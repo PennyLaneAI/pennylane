@@ -1,5 +1,5 @@
-Xanadu quantum machine learning library
-=======================================
+OpenQML TODO list
+=================
 
 
 Basic idea

@@ -8,14 +8,10 @@ OpenQML is a Python library for solving quantum machine learning problems on var
 platforms, including Strawberry Fields :cite:`strawberryfields`.
 
 
-License
-=======
-
-TODO
+.. include:: ../README.rst
+   :start-line: 5
 
 .. include:: ../TODO.rst
-   :start-line: 3
-
 
 .. toctree::
    :maxdepth: 2
