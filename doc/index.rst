@@ -14,9 +14,10 @@ platforms, including Strawberry Fields :cite:`strawberryfields`.
 .. include:: ../TODO.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
+   plugins
    references
 
 
