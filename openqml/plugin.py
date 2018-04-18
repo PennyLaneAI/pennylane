@@ -12,6 +12,7 @@ Functions
 ---------
 
 .. autosummary::
+   list_plugins
    load_plugin
    _load_from_namespace_pkg
 
@@ -54,6 +55,15 @@ def _load_from_namespace_pkg(ns, name):
             break
 
 
+def list_plugins():
+    """Lists all the OpenQML plugins found.
+
+    Returns:
+      list[str]: names of all the plugins found in the openqml.plugins namespace package
+    """
+    return [modname for finder, modname, ispkg in pkgutil.iter_modules(openqml.plugins.__path__)]
+
+
 def load_plugin(name, plugin_dir=None):
     """Loads an OpenQML plugin.
 
@@ -75,7 +85,7 @@ def load_plugin(name, plugin_dir=None):
             # try reading the plugin dir from the environment
             plugin_dir = os.environ['OPENQML_PLUGINS']
 
-        # load the plugin by append the python module path
+        # load the plugin by appending the python module path
         sys.path.append(os.path.abspath(plugin_dir))
         mod = importlib.import_module(name)
         # TODO moving one module path element from plugin_dir to name might be safer, or not

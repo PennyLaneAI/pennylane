@@ -7,10 +7,15 @@ Strawberry Fields plugin for OpenQML
 
 .. currentmodule:: openqml.sf_plugin
 
-
+This plugin provides the interface between OpenQML and Strawberry Fields.
+It enables OpenQML to optimize continuous variable quantum circuits.
 """
 
 from openqml.plugin import Plugin
+
+import strawberryfields as sf
+from strawberryfields.ops import *
+
 
 
 class SFPlugin(Plugin):
