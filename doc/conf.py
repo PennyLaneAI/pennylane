@@ -192,3 +192,7 @@ autodoc_member_order = 'bysource'
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
+
+
+# temporary HACK for getting some latex macros to work in MathJax
+mathjax_path = 'MathJax_local.js'
