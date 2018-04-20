@@ -67,7 +67,7 @@ The gradient can be computed in different ways:
 
 1. user giving us a :math:`\nabla_{\theta_i} f` black box in addition to :math:`f`
 2. automatically using numerical differentiation based on :math:`f` evaluations only, `<https://pypi.org/project/Numdifftools/>`_
-3. automatically using an analytic method, i.e. given a circuit :math:`f` construct a circuit for :math:`\nabla_{\theta_i} f`
+3. automatically using the analytic method from above, i.e. given a circuit :math:`f` construct a circuit for :math:`\nabla_{\theta_i} f`
 
 For (3) we need to know something about gates, each plugin may have its own set.
 
