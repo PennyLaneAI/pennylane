@@ -23,6 +23,39 @@ Both training and testing steps rely on having a quantum circuit black box at ha
 The thetas are continuous variables, typically rotation angles or in the CV case, unconstrained real numbers.
 
 
+Variational Circuit
+-------------------
+
+The variational circuit :math:`U(\theta) = U_1,...,U_D ` prepares a state :math:`|\psi(\theta)\rangle =  U(\theta) |0\rangle`. There are three modes in which we can run the circuit:
+
+1. Prepare and sample from :math:`|\psi(\theta)\rangle`. Sampling means to perform a projective measurement in some basis, for example the computational or Fock basis.
+
+2. Prepare the state :math:`|\psi(\theta)\rangle` and estimate the expectation value :math:`\langle \psi(\theta)| O |\psi(\theta)\rangle` of an operator :math:`O`. The estimation can be analytical (classical simulations), or by taking the average of multiple measurements (quantum hardware).
+
+3. Use a ''derivative circuit'' to prepare the state :math:`\partial_{\mu} U(\theta) |0\rangle` with :math:`\mu \in \theta` and estimate the derivative of the expectation of :math:`O`:
+
+.. math::
+		
+	\partial_{\mu}\langle \psi(\theta)| O |\psi(\theta)\rangle =  -2 \sum_k \sum_l a_k g_l Im[\langle 0 | U_1..A_k..U_D O_l U_1...U_D |0 \rangle ]
+
+where we have :math:`O = \sum_l g_l O_l` and :math:`\partial_{\mu} U(\mu) = \sum_k a_k A_k`. This incorporates the two cases currently mentioned in the literature:
+
+* UNITARIES FROM GENERATORS: If :math:`U(\mu) = e^{i \mu G}`, we decompose :math:`G = \sum_k a_k P_k` where the :math:`P_k` are unitary, then :math:`U_k = P_k U(\mu)`. 
+* GATE DERIVATIVES AS LINEAR COMBINATIONS OF UNITARIES: We can often decompose :math:`\partial_{\mu} U(\mu) = \sum_k a_k A_k(\mu)`, where the :math`U_k(\mu)` are parametrized unitary gates that are part of the elementary gate set of the quantum device.
+	
+
+The circuit can also depend on some inputs :math:`(x_1,...,x_N)` of which we do not have to take derivatives, but which can nonetheless change between two calls of the circuit. 
+
+.. note::
+
+	How do we deal with batch inputs, i.e. if we need the circuit with the same parameters to be executed for batches of inputs :math:`(x_1,...,x_N), (z_1,...,z_N)...`? 
+
+.. note::
+
+	The parameter update for a set of parameters can be parallelised on classical architectures, in other words, updating one parameter is independent of the other updates.
+
+
+
 Gradient
 --------
 
