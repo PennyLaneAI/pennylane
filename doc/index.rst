@@ -15,6 +15,7 @@ platforms, including Strawberry Fields :cite:`strawberryfields`.
    :maxdepth: 1
    :caption: Contents:
 
+   plugins
    TODO
    references
 
