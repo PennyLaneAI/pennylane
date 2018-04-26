@@ -14,12 +14,13 @@ from openqml.plugin import Plugin
 
 
 class DummyPlugin(Plugin):
+    plugin_name = 'dummy plugin'
+    plugin_api_version = '0.0.0'
+    plugin_version = '1.0.0'
+
     def __init__(self):
         super().__init__()
         print('Dummy plugin instance created.')
-
-    def func(self, reg):
-        print('Dummy plugin func called.')
 
 
 

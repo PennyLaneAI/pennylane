@@ -3,22 +3,17 @@ Unit tests for the :mod:`openqml` plugin interface.
 """
 
 import unittest
-# HACK to import the openqml modules from this source distribution, not the one in site-packages
-import os
-import sys
-sys.path.insert(0, os.path.abspath('.'))
 
 #from numpy.random import (randn, uniform, randint)
 #from numpy import array, pi
 
-import openqml
+from defaults import openqml, BaseTest
 from openqml.plugin import (list_plugins, load_plugin, Plugin)
 
 
 
-class BaseTest(unittest.TestCase):
+class BasicTest(BaseTest):
     """ABC for tests.
-    TODO Encapsulates the user-given commandline parameters for the test run.
     """
     def setUp(self):
         #self.plugin = openqml.load_plugin('strawberryfields')
@@ -28,7 +23,7 @@ class BaseTest(unittest.TestCase):
         "Plugin discovery and loading."
 
         plugins = list_plugins()
-        print('Found plugins: ', plugins)
+        print('Found plugins: ', plugins, '\n')
 
         # nonexistent plugin exception
         self.assertRaises(ValueError, load_plugin, 'nonexistent_plugin')
@@ -36,21 +31,27 @@ class BaseTest(unittest.TestCase):
         def test_plugin(p):
             "Tests for each individual plugin."
             self.assertTrue(issubclass(p, Plugin))
+            print('Name:', p.plugin_name)
+            print('API version:', p.plugin_api_version)
+            print('Plugin version:', p.plugin_version)
 
         # try loading all the discovered plugins, test them
         for name in plugins:
-            p = load_plugin(name)
+            try:
+                p = load_plugin(name)
+            except ImportError:
+                continue
             print(p)
             test_plugin(p)
+            print()
 
 
 
 if __name__ == '__main__':
     print('Testing OpenQML version ' + openqml.version() + ', plugin API.')
-
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (BaseTest,):
+    for t in (BasicTest,):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 

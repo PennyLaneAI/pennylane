@@ -19,6 +19,10 @@ from strawberryfields.ops import *
 
 
 class SFPlugin(Plugin):
+    plugin_name = 'Strawberry Fields OpenQML plugin'
+    plugin_api_version = '0.0.0'
+    plugin_version = sf.version()
+
     def __init__(self):
         super().__init__()
         print('Strawberry Fields plugin instance created.')
