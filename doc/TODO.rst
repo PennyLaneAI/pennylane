@@ -125,6 +125,7 @@ Optimization problems supported
 -------------------------------
 
 * State fitting: No inputs, :math:`y_i` is a target quantum state, :math:`f(\theta_i)` should prepare a state maximally close to the target.
+  Note that this cannot be done (efficiently) with a hardware backend.
 * Generative model: No inputs, :math:`y_i` are measurement samples (for example expectation values of observables),
   :math:`f(\theta_i)` should prepare a state that produces those samples with maximal likelihood.
 * Quantum classifier: :math:`x_i, y_i` are input and output samples, :math:`g(f(\theta_i))` should map the inputs to the outputs.
