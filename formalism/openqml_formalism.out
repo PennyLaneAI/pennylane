@@ -1,8 +1,0 @@
-\BOOKMARK [0][-]{section*.2}{OpenQML - Technical manuscript}{}% 2
-\BOOKMARK [1][-]{section*.1}{Abstract}{section*.2}% 1
-\BOOKMARK [1][-]{section*.3}{Basic building blocks}{section*.2}% 3
-\BOOKMARK [2][-]{section*.4}{Variational circuit, layers and gates}{section*.3}% 4
-\BOOKMARK [2][-]{section*.7}{Cost function}{section*.3}% 5
-\BOOKMARK [1][-]{section*.11}{Optimization}{section*.2}% 6
-\BOOKMARK [2][-]{section*.12}{Gradient descent step}{section*.11}% 7
-\BOOKMARK [2][-]{section*.13}{Computing the gradient}{section*.11}% 8
