@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.12.26)  27 APR 2018 14:36
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.12.26)  27 APR 2018 15:49
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -567,19 +567,23 @@ Underfull \hbox (badness 10000) in paragraph at lines 173--175
  []
 
 [2]
+Underfull \hbox (badness 10000) in paragraph at lines 199--201
+
+ []
+
 No file openqml_formalism.bbl.
 [3]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 204.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 217.
  (./openqml_formalism.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 204.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 204.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 217.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 217.
 Package rerunfilecheck Info: File `openqml_formalism.out' has not changed.
 (rerunfilecheck)             Checksum: 1AF1D6AA6B9986E575034D34401A3FD3;527.
  ) 
 Here is how much of TeX's memory you used:
  9399 strings out of 494910
  131030 string characters out of 6179835
- 248294 words of memory out of 5000000
+ 250294 words of memory out of 5000000
  12562 multiletter control sequences out of 15000+600000
  10599 words of font info for 39 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
@@ -599,7 +603,7 @@ mr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb>
 are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/te
 xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/t
 exmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on openqml_formalism.pdf (3 pages, 196805 bytes).
+Output written on openqml_formalism.pdf (3 pages, 199252 bytes).
 PDF statistics:
  132 PDF objects out of 1000 (max. 8388607)
  109 compressed objects within 2 object streams

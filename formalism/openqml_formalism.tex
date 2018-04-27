@@ -185,17 +185,30 @@ Since $H$ might not be a unitary operator, we have to decompose it into unitarie
 \]
 
 Summarizing the above, we get the formulae
-\begin{equation*}
-	\partial_{\mu}  \rho(\theta) =  \sum_k \left[ a_k  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta) + h.c. \right].
-\end{equation*}
+\begin{eqnarray*}
+	\partial_{\mu} E_i(\theta) &=& \tr \{ \sum_k \left[ a_k  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta) + h.c. \right] \; \hat{O}_i\}, \\ 
+	&=& \sum_k \tr \{  \left[ a_k  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta) + h.c. \right] \; \hat{O}_i\}\\
+	&=& \sum_k \tr \{   a_k  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta) \hat{O}_i + h.c. \}.
+\end{eqnarray*}
 
 Altogether, the quantum computer has to evaluate the terms 
 \[ \tr \{  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta)  \hat{O} \},\]
 and
-\[ \tr \{  U(\theta) \rho_0 U_{A_k}^{\dagger}(\theta)  \hat{O} \}.\]
-For this, we have to prepare a quantum state of the form
+\[ \tr \{  U(\theta) \rho_0 U_{A_k}^{\dagger}(\theta)  \hat{O} \},\]
+from which we can construct the derivative of the expectation classically. For this, we have to prepare a quantum state of the form
 \[ \mathcal{A} \rho_0 \mathcal{B}, \]
-where $ \mathcal{A}, \mathcal{B}$ are the derivative and the original variational circuit. \maria{How can we do this? I only know a routine that gets the real value of this expression by interpreting $\hat{O}$ as a quantum gate and measuring the overlap of two states...}
+where $ \mathcal{A}, \mathcal{B}$ are the derivative and the original variational circuit. \\
+
+\maria{Nathan, you mentioned that you know a trick of how we can implement this easily? So far I am very sceptical that this is simple. I only know the following trick:
+Decompose $\hat{O}$ into a sum of unitaries $B_s$,
+\[\hat{O} = \sum_s b_s B_s,\]
+so that we have to implement
+\[ \tr \{  U(\theta) \rho_0 U_{A_k}^{\dagger}(\theta)  B_s \}.\]
+Define $A=U(\theta)$ and $D=U_{A_k}^{\dagger}(\theta)  B_s$, then prepare
+\[ \frac{1}{\sqrt{2}} (\ket{0} \otimes A\rho_0 A^{\dagger} + \ket{1} \otimes D\rho_0 D^{\dagger}),\]
+and apply a Hadamard on the ancilla. The probability of measuring the ancilla in $0$ is
+\[p(0) = \frac{1}{2} + \frac{1}{2} \tr \{ A\rho_0 A^{\dagger} D\rho_0 D^{\dagger} +D\rho_0 D^{\dagger} A\rho_0 A^{\dagger}  \} \]
+For this, the quantum device needs ancilla qubits, and $A_k$ and $B_s$ have to be implemented conditioned on the ancilla. }
 
 %\bibliographystyle{unsrt}
 %\bibliography{references}
