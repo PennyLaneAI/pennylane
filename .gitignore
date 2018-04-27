@@ -11,3 +11,12 @@ examples/*ipynp*
 coverage_html_report/*
 notebooks/*
 examples/.ipynb_checkpoints/*
+*.aux
+*.bbl
+*.blg
+*.end
+*.log
+*.out
+*.toc
+*.dvi
+*Notes.bib
