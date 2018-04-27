@@ -1,0 +1,204 @@
+\documentclass[amsmath,amssymb,aps,pra,10pt,twocolumn,groupedaddress,nofootinbib]{revtex4-1}
+
+\usepackage{graphicx}% Include figure files
+\usepackage{bm,bbm}% bold math
+\usepackage{hyperref}% add hypertext capabilities
+\usepackage[margin=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+\newcommand{\ket}[1]{| #1 \rangle} % for Dirac bras
+\newcommand{\bra}[1]{\langle #1 |} % for Dirac kets
+\newcommand{\braket}[2]{\langle #1 | #2 \rangle} % for Dirac brackets
+\newcommand{\ketbra}[2]{|#1\rangle\langle#2|}
+\renewcommand{\a}{\hat{a}}
+\newcommand{\ad}{\a^\dagger}
+\newcommand{\x}{\hat{x}}
+\newcommand{\p}{\hat{p}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bp}{\mathbf{p}}
+\newcommand{\bq}{\mathbf{q}}
+\newcommand{\e}{\mathrm{e}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\bad}{\bm{\hat a}^\dagger}
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\G}{\mathcal{G}}
+
+\newcommand{\sidenote}[1]{\marginpar{\footnotesize{\textcolor{red}{-#1}}}}
+
+\newcommand{\nathan}[1]{\textcolor{blue}{Nathan: #1}}
+\newcommand{\maria}[1]{\textcolor{orange}{Maria: #1}}
+\newcommand{\ville}[1]{\textcolor{purple}{Ville: #1}}
+
+
+\begin{document}
+
+\title{OpenQML - Technical manuscript}
+\author{Xanadu}
+\date{\today}
+
+\begin{abstract}
+Compilation of formulas and conventions for the OpenQML framework.
+\end{abstract}
+
+\maketitle
+
+
+\section{Basic building blocks}
+
+\subsection{Variational circuit, layers and gates}
+
+We are given a \textbf{variational circiut} 
+\[ U (\theta[, x]): \rho_0 \rightarrow \tr \{ \rho \hat{O_i} \} := E_i. \]
+The circuit takes a ground or vacuum state $\rho_0 = \ketbra{0}{0}$ and maps it to the expectation value of an operator $\hat{O}_i$ from a set of operators $\mathcal{O} = \{\hat{O}_1 \cdots \hat{O}_{N_O}\}$ with respect to the final state $\rho$ of the circuit. These operators correspond to measurements that are easy to make on the device, for example when $\hat{O}$ is the Pauli operator $\sigma_z$ that corresponds to a computational basis measurement, or the quadrature operator $\x$ corresponding to homodyne detection in CV systems. The circuit can also potentially take an input $x$, which we treat as a placeholder that can be replaced with values during training.\\
+
+The variational circuit can be composed of \textbf{layers} 
+\[ U (\theta) = \L_{N_L} \cdots \L_{1}\]
+which repeat a certain architecture. A layer $\L_l$, $l=1,...,N_L$, consists of a series of \textbf{gates}
+\[\L_l = \G^l_{N_G}(\theta^l_{N_G}) \cdots \G^l_1(\theta^l_1). \]
+Each gate is parametrised by a set of parameters $\theta^i_j$, $i = 1,...,N_L$, $j=1,...,N_G$, which can be empty if the gate is not parametrised. \\
+
+We propose to use the following \textbf{elementary gate sets}:
+
+\paragraph{Qubit architectures}
+
+Three rotations 
+
+\begin{eqnarray*}
+	R_z(\alpha) &=& \e^{-\alpha \sigma_x /2} = 
+	\begin{pmatrix} 
+	\cos \frac{\alpha}{2} & -i \sin \frac{\alpha}{2}\\
+	-i \sin \frac{\alpha}{2} & \cos \frac{\alpha}{2}
+	\end{pmatrix}\\
+	R_z(\alpha) &=& \e^{-\alpha \sigma_y /2} = 	
+	\begin{pmatrix} 
+	\cos \frac{\alpha}{2} & -\sin \frac{\alpha}{2}\\
+    \sin \frac{\alpha}{2} & \cos \frac{\alpha}{2}
+	\end{pmatrix}\\
+	R_z(\alpha) &=& \e^{-\alpha \sigma_z /2}=
+	\begin{pmatrix} 
+	\e^{-i \frac{\alpha}{2}} & 0\\
+	0 & \e^{i \frac{\alpha}{2}}
+	\end{pmatrix}\\ 
+\end{eqnarray*}
+
+and the $\mathrm{CNOT}$ gate.
+
+\paragraph{CV architectures}
+
+Displacement, Squeezing, Phase rotation, beam splitter, Kerr nonlinearity, Cubix phase gate. See SF conventions.
+
+\subsection{Cost function}
+
+The \textbf{cost function} depends on the expectation vales $\{E_i\}$,
+\[C(\theta[, \mathcal{D}]) = g(\{E_i\}),\]
+and potentially on a data set $\mathcal{D}$ which either consists of multiple inputs, $\mathcal{D} = \{x\}$, or input-output pairs, $\mathcal{D} = \{(x ,y)\}$. We assume that both $x$ and $y$ are real finite vectors or scalars.\\
+
+For the following we will also assume that the cost function is a sum of functions of the expectations,
+\begin{equation}
+	C(\theta[, \mathcal{D}]) = \sum_i g_i(\{E_i\}),
+	\label{eq:cost}
+\end{equation}
+which is true for the standard use-cases of variational circuits.
+
+\color{black!80!white}
+Examples of cost functions are:
+
+\paragraph{Expectation cost for a variational eigensolver}
+
+The cost function of a variational eigensolver is a weighed sum of expectation values,
+\[ C(\theta) = \sum_i h_i E_i(\theta). \]
+Usually, these are expectations of Pauli operators, and their sum is the energy expectation,
+\[\langle H \rangle = \sum\limits_{i, \alpha} h^i_{\alpha} \langle\sigma^i_{\alpha}\rangle + \sum\limits_{\substack{i,j\\ \alpha, \beta}} h^{ij}_{\alpha, \beta} \langle \sigma^i_{\alpha}\sigma^j_{\beta}\rangle + \hdots,\]
+where $i,j$ denote the qubits that the Paulis act on, and $\alpha, \beta = x,y,z$ sum over all different combinations of Pauli operators. 
+
+\paragraph{Maximum likelihood cost for a generative model}
+If the goal is to increase the likelihood of measuring a basis state $\ket{x}$ that represents an input in the data set $\mathcal{D} = \{x\}$, the expectations we are interested in are 
+\[E_x(\theta) =  \tr\{\rho(\theta) \ketbra{x}{x}  \},\]
+and we can use maximum likelihood to define
+\[C(\theta, \mathcal{D}) = \sum_{x \in \mathcal{D}}\log E_x(\theta) .\]
+Note that in this unsupervised learning task the data enters the cost function directly, and the circuit is data-independent.
+
+
+\paragraph{Square loss cost for supervised learning}
+If we interpret the expectation $E_x(\theta) = \tr \{ \rho(\theta, x) \; \sigma_z \}$ of the computational basis state of a designated qubit for an input $x$ as the prediction of a quantum classifier, the square loss cost function reads 
+\[ C(\theta, \mathcal{D}) = \sum_{(x,y) \in \mathcal{D}} |E_x(\theta)-y|^2. \]
+
+\color{black}
+
+\section{Optimization}
+
+OpenQML deals with the optimization of the variational circuit with regards to the cost. We always minimize the cost. Our core method is (stochastic) gradient descent. 
+
+\subsection{Gradient descent step}
+In every \textbf{step} of the optimization algorithm, the parameters are updated according to the following simple loop\\
+
+\begin{algorithmic}[1]
+\Procedure{Gradient descent step}{}
+\State [sample a batch $\mathcal{D}$ from the training data]
+\For {$\mu \in \theta $} 
+\State $\mu^{(t+1)} = \mu^{(t)} - \eta^{(t)} \partial_{\mu} C(\theta[, \mathcal{D}]) + S$
+\EndFor
+\EndProcedure
+\end{algorithmic}
+
+The learning rate $\eta^{(t)}$ can be adapted in each step, either depending on the gradient or on the step number. $S$ is a potential additional term that can add a momentum to the update. The gradient $\partial_{\mu} C(\theta[, \mathcal{D}])$ has to be evaluated by automatic differentiation of the cost function, which is computed hybridly by the quantum device or simulator and a classical computer. We therefore need to define a hybrid automatic differentiation scheme.
+
+\subsection{Computing the gradient}
+For the cost of Eq. (\ref{eq:cost}) and neglecting the dependency on inputs $x$ for now, we have
+\[\partial_{\mu} C(\theta[, \mathcal{D}]) = \sum_i \frac{d g(\{E_i(\theta)\})}{d E_i(\theta)} \partial_{\mu} E_i(\theta). \]
+The first gradient $\frac{d g(\{E_i(\theta)\})}{d E_i(\theta)}$ is the derivative of the classically computed part of the cost. We evaluate it using standard computational tools for automatic differentiation. The second gradient $\partial_{\mu} E_i(\theta)$ is the derivative of the part that is computed by the quantum device. We need something like ``quantum automatic differentiation'' to compute these gradients.\\
+
+Formally, we have
+\begin{eqnarray*}
+	\partial_{\mu} E_i(\theta) &=& \partial_{\mu} \tr \{\rho(\theta) \; \hat{O}_i\} \\
+	&=& \tr \{ (\partial_{\mu}  \rho(\theta)) \; \hat{O}_i\}, \\
+\end{eqnarray*}
+and with $\rho(\theta) = U(\theta)\rho_0U^{\dagger}(\theta)$ and the product rule of differentiation, we get
+\[\partial_{\mu}  \rho(\theta) = \left(\partial_{\mu}   U(\theta)\right) \rho_0U^{\dagger}(\theta) +   U(\theta) \rho_0 \left(\partial_{\mu} U^{\dagger}(\theta)\right)   . \]
+This expression contains the \textbf{circuit derivative}, $\partial_{\mu}  U(\theta)$. Assume that only the $l$th layer depends on circuit parameter $\mu$, then
+\[
+\partial_{\mu}  U(\theta) =  \mathcal{L}_1^{\dagger} \cdots (\partial_{\mu} \mathcal{L}_l^{\dagger})\cdots \mathcal{L}_D^{\dagger}. 
+\]
+We call the expression $\partial_{\mu} \mathcal{L}_d^{\dagger}$  the \textbf{layer derivatives}. The layer is decomposed into different gates from our universal gate set. Let $\mu$ be the parameter of the $r$th gate $\G_r(\mu)$ (where $\G$ can also depend on other parameters). The derivative of a layer is then the original layer, but instead of $\G_r$ we use $\partial_{\mu} \G_r(\mu)$. This expression is in general not a quantum gate, and in particular not necessarily a member of our elementary gate set. We therefore have to decompose it into a weighed sum of ``allowed gates'' $A_k(\mu)$, 
+\begin{equation} 
+	\partial_{\mu} \G(\mu) = \sum_k a_k A_k(\mu),
+    \label{eq:decomposition_derivative}
+\end{equation}
+with complex coefficients $a_k$. This is always possible, because any operator can be represented as a sum of unitaries, and if our elementary gate set is universal for quantum computing, it can represent any unitary. The derivative circuit hence becomes
+\begin{eqnarray}
+\partial_{\mu}  U(\theta)  &=& \sum_k a_k U_{A_k}(\theta) \\
+&=& \sum_k a_k \G_1^1 \cdots A_k(\mu) \cdots \G_{N_G}^{N_L},
+\end{eqnarray} 
+where $U_{A_k}(\theta)$ is the original circuit but with the gate $\G_r^l(\mu)$ replaced by $A_k(\mu)$. \\
+
+
+
+An example is the special case for Equation (\ref{eq:decomposition_derivative}) when $\G(\mu) = \e^{i\mu H}$ for a generator $H$. Then, formally,
+\[
+\partial_{\mu}\G(\mu) = i H \e^{i\mu H}. 
+\]
+Since $H$ might not be a unitary operator, we have to decompose it into unitaries $H_k$ via $H = \sum_k a_k H_k$, so that 
+\[
+\partial_{\mu}\G(\mu) = \sum_k i \underbrace{H_k \e^{i\mu H}}_{A_k}. 
+\]
+
+Summarizing the above, we get the formulae
+\begin{equation*}
+	\partial_{\mu}  \rho(\theta) =  \sum_k \left[ a_k  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta) + h.c. \right].
+\end{equation*}
+
+Altogether, the quantum computer has to evaluate the terms 
+\[ \tr \{  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta)  \hat{O} \},\]
+and
+\[ \tr \{  U(\theta) \rho_0 U_{A_k}^{\dagger}(\theta)  \hat{O} \}.\]
+For this, we have to prepare a quantum state of the form
+\[ \mathcal{A} \rho_0 \mathcal{B}, \]
+where $ \mathcal{A}, \mathcal{B}$ are the derivative and the original variational circuit. \maria{How can we do this? I only know a routine that gets the real value of this expression by interpreting $\hat{O}$ as a quantum gate and measuring the overlap of two states...}
+
+%\bibliographystyle{unsrt}
+%\bibliography{references}
+
+
+\end{document}
