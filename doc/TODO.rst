@@ -35,20 +35,20 @@ The variational circuit :math:`U(\theta) = U_1,...,U_D ` prepares a state :math:
 3. Use a ''derivative circuit'' to prepare the state :math:`\partial_{\mu} U(\theta) |0\rangle` with :math:`\mu \in \theta` and estimate the derivative of the expectation of :math:`O`:
 
 .. math::
-		
+
 	\partial_{\mu}\langle \psi(\theta)| O |\psi(\theta)\rangle =  -2 \sum_k \sum_l a_k g_l Im[\langle 0 | U_1..A_k..U_D O_l U_1...U_D |0 \rangle ]
 
 where we have :math:`O = \sum_l g_l O_l` and :math:`\partial_{\mu} U(\mu) = \sum_k a_k A_k`. This incorporates the two cases currently mentioned in the literature:
 
-* UNITARIES FROM GENERATORS: If :math:`U(\mu) = e^{i \mu G}`, we decompose :math:`G = \sum_k a_k P_k` where the :math:`P_k` are unitary, then :math:`U_k = P_k U(\mu)`. 
+* UNITARIES FROM GENERATORS: If :math:`U(\mu) = e^{i \mu G}`, we decompose :math:`G = \sum_k a_k P_k` where the :math:`P_k` are unitary, then :math:`U_k = P_k U(\mu)`.
 * GATE DERIVATIVES AS LINEAR COMBINATIONS OF UNITARIES: We can often decompose :math:`\partial_{\mu} U(\mu) = \sum_k a_k A_k(\mu)`, where the :math`U_k(\mu)` are parametrized unitary gates that are part of the elementary gate set of the quantum device.
-	
 
-The circuit can also depend on some inputs :math:`(x_1,...,x_N)` of which we do not have to take derivatives, but which can nonetheless change between two calls of the circuit. 
+
+The circuit can also depend on some inputs :math:`(x_1,...,x_N)` of which we do not have to take derivatives, but which can nonetheless change between two calls of the circuit.
 
 .. note::
 
-	How do we deal with batch inputs, i.e. if we need the circuit with the same parameters to be executed for batches of inputs :math:`(x_1,...,x_N), (z_1,...,z_N)...`? 
+	How do we deal with batch inputs, i.e. if we need the circuit with the same parameters to be executed for batches of inputs :math:`(x_1,...,x_N), (z_1,...,z_N)...`?
 
 .. note::
 
@@ -153,3 +153,47 @@ Misc. ideas
 * The above approach assumes a fixed circuit/black box with continuous parameters.
   Maybe we could try to optimize the circuit template too, using discrete optimization methods?
 * What about using a quantum device to train a classical model, and use/test it in classical hardware?
+
+
+Data-flow graph
+---------------
+
+Much like in TensorFlow or other graph-based automatic differentiation frameworks,
+we may model our computational system using a directed acyclic graph (DAG).
+In our case
+
+* The edges represent classical variables (scalar or vector) and the nodes represent functions transforming inputs to outputs.
+* The nodes can be either classical (classical neural nets, transformation functions) or
+  quantum (quantum circuits with classical inputs (gate parameters, initializations) and outputs (measurement results, expectation values)).
+
+  * The graph can be coarse-grained by grouping nodes together into a single node.
+    A node that contains any quantum information processing becomes a quantum node.
+  * We may normally assume that classical nodes are easy to compute, and quantum nodes are hard to compute unless
+    we have access to quantum hardware. OpenQML computes the classical nodes on its own, and relegates the quantum nodes to whatever plugin is in use.
+  * We have 3 special nodes, PAR and DATA (with only outgoing edges, representing input) and OUT (with only incoming edges, representing output).
+
+* In this model, the edges are always classical. Quantum information never enters or leaves a node.
+  In principle the model could be extended to handle quantum edges as well,
+  in which case we could zoom into a quantum node, revealing e.g. a quantum circuit with quantum wires in it.
+  This would result in a superset of the quantum circuit notation.
+
+* The edges could maybe be divided into two types, data (D) and optimization parameters/weights (P).
+  We now have the following basic rules:
+
+  * Data only comes from data: D output requires a D input (exception: DATA node)
+  * Parameters are not affected by data: P output requires that P is the only input type (exception: PAR node)
+  * The only sink (node that returns nothing) is OUT
+  * The only sources (nodes that take no inputs) are DATA and PAR
+
+* This leaves us with the following intermediate node types:
+
+  * D -> D: data transformation
+  * P -> P: parameter transformation
+  * D,P -> D: parametrized data processing
+
+* If we relax the "don't mix parameters and data" rule, we could have D,P -> D,P nodes as well.
+* As a special case we have a linear graph which can represent e.g. layered neural nets or classical/quantum sandwich structures.
+
+
+We may use standard AD methods to compute the gradients of classical nodes, and implement our own system
+for computing the gradients of the quantum nodes by sending the plugin a modified quantum circuit to execute.
