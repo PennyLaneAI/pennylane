@@ -16,6 +16,7 @@ platforms, including Strawberry Fields :cite:`strawberryfields`.
    :caption: Contents:
 
    conventions
+   circuit
    plugins
    TODO
    references

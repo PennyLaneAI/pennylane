@@ -16,7 +16,7 @@ __all__ = ['version']
 
 
 "Version number (major.minor.patch[-label])"
-__version__ = '0.0.0'
+__version__ = '0.1.0'
 
 
 def version():
