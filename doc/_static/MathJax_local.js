@@ -20,6 +20,7 @@ document.write('\
                 a: ["\\\\hat{a}",0],\
                 ad: ["\\\\text{ad}",0],\
                 Ad: ["\\\\text{Ad}",0],\
+                Var: ["\\\\text{Var}",0],\
                 re: ["\\\\text{Re}",0],\
                 im: ["\\\\text{Im}",0],\
                 tr: ["\\\\mathrm{Tr} #1",1],\

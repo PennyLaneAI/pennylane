@@ -84,18 +84,18 @@ Assume we have a gate :math:`U` belonging to a one-parameter unitary group gener
 .. math::
    \pde{\theta} \Ad_{U_\theta} \rho = \pde{\theta} (U_\theta \rho U_\theta^\dagger) = -i [G, U_\theta \rho U_\theta^\dagger] = -i \ad_G \Ad_{U_\theta} \rho = -i \Ad_{U_\theta} \ad_G \rho.
 
-Assume now we have a propagator :math:`U = B U_\theta A`, and the initial state of the system is :math:`\rho`.
+Assume now we have a propagator :math:`U`, and the initial state of the system is :math:`\rho`.
 The expectation values of various observables are obtained as
 
 .. math::
-   \expect{x_i}_U = \tr(\Ad_{U}(\rho) x_i)
-   = \tr(\rho \Ad_{U^\dagger}(x_i)).
+   \expect{x_i}_U = \tr((\Ad_{U}\rho) x_i)
+   = \tr(\rho \Ad_{U^\dagger}x_i).
 
-The gradient of the expectation value is given by
+With :math:`U=B U_\theta A`, the gradient of the expectation value is given by
 
 .. math::
-   \pde{\theta} \expect{x_i}_{B U_\theta A} = \tr(x_i \Ad_B (\pde{\theta} \Ad_{U_\theta}) \Ad_A(\rho))
-   = \tr(x_i \Ad_B (-i \ad_G) \Ad_{U_\theta A}(\rho)).
+   \pde{\theta} \expect{x_i}_{B U_\theta A} = \tr(x_i \Ad_B (\pde{\theta} \Ad_{U_\theta}) \Ad_A \rho)
+   = \tr(x_i \Ad_B (-i \ad_G) \Ad_{U_\theta A} \rho).
 
 
 Special case: single-qubit gates
@@ -108,21 +108,38 @@ This yields
 .. math::
    \Ad_W \rho = W \rho W^\dagger
    = \frac{1}{2}\left((\I-2iG)\rho(\I+2iG)\right)
-   = \frac{1}{2}\left(\rho -2i\ad_G(\rho) +4G \rho G \right)
+   = \frac{1}{2}\left(\rho -2i\ad_G \rho +4\Ad_G \rho\right)
 
 and thus we obtain the convenient formula
 
 .. math::
-   \frac{1}{2}(\Ad_W-\Ad_{W^\dagger}) \rho = -i\ad_G(\rho).
+   \frac{1}{2}(\Ad_W-\Ad_{W^\dagger}) = -i\ad_G.
 
 This enables us to compute the expectation value gradient as the average of two other expectation values,
 obtained using parameter-shifted versions of the gate :math:`U_\theta`:
 
 .. math::
    \pde{\theta} \expect{x_i}_{B U_\theta A}
-   = \tr(x_i \Ad_B (-i \ad_G) \Ad_{U_\theta A}(\rho)).
-   = \frac{1}{2} \tr(x_i \Ad_B (\Ad_W-\Ad_{W^\dagger}) \Ad_{U_\theta A}(\rho)).
+   = \tr(x_i \Ad_B (-i \ad_G) \Ad_{U_\theta A} \rho).
+   = \frac{1}{2} \tr(x_i \Ad_B (\Ad_W-\Ad_{W^\dagger}) \Ad_{U_\theta A} \rho).
    = \frac{1}{2} \left(\expect{x_i}_{B U_{\theta+\pi/2} A}  -\expect{x_i}_{B U_{\theta-\pi/2} A}\right).
+
+By performing a measurement :math:`x_i` (e.g. experimentally) :math:`n` times and averaging the results,
+we obtain an unbiased estimator  :math:`\expect{x_i}_U^*`, for the expectation value :math:`\expect{x_i}_U`,
+with variance :math:`\sigma^2/n`, where :math:`\sigma^2` is the statistical variance of the measurement
+and depends on both the measurement and the state.
+We may then form an unbiased estimator :math:`\nabla_i^*` for the gradient components using the estimators
+for the two expectation values involved, with
+
+.. math::
+   \Var(\nabla_i^*) = \frac{1}{4}\left(\frac{\sigma_1^2}{n_1}+\frac{\sigma_2^2}{n_2} \right).
+
+
+This method for computing the gradient components cannot be applied in the CV case, because
+there is no analog to the :math:`W` gate.
+What about SU(n) (qudits)?
+Does the W gate require periodicity, i.e. that the one-parameter subgroup is isomorphic to U(1)?
+This is not true for most :math:`SU(n>2)` 1-param subgroups.
 
 
 
@@ -143,15 +160,15 @@ The expectation values are given by
 
 .. math::
    \expect{x_i}
-   = \tr(\rho \Ad_{(B U_\theta A)^\dagger}(x_i))
+   = \tr(\rho \Ad_{(B U_\theta A)^\dagger} x_i )
    = (\tilde{B})^{-1}_{ij} (\tilde{U_\theta})^{-1}_{jl} (\tilde{A})^{-1}_{lm} \: \tr(\rho x_m)
 
 Their derivatives are given by
 
 .. math::
    \pde{\theta} \expect{x_i}
-   &= \tr(\rho \Ad_{A^\dagger} \pde{\theta} \Ad_{U_\theta^\dagger} \Ad_{B^\dagger} (x_i))
-   = i \tr(\rho \Ad_{A^\dagger} \ad_G \Ad_{U_\theta^\dagger} \Ad_{B^\dagger} (x_i))
+   &= \tr(\rho \Ad_{A^\dagger} \pde{\theta} \Ad_{U_\theta^\dagger} \Ad_{B^\dagger} x_i)
+   = i \tr(\rho \Ad_{A^\dagger} \ad_G \Ad_{U_\theta^\dagger} \Ad_{B^\dagger} x_i)
    = i (\tilde{B})^{-1}_{ij} (\tilde{U_\theta})^{-1}_{jk} \hat{G}_{kl} (\tilde{A})^{-1}_{lm} \: \tr(\rho x_m)
 
    &= (\tilde{B})^{-1}_{ij} \pde{\theta} (\tilde{U_\theta})^{-1}_{jl} (\tilde{A})^{-1}_{lm} \: \tr(\rho x_m)
