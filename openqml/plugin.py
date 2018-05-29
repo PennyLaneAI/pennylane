@@ -29,7 +29,10 @@ import os
 import sys
 import importlib
 import pkgutil
+import warnings
 
+import openqml
+from openqml.circuit import Circuit
 import openqml.plugins
 
 
@@ -48,7 +51,8 @@ def _load_from_namespace_pkg(ns, name):
         if modname == name:
             # load the module
             try:
-                mod = importlib.import_module(ns.__name__ +'.' +modname)
+                temp = ns.__name__ +'.' +modname
+                mod = importlib.import_module(temp)
                 return mod
             except ImportError as err:
                 raise err
@@ -96,8 +100,13 @@ def load_plugin(name, plugin_dir=None):
 
     if mod is None:
         raise ValueError('Plugin {} not found.'.format(name))
-    print(mod)
-    return mod.init_plugin()
+    #print(mod)
+    print(mod.__file__)
+    p = mod.init_plugin()
+    temp = openqml.version()
+    if p.plugin_api_version != temp:
+        warnings.warn('Plugin API version {} does not match OpenQML version {}.'.format(p.plugin_api_version, temp))
+    return p
 
 
 
@@ -107,14 +116,19 @@ class Plugin:
     plugin_name = ''         #: str: official plugin name
     plugin_api_version = ''  #: str: version of OpenQML for which the plugin was made
     plugin_version = ''      #: str: version of the plugin itself
+    author = ''              #: str: plugin author(s)
 
     def __init__(self):
-        raise NotImplementedError
+        self._circuits = {}  #: dict[str->Circuit]: known circuit templates
+
+    def __repr__(self):
+        """String representation."""
+        return self.__class__.__name__
 
     def __str__(self):
-        """String representation."""
-        # defaults to the class name
-        return self.__class__.__name__
+        """Verbose string representation."""
+        return self.__repr__() +'\nName: ' +self.plugin_name +'\nAPI version: ' +self.plugin_api_version\
+            +'\nPlugin version: ' +self.plugin_version +'\nAuthor: ' +self.author +'\n'
 
     def get_gateset(self):
         """Get the supported gate set.
@@ -124,13 +138,21 @@ class Plugin:
         """
         raise NotImplementedError
 
+    def get_templates(self):
+        """Get the predefined circuit templates.
+
+        Returns:
+          iterable[Circuit]: circuit templates
+        """
+        return self._circuits.values()
+
     def get_capabilities(self):
         """Get the other capabilities of the plugin.
 
         Measurements, batching etc.
 
         Returns:
-          dict: results
+          dict[str->*]: results
         """
         raise NotImplementedError
 
@@ -148,35 +170,38 @@ class Plugin:
         """
         raise NotImplementedError
 
-    def execute_circuit(self, circuit, params, evals=1):
+    def execute_circuit(self, circuit, params=[], **kwargs):
         """Execute a parametrized quantum circuit with the specified parameter values.
 
         Args:
-          circuit (Sequence[Command]):
-          params    (Sequence[float]):
+          circuit (Circuit, str): circuit to execute, or the name of a predefined circuit
+          params  (Sequence[float]): values of the non-fixed parameters
+
+        Keyword Args:
           evals (int): how many times should the circuit be evaluated to estimate the measurement results?
         """
-        raise NotImplementedError
+        if not isinstance(circuit, Circuit):
+            # look it up by name
+            circuit = self._circuits[circuit]
 
-    def define_circuit(self, circuit):
+        temp = len(params)
+        if temp != circuit.n_par:
+            raise ValueError('Wrong number of circuit parameters: {} given, {} required.'.format(temp, circuit.n_par))
+
+        print('Executing a circuit, len = {}'.format(len(circuit)))
+        return self._execute_circuit(circuit, params, **kwargs)
+
+    def define_circuit(self, circuit, name=None):
         """Define a parametrized quantum circuit for later execution.
 
         Args:
-          circuit (Sequence[Command]):
+          circuit (Circuit): quantum circuit
+          name (str, None): Name given to the circuit. If None, circuit.name is used.
         """
-        raise NotImplementedError
-
-    def eval_circuit(self, params, evals=1):
-        """Evaluate a pre-defined quantum circuit using the given parameter values.
-
-        Args:
-          params    (Sequence[float]):
-          evals (int): how many times should the circuit be evaluated to estimate the measurement results?
-        """
-        raise NotImplementedError
-
-
-
-
-
-# gate set: (name, #modes, #params, how to diffenrentiate the gate wrt. param (generator, numeric?), other info?)
+        if name is None:
+            name = circuit.name
+        else:
+            warnings.warn('Circuit stored under a different name.')
+        if name in self._circuits:
+            warnings.warn('Stored circuit replaced.')
+        self._circuits[name] = circuit

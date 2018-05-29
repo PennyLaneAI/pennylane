@@ -30,10 +30,8 @@ class BasicTest(BaseTest):
 
         def test_plugin(p):
             "Tests for each individual plugin."
-            self.assertTrue(issubclass(p, Plugin))
-            print('Name:', p.plugin_name)
-            print('API version:', p.plugin_api_version)
-            print('Plugin version:', p.plugin_version)
+            self.assertTrue(isinstance(p, Plugin))
+            print(p)
 
         # try loading all the discovered plugins, test them
         for name in plugins:
@@ -41,10 +39,23 @@ class BasicTest(BaseTest):
                 p = load_plugin(name)
             except ImportError:
                 continue
-            print(p)
             test_plugin(p)
+            print('Gates:')
+            gates = p.get_gateset()
+            for g in gates:
+                print(g)
+            print('\nCircuit templates:')
+            templates = p.get_templates()
+            for t in templates:
+                print(t)
             print()
 
+
+
+    def test_usage(self):
+        "Simple use case."
+        p = load_plugin('dummy_plugin')
+        p.execute_circuit('demo', params=[1.0, 2.0])
 
 
 if __name__ == '__main__':
