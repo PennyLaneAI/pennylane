@@ -11,7 +11,6 @@ The dummy plugin is meant to be used as a template for writing OpenQML plugins f
 It implements all the API functions and provides a very simple simulation of a qubit-based quantum circuit architecture.
 """
 
-import sys
 import numpy as np
 from scipy.linalg import expm
 
@@ -73,7 +72,7 @@ def fr3(a, b, c):
     Returns:
       array: unitary 2x2 rotation matrix rz(c) @ ry(b) @ rz(a)
     """
-    return rz(c) @ (ry(b) @ rz(a))
+    return frz(c) @ (fry(b) @ frz(a))
 
 
 #========================================================
@@ -128,7 +127,7 @@ class DummyPlugin(Plugin):
     plugin_version = '1.0.0'
     author = 'Xanadu Inc.'
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
         self.reset()
         for c in _circuits:
@@ -227,7 +226,7 @@ class DummyPlugin(Plugin):
 
 
 
-def init_plugin():
+def init_plugin(**kwargs):
     """Every plugin must define this function.
 
     It should perform whatever initializations are necessary, and then return an API class instance.
@@ -235,4 +234,4 @@ def init_plugin():
     Returns:
       Plugin: plugin API class instance
     """
-    return DummyPlugin()
+    return DummyPlugin(**kwargs)

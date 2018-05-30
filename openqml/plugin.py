@@ -28,11 +28,12 @@ Classes
 import os
 import sys
 import importlib
+import logging as log
 import pkgutil
 import warnings
 
 import openqml
-from openqml.circuit import Circuit
+from .circuit import Circuit
 import openqml.plugins
 
 
@@ -112,6 +113,10 @@ def load_plugin(name, plugin_dir=None):
 
 class Plugin:
     """ABC for OpenQML plugins.
+
+    This class implements some utility methods that the child classes can either use or override as they wish.
+    The other methods are simply to define the plugin API, raising NotImplementedError if called.
+    The child classes *must* override them.
     """
     plugin_name = ''         #: str: official plugin name
     plugin_api_version = ''  #: str: version of OpenQML for which the plugin was made
@@ -142,9 +147,9 @@ class Plugin:
         """Get the predefined circuit templates.
 
         Returns:
-          iterable[Circuit]: circuit templates
+          list[Circuit]: circuit templates
         """
-        return self._circuits.values()
+        return list(self._circuits.values())
 
     def get_capabilities(self):
         """Get the other capabilities of the plugin.
@@ -188,7 +193,7 @@ class Plugin:
         if temp != circuit.n_par:
             raise ValueError('Wrong number of circuit parameters: {} given, {} required.'.format(temp, circuit.n_par))
 
-        print('Executing a circuit, len = {}'.format(len(circuit)))
+        log.info('Executing {}'.format(str(circuit)))
         return self._execute_circuit(circuit, params, **kwargs)
 
     def define_circuit(self, circuit, name=None):

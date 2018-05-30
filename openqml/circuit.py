@@ -18,6 +18,10 @@ Classes
    Circuit
 """
 
+import warnings
+
+#import numpy as np
+
 
 class GateSpec:
     """Defines a single type of quantum gate supported by a backend, and its properies.
@@ -63,7 +67,7 @@ class Command:
         self.reg  = reg   #: Sequence[int]: subsystems to which the operation is applied
 
     def __str__(self):
-        return self.gate.name +'({}) | \t({})'.format(", ".join(self.par), ", ".join(self.reg))
+        return self.gate.name +'({}) | \t[{}]'.format(", ".join(map(str, self.par)), ", ".join(map(str, self.reg)))
 
 
 class ParRef:
@@ -84,14 +88,14 @@ class ParRef:
 class Circuit:
     """Quantum circuit.
 
-    Represents a list of Commands.
+    Represents a list of Commands. The Commands must not be used elsewhere, as they are mutable and are sometimes written into.
 
     Args:
       seq (Sequence[Command]): sequence of quantum operations to apply to the state
       name (str): circuit name
     """
     def __init__(self, seq, name=''):
-        self.seq  = seq   #: Sequence[Command]:
+        self.seq  = list(seq)  #: list[Command]:
         self.name = name  #: str: circuit name
         self.pars = {}    #: dict[int->list[Command]]: map from non-fixed parameter index to the list of Commands (in this circuit!) that depend on it
 
@@ -103,10 +107,11 @@ class Circuit:
             for p in c.par:
                 if isinstance(p, ParRef):
                     self.pars.setdefault(p.idx, []).append(c)
-        self.check_indices(subsys)
+        msg = "Circuit '{}': ".format(self.name)
+        self.check_indices(subsys, msg+'subsystems: ')
         # TODO remap the subsystem indices to a continuous range 0..n_sys-1
-        self.check_indices(self.pars.keys())
-        self.n_sys = len(subsys)     #: int: number of subsystems
+        self.check_indices(self.pars.keys(), msg+'params: ')
+        self.n_sys = len(subsys)  #: int: number of subsystems
 
     @property
     def n_par(self):
@@ -118,18 +123,20 @@ class Circuit:
         return len(self.pars)
 
     @staticmethod
-    def check_indices(inds):
+    def check_indices(inds, msg):
         """Check if the given indices form a continuous range.
 
         Args:
           inds (set[int]): set of indices
         """
+        if len(inds) == 0:
+            return
         if min(inds) < 0:
-            warnings.warn('Negative indices!')
+            warnings.warn(msg + 'negative indices')
         temp = set(range(max(inds)+1))
         temp -= inds
         if len(temp) != 0:
-            warnings.warn('Unused indices: ', temp)
+            warnings.warn(msg + 'unused indices: {}'.format(temp))
 
     def __str__(self):
         return "Quantum circuit '{}': len={}, n_sys={}, n_par={}".format(self.name, len(self), self.n_sys, self.n_par)
