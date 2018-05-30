@@ -4,12 +4,12 @@ Unit tests for the :mod:`openqml` plugin interface.
 
 import unittest
 
-#from numpy.random import (randn, uniform, randint)
+from numpy.random import (randn,)
 #from numpy import array, pi
 
 from defaults import openqml, BaseTest
 from openqml.plugin import (list_plugins, load_plugin, Plugin)
-
+from openqml.circuit import (Command, Circuit)
 
 
 class BasicTest(BaseTest):
@@ -43,13 +43,18 @@ class BasicTest(BaseTest):
             print('Gates:')
             gates = p.get_gateset()
             for g in gates:
+                # try running each gate with random parameters
                 print(g)
+                cmd = Command(g, list(range(g.n_sys)), randn(g.n_par))
+                print(cmd)
+                p.execute_circuit(Circuit([cmd]))
             print('\nCircuit templates:')
             templates = p.get_templates()
-            for t in templates:
-                print(t)
+            for c in templates:
+                # try running each circuit template with random parameters
+                print(c)
+                p.execute_circuit(c, randn(c.n_par))
             print()
-
 
 
     def test_usage(self):

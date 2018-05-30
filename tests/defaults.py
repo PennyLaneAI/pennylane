@@ -6,6 +6,7 @@ import argparse
 import unittest
 import os
 import sys
+import logging as log
 
 import numpy as np
 
@@ -28,9 +29,13 @@ def get_commandline_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--tolerance', type=float, default=TOLERANCE, help='Numerical tolerance for equality tests.')
+    parser.add_argument('--log', action='store_true', default=False, help='Turn verbose logging on.')
 
     # HACK: We only parse known args to enable unittest test discovery without parsing errors.
     args, _ = parser.parse_known_args()
+
+    # set up logging for tests
+    log.basicConfig(format='%(levelname)s:%(message)s', level=log.INFO if args.log else log.WARN)
     return args
 
 

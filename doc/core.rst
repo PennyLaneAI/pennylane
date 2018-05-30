@@ -1,0 +1,2 @@
+.. automodule:: openqml.core
+   :members:
