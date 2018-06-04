@@ -1,5 +1,6 @@
-\documentclass[amsmath,amssymb,aps,pra,10pt,twocolumn,groupedaddress,nofootinbib]{revtex4-1}
+\documentclass[aps,pra,10pt,twocolumn,groupedaddress,nofootinbib]{revtex4-1}
 
+\usepackage{amsmath, amssymb, amsthm}
 \usepackage{graphicx}% Include figure files
 \usepackage{bm,bbm}% bold math
 \usepackage{hyperref}% add hypertext capabilities
@@ -9,11 +10,20 @@
 \usepackage[noend]{algpseudocode}
 
 
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}%[section]
+
+
 \DeclareMathOperator{\re}{Re}
 \DeclareMathOperator{\im}{Im}
 \DeclareMathOperator{\tr}{Tr}
 \DeclareMathOperator{\Ad}{Ad}
 \DeclareMathOperator{\ad}{ad}
+\DeclareMathOperator{\diag}{diag}  % diagonal vector of the given matrix / diagonal matrix with the given vector as diagonal
+\DeclareMathOperator{\Ker}{Ker}    % kernel
+\DeclareMathOperator{\Imag}{Imag}  % image
+\DeclareMathOperator{\spec}{spec}  % eigenvalue spectrum
+\DeclareMathOperator{\lcm}{lcm}    % least common multiple
 
 \newcommand{\isom}{\cong} % isomorphic to
 \newcommand{\conj}[1]{\overline{#1}} % complex conjugate
@@ -224,6 +234,140 @@ loss cost function reads
 \[ C(\theta, \mathcal{D}) = \sum_{(x,y) \in \mathcal{D}} |E_x(\theta)-y|^2. \]
 
 \color{black}
+
+
+\section{Gradient computation}
+
+In this section we explore issues related to computing gradients of variational quantum circuits.
+
+
+\subsection{One-parameter subgroups}
+
+A one-parameter subgroup of the topological group~$G$ is defined by a continuous group homomorphism
+\be
+\phi: \R \to G,
+\ee
+where $\R$ is a group with respect to addition.
+The homomorphism property means that
+\be
+\phi(a)\phi(b) = \phi(a+b) \quad \forall a,b \in \R,
+\ee
+which immediately yields
+$\phi(0) = e$ and $\phi(-a) = \phi(a)^{-1}$,
+where $e$~is the identity element of~$G$.
+$\Imag \phi$ is always a subgroup of~$G$.
+
+The kernel of the homomorphism is defined as
+\be
+\Ker \phi = \{a \in \R | \phi(a) = e\}.
+\ee
+
+\begin{theorem}
+  \label{th:1psg}
+One-parameter subgroups are either isomorphic to~$\R$, or their parametrization~$\phi$ is periodic.
+
+\begin{proof}
+$\phi$ is an injection iff $\Ker \phi = \{0\}$ (trivial kernel).
+In this case the subgroup $\phi(\R) < G$ is isomorphic to~$\R$.
+Let us next assume that the kernel is nontrivial, i.e. for some $p \neq 0$ we have
+$\phi(p) = e$.
+% p \in \Ker \phi \implies n*p \in \Ker \phi
+This is equivalent to
+\be
+\phi(a+p) = \phi(a)\phi(p) = \phi(a) \quad \forall a \in \R,
+\ee
+and the map~$\phi$ is thus periodic. Let us use $\tilde{p}>0$
+to denote the period, i.e.
+$\tilde{p} = \min \{|p| \neq 0 | p \in \Ker \phi\}$.
+Now the kernel is seen to be $\Ker \phi = \{n \tilde{p} | n \in Z\}$.
+\end{proof}
+\end{theorem}
+
+\subsection{Finite-dimensional Hilbert spaces}
+
+Assume we are given a traceless hermitian $n \times n$ generator~$G$, with the eigendecomposition
+\be
+G = V \diag(\lambda_1, \ldots, \lambda_n) V^\dagger.
+\ee
+The tracelessness yields $\sum_k \lambda_k = 0$.
+$G$~generates a one-parameter subgroup of the unitary group~$SU(n)$
+with the homomorphism/parametrization
+\be
+U(\theta) = \exp(-iG\theta)
+= V \diag(e^{-i\lambda_1 \theta}, \ldots, e^{-i\lambda_n \theta}) V^\dagger,
+\ee
+where $\theta \in \R$. Using Th.~\ref{th:1psg} we find that
+\begin{align}
+  & U(\theta) \: \text{is periodic with period} \: \tilde{\theta} > 0\\
+  \iff \: & \Ker U = \{n \tilde{\theta} | n \in Z\}\\
+  \iff \: & \lambda_k \tilde{\theta} = n_k 2 \pi \quad \forall k, \: \text{where} \: n_k \in \Z\\
+  \iff \: & \frac{\lambda_i}{\lambda_j} = \frac{n_i}{n_j} \quad \forall i,j.
+\end{align}
+
+Let us extend the definition of least common multiple to real numbers:
+\be
+\lcm(a_1, a_2, \ldots) := \min \{q | \forall i \exists n_i \in \Z: a_i n_i = q>0\}.
+\ee
+Such a number exists iff $a_i$ are rational multiples of each other.
+Now $\tilde{\theta} = 2\pi \: \lcm \{\lambda^{-1} \:|\: \lambda \in \spec(G) \setminus \{0\}\}$.
+
+
+
+Qubits:
+$G$~has only two eigenvalues, and the tracelessness guarantees that $\lambda_2 = -\lambda_1$.
+Thus $U(\theta)$ is always periodic with $\tilde{\theta} = 2\pi/|\lambda_1|$.
+
+Qudits:
+Now almost all generators~$G$ have eigenvalues that are not rational multiples of each other.
+These~$G$ generate a one-parameter subgroup of $U(d)$ isomorphic to~$\R$.
+However, some generators~$G$ always generate a periodic subgroup.
+
+
+\subsection{Gradient trick}
+
+Let us assume $G^2 = r^2\I$.
+This is equivalent to $\lambda_i = \pm r$.
+Now we may write the Taylor series for the exponential
+and split it into a cosine and a sine series:
+\begin{align*}
+U(\theta) &= \exp(-iG\theta) = \sum_{k=0}^\infty \frac{(-i\theta)^k G^k}{k!}\\
+&=
+\sum_{k=0}^\infty \frac{(-i\theta)^{2k} G^{2k}}{(2k)!}
++\sum_{k=0}^\infty \frac{(-i\theta)^{2k+1} G^{2k+1}}{(2k+1)!}\\
+&=
+\I \sum_{k=0}^\infty \frac{(-1)^{k} (\theta r)^{2k}}{(2k)!}
+-i G/r \sum_{k=0}^\infty \frac{(-1)^{k} (\theta r)^{2k+1}}{(2k+1)!}\\
+&=
+\I \cos(r \theta)
+-i G/r \sin(r \theta).
+\end{align*}
+Let us then define the unitary
+\be
+W := U(\pi/(4r)) = \frac{1}{\sqrt{2}}(\I -ir^{-1}G).
+\ee
+This yields
+\begin{align}
+  \notag
+\Ad_W \rho
+&= W \rho W^\dagger
+= \frac{1}{2}\left((\I-ir^{-1}G)\rho(\I+ir^{-1}G)\right)\\
+&= \frac{1}{2}\left(\rho -ir^{-1}\ad_G \rho +r^{-2}\Ad_G \rho\right)
+\end{align}
+and thus we obtain the convenient formula
+\be
+r(\Ad_W-\Ad_{W^\dagger}) = -i\ad_G.
+\ee
+
+
+Qubits:
+This trick works for arbitrary single-qubit gates, generated by a linear combination of Pauli matrices
+$G = \vec{a} \cdot \vec{\sigma}/2$
+where $|\vec{a}|=1$.
+We obtain $G^2 = \frac{1}{4} \I$, and thus $r=1/2$.
+
+Qudits (including the multi-qubit case):
+We may use the trick for gates generated by $G$ whose
+eigenvalues fulfill $\lambda_i = \pm r$.
 
 \section{Optimization}
 
