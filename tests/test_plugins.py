@@ -32,6 +32,22 @@ class BasicTest(BaseTest):
             "Tests for each individual plugin."
             self.assertTrue(isinstance(p, Plugin))
             print(p)
+            print('Gates:')
+            gates = p.get_gateset()
+            for g in gates:
+                # try running each gate with random parameters
+                print(g)
+                cmd = Command(g, list(range(g.n_sys)), randn(g.n_par))
+                print(cmd)
+                p.reset()
+                p.execute_circuit(Circuit([cmd]))
+            print('\nCircuit templates:')
+            templates = p.get_templates()
+            for c in templates:
+                # try running each circuit template with random parameters
+                print(c)
+                p.execute_circuit(c, randn(c.n_par))
+
 
         # try loading all the discovered plugins, test them
         for name in plugins:
@@ -40,27 +56,16 @@ class BasicTest(BaseTest):
             except ImportError:
                 continue
             test_plugin(p)
-            print('Gates:')
-            gates = p.get_gateset()
-            for g in gates:
-                # try running each gate with random parameters
-                print(g)
-                cmd = Command(g, list(range(g.n_sys)), randn(g.n_par))
-                print(cmd)
-                p.execute_circuit(Circuit([cmd]))
-            print('\nCircuit templates:')
-            templates = p.get_templates()
-            for c in templates:
-                # try running each circuit template with random parameters
-                print(c)
-                p.execute_circuit(c, randn(c.n_par))
             print()
 
 
     def test_usage(self):
         "Simple use case."
         p = load_plugin('dummy_plugin')
+        obs = p.get_observables()
         p.execute_circuit('demo', params=[1.0, 2.0])
+        temp = p.measure(obs[0], 0, n_eval=5000)
+        print(temp)
 
 
 if __name__ == '__main__':
