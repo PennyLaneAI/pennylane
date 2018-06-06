@@ -11,11 +11,38 @@ The dummy plugin is meant to be used as a template for writing OpenQML plugins f
 It implements all the API functions and provides a very simple simulation of a qubit-based quantum circuit architecture.
 """
 
+import warnings
+
 import numpy as np
-from scipy.linalg import expm
+from scipy.linalg import expm, eigh
 
 from openqml.plugin import Plugin
 from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
+
+
+# tolerance for numerical errors
+tolerance = 1e-10
+
+#========================================================
+#  utilities
+#========================================================
+
+def spectral_decomposition_qubit(A):
+    r"""Spectral decomposition of a 2*2 Hermitian matrix.
+
+    Args:
+      A (array): 2*2 Hermitian matrix
+
+    Returns:
+      (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
+        such that :math:`A = \sum_k a_k P_k`.
+    """
+    d, v = eigh(A)
+    P = []
+    for k in range(2):
+        temp = v[:, k]
+        P.append(np.outer(temp.conj(), temp))
+    return d, P
 
 
 #========================================================
@@ -100,6 +127,7 @@ swap = Gate('SWAP', 2, 0, SWAP)
 
 _gates = [rx, ry, rz, r3, cnot, swap]
 
+_observables = [Gate('z', 1, 0, Z)]
 
 # circuit templates
 _circuits = [
@@ -134,30 +162,42 @@ class DummyPlugin(Plugin):
             self.define_circuit(c)
 
     def reset(self):
-        self.state = None
+        self.n = None  #: int: number of qubits in the state
+        self._state = None  #: array: state vector
 
     def get_gateset(self):
         return _gates
 
+    def get_observables(self):
+        return _observables
+
     def _execute_gate(self, gate, par, reg):
         """Applies a single gate or measurement on the current system state.
-        """
-        # get the matrix
-        print(gate.name)
-        U = gate.func(*par)
-        if gate.n_sys == 1:
-            self.apply_one(U, reg)
-        elif gate.n_sys == 2:
-            self.apply_two(U, reg)
-        else:
-            raise ValueError('This plugin supports only one- and two-qubit gates.')
-
-    def apply_one(self, U, reg):
-        """Apply a one-qubit gate to the state vector.
 
         Args:
-          U (array): 2x2 unitary matrix
+          gate           (Gate): gate type
+          par (Sequence[float]): gate parameters
+          reg   (Sequence[int]): subsystems to which the gate is applied
+        """
+        print(gate.name)
+        U = gate.func(*par)  # get the matrix
+        if gate.n_sys == 1:
+            U = self.apply_one(U, reg)
+        elif gate.n_sys == 2:
+            U = self.apply_two(U, reg)
+        else:
+            raise ValueError('This plugin supports only one- and two-qubit gates.')
+        self._state = U @ self._state
+
+    def apply_one(self, U, reg):
+        """Expand a one-qubit gate into a full system propagator.
+
+        Args:
+          U (array): 2*2 unitary matrix
           reg (int): target subsystem
+
+        Returns:
+          array: 2^n*2^n unitary matrix
         """
         if U.shape != (2, 2):
             raise ValueError('2x2 unitary required.')
@@ -165,15 +205,18 @@ class DummyPlugin(Plugin):
         before = 2**reg
         after  = 2**(self.n-reg-1)
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
-        self._state = U @ self._state
+        return U
 
 
     def apply_two(self, U, reg):
-        """Apply a two-qubit gate to the state vector.
+        """Expand a two-qubit gate into a full system propagator.
 
         Args:
           U (array): 4x4 unitary matrix
-        reg (Sequence[int]): two target subsystems (order matters!)
+          reg (Sequence[int]): two target subsystems (order matters!)
+
+        Returns:
+          array: 2^n*2^n unitary matrix
         """
         if U.shape != (4, 4):
             raise ValueError('4x4 unitary required.')
@@ -204,14 +247,50 @@ class DummyPlugin(Plugin):
         temp = np.prod(dim)
         U = U.reshape(dim * 2).transpose(perm).reshape([temp, temp])
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
-        self._state = U @ self._state
+        return U
 
+    def ev(self, A, reg):
+        """Expectation value of an observable in the current state.
+
+        Args:
+          A (array): 2*2 hermitian matrix corresponding to the observable
+          reg (int): target subsystem
+
+        Returns:
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        """
+        if A.shape != (2, 2):
+            raise ValueError('2x2 matrix required.')
+        A = self.apply_one(A, [reg])
+        temp = np.vdot(self._state, A @ self._state)
+        if np.abs(temp.imag) > tolerance:
+            warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(temp.imag))
+        return temp.real
+
+    def measure(self, A, reg, n_eval=None):
+        A = A.func()
+        ev  = self.ev(A, reg)
+        var = self.ev(A**2, reg) -ev**2
+        if n_eval is not None:
+            if 0:
+                # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+                ev = np.random.normal(ev, np.sqrt(var / n_eval))
+            else:
+                # sample Bernoulli distribution n_eval times / binomial distribution once
+                a, P = spectral_decomposition_qubit(A)
+                p0 = self.ev(P[0], reg)  # probability of measuring a[0]
+                n0 = np.random.binomial(n_eval, p0)
+                ev = (n0*a[0] +(n_eval-n0)*a[1]) / n_eval
+        return ev, var
 
     def _execute_circuit(self, circuit, params=[], **kwargs):
-        # init the state vector
-
-        self.n = circuit.n_sys  #: int: number of qubits in the state
-        self._state = np.zeros(2**self.n, dtype=complex)  #: array: state vector
+        if self._state is None:
+            # init the state vector to |00..0>
+            self.n = circuit.n_sys
+            self._state = np.zeros(2**self.n, dtype=complex)
+            self._state[0] = 1
+        elif self.n != circuit.n_sys:
+            raise ValueError('Trying to execute a {}-qubit circuit on a {}-qubit state.'.format(circuit.n_sys, self.n))
 
         def parmap(p):
             "Mapping function for gate parameters. Replaces ParRefs with the corresponding parameter values."

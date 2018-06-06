@@ -165,6 +165,7 @@ class Plugin:
         """Reset the plugin.
 
         After the reset the plugin should be as if it was just loaded.
+        Most importantly the quantum state is reset to its initial value.
         """
         raise NotImplementedError
 
@@ -175,8 +176,16 @@ class Plugin:
         """
         raise NotImplementedError
 
+    def _execute_circuit(self, circuit, params=[], **kwargs):
+        raise NotImplementedError
+
     def execute_circuit(self, circuit, params=[], **kwargs):
         """Execute a parametrized quantum circuit with the specified parameter values.
+
+        Note: The state of the backend is not automatically reset.
+
+        This function is a thin wrapper around :meth:`~Plugin._execute_circuit`
+        that mostly checks argument validity.
 
         Args:
           circuit (Circuit, str): circuit to execute, or the name of a predefined circuit
@@ -187,7 +196,10 @@ class Plugin:
         """
         if not isinstance(circuit, Circuit):
             # look it up by name
-            circuit = self._circuits[circuit]
+            try:
+                circuit = self._circuits[circuit]
+            except KeyError:
+                raise KeyError("Unknown circuit '{}'".format(circuit))
 
         temp = len(params)
         if temp != circuit.n_par:
@@ -210,3 +222,18 @@ class Plugin:
         if name in self._circuits:
             warnings.warn('Stored circuit replaced.')
         self._circuits[name] = circuit
+
+    def measure(self, A, reg, n_eval=None):
+        """Measure the expectation value of an observable.
+
+        Args:
+          A  (Gate): observable
+          reg (int): target subsystem
+          n_eval (int, None): If None return the exact expectation value,
+            otherwise estimate it by averaging n_eval measurements.
+            Returned variance is always exact.
+
+        Returns:
+          (float, float): expectation value, variance
+        """
+        raise NotImplementedError

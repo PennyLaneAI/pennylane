@@ -26,7 +26,7 @@ The thetas are continuous variables, typically rotation angles or in the CV case
 Variational Circuit
 -------------------
 
-The variational circuit :math:`U(\theta) = U_1,...,U_D ` prepares a state :math:`|\psi(\theta)\rangle =  U(\theta) |0\rangle`. There are three modes in which we can run the circuit:
+The variational circuit :math:`U(\theta) = U_1,...,U_D` prepares a state :math:`|\psi(\theta)\rangle =  U(\theta) |0\rangle`. There are three modes in which we can run the circuit:
 
 1. Prepare and sample from :math:`|\psi(\theta)\rangle`. Sampling means to perform a projective measurement in some basis, for example the computational or Fock basis.
 
@@ -70,6 +70,8 @@ The gradient can be computed in different ways:
 3. automatically using the analytic method from above, i.e. given a circuit :math:`f` construct a circuit for :math:`\nabla_{\theta_i} f`
 
 For (3) we need to know something about gates, each plugin may have its own set.
+
+Do we need Hessians as well at some point in the future? AD methods can handle them too.
 
 
 Circuit gradient
