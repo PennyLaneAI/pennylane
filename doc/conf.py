@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'OpenQML'
-copyright = '2018, Xanadu Inc.'
+copyright = '2018, Xanadu Inc'
 author = 'Xanadu Inc.'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -154,6 +154,8 @@ latex_elements = {
     # 'figure_align': 'htbp',
 }
 
+latex_additional_files = ['macros.tex']
+
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
@@ -196,3 +198,4 @@ inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
 
 # temporary HACK for getting some latex macros to work in MathJax
 mathjax_path = 'MathJax_local.js'
+

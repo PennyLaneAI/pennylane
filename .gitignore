@@ -19,5 +19,6 @@ examples/.ipynb_checkpoints/*
 *.out
 *.toc
 *.dvi
+*.pdf
 *Notes.bib
 *.synctex.gz
