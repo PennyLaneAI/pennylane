@@ -227,7 +227,7 @@ class Plugin:
         """Measure the expectation value of an observable.
 
         Args:
-          A  (Gate): observable
+          A  (Gate): Hermitian observable
           reg (int): target subsystem
           n_eval (int, None): If None return the exact expectation value,
             otherwise estimate it by averaging n_eval measurements.

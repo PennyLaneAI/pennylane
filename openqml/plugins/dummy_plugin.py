@@ -290,7 +290,7 @@ class DummyPlugin(Plugin):
             self._state = np.zeros(2**self.n, dtype=complex)
             self._state[0] = 1
         elif self.n != circuit.n_sys:
-            raise ValueError('Trying to execute a {}-qubit circuit on a {}-qubit state.'.format(circuit.n_sys, self.n))
+            raise ValueError("Trying to execute a {}-qubit circuit '{}' on a {}-qubit state.".format(circuit.n_sys, circuit.name, self.n))
 
         def parmap(p):
             "Mapping function for gate parameters. Replaces ParRefs with the corresponding parameter values."
