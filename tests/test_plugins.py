@@ -40,12 +40,13 @@ class BasicTest(BaseTest):
                 cmd = Command(g, list(range(g.n_sys)), randn(g.n_par))
                 print(cmd)
                 p.reset()
-                p.execute_circuit(Circuit([cmd]))
+                p.execute_circuit(Circuit([cmd], g.name))
             print('\nCircuit templates:')
             templates = p.get_templates()
             for c in templates:
                 # try running each circuit template with random parameters
                 print(c)
+                p.reset()
                 p.execute_circuit(c, randn(c.n_par))
 
 
