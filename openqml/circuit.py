@@ -18,6 +18,8 @@ Classes
    Circuit
 """
 
+import numpy as np
+
 import logging as log
 import warnings
 
@@ -75,6 +77,7 @@ class ParRef:
     """Parameter reference.
 
     Represents a circuit parameter with a non-fixed value.
+    Each time the circuit is executed, it is given a vector of parameter values. ParRef is essentially an index into that vector.
 
     Args:
       idx (int): parameter index >= 0
@@ -89,16 +92,18 @@ class ParRef:
 class Circuit:
     """Quantum circuit.
 
-    Represents a list of Commands. The Commands must not be used elsewhere, as they are mutable and are sometimes written into.
+    The quantum circuit is described in terms of a list of :class:`Command` s.
+    The Commands must not be used elsewhere, as they are mutable and are sometimes written into.
 
     Args:
       seq (Sequence[Command]): sequence of quantum operations to apply to the state
       name (str): circuit name
     """
-    def __init__(self, seq, name=''):
+    def __init__(self, seq, name='', obs=None):
         self.seq  = list(seq)  #: list[Command]:
         self.name = name  #: str: circuit name
         self.pars = {}    #: dict[int->list[Command]]: map from non-fixed parameter index to the list of Commands (in this circuit!) that depend on it
+        self.obs = obs    #: Command: observable HACK FIXME
 
         # TODO check the validity of the circuit?
         # count the subsystems and parameter references used
@@ -165,3 +170,83 @@ class Circuit:
 
     def __len__(self):
         return len(self.seq)
+
+
+class QNode:
+    """Quantum node in the computational graph.
+
+    Each quantum node is defined by a :class:`Circuit` instance representing the quantum program, and
+    a :class:`PluginAPI` instance representing the backend to execute it on.
+    """
+    def __init__(self, circuit, backend):
+        self.circuit = circuit  #: Circuit: quantum circuit representing the program
+        self.backend = backend  #: PluginAPI: backend for executing the program
+
+    def evaluate(self, params, **kwargs):
+        """Evaluate the node
+        """
+        return self.backend.execute_circuit(self.circuit, params, **kwargs)
+
+
+    def gradient_finite_diff(self, params, h=1e-7, **kwargs):
+        """Compute the gradient of the node using finite differences.
+
+        Given an n-parameter quantum circuit, this function computes its gradient with respect to the parameters
+        using the finite difference method. The current implementation evaluates the circuit at n+1 points of the parameter space.
+
+        Args:
+          params (Sequence[float]): point in parameter space at which to evaluate the gradient
+          h (float): step size
+        Returns:
+          array: gradient vector
+        """
+        params = np.asarray(params)
+        grad = np.zeros(params.shape)
+        # value at the evaluation point
+        x0 = self.backend.execute_circuit(self.circuit, params, **kwargs)
+        for k in range(len(params)):
+            # shift the k:th parameter by h
+            temp = params.copy()
+            temp[k] += h
+            x = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+            grad[k] = (x-x0) / h
+        return grad
+
+
+    def gradient_angle(self, params, **kwargs):
+        """Compute the gradient of the node using the angle method.
+
+        Given an n-parameter quantum circuit, this function computes its gradient with respect to the parameters
+        using the angle method. The method only works for one-parameter gates where the parameter is the rotation angle,
+        and the generator eigenvalues are all :math:`\pm 1/2`. TODO r?
+        The circuit is evaluated twice for each incidence of each parameter in the circuit.
+
+        Args:
+          params (Sequence[float]): point in parameter space at which to evaluate the gradient
+        Returns:
+          array: gradient vector
+        """
+        params = np.asarray(params)
+        grad = np.zeros(params.shape)
+        n = self.circuit.n_par
+        for k in range(n):
+            # find the Commands in which the parameter appears, use the product rule
+            for cmd in self.circuit.pars[k]:
+                if cmd.gate.n_par != 1:
+                    raise ValueError('For now we can only differentiate one-parameter gates.')
+                # we temporarily edit the Command so that parameter k is replaced by a new one,
+                # which we can modify without affecting other Commands depending on the original.
+                orig = cmd.par[0]
+                assert(orig.idx == k)
+                cmd.par[0] = ParRef(n)  # reference to a new, temporary parameter
+                self.circuit.pars[n] = None  # we just need to add something to the map, it's not actually used
+                # shift it by pi/2 and -pi/2
+                temp = np.r_[params, params[k]+np.pi/2]
+                x2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+                temp[-1] = params[k] -np.pi/2
+                x1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+                # restore the original parameter
+                cmd.par[0] = orig
+                del self.circuit.pars[n]
+                grad[k] += (x2-x1) / 2
+        return grad

@@ -45,11 +45,10 @@ args = get_commandline_args()
 
 class BaseTest(unittest.TestCase):
     """ABC for tests.
-    Encapsulates the user-given commandline parameters for the test run.
+    Encapsulates the user-given commandline parameters for the test run as class attributes.
     """
-    def setUp(self):
-        self.args = args
-        self.tol = args.tolerance
+    args = args
+    tol = args.tolerance
 
     def assertAllAlmostEqual(self, first, second, delta, msg=None):
         """

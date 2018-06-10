@@ -301,7 +301,8 @@ where $\theta \in \R$. Using Th.~\ref{th:1psg} we find that
   & U(\theta) \: \text{is periodic with period} \: \tilde{\theta} > 0\\
   \iff \: & \Ker U = \{n \tilde{\theta} | n \in Z\}\\
   \iff \: & \lambda_k \tilde{\theta} = n_k 2 \pi \quad \forall k, \: \text{where} \: n_k \in \Z\\
-  \iff \: & \frac{\lambda_i}{\lambda_j} = \frac{n_i}{n_j} \quad \forall i,j.
+  \iff \: & \frac{\lambda_i}{\lambda_j} = \frac{n_i}{n_j} \quad \forall i,j
+  \: \text{for all nonzero eigenvalues.}
 \end{align}
 
 Let us extend the definition of least common multiple to real numbers:
@@ -309,7 +310,10 @@ Let us extend the definition of least common multiple to real numbers:
 \lcm(a_1, a_2, \ldots) := \min \{q | \forall i \exists n_i \in \Z: a_i n_i = q>0\}.
 \ee
 Such a number exists iff $a_i$ are rational multiples of each other.
-Now $\tilde{\theta} = 2\pi \: \lcm \{\lambda^{-1} \:|\: \lambda \in \spec(G) \setminus \{0\}\}$.
+Now
+\be
+\tilde{\theta} = 2\pi \: \lcm \{\lambda^{-1} \:|\: \lambda \in \spec(G) \setminus \{0\}\}.
+\ee
 
 
 
