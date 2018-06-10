@@ -1,11 +1,23 @@
 # Copyright 2018 Xanadu Quantum Technologies Inc.
 r"""
-ABC for plugins
-===============
+Plugin system
+=============
 
 **Module name:** :mod:`openqml.plugin`
 
 .. currentmodule:: openqml.plugin
+
+
+Terminology
+-----------
+
+By an :dfn:`OpenQML plugin` we mean an individual Python module in the openqml.plugins namespace package.
+Each OpenQML plugin defines the function :func:`init_plugin` which returns the :dfn:`API class` for that plugin,
+a subclass of :class:`PluginAPI`.
+Each instance of the plugin API class is an independent backend for executing quantum circuits.
+Multiple instances can exist simultaneously and they must not interfere with each other.
+
+Typically each quantum node in the computational graph uses its own PluginAPI instance.
 
 
 Functions
@@ -21,7 +33,9 @@ Classes
 -------
 
 .. autosummary::
-   Plugin
+   PluginAPI
+
+----
 """
 
 
@@ -79,7 +93,7 @@ def load_plugin(name, plugin_dir=None):
         If '', try using the OPENQML_PLUGINS environmental variable as the path.
 
     Returns:
-      Plugin: loaded plugin class object
+      class: loaded plugin API class
     """
     mod = None
     try:
@@ -111,7 +125,7 @@ def load_plugin(name, plugin_dir=None):
 
 
 
-class Plugin:
+class PluginAPI:
     """ABC for OpenQML plugins.
 
     This class implements some utility methods that the child classes can either use or override as they wish.
@@ -122,36 +136,51 @@ class Plugin:
     plugin_api_version = ''  #: str: version of OpenQML for which the plugin was made
     plugin_version = ''      #: str: version of the plugin itself
     author = ''              #: str: plugin author(s)
+    _gates = []              #: list[GateSpec]: specifications for supported gates
+    _observables = []        #: list[GateSpec]: specifications for supported observables
+    _circuits = {}           #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self):
-        self._circuits = {}  #: dict[str->Circuit]: known circuit templates
+    def __init__(self, name='default'):
+        self.name = name
 
     def __repr__(self):
         """String representation."""
-        return self.__class__.__name__
+        return self.__module__ +'.' +self.__class__.__name__ +'\nInstance: ' +self.name
 
     def __str__(self):
         """Verbose string representation."""
         return self.__repr__() +'\nName: ' +self.plugin_name +'\nAPI version: ' +self.plugin_api_version\
             +'\nPlugin version: ' +self.plugin_version +'\nAuthor: ' +self.author +'\n'
 
-    def get_gateset(self):
+    @classmethod
+    def gates(cls):
         """Get the supported gate set.
 
         Returns:
-          list[GateSpec]: gate specifications for supported gates
+          list[GateSpec]:
         """
-        raise NotImplementedError
+        return cls._gates
 
-    def get_templates(self):
+    @classmethod
+    def observables(cls):
+        """Get the supported observables.
+
+        Returns:
+          list[GateSpec]:
+        """
+        return cls._observables
+
+    @classmethod
+    def templates(cls):
         """Get the predefined circuit templates.
 
         Returns:
           list[Circuit]: circuit templates
         """
-        return list(self._circuits.values())
+        return list(cls._circuits.values())
 
-    def get_capabilities(self):
+    @classmethod
+    def get_capabilities(cls):
         """Get the other capabilities of the plugin.
 
         Measurements, batching etc.
@@ -161,10 +190,40 @@ class Plugin:
         """
         raise NotImplementedError
 
-    def reset(self):
-        """Reset the plugin.
+    @classmethod
+    def register_circuit(cls, circuit, name=None):
+        """Register a parametrized quantum circuit for later execution.
 
-        After the reset the plugin should be as if it was just loaded.
+        Args:
+          circuit (Circuit): quantum circuit
+          name (str, None): Name given to the circuit. If None, circuit.name is used.
+        """
+        if name is None:
+            name = circuit.name
+        else:
+            warnings.warn('Circuit stored under a different name.')
+        if name in cls._circuits:
+            warnings.warn('Stored circuit replaced.')
+        cls._circuits[name] = circuit
+
+    @classmethod
+    def get_circuit(cls, name):
+        """Find a register quantum circuit by name.
+
+        Args:
+          name (str): name given to the circuit
+        Returns:
+          Circuit: quantum circuit
+        """
+        if name not in cls._circuits:
+            raise KeyError("Unknown circuit '{}'.".format(name))
+        return cls._circuits[name]
+
+
+    def reset(self):
+        """Reset the backend state.
+
+        After the reset the backend should be as if it was just constructed.
         Most importantly the quantum state is reset to its initial value.
         """
         raise NotImplementedError
@@ -179,20 +238,24 @@ class Plugin:
     def _execute_circuit(self, circuit, params=[], **kwargs):
         raise NotImplementedError
 
-    def execute_circuit(self, circuit, params=[], **kwargs):
+    def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
         """Execute a parametrized quantum circuit with the specified parameter values.
 
         Note: The state of the backend is not automatically reset.
 
-        This function is a thin wrapper around :meth:`~Plugin._execute_circuit`
+        This function is a thin wrapper around :meth:`~PluginAPI._execute_circuit`
         that mostly checks argument validity.
 
         Args:
           circuit (Circuit, str): circuit to execute, or the name of a predefined circuit
           params  (Sequence[float]): values of the non-fixed parameters
+          reset   (bool): should the backend state be reset before the execution?
 
         Keyword Args:
           evals (int): how many times should the circuit be evaluated to estimate the measurement results?
+
+        Returns:
+          float, None: If the circuit has an observable defined return the expectation value, otherwise None.
         """
         if not isinstance(circuit, Circuit):
             # look it up by name
@@ -206,22 +269,9 @@ class Plugin:
             raise ValueError('Wrong number of circuit parameters: {} given, {} required.'.format(temp, circuit.n_par))
 
         log.info('Executing {}'.format(str(circuit)))
+        if reset:
+            self.reset()
         return self._execute_circuit(circuit, params, **kwargs)
-
-    def define_circuit(self, circuit, name=None):
-        """Define a parametrized quantum circuit for later execution.
-
-        Args:
-          circuit (Circuit): quantum circuit
-          name (str, None): Name given to the circuit. If None, circuit.name is used.
-        """
-        if name is None:
-            name = circuit.name
-        else:
-            warnings.warn('Circuit stored under a different name.')
-        if name in self._circuits:
-            warnings.warn('Stored circuit replaced.')
-        self._circuits[name] = circuit
 
     def measure(self, A, reg, n_eval=None):
         """Measure the expectation value of an observable.

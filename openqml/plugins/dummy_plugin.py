@@ -1,13 +1,13 @@
 # Copyright 2018 Xanadu Quantum Technologies Inc.
 r"""
-Dummy implementation for a plugin
-=================================
+Example implementation for an OpenQML plugin
+============================================
 
 **Module name:** :mod:`openqml.plugins.dummy_plugin`
 
 .. currentmodule:: openqml.plugins.dummy_plugin
 
-The dummy plugin is meant to be used as a template for writing OpenQML plugins for new backends.
+The dummy plugin is meant to be used as a template for writing OpenQML plugin modules for new backends.
 It implements all the API functions and provides a very simple simulation of a qubit-based quantum circuit architecture.
 """
 
@@ -16,7 +16,7 @@ import warnings
 import numpy as np
 from scipy.linalg import expm, eigh
 
-from openqml.plugin import Plugin
+import openqml.plugin
 from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
 
 
@@ -117,7 +117,7 @@ class Gate(GateSpec):
         else:
             self.func = func  #: callable: function that returns the gate matrix
 
-
+# gates
 rx = Gate('rx', 1, 1, frx)
 ry = Gate('ry', 1, 1, fry)
 rz = Gate('rz', 1, 1, frz)
@@ -125,51 +125,56 @@ r3 = Gate('r3', 1, 3, fr3)
 cnot = Gate('CNOT', 2, 0, CNOT)
 swap = Gate('SWAP', 2, 0, SWAP)
 
-_gates = [rx, ry, rz, r3, cnot, swap]
-
-_observables = [Gate('z', 1, 0, Z)]
+# observable
+ev_z = Gate('z', 1, 0, Z)
 
 # circuit templates
-_circuits = [
-  Circuit([
-    Command(rx, [0], [ParRef(0)]),
-    Command(cnot, [0, 1]),
-    Command(ry, [0], [-1.6]),
-    Command(ry, [1], [ParRef(0)]),
-    Command(cnot, [1, 0]),
-    Command(rx, [0], [ParRef(1)]),
-    Command(cnot, [0, 1])
-  ], 'demo'),
-  Circuit([
-    Command(r3, [0], [ParRef(0), 0.3, -0.2]),
-    Command(swap, [0, 1]),
-  ], 'rubbish'),
+_circuit_list = [
+    Circuit([
+        Command(rx, [0], [ParRef(0)]),
+        Command(cnot, [0, 1]),
+        Command(ry, [0], [-1.6]),
+        Command(ry, [1], [ParRef(0)]),
+        Command(cnot, [1, 0]),
+        Command(rx, [0], [ParRef(1)]),
+        Command(cnot, [0, 1])
+    ], 'demo'),
+    Circuit([
+        Command(rx, [0], [ParRef(0)]),
+        Command(cnot, [0, 1]),
+        Command(ry, [0], [-1.6]),
+        Command(ry, [1], [ParRef(0)]),
+        Command(cnot, [1, 0]),
+        Command(rx, [0], [ParRef(1)]),
+        Command(cnot, [0, 1])
+    ], 'demo_ev', obs=Command(ev_z, [0])),
+    Circuit([
+        Command(r3, [0], [ParRef(0), 0.3, -0.2]),
+        Command(swap, [0, 1]),
+    ], 'rubbish'),
 ]
 
 
-class DummyPlugin(Plugin):
-    """Dummy implementation for OpenQML plugins.
+class PluginAPI(openqml.plugin.PluginAPI):
+    """Example implementation of an OpenQML plugin API class.
+
+    Provides a very simple simulation of a qubit-based quantum circuit architecture.
     """
     plugin_name = 'dummy plugin'
     plugin_api_version = '0.1.0'
     plugin_version = '1.0.0'
     author = 'Xanadu Inc.'
+    _gates = [rx, ry, rz, r3, cnot, swap]
+    _observables = [ev_z]
+    _circuits = {c.name: c for c in _circuit_list}
 
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
         self.reset()
-        for c in _circuits:
-            self.define_circuit(c)
 
     def reset(self):
         self.n = None  #: int: number of qubits in the state
         self._state = None  #: array: state vector
-
-    def get_gateset(self):
-        return _gates
-
-    def get_observables(self):
-        return _observables
 
     def _execute_gate(self, gate, par, reg):
         """Applies a single gate or measurement on the current system state.
@@ -179,7 +184,6 @@ class DummyPlugin(Plugin):
           par (Sequence[float]): gate parameters
           reg   (Sequence[int]): subsystems to which the gate is applied
         """
-        print(gate.name)
         U = gate.func(*par)  # get the matrix
         if gate.n_sys == 1:
             U = self.apply_one(U, reg)
@@ -303,14 +307,18 @@ class DummyPlugin(Plugin):
             par = map(parmap, c.par)
             self._execute_gate(c.gate, par, c.reg)
 
+        if circuit.obs is not None:
+            ev, var = self.measure(circuit.obs.gate, circuit.obs.reg[0], **kwargs)
+            return ev
+
 
 
 def init_plugin(**kwargs):
     """Every plugin must define this function.
 
-    It should perform whatever initializations are necessary, and then return an API class instance.
+    It should perform whatever initializations are necessary, and then return the API class.
 
     Returns:
-      Plugin: plugin API class instance
+      class: plugin API class
     """
-    return DummyPlugin(**kwargs)
+    return PluginAPI
