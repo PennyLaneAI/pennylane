@@ -66,44 +66,6 @@ class BasicTest(BaseTest):
         print('Measured:', temp)
 
 
-    def test_qnode(self):
-        "Quantum node and node gradient evaluation."
-
-        p = load_plugin('dummy_plugin')
-        c = p.get_circuit('demo_ev')
-        p1 = p('node 1')
-        qn = QNode(c, p1)
-        params = [1.0, 2.0]
-        x0 = qn.evaluate(params)
-        grad1 = qn.gradient_finite_diff(params)
-        grad2 = qn.gradient_angle(params)
-        # gradients computed with different methods must agree
-        self.assertAllAlmostEqual(grad1, grad2, self.tol)
-
-
-    def test_autograd(self):
-        "Automatic differentiation of quantum nodes."
-
-        p = load_plugin('dummy_plugin')
-        c = p.get_circuit('demo_ev')
-        p1 = p('node 1')
-        qn = QNode(c, p1)
-        params = [1.0, 2.0]
-        x0 = qn.evaluate(params)
-        grad1 = qn.gradient_finite_diff(params)
-        grad2 = qn.gradient_angle(params)
-        # gradients computed with different methods must agree
-        self.assertAllAlmostEqual(grad1, grad2, self.tol)
-
-        def loss(p):
-            ret = 1
-            ret += circuit1(2 * p[:3])  #__call__: re-initializes linked plugin, propagates, returns ev:s, deletes state to save memory?
-            # we have defined circuit.grad(p) as the gradient func...
-            # one plugin per circuit instance???
-            # or maybe circuit is just the program, and qnode is the node object? qnode contains a circuit and a plugin ref
-            ret += circuit2(p[3:] ** 2)
-            return norm(ret)
-
 
 if __name__ == '__main__':
     print('Testing OpenQML version ' + openqml.version() + ', plugin API.')
