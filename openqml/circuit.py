@@ -16,9 +16,13 @@ Classes
    Command
    ParRef
    Circuit
+   QNode
+
+----
 """
 
-import numpy as np
+import autograd.numpy as np
+import autograd.extend
 
 import logging as log
 import warnings
@@ -176,14 +180,24 @@ class QNode:
     """Quantum node in the computational graph.
 
     Each quantum node is defined by a :class:`Circuit` instance representing the quantum program, and
-    a :class:`PluginAPI` instance representing the backend to execute it on.
+    a :class:`~openqml.plugin.PluginAPI` instance representing the backend to execute it on.
     """
     def __init__(self, circuit, backend):
         self.circuit = circuit  #: Circuit: quantum circuit representing the program
         self.backend = backend  #: PluginAPI: backend for executing the program
 
+    @autograd.extend.primitive
     def evaluate(self, params, **kwargs):
-        """Evaluate the node
+        """Evaluate the node.
+
+        .. todo:: rename to __call__?
+
+        .. todo:: Should we delete the backend state after the call to save memory?
+
+        Args:
+          params (Sequence[float]): circuit parameters
+        Returns:
+          float: (approximate) expectation value of the measured observable
         """
         return self.backend.execute_circuit(self.circuit, params, **kwargs)
 
@@ -250,3 +264,7 @@ class QNode:
                 del self.circuit.pars[n]
                 grad[k] += (x2-x1) / 2
         return grad
+
+
+# define the vector-Jacobian product function for QNode.evaluate
+autograd.extend.defvjp(QNode.evaluate, lambda ans, self, params: lambda g: g * self.gradient_angle(params), argnums=[1])
