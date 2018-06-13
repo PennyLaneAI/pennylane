@@ -68,7 +68,7 @@ class BasicTest(BaseTest):
 
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', plugin API.')
+    print('Testing OpenQML version ' + openqml.version() + ', QNode class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,):

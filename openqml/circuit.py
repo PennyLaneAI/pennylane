@@ -102,12 +102,15 @@ class Circuit:
     Args:
       seq (Sequence[Command]): sequence of quantum operations to apply to the state
       name (str): circuit name
+      out (None, Sequence[int]): Subsystem indices from which the circuit output array is constructed.
+        The command sequence should contain a measurement for each subsystem listed here.
+        None means the circuit returns no value.
     """
-    def __init__(self, seq, name='', obs=None):
+    def __init__(self, seq, name='', out=None):
         self.seq  = list(seq)  #: list[Command]:
         self.name = name  #: str: circuit name
         self.pars = {}    #: dict[int->list[Command]]: map from non-fixed parameter index to the list of Commands (in this circuit!) that depend on it
-        self.obs = obs    #: Command: observable HACK FIXME
+        self.out = out    #: Sequence[int]: subsystem indices for circuit output
 
         # TODO check the validity of the circuit?
         # count the subsystems and parameter references used
