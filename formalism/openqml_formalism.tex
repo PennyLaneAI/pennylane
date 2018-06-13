@@ -108,31 +108,46 @@ Compilation of formulas and conventions for the OpenQML framework.
 \maketitle
 
 
-\section{Basic building blocks}
+\section{Conventions}
 
-\subsection{Variational circuit, layers and gates}
+\section{Basic structure}
 
-We are given a \textbf{variational circiut}
-\[ U (\theta[, x]): \rho_0 \mapsto \tr \{ \rho \hat{O_i} \} := E_i. \]
-The circuit takes a ground or vacuum state $\rho_0 = \ketbra{0}{0}$
-and maps it to the expectation value of an operator $\hat{O}_i$ from a
-set of operators $\mathcal{O} = \{\hat{O}_1 \cdots \hat{O}_{N_O}\}$
-with respect to the final state $\rho$ of the circuit. These operators
-correspond to measurements that are easy to make on the device, for
-example when $\hat{O}$ is the Pauli operator $\sigma_z$ that
-corresponds to a computational basis measurement, or the quadrature
-operator $\x$ corresponding to homodyne detection in CV systems. The
-circuit can also potentially take an input $x$, which we treat as a
-placeholder that can be replaced with values during training.
+We consider an abstract \textbf{model} $f(x, \theta)$ 
+that maps a set of \textbf{model inputs} $x$ (which may be empty) and a set of parameters $\theta$ to a \textbf{model output} $y$. \\
+
+Each model, as defined by parameters $\theta$, is associated with a scalar \textbf{cost} $C(\theta, \mathcal{D})$, which also depends on a (possibly empty) dataset $\mathcal{D}$.\\
+
+A model can be understood as a directed graph of \textbf{nodes}. There are two types of nodes: \textbf{classical nodes} $c(x_c, \theta_c) = y_c $ and \textbf{quantum nodes} $q(x_q, \theta_q) = y_q $. Each node defines a map from \textbf{node inputs} to \textbf{node outputs}, where the node inputs are the node outputs from the previous layer. Root nodes (those without parents) take a subset of the model inputs $x$ as node inputs, and the collection of leaf nodes (those without children) return the model output as their node outputs. \\
+
+An example is a variational quantum eigensolver, where the model inputs is an empty set, and the output of the model is the weighed sum of expectation values:
+IMAGE.\\
+
+Another example is a classical neural network with one quantum layer: IMAGE.\\
 
 
-The variational circuit can be composed of \textbf{layers}
+\subsection{Quantum nodes}
+A quantum node consists of a variational circuit. We formally define a \textbf{variational circuit} $V$ as the map
+\[V: \theta \mapsto \bra{\psi_0} U(\theta)^{\dagger}  \hat{O} U(\theta) \ket{\psi_0}. \]
+This means that quantum nodes always map onto scalar values.
+
+Taking these expressions apart, 
+\begin{itemize}
+\item $U(\theta)$ is a unitary transformation defined by a \textbf{quantum circuit} which depends on a set of \textit{circuit parameters} $\theta$.
+\item $|\psi_0 \rangle$ is an \textbf{initial quantum state}, which is usually the vacuum state $\ket{0}$.
+\item $\hat{O}$ is a \textbf{measurement operator}. For
+example, this could be a Pauli operator, or the quadrature
+operator $\x$ corresponding to homodyne detection in CV systems.
+\end{itemize} 
+
+The circuit parameters $\theta$ can be of three different types: They can be \textbf{trainable parameters}, \textbf{fixed parameters}, or \textbf{placeholders} for inputs.\\
+
+The variational circuit is composed of \textbf{layers}
 \[ U (\theta) = \L_{N_L} \cdots \L_{1}\]
-which repeat a certain architecture. A layer $\L_l$, $l=1,...,N_L$, consists of a series of \textbf{gates}
+which repeat a set architecture. A layer $\L_l$, $l=1,...,N_L$, consists of a series of \textbf{gates}
 \[\L_l = \G^l_{N_G}(\theta^l_{N_G}) \cdots \G^l_1(\theta^l_1). \]
 Each gate is parametrised by a set of parameters
 $\theta^i_j$, $i = 1,...,N_L$, $j=1,...,N_G$,
-which can be empty if the gate is not parametrised.
+which can be empty if the gate is not parametrised.\\
 
 We propose to use the following \textbf{elementary gate sets}:
 
@@ -160,11 +175,11 @@ the elementary rotations around the $x$, $y$ and~$z$ axes:
 Any $\SO(3)$ rotation can be expressed using three Euler angles, that
 is, three rotations around two orthogonal axes. A standard axis choice is~$zyz$.
 Due to the isomorphism $\SU(2)/\Z_2 \isom \SO(3)$ we obtain a similar decomposition
-for arbitrary single-qubit gates~$U$:
+for arbitrary single-qubit gates $S$:
 \begin{align}
 \label{eq:app:euler}
 \notag
-U &= R_z(\gamma) R_y(\beta) R_z(\alpha)\\
+S &= R_z(\gamma) R_y(\beta) R_z(\alpha)\\
 &=
 \bpm
 e^{-i(\alpha+\gamma)/2} \cos(\beta/2) & -e^{i(\alpha-\gamma)/2} \sin(\beta/2)\\
@@ -173,67 +188,57 @@ e^{-i(\alpha-\gamma)/2} \sin(\beta/2) &  e^{i(\alpha+\gamma)/2} \cos(\beta/2)
 \end{align}
 
 Together with the $\CNOT$ gate this gate set is universal, i.e. any $\SU(2^n)$
-gate can be expanded into a finite sequence of $\SU(2)$ and $\CNOT$ gates~\cite{barenco1995}.
-
-
-Additionally our elementary gate set includes the following common fixed gates:
-TODO
-
-
-
+gate can be expanded into a finite sequence of $\SU(2)$ and $\CNOT$ gates~\cite{barenco1995}.\\
 
 \subsubsection{CV architectures}
 
 Displacement, squeezing, phase rotation, beam splitter, Kerr nonlinearity, cubic phase gate. See SF conventions.
 
-\subsection{Cost function}
 
-The \textbf{cost function} depends on the expectation vales $\{E_i\}$,
-\[C(\theta[, \mathcal{D}]) = g(\{E_i\}),\]
-and potentially on a data set $\mathcal{D}$ which either consists of
-multiple inputs, $\mathcal{D} = \{x\}$, or input-output pairs,
-$\mathcal{D} = \{(x ,y)\}$. We assume that both $x$ and $y$ are real
-finite vectors or scalars.
+\subsection{Classical nodes}
 
-For the following we will also assume that the cost function is a sum of functions of the expectations,
-\be
-C(\theta[, \mathcal{D}]) = \sum_i g_i(\{E_i\}),
-\label{eq:cost}
-\ee
-which is true for the standard use-cases of variational circuits.
+A classical node can be any function...
 
-\color{black!80!white}
-Examples of cost functions are:
-
-\paragraph{Expectation cost for a variational eigensolver}
-
-The cost function of a variational eigensolver is a weighed sum of expectation values,
-\[ C(\theta) = \sum_i h_i E_i(\theta). \]
-Usually, these are expectations of Pauli operators, and their sum is the energy expectation,
-\[\langle H \rangle = \sum\limits_{i, \alpha} h^i_{\alpha} \langle\sigma^i_{\alpha}\rangle + \sum\limits_{\substack{i,j\\ \alpha, \beta}} h^{ij}_{\alpha, \beta} \langle \sigma^i_{\alpha}\sigma^j_{\beta}\rangle + \hdots,\]
-where $i,j$ denote the qubits that the Paulis act on, and
-$\alpha, \beta = x,y,z$ sum over all different combinations of Pauli operators.
-
-\paragraph{Maximum likelihood cost for a generative model}
-If the goal is to increase the likelihood of measuring a basis state
-$\ket{x}$ that represents an input in the data set
-$\mathcal{D} = \{x\}$, the expectations we are interested in are
-\be
-E_x(\theta) =  \tr\{\rho(\theta) \ketbra{x}{x}  \},
-\ee
-and we can use maximum likelihood to define
-\[C(\theta, \mathcal{D}) = \sum_{x \in \mathcal{D}}\log E_x(\theta) .\]
-Note that in this unsupervised learning task the data enters the cost function directly, and the circuit is data-independent.
+%\subsection{Cost function}
+%
+%The \textbf{cost function} $C(\theta[, \mathcal{D}])$ depends the circuit parameters and potentially on a data set $\mathcal{D}$ which either consists of
+%multiple inputs, $\mathcal{D} = \{x\}$, or input-target pairs,
+%$\mathcal{D} = \{(x, t)\}$. \\
 
 
-\paragraph{Square loss cost for supervised learning}
-If we interpret the expectation $E_x(\theta) = \tr \{ \rho(\theta, x)
-\; \sigma_z \}$ of the computational basis state of a designated qubit
-for an input $x$ as the prediction of a quantum classifier, the square
-loss cost function reads
-\[ C(\theta, \mathcal{D}) = \sum_{(x,y) \in \mathcal{D}} |E_x(\theta)-y|^2. \]
 
-\color{black}
+%\color{black!80!white}
+%Examples of cost functions are:
+%
+%\paragraph{Expectation cost for a variational eigensolver}
+%
+%The cost function of a variational eigensolver is a weighed sum of expectation values,
+%\[ C(\theta) = \sum_i h_i E_i(\theta). \]
+%Usually, these are expectations of Pauli operators, and their sum is the energy expectation,
+%\[\langle H \rangle = \sum\limits_{i, \alpha} h^i_{\alpha} \langle\sigma^i_{\alpha}\rangle + \sum\limits_{\substack{i,j\\ \alpha, \beta}} h^{ij}_{\alpha, \beta} \langle \sigma^i_{\alpha}\sigma^j_{\beta}\rangle + \hdots,\]
+%where $i,j$ denote the qubits that the Paulis act on, and
+%$\alpha, \beta = x,y,z$ sum over all different combinations of Pauli operators.
+%
+%\paragraph{Maximum likelihood cost for a generative model}
+%If the goal is to increase the likelihood of measuring a basis state
+%$\ket{x}$ that represents an input in the data set
+%$\mathcal{D} = \{x\}$, the expectations we are interested in are
+%\be
+%E_x(\theta) =  \tr\{\rho(\theta) \ketbra{x}{x}  \},
+%\ee
+%and we can use maximum likelihood to define
+%\[C(\theta, \mathcal{D}) = \sum_{x \in \mathcal{D}}\log E_x(\theta) .\]
+%Note that in this unsupervised learning task the data enters the cost function directly, and the circuit is data-independent.
+%
+%
+%\paragraph{Square loss cost for supervised learning}
+%If we interpret the expectation $E_x(\theta) = \tr \{ \rho(\theta, x)
+%\; \sigma_z \}$ of the computational basis state of a designated qubit
+%for an input $x$ as the prediction of a quantum classifier, the square
+%loss cost function reads
+%\[ C(\theta, \mathcal{D}) = \sum_{(x,y) \in \mathcal{D}} |E_x(\theta)-y|^2. \]
+%
+%\color{black}
 
 
 \section{Gradient computation}
