@@ -200,33 +200,48 @@ class QNode:
         Args:
           params (Sequence[float]): circuit parameters
         Returns:
-          float: (approximate) expectation value of the measured observable
+          vector[float]: (approximate) expectation value(s) of the measured observable(s)
         """
         return self.backend.execute_circuit(self.circuit, params, **kwargs)
 
 
-    def gradient_finite_diff(self, params, h=1e-7, **kwargs):
+    def gradient_finite_diff(self, params, h=1e-7, order=1, **kwargs):
         """Compute the gradient of the node using finite differences.
 
         Given an n-parameter quantum circuit, this function computes its gradient with respect to the parameters
-        using the finite difference method. The current implementation evaluates the circuit at n+1 points of the parameter space.
+        using the finite difference method.
 
         Args:
           params (Sequence[float]): point in parameter space at which to evaluate the gradient
           h (float): step size
+          order (int): Finite difference method order, 1 or 2. The order-1 method evaluates the circuit at n+1 points of the parameter space,
+            the order-2 method at 2n points.
         Returns:
-          array: gradient vector
+          vector[float]: gradient vector
         """
         params = np.asarray(params)
         grad = np.zeros(params.shape)
-        # value at the evaluation point
-        x0 = self.backend.execute_circuit(self.circuit, params, **kwargs)
-        for k in range(len(params)):
-            # shift the k:th parameter by h
-            temp = params.copy()
-            temp[k] += h
-            x = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-            grad[k] = (x-x0) / h
+        if order == 1:
+            # value at the evaluation point
+            x0 = self.backend.execute_circuit(self.circuit, params, **kwargs)
+            for k in range(len(params)):
+                # shift the k:th parameter by h
+                temp = params.copy()
+                temp[k] += h
+                x = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+                grad[k] = (x-x0) / h
+        elif order == 2:
+            # symmetric difference
+            for k in range(len(params)):
+                # shift the k:th parameter by +-h/2
+                temp = params.copy()
+                temp[k] += 0.5*h
+                x2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+                temp[k] = params[k] -0.5*h
+                x1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+                grad[k] = (x2-x1) / h
+        else:
+            raise ValueError('Order must be 1 or 2.')
         return grad
 
 
@@ -241,7 +256,7 @@ class QNode:
         Args:
           params (Sequence[float]): point in parameter space at which to evaluate the gradient
         Returns:
-          array: gradient vector
+          vector[float]: gradient vector
         """
         params = np.asarray(params)
         grad = np.zeros(params.shape)
