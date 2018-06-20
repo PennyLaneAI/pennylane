@@ -9,7 +9,7 @@ from numpy.random import (randn,)
 
 from defaults import openqml, BaseTest
 from openqml.plugin import (list_plugins, load_plugin, PluginAPI)
-from openqml.circuit import (Command, Circuit, QNode)
+from openqml.circuit import (Command, Circuit)
 
 
 class BasicTest(BaseTest):
@@ -31,6 +31,7 @@ class BasicTest(BaseTest):
         def test_plugin(p):
             "Tests for each individual plugin."
             self.assertTrue(isinstance(p, PluginAPI))
+            print()
             print(p)
             print('Gates:')
             for g in p.gates():
@@ -39,6 +40,14 @@ class BasicTest(BaseTest):
                 cmd = Command(g, list(range(g.n_sys)), randn(g.n_par))
                 print(cmd)
                 p.execute_circuit(Circuit([cmd], g.name))
+
+            print('\nObservables:')
+            for g in p.observables():
+                print(g)
+                cmd = Command(g, list(range(g.n_sys)), randn(g.n_par))
+                print(cmd)
+                p.execute_circuit(Circuit([cmd], g.name))
+
             print('\nCircuit templates:')
             for c in p.templates():
                 # try running each circuit template with random parameters
@@ -51,8 +60,14 @@ class BasicTest(BaseTest):
                 p = load_plugin(name)
             except ImportError:
                 continue
-            test_plugin(p())
-            print()
+            temp = p.capabilities().get('backend')
+            if temp is None:
+                # test the default version
+                test_plugin(p())
+            else:
+                # test all backends
+                for k in temp:
+                    test_plugin(p(backend=k))
 
 
     def test_measurement(self):

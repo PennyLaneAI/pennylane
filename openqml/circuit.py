@@ -7,6 +7,12 @@ Quantum circuits
 
 .. currentmodule:: openqml.circuit
 
+:class:`Quantum circuits <Circuit>` are abstract representations of the programs that quantum computers and simulators can execute.
+In OpenQML they are typically encapsulated inside :class:`QNode` instances in the computational graph.
+Each OpenQML plugin typically :meth:`provides <openqml.plugin.PluginAPI.templates>` a few ready-made parametrized circuit templates (variational quantum circuits)
+that can be used in quantum machine learning tasks, but the users can also build their own circuits
+out of the :class:`GateSpec` instances the plugin :meth:`supports <openqml.plugin.PluginAPI.gates>`.
+
 
 Classes
 -------
@@ -17,6 +23,19 @@ Classes
    ParRef
    Circuit
    QNode
+
+
+QNode methods
+-------------
+
+.. currentmodule:: openqml.circuit.QNode
+
+.. autosummary::
+   evaluate
+   gradient_finite_diff
+   gradient_angle
+
+.. currentmodule:: openqml.circuit
 
 ----
 """
@@ -31,10 +50,12 @@ import warnings
 
 
 class GateSpec:
-    """Defines a single type of quantum gate supported by a backend, and its properies.
+    """A type of quantum operation supported by a backend, and its properies.
+
+    GateSpec is used to describe both unitary quantum gates and measurements/observables.
 
     Args:
-      name  (str): name of the gate
+      name  (str): name of the operation
       n_sys (int): number of subsystems it acts on
       n_par (int): number of real parameters it takes
       grad  (str): gradient computation method (generator, numeric?)
@@ -180,7 +201,7 @@ class Circuit:
 
 
 class QNode:
-    """Quantum node in the computational graph.
+    """Quantum node in the computational graph, encapsulating a circuit and a backend for executing it.
 
     Each quantum node is defined by a :class:`Circuit` instance representing the quantum program, and
     a :class:`~openqml.plugin.PluginAPI` instance representing the backend to execute it on.
