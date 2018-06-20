@@ -247,7 +247,7 @@ We depict classical nodes by the following symbol:\\
 \node[]  at (1,-0.75) {$\vdots $};
 \node[quantum node] (qK) at (0,-1.5) {$U(\theta_i)$ \nodepart{two} $\sigma_x \otimes \sigma_y$};
 \node[]  at (1,-2.25) {$\vdots $};
-\node[classical node] (c) at (4.25,-1) {$\sum_{i=1}^K h_i y_{q_i} $};
+\node[classical node] (c) at (4.25,-1) {$\sum_{i=1}^K a_i y_{q_i} $};
 \node[output node] (o) at (7,-1) {$y$};
 \draw[->] (i1) -- (q1);
 \draw[->] (iK) -- (qK) ;
@@ -300,49 +300,49 @@ From the building blocks of classical and quantum nodes, more complicated hybrid
 
 
 \subsubsection{Cost function}
-The cost function has a different structure for different tasks of the learning or optimization task. We distinguish three tasks (see Fig. \ref{Fig:tasks}).\\
+We consider three different tasks for OpenQML: optimization, unsupervised learning and supervised learning. The tasks depend on whether and what type of data is used for training (see Table \ref{Tbl:tasks}).\\
+
+\begin{table}[t]
+\begin{tabular}{lll}
+\hline \hline
+Task & Inputs & Targets\\
+\hline 
+Optimisation & No & No \\
+Unsupervised & Yes & No\\
+Supervised & Yes & Yes\\\hline \hline
+\end{tabular}
+\caption{Definition of the three tasks depending on whether and which type of data is used to train the circuit.}
+\label{Tbl:tasks}
+\end{table}
 
 
-\begin{figure}[t]
-\includegraphics[scale=0.08]{tasks.pdf}
-\caption{Three tasks for OpenQML and the ob}
-\label{Fig:tasks}
-\end{figure}
+The cost function has a different structure for different tasks of training. We will revisit the examples in Figure \ref{Fig:example_modelgraphs} and present some potential cost function for these models. \\
 
-It is useful to consider some examples
-\paragraph{Expectation cost for a variational eigensolver}
+%\begin{figure}[t]
+%\includegraphics[scale=0.08]{tasks.pdf}
+%\caption{Three tasks for OpenQML and the ob}
+%\label{Fig:tasks}
+%\end{figure}
 
-The cost function of a variational eigensolver is a weighed sum of expectation values,
-\[ C(\theta) = \sum_i h_i E_i(\theta). \]
-Usually, these are expectations of Pauli operators, and their sum is the energy expectation,
-\[\langle H \rangle = \sum\limits_{i, \alpha} h^i_{\alpha} \langle\sigma^i_{\alpha}\rangle + \sum\limits_{\substack{i,j\\ \alpha, \beta}} h^{ij}_{\alpha, \beta} \langle \sigma^i_{\alpha}\sigma^j_{\beta}\rangle + \hdots,\]
-where $i,j$ denote the qubits that the Paulis act on, and
-$\alpha, \beta = x,y,z$ sum over all different combinations of Pauli operators.
+\paragraph{Expectation maximisation cost for a variational eigensolver}
 
-\paragraph{Cost for a generative model}
-If the goal is to increase the likelihood of measuring a basis state
-$\ket{x}$ that represents an input in the data set
-$\mathcal{D} = \{x\}$, the expectations we are interested in are
-\be
-E_x(\theta) =  \tr\{\rho(\theta) \ketbra{x}{x}  \},
-\ee
-and we can use maximum likelihood to define
-\[C(\theta, \mathcal{D}) = \sum_{x \in \mathcal{D}}\log E_x(\theta) .\]
-Note that in this unsupervised learning task the data enters the cost function directly, and the circuit is data-independent.
+The cost function of a variational eigensolver is the direct model output $y$ shown in Figure \ref{Fig:example_modelgraphs} (a). $y$ is a weighed sum of local expectation values, which classically computes the expectation value of a global observable which is decomposed into a sum of local observables. Hence, the cost function reads
+\[ C(\theta) = \sum_i a_i \bra{0}U(\theta)^{\dagger} O_i U(\theta)\ket{0}, \]
+where the $O_i$ are Pauli operators acting on a few qubits only.
 
 
+\paragraph{Maximum likelihood cost for a generative model}
+Assume we are given some unlabelled data $\mathcal{D}$ that can be associated with the basis states of a quantum state. Our goal is to prepare a quantum state $\ket{psi}$ using the variational circuit, so that the likelihood of measuring a basis state $\ket{x^m}$ that represents an input $x^m \in \mathcal{D}$ is large. If we denote the projection onto the basis states that denote the data set as $\Lambda_{\mathcal{D}}$ as in Figure \ref{Fig:example_modelgraphs} (b), the goal is to maximise the expectation of this operator. The loss is hence given by
+\[ C(\theta, \mathcal{D}) = \bra{0}U(\theta)^{\dagger} \Lambda_{\mathcal{D}} U(\theta)\ket{0}.\] 
+ 
 
 \paragraph{Square loss cost for supervised learning}
-If we interpret the expectation $E_x(\theta) = \tr \{ \rho(\theta, x)
-\; \sigma_z \}$ of the computational basis state of a designated qubit
-for an input $x$ as the prediction of a quantum classifier, the square
-loss cost function reads
-\[ C(\theta, \mathcal{D}) = \sum_{(x,y) \in \mathcal{D}} |E_x(\theta)-y|^2. \]
+Subfigure (c) in Figure \ref{Fig:example_modelgraphs} is an example of a supervised model. We are given a labelled dataset $\mathcal{D}$. The output $y^m$ of the model for an input $\bx^m$ is defined as the expectation of a specified $\sigma_z$ operator. The square loss compares this expectation with the target value $t^m$ for all training data $m=1,...,M$, 
+\[ C(\theta, \mathcal{D}) = \sum_{m} |\bra{0}U(\theta, \bx^m)^{\dagger} \sigma_z U(\theta, \bx^m)\ket{0}-t^m|^2. \]
 
-\color{black}
+There are of course many other loss functions one could think of, each taking the output of the current model and possibly some data and scoring its parameters with a scalar value.
 
-
-\section{Gradient computation}
+\section{Gradient computation for quantum nodes}
 
 In this section we explore issues related to computing gradients of models $f(x, \theta)$ consisting of quantum and classical nodes with regards to a specific model parameter $\mu \in \theta$.\\
 
@@ -358,9 +358,6 @@ which expresses that $f_T$ is derived for its argument, which consists of the fo
 while for general $\mu \in \theta_t$, 
 \[ \partial_{\mu \in \theta_t} f(x, \theta) = \prod_{i=1}^t ( f'_i \circ ... \circ f_1 ). \]
 (Where obviously $( f'_1 \circ ... \circ f_1 ) = f'_1$ \maria{Is there an iterative symbol for chaining?}).
-
-
-
 
 
 \subsection{One-parameter subgroups}
