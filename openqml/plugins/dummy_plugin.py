@@ -107,15 +107,68 @@ def fr3(a, b, c):
 #========================================================
 
 class Gate(GateSpec):
-    """Implements the quantum gates and measurements.
+    """Implements the quantum gates.
     """
-    def __init__(self, name, reg, par=[], func=None):
-        super().__init__(name, reg, par)
+    def __init__(self, name, n_sys, n_par, func=None):
+        super().__init__(name, n_sys, n_par)
         if not callable(func):
             # for fixed gates given e.g. as NumPy arrays
             self.func = lambda: func
         else:
             self.func = func  #: callable: function that returns the gate matrix
+
+    def execute(self, par, reg, sim):
+        """Applies a single gate or measurement on the current system state.
+
+        Args:
+          par (Sequence[float]): gate parameters
+          reg   (Sequence[int]): subsystems to which the gate is applied
+          sim       (PluginAPI): simulator instance keeping track of the system state and measurement results
+
+        Returns:
+          vector[complex]: evolved system state vector
+        """
+        U = self.func(*par)  # get the matrix
+        if self.n_sys == 1:
+            U = sim.expand_one(U, reg)
+        elif self.n_sys == 2:
+            U = sim.expand_two(U, reg)
+        else:
+            raise ValueError('This plugin supports only one- and two-qubit gates.')
+        return U @ sim._state
+
+
+class Observable(Gate):
+    """Implements single-qubit hermitian observables.
+
+    For now we assume that all the observables in the circuit commute, and that no more unitary gates appear after them.
+    Since we are only interested in the expectation values, there is no need to project the state after the measurement.
+    """
+    def execute(self, par, reg, sim):
+        if self.n_sys != 1:
+            raise ValueError('This plugin supports only one-qubit observables.')
+
+        A = self.func(*par)  # get the matrix
+        if sim.n_eval == 0:
+            # exact expectation value
+            ev = sim.ev(A, reg)
+        else:
+            # estimate the ev
+            if 0:
+                # use central limit theorem, sample normal distribution once, only ok if sim.n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+                ev = sim.ev(A, reg)
+                var = sim.ev(A**2, reg) -ev**2  # variance
+                ev = np.random.normal(ev, np.sqrt(var / sim.n_eval))
+            else:
+                # sample Bernoulli distribution sim.n_eval times / binomial distribution once
+                a, P = spectral_decomposition_qubit(A)
+                p0 = sim.ev(P[0], reg)  # probability of measuring a[0]
+                n0 = np.random.binomial(sim.n_eval, p0)
+                ev = (n0*a[0] +(sim.n_eval-n0)*a[1]) / sim.n_eval
+
+        sim._result[reg[0]] = ev  # store the result
+        return sim._state  # no change to state
+
 
 # gates
 rx = Gate('rx', 1, 1, frx)
@@ -125,29 +178,23 @@ r3 = Gate('r3', 1, 3, fr3)
 cnot = Gate('CNOT', 2, 0, CNOT)
 swap = Gate('SWAP', 2, 0, SWAP)
 
-# observable
-ev_z = Gate('z', 1, 0, Z)
+# observables
+ev_z = Observable('z', 1, 0, Z)
+
+demo = [
+    Command(rx, [0], [ParRef(0)]),
+    Command(cnot, [0, 1]),
+    Command(ry, [0], [-1.6]),
+    Command(ry, [1], [ParRef(0)]),
+    Command(cnot, [1, 0]),
+    Command(rx, [0], [ParRef(1)]),
+    Command(cnot, [0, 1])
+]
 
 # circuit templates
 _circuit_list = [
-    Circuit([
-        Command(rx, [0], [ParRef(0)]),
-        Command(cnot, [0, 1]),
-        Command(ry, [0], [-1.6]),
-        Command(ry, [1], [ParRef(0)]),
-        Command(cnot, [1, 0]),
-        Command(rx, [0], [ParRef(1)]),
-        Command(cnot, [0, 1])
-    ], 'demo'),
-    Circuit([
-        Command(rx, [0], [ParRef(0)]),
-        Command(cnot, [0, 1]),
-        Command(ry, [0], [-1.6]),
-        Command(ry, [1], [ParRef(0)]),
-        Command(cnot, [1, 0]),
-        Command(rx, [0], [ParRef(1)]),
-        Command(cnot, [0, 1])
-    ], 'demo_ev', obs=Command(ev_z, [0])),
+    Circuit(demo, 'demo'),
+    Circuit(demo +[Command(ev_z, [0])], 'demo_ev', out=[0]),
     Circuit([
         Command(r3, [0], [ParRef(0), 0.3, -0.2]),
         Command(swap, [0, 1]),
@@ -160,7 +207,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
     Provides a very simple simulation of a qubit-based quantum circuit architecture.
     """
-    plugin_name = 'dummy plugin'
+    plugin_name = 'Dummy OpenQML plugin'
     plugin_api_version = '0.1.0'
     plugin_version = '1.0.0'
     author = 'Xanadu Inc.'
@@ -174,56 +221,41 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
     def reset(self):
         self.n = None  #: int: number of qubits in the state
-        self._state = None  #: array: state vector
+        self._state  = None  #: array: state vector
+        self._result = None  #: array: measurement results
 
-    def _execute_gate(self, gate, par, reg):
-        """Applies a single gate or measurement on the current system state.
-
-        Args:
-          gate           (Gate): gate type
-          par (Sequence[float]): gate parameters
-          reg   (Sequence[int]): subsystems to which the gate is applied
-        """
-        U = gate.func(*par)  # get the matrix
-        if gate.n_sys == 1:
-            U = self.apply_one(U, reg)
-        elif gate.n_sys == 2:
-            U = self.apply_two(U, reg)
-        else:
-            raise ValueError('This plugin supports only one- and two-qubit gates.')
-        self._state = U @ self._state
-
-    def apply_one(self, U, reg):
-        """Expand a one-qubit gate into a full system propagator.
+    def expand_one(self, U, reg):
+        """Expand a one-qubit operator into a full system operator.
 
         Args:
-          U (array): 2*2 unitary matrix
-          reg (int): target subsystem
+          U (array): 2*2 matrix
+          reg (Sequence[int]): target subsystem
 
         Returns:
-          array: 2^n*2^n unitary matrix
+          array: 2^n*2^n matrix
         """
         if U.shape != (2, 2):
-            raise ValueError('2x2 unitary required.')
+            raise ValueError('2x2 matrix required.')
+        if len(reg) != 1:
+            raise ValueError('One target subsystem required.')
         reg = reg[0]
         before = 2**reg
         after  = 2**(self.n-reg-1)
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
         return U
 
-
-    def apply_two(self, U, reg):
-        """Expand a two-qubit gate into a full system propagator.
+    def expand_two(self, U, reg):
+        """Expand a two-qubit operator into a full system operator.
 
         Args:
-          U (array): 4x4 unitary matrix
+          U (array): 4x4 matrix
           reg (Sequence[int]): two target subsystems (order matters!)
 
         Returns:
-          array: 2^n*2^n unitary matrix
+          array: 2^n*2^n matrix
         """
         if U.shape != (4, 4):
-            raise ValueError('4x4 unitary required.')
+            raise ValueError('4x4 matrix required.')
         if len(reg) != 2:
             raise ValueError('Two target subsystems required.')
         reg = np.asarray(reg)
@@ -254,45 +286,38 @@ class PluginAPI(openqml.plugin.PluginAPI):
         return U
 
     def ev(self, A, reg):
-        """Expectation value of an observable in the current state.
+        """Expectation value of a one-qubit observable in the current state.
 
         Args:
           A (array): 2*2 hermitian matrix corresponding to the observable
-          reg (int): target subsystem
+          reg (Sequence[int]): target subsystem
 
         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         if A.shape != (2, 2):
             raise ValueError('2x2 matrix required.')
-        A = self.apply_one(A, [reg])
+        A = self.expand_one(A, reg)
         temp = np.vdot(self._state, A @ self._state)
         if np.abs(temp.imag) > tolerance:
             warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(temp.imag))
         return temp.real
 
-    def measure(self, A, reg, n_eval=None):
-        A = A.func()
-        ev  = self.ev(A, reg)
-        var = self.ev(A**2, reg) -ev**2
-        if n_eval is not None:
-            if 0:
-                # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-                ev = np.random.normal(ev, np.sqrt(var / n_eval))
-            else:
-                # sample Bernoulli distribution n_eval times / binomial distribution once
-                a, P = spectral_decomposition_qubit(A)
-                p0 = self.ev(P[0], reg)  # probability of measuring a[0]
-                n0 = np.random.binomial(n_eval, p0)
-                ev = (n0*a[0] +(n_eval-n0)*a[1]) / n_eval
-        return ev, var
+    def measure(self, A, reg, par=[], n_eval=0):
+        self.n_eval = n_eval
+        A.execute(par, [reg], self)
+        return self._result[reg]
 
-    def _execute_circuit(self, circuit, params=[], **kwargs):
+    def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
+        super().execute_circuit(circuit, params, reset=reset, **kwargs)
+        circuit = self.circuit
+
         if self._state is None:
             # init the state vector to |00..0>
             self.n = circuit.n_sys
             self._state = np.zeros(2**self.n, dtype=complex)
             self._state[0] = 1
+            self._result = np.full(self.n, np.nan)
         elif self.n != circuit.n_sys:
             raise ValueError("Trying to execute a {}-qubit circuit '{}' on a {}-qubit state.".format(circuit.n_sys, circuit.name, self.n))
 
@@ -302,14 +327,16 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 return params[p.idx]
             return p
 
-        for c in circuit.seq:
+        for cmd in circuit.seq:
             # prepare the parameters
-            par = map(parmap, c.par)
-            self._execute_gate(c.gate, par, c.reg)
+            par = map(parmap, cmd.par)
+            # apply the gate to the current state
+            self._state = cmd.gate.execute(par, cmd.reg, self)
 
-        if circuit.obs is not None:
-            ev, var = self.measure(circuit.obs.gate, circuit.obs.reg[0], **kwargs)
-            return ev
+        if circuit.out is not None:
+            # return the measurement results for the requested modes
+            return self._result[circuit.out]
+
 
 
 

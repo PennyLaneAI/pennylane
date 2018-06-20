@@ -14,6 +14,8 @@ document.write('\
                 hc: ["\\\\text{h.c.}",0],\
                 cc: ["\\\\text{c.c.}",0],\
                 pde: ["\\\\frac{\\\\partial}{\\\\partial \#1}",1],\
+                R: ["\\\\mathbb{R}",0],\
+                C: ["\\\\mathbb{C}",0],\
                 I: ["I",0],\
                 x: ["\\\\hat{x}",0],\
                 p: ["\\\\hat{p}",0],\
