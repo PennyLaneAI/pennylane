@@ -331,10 +331,10 @@ The cost function of a variational eigensolver is the direct model output $y$ sh
 where the $O_i$ are Pauli operators acting on a few qubits only.
 
 
-\paragraph{Maximum likelihood cost for a generative model}
+\paragraph{Cost for a generative model}
 Assume we are given some unlabelled data $\mathcal{D}$ that can be associated with the basis states of a quantum state. Our goal is to prepare a quantum state $\ket{psi}$ using the variational circuit, so that the likelihood of measuring a basis state $\ket{x^m}$ that represents an input $x^m \in \mathcal{D}$ is large. If we denote the projection onto the basis states that denote the data set as $\Lambda_{\mathcal{D}}$ as in Figure \ref{Fig:example_modelgraphs} (b), the goal is to maximise the expectation of this operator. The loss is hence given by
 \[ C(\theta, \mathcal{D}) = \bra{0}U(\theta)^{\dagger} \Lambda_{\mathcal{D}} U(\theta)\ket{0}.\] 
- 
+\maria{This is not maximum likelihood. Would that be better?} 
 
 \paragraph{Square loss cost for supervised learning}
 Subfigure (c) in Figure \ref{Fig:example_modelgraphs} is an example of a supervised model. We are given a labelled dataset $\mathcal{D}$. The output $y^m$ of the model for an input $\bx^m$ is defined as the expectation of a specified $\sigma_z$ operator. The square loss compares this expectation with the target value $t^m$ for all training data $m=1,...,M$, 
@@ -342,27 +342,100 @@ Subfigure (c) in Figure \ref{Fig:example_modelgraphs} is an example of a supervi
 
 There are of course many other loss functions one could think of, each taking the output of the current model and possibly some data and scoring its parameters with a scalar value.
 
-\section{Gradient computation for quantum nodes}
+\section{Gradient computation}
 
-In this section we explore issues related to computing gradients of models $f(x, \theta)$ consisting of quantum and classical nodes with regards to a specific model parameter $\mu \in \theta$.\\
+To optimize the loss, we could of course use numerical methods that only require black-box evaluations of the model, such as finite-differences, Nelder-Mead or SLSQP. However, OpenQML can also compute automatic gradients. In this section we explore issues related to computing analytic gradients of models $f(x, \theta)$ consisting of quantum and classical nodes with regards to a specific model parameter $\mu \in \theta$.\\
 
-\subsection{Chain rule over nodes}
+\subsection{Chain rule for hybrid model graphs}
 
-Assume the model $f$ maps to a scalar output and is a chain of (quantum or classical nodes) $f_1,...,f_T$,
-\[ f(x, \theta) = f_T \circ f_{T-1} \circ ... \circ f_1 \in \mathbb{R}.\]
-The nodes each take a subset of the parameters $\theta_1,...,\theta_T$. For now we assume that the subsets are disjunct, so that there is no parameter tie. We can formally derive a `backpropagation' mechanism for the model.\\
+Assume the model $f$ is described by a hybrid model graph $\mathcal{M}$. We want to take the derivative of an element $y_s$ of $f$'s output $y$ with respect to a model parameter $\mu$. Assume that $\mu$ is in the subset $\theta*$ of the parameters $\theta$, and the subset parametrizes the node $n*$. For now we assume that the subsets are disjunct, so that there is no parameter tie between nodes. Let $y_s \circ n^{(p)}_1 \circ ... \circ (n^*)^{(p)}$ be the chain of (quantum or classical nodes) that emerges from following the output $y_s$ in the opposite direction of the directed edges until we reach node $n*$. Since there may be $N_p > 1$ of those paths, we used a superscript to denote the path index. All branches that do not lead back to $\theta_t$ are independent of $\mu$ and can be thought of as constants. We can formally derive a `backpropagation' mechanism for this model.\\
 
-Let us look at 1-d chains of nodes. The chain rule prescribes that the gradient with respect to a parameter $\mu \in \theta_1$ in the last node is given by
-\[ \partial_{\mu} f(x, \theta) =  f_T' \circ f_{T-1} \circ ... \circ f_1, \]
-which expresses that $f_T$ is derived for its argument, which consists of the following functions. 
-while for general $\mu \in \theta_t$, 
-\[ \partial_{\mu \in \theta_t} f(x, \theta) = \prod_{i=1}^t ( f'_i \circ ... \circ f_1 ). \]
-(Where obviously $( f'_1 \circ ... \circ f_1 ) = f'_1$ \maria{Is there an iterative symbol for chaining?}).
+The chain rule prescribes that the gradient with respect to the model parameter $\mu \in \theta_t$ is given by
+\[ \partial_{\mu \in \theta_t} y_s = \sum_{p=1}^{N_p} \frac{y}{n_1^{(p)}} \frac{ n^{(p)}_1}{n^{(p)}_{2}}  \cdots \frac{n^*}{\mu}. \] 
+
+\begin{figure}[t]
+\begin{tikzpicture}
+\node[] at (-0.75,1.5) {Path p=1};
+\node[input node] (i) at (-0.75,0) {$\emptyset$};
+\node[classical node, fill=lightgray, anchor=center] (c1) at (0,0) {\phantom{.}};
+\node[quantum node, anchor=center] (q1) at (1,0) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[quantum node, fill=lightgray, anchor=center] (q2) at (1,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, anchor=center] (c2) at (2,0) {\phantom{.} };
+\node[anchor=center] (mid1up) at (2.5,0.325) {};
+\node[anchor=center] (mid1down) at (2.5,-0.325) {};
+\node[quantum node, anchor=center] (q3) at (3.5,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, fill=lightgray, anchor=center] (c3) at (3,-0.75) {\phantom{.} };
+\node[classical node, fill=lightgray, anchor=center] (c4) at (4,-0.75) {\phantom{.} };
+\node[anchor=center] (mid2up) at (4.5,0.325) {};
+\node[anchor=center] (mid2down) at (4.5,-0.325) {};
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+\node[anchor=center] (mid3up) at (5.5,0.325) {};
+\node[anchor=center] (mid3down) at (5.5,-0.325) {};
+\node[output node, anchor=center] (o1) at (6,0.75) {$\textcolor{gray}{y_1}$ };
+\node[output node, anchor=center] (o2) at (6,0) {$y_2$ };
+\node[output node, anchor=center] (o3) at (6,-0.75) {$\textcolor{gray}{y_3}$ };
+\draw[->, gray] (i) -- (c1);
+\draw[->, gray] (c1) -- (q1);
+\draw[->] (q1) -- (c2);
+\draw[->, gray] (q2) -- (q3);
+\draw[->, gray] (c2) -| (mid1down)|- (c3);
+\draw[->] (c2) -| (mid1up) |- (q3);
+\draw[->] (c3) -- (c4);
+\draw[->, gray] (c4) -| (mid2up) |- (c5);
+\draw[->] (q3) -| (mid2down) |- (c5);
+\draw[->, gray] (c5)++(0,4pt) -| (mid3up) |- (o1);
+\draw[->] (c5) -- (o2);
+\draw[->, gray] (c5)++(0,-4pt) -| (mid3down) |- (o3);
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+
+\end{tikzpicture}\\
+\begin{tikzpicture}
+\node[] at (-0.75,1.5) {Path p=2};
+\node[input node] (i) at (-0.75,0) {$\emptyset$};
+\node[classical node, fill=lightgray, anchor=center] (c1) at (0,0) {\phantom{.}};
+\node[quantum node, anchor=center] (q1) at (1,0) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[quantum node, fill=lightgray, anchor=center] (q2) at (1,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, anchor=center] (c2) at (2,0) {\phantom{.} };
+\node[anchor=center] (mid1up) at (2.5,0.325) {};
+\node[anchor=center] (mid1down) at (2.5,-0.325) {};
+\node[quantum node, fill=lightgray, anchor=center] (q3) at (3.5,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, anchor=center] (c3) at (3,-0.75) {\phantom{.} };
+\node[classical node, anchor=center] (c4) at (4,-0.75) {\phantom{.} };
+\node[anchor=center] (mid2up) at (4.5,0.325) {};
+\node[anchor=center] (mid2down) at (4.5,-0.325) {};
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+\node[anchor=center] (mid3up) at (5.5,0.325) {};
+\node[anchor=center] (mid3down) at (5.5,-0.325) {};
+\node[output node, anchor=center] (o1) at (6,0.75) {$\textcolor{gray}{y_1}$ };
+\node[output node, anchor=center] (o2) at (6,0) {$y_2$ };
+\node[output node, anchor=center] (o3) at (6,-0.75) {$\textcolor{gray}{y_3}$ };
+\draw[->, gray] (i) -- (c1);
+\draw[->, gray] (c1) -- (q1);
+\draw[->] (q1) -- (c2);
+\draw[->, gray] (q2) -- (q3);
+\draw[->] (c2) -| (mid1down)|- (c3);
+\draw[->, gray] (c2) -| (mid1up) |- (q3);
+\draw[->] (c3) -- (c4);
+\draw[->] (c4) -| (mid2up) |- (c5);
+\draw[->] (q3) -| (mid2down) |- (c5);
+\draw[->, gray] (c5)++(0,4pt) -| (mid3up) |- (o1);
+\draw[->] (c5) -- (o2);
+\draw[->, gray] (c5)++(0,-4pt) -| (mid3down) |- (o3);
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+
+\end{tikzpicture}
+\caption{Illustration of the two paths that lead from the second output $y_2$$ back to the first quantum node, whose parameter we want to derive $y_2$ for.}
+\label{}
+\end{figure}
+
+This means that we need to be able to compute two types of gradients for each node: The derivative with respect to the input from a previous node, as well as the derivative for each node parameter. Note that while $\partial_{\mu \in \theta_t} y_s$ is a scalar gradient, the gradients in between may be multi-dimensional tensors.\\
+
+The gradients for classical nodes are straight forward, and can be implemented by (classical) automatic differentiation. However, for quantum nodes it is not obvious. We therefore show how to do quantum automatic differentiation. 
 
 
 \subsection{One-parameter subgroups}
 
-A one-parameter subgroup of the topological group~$G$ is defined by a continuous group homomorphism
+\maria{Is this internal or for the whitepaper/conventions? If the second is true, we need to simplify and put to appendix.} A one-parameter subgroup of the topological group~$G$ is defined by a continuous group homomorphism
 \be
 \phi: \R \to G,
 \ee
