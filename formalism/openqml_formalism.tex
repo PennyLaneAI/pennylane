@@ -319,7 +319,7 @@ Usually, these are expectations of Pauli operators, and their sum is the energy 
 where $i,j$ denote the qubits that the Paulis act on, and
 $\alpha, \beta = x,y,z$ sum over all different combinations of Pauli operators.
 
-\paragraph{Maximum likelihood cost for a generative model}
+\paragraph{Cost for a generative model}
 If the goal is to increase the likelihood of measuring a basis state
 $\ket{x}$ that represents an input in the data set
 $\mathcal{D} = \{x\}$, the expectations we are interested in are
@@ -329,6 +329,7 @@ E_x(\theta) =  \tr\{\rho(\theta) \ketbra{x}{x}  \},
 and we can use maximum likelihood to define
 \[C(\theta, \mathcal{D}) = \sum_{x \in \mathcal{D}}\log E_x(\theta) .\]
 Note that in this unsupervised learning task the data enters the cost function directly, and the circuit is data-independent.
+
 
 
 \paragraph{Square loss cost for supervised learning}
@@ -343,7 +344,23 @@ loss cost function reads
 
 \section{Gradient computation}
 
-In this section we explore issues related to computing gradients of variational quantum circuits.
+In this section we explore issues related to computing gradients of models $f(x, \theta)$ consisting of quantum and classical nodes with regards to a specific model parameter $\mu \in \theta$.\\
+
+\subsection{Chain rule over nodes}
+
+Assume the model $f$ maps to a scalar output and is a chain of (quantum or classical nodes) $f_1,...,f_T$,
+\[ f(x, \theta) = f_T \circ f_{T-1} \circ ... \circ f_1 \in \mathbb{R}.\]
+The nodes each take a subset of the parameters $\theta_1,...,\theta_T$. For now we assume that the subsets are disjunct, so that there is no parameter tie. We can formally derive a `backpropagation' mechanism for the model.\\
+
+Let us look at 1-d chains of nodes. The chain rule prescribes that the gradient with respect to a parameter $\mu \in \theta_1$ in the last node is given by
+\[ \partial_{\mu} f(x, \theta) =  f_T' \circ f_{T-1} \circ ... \circ f_1, \]
+which expresses that $f_T$ is derived for its argument, which consists of the following functions. 
+while for general $\mu \in \theta_t$, 
+\[ \partial_{\mu \in \theta_t} f(x, \theta) = \prod_{i=1}^t ( f'_i \circ ... \circ f_1 ). \]
+(Where obviously $( f'_1 \circ ... \circ f_1 ) = f'_1$ \maria{Is there an iterative symbol for chaining?}).
+
+
+
 
 
 \subsection{One-parameter subgroups}
