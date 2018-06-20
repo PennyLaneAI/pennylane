@@ -215,8 +215,8 @@ class PluginAPI(openqml.plugin.PluginAPI):
     _observables = [ev_z]
     _circuits = {c.name: c for c in _circuit_list}
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args)
+    def __init__(self, name='default', **kwargs):
+        super().__init__(name, **kwargs)
         self.reset()
 
     def reset(self):
@@ -340,7 +340,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
 
 
-def init_plugin(**kwargs):
+def init_plugin():
     """Every plugin must define this function.
 
     It should perform whatever initializations are necessary, and then return the API class.

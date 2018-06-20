@@ -9,6 +9,11 @@ Strawberry Fields plugin for OpenQML
 
 This plugin provides the interface between OpenQML and Strawberry Fields.
 It enables OpenQML to optimize continuous variable quantum circuits.
+
+Strawberry Fields supports several different backends for executing quantum circuits.
+The default is a NumPy-based Fock basis simulator, but also a TensorFlow-based Fock basis simulator and a Gaussian simulator are available.
+See PluginAPI._capabilities['backend'] for a list of backend options.
+
 """
 
 import warnings
@@ -89,18 +94,34 @@ class PluginAPI(openqml.plugin.PluginAPI):
     plugin_api_version = '0.1.0'
     plugin_version = sf.version()
     author = 'Xanadu Inc.'
-    _gates = [D, S, X, Z, R, F, P, V, K, BS, S2, CX, CZ]
-    _observables = [MHo, MHe, MFock]
     _circuits = {c.name: c for c in _circuit_list}
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args)
+    def __init__(self, name='default', **kwargs):
+        super().__init__(name, **kwargs)
+
         # sensible defaults
         kwargs.setdefault('backend', 'fock')
-        kwargs.setdefault('cutoff_dim', 5)
-        # store kwargs
+
+        # backend-specific capabilities
+        temp = kwargs['backend']
+        self.backend = temp  #: str: backend name
+        # gate and observable sets depend on the backend, so they have to be instance properties
+        self._gates = [D, S, X, Z, R, F, P, BS, S2, CX, CZ]
+        self._observables = [MHo]
+        if temp in ('fock', 'tf'):
+            kwargs.setdefault('cutoff_dim', 5)  # Fock space truncation dimension
+            self._observables.append(MFock)
+            self._gates.extend([V, K])  # nongaussian gates: cubic phase and Kerr
+        elif temp == 'gaussian':
+            self._observables.append(MHe)  # TODO move to _observables when the Fock basis backends support heterodyning
+        else:
+            raise ValueError("Unknown backend '{}'.".format(temp))
+
         self.init_kwargs = kwargs  #: dict: initialization arguments
-        self.eng = None
+        self.eng = None  #: strawberryfields.engine.Engine: engine for executing SF programs
+
+    def __str__(self):
+        return super().__str__() +'Backend: ' +self.backend +'\n'
 
     def reset(self):
         # reset the engine and backend
@@ -154,7 +175,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
 
 
-def init_plugin(**kwargs):
+def init_plugin():
     """Every plugin must define this function.
 
     It should perform whatever initializations are necessary, and then return an API class.
@@ -162,4 +183,9 @@ def init_plugin(**kwargs):
     Returns:
       class: plugin API class
     """
+    # find out which SF backends are available
+    temp = list(sf.backends.supported_backends.keys())
+    temp.remove('base')  # HACK
+    PluginAPI._capabilities['backend'] = temp
+
     return PluginAPI

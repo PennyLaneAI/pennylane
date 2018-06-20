@@ -7,6 +7,9 @@ Plugin system
 
 .. currentmodule:: openqml.plugin
 
+OpenQML is designed to be extended by plugins that provide new backends for executing the quantum circuits,
+either by simulation or on quantum hardware.
+
 
 Terminology
 -----------
@@ -17,7 +20,7 @@ a subclass of :class:`PluginAPI`.
 Each instance of the plugin API class is an independent backend for executing quantum circuits.
 Multiple instances of the same class can exist simultaneously and they must not interfere with each other.
 
-Typically each quantum node in the computational graph uses its own PluginAPI instance.
+Typically each :class:`quantum node <openqml.circuit.QNode>` in the computational graph uses its own PluginAPI instance.
 
 
 Functions
@@ -34,6 +37,24 @@ Classes
 
 .. autosummary::
    PluginAPI
+
+
+PluginAPI methods
+-----------------
+
+.. currentmodule:: openqml.plugin.PluginAPI
+
+.. autosummary::
+   gates
+   observables
+   templates
+   capabilities
+   register_circuit
+   get_circuit
+   reset
+   shutdown
+   execute_circuit
+   measure
 
 ----
 """
@@ -131,17 +152,26 @@ class PluginAPI:
     This class implements some utility methods that the child classes can either use or override as they wish.
     The other methods are simply to define the plugin API, raising NotImplementedError if called.
     The child classes *must* override them.
+
+    Args:
+      name (str): name for the plugin instance
+
+    Keyword Args:
+      n_eval (int): How many times should the circuit be evaluated (or sampled) to estimate the measurement results?
+        For simulator backends, zero yields the exact result.
     """
     plugin_name = ''         #: str: official plugin name
     plugin_api_version = ''  #: str: version of OpenQML for which the plugin was made
     plugin_version = ''      #: str: version of the plugin itself
     author = ''              #: str: plugin author(s)
+    _capabilities = {}       #: dict[str->*]: plugin capabilities
     _gates = []              #: list[GateSpec]: specifications for supported gates
     _observables = []        #: list[GateSpec]: specifications for supported observables
     _circuits = {}           #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, name='default'):
+    def __init__(self, name='default', *, n_eval=0, **kwargs):
         self.name = name
+        self.n_eval = n_eval
 
     def __repr__(self):
         """String representation."""
@@ -152,35 +182,34 @@ class PluginAPI:
         return self.__repr__() +'\nName: ' +self.plugin_name +'\nAPI version: ' +self.plugin_api_version\
             +'\nPlugin version: ' +self.plugin_version +'\nAuthor: ' +self.author +'\n'
 
-    @classmethod
-    def gates(cls):
+    def gates(self):
         """Get the supported gate set.
 
         Returns:
           list[GateSpec]:
         """
-        return cls._gates
+        return self._gates
 
-    @classmethod
-    def observables(cls):
+    def observables(self):
         """Get the supported observables.
 
         Returns:
           list[GateSpec]:
         """
-        return cls._observables
+        return self._observables
 
-    @classmethod
-    def templates(cls):
+    def templates(self):
         """Get the predefined circuit templates.
+
+        .. todo:: rename to circuits?
 
         Returns:
           list[Circuit]: circuit templates
         """
-        return list(cls._circuits.values())
+        return list(self._circuits.values())
 
     @classmethod
-    def get_capabilities(cls):
+    def capabilities(cls):
         """Get the other capabilities of the plugin.
 
         Measurements, batching etc.
@@ -188,7 +217,7 @@ class PluginAPI:
         Returns:
           dict[str->*]: results
         """
-        raise NotImplementedError
+        return cls._capabilities
 
     @classmethod
     def register_circuit(cls, circuit, name=None):
@@ -230,17 +259,15 @@ class PluginAPI:
     def shutdown(self):
         """Shut down the hardware backend.
 
-        Called to notify a hardware backend that it is no longer needed.
+        Called to notify a hardware backend that it is no longer needed. The plugin instance is rendered unusable.
         """
         raise NotImplementedError
 
     def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
         """Execute a parametrized quantum circuit with the specified parameter values.
 
-        Note: The state of the backend is not automatically reset.
-
         :meth:`PluginAPI.execute_circuit` mostly just checks argument validity and sets certain instance variables,
-        the subclasses are expected to provide the actual functionality.
+        the subclasses are expected to provide the actual functionality by overriding this method.
 
         Args:
           circuit (Circuit, str): circuit to execute, or the name of a predefined circuit
@@ -266,15 +293,15 @@ class PluginAPI:
         if temp != circuit.n_par:
             raise ValueError('Wrong number of circuit parameters: {} given, {} required.'.format(temp, circuit.n_par))
 
-        # keyword arguments
-        self.n_eval = kwargs.get('n_eval', 0)
+        # keyword arguments may override initialization arguments
+        self.n_eval = kwargs.get('n_eval', self.n_eval)
 
         log.info('Executing {}'.format(str(circuit)))
         if reset:
             self.reset()
 
     def measure(self, A, reg, par=[], n_eval=0):
-        """Measure the expectation value of an observable.
+        """Measure the expectation value of an observable in the current state of the circuit.
 
         Args:
           A  (Gate): Hermitian observable
