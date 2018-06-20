@@ -15,7 +15,7 @@ By an :dfn:`OpenQML plugin` we mean an individual Python module in the openqml.p
 Each OpenQML plugin defines the function :func:`init_plugin` which returns the :dfn:`API class` for that plugin,
 a subclass of :class:`PluginAPI`.
 Each instance of the plugin API class is an independent backend for executing quantum circuits.
-Multiple instances can exist simultaneously and they must not interfere with each other.
+Multiple instances of the same class can exist simultaneously and they must not interfere with each other.
 
 Typically each quantum node in the computational graph uses its own PluginAPI instance.
 
@@ -219,7 +219,6 @@ class PluginAPI:
             raise KeyError("Unknown circuit '{}'.".format(name))
         return cls._circuits[name]
 
-
     def reset(self):
         """Reset the backend state.
 
@@ -235,16 +234,13 @@ class PluginAPI:
         """
         raise NotImplementedError
 
-    def _execute_circuit(self, circuit, params=[], **kwargs):
-        raise NotImplementedError
-
     def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
         """Execute a parametrized quantum circuit with the specified parameter values.
 
         Note: The state of the backend is not automatically reset.
 
-        This function is a thin wrapper around :meth:`~PluginAPI._execute_circuit`
-        that mostly checks argument validity.
+        :meth:`PluginAPI.execute_circuit` mostly just checks argument validity and sets certain instance variables,
+        the subclasses are expected to provide the actual functionality.
 
         Args:
           circuit (Circuit, str): circuit to execute, or the name of a predefined circuit
@@ -252,10 +248,11 @@ class PluginAPI:
           reset   (bool): should the backend state be reset before the execution?
 
         Keyword Args:
-          evals (int): how many times should the circuit be evaluated to estimate the measurement results?
+          n_eval (int): How many times should the circuit be evaluated (or sampled) to estimate the measurement results?
+            For simulator backends, zero yields the exact result.
 
         Returns:
-          float, None: If the circuit has an observable defined return the expectation value, otherwise None.
+          vector[float], None: If the circuit has output observable(s) defined return the expectation value(s), otherwise None.
         """
         if not isinstance(circuit, Circuit):
             # look it up by name
@@ -263,27 +260,30 @@ class PluginAPI:
                 circuit = self._circuits[circuit]
             except KeyError:
                 raise KeyError("Unknown circuit '{}'".format(circuit))
+        self.circuit = circuit  #: Circuit: quantum circuit to execute
 
         temp = len(params)
         if temp != circuit.n_par:
             raise ValueError('Wrong number of circuit parameters: {} given, {} required.'.format(temp, circuit.n_par))
 
+        # keyword arguments
+        self.n_eval = kwargs.get('n_eval', 0)
+
         log.info('Executing {}'.format(str(circuit)))
         if reset:
             self.reset()
-        return self._execute_circuit(circuit, params, **kwargs)
 
-    def measure(self, A, reg, n_eval=None):
+    def measure(self, A, reg, par=[], n_eval=0):
         """Measure the expectation value of an observable.
 
         Args:
           A  (Gate): Hermitian observable
           reg (int): target subsystem
-          n_eval (int, None): If None return the exact expectation value,
+          par (Sequence[float]): parameters for the observable
+          n_eval (int): If zero return the exact expectation value,
             otherwise estimate it by averaging n_eval measurements.
-            Returned variance is always exact.
 
         Returns:
-          (float, float): expectation value, variance
+          float: (estimated) expectation value
         """
         raise NotImplementedError

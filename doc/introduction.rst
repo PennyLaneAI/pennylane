@@ -18,10 +18,12 @@ Key features of OpenQML:
 Quantum circuits
 --------------------
 
-The key building block in OpenQML is the *variational quantum circuit*. 
+The key building block in OpenQML is the *variational quantum circuit*.
 
-These quantum circuits are made up of quantum gates, some (or all) of which are parameterizable. The user specifies the circuit, fixing the gates and the order which they appear, but leaves the gate parameters :math:`\theta_i` unfixed. 
-
+These quantum circuits are made up of quantum gates, some (or all) of which are parameterizable.
+The user specifies the circuit, fixing the gates and the order which they appear, but may leave any number of the gate parameters :math:`\theta_i` unfixed.
+The same parameter may appear in several gates.
+The gates may be followed by a sequence of single-subsystem measurements represented by hermitian observables :math:`O_j`.
 
 :html:`<br>`
 
@@ -29,17 +31,20 @@ These quantum circuits are made up of quantum gates, some (or all) of which are 
     :align: center
     :width: 70%
     :target: javascript:void(0);
-    
-    An simple example variational circuit built with the parameterizable gates :math:`\{A,B,C\}`.
+
+    An simple example variational circuit built with the parameterizable gates :math:`\{A,B,C,D\}`.
 
 :html:`<br>`
 
 
 The quantum circuit performs a unitary transformation :math:`U(\bm{\theta}})`.
 
-The gate parameters can be used to input classical data :math:`\bx` into a quantum circuit (by setting the parameters :math:`\theta_i` of some subset of gates based on the components of :math:`\bx`), and also to enact a transformation on this data. The output of the circuit is given by the expectation value of some measurement operator :math:`B`. Altogether, the circuit computes the function
+The gate parameters can be used to input classical data :math:`\bx` into a quantum circuit (by setting the parameters :math:`\theta_i` of some subset of gates based on the components of :math:`\bx`), and also to enact a transformation on this data.
+The output of the circuit is given by the expectation values of the hermitian observables :math:`O_j`.
+Altogether, the circuit computes the function :math:`f: \R^m \to \R^n`.
+If there is only a single observable, this function can be expressed as
 
-.. math:: f\theta(\bx) = \langle B \rangle_{\bx,\theta} = \mathrm{Tr}(B~U(x, \theta)\ketbra{0}{0}U^\dagger(\bx, \theta)).
+.. math:: f(\theta(\bx)) = \langle O_j \rangle_{\bx,\theta} = \mathrm{Tr}\big(O_j \: U(x, \theta)\ketbra{0}{0}U^\dagger(\bx, \theta)\big).
 
 Machine learning with variational circuits
 --------------------------------------------------
@@ -50,7 +55,6 @@ How can we build machine learning models using programmable quantum circuits?
 Quantum circuit gradients
 -------------------------
 
-What is the *gradient of a quantum circuit*? 
+What is the *gradient of a quantum circuit*?
 
 At the highest level, we picture a quantum circuit as a hardware device that can evaluate functions of the form :math:`f_{\theta}(\bx)`. In machine learning, we want to find the parameter values which make the function :math:`f` optimal for some problem of interest. One way to do this is to perform *gradient descent*: we compute the gradients :math:`\nabla_\theta f(\bx)` and update the parameters to new values based on this gradient information, :math:`\theta\mapsto\theta + \eta\nabla_\theta f(\bx)`. For this, we need a method to evaluate the gradients of the function :math:`f` defined by our quantum circuit.
-

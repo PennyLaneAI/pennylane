@@ -58,12 +58,15 @@ class BasicTest(BaseTest):
     def test_measurement(self):
         "Basic expectation value measurement."
 
-        p = load_plugin('dummy_plugin')
-        p = p('test instance')
-        obs = p.observables()
-        p.execute_circuit('demo', params=[1.0, 2.0])
-        temp = p.measure(obs[0], 0, n_eval=5000)
-        print('Measured:', temp)
+        plugins = list_plugins()
+        for name in plugins:
+            p = load_plugin(name)
+            p = p('test instance')
+            # execute the demo circuit without measurement, then measure an observable
+            temp = p.execute_circuit('demo', params=[1.0, 2.0])
+            obs = p.observables()[0]
+            temp = p.measure(obs, 0, par=randn(obs.n_par), n_eval=1000)
+            print('Measured:', temp)
 
 
 
