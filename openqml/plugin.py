@@ -296,7 +296,7 @@ class PluginAPI:
         # keyword arguments may override initialization arguments
         self.n_eval = kwargs.get('n_eval', self.n_eval)
 
-        log.info('Executing {}'.format(str(circuit)))
+        log.debug('Executing {}'.format(str(circuit)))
         if reset:
             self.reset()
 
