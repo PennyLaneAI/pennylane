@@ -226,7 +226,7 @@ class QNode:
         return self.backend.execute_circuit(self.circuit, params, **kwargs)
 
 
-    def gradient_finite_diff(self, params, h=1e-7, order=1, **kwargs):
+    def gradient_finite_diff(self, params, which=None, h=1e-7, order=1, **kwargs):
         """Compute the gradient of the node using finite differences.
 
         Given an n-parameter quantum circuit, this function computes its gradient with respect to the parameters
@@ -234,39 +234,44 @@ class QNode:
 
         Args:
           params (Sequence[float]): point in parameter space at which to evaluate the gradient
+          which  (Sequence[int], None): return the gradient with respect to these parameters. None means all.
           h (float): step size
           order (int): Finite difference method order, 1 or 2. The order-1 method evaluates the circuit at n+1 points of the parameter space,
             the order-2 method at 2n points.
+
         Returns:
           vector[float]: gradient vector
         """
+        if which is None:
+            which = range(len(params))
+        which = set(which)  # make the indices unique
         params = np.asarray(params)
-        grad = np.zeros(params.shape)
+        grad = np.zeros(len(which))
         if order == 1:
             # value at the evaluation point
             x0 = self.backend.execute_circuit(self.circuit, params, **kwargs)
-            for k in range(len(params)):
+            for i, k in enumerate(which):
                 # shift the k:th parameter by h
                 temp = params.copy()
                 temp[k] += h
                 x = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-                grad[k] = (x-x0) / h
+                grad[i] = (x-x0) / h
         elif order == 2:
             # symmetric difference
-            for k in range(len(params)):
+            for i, k in enumerate(which):
                 # shift the k:th parameter by +-h/2
                 temp = params.copy()
                 temp[k] += 0.5*h
                 x2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
                 temp[k] = params[k] -0.5*h
                 x1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-                grad[k] = (x2-x1) / h
+                grad[i] = (x2-x1) / h
         else:
             raise ValueError('Order must be 1 or 2.')
         return grad
 
 
-    def gradient_angle(self, params, **kwargs):
+    def gradient_angle(self, params, which=None, **kwargs):
         """Compute the gradient of the node using the angle method.
 
         Given an n-parameter quantum circuit, this function computes its gradient with respect to the parameters
@@ -276,13 +281,18 @@ class QNode:
 
         Args:
           params (Sequence[float]): point in parameter space at which to evaluate the gradient
+          which  (Sequence[int], None): return the gradient with respect to these parameters. None means all.
+
         Returns:
           vector[float]: gradient vector
         """
+        if which is None:
+            which = range(len(params))
+        which = set(which)  # make the indices unique
         params = np.asarray(params)
-        grad = np.zeros(params.shape)
+        grad = np.zeros(len(which))
         n = self.circuit.n_par
-        for k in range(n):
+        for i, k in enumerate(which):
             # find the Commands in which the parameter appears, use the product rule
             for cmd in self.circuit.pars[k]:
                 if cmd.gate.n_par != 1:
@@ -301,7 +311,7 @@ class QNode:
                 # restore the original parameter
                 cmd.par[0] = orig
                 del self.circuit.pars[n]
-                grad[k] += (x2-x1) / 2
+                grad[i] += (x2-x1) / 2
         return grad
 
 
