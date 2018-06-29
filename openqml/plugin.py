@@ -304,7 +304,7 @@ class PluginAPI:
         """Measure the expectation value of an observable in the current state of the circuit.
 
         Args:
-          A  (Gate): Hermitian observable
+          A  (GateSpec): Hermitian observable
           reg (int): target subsystem
           par (Sequence[float]): parameters for the observable
           n_eval (int): If zero return the exact expectation value,
