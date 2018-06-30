@@ -580,13 +580,6 @@ Thus the derivative of the state~$\rho$ propagated by $U_{\vec{\theta}}$ is give
   %&= -i Q_k U_{\vec{\theta}} \rho U_{\vec{\theta}}^\dagger +\text{h.c.}
   &= -i \ad_{Q_k} \Ad_{U_{\vec{\theta}}} \rho.
 \end{align}
-In the case where we only have a single generator (one-parameter subgroup, see below),
-$G = \theta B$, the commutator $\ad_G B = 0$
-and the series~$Q$ terminates after the first term, yielding
-\be
-\pd{}{\theta} \Ad_{U_{\theta}} \rho
-  = -i \ad_B \Ad_{U_{\theta}} \rho.
-\ee
 Assume now we have a propagator U, and the initial state of the system is~$\rho$.
 The expectation value of the observable $Q$ is are obtained as
 \be
@@ -603,11 +596,41 @@ With $U=B U_{\vec{\theta}} A$, the derivative of the expectation value is given 
 \end{align}
 
 \ville{The usefulness of this formula depends on whether we can sum the series~$Q_k$ easily enough.
-  For example, for the displacement gate~$D(\re{z}, \im{z})$ it terminates after the second term
-  (and even that second term is proportional to identity, so it does not matter to the $\ad$).
   However, evaluating the $\ad_{Q_k}$ part on a quantum computer is the real problem.
 }
 
+\subsubsection{One-parameter gates}
+
+In the case where we only have a single generator (one-parameter subgroup, see below),
+$G = \theta_1 B_1$, the commutator $\ad_G B_1 = 0$
+and the series terminates at the first term, yielding
+$Q_1 = B_1$.
+
+\subsubsection{Displacement}
+
+The displacement gate is given by
+\begin{align}
+  D(\vec{\theta}) &= D(\re z, \im z) = \exp\left( za^\dagger -z^* a\right)\\
+  \notag
+&= \exp\left(-i\left(\re(z)(-i)(a-a^\dagger) -\im(z)(a+a^\dagger)\right)\right).
+\end{align}
+The generators are $\{B_k\}_k = \{-i(a-a^\dagger), -(a+a^\dagger)\}$.
+Now we have
+\begin{align*}
+  -i \ad_G B_1 &= -i\comm{i(za^\dagger -z^* a)}{-i(a-a^\dagger)}
+  = -2 \theta_2 \I,\\
+  -i\ad_G B_2 &= -i\comm{i(za^\dagger -z^* a)}{-(a+a^\dagger)}
+  = 2 \theta_1 \I,
+\end{align*}
+and thus
+\begin{align*}
+Q_1 &= B_1 -\theta_{2} \I,\\
+Q_2 &= B_2 +\theta_{1} \I.
+\end{align*}
+The series terminate already at the second term, and furthermore
+the identity terms do not matter in a commutator.
+We obtain $\ad_{Q_k} = \ad_{B_k}$, and
+hence displacement gates can be handled exactly the same way as one-parameter gates.
 
 
 \subsection{One-parameter subgroups in quantum mechanics}
@@ -665,11 +688,11 @@ This holds in both finite-dimensional and infinite-dimensional cases.
 The unitary and its generator commute.
 
 \ville{The reason why I'm looking into the periodicity of the subgroup $U_\theta$ is that I was originally
-  overoptimistic and though that periodicity might be sufficient to make the gradient trick work. It probably isn't.
+  overoptimistic and though that periodicity might be sufficient to make the gradient trick~\ref{sec:gradient_trick} work. It probably isn't.
   Might be necessary though.}
 
 
-\subsection{Finite-dimensional Hilbert spaces}
+\subsubsection{Finite-dimensional Hilbert spaces}
 
 
 Assume we are given a hermitian $n \times n$ generator~$G$, with the eigendecomposition
@@ -702,7 +725,7 @@ Now
 \tilde{\theta} = 2\pi \: \lcm \{\lambda^{-1} \:|\: \lambda \in \spec(G) \setminus \{0\}\}.
 \ee
 
-In quantum mechanics the global phase of a propagator is meaningless, so we may always add
+In quantum mechanics the global phase of a propagator has no physical meaning, so we may always add
 a multiple of identity to the generator~$G$ without affecting the physics.
 This is equivalent to shifting all the eigenvalues by the same amount.
 Hence the periodicity conditions are relaxed a bit. In particular, we may always make one eigenvalue zero.
@@ -744,7 +767,7 @@ Unitarity also requires
 \notag
 &U_\theta U_\theta^\dagger = a^2\I +2\re(ab^*) G +|b|^2 G^2 = \I\\
 \iff \:&
-2\re(ab^*) G +|b|^2 G^2 = (1-a^2)\I,
+2a\re(b) G +|b|^2 G^2 = (1-a^2)\I,
 \end{align}
 which limits the form $G$ can take.
 
@@ -757,9 +780,20 @@ Quite generally we have
 = \exp(-i \theta \ad_{G})\\
 &= \I +(-i\theta)\ad_G +\frac{(-i\theta)^2}{2!} \ad_G^2 +\ldots
 \end{align}
+We may eliminate all even terms in the series by projecting to the odd part:
+\begin{align}
+\notag
+\frac{1}{2}\left(\Ad_{U_\theta} -\Ad_{U_{-\theta}})\right)
+&= (-i\theta)\ad_G +\frac{(-i\theta)^3}{3!} \ad_G^3 +\ldots
+\end{align}
+
+
 \ville{Can we express $\ad_G$ (for some relevant $G$) using a linear combination of these series expressions with different values of~$\theta$?}
 
+\ville{In the case where $G$ only has two unique eigenvalues, the above series collapses to $\ad_G$ times a scalar sine series, see below.}
+
 \subsection{Gradient trick}
+\label{sec:gradient_trick}
 
 Let us assume that $G'$ has only two unique eigenvalues, $\lambda$ and~$\lambda+2r$.
 We may now define $G = G' -(\lambda+r)\I$ with the unique eigenvalues
