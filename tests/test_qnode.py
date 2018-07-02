@@ -7,7 +7,7 @@ import unittest
 import autograd
 import autograd.numpy as np
 
-from numpy.random import (randn,)
+from autograd.numpy.random import (randn,)
 
 from defaults import openqml, BaseTest
 from openqml.plugin import (load_plugin,)
@@ -29,17 +29,17 @@ class BasicTest(BaseTest):
         params = randn(q.circuit.n_par)
         x0 = q.evaluate(params)
         # manual gradients
-        grad1 = q.gradient_finite_diff(params, order=1)
-        grad2 = q.gradient_finite_diff(params, order=2)
+        grad_fd1 = q.gradient_finite_diff(params, order=1)
+        grad_fd2 = q.gradient_finite_diff(params, order=2)
         grad_angle = q.gradient_angle(params)
         # automatic gradient
         grad = autograd.grad(q.evaluate)
         grad_auto = grad(params)
 
         # gradients computed with different methods must agree
-        self.assertAllAlmostEqual(grad1, grad2, self.tol)
-        self.assertAllAlmostEqual(grad1, grad_angle, self.tol)
-        self.assertAllAlmostEqual(grad1, grad_auto, self.tol)
+        self.assertAllAlmostEqual(grad_fd1, grad_fd2, self.tol)
+        self.assertAllAlmostEqual(grad_fd1, grad_angle, self.tol)
+        self.assertAllAlmostEqual(grad_fd1, grad_auto, self.tol)
 
 
     def test_qnode_fail(self):
@@ -56,32 +56,42 @@ class BasicTest(BaseTest):
         self.assertRaises(ValueError, q.gradient_finite_diff, params, **{'order': 3})
 
 
-    @unittest.skip('TODO FIXME')
     def test_autograd(self):
         "Automatic differentiation of a computational graph containing quantum nodes."
 
+        self.circuit = self.plugin.get_circuit('demo_ev')
         self.assertEqual(self.circuit.n_par, 2)
         p1 = self.plugin('node 1')
         q1 = QNode(self.circuit, p1)
-        params = randn(q.circuit.n_par -1)  # input data is the first parameter
+        params = randn(q1.circuit.n_par -1)  # input data is the first parameter
         data = randn(3, 2)
 
         def error(p):
             "Simple quantum classifier, trying to map inputs to outputs."
             ret = 0
             for d in data:
-                temp = np.r_[d[0], p]
-                print(temp)
-                temp = q1.evaluate(temp) -d[1]
-                ret += np.abs(temp) ** 2
+                x = np.array([d[0], p[0]])
+                temp = q1.evaluate(x) -d[1]
+                ret += temp ** 2
             return ret
 
-        grad = autograd.grad(error)
-        x0 = error(params)
-        print('error:', x0)
-        g = grad(params)
-        print('autograd:', g)
+        def d_error(p, grad_func):
+            "Gradient of error, computed manually."
+            ret = 0
+            for d in data:
+                x = np.array([d[0], p[0]])
+                temp = q1.evaluate(x) -d[1]
+                ret += 2 * temp * grad_func(x, which=[1])
+            return ret
 
+        y0 = error(params)
+        grad = autograd.grad(error)
+        grad_auto = grad(params)
+
+        grad_fd1 = d_error(params, q1.gradient_finite_diff)
+        grad_angle = d_error(params, q1.gradient_angle)
+        self.assertAllAlmostEqual(grad_fd1, grad_auto, self.tol)
+        self.assertAllAlmostEqual(grad_angle, grad_auto, self.tol)
 
 
 
