@@ -1049,12 +1049,12 @@ for $k=1,...,K$. For the position quadrature we have that
 &-& \frac{1}{2}  \bra{\psi}(\G - i A_k)^{\dagger}  \hat{c} (\G - i A_k) \ket{\psi}  \\
 &=& i \bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi} - i \bra{\psi}\G^{\dagger} \hat{c} A_k  \ket{\psi}
 \end{eqnarray*}
+THAT $i$ IS STILL IN THE WAY IF WE DO NOT WORK WITH GENERATORS!
 
 
+We try to show now how to apply a transformation of the form $\G \pm i A_k$ on a CV quantum computer with the help of a vacuum mode and beam splitters, using the Heisenberg picture. 
 
-We show now (hopefully) how to compute Eq. (\ref{Eq:simplf_exp_der1}) and (\ref{Eq:simplf_exp_der2}) on a CV quantum computer with the help of a vacuum mode and beam splitters, using the Heisenberg picture. 
-
-Starting with $\ket{\psi}$ in the first mode (after applying $U$, and vacuum in the second, we apply the circuit shown in Fig. \ref{Fig:der_eval_cv}. The circuit consists of a 50-50 beam splitter with relative phase shift of $\pi/2$, a Gaussian transformation on each mode separately, as well as another 50-50 beam splitter. We measure the expectation of the vector of the transformed quadrature operators $\c, \d$. 
+Starting with $\ket{\psi}$ in the first mode, and vacuum in the second, we apply the circuit shown in Fig. \ref{Fig:der_eval_cv}. The circuit consists of a 50-50 beam splitter with relative phase shift of $\pi/2$, a Gaussian transformation on each mode separately, as well as another 50-50 beam splitter. We measure the expectation of the vector of the transformed quadrature operators $\c, \d$. 
 
 
 \begin{figure}[t]
@@ -1073,9 +1073,9 @@ In the Heisenberg picture, the two modes are described by their quadrature opera
 where we use $\x$ and $\p$ to describe the quadratures of the second mode, which does not get transformed by a subsequent circuit $V$. 
 The first beam splitter tranforms this vector to
 \[\frac{1}{\sqrt{2}}\begin{pmatrix} \c + i \x \\ \d + i \p \\ \x - i\c \\ \p - i \d \end{pmatrix}.\]
-The Gaussian gates applied to each mode can be expressed by symplectic transformations applied to the subspaces of each mode:
+The Gaussian gates applied to each mode can be expressed by symplectic transformations applied to the subspaces of each mode. Let the symplectic trafo describing gate $A_k$ acting on the first mode be given by
 \[\underbrace{\begin{pmatrix} s_{11} & s_{12}\\ s_{21} & s_{22} \end{pmatrix}}_{S} \begin{pmatrix} \c + i \x \\ \d + i \p \end{pmatrix} + \underbrace{\begin{pmatrix} \alpha_1 \\ \alpha_2 \end{pmatrix}}_{\alpha}, \]
-and
+and let the trafo describing gate $\G$ acting on the second mode be given by
 \[\underbrace{\begin{pmatrix} r_{11} & r_{12}\\ r_{21} & r_{22} \end{pmatrix}}_{R} \begin{pmatrix} \x - i\c \\ \p - i \d\end{pmatrix} + \underbrace{\begin{pmatrix} \beta_1 \\ \beta_2 \end{pmatrix}}_{\beta}.\]
 After the second beam splitter, we get the following overall transformation on the first mode:
 \[\begin{pmatrix} \c \\ \d \end{pmatrix} \rightarrow \frac{1}{2} \bigg[ (S-iR) \begin{pmatrix} \c \\ \d \end{pmatrix} + (R+iS) \begin{pmatrix} \x \\ \p \end{pmatrix} + \alpha + \beta \bigg]\]
@@ -1090,8 +1090,7 @@ for the ``position'' quadrature, and
 for the ``momentum'' quadrature, since the expectation $\bra{0}\x\ket{0}$ and $\bra{0}\p\ket{0}$ evaluate to zero. This is equivalent to the expectation of $(\c, \d)^{\dagger}$ after the (non-symplectic) transformation 
 \[(S-iR)\begin{pmatrix} \c \\ \d \end{pmatrix} + \alpha + \beta.\]
 
-
-
+CAN WE USE IT TO GET THE DESIRED EXPECTATIONS?
 
 
 
