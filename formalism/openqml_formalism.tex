@@ -8,7 +8,7 @@
 \usepackage{xcolor}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
-
+\usepackage{qcircuit}
 
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}%[section]
@@ -75,6 +75,8 @@
 \newcommand{\adag}{\hat{a}^{\dagger}}
 \newcommand{\x}{\hat{x}}
 \newcommand{\p}{\hat{p}}
+\renewcommand{\c}{\hat{c}}
+\renewcommand{\d}{\hat{d}}
 \newcommand{\bx}{\mathbf{x}}
 \newcommand{\bp}{\mathbf{p}}
 \newcommand{\bq}{\mathbf{q}}
@@ -82,6 +84,7 @@
 \newcommand{\bad}{\bm{\hat a}^\dagger}
 \renewcommand{\L}{\mathcal{L}}
 \newcommand{\G}{\mathcal{G}}
+\newcommand{\cR}{\mathcal{R}}
 
 \newcommand{\sidenote}[1]{\marginpar{\footnotesize{\textcolor{red}{-#1}}}}
 
@@ -127,8 +130,7 @@ Compilation of formulas and conventions for the OpenQML framework.
 \maketitle
 
 
-\section{Conventions}
-\section{Basic structure}
+\section{Model structure}
 
 We consider an abstract \textbf{model} $f(x, \theta)$ 
 that maps a set of \textbf{model inputs} $x$ (which may be empty) and a set of \textbf{model parameters} $\theta$ to a \textbf{model output} $y$. \\
@@ -233,10 +235,6 @@ We depict classical nodes by the following symbol:\\
 \end{figure}
  
 
-
-\subsection{Combined nodes}
-
-
 \begin{figure*}[t]
 \begin{flushleft}
 \begin{tikzpicture}
@@ -297,9 +295,10 @@ We depict classical nodes by the following symbol:\\
 
 From the building blocks of classical and quantum nodes, more complicated hybrid structures evolve. Examples of hybrid model graphs are given in Figure \ref{Fig:example_modelgraphs}. Figure \ref{Fig:example_modelgraphs} (a) shows a variational quantum eigensolver, where the model input is an empty set, and the output of the model is the weighed sum of expectation values. Figure \ref{Fig:example_modelgraphs} (b) shows a generative quantum model. Finally, Figure \ref{Fig:example_modelgraphs} (c) shows a classical neural network with one final quantum layer, whose output is the expectation value of a $\sigma_z$ operator applied to a predefined qubit. 
 
+\section{Optimization}
 
 
-\subsubsection{Cost function}
+\subsection{Cost function}
 We consider three different tasks for OpenQML: optimization, unsupervised learning and supervised learning. The tasks depend on whether and what type of data is used for training (see Table \ref{Tbl:tasks}).\\
 
 \begin{table}[t]
@@ -342,13 +341,63 @@ Subfigure (c) in Figure \ref{Fig:example_modelgraphs} is an example of a supervi
 
 There are of course many other loss functions one could think of, each taking the output of the current model and possibly some data and scoring its parameters with a scalar value.
 
-\section{Gradient computation}
+\subsection{Optimization methods}
 
-To optimize the loss, we could of course use numerical methods that only require black-box evaluations of the model, such as finite-differences, Nelder-Mead or SLSQP. However, OpenQML can also compute automatic gradients. In this section we explore issues related to computing analytic gradients of models $f(x, \theta)$ consisting of quantum and classical nodes with regards to a specific model parameter $\mu \in \theta$.\\
+There are three methods to optimize models built from classical and quantum nodes: 
+\begin{enumerate}
+\item Gradient-free optimization (i.e., Nelder-Mead, genetic algorithms, particle swarm optimization...)
+\item Gradient-based optimization with numerical computation of gradients
+\item Gradient-based optimization with analytical computation of the gradients
+\end{enumerate}
+Note that when we speak of gradients here, we actually refer to estimates of gradients that result from estimates of expectation values. Only in simulations of the quantum circuits can these estimates be exact deterministic values. In the items above, ``analytical computation'' therefore means that if the results of the quantum nodes were exact expectation values (i.e. values derived from analytical computation or estimated by an amount of measurements that goes to infinity), the gradients would be exact. Numerically computed gradients are approximations of the true gradients, even if the quantum nodes were giving exact expectations. 
 
-\subsection{Chain rule for hybrid model graphs}
+\subsubsection{Gradient-free optimization}
+Gradient-free optimization is straight-forward from an algorithmic perspective, since we only need function evaluations that the quantum and classical devices can provide together. 
 
-Assume the model $f$ is described by a hybrid model graph $\mathcal{M}$. We want to take the derivative of an element $y_s$ of $f$'s output $y$ with respect to a model parameter $\mu$. Assume that $\mu$ is in the subset $\theta*$ of the parameters $\theta$, and the subset parametrizes the node $n*$. For now we assume that the subsets are disjunct, so that there is no parameter tie between nodes. Let $y_s \circ n^{(p)}_1 \circ ... \circ (n^*)^{(p)}$ be the chain of (quantum or classical nodes) that emerges from following the output $y_s$ in the opposite direction of the directed edges until we reach node $n*$. Since there may be $N_p > 1$ of those paths, we used a superscript to denote the path index. All branches that do not lead back to $\theta_t$ are independent of $\mu$ and can be thought of as constants. We can formally derive a `backpropagation' mechanism for this model.\\
+\subsubsection{Gradient-based numeric optimization}
+
+Also numerical methods require only black-box evaluations of the model. The value of the cost function $C(\theta)$ is estimated at two positions close to the current circuit parameter $\mu \in \theta$ which we want to update. The approximation of the gradient is given by
+\[ \partial_{\mu} C(\mu) \approx \frac{C(\mu ) - C(\mu + \Delta \mu)}{\Delta \mu} \]
+for the \textbf{forward finite-differences} method, and by  
+\[ \partial_{\mu} C(\mu) \approx \frac{C(\mu - \frac{1}{2}\Delta \mu ) - C(\mu + \frac{1}{2} \Delta \mu)}{\Delta \mu} \]
+for the \textbf{centered finite-differences} method. The parameter shift $\Delta \mu$ has to be as small as possible for good approximations, but still large enough to make the finite difference larger than the error in estimating $C(\mu)$ with quantum devices, which makes numerical gradients useless for some applications.
+
+\subsubsection{Gradient-based analytic optimization}
+
+The third method, gradient-based optimization with analytical gradients, takes some more theoretical foundations, which we develop in the following section. The most common algorithm is (stochastic) gradient descent. In gradient descent, to minimize the cost in every \textbf{step} the parameters are updated according to the following simple loop:\\
+
+\begin{algorithmic}[1]
+\Procedure{Gradient Descent step}{}
+\For {$\mu \in \theta $}
+\State $\mu^{(t+1)} = \mu^{(t)} - \eta^{(t)} \partial_{\mu} C(\theta[, \mathcal{D}]) + S$
+\EndFor
+\EndProcedure
+\end{algorithmic}
+
+Here $\mathcal{D}$ is the dataset associated with the cost function for learning problems. If $C$ depends on a dataset $\mathcal{D}$, stochastic gradient descent refers to a gradient descent algorithm where in each step $\mathcal{D}$ is a random subsample of the full training data set.\\
+
+The learning rate $\eta^{(t)}$ can be adapted in each step, either
+depending on the gradient or on the step number. $S$ is a potential
+additional term that can add a momentum to the update. The gradient
+$\partial_{\mu} C(\theta[, \mathcal{D}])$ has to be evaluated by
+automatic differentiation of the cost function, which is computed
+hybridly by the quantum device or simulator and a classical
+computer. We therefore need to define a hybrid automatic
+differentiation scheme.
+
+
+Momentum. Adagrad. Adam.
+
+
+\section{Computing analytical gradients of quantum nodes}
+   
+The central feature of OpenQML is that it can compute automatic gradients of expectation values. In this section we therefore explore issues related to computing analytic gradients of models $f(x, \theta)$ consisting of quantum and classical nodes with regards to a specific model parameter $\mu \in \theta$.
+
+\subsection{Gradients of hybrid model graphs}
+
+\subsubsection{Backpropagating throught the graph}
+
+Assume the model $f$ is described by a hybrid model graph $\mathcal{M}$. We want to take the derivative of an element $y_s$ of $f$'s output $y$ with respect to a model parameter $\mu$. Assume that $\mu$ is in the subset $\theta^*$ of the parameters $\theta$, and the subset parametrizes the node $n^*$. For now we assume that the subsets are disjunct, so that there is no parameter tie between nodes. Let $y_s \circ n^{(p)}_1 \circ ... \circ (n^*)^{(p)}$ be the chain of (quantum or classical nodes) that emerges from following the output $y_s$ in the opposite direction of the directed edges until we reach node $n^*$. Since there may be $N_p > 1$ of those paths, we used a superscript to denote the path index. All branches that do not lead back to $\theta_t$ are independent of $\mu$ and can be thought of as constants. We can formally derive a `backpropagation' mechanism for this model.\\
 
 The chain rule prescribes that the gradient with respect to the model parameter $\mu \in \theta_t$ is given by
 \[ \partial_{\mu \in \theta_t} y_s = \sum_{p=1}^{N_p} \frac{y}{n_1^{(p)}} \frac{ n^{(p)}_1}{n^{(p)}_{2}}  \cdots \frac{n^*}{\mu}. \] 
@@ -430,12 +479,126 @@ The chain rule prescribes that the gradient with respect to the model parameter 
 
 This means that we need to be able to compute two types of gradients for each node: The derivative with respect to the input from a previous node, as well as the derivative for each node parameter. Note that while $\partial_{\mu \in \theta_t} y_s$ is a scalar gradient, the gradients in between may be multi-dimensional tensors.\\
 
-The gradients for classical nodes are straight forward, and can be implemented by (classical) automatic differentiation. However, for quantum nodes it is not obvious. We therefore show how to do quantum automatic differentiation. 
+The gradients for classical nodes are straight forward, and can be computed by known methods such as (classical) automatic differentiation. However, for quantum nodes this is not obvious. We therefore show how to do quantum automatic differentiation. 
+
+\subsubsection{Gradients of quantum nodes}
+
+Quantum nodes map a set of parameters  $\theta_q \subset \theta$ to an estimate of an expectation value $E = \mathrm{tr}\{ \rho(\theta_q ) O\}$ for an operator $O$ with regards to a state $\rho(\theta_q)$ prepared by the variational circuit. For convenience we will drop the subscript $q$ in this section. We will also neglect inputs $x$ to the variational circuit. Derivatives with respect to the node inputs work exactly as if they were model parameters.\\
+
+Formally, we have
+\[ \partial_{\mu} \bra{0}U^{\dagger} \hat{O} U \ket{\psi} =  \bra{0}(\partial_{\mu}U^{\dagger}) \hat{O} U \ket{0} + \bra{0}U^{\dagger} \hat{O} (\partial_{\mu} U) \ket{0}, \]
+
+This expression contains the \textbf{circuit derivative},
+$\partial_{\mu}  U(\theta)$. Assume that only the $l$th layer depends
+on circuit parameter $\mu$, then
+\[
+\partial_{\mu}  U(\theta) =  \mathcal{L}_1^{\dagger} \cdots (\partial_{\mu} \mathcal{L}_l^{\dagger})\cdots \mathcal{L}_D^{\dagger}.
+\]
+We call the expression $\partial_{\mu} \mathcal{L}_l^{\dagger}$  the
+\textbf{layer derivative}. The layer is decomposed into different
+gates from our universal gate set. Let $\mu$ be the parameter of the
+$r$th gate $\G_r(\mu)$ (where $\G$ can also depend on other
+parameters). The derivative of a layer is then the original layer, but
+instead of $\G_r$ we use $\partial_{\mu} \G_r(\mu)$. This expression
+is in general not a quantum gate, and in particular not necessarily a
+member of our elementary gate set. 
+
+\subsubsection{Gradients of quantum gates}
+
+We can always express the derivative of a gate as a weighed sum of ``allowed gates'' $A_k(\mu)$,
+\begin{equation}
+        \partial_{\mu} \G(\mu) = \sum_k a_k A_k(\mu),
+    \label{eq:decomposition_derivative}
+\end{equation}
+with complex coefficients $a_k$. Any
+operator can be represented as a sum of unitaries, and if our
+elementary gate set is universal for quantum computing, it can
+represent any unitary. The derivative circuit hence becomes
+\begin{eqnarray}
+\partial_{\mu}  U(\theta)  &=& \sum_k a_k U_{A_k}(\theta) \\
+&=& \sum_k a_k \G_1^1 \cdots A_k(\mu) \cdots \G_{N_G}^{N_L},
+\end{eqnarray}
+where $U_{A_k}(\theta)$ is the original circuit but with the gate $\G_r^l(\mu)$ replaced by $A_k(\mu)$. We show examples for the decomposition in Appendix \ref{App:gatederiv}.\\
 
 
-\subsection{One-parameter subgroups}
+Summarizing the above, we get the formula
+\begin{multline}
+        \partial_{\mu} y_q(\theta) = \sum_k a^*_k  \bra{0} U_{A_k}(\theta)^{\dagger} \hat{O} U(\theta) \ket{0} \\
+        + a_k  \bra{0} U(\theta)^{\dagger} \hat{O} U_{A_k}(\theta) \ket{0}.
+        \label{Eq:expgrad}
+\end{multline}
+The terms $\bra{0} U_{A_k}(\theta)^{\dagger} \hat{O} U(\theta) \ket{0}$ are not expectation values and can therefore not be evaluated with the quantum device, unless we consult tricks. 
 
-\maria{Is this internal or for the whitepaper/conventions? If the second is true, we need to simplify and put to appendix.} A one-parameter subgroup of the topological group~$G$ is defined by a continuous group homomorphism
+\subsection{Evaluating the gradients on a quantum computer}
+
+Next we need to show how to estimate this value with a quantum device. 
+
+
+
+\subsubsection{Simplification for Pauli gates}
+
+Let us consider for ease of notation that the variational circuit only consists of the gate $\G(\mu) = \e^{i \mu G}$, where $G$ is a generator of a one-parameter subgroup. Let us assume $G^2 = r^2\I$. This is equivalent to the two eigenvalues of $\mathcal{G}$ being $\lambda_i = \pm r$. Then 
+\begin{multline}
+\partial_{\mu} y_q =  \bra{0}(\partial_{\mu}\G^{\dagger}(\mu)) \hat{O} \G(\mu) \ket{0} + \bra{0}\G^{\dagger}(\mu) \hat{O} (\partial_{\mu} \G(\mu)) \ket{0},
+\label{Eq:deriv_pauli}
+\end{multline}
+is equivalent to
+\begin{multline}
+\frac{1}{2}\bra{0}\G^{\dagger}(\mu)\G^{\dagger}(\frac{\pi}{4r}) \hat{O} \G(\frac{\pi}{4r})\G(\mu) \ket{0} \\
+- \frac{1}{2}\bra{0}\G^{\dagger}(\mu)\G^{\dagger}(-\frac{\pi}{4r}) \hat{O}\G(-\frac{\pi}{4r}) \G(\mu)\ket{0}.
+\label{Eq:insertpifourth}
+\end{multline}
+
+\begin{proof}
+We may write the Taylor series for the exponential of $\G(\mu)$
+and split it into a cosine and a sine series:
+\begin{align*}
+\mathcal{G}(\mu) &= \exp(-iG\mu) = \sum_{k=0}^\infty \frac{(-i\mu)^k G^k}{k!}\\
+&=
+\sum_{k=0}^\infty \frac{(-i\mu)^{2k} G^{2k}}{(2k)!}
++\sum_{k=0}^\infty \frac{(-i\mu)^{2k+1} G^{2k+1}}{(2k+1)!}\\
+&=
+\I \sum_{k=0}^\infty \frac{(-1)^{k} (\mu r)^{2k}}{(2k)!}
+-i G/r \sum_{k=0}^\infty \frac{(-1)^{k} (\mu r)^{2k+1}}{(2k+1)!}\\
+&=
+\I \cos(r \mu)
+-i G/r \sin(r \mu).
+\end{align*}
+This way, the gate with $\mu = \frac{\pi}{4r}$ is given by
+\be
+\G(\pm \frac{\pi}{4r}) = \frac{1}{\sqrt{2}}(\I \pm ir^{-1}G).
+\ee
+Inserting this into Equation (\ref{Eq:insertpifourth}), we find that some terms cancel out to arrive at Equation (\ref{Eq:deriv_pauli}). 
+\end{proof}
+
+This trick works for arbitrary single-qubit gates, generated by a linear combination of Pauli matrices
+$G = \vec{a} \cdot \vec{\sigma}/2$
+where $|\vec{a}|=1$. We obtain $G^2 = \frac{1}{4} \I$, and thus $r=1/2$.
+
+\maria{Check imaginary unit prefactor.}
+
+
+\section{Error analysis}
+
+Even for analytic differentiation, the gradients are   associated with errors due to the fact that outcomes from quantum nodes are estimates of expectations. This section analyses the propagation and bounds on this error. It also discusses prospects of noise having desirable side effects such as regularisation (known from dropout and similar techniques) and faster convergence of training (as known from Stochastic Gradient Descent training).
+
+\subsection{Error propagation}
+
+
+ 
+
+
+
+
+
+%\bibliographystyle{unsrt}
+\bibliography{openqml_formalism}
+
+\appendix
+
+\section{One-parameter subgroups}
+
+A one-parameter subgroup of the topological group~$G$ is defined by a continuous group homomorphism
 \be
 \phi: \R \to G,
 \ee
@@ -474,8 +637,6 @@ $\tilde{p} = \min \{|p| \neq 0 | p \in \Ker \phi\}$.
 Now the kernel is seen to be $\Ker \phi = \{n \tilde{p} | n \in Z\}$.
 \end{proof}
 \end{theorem}
-
-\subsection{Finite-dimensional Hilbert spaces}
 
 Assume we are given a traceless hermitian $n \times n$ generator~$G$, with the eigendecomposition
 \be
@@ -519,165 +680,214 @@ These~$G$ generate a one-parameter subgroup of $U(d)$ isomorphic to~$\R$.
 However, some generators~$G$ always generate a periodic subgroup.
 
 
-\subsection{Gradient trick}
-
-Let us assume $G^2 = r^2\I$.
-This is equivalent to $\lambda_i = \pm r$.
-Now we may write the Taylor series for the exponential
-and split it into a cosine and a sine series:
-\begin{align*}
-U(\theta) &= \exp(-iG\theta) = \sum_{k=0}^\infty \frac{(-i\theta)^k G^k}{k!}\\
-&=
-\sum_{k=0}^\infty \frac{(-i\theta)^{2k} G^{2k}}{(2k)!}
-+\sum_{k=0}^\infty \frac{(-i\theta)^{2k+1} G^{2k+1}}{(2k+1)!}\\
-&=
-\I \sum_{k=0}^\infty \frac{(-1)^{k} (\theta r)^{2k}}{(2k)!}
--i G/r \sum_{k=0}^\infty \frac{(-1)^{k} (\theta r)^{2k+1}}{(2k+1)!}\\
-&=
-\I \cos(r \theta)
--i G/r \sin(r \theta).
-\end{align*}
-Let us then define the unitary
-\be
-W := U(\pi/(4r)) = \frac{1}{\sqrt{2}}(\I -ir^{-1}G).
-\ee
-This yields
-\begin{align}
-  \notag
-\Ad_W \rho
-&= W \rho W^\dagger
-= \frac{1}{2}\left((\I-ir^{-1}G)\rho(\I+ir^{-1}G)\right)\\
-&= \frac{1}{2}\left(\rho -ir^{-1}\ad_G \rho +r^{-2}\Ad_G \rho\right)
-\end{align}
-and thus we obtain the convenient formula
-\be
-r(\Ad_W-\Ad_{W^\dagger}) = -i\ad_G.
-\ee
+\section{Linear combination of unitaries}\label{App:gatederiv}
 
 
-Qubits:
-This trick works for arbitrary single-qubit gates, generated by a linear combination of Pauli matrices
-$G = \vec{a} \cdot \vec{\sigma}/2$
-where $|\vec{a}|=1$.
-We obtain $G^2 = \frac{1}{4} \I$, and thus $r=1/2$.
-
-Qudits (including the multi-qubit case):
-We may use the trick for gates generated by $G$ whose
-eigenvalues fulfill $\lambda_i = \pm r$.
-
-\section{Optimization}
-
-OpenQML deals with the optimization of the variational circuit with
-regards to the cost. We always minimize the cost. Our core method is
-(stochastic) gradient descent.
-
-\subsection{Gradient descent step}
-In every \textbf{step} of the optimization algorithm, the parameters are updated according to the following simple loop\\
-
-\begin{algorithmic}[1]
-\Procedure{Gradient descent step}{}
-\State [sample a batch $\mathcal{D}$ from the training data]
-\For {$\mu \in \theta $}
-\State $\mu^{(t+1)} = \mu^{(t)} - \eta^{(t)} \partial_{\mu} C(\theta[, \mathcal{D}]) + S$
-\EndFor
-\EndProcedure
-\end{algorithmic}
-
-The learning rate $\eta^{(t)}$ can be adapted in each step, either
-depending on the gradient or on the step number. $S$ is a potential
-additional term that can add a momentum to the update. The gradient
-$\partial_{\mu} C(\theta[, \mathcal{D}])$ has to be evaluated by
-automatic differentiation of the cost function, which is computed
-hybridly by the quantum device or simulator and a classical
-computer. We therefore need to define a hybrid automatic
-differentiation scheme.
-
-\subsection{Computing the gradient}
-For the cost of Eq. (\ref{eq:cost}) and neglecting the dependency on inputs $x$ for now, we have
-\[\partial_{\mu} C(\theta[, \mathcal{D}]) = \sum_i \frac{d g(\{E_i(\theta)\})}{d E_i(\theta)} \partial_{\mu} E_i(\theta). \]
-The first gradient $\frac{d g(\{E_i(\theta)\})}{d E_i(\theta)}$ is the
-derivative of the classically computed part of the cost. We evaluate
-it using standard computational tools for automatic
-differentiation. The second gradient $\partial_{\mu} E_i(\theta)$ is
-the derivative of the part that is computed by the quantum device. We
-need something like ``quantum automatic differentiation'' to compute
-these gradients.
-
-Formally, we have
-\begin{eqnarray*}
-        \partial_{\mu} E_i(\theta) &=& \partial_{\mu} \tr \{\rho(\theta) \; \hat{O}_i\} \\
-        &=& \tr \{ (\partial_{\mu}  \rho(\theta)) \; \hat{O}_i\}, \\
-\end{eqnarray*}
-and with $\rho(\theta) = U(\theta)\rho_0U^{\dagger}(\theta)$ and the product rule of differentiation, we get
-\[\partial_{\mu}  \rho(\theta) = \left(\partial_{\mu}   U(\theta)\right) \rho_0U^{\dagger}(\theta) +   U(\theta) \rho_0 \left(\partial_{\mu} U^{\dagger}(\theta)\right)   . \]
-This expression contains the \textbf{circuit derivative},
-$\partial_{\mu}  U(\theta)$. Assume that only the $l$th layer depends
-on circuit parameter $\mu$, then
-\[
-\partial_{\mu}  U(\theta) =  \mathcal{L}_1^{\dagger} \cdots (\partial_{\mu} \mathcal{L}_l^{\dagger})\cdots \mathcal{L}_D^{\dagger}.
-\]
-We call the expression $\partial_{\mu} \mathcal{L}_d^{\dagger}$  the
-\textbf{layer derivatives}. The layer is decomposed into different
-gates from our universal gate set. Let $\mu$ be the parameter of the
-$r$th gate $\G_r(\mu)$ (where $\G$ can also depend on other
-parameters). The derivative of a layer is then the original layer, but
-instead of $\G_r$ we use $\partial_{\mu} \G_r(\mu)$. This expression
-is in general not a quantum gate, and in particular not necessarily a
-member of our elementary gate set. We therefore have to decompose it
-into a weighed sum of ``allowed gates'' $A_k(\mu)$,
+An example is the special case for Equation (\ref{eq:decomposition_derivative}) when $\G(\mu) = \e^{i\mu D}$ for a generator $D$. Then, formally,
 \begin{equation}
-        \partial_{\mu} \G(\mu) = \sum_k a_k A_k(\mu),
-    \label{eq:decomposition_derivative}
+	\partial_{\mu}\G(\mu) = i D \e^{i\mu D}.
+	\label{Eq:der_of_generator_gate}
 \end{equation}
-with complex coefficients $a_k$. This is always possible, because any
-operator can be represented as a sum of unitaries, and if our
-elementary gate set is universal for quantum computing, it can
-represent any unitary. The derivative circuit hence becomes
-\begin{eqnarray}
-\partial_{\mu}  U(\theta)  &=& \sum_k a_k U_{A_k}(\theta) \\
-&=& \sum_k a_k \G_1^1 \cdots A_k(\mu) \cdots \G_{N_G}^{N_L},
-\end{eqnarray}
-where $U_{A_k}(\theta)$ is the original circuit but with the gate $\G_r^l(\mu)$ replaced by $A_k(\mu)$. \\
-
-
-
-An example is the special case for Equation (\ref{eq:decomposition_derivative}) when $\G(\mu) = \e^{i\mu H}$ for a generator $H$. Then, formally,
+Since $D$ might not be a unitary operator, we have to decompose it into unitaries $D_k$ via $D = \sum_k \delta_k D_k$, so that
 \[
-\partial_{\mu}\G(\mu) = i H \e^{i\mu H}.
+\partial_{\mu}\G(\mu) = \sum_k \underbrace{i \delta_k}_{a_k} \underbrace{D_k \e^{i\mu D}}_{A_k}.
 \]
-Since $H$ might not be a unitary operator, we have to decompose it into unitaries $H_k$ via $H = \sum_k a_k H_k$, so that
-\[
-\partial_{\mu}\G(\mu) = \sum_k i \underbrace{H_k \e^{i\mu H}}_{A_k}.
-\]
+In other words, the derivative sequence $A_k$ consists of $D_k$ as well as the original gate. We call this the \textit{generator decomposition rule}.\\
 
-Summarizing the above, we get the formulae
+In many situations, the derivative sequence is a linear combination of the original gate but with a transformed parameter:
+\[ \partial \G(\mu) = \sum_k  a_k \underbrace{\G(r_k (\mu))}_{A_k}. \]
+For example, the transformation $r_k (\mu)$ can be a parameter shift by $\frac{\pi}{2}$, or replacing the parameter by a constant. We call this the \textit{parameter shift rule}. \\
+
+We will look at some concrete gates and formulate their derivatives.
+
+
+\subsection{Derivatives of Pauli generated single qubit gates}
+A standard example for the generator decomposition rule is the case when $D$ is a Pauli operator. Then, the sum over $k$ only has one term, since $D$ is already unitary and can be applied as a gate.  
+
+
+\subsection{Derivatives of general single qubit gates}
+As remarked in \cite{schuld18cc}, for general single qubit gates parameterized as
+
+\begin{equation*} \label{eq:1q:parametrization}
+\G (\alpha,\beta, \gamma, \phi ) = \e^{i\phi} \begin{pmatrix} \e^{i\beta} \cos \alpha &  \e^{i\gamma} \sin \alpha\\ -\e^{-i\gamma} \sin \alpha &  \e^{-i\beta} \cos \alpha \end{pmatrix}
+\end{equation*}
+one can use the ``parameter shift'' rule as
 \begin{eqnarray*}
-        \partial_{\mu} E_i(\theta) &=& \tr \{ \sum_k \left[ a_k  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta) + h.c. \right] \; \hat{O}_i\}, \\
-        &=& \sum_k \tr \{  \left[ a_k  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta) + h.c. \right] \; \hat{O}_i\}\\
-        &=& \sum_k \tr \{   a_k  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta) \hat{O}_i + h.c. \}.
+ \partial_{\alpha} \G  &=&  \G(\alpha + \frac{\pi}{2}, \beta, \gamma ),   \\
+ \partial_{\beta} \G &=& \frac{1}{2} \G(\alpha, \beta + \frac{\pi}{2} , 0  ) + \frac{1}{2}  \G(\alpha, \beta + \frac{\pi}{2} , \pi ),  \\
+\partial_{\gamma} \G &=& \frac{1}{2} \G(\alpha, 0, \gamma + \frac{\pi}{2}  ) + \frac{1}{2}  \G(\alpha, \pi, \gamma + \frac{\pi}{2} ). 
 \end{eqnarray*}
 
-Altogether, the quantum computer has to evaluate the terms
-\[ \tr \{  U_{A_k}(\theta) \rho_0 U^{\dagger}(\theta)  \hat{O} \},\]
+\subsection{Derivatives of Gaussian gates}
+
+Using the quadrature operator formalism with the Heisenberg picture, we show that for most Gaussian gates the derivative of a gate can be expressed by using the same gate with a simple transformation of the parameters. In the case of squeezing we require a classical linear combination of such gates. \\
+
+\paragraph{Beam splitter}
+The beam splitter with $\theta$ and phase $\phi$ (using Strawberry Fields conventions) applied to modes $i$ and $j$ with quadrature vector $\xi = (x_i, p_i, x_j, p_j )^T$ implements the transformation
+\[  \begin{pmatrix} \x'_i \\ \p'_i \\ \x'_j \\ \p'_j \end{pmatrix} = 
+\begin{pmatrix} \cos(\theta) \mathbbm{1} & -e^{-i\phi}\sin(\theta) \mathbbm{1}\\
+e^{i\phi}\sin(\theta) \mathbbm{1} & \cos(\theta) \mathbbm{1} \end{pmatrix} \begin{pmatrix} \x_i \\ \p_i \\ \x_j \\ \p_j \end{pmatrix},
+\]
+or
+\[ \xi' = B(\theta, \phi) \xi .\]
+The derivative of the transformation $ B(\theta, \phi) $ with respect to $\theta$ is given by the matrix
+\[ \partial_{\theta} B(\theta, \phi) = \begin{pmatrix} -\sin(\theta) \mathbbm{1} & -e^{-i\phi}\cos(\theta) \mathbbm{1}\\
+e^{i\phi}\cos(\theta) \mathbbm{1} & -\sin(\theta) \mathbbm{1} \end{pmatrix} \]
+Compared to $B(\theta, \phi)$, this transformation changes the sign of the quadratures of the first mode and `swaps' the quadratures of the two modes.\\
+
+We have that
+\[ \partial_{\theta} B(\theta, \phi) =B(\frac{\pi}{2} , \phi ) B(\theta , \phi ) = B(\theta +\frac{\pi}{2}, \phi ), \]
+in other words, we either have to insert a constant beam splitter gate, or alternatively shift the first parameter by $\frac{\pi}{2}$ to get the derivative circuit.\\
+
+For the phase parameter $\phi$, we get
+\[ \partial_{\phi} B(\theta, \phi) = \begin{pmatrix} 0 & - e^{-i(\phi + \frac{\pi}{2})} \sin(\theta) \mathbbm{1}\\
+e^{i(\phi + \frac{\pi}{2})}\sin(\theta) \mathbbm{1} & 0  \end{pmatrix}, \]
+and consequently
+\[\partial_{\phi} B(\theta, \phi) = \frac{1}{2}B(\theta, \phi + \frac{\pi}{2}) - \frac{1}{2}B(\theta, \phi + \frac{3\pi}{2}). \]
+
+Note that when the linear network implements an orthogonal instead of a unitary transformation, the phase of the beam splitter is always $\phi=0$.
+
+
+\paragraph{Phase rotation}
+When considering unitary transformations and universal quantum computing, we also have a phase rotation gate,
+\[
+\begin{pmatrix}
+\x'\\
+\p'
+\end{pmatrix} =  \begin{pmatrix} \cos(\phi) & \sin(\phi) \\
+-\sin(\phi) & \cos(\phi) \end{pmatrix}\begin{pmatrix} \x\\ \p \end{pmatrix}, \]
+or summarised, 
+\[ \xi' = R(\phi ) \xi. \]
+The derivative of $R(\phi)$ with respect to $\phi$ is
+\[ \partial_{\phi} \; R(\phi) = \begin{pmatrix} -\sin(\phi) & \cos(\phi) \\
+-\cos(\phi) & -\sin(\phi) \end{pmatrix} ,\]
+and hence
+\[ \partial_{\phi} \; R(\phi) = R(\phi + \frac{\pi}{2}).\]
+This effectively exchanges the position and momentum quadratures of the mode.\\
+
+\paragraph{Displacement}
+
+Displacement by a complex number $b = b_{\mathrm{re}} + i b_{\mathrm{im}}$ shifts the quadratures,
+\[
+\begin{pmatrix}
+\x'\\
+\p'
+\end{pmatrix} = \begin{pmatrix} \x + b_{\mathrm{re}} \\ \p + b_{\mathrm{im}} \end{pmatrix}. \]
+
+To use a similar notation as above, extend the quadrature vector by a constant entry,  
+\begin{equation}
+\begin{pmatrix}
+  \x' \\ \p' \\ \mathbbm{1}
+\end{pmatrix}
+ = 
+\begin{pmatrix}
+1 & 0 & b_{\mathrm{im}}  \\
+0 & 1 & b_{\mathrm{re}} \\
+0 & 0 & 1
+\end{pmatrix}
+\begin{pmatrix}
+\x \\ \p \\ \mathbbm{1}
+\end{pmatrix},
+\end{equation}
+where the matrix represents the displacement operator $D(b)$. The derivative of $D$ with respect to $b_{\mathrm{im}}$ and $b_{\mathrm{re}}$ is given by 
+\[\partial_{b_{\mathrm{re}}} D(b_{\mathrm{re}}, b_{\mathrm{im}}) = \begin{pmatrix}
+0 & 0 & 0  \\
+0 & 0 & 1 \\
+0 & 0 & 0
+\end{pmatrix},
+\partial_{b_{\mathrm{im}}} D(b_{\mathrm{re}}, b_{\mathrm{im}}) = \begin{pmatrix}
+0 & 0 & 1  \\
+0 & 0 & 0 \\
+0 & 0 & 0
+\end{pmatrix}.\]
+The gradient gates are therefore equivalent to the sum of a displacement of $1$ and $-1$ in the variable that we derive for, 
+\begin{eqnarray*}
+\partial_{b_{\mathrm{re}}} D(b_{\mathrm{re}}, b_{\mathrm{im}}) &=& \frac{1}{2} D(1, 0) - \frac{1}{2} D(-1, 0) \\
+\partial_{b_{\mathrm{im}}} D(b_{\mathrm{re}}, b_{\mathrm{im}}) &=& \frac{1}{2} D(0, 1) - \frac{1}{2} D(0, -1) 
+\end{eqnarray*}
+
+\paragraph{Squeezing}
+Squeezing a mode by a factor $z = r \e^{i\phi}$ with the squeezing operator $S(z)= S(r, \phi)$ corresponds to the operation
+\[ \begin{pmatrix} \x'\\ \p' \end{pmatrix} = \begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} \cos \phi & \sin \phi \\ - \sin \phi & \cos \phi \end{pmatrix} \begin{pmatrix} \x \\ \p \end{pmatrix}. \]
+Then 
+\begin{eqnarray*} \partial_{r} S(r, \phi) &=& \begin{pmatrix} -1 & 0 \\ 0 & 1 \end{pmatrix}
+S(r, \phi) \\ 
+&=& S(r+\log (\sqrt{2}-1), \phi) + \sqrt{2} S(r, \phi),\end{eqnarray*}
 and
-\[ \tr \{  U(\theta) \rho_0 U_{A_k}^{\dagger}(\theta)  \hat{O} \},\]
-from which we can construct the derivative of the expectation classically. For this, we have to prepare a quantum state of the form
-\[ \mathcal{A} \rho_0 \mathcal{B}, \]
-where $ \mathcal{A}, \mathcal{B}$ are the derivative and the original variational circuit. \\
+\begin{eqnarray*} \partial_{\phi} S(r, \phi) &=& \begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} -\sin \phi & \cos \phi \\ - \cos \phi & -\sin \phi \end{pmatrix}\\ 
+&=& S(r, \phi + \frac{\pi}{2}).\end{eqnarray*}
+ 
 
-\maria{Nathan, you mentioned that you know a trick of how we can implement this easily? So far I am very sceptical that this is simple. I only know the following trick:
-Decompose $\hat{O}$ into a sum of unitaries $B_s$,
-\[\hat{O} = \sum_s b_s B_s,\]
-so that we have to implement
-\[ \tr \{  U(\theta) \rho_0 U_{A_k}^{\dagger}(\theta)  B_s \}.\]
-Define $A=U(\theta)$ and $D=U_{A_k}^{\dagger}(\theta)  B_s$, then prepare
-\[ \frac{1}{\sqrt{2}} (\ket{0} \otimes A\rho_0 A^{\dagger} + \ket{1} \otimes D\rho_0 D^{\dagger}),\]
-and apply a Hadamard on the ancilla. The probability of measuring the ancilla in $0$ is
-\[p(0) = \frac{1}{2} + \frac{1}{2} \tr \{ A\rho_0 A^{\dagger} D\rho_0 D^{\dagger} +D\rho_0 D^{\dagger} A\rho_0 A^{\dagger}  \} \]
-For this, the quantum device needs ancilla qubits, and $A_k$ and $B_s$ have to be implemented conditioned on the ancilla. }
+In summary, the derivatives of Gaussian gates are rather simple to implement as a linear combination of the same gates, but with shifted parameters.
 
-%\bibliographystyle{unsrt}
-\bibliography{openqml_formalism}
+\subsection{Derivatives of ``Gaussian expectations''}
+
+Assume we want to take the derivative of the expectation values
+\[ \bra{0}U^{\dagger} \G V^{\dagger} \hat{x} V \G U \ket{0}\]
+and
+\[ \bra{0}U^{\dagger} \G V^{\dagger} \hat{p} V \G U \ket{0}\]
+of a single mode with respect to the parameter of a Gaussian gate $\G$, where $U,V$ are CV circuits applied before and after this gate. To simplify the notation, we absorb $U$ into the quantum state, and $V$ into the operator and compute $ \bra{\psi} \G \hat{c} \G \ket{\psi}$ and $\bra{\psi} \G \hat{d} \G \ket{\psi} $, instead, with $\hat{c} = V^{\dagger} \x V$, $\hat{d} = V^{\dagger} \p V$, and $\ket{\psi}= U \ket{0}$.\\
+
+We have seen above how the derivative of $\G$ can be decomposed into $\sum_{k=1}^K a_k A_k$ where $A_k$ are also Gaussian gates. We consequently need to compute the values
+\begin{eqnarray}
+	&&\bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{c} A_k  \ket{\psi} \label{Eq:simplf_exp_der1}  \\
+	&&\bra{\psi} A_k^{\dagger} \hat{d} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{d} A_k  \ket{\psi}
+	\label{Eq:simplf_exp_der2} 
+\end{eqnarray} 
+for $k=1,...,K$. For the position quadrature we have that
+\begin{eqnarray*}
+&&\frac{1}{2}\bra{\psi} (\G + i A_k)^{\dagger} \hat{c} (\G + i A_k) \ket{\psi} \\
+&-& \frac{1}{2}  \bra{\psi}(\G - i A_k)^{\dagger}  \hat{c} (\G - i A_k) \ket{\psi}  \\
+&=& i \bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi} - i \bra{\psi}\G^{\dagger} \hat{c} A_k  \ket{\psi}
+\end{eqnarray*}
+
+
+
+We show now (hopefully) how to compute Eq. (\ref{Eq:simplf_exp_der1}) and (\ref{Eq:simplf_exp_der2}) on a CV quantum computer with the help of a vacuum mode and beam splitters, using the Heisenberg picture. 
+
+Starting with $\ket{\psi}$ in the first mode (after applying $U$, and vacuum in the second, we apply the circuit shown in Fig. \ref{Fig:der_eval_cv}. The circuit consists of a 50-50 beam splitter with relative phase shift of $\pi/2$, a Gaussian transformation on each mode separately, as well as another 50-50 beam splitter. We measure the expectation of the vector of the transformed quadrature operators $\c, \d$. 
+
+
+\begin{figure}[t]
+$$
+\Qcircuit @C=1em @R=.7em {
+\lstick{\ket{\psi}} &  \multigate{1}{BS(\frac{\pi}{4}, \frac{\pi}{2})}  & \gate{A}&  \multigate{1}{BS(\frac{\pi}{4}, 0)} &  \meter\\
+\lstick{\ket{0}} &   \ghost{BS(\frac{\pi}{4},\frac{\pi}{2})}   & \gate{\G}&\ghost{BS(\frac{\pi}{4}, 0)} &  \meter\\
+}
+$$
+\caption{Derivative evaluation circuit.}
+\label{Fig:der_eval_cv}
+\end{figure}
+
+In the Heisenberg picture, the two modes are described by their quadrature operators,
+\[\begin{pmatrix} \c \\ \d \\ \x \\ \p \end{pmatrix}, \]
+where we use $\x$ and $\p$ to describe the quadratures of the second mode, which does not get transformed by a subsequent circuit $V$. 
+The first beam splitter tranforms this vector to
+\[\frac{1}{\sqrt{2}}\begin{pmatrix} \c + i \x \\ \d + i \p \\ \x - i\c \\ \p - i \d \end{pmatrix}.\]
+The Gaussian gates applied to each mode can be expressed by symplectic transformations applied to the subspaces of each mode:
+\[\underbrace{\begin{pmatrix} s_{11} & s_{12}\\ s_{21} & s_{22} \end{pmatrix}}_{S} \begin{pmatrix} \c + i \x \\ \d + i \p \end{pmatrix} + \underbrace{\begin{pmatrix} \alpha_1 \\ \alpha_2 \end{pmatrix}}_{\alpha}, \]
+and
+\[\underbrace{\begin{pmatrix} r_{11} & r_{12}\\ r_{21} & r_{22} \end{pmatrix}}_{R} \begin{pmatrix} \x - i\c \\ \p - i \d\end{pmatrix} + \underbrace{\begin{pmatrix} \beta_1 \\ \beta_2 \end{pmatrix}}_{\beta}.\]
+After the second beam splitter, we get the following overall transformation on the first mode:
+\[\begin{pmatrix} \c \\ \d \end{pmatrix} \rightarrow \frac{1}{2} \bigg[ (S-iR) \begin{pmatrix} \c \\ \d \end{pmatrix} + (R+iS) \begin{pmatrix} \x \\ \p \end{pmatrix} + \alpha + \beta \bigg]\]
+Taking the expectation of the time evolved quadrature operators with respect to the initial state $\ket{\psi} \otimes \ket{0}$ results in
+\[\frac{1}{2} \bigg[ (s_{11}-ir_{11}) \bra{\psi}\c\ket{\psi} + (s_{12}-ir_{12}) \bra{\psi}\d\ket{\psi} + \alpha_1 + \beta_1
+%+(r_{11}+is_{11}) \bra{0}\x\ket{0} +(r_{12}+is_{12}) \bra{0}\p\ket{0}
+\bigg]\]
+for the ``position'' quadrature, and
+\[\frac{1}{2} \bigg[ (s_{21}-ir_{21}) \bra{\psi}\c\ket{\psi} + (s_{22}-ir_{22}) \bra{\psi}\d\ket{\psi} + \alpha_2 + \beta_2
+%+(r_{21}+is_{21}) \bra{0}\x\ket{0} +(r_{22}+is_{22}) \bra{0}\p\ket{0}
+\bigg]\]
+for the ``momentum'' quadrature, since the expectation $\bra{0}\x\ket{0}$ and $\bra{0}\p\ket{0}$ evaluate to zero. This is equivalent to the expectation of $(\c, \d)^{\dagger}$ after the (non-symplectic) transformation 
+\[(S-iR)\begin{pmatrix} \c \\ \d \end{pmatrix} + \alpha + \beta.\]
+
+
+
+
+
+ 
+
+
 
 
 \end{document}
