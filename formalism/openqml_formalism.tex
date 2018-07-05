@@ -1037,31 +1037,45 @@ and
 \[ \bra{0}U^{\dagger} \G V^{\dagger} \hat{p} V \G U \ket{0}\]
 of a single mode with respect to the parameter of a Gaussian gate $\G$, where $U,V$ are CV circuits applied before and after this gate. To simplify the notation, we absorb $U$ into the quantum state, and $V$ into the operator and compute $ \bra{\psi} \G \hat{c} \G \ket{\psi}$ and $\bra{\psi} \G \hat{d} \G \ket{\psi} $, instead, with $\hat{c} = V^{\dagger} \x V$, $\hat{d} = V^{\dagger} \p V$, and $\ket{\psi}= U \ket{0}$.\\
 
-We have seen above how the derivative of $\G$ can be decomposed into $\sum_{k=1}^K a_k A_k$ where $A_k$ are also Gaussian gates. We consequently need to compute the values
-\begin{eqnarray}
-	&&\bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{c} A_k  \ket{\psi} \label{Eq:simplf_exp_der1}  \\
-	&&\bra{\psi} A_k^{\dagger} \hat{d} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{d} A_k  \ket{\psi}
-	\label{Eq:simplf_exp_der2} 
-\end{eqnarray} 
-for $k=1,...,K$. For the position quadrature we have that
+We have seen above how the derivative of $\G$ can always be decomposed into $\sum_{k=1}^K a_k A_k$ where $A_k$ are Gaussian gates. We consequently need to compute the values
 \begin{eqnarray*}
-&&\frac{1}{2}\bra{\psi} (\G + i A_k)^{\dagger} \hat{c} (\G + i A_k) \ket{\psi} \\
-&-& \frac{1}{2}  \bra{\psi}(\G - i A_k)^{\dagger}  \hat{c} (\G - i A_k) \ket{\psi}  \\
-&=& i \bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi} - i \bra{\psi}\G^{\dagger} \hat{c} A_k  \ket{\psi}
+	&&a_k\sum_{k=1}^{K} \bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{c} A_k  \ket{\psi}  \\
+	&&a_k \sum_{k=1}^{K} \bra{\psi} A_k^{\dagger} \hat{d} \G \ket{\psi} +   \bra{\psi}\G^{\dagger} \hat{d} A_k  \ket{\psi}
+\end{eqnarray*} 
+for $k=1,...,K$. Let us look at one of these terms for the position operator, 
+\begin{equation}
+	\bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{c} A_k  \ket{\psi}.
+	\label{Eq:term_to_evaluate}
+\end{equation}
+We can estimate the term on a quantum computer as follows. Evaluate  
+\[E_1 = \bra{\psi} (\G + A_k)^{\dagger} \hat{c} (\G + A_k) \ket{\psi},\]
+and
+\[E_2= \bra{\psi}(\G - A_k)^{\dagger}  \hat{c} (\G - A_k) \ket{\psi} \]
+on the quantum device. Classically compute $\frac{1}{2}E_1 - \frac{1}{2} E_2$. This is exactly the term (\ref{Eq:term_to_evaluate}) we seek to estimate.
+\begin{proof}
+We have 
+\begin{eqnarray*}
+	E_1 = &&\bra{\psi} \G^{\dagger} \hat{c} \G \ket{\psi} + \bra{\psi} A_k^{\dagger} \hat{c} A_k \ket{\psi} \\
+	&+& \bra{\psi} \G^{\dagger} \hat{c} A_k \ket{\psi}+ \bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi}
 \end{eqnarray*}
-THAT $i$ IS STILL IN THE WAY IF WE DO NOT WORK WITH GENERATORS!
+and
+\begin{eqnarray*}
+	E_2 = && \bra{\psi} \G^{\dagger} \hat{c} \G \ket{\psi} + \bra{\psi} A_k^{\dagger} \hat{c} A_k \ket{\psi} \\
+	&-& \bra{\psi} \G^{\dagger} \hat{c} A_k \ket{\psi}- \bra{\psi} A_k^{\dagger} \hat{c} \G \ket{\psi}
+\end{eqnarray*}
+Subtracting the terms cancels the first two expectation values in $E_1$ and $E_2$ and adds the second ones, and the normalisation of $\frac{1}{2}$ ensures that we have a prefactor of $1$.
+\end{proof}
 
+We show now how to estimate the expectations $E_1, E_2$ for single qubit gates on a CV quantum computer with the help of an additional vacuum mode and beam splitters. We use the Heisenberg picture. \\
 
-We try to show now how to apply a transformation of the form $\G \pm i A_k$ on a CV quantum computer with the help of a vacuum mode and beam splitters, using the Heisenberg picture. 
-
-Starting with $\ket{\psi}$ in the first mode, and vacuum in the second, we apply the circuit shown in Fig. \ref{Fig:der_eval_cv}. The circuit consists of a 50-50 beam splitter with relative phase shift of $\pi/2$, a Gaussian transformation on each mode separately, as well as another 50-50 beam splitter. We measure the expectation of the vector of the transformed quadrature operators $\c, \d$. 
+Starting with $\ket{\psi}$ in the first mode (which just means that we already applied circuit $U$), and vacuum in the second, we apply the circuit shown in Fig. \ref{Fig:der_eval_cv}. The circuit consists of a 50-50 beam splitter, a Gaussian transformation on each mode separately, as well as another 50-50 beam splitter. We measure the expectation of the vector of the transformed quadrature operators $\c, \d$. \\
 
 
 \begin{figure}[t]
 $$
 \Qcircuit @C=1em @R=.7em {
-\lstick{\ket{\psi}} &  \multigate{1}{BS(\frac{\pi}{4}, \frac{\pi}{2})}  & \gate{A}&  \multigate{1}{BS(\frac{\pi}{4}, 0)} &  \meter\\
-\lstick{\ket{0}} &   \ghost{BS(\frac{\pi}{4},\frac{\pi}{2})}   & \gate{\G}&\ghost{BS(\frac{\pi}{4}, 0)} &  \meter\\
+\lstick{\ket{\psi}} &  \multigate{1}{BS(\frac{\pi}{4})}  & \gate{A}&  \multigate{1}{BS(\frac{\pi}{4})} &  \meter\\
+\lstick{\ket{0}} &   \ghost{BS(\frac{\pi}{4})}   & \gate{\G}&\ghost{BS(\frac{\pi}{4})} &  \\
 }
 $$
 \caption{Derivative evaluation circuit.}
@@ -1070,27 +1084,40 @@ $$
 
 In the Heisenberg picture, the two modes are described by their quadrature operators,
 \[\begin{pmatrix} \c \\ \d \\ \x \\ \p \end{pmatrix}, \]
-where we use $\x$ and $\p$ to describe the quadratures of the second mode, which does not get transformed by a subsequent circuit $V$. 
+where we use $\x$ and $\p$ to describe the quadratures of the second mode (which does not get transformed by a subsequent circuit $V$). 
 The first beam splitter tranforms this vector to
-\[\frac{1}{\sqrt{2}}\begin{pmatrix} \c + i \x \\ \d + i \p \\ \x - i\c \\ \p - i \d \end{pmatrix}.\]
+\[\frac{1}{\sqrt{2}}\begin{pmatrix} \c - \x \\ \d - \p \\ \c + \x \\ \d + \p \end{pmatrix}.\]
 The Gaussian gates applied to each mode can be expressed by symplectic transformations applied to the subspaces of each mode. Let the symplectic trafo describing gate $A_k$ acting on the first mode be given by
-\[\underbrace{\begin{pmatrix} s_{11} & s_{12}\\ s_{21} & s_{22} \end{pmatrix}}_{S} \begin{pmatrix} \c + i \x \\ \d + i \p \end{pmatrix} + \underbrace{\begin{pmatrix} \alpha_1 \\ \alpha_2 \end{pmatrix}}_{\alpha}, \]
+\[\underbrace{\begin{pmatrix} s_{11} & s_{12}\\ s_{21} & s_{22} \end{pmatrix}}_{S} \begin{pmatrix} \c - \x \\ \d - \p \end{pmatrix} + \underbrace{\begin{pmatrix} \alpha_1 \\ \alpha_2 \end{pmatrix}}_{\alpha}, \]
 and let the trafo describing gate $\G$ acting on the second mode be given by
-\[\underbrace{\begin{pmatrix} r_{11} & r_{12}\\ r_{21} & r_{22} \end{pmatrix}}_{R} \begin{pmatrix} \x - i\c \\ \p - i \d\end{pmatrix} + \underbrace{\begin{pmatrix} \beta_1 \\ \beta_2 \end{pmatrix}}_{\beta}.\]
-After the second beam splitter, we get the following overall transformation on the first mode:
-\[\begin{pmatrix} \c \\ \d \end{pmatrix} \rightarrow \frac{1}{2} \bigg[ (S-iR) \begin{pmatrix} \c \\ \d \end{pmatrix} + (R+iS) \begin{pmatrix} \x \\ \p \end{pmatrix} + \alpha + \beta \bigg]\]
+\[\underbrace{\begin{pmatrix} r_{11} & r_{12}\\ r_{21} & r_{22} \end{pmatrix}}_{R} \begin{pmatrix} \c + \x \\ \d + \p \end{pmatrix} + \underbrace{\begin{pmatrix} \beta_1 \\ \beta_2 \end{pmatrix}}_{\beta}.\]
+Overall, the evolution is given by
+\[\frac{1}{\sqrt{2}}\begin{pmatrix} S & 0 \\ 0 & R \end{pmatrix}
+\begin{pmatrix} \c - \x \\ \d - \p \\ \c + \x \\ \d + \p \end{pmatrix} + \begin{pmatrix}\alpha_1\\ \alpha_2 \\ \beta_1 \\ \beta_2 \end{pmatrix}.\]
+This yields
+\[\frac{1}{\sqrt{2}}\begin{pmatrix} s_{11}(\c - \x) + s_{12}(\d - \p) + \alpha_1 \\ s_{21}(\c - \x) + s_{22}(\d - \p)  + \alpha_2 \\ r_{11}(\c + \x) + r_{12}(\d + \p)  + \beta_1 \\ r_{21}(\c + \x) + r_{22}(\d + \p) + \beta_2  \end{pmatrix}.\]
+After the second beam splitter, we get
+\begin{widetext}
+\[\frac{1}{2}\begin{pmatrix}(s_{11}- r_{11})\c +(s_{12}- r_{12})\d  -(s_{11}+ r_{11})\x - (s_{12}+ r_{12}) \p  +  \alpha_1 - \beta_1\\ 
+(s_{21}- r_{21}) \c+ (s_{22}- r_{22}) \d - (s_{21}+ r_{21}) \x -(s_{22}+ r_{22}) \p  + \alpha_2  - \beta_2 \\ 
+(s_{11}+r_{11}) \c + (s_{12}+r_{12}) \d + (r_{11}-s_{11}) \x + (r_{12}-s_{12}) \p + \alpha_1   + \beta_1\\ 
+(s_{21}+r_{21}) \c + ( s_{22}+ r_{22}) \d + (r_{21}-s_{21}) \x + ( r_{22}- s_{22}) \p + \alpha_2  + \beta_2  \end{pmatrix}\]
+\end{widetext}
+which corresponds to following overall transformation on the first mode:
+\[\begin{pmatrix} \c \\ \d \end{pmatrix} \rightarrow \frac{1}{2} \bigg[ (S-R) \begin{pmatrix} \c \\ \d \end{pmatrix} - (S+R) \begin{pmatrix} \x \\ \p \end{pmatrix} + \alpha - \beta \bigg]\]
 Taking the expectation of the time evolved quadrature operators with respect to the initial state $\ket{\psi} \otimes \ket{0}$ results in
-\[\frac{1}{2} \bigg[ (s_{11}-ir_{11}) \bra{\psi}\c\ket{\psi} + (s_{12}-ir_{12}) \bra{\psi}\d\ket{\psi} + \alpha_1 + \beta_1
-%+(r_{11}+is_{11}) \bra{0}\x\ket{0} +(r_{12}+is_{12}) \bra{0}\p\ket{0}
-\bigg]\]
+\begin{multline*}
+	\frac{1}{2} \bigg[ (s_{11}-r_{11}) \bra{\psi}\c\ket{\psi} + (s_{12}-r_{12}) \bra{\psi}\d\ket{\psi} + \alpha_1 - \beta_1 \\+ (s_{11}+r_{11}) \bra{0}\x\ket{0} + (s_{12}+r_{12}) \bra{0}\p\ket{0} \bigg]
+\end{multline*}
 for the ``position'' quadrature, and
-\[\frac{1}{2} \bigg[ (s_{21}-ir_{21}) \bra{\psi}\c\ket{\psi} + (s_{22}-ir_{22}) \bra{\psi}\d\ket{\psi} + \alpha_2 + \beta_2
-%+(r_{21}+is_{21}) \bra{0}\x\ket{0} +(r_{22}+is_{22}) \bra{0}\p\ket{0}
-\bigg]\]
-for the ``momentum'' quadrature, since the expectation $\bra{0}\x\ket{0}$ and $\bra{0}\p\ket{0}$ evaluate to zero. This is equivalent to the expectation of $(\c, \d)^{\dagger}$ after the (non-symplectic) transformation 
-\[(S-iR)\begin{pmatrix} \c \\ \d \end{pmatrix} + \alpha + \beta.\]
+\begin{multline*}
+	\frac{1}{2} \bigg[ (s_{21}-r_{21}) \bra{\psi}\c\ket{\psi} + (s_{22}-r_{22}) \bra{\psi}\d\ket{\psi} + \alpha_1 - \beta_1 \\+ (s_{21}+r_{21}) \bra{0}\x\ket{0} + (s_{22}+r_{22}) \bra{0}\p\ket{0} \bigg]
+\end{multline*}
+for the ``momentum'' quadrature. The expectations $\bra{0}\x\ket{0}$ and $\bra{0}\p\ket{0}$ evaluate to zero and the operation is therefore equivalent to the expectation of $(\c, \d)^{\dagger}$ with respect to $\ket{\psi} \otimes \ket{0}$ after the (non-symplectic) transformation 
+\[(S-R)\begin{pmatrix} \c \\ \d \end{pmatrix} + \alpha - \beta.\]
+To get the sum of the two, we simply consider the expectation of the second mode. This trick should work for any other operator $\hat{O}$ with $\bra{0} \hat{O} \ket{0} = \bra{0} \hat{O}^{\dagger} \ket{0}=0$.\\
 
-CAN WE USE IT TO GET THE DESIRED EXPECTATIONS?
+IS THERE A NORMALIZATION SOMEWHERE? HOW DOES POSTSELECTION WITH PATH-ENCODED ANCILLAS WORK?\\
 
 
 
