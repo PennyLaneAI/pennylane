@@ -6,7 +6,6 @@ import unittest
 
 import autograd
 import autograd.numpy as np
-
 from autograd.numpy.random import (randn,)
 
 from defaults import openqml, BaseTest
