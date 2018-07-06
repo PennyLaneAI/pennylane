@@ -199,6 +199,18 @@ _circuit_list = [
         Command(r3, [0], [ParRef(0), 0.3, -0.2]),
         Command(swap, [0, 1]),
     ], 'rubbish'),
+    Circuit([
+        Command(rx, [0], [ParRef(0)]),
+        Command(cnot, [0, 1]),
+        Command(rx, [0], [-1.6]),
+        Command(rz, [1], [0.7]),
+        Command(cnot, [0, 1]),
+        Command(rx, [0], [ParRef(1)]),
+        Command(rz, [1], [ParRef(2)]),
+        Command(cnot, [0, 1]),
+        Command(rx, [0], [-1.2]),
+        Command(ev_z, [0])
+    ], 'opt_ev', out=[0]),
 ]
 
 
