@@ -165,8 +165,8 @@ class PluginAPI:
     plugin_version = ''      #: str: version of the plugin itself
     author = ''              #: str: plugin author(s)
     _capabilities = {}       #: dict[str->*]: plugin capabilities
-    _gates = []              #: list[GateSpec]: specifications for supported gates
-    _observables = []        #: list[GateSpec]: specifications for supported observables
+    _gates = {}              #: dict[str->GateSpec]: specifications for supported gates
+    _observables = {}        #: dict[str->GateSpec]: specifications for supported observables
     _circuits = {}           #: dict[str->Circuit]: circuit templates associated with this API class
 
     def __init__(self, name='default', *, n_eval=0, **kwargs):
@@ -182,31 +182,34 @@ class PluginAPI:
         return self.__repr__() +'\nName: ' +self.plugin_name +'\nAPI version: ' +self.plugin_api_version\
             +'\nPlugin version: ' +self.plugin_version +'\nAuthor: ' +self.author +'\n'
 
+    @property
     def gates(self):
         """Get the supported gate set.
 
         Returns:
-          list[GateSpec]:
+          dict[str->GateSpec]:
         """
         return self._gates
 
+    @property
     def observables(self):
         """Get the supported observables.
 
         Returns:
-          list[GateSpec]:
+          dict[str->GateSpec]:
         """
         return self._observables
 
+    @property
     def templates(self):
         """Get the predefined circuit templates.
 
         .. todo:: rename to circuits?
 
         Returns:
-          list[Circuit]: circuit templates
+          dict[str->Circuit]: circuit templates
         """
-        return list(self._circuits.values())
+        return self._circuits
 
     @classmethod
     def capabilities(cls):

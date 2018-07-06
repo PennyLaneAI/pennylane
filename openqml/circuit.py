@@ -49,6 +49,9 @@ import warnings
 #import numpy as np
 
 
+__all__ = ['GateSpec', 'Command', 'ParRef', 'Circuit', 'QNode']
+
+
 class GateSpec:
     """A type of quantum operation supported by a backend, and its properies.
 
