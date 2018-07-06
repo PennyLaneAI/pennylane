@@ -223,8 +223,8 @@ class PluginAPI(openqml.plugin.PluginAPI):
     plugin_api_version = '0.1.0'
     plugin_version = '1.0.0'
     author = 'Xanadu Inc.'
-    _gates = [rx, ry, rz, r3, cnot, swap]
-    _observables = [ev_z]
+    _gates = {g.name: g for g in [rx, ry, rz, r3, cnot, swap]}
+    _observables = {g.name: g for g in [ev_z]}
     _circuits = {c.name: c for c in _circuit_list}
 
     def __init__(self, name='default', **kwargs):

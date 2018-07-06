@@ -34,7 +34,7 @@ class BasicTest(BaseTest):
             print()
             print(p)
             print('Gates:')
-            for g in p.gates():
+            for g in p.gates.values():
                 # try running each gate with random parameters
                 print(g)
                 cmd = Command(g, list(range(g.n_sys)), randn(g.n_par))
@@ -42,14 +42,14 @@ class BasicTest(BaseTest):
                 p.execute_circuit(Circuit([cmd], g.name))
 
             print('\nObservables:')
-            for g in p.observables():
+            for g in p.observables.values():
                 print(g)
                 cmd = Command(g, list(range(g.n_sys)), randn(g.n_par))
                 print(cmd)
                 p.execute_circuit(Circuit([cmd], g.name))
 
             print('\nCircuit templates:')
-            for c in p.templates():
+            for c in p.templates.values():
                 # try running each circuit template with random parameters
                 print(c)
                 p.execute_circuit(c, randn(c.n_par))
@@ -79,7 +79,7 @@ class BasicTest(BaseTest):
             p = p('test instance')
             # execute the demo circuit without measurement, then measure an observable
             temp = p.execute_circuit('demo', params=[1.0, 2.0])
-            obs = p.observables()[0]
+            obs = list(p.observables.values())[0]
             temp = p.measure(obs, 0, par=randn(obs.n_par), n_eval=1000)
             print('Measured:', temp)
 

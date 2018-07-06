@@ -42,7 +42,12 @@ class Gate(GateSpec):
         super().__init__(name, n_sys, n_par)
         self.cls = cls  #: class: sf.ops.Operation subclass corresponding to the gate
 
-# gates
+# gates (and state preparations)
+Vac  = Gate('Vac', 1, 0, sfo.Vacuum)
+Coh  = Gate('Coh', 1, 2, sfo.Coherent)
+Squ  = Gate('Squ', 1, 2, sfo.Squeezed)
+The  = Gate('The', 1, 1, sfo.Thermal)
+Fock = Gate('Fock', 1, 1, sfo.Fock)
 D = Gate('D', 1, 2, sfo.Dgate)
 S = Gate('S', 1, 2, sfo.Sgate)
 X = Gate('X', 1, 1, sfo.Xgate)
@@ -106,16 +111,18 @@ class PluginAPI(openqml.plugin.PluginAPI):
         temp = kwargs['backend']
         self.backend = temp  #: str: backend name
         # gate and observable sets depend on the backend, so they have to be instance properties
-        self._gates = [D, S, X, Z, R, F, P, BS, S2, CX, CZ]
-        self._observables = [MHo]
+        gates = [Vac, Coh, Squ, The, D, S, X, Z, R, F, P, BS, S2, CX, CZ]
+        observables = [MHo]
         if temp in ('fock', 'tf'):
             kwargs.setdefault('cutoff_dim', 5)  # Fock space truncation dimension
-            self._observables.append(MFock)
-            self._gates.extend([V, K])  # nongaussian gates: cubic phase and Kerr
+            observables.append(MFock)
+            gates.extend([Fock, V, K])  # nongaussian gates: Fock state prep, cubic phase and Kerr
         elif temp == 'gaussian':
-            self._observables.append(MHe)  # TODO move to _observables when the Fock basis backends support heterodyning
+            observables.append(MHe)  # TODO move to observables when the Fock basis backends support heterodyning
         else:
             raise ValueError("Unknown backend '{}'.".format(temp))
+        self._gates = {g.name: g for g in gates}
+        self._observables = {g.name: g for g in observables}
 
         self.init_kwargs = kwargs  #: dict: initialization arguments
         self.eng = None  #: strawberryfields.engine.Engine: engine for executing SF programs
