@@ -35,7 +35,7 @@ def get_commandline_args():
     args, _ = parser.parse_known_args()
 
     # set up logging for tests
-    log.basicConfig(format='%(levelname)s:%(message)s', level=log.INFO if args.log else log.WARN)
+    log.basicConfig(format='%(levelname)s: %(message)s', level=log.INFO if args.log else log.WARN)
     return args
 
 
@@ -80,3 +80,9 @@ class BaseTest(unittest.TestCase):
         Like assertTrue, but works with arrays. All the corresponding elements have to be True.
         """
         return self.assertTrue(np.all(value))
+
+    def assertAlmostLess(self, first, second, delta, msg=None):
+        """
+        Like assertLess, but with a tolerance.
+        """
+        return self.assertLess(first, second+delta, msg=msg)

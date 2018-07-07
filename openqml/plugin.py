@@ -170,8 +170,8 @@ class PluginAPI:
     _circuits = {}           #: dict[str->Circuit]: circuit templates associated with this API class
 
     def __init__(self, name='default', *, n_eval=0, **kwargs):
-        self.name = name
-        self.n_eval = n_eval
+        self.name   = name    #: str: name of the plugin instance
+        self.n_eval = n_eval  #: int: number of circuit evaluations used to estimate expectation values of observables. 0 means the exact ev is returned.
 
     def __repr__(self):
         """String representation."""

@@ -92,7 +92,7 @@ class Optimizer:
     def __init__(self, cost_func, cost_grad, weights, *, n_data=0, **kwargs):
 
         self._cost_func = cost_func  #: callable: scalar function to be minimized
-        self._cost_grad = cost_grad  #: callable: gradient of cost_fun
+        self._cost_grad = cost_grad  #: callable: gradient of _cost_func
         self._n_data = n_data        #: int: total number of data samples to be used in training
         self.stop = False            #: bool: flag, stop optimization
 
@@ -119,7 +119,7 @@ class Optimizer:
 
         if not isinstance(weights, np.ndarray) or len(weights.shape) != 1:
             raise TypeError('The weights must be given as a 1d array.')
-        self._weights = weights
+        self._weights = weights  #: array[float]: optimization parameters
 
 
     @property
@@ -157,7 +157,7 @@ class Optimizer:
           x0 (array[float]): initial values for the optimization parameters
           max_steps (int): maximum number of iterations for the algorithm
         """
-        init_lr = self._hp["init_learning_rate"]
+        init_lr = self._hp['init_learning_rate']
         decay = self._hp['decay']
         batch_size = self._hp['batch_size']
         print_every = self._hp['print_every']
@@ -194,7 +194,10 @@ class Optimizer:
                 msg = 'User stop.'
                 break
 
-        return OptimizeResult({'success': success, 'x': x, 'nit': step-global_step,  'message': msg})
+        return OptimizeResult({'success': success,
+                               'x': x,
+                               'nit': step-global_step,
+                               'message': msg})
 
 
     def train(self, max_steps=100):
@@ -203,18 +206,18 @@ class Optimizer:
         Args:
           max_steps (int): maximum number of steps for the algorithm
         """
-        if self._hp['regularizer'] is not None:
-            self.err_func = lambda x, batch=None: self._cost_func(x, batch) +self._reg_cost_L2(x)
-            self.err_grad = lambda x, batch=None: self._cost_grad(x, batch) +self._reg_cost_L2(x, grad=True)
-        else:
+        if self._hp['regularizer'] is None:
             self.err_func = lambda x, batch=None: self._cost_func(x, batch)
             self.err_grad = lambda x, batch=None: self._cost_grad(x, batch)
+        else:
+            self.err_func = lambda x, batch=None: self._cost_func(x, batch) +self._reg_cost_L2(x)
+            self.err_grad = lambda x, batch=None: self._cost_grad(x, batch) +self._reg_cost_L2(x, grad=True)
 
         if self._cost_grad is None:
             self.err_grad = None
 
         x0 = self._weights  # initial weights
-        log.info('Initial cost: {}'.format(self.err_func(x0)))
+        log.info('Initial cost: {:.6g}'.format(self.err_func(x0)))
 
         def signal_handler(sig, frame):
             "Called when SIGINT is received, for example when the user presses ctrl-c."
@@ -223,21 +226,26 @@ class Optimizer:
         # catch ctrl-c gracefully
         signal.signal(signal.SIGINT, signal_handler)
 
-        optimizer = self._hp["optimizer"]
+        optimizer = self._hp['optimizer']
         try:
-            if optimizer == "SGD":   # stochastic gradient descent
+            if optimizer == 'SGD':   # stochastic gradient descent
                 opt = self._optimize_SGD(x0, max_steps)
 
             elif optimizer in OPTIMIZER_NAMES:
-                self.nit = 0
+                print_every = self._hp['print_every']
+                self.nit = 0  #: int: number of iterations performed
                 def callback(x):
                     self._weights = x
+                    if self.nit % print_every == 0:
+                        log.info('{:9d} {:10.6g}'.format(self.nit, self.err_func(x)))
                     self.nit += 1
                     if self.stop:
                         raise StopOptimization('User stop.')
 
+                log.info('Iteration       Cost')
+                log.info('--------------------')
                 opt = minimize(self.err_func, x0, method=optimizer, jac=self.err_grad, callback=callback,
-                               options={"maxiter": max_steps, "disp": True})
+                               options={'maxiter': max_steps, 'disp': True})
             else:
                 raise ValueError("Unknown optimisation method '{}'.".format(optimizer))
 
@@ -258,7 +266,7 @@ class Optimizer:
             print("Reason for termination: ", opt.message)
 
         cost = self.err_func(self._weights)
-        print("\nFinal cost: {}\n".format(cost))
+        print('\nFinal cost: {:.6g}\n'.format(cost))
 
         # restore default handler
         signal.signal(signal.SIGINT, signal.SIG_DFL)

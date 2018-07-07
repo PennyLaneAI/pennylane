@@ -3,6 +3,7 @@ Unit tests for the :mod:`openqml` :class:`Optimizer` class.
 """
 
 import unittest
+from matplotlib.pyplot import figure
 
 import autograd
 import autograd.numpy as np
@@ -20,11 +21,25 @@ class OptTest(BaseTest):
     """
     def setUp(self):
         # arbitrary classification data
-        self.data = np.array([[1.0, 0.2],
-                              [0.2, 0.1],
-                              [-0.6, 0.2],
-                              [1.7, 0.6],
-                              [2.0, 0.8]], dtype=float)
+        self.data = np.array([[-0.8, -0.4],
+                              [-0.5, 0.3],
+                              [-0.2, -0.2],
+                              [0.1, 0.1],
+                              [0.4, 0.5],
+                              [1.0, 0.9]], dtype=float)
+
+
+    def map_data(self, data_in, weights):
+        """Maps input data using a parametrized quantum circuit.
+
+        Args:
+          data_in (float): input data
+          weights (array[float]): optimization parameters
+        Returns:
+          float: mapped data
+        """
+        par = np.concatenate((np.array([0.5*np.pi * data_in]), weights))
+        return self.q.evaluate(par)[0]
 
 
     def cost(self, weights, data_sample=None):
@@ -36,34 +51,33 @@ class OptTest(BaseTest):
           weights (array[float]): optimization parameters
           data_sample (array[int], None): For stochastic gradient methods, indices of the data samples to use in the error calculation.
             If None, all data samples are used.
+        Returns:
+          float: cost
         """
-        cost = 0
         if data_sample is None:
             data = self.data
         else:
             data = self.data[data_sample]
 
+        cost = 0
         for d in data:
-            par = np.concatenate((d[0:1], weights))
-            temp = self.q.evaluate(par)[0] -d[1]
+            temp = self.map_data(d[0], weights) -d[1]
             cost = cost +temp ** 2
         return cost
 
 
-    def cost_grad(self, weights, data_sample=None):
-        """Gradient of cost (error) function.
-        """
-        grad = np.zeros(weights.shape)
-        if data_sample is None:
-            data = self.data
-        else:
-            data = self.data[data_sample]
-
-        for d in data:
-            par = np.r_[d[0], weights]
-            temp = self.q.evaluate(par)[0] -d[1]
-            grad += 2*temp * self.q.gradient_angle(par, [1])
-        return grad
+    def plot_result(self, weights):
+        """Plot the classification function."""
+        xx = np.linspace(-1, 1, 100)
+        yy = np.array([self.map_data(x, weights) for x in xx], dtype=float)
+        fig = figure()
+        ax = fig.add_subplot(1,1,1)
+        ax.plot(xx, yy, 'k-')
+        ax.plot(self.data[:,0], self.data[:,1], 'rs')
+        ax.legend(['classification', 'data'])
+        ax.grid(True)
+        ax.set_title('Quantum classifier')
+        fig.show()
 
 
     def test_opt(self):
@@ -74,45 +88,30 @@ class OptTest(BaseTest):
         p = self.plugin('test node')
         q = QNode(self.circuit, p)
         self.q = q
-        x0 = randn(q.circuit.n_par -1)
+        x0 = randn(q.circuit.n_par -1)  # one circuit param is used to encode the data
         grad = autograd.grad(self.cost, 0)  # gradient with respect to weights
 
-        temp = 0.404258  # expected minimal cost
-        tol = 0.0001
+        temp = 0.30288  # expected minimal cost
+        tol = 0.001
 
-        #o = Optimizer(self.cost, self.cost_grad, x0, n_data=self.data.shape[0], optimizer='SGD')
         o = Optimizer(self.cost, grad, x0, n_data=self.data.shape[0], optimizer='SGD')
-        o.set_hp(batch_size=3)
+        o.set_hp(batch_size=4)
         c = o.train(100)
-        #self.assertAlmostEqual(c, temp, delta=tol)
+        self.plot_result(o.weights)
+        self.assertAlmostLess(c, temp, delta=0.2)  # SGD requires more iterations to converge well
 
-        o = Optimizer(self.cost, None, x0, optimizer='Nelder-Mead')
-        c = o.train()
-        self.assertAlmostEqual(c, temp, delta=tol)
+        opts = ['BFGS', 'CG', 'L-BFGS-B', 'TNC', 'SLSQP']
+        opts_nograd = ['Nelder-Mead', 'Powell']
 
-        o = Optimizer(self.cost, None, x0, optimizer='Powell')
-        c = o.train()
-        self.assertAlmostEqual(c, temp, delta=tol)
+        for opt in opts:
+            o = Optimizer(self.cost, grad, x0, optimizer=opt)
+            c = o.train()
+            self.assertAlmostEqual(c, temp, delta=tol)
 
-        o = Optimizer(self.cost, grad, x0, optimizer='CG')
-        c = o.train()
-        self.assertAlmostEqual(c, temp, delta=tol)
-
-        o = Optimizer(self.cost, grad, x0, optimizer='BFGS')
-        c = o.train()
-        self.assertAlmostEqual(c, temp, delta=tol)
-
-        o = Optimizer(self.cost, grad, x0, optimizer='L-BFGS-B')
-        c = o.train()
-        self.assertAlmostEqual(c, temp, delta=tol)
-
-        o = Optimizer(self.cost, grad, x0, optimizer='TNC')
-        c = o.train()
-        self.assertAlmostEqual(c, temp, delta=tol)
-
-        o = Optimizer(self.cost, grad, x0, optimizer='SLSQP')
-        c = o.train()
-        self.assertAlmostEqual(c, temp, delta=tol)
+        for opt in opts_nograd:
+            o = Optimizer(self.cost, None, x0, optimizer=opt)
+            c = o.train()
+            self.assertAlmostEqual(c, temp, delta=tol)
 
 
 if __name__ == '__main__':
