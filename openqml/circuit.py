@@ -278,8 +278,7 @@ class QNode:
         """Compute the gradient of the node using the angle method.
 
         Given an n-parameter quantum circuit, this function computes its gradient with respect to the parameters
-        using the angle method. The method only works for one-parameter gates where the parameter is the rotation angle,
-        and the generator eigenvalues are all :math:`\pm 1/2`. TODO r?
+        using the angle method. The method only works for one-parameter gates where the generator only has two unique eigenvalues.
         The circuit is evaluated twice for each incidence of each parameter in the circuit.
 
         Args:

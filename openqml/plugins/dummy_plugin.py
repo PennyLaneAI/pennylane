@@ -145,6 +145,7 @@ class Observable(Gate):
     Since we are only interested in the expectation values, there is no need to project the state after the measurement.
     """
     def execute(self, par, reg, sim):
+        "Estimates the expectation value of the observable in the current system state."
         if self.n_sys != 1:
             raise ValueError('This plugin supports only one-qubit observables.')
 
@@ -199,16 +200,21 @@ _circuit_list = [
         Command(r3, [0], [ParRef(0), 0.3, -0.2]),
         Command(swap, [0, 1]),
     ], 'rubbish'),
-    Circuit([
+    Circuit([  # data classifier circuit, ParRef(0) represents the data
         Command(rx, [0], [ParRef(0)]),
         Command(cnot, [0, 1]),
-        Command(rx, [0], [-1.6]),
-        Command(rz, [1], [0.7]),
-        Command(cnot, [0, 1]),
         Command(rx, [0], [ParRef(1)]),
-        Command(rz, [1], [ParRef(2)]),
+        Command(rz, [1], [2.7]),
         Command(cnot, [0, 1]),
-        Command(rx, [0], [-1.2]),
+        Command(rx, [0], [-1.8]),
+        Command(rz, [1], [ParRef(2)]),
+        Command(rx, [1], [ParRef(6)]),
+        Command(rz, [1], [ParRef(7)]),
+        Command(cnot, [0, 1]),
+        Command(rx, [0], [ParRef(3)]),
+        Command(rz, [1], [ParRef(4)]),
+        Command(cnot, [0, 1]),
+        Command(rx, [0], [ParRef(5)]),
         Command(ev_z, [0])
     ], 'opt_ev', out=[0]),
 ]
