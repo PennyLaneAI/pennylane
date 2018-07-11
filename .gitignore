@@ -22,3 +22,5 @@ examples/.ipynb_checkpoints/*
 *.pdf
 *Notes.bib
 *.synctex.gz
+
+!formalism/tasks.pdf
