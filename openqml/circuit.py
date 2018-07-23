@@ -46,7 +46,6 @@ import autograd.extend
 import logging as log
 import warnings
 
-#import numpy as np
 
 
 __all__ = ['GateSpec', 'Command', 'ParRef', 'Circuit', 'QNode']
@@ -120,8 +119,14 @@ class ParRef:
 class Circuit:
     """Quantum circuit.
 
-    The quantum circuit is described in terms of a list of :class:`Command` s.
+    The quantum circuit is described in terms of a list of :class:`Command` instances.
     The Commands must not be used elsewhere, as they are mutable and are sometimes written into.
+
+    .. note::
+
+       The `out` argument reflects the way Strawberry Fields currently stores measurement results
+       in a classical variable associated with the mode being measured. This approach does not work if one wishes to measure
+       the same subsystem several times during the circuit and retain all the results.
 
     Args:
       seq (Sequence[Command]): sequence of quantum operations to apply to the state

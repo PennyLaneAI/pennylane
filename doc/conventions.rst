@@ -77,6 +77,7 @@ the expectation values can be obtained as
 If both A and B are projective measurements and they additionally commute, the combined measurement C is also projective.
 
 
+.. _measurements:
 
 Observables and measurements in OpenQML and Strawberry Fields
 -------------------------------------------------------------
@@ -94,36 +95,45 @@ After the program is finished, in addition to the measured results we may treat 
 Assuming the program itself is deterministic, if there are no measurements we obtain the same final state each time (which in itself is a quantum probability distribution).
 If there are measurements :math:`A, B, \ldots` in the program, each run of the program instead samples the joint p.d.f. of the measurement results,
 which are not necessarily statistically independent.
-Due to entanglement, even the results of two measurements that seem independent on the circuit DAG (in the sense that neither :math:`A>B` nor :math:`B<A`) may actually depend on each other.
+Due to entanglement, even the results of two measurements that seem independent on the circuit DAG (in the sense that neither :math:`A<B` nor :math:`B<A`) may actually depend on each other.
 
 .. note::
 
    Example (ignoring normalization here): Consider the state :math:`\ket{00}+\ket{11}`. If we measure both of the two subsystems separately in the computational basis, for both measurements
    0 and 1 are equally likely outcomes, but the results always are perfectly correlated.
 
-However, if neither :math:`A>B` nor :math:`B<A`, the measurements necessarily commute, and the relative order in which the measurements are performed does not affect the joint p.d.f. of the results.
+However, if neither :math:`A<B` nor :math:`B<A`, the measurements necessarily commute, and the relative order in which the measurements are performed does not affect the joint p.d.f. of the results.
 Furthermore, if we are only interested in expectation values of observables (and don't care about correlations), we may compute them as shown in the previous section.
 
-Let us now assume we wish to obtain (an estimate for) the expectation value :math:`\expect{A}` of a measurement using SF.
+Let us now assume we wish to obtain (estimates for) the expectation values :math:`\expect{A}, \expect{B}, \ldots` of a measurement using SF.
 
-* The simplest method is to run the circuit :math:`n` times and average the results, resulting in an estimate for :math:`\expect{A}`.
-  This is computationally inefficient for simulators, but may be a valid method for a hardware backend.
+#. The simplest method is to run the circuit :math:`n` times and average the results for each measurement, resulting in an estimate for the expectation values.
+   This is computationally inefficient for simulators, but may be a valid method for a hardware backend.
 
-* If :math:`A` does not causally depend on any other measurements (this is always true for the first measurement we make in the program),
-  we may run the program until we reach :math:`A` and sample the state at that point n times.
-  This will not work if :math:`A` depends on preceding measurements. This feature is not yet implemented in SF.
-  Alternatively, for certain types of measurements we may extract the state object before :math:`A` happens,
-  and then call the appropriate expectation value method on it to obtain the EV directly.
+#. If :math:`A` does not causally depend on any other measurements (this is always true for the first measurement we make in the program),
+   we may run the program until we reach :math:`A` and sample the state at that point :math:`n` times.
+   This will not work if :math:`A` depends on preceding measurements.
+   **This feature is not yet implemented in SF.**
+   Alternatively, for certain types of measurements we may extract the state object before :math:`A` happens,
+   and then call the appropriate expectation value method on it to obtain the EV directly.
 
-* Likewise, if :math:`A` commutes with all the other measurements we are interested in, we may compute its expectation value as in the previous item.
+#. The method in the previous item can be used for any number of measurements if they are all consecutive
+   (or made consecutive by eliminating unitaries between them as explained in the previous section, thereby modifying the measurement operators),
+   and all commute with each other.
 
-* The ideal solution would be to automate the the computation of expectation values of an arbitrary number of measurements
-  as efficiently as possible. At least it would be possible to topologically sort the circuit DAG into a Command sequence consisting of three parts, A+B+C,
-  where only B contains measurements and A and C are as long as possible. By isolating the measurements into a short program sequence
-  we may benefit by saving and re-using the state after A during the sampling in part B. If we are not interested in the final state, executing C is not necessary at all.
+#. The ideal solution would be to automate the the computation of expectation values of an arbitrary number of measurements
+   as efficiently as possible. At least it would be possible to topologically sort the circuit DAG into a Command sequence consisting of three parts, A+B+C,
+   where only B contains measurements and A and C are as long as possible. By isolating the measurements into a short program sequence
+   we may benefit by saving and re-using the state after A during the sampling in part B. If we are not interested in the final state, executing C is not necessary at all.
+
+When estimating expectation values like this, we will not obtain a specific collapsed state (and usually will not need one).
+If one is needed, the option that makes the most sense for commuting measurements would probably be
+
+.. math:: \rho' = \sum_{ij\ldots} (A_i B_j \cdots) \rho (A_i B_j \cdots)^\dagger.
 
 
-In summary, both :mod:`openqml.plugins.strawberryfields` and :mod:`openqml.plugins.dummy_plugin` currently are only designed to return expectation values of measurements which
+In summary, both :mod:`openqml.plugins.strawberryfields` and :mod:`openqml.plugins.dummy_plugin` currently are only designed to return expectation values of measurements which are
 
-#. are all grouped next to each other, and
+#. projective,
+#. grouped next to each other, and
 #. all commute with each other.
