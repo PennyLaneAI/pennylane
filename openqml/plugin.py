@@ -137,7 +137,10 @@ def load_plugin(name, plugin_dir=None):
     if mod is None:
         raise ValueError('Plugin {} not found.'.format(name))
     #print(mod)
+    temp = '+' * len(mod.__file__)
+    print(temp)
     print(mod.__file__)
+    print(temp)
     p = mod.init_plugin()
     temp = openqml.version()
     if p.plugin_api_version != temp:

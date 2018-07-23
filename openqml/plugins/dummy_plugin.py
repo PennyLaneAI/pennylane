@@ -1,14 +1,36 @@
 # Copyright 2018 Xanadu Quantum Technologies Inc.
 r"""
-Example implementation for an OpenQML plugin
-============================================
+Example OpenQML plugin
+======================
 
 **Module name:** :mod:`openqml.plugins.dummy_plugin`
 
 .. currentmodule:: openqml.plugins.dummy_plugin
 
 The dummy plugin is meant to be used as a template for writing OpenQML plugin modules for new backends.
-It implements all the API functions and provides a very simple simulation of a qubit-based quantum circuit architecture.
+It implements all the :class:`~openqml.plugin.PluginAPI` methods and provides a very simple pure state
+simulation of a qubit-based quantum circuit architecture.
+
+Functions
+---------
+
+.. autosummary::
+   init_plugin
+   spectral_decomposition_qubit
+   frx
+   fry
+   frz
+   fr3
+
+Classes
+-------
+
+.. autosummary::
+   Gate
+   Observable
+   PluginAPI
+
+----
 """
 
 import warnings
@@ -123,7 +145,7 @@ class Gate(GateSpec):
         Args:
           par (Sequence[float]): gate parameters
           reg   (Sequence[int]): subsystems to which the gate is applied
-          sim       (PluginAPI): simulator instance keeping track of the system state and measurement results
+          sim (~openqml.plugin.PluginAPI): simulator instance keeping track of the system state and measurement results
 
         Returns:
           vector[complex]: evolved system state vector
@@ -141,31 +163,36 @@ class Gate(GateSpec):
 class Observable(Gate):
     """Implements single-qubit hermitian observables.
 
-    For now we assume that all the observables in the circuit commute, and that no more unitary gates appear after them.
+    We assume that all the observables in the circuit are consequtive, and commute.
     Since we are only interested in the expectation values, there is no need to project the state after the measurement.
+    See :ref:`measurements`.
     """
     def execute(self, par, reg, sim):
-        "Estimates the expectation value of the observable in the current system state."
+        """Estimates the expectation value of the observable in the current system state.
+
+        The arguments and return value are the same as for :meth:`Gate.execute`.
+        """
         if self.n_sys != 1:
             raise ValueError('This plugin supports only one-qubit observables.')
 
         A = self.func(*par)  # get the matrix
-        if sim.n_eval == 0:
+        n_eval = sim.n_eval
+        if n_eval == 0:
             # exact expectation value
             ev = sim.ev(A, reg)
         else:
             # estimate the ev
             if 0:
-                # use central limit theorem, sample normal distribution once, only ok if sim.n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+                # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
                 ev = sim.ev(A, reg)
                 var = sim.ev(A**2, reg) -ev**2  # variance
-                ev = np.random.normal(ev, np.sqrt(var / sim.n_eval))
+                ev = np.random.normal(ev, np.sqrt(var / n_eval))
             else:
-                # sample Bernoulli distribution sim.n_eval times / binomial distribution once
+                # sample Bernoulli distribution n_eval times / binomial distribution once
                 a, P = spectral_decomposition_qubit(A)
                 p0 = sim.ev(P[0], reg)  # probability of measuring a[0]
-                n0 = np.random.binomial(sim.n_eval, p0)
-                ev = (n0*a[0] +(sim.n_eval-n0)*a[1]) / sim.n_eval
+                n0 = np.random.binomial(n_eval, p0)
+                ev = (n0*a[0] +(n_eval-n0)*a[1]) / n_eval
 
         sim._result[reg[0]] = ev  # store the result
         return sim._state  # no change to state
@@ -304,7 +331,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
         return U
 
     def ev(self, A, reg):
-        """Expectation value of a one-qubit observable in the current state.
+        r"""Expectation value of a one-qubit observable in the current state.
 
         Args:
           A (array): 2*2 hermitian matrix corresponding to the observable
@@ -322,8 +349,10 @@ class PluginAPI(openqml.plugin.PluginAPI):
         return temp.real
 
     def measure(self, A, reg, par=[], n_eval=0):
+        temp = self.n_eval  # store the original
         self.n_eval = n_eval
         A.execute(par, [reg], self)
+        self.n_eval = temp  # restore it
         return self._result[reg]
 
     def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
@@ -359,8 +388,9 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
 
 def init_plugin():
-    """Every plugin must define this function.
+    """Initialize the plugin.
 
+    Every plugin must define this function.
     It should perform whatever initializations are necessary, and then return the API class.
 
     Returns:

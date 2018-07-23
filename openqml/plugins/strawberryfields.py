@@ -1,7 +1,7 @@
 # Copyright 2018 Xanadu Quantum Technologies Inc.
 r"""
-Strawberry Fields plugin for OpenQML
-====================================
+Strawberry Fields plugin
+========================
 
 **Module name:** :mod:`openqml.plugins.strawberryfields`
 
@@ -14,6 +14,21 @@ Strawberry Fields supports several different backends for executing quantum circ
 The default is a NumPy-based Fock basis simulator, but also a TensorFlow-based Fock basis simulator and a Gaussian simulator are available.
 See PluginAPI._capabilities['backend'] for a list of backend options.
 
+Functions
+---------
+
+.. autosummary::
+   init_plugin
+
+Classes
+-------
+
+.. autosummary::
+   Gate
+   Observable
+   PluginAPI
+
+----
 """
 
 import warnings
@@ -36,11 +51,65 @@ tolerance = 1e-10
 #========================================================
 
 class Gate(GateSpec):
-    """Implements the quantum gates and measurements.
+    """Implements the quantum gates and observables.
     """
     def __init__(self, name, n_sys, n_par, cls=None):
         super().__init__(name, n_sys, n_par)
         self.cls = cls  #: class: sf.ops.Operation subclass corresponding to the gate
+
+    def execute(self, par, reg, sim):
+        """Applies a single gate or measurement on the current system state.
+
+        Args:
+          par (Sequence[float]): gate parameters
+          reg   (Sequence[int]): subsystems to which the gate is applied
+          sim (~openqml.plugin.PluginAPI): simulator instance keeping track of the system state and measurement results
+        """
+        # construct the Operation instance
+        G = self.cls(*par)
+        # apply it
+        G | reg
+
+
+class Observable(Gate):
+    """Implements hermitian observables.
+
+    We assume that all the observables in the circuit are consequtive, and commute.
+    Since we are only interested in the expectation values, there is no need to project the state after the measurement.
+    See :ref:`measurements`.
+    """
+    def execute(self, par, reg, sim):
+        """Estimates the expectation value of the observable in the current system state.
+
+        The arguments are the same as for :meth:`Gate.execute`.
+        """
+        if self.n_sys != 1:
+            raise ValueError('This plugin supports only one-qubit observables.')
+
+        #A = self.cls(*par)  # Operation instance
+        # run the queued program so that we obtain the state before the measurement
+        state = sim.eng.run(**sim.init_kwargs)  # FIXME remove **kwargs here when SF is updated
+        n_eval = sim.n_eval
+
+        if self.cls == sfo.MeasureHomodyne:
+            ev, var = state.quad_expectation(reg[0], *par)
+        elif self.cls == sfo.MeasureFock:
+            ev = state.mean_photon(reg[0])  # FIXME should return var too!
+            var = 0
+        else:
+            warnings.warn('No expectation value method defined for {}.'.format(self.cls))
+            ev = 0
+            var = 0
+        print('-----> observable: ev: {}, var: {}'.format(ev, var))
+
+        if n_eval != 0:
+            # estimate the ev
+            # TODO implement sampling in SF
+            # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+            ev = np.random.normal(ev, np.sqrt(var / n_eval))
+
+        sim.eng.register[reg[0]].val = ev  # TODO HACK: store the result (there should be a SF method for computing and storing the expectation value!)
+
 
 # gates (and state preparations)
 Vac  = Gate('Vac', 1, 0, sfo.Vacuum)
@@ -63,11 +132,11 @@ CX = Gate('CX', 2, 1, sfo.CXgate)
 CZ = Gate('CZ', 2, 1, sfo.CZgate)
 
 # measurements
-MFock = Gate('MFock', 1, 0, sfo.MeasureFock)
-MHo   = Gate('MHomodyne', 1, 1, sfo.MeasureHomodyne)
-#MX    = Gate('MX', 1, 0, sfo.MeasureX)
-#MP    = Gate('MP', 1, 0, sfo.MeasureP)
-MHe   = Gate('MHeterodyne', 1, 0, sfo.MeasureHeterodyne)
+MFock = Observable('MFock', 1, 0, sfo.MeasureFock)
+MHo   = Observable('MHomodyne', 1, 1, sfo.MeasureHomodyne)
+#MX    = Observable('MX', 1, 0, sfo.MeasureX)
+#MP    = Observable('MP', 1, 0, sfo.MeasureP)
+MHe   = Observable('MHeterodyne', 1, 0, sfo.MeasureHeterodyne)
 
 
 demo = [
@@ -116,7 +185,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
         if temp in ('fock', 'tf'):
             kwargs.setdefault('cutoff_dim', 5)  # Fock space truncation dimension
             observables.append(MFock)
-            gates.extend([Fock, V, K])  # nongaussian gates: Fock state prep, cubic phase and Kerr
+            gates.extend([V, K])  # nongaussian gates: Fock state prep, cubic phase and Kerr  FIXME Fock requires an integer parameter, messes up a test if included here
         elif temp == 'gaussian':
             observables.append(MHe)  # TODO move to observables when the Fock basis backends support heterodyning
         else:
@@ -137,14 +206,12 @@ class PluginAPI(openqml.plugin.PluginAPI):
             #self.eng.reset()
 
     def measure(self, A, reg, par=[], n_eval=0):
-        rr = self.eng.register
-        G = A.cls(*par)  # construct the measurement operation
+        temp = self.n_eval  # store the original
+        self.n_eval = n_eval
         with self.eng:
-            # apply it
-            G | rr[reg]
-        self.eng.run(n_eval=n_eval)
-        # measured value FIXME is not the EV!!!
-        return rr[reg].val
+            A.execute(par, [reg], self)  # compute the expectation value
+        self.n_eval = temp  # restore it
+        return self.eng.register[reg].val
 
     def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
         super().execute_circuit(circuit, params, reset=reset, **kwargs)
@@ -169,22 +236,21 @@ class PluginAPI(openqml.plugin.PluginAPI):
             for cmd in circuit.seq:
                 # prepare the parameters
                 par = map(parmap, cmd.par)
-                # construct the gate
-                G = cmd.gate.cls(*par)
-                # apply it
-                G | cmd.reg  #reg[cmd.reg]  # use numeric subsystem references for simplicity
+                # execute the gate
+                cmd.gate.execute(par, cmd.reg, self)
+
         self.eng.run(**self.init_kwargs)  # FIXME remove **kwargs here when SF is updated
 
         if circuit.out is not None:
-            # return the measurement results for the requested modes
-            # measured value FIXME is not the EV!!!
+            # return the estimated expectation values for the requested modes
             return np.array([reg[idx].val for idx in circuit.out])
 
 
 
 def init_plugin():
-    """Every plugin must define this function.
+    """Initialize the plugin.
 
+    Every plugin must define this function.
     It should perform whatever initializations are necessary, and then return an API class.
 
     Returns:
@@ -193,6 +259,6 @@ def init_plugin():
     # find out which SF backends are available
     temp = list(sf.backends.supported_backends.keys())
     temp.remove('base')  # HACK
-    PluginAPI._capabilities['backend'] = temp
+    PluginAPI._capabilities['backend'] = sorted(temp)
 
     return PluginAPI

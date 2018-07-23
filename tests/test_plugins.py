@@ -54,6 +54,15 @@ class BasicTest(BaseTest):
                 print(c)
                 p.execute_circuit(c, randn(c.n_par))
 
+            print('\nInteractive measurements:')
+            for g in p.observables.values():
+                print(g)
+                # execute the demo circuit without measurement, then measure the observable manually
+                temp = p.execute_circuit('demo', params=[1.0, 2.0])
+                #temp = p.measure(g, 0, par=randn(g.n_par), n_eval=1000)
+                temp = p.measure(g, 0, par=0*randn(g.n_par), n_eval=1000)
+                print('Estimated EV:', temp)
+
         # try loading all the discovered plugins, test them
         for name in plugins:
             try:
@@ -68,20 +77,7 @@ class BasicTest(BaseTest):
                 # test all backends
                 for k in temp:
                     test_plugin(p(backend=k))
-
-
-    def test_measurement(self):
-        "Basic expectation value measurement."
-
-        plugins = list_plugins()
-        for name in plugins:
-            p = load_plugin(name)
-            p = p('test instance')
-            # execute the demo circuit without measurement, then measure an observable
-            temp = p.execute_circuit('demo', params=[1.0, 2.0])
-            obs = list(p.observables.values())[0]
-            temp = p.measure(obs, 0, par=randn(obs.n_par), n_eval=1000)
-            print('Measured:', temp)
+                    print('-' * 80)
 
 
 
