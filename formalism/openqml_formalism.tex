@@ -994,7 +994,6 @@ where the first qubit is an ancilla. Now apply $\G$ from Equation (\ref{Eq:term_
 \[ \frac{1}{\sqrt{2}} \left( \ket{0} \G \ket{\psi} + \ket{1} A \ket{\psi} \right). \]
 A second Hadamard prepares
 \[ \frac{1}{2} \left( \ket{0} (\G + A) \ket{\psi} + \ket{1} (\G - A) \ket{\psi} \right). \]
-\maria{This looks nice, but does not help us if I am correct:  $\langle \hat{Q} \rangle = \frac{1}{4} \left( E_1 + E_2 \right) $}
 A measurement of the ancilla selects one of the two branches and results in state
 $\frac{1}{2 \sqrt{p_0}} (\G + A) \ket{\psi}$ with probability
 \[p_0  = \bra{\psi} (\G + A)^{\dagger} (\G + A) \ket{\psi},\]
@@ -1002,9 +1001,11 @@ or in state $\frac{1}{2\sqrt{p_1}} (\G - A) \ket{\psi}$ with probability
 \[p_1 = \bra{\psi} (\G - A)^{\dagger} (\G - A) \ket{\psi}.   \]
 Note that this is not a conditional measurement: Either result contributes to the final estimate. We measure the expectation of $\hat{Q}$ with respect to the final state. If the ancilla was in state $0$, we contribute the result to the estimation of
 \[\tilde{E}_0 =  \frac{1}{4 p_0} \bra{\psi} (\G + A)^{\dagger} \hat{Q} (\G + A) \ket{\psi}, \]
-and if the ancilla was in state $0$ we contribute the result towards the estimation of
+and if the ancilla was in state $1$ we contribute the result towards the estimation of
 \[\tilde{E}_1 =  \frac{1}{4 p_1} \bra{\psi} (\G - A)^{\dagger} \hat{Q} (\G - A) \ket{\psi}. \]
-We can now use our knowledge of $p_0, p_1$ from the measurement together with $E_0 = 4 p_0 \tilde{E}_0$ and $E_1 = 4 p_1 \tilde{E}_1$ to compute the desired estimate (\ref{Eq:term_to_estimate}), and proceed similarly for the term involving unitary $B$.\\
+We can now use our knowledge of $p_0, p_1$ from the measurement together with $E_0 = 4 p_0 \tilde{E}_0$ and $E_1 = 4 p_1 \tilde{E}_1$ to compute the desired estimate (\ref{Eq:term_to_estimate}),
+\[\bra{\psi} A^{\dagger}  \hat{Q} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{Q} A  \ket{\psi} = 2 p_0 \tilde{E}_0 + 1 p_1 \tilde{E}_1.\]
+
 
 Overall, on top of the ``normal operation mode'' of the device, this routine requires that we can apply the gate as well the unitaries from the derivative decomposition controlled by an ancilla. We need to estimate $K$ expectation values altogether. Furthermore, the decomposition of the derivative gate into (single-subsystem)  unitaries that can be implemented by the device has to be worked out once. We will show below that for interesting cases in qubit and CV architectures, the $A_k$ are represented by a single qubit gate.
 
@@ -1028,13 +1029,13 @@ $$
 \end{figure}
 
 The overall quadrature vector is given by
-\[\begin{pmatrix} \c_1 \\ \d_1 \\ \x_2 \\ \p_2 \end{pmatrix}, \]
-where we use $\x$ and $\p_2$ to describe the quadratures of the second mode (which does not get transformed by a subsequent circuit $V$).
+\[( \c_1, \d_1, \x_2, \p_2 )^T, \]
+where we use $\x$ and $\p_2$ to describe the quadratures of the second mode (which does not get transformed by a subsequent circuit $V$). 
 The first beam splitter tranforms this vector to
 \[\frac{1}{\sqrt{2}}\begin{pmatrix} \c_1 - \x_2 \\ \d_1 - \p_2 \\ \c_1 + \x_2 \\ \d_1 + \p_2 \end{pmatrix}.\]
-The Gaussian gates applied to each mode can be expressed by symplectic transformations applied to the subspaces of each mode. Let the symplectic trafo describing gate $A_k$ acting on the first mode be given by
+The Gaussian gates applied to each mode can be expressed by symplectic transformations applied to the subspaces of each mode. Let gate $A$ acting on the first mode be given by the Bogoliubov transform
 \[\underbrace{\begin{pmatrix} s_{11} & s_{12}\\ s_{21} & s_{22} \end{pmatrix}}_{S} \begin{pmatrix} \c_1 - \x_2 \\ \d_1 - \p_2 \end{pmatrix} + \underbrace{\begin{pmatrix} \alpha_1 \\ \alpha_2 \end{pmatrix}}_{\alpha}, \]
-and let the trafo describing gate $\G$ acting on the second mode be given by
+and let gate $\G$ acting on the second mode be given by the transform
 \[\underbrace{\begin{pmatrix} r_{11} & r_{12}\\ r_{21} & r_{22} \end{pmatrix}}_{R} \begin{pmatrix} \c_1 + \x_2 \\ \d_1 + \p_2 \end{pmatrix} + \underbrace{\begin{pmatrix} \beta_1 \\ \beta_2 \end{pmatrix}}_{\beta}.\]
 Overall, the evolution is given by
 \[\frac{1}{\sqrt{2}}\begin{pmatrix} S & 0 \\ 0 & R \end{pmatrix}
@@ -1103,7 +1104,7 @@ This effectively exchanges the position and momentum quadratures of the mode.\\
 
 The corresponding unitary gate has the relation
 \begin{equation}
-	\partial_{\phi} \; R(\phi) = R(\phi + \frac{\pi}{2}).
+	\partial_{\phi} \; \mathcal{R}(\phi) = \mathcal{R}(\phi + \frac{\pi}{2}).
 	\label{Eq:der_rotation}
 \end{equation}
 
@@ -1121,17 +1122,17 @@ To use a similar notation as above, extend the quadrature vector by a constant e
 \begin{pmatrix}
   \x' \\ \p' \\ \mathbbm{1}
 \end{pmatrix}
- =
-\begin{pmatrix}
+ = 
+\underbrace{\begin{pmatrix}
 1 & 0 & b_{\mathrm{im}}  \\
 0 & 1 & b_{\mathrm{re}} \\
 0 & 0 & 1
-\end{pmatrix}
+\end{pmatrix}}_{D}
 \begin{pmatrix}
 \x \\ \p \\ \mathbbm{1}
-\end{pmatrix},
+\end{pmatrix}.
 \end{equation}
-where the matrix represents the displacement operator $D(b)$. The derivative of $D$ with respect to $b_{\mathrm{im}}$ and $b_{\mathrm{re}}$ is given by
+The derivative of the Bogoliubov transform $D$ with respect to $b_{\mathrm{im}}$ and $b_{\mathrm{re}}$ is given by 
 \[\partial_{b_{\mathrm{re}}} D(b_{\mathrm{re}}, b_{\mathrm{im}}) = \begin{pmatrix}
 0 & 0 & 0  \\
 0 & 0 & 1 \\
@@ -1142,7 +1143,7 @@ where the matrix represents the displacement operator $D(b)$. The derivative of 
 0 & 0 & 0 \\
 0 & 0 & 0
 \end{pmatrix}.\]
-The gradient gates are therefore equivalent to the sum of a displacement of $1$ and $-1$ in the variable that we derive for,
+The gradient gates are therefore equivalent to the sum of a displacement of $1$ and $-1$ in the variable that we derive for, 
 \begin{eqnarray*}
 \partial_{b_{\mathrm{re}}} D(b_{\mathrm{re}}, b_{\mathrm{im}}) &=& \frac{1}{2} D(1, 0) - \frac{1}{2} D(-1, 0) \\
 \partial_{b_{\mathrm{im}}} D(b_{\mathrm{re}}, b_{\mathrm{im}}) &=& \frac{1}{2} D(0, 1) - \frac{1}{2} D(0, -1)
