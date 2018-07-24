@@ -9,7 +9,7 @@
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{qcircuit}
-
+\usepackage{multirow}
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}%[section]
 
@@ -892,7 +892,10 @@ The derivative of the expectation is formally given by
 In matrix notation, the expression $\partial_{\mu}\G$ is the entry-wise gradient of $\G$. Since this is in general a complex square matrix, we can always decompose it into the weighted sum of two unitary matrices $A$ and $B$ [ADD PROOF],
 \[\partial_{\mu}\G = \alpha A + \beta B \]
 with real $\alpha, \beta$. To be more general, for example if there is a convenient decomposition into more or less than $2$ unitaries, let us assume that
-\[\partial_{\mu}\G = \sum_{k=1}^K \alpha_k A_k, \]
+\begin{equation} 
+	\partial_{\mu}\G = \sum_{k=1}^K \alpha_k A_k, 
+	\label{Eq:deriv_decomp}
+\end{equation}
 for real $\alpha_k$. The gradient becomes
 \begin{equation*}
 	\partial_{\mu} y  = \sum_{k=1}^K \alpha_k  \left( \bra{\psi} A_k^{\dagger}  \hat{Q} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{Q} A_k  \ket{\psi} \right).
@@ -926,24 +929,22 @@ and
 Subtracting the terms cancels the first two expectation values in $E_1$ and $E_2$ and adds the second ones, and the factor of $\frac{1}{2}$ ensures that we have the correct normalization.
 \end{proof}
 
-We will now propose a way to estimate $E_1$ and $E_2$ using a technique called a linear combination of unitaries (LCU) [REF], first considering a qubit-based quantum computer, and subsequently looking at a CV quantum computer.
 
+\subsection{Autodiff on a qubit-based quantum computer}
 
-\subsubsection{Qubit-based quantum computer}
+We will now propose a way to estimate $E_1$ and $E_2$ on a qubit-based quantum computer, using a technique called a linear combination of unitaries (LCU). We will first consider the special case of Pauli rotations, in which the procedure is known to simplify considerably [REF MITARAI], and subsequently consider the more general case.\\
 
-We will first consider the special case of Pauli rotations, in which the procedure is known to simplify considerably [REF MITARAI], and subsequently consider the more general case.\\
-
-\paragraph{Pauli gates}
+\subsubsection{Pauli gates}
 Consider the gate $\G(\mu) = \e^{i \mu G}$, where $G$ is hermitian as well as unitary, and therefore a projector, $G^2 = \mathbbm{1}$ [\maria{Tried the more general $G^2 = r \mathbbm{1}$, but ran into trouble with $r$ in the calculation below. Possibly generalise.}]. A prominent example are Pauli operators, and it is known that any single qubit quantum gate can be decomposed into such gates. The gradient of such a gate is given by
 \[ \partial_{\mu} \G = i G \e^{i \mu G}.    \]
 Then Eq. (\ref{Eq:der_of_exp}) becomes
 \[ \partial_{\mu} y =   \bra{\psi} \G^{\dagger} (iG)^{\dagger}  \hat{Q} \mathbbm{1} \G \ket{\psi} + \bra{\psi} \G^{\dagger} \mathbbm{1}  \hat{Q} (iG) \G \ket{\psi} , \]
-which has the form of term (\ref{Eq:term_to_estimate}). We can hence write
+which has the form of term (\ref{Eq:term_to_estimate}). We can therefore write
 \[ \partial_{\mu} y = \frac{1}{2}E_1 - \frac{1}{2} E_2, \]
 with
-\[E_1 = \bra{\psi} (\mathbbm{1} + iG)^{\dagger} \hat{c} (\mathbbm{1} + iG) \ket{\psi},\]
+\[E_1 = \bra{\psi} (\mathbbm{1} + iG)^{\dagger} \hat{Q} (\mathbbm{1} + iG) \ket{\psi},\]
 and
-\[E_2= \bra{\psi}(\mathbbm{1} - iG)^{\dagger}  \hat{c} (\mathbbm{1} - iG) \ket{\psi}. \]
+\[E_2= \bra{\psi}(\mathbbm{1} - iG)^{\dagger}  \hat{Q} (\mathbbm{1} - iG) \ket{\psi}. \]
 Since $G$ is a projector, we get
 \begin{equation}
 	\G(\pm \frac{\pi}{2}) = \frac{1}{\sqrt{2}}(\I \pm iG),
@@ -973,7 +974,7 @@ We conclude that the expectations can be estimated straight from the quantum dev
 	\partial_{\mu} y =   \bra{\psi} \G\left(\mu \right)^{\dagger} \G \left(\frac{\pi}{2} \right)^{\dagger}  \hat{Q} \G\left(\mu \right) \left(\frac{\pi}{2} \right) \G\left(\mu \right) \ket{\psi} \\ + \bra{\psi} \G\left(\mu \right)^{\dagger} \G \left(- \frac{\pi}{2} \right)^{\dagger} \hat{Q} \G \left(-\frac{\pi}{2} \right) \G\left(\mu \right) \ket{\psi}
 \end{multline*}
 
-\paragraph{General case}
+\subsubsection{General case}
 
 \begin{figure}[t]
 $$
@@ -1010,67 +1011,8 @@ We can now use our knowledge of $p_0, p_1$ from the measurement together with $E
 Overall, on top of the ``normal operation mode'' of the device, this routine requires that we can apply the gate as well the unitaries from the derivative decomposition controlled by an ancilla. We need to estimate $K$ expectation values altogether. Furthermore, the decomposition of the derivative gate into (single-subsystem)  unitaries that can be implemented by the device has to be worked out once. We will show below that for interesting cases in qubit and CV architectures, the $A_k$ are represented by a single qubit gate.
 
 
-\subsubsection{CV quantum computer}
-
-We show now how to estimate the expectations $E_1, E_2$ for single mode gates on a CV quantum computer. Here, the observables $\hat{O}$ that we are interested in are typically the quadratures $\x, \p$ (for homodyne detection) or the number operator $\hat{a}^{\dagger}\hat{a}$ (photon number resolution) of a given mode. The LCU circuit is implemented with the help of an additional vacuum mode and beam splitters. We use the Heisenberg picture and will look at the evolution and measurement of the quadratures as an example. As explained above, we consider the observables $\c_1 = V^{\dagger} \x_1 V$ and $\d_1 = V^{\dagger} \p_1 V$, which result from evolving the original quadratures by the circuit $V$ that follows after the gate $\G$. \maria{How can we generalise?} \\
-
-Starting with $\ket{\psi}$ in the first mode (which just means that we already applied circuit $U$), and vacuum in the second, we apply the circuit shown in Fig. \ref{Fig:der_eval_cv}. The circuit consists of a 50-50 beam splitter with phase $\pi$, a Gaussian transformation on each mode separately, as well as another 50-50 beam splitter with phase $\pi$. We measure the expectation of the vector of the transformed quadrature operators $\c_1, \d$. \\
-
-
-\begin{figure}[t]
-$$
-\Qcircuit @C=1em @R=.7em {
-\lstick{\ket{\psi}} &  \multigate{1}{BS(\frac{\pi}{4}, \pi)}  & \gate{A}&  \multigate{1}{BS(\frac{\pi}{4}, \pi)} &  \qw \\
-\lstick{\ket{0}} &   \ghost{BS(\frac{\pi}{4}, \pi)}   & \gate{\G}&\ghost{BS(\frac{\pi}{4}, \pi)} & \qw \\
-}
-$$
-\caption{Derivative evaluation circuit.}
-\label{Fig:der_eval_cv}
-\end{figure}
-
-The overall initial quadrature vector is given by
-\[\xi = ( \c_1, \d_1, \x_2, \p_2 )^T, \]
-where we use $\x_2$ and $\p_2$ to describe the quadratures of the second mode (which does not get transformed by a subsequent circuit $V$).
-The Bogoliubov transformation of this vector by a beamsplitter, the Gaussian transformations $A$ and $\G$, and the second beamsplitter is given by
-\[ \frac{1}{2} \begin{pmatrix} \mathbbm{1} & -\mathbbm{1}\\ \mathbbm{1} & \mathbbm{1} \end{pmatrix} 
-\begin{pmatrix} \mathbf{S} & 0\\ 0 & \mathbf{R} \end{pmatrix}
-\begin{pmatrix} \mathbbm{1} & -\mathbbm{1}\\ \mathbbm{1} & \mathbbm{1} \end{pmatrix} 
-\xi + \frac{1}{\sqrt{2}} \begin{pmatrix} \mathbbm{1} & -\mathbbm{1}\\ \mathbbm{1} & \mathbbm{1} \end{pmatrix}  \begin{pmatrix} \mathbf{s} \\ \mathbf{r} \end{pmatrix}.
-\]
-Here, $(\mathbf{S}, \mathbf{s}) = \mathbf{S}\tilde{\xi} + \mathbf{s}$ is the symplectic transformation corresponding to the Gaussian gate $A$, and $(\mathbf{R}, \mathbf{r}) = \mathbf{R}\tilde{\xi} + \mathbf{r}$ the symplectic transformation corresponding to gate $\G$, acting on a quadrature vector $\tilde{\xi}$. The vectors $\mathbf{s}, \mathbf{r}$ contain the real and imaginary part of the displacement, i.e., $\mathbf{s} = (s_{\text{Re}}, s_{\text{Im}})^T$
-
-%After the second beam splitter, we get the final quadrature vector
-%\begin{widetext}
-%\[\begin{pmatrix} \c_1' \\ \d' \\ \x_2' \\ \p_2' \end{pmatrix} =  \frac{1}{2}\begin{pmatrix}(s_{11}- r_{11})\c_1 +(s_{12}- r_{12})\d_1  -(s_{11}+ r_{11})\x_2 - (s_{12}+ r_{12}) \p_2  +  \alpha_1 - \beta_1\\
-%(s_{21}- r_{21}) \c_1+ (s_{22}- r_{22}) \d_1 - (s_{21}+ r_{21}) \x_2 -(s_{22}+ r_{22}) \p_2  + \alpha_2  - \beta_2 \\
-%(s_{11}+r_{11}) \c_1 + (s_{12}+r_{12}) \d_1 + (r_{11}-s_{11}) \x_2 + (r_{12}-s_{12}) \p_2 + \alpha_1   + \beta_1\\
-%(s_{21}+r_{21}) \c_1 + ( s_{22}+ r_{22}) \d_1 + (r_{21}-s_{21}) \x_2 + ( r_{22}- s_{22}) \p_2 + \alpha_2  + \beta_2  \end{pmatrix}.\]
-%\end{widetext}
-This corresponds to following overall transformation:
-\[ \frac{1}{2} \begin{pmatrix} \mathbf{S}-\mathbf{R} & -\mathbf{S}-\mathbf{R}\\ \mathbf{S}+\mathbf{R} & -\mathbf{S}+\mathbf{R}\end{pmatrix}
-\xi + \frac{1}{\sqrt{2}} \begin{pmatrix} \mathbf{s}- \mathbf{r}\\  \mathbf{s} + \mathbf{r} \end{pmatrix}.
-\]
-Taking the expectation of the time evolved quadrature operators of the first mode with respect to the initial state $\ket{\psi} \otimes \ket{0}$ results in
-\begin{multline*}
-\c'=	\frac{1}{2} \bigg[ (s_{11}-r_{11}) \bra{\psi}\c_1\ket{\psi} \\ + (s_{12}-r_{12}) \bra{\psi}\d\ket{\psi} + s_{\text{Re}} - r_{\text{Re}} \bigg]
-\end{multline*}
-for the ``position'' quadrature, and
-\begin{multline*}
-\d' =	\frac{1}{2} \bigg[ (s_{21}-r_{21}) \bra{\psi}\c_1\ket{\psi} \\ +(s_{22}-r_{22}) \bra{\psi}\d\ket{\psi} + s_{\text{Im}} - r_{\text{Im}} \bigg]
-\end{multline*}
-for the ``momentum'' quadrature. Here we used that the expectations $\bra{0}\x_2\ket{0}$ and $\bra{0}\p_2\ket{0}$ evaluate to zero. The values $s_{11}, r_{11},...$ are the entries of $\mathbf{S}$ and $\mathbf{R}$. \\
-
-The operation is formally equivalent to the expectation of $(\c_1, \d_1)^{\dagger}$ with respect to $\ket{\psi} \otimes \ket{0}$ after the (non-symplectic) transformation
-\[(\mathbf{S}-\mathbf{R})\begin{pmatrix} \c_1 \\ \d_1 \end{pmatrix} + \mathbf{s} - \mathbf{r},\]
-which is what we required 
-To get the sum of the two, we simply consider a homodyne measurement of in the second mode. \\
-
-
-\section{Examples of derivative gate decompositions (Maria)}
-
-
-\subsection{Derivatives of general single qubit gates}
-As remarked in \cite{schuld18cc}, for general single qubit gates parameterized as
+\subsubsection{Decomposition of derivatives of single qubit gates}
+For the LCU trick to work in general, we need a decomposition of the derivative gate as in Eq. (\ref{Eq:deriv_decomp}). As remarked in \cite{schuld18cc}, for general single qubit gates parameterized as
 
 \begin{equation*} \label{eq:1q:parametrization}
 \G (\alpha,\beta, \gamma, \phi ) = \e^{i\phi} \begin{pmatrix} \e^{i\beta} \cos \alpha &  \e^{i\gamma} \sin \alpha\\ -\e^{-i\gamma} \sin \alpha &  \e^{-i\beta} \cos \alpha \end{pmatrix}
@@ -1084,25 +1026,42 @@ one can use the ``parameter shift'' rule as
 \maria{What else are interesting cases? Which parametrised gates could devices naturally have besides Pauli-gates?}
 
 
+\subsection{Autodiff on a CV quantum computer}
+
+We now turn to continuous-variable architectures. As before, the task is to compute 
+\[\partial_{\mu}y = \partial_{\mu} \bra{0}U^{\dagger} \G^{\dagger} V^{\dagger} \hat{O}V \G U \ket{0} = \partial_{\mu} \bra{\psi} \G^{\dagger} \hat{Q} \G \ket{\psi},  \]
+but now  $\ket{0}$ denotes the vacuum state, $U, V$ are CV circuits and $\G$ is a (one or two-mode) CV gate. The original observable $\hat{O}$ that we are interested in is typically a quadrature $\x, \p$ (for homodyne detection) or the number projector $\ketbra{n}{n}$ (for photon number resolution) of a given mode. \maria{Any other measurements to consider?} We will have a look at both these settings.
 
 
-\subsection{Gaussian circuits}
+\subsubsection{Homodyne measurement}
 
-We now show that for Gaussian gates and homodyne measurements, the derivative of the quadrature expectation can be expressed by estimating the expectations of slightly different circuits. This is done using the quadrature operator formalism with the Heisenberg picture, where a Gaussian gate applied to the (evolved) quadratures $\hat{q} =\hat{c}, \hat{d}$ is expressed by 
-\[ \G(\mu) \hat{q} \G^{\dagger}(\mu)  = a(\mu)  \c + b(\mu) \d + \alpha (\mu). \]
-Therefore, 
-\[\partial_{\mu} \left( \G(\mu) \hat{q} \G^{\dagger}(\mu)\right)  = \partial_{\mu}a(\mu)  \c + \partial_{\mu}b(\mu) \d + \partial_{\mu}\alpha (\mu). \]
-If we can express the right side as
-\[ \sum_{k=1}^K \gamma_k (\tilde{a}_k(\mu)  \c + \tilde{b}_k(\mu) \d + \tilde{\alpha}_k (\mu)) = \sum_{k=1}^K \gamma_k (A_k(\mu)^{\dagger} \hat{q} A_k), \]
-we get
-\[\partial_{\mu}\bra{\psi} \G(\mu)^{\dagger} \hat{q} \G(\mu) \ket{\psi} = \sum_{k=1}^K \gamma_k \bra{\psi} A_k(\mu)^{\dagger} \hat{q} A_k(\mu) \ket{\psi}, \]
-and, as in the case of Pauli gates, the derivative of the expectation is a wighed sum of expectations with slightly different gates.\\
+We will show now that for homodyne measurements, the derivative of the quadrature expectation can in many cases of interest be estimated by estimating the expectations of slightly different circuits. For this we do not need the LCU trick from qubits. This can be shown using the Heisenberg picture. \\
 
-We will now show that for standard Gaussian gates one can indeed  express their derivative as a linear combination. For this we use the Bogoliubov transform of the entire quadrature vector.
+To make this claim more precise, denote the quadratures after the evolution with the circuit $V$ as $\c = V^{\dagger} \x V$ and $\d = V^{\dagger} \p V$. If $V$ is a Gaussian circuit, the modified quadratures are a linear combination of the original ones, while non-Gaussian circuits result in $\c, \d$ being polynomials in the original quadratures. \maria{Does $V$ have to be Gaussian in order for the idea below to work? Feeling stupid, but I just can't figure it out.} Let $\hat{q} = \x, \p$ be either of the two operators. We want to express the derivative of the expectation as a linear combination of expectations,
+\begin{equation}
+	\partial_{\mu}\bra{\psi} \G(\mu)^{\dagger} \hat{q} \G(\mu) \ket{\psi} = \sum_{k=1}^K \gamma_k \bra{\psi} A_k^{\dagger} \hat{q} A_k \ket{\psi},
+	\label{Eq:sumofsympl}
+\end{equation}
+in which the gate $\G$ has been replaced by another gate (or sequence of gates) $A_k$. \\
+
+%Maybe this little digression shows why this may not be so difficult: Assume that the transformation of the modified quadratures $\hat{q}$ maps them to a new operator that is a polynomial $\mathcal{P}_d$ of order $d$ in the modified quadratures,
+%\[ \G(\mu) \hat{q} \G^{\dagger}(\mu)  = \mathcal{P}_d(\c, \d) . \]
+%The coefficients with which the different terms appear depend on the parameter $\mu$. Deriving this polynomial for $\mu$ will therefore result in a different polynomial  $\mathcal{P}'_{d'}$ (which may have a different order $d'$). This polynomial might not correspond to a valid transformation, but if it can be decomposed into ``valid polynomials'',
+%\[ \mathcal{P}_d(\c, \d) = \sum_k \mathcal{P}^k_d(\c, \d), \]
+%we can express the expectation as a sum of other expectations that give rise to $\mathcal{P}^k_d$. For example, if $\G$ is Gaussian,
+%\begin{equation}
+%	\partial_{\mu} \left( \G(\mu) \hat{q} \G^{\dagger}(\mu)\right)  = \partial_{\mu}a(\mu)  \c + \partial_{\mu}b(\mu) \d + \partial_{\mu}\alpha (\mu), 
+%	\label{Eq:derofhomodyne}
+%\end{equation}
+%we have to try and express the right hand side as a weighed sum of affine symplectic transformations
+%\[ \sum_{k=1}^K \gamma_k (\tilde{a}_k(\mu)  \c + \tilde{b}_k(\mu) \d + \tilde{\alpha}_k (\mu)) = \sum_{k=1}^K \gamma_k \; A_k^{\dagger} \hat{q} A_k. \]
 
 
-\paragraph{Phase rotation}
-The Bogoliubov transform $ \mathcal{B}_R(\phi)$ of the phase rotation gate, acting as
+We will now show how to do this for the standard Gaussian gates in the StrawberryFields elementary gate set, as well as for the cubic phase gate. In the case of Gaussian gates, we calculate the derivative of the Bogoliubov transform of the quadrature vector, and express it as a linear combination of Bogoliubov transforms, which can be translated back into linear combinations of expectations. For the cubic phase gate we look at the nonlinear transformation of quadratures directly.\\
+
+
+\paragraph{Phase rotation.}
+The Bogoliubov transform $ \mathcal{B}_R(\phi)$ of the phase rotation gate $R(\phi)$ acts as
 \[
 \begin{pmatrix}
 \x'\\
@@ -1119,7 +1078,7 @@ This effectively exchanges the position and momentum quadratures of the mode.\\
 We therefore have
 \[\partial_{\phi}\bra{\psi} R(\phi)^{\dagger} \hat{q} R(\phi) \ket{\psi} =  \bra{\psi} R(\phi + \frac{\pi}{2})^{\dagger} \hat{q} R(\phi + \frac{\pi}{2}) \ket{\psi}. \]
 
-\paragraph{Displacement}
+\paragraph{Displacement.}
 
 Displacement by a complex number $b = b_{\mathrm{re}} + i b_{\mathrm{im}}$ shifts the quadratures,
 \[
@@ -1138,19 +1097,19 @@ To use a similar notation as above, extend the quadrature vector by a constant e
 1 & 0 & b_{\mathrm{im}}  \\
 0 & 1 & b_{\mathrm{re}} \\
 0 & 0 & 1
-\end{pmatrix}}_{\mathcal{B}_D}
+\end{pmatrix}}_{\mathcal{B}_D(b)}
 \begin{pmatrix}
 \x \\ \p \\ \mathbbm{1}
 \end{pmatrix}.
 \end{equation}
-The derivative of the Bogoliubov transform $\mathcal{B}_D$ with respect to $b_{\mathrm{im}}$ and $b_{\mathrm{re}}$ is given by 
+The derivative of the Bogoliubov transform $\mathcal{B}_D(b)$ with respect to $b_{\mathrm{im}}$ and $b_{\mathrm{re}}$ is given by 
 \begin{eqnarray*}
-\partial_{b_{\mathrm{re}}} \mathcal{B}_D(b_{\mathrm{re}}, b_{\mathrm{im}}) &=& \begin{pmatrix}
+\partial_{b_{\mathrm{re}}} \mathcal{B}_D(b) &=& \begin{pmatrix}
 0 & 0 & 0  \\
 0 & 0 & 1 \\
 0 & 0 & 0
 \end{pmatrix},\\
-\partial_{b_{\mathrm{im}}} \mathcal{B}_D(b_{\mathrm{re}}, b_{\mathrm{im}}) &=& \begin{pmatrix}
+\partial_{b_{\mathrm{im}}} \mathcal{B}_D(b) &=& \begin{pmatrix}
 0 & 0 & 1  \\
 0 & 0 & 0 \\
 0 & 0 & 0
@@ -1158,53 +1117,140 @@ The derivative of the Bogoliubov transform $\mathcal{B}_D$ with respect to $b_{\
 \end{eqnarray*}
 The gradient gates are therefore equivalent to the sum of a displacement of $1$ and $-1$ in the variable that we derive for, 
 \begin{eqnarray*}
-\partial_{b_{\mathrm{re}}} \mathcal{B}_D(b_{\mathrm{re}}, b_{\mathrm{im}}) &=& \frac{1}{2} \mathcal{B}_D(1, 0) - \frac{1}{2} \mathcal{B}_D(-1, 0) \\
-\partial_{b_{\mathrm{im}}} D(b_{\mathrm{re}}, b_{\mathrm{im}}) &=& \frac{1}{2} \mathcal{B}_D(0, 1) - \frac{1}{2} \mathcal{B}_D(0, -1)
+\partial_{b_{\mathrm{re}}} \mathcal{B}_D(b) &=& \frac{1}{2} \mathcal{B}_D(1, 0) - \frac{1}{2} \mathcal{B}_D(-1, 0) \\
+\partial_{b_{\mathrm{im}}} \mathcal{B}_D(b) &=& \frac{1}{2} \mathcal{B}_D(0, 1) - \frac{1}{2} \mathcal{B}_D(0, -1)
 \end{eqnarray*}
-
-\paragraph{Squeezing}
-Squeezing a mode by a factor $z = r \e^{i\phi}$ with the squeezing operator $S(z)= S(r, \phi)$ corresponds to the operation
-\[ \begin{pmatrix} \x'\\ \p' \end{pmatrix} = \begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} \cos \phi & \sin \phi \\ - \sin \phi & \cos \phi \end{pmatrix} \begin{pmatrix} \x \\ \p \end{pmatrix}. \]
-Then
-\begin{eqnarray*} \partial_{r} S(r, \phi) &=& \begin{pmatrix} -1 & 0 \\ 0 & 1 \end{pmatrix}
-S(r, \phi) \\
-&=& S(r+\log (\sqrt{2}-1), \phi) + \sqrt{2} S(r, \phi),\end{eqnarray*}
+This leads to the final expressions
+\begin{multline} 
+\partial_{b_{\mathrm{re}}}\bra{\psi} D(b)^{\dagger} \hat{q} D(b) \ket{\psi} =  \frac{1}{2}\bra{\psi} D(1,0)^{\dagger} \hat{q} D(1,0) \ket{\psi} \\
+- \frac{1}{2}\bra{\psi} D(1,0)^{\dagger} \hat{q} D(-1,0) \ket{\psi}, 
+\end{multline}
 and
-\begin{eqnarray*} \partial_{\phi} S(r, \phi) &=& \begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} -\sin \phi & \cos \phi \\ - \cos \phi & -\sin \phi \end{pmatrix}\\
-&=& S(r, \phi + \frac{\pi}{2}).\end{eqnarray*}
+\begin{multline} 
+\partial_{b_{\mathrm{im}}}\bra{\psi} D(b)^{\dagger} \hat{q} D(b) \ket{\psi} =  \frac{1}{2}\bra{\psi} D(0,1)^{\dagger} \hat{q} D(1,0) \ket{\psi} \\ 
+- \frac{1}{2}\bra{\psi} D(1,0)^{\dagger} \hat{q} D(0,-1) \ket{\psi} . 
+\end{multline}
+
+\paragraph{Squeezing.}
+Squeezing a mode by a factor $z = r \e^{i\phi}$ with the squeezing operator $S(r, \phi)$ corresponds to the Bogoliubov transformation
+\[ \begin{pmatrix} \x'\\ \p' \end{pmatrix} = \underbrace{\begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} \cos \phi & \sin \phi \\ - \sin \phi & \cos \phi \end{pmatrix}}_{\mathcal{B}_S(r, \phi)} \begin{pmatrix} \x \\ \p \end{pmatrix}. \]
+Then
+\begin{eqnarray*} \partial_{r} \mathcal{B}_S(r, \phi) &=& \begin{pmatrix} -1 & 0 \\ 0 & 1 \end{pmatrix}
+\mathcal{B}_S(r, \phi) \\
+&=& \mathcal{B}_S(r+\log (\sqrt{2}-1), \phi) + \sqrt{2} \mathcal{B}_S(r, \phi),\end{eqnarray*}
+and
+\begin{eqnarray*} \partial_{\phi} \mathcal{B}_S(r, \phi) &=& \begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} -\sin \phi & \cos \phi \\ - \cos \phi & -\sin \phi \end{pmatrix}\\
+&=& \mathcal{B}_S(r, \phi + \frac{\pi}{2}).\end{eqnarray*}
 
 
 
-\paragraph{Beam splitter}
+\paragraph{Beam splitter.}
 The beam splitter with $\theta$ and phase $\phi$ (using Strawberry Fields conventions) applied to modes $i$ and $j$ with quadrature vector $\xi = (x_i, p_i, x_j, p_j )^T$ applies the Bogoliubov transformation $B$ on the vector of quadrature operators,
 \[  \begin{pmatrix} \x'_i \\ \p'_i \\ \x'_j \\ \p'_j \end{pmatrix} =
 \underbrace{\begin{pmatrix} \cos(\theta) \mathbbm{1} & -e^{-i\phi}\sin(\theta) \mathbbm{1}\\
-e^{i\phi}\sin(\theta) \mathbbm{1} & \cos(\theta) \mathbbm{1} \end{pmatrix}}_{B_{\text{Bog}}} \begin{pmatrix} \x_i \\ \p_i \\ \x_j \\ \p_j \end{pmatrix}.
+e^{i\phi}\sin(\theta) \mathbbm{1} & \cos(\theta) \mathbbm{1} \end{pmatrix}}_{\mathcal{B}_{BS}(\theta, \phi)} \begin{pmatrix} \x_i \\ \p_i \\ \x_j \\ \p_j \end{pmatrix}.
 \]
 
-The derivative of the transformation $ B(\theta, \phi) $ with respect to $\theta$ is given by the matrix
+The derivative of the transformation $ \mathcal{B}_{BS}(\theta, \phi)$ with respect to $\theta$ is given by the matrix
 \begin{eqnarray*}
-\partial_{\theta} B(\theta, \phi) &=& \begin{pmatrix} -\sin(\theta) \mathbbm{1} & -e^{-i\phi}\cos(\theta) \mathbbm{1}\\
+\partial_{\theta} \mathcal{B}_{BS}(\theta, \phi) &=& \begin{pmatrix} -\sin(\theta) \mathbbm{1} & -e^{-i\phi}\cos(\theta) \mathbbm{1}\\
 e^{i\phi}\cos(\theta) \mathbbm{1} & -\sin(\theta) \mathbbm{1} \end{pmatrix} \\
-&=& B(\theta +\frac{\pi}{2}, \phi )
+&=& \mathcal{B}_{BS}(\theta +\frac{\pi}{2}, \phi )
 \end{eqnarray*}
 
-For the unitary operator $\mathcal{B}$ representing a beam splitter gate we equivalently find that
-\[ \partial_{\theta} \mathcal{B}(\theta, \phi) = \mathcal{B}(\theta +\frac{\pi}{2}, \phi). \]
 
 For the phase parameter $\phi$, we get
-\[ \partial_{\phi} B(\theta, \phi) = \begin{pmatrix} 0 & - e^{-i(\phi + \frac{\pi}{2})} \sin(\theta) \mathbbm{1}\\
+\[ \partial_{\phi} \mathcal{B}_{BS}(\theta, \phi) = \begin{pmatrix} 0 & - e^{-i(\phi + \frac{\pi}{2})} \sin(\theta) \mathbbm{1}\\
 e^{i(\phi + \frac{\pi}{2})}\sin(\theta) \mathbbm{1} & 0  \end{pmatrix}, \]
 and consequently
-\[\partial_{\phi} B(\theta, \phi) = \frac{1}{2}B(\theta, \phi + \frac{\pi}{2}) - \frac{1}{2}B(\theta, \phi + \frac{3\pi}{2}). \]
+\[\partial_{\phi} \mathcal{B}_{BS}(\theta, \phi) = \frac{1}{2}\mathcal{B}_{BS}(\theta, \phi + \frac{\pi}{2}) - \frac{1}{2}\mathcal{B}_{BS}(\theta, \phi + \frac{3\pi}{2}). \]
 
-Note that when the linear network implements an orthogonal instead of a unitary transformation, the phase of the beam splitter is always $\phi=0$.
+\paragraph{Cubic phase gate.}
+The cubic phase gate $V(\mu)$ is a non-linear gate with the effect
+\[V(\gamma)^{\dagger} \x V(\gamma) = \x, \;\; V(\gamma)^{\dagger} \p V(\gamma) = \p + \gamma \x^2. \]
+Therefore, 
+\begin{eqnarray}
+\partial_{\gamma} V(\gamma)^{\dagger} \x V(\gamma) &=& 0\\
+\partial_{\gamma} V(\gamma)^{\dagger} \p V(\gamma) &=& \x^2.
+\end{eqnarray} 
+The derivative of the operation for $\hat{q} = \x, \p$ is equivalent to 
+\[ \partial_{\gamma} V(\gamma)^{\dagger} \hat{q} V(\gamma) =   V\left(\frac{1}{2} \right)^{\dagger} \hat{q} V \left(\frac{1}{2} \right) - V \left(-\frac{1}{2} \right)^{\dagger} \hat{q} V\left(-\frac{1}{2} \right) \]
 
 
-In summary, the derivatives of Gaussian gates are rather simple to implement as a linear combination of the same gates, but with shifted parameters.
+
+\subsubsection{Photon number resolution}
+
+Possibly the best we can hope for is to find a derivative expression for a fully Gaussian circuit with a subsequent photon number resolving measurement with observable $\ketbra{n}{n}$. \maria{This is the GBS-type setting we want to implement in the lab, so quite important. But even this looks nasty.}\\
+
+We have [Kruse et al 2018]
+\[y = \bra{0}U^{\dagger} \G^{\dagger} V^{\dagger} \; \ketbra{n}{n} \; V \G U \ket{0} =  \frac{1}{\bar{n}! \sqrt{|\sigma_{Q}|} }\text{Haf}(\mathbf{A}_S).\]
+The submatrix $\mathbf{A}_S$ depends on the photon sequence $\bar{n}$ which detemine which rows and columns of the circuit's A-matrix
+\[ \mathbf{A} =\begin{pmatrix}0 & \mathbbm{1} \\ \mathbbm{1} & 0 \end{pmatrix} \left[ \mathbbm{1} - \sigma_Q^{-1} \right],\]
+to construct it from. Here,
+\[\sigma_Q = \sigma + \frac{1}{2} \mathbbm{1},\]
+and $\sigma$ is the covariance matrix of the Gaussian state.
+\maria{Quick and dirty, the gradient would be something like
+\begin{multline}\partial_{\mu} y = -\frac{\sqrt{(|\sigma_Q| \tr \{ \sigma_Q^{-1} \partial_{\mu} \sigma \})}}{2\bar{n}! }\text{Haf}(\mathbf{A}_S) \\
++ \frac{1}{\bar{n}! \sqrt{|\sigma_{Q}|} )}\text{Haf}(\mathbf{A'}_S),
+\end{multline}
+with 
+\[\mathbf{A}' = \begin{pmatrix}0 & \mathbbm{1} \\ \mathbbm{1} & 0 \end{pmatrix} \sigma_Q^{-1}(\partial_{\mu} \sigma) \sigma_Q^{-1}.\] 
+That looks rather nasty, and I doubt that we can compute this naturally with the device. Hopeless?}
 
 
 
+%The LCU circuit is implemented with the help of an additional vacuum mode and beam splitters. We use the Heisenberg picture and will look at the evolution and measurement of the quadratures as an example. As explained above, we consider the observables $\c_1 = V^{\dagger} \x_1 V$ and $\d_1 = V^{\dagger} \p_1 V$, which result from evolving the original quadratures by the circuit $V$ that follows after the gate $\G$. \maria{How can we generalise?} \\
+%
+%Starting with $\ket{\psi}$ in the first mode (which just means that we already applied circuit $U$), and vacuum in the second, we apply the circuit shown in Fig. \ref{Fig:der_eval_cv}. The circuit consists of a 50-50 beam splitter with phase $\pi$, a Gaussian transformation on each mode separately, as well as another 50-50 beam splitter with phase $\pi$. We measure the expectation of the vector of the transformed quadrature operators $\c_1, \d$. \\
+%
+%
+%\begin{figure}[t]
+%$$
+%\Qcircuit @C=1em @R=.7em {
+%\lstick{\ket{\psi}} &  \multigate{1}{BS(\frac{\pi}{4}, \pi)}  & \gate{A}&  \multigate{1}{BS(\frac{\pi}{4}, \pi)} &  \qw \\
+%\lstick{\ket{0}} &   \ghost{BS(\frac{\pi}{4}, \pi)}   & \gate{\G}&\ghost{BS(\frac{\pi}{4}, \pi)} & \qw \\
+%}
+%$$
+%\caption{Derivative evaluation circuit.}
+%\label{Fig:der_eval_cv}
+%\end{figure}
+%
+%The overall initial quadrature vector is given by
+%\[\xi = ( \c_1, \d_1, \x_2, \p_2 )^T, \]
+%where we use $\x_2$ and $\p_2$ to describe the quadratures of the second mode (which does not get transformed by a subsequent circuit $V$).
+%The Bogoliubov transformation of this vector by a beamsplitter, the Gaussian transformations $A$ and $\G$, and the second beamsplitter is given by
+%\[ \frac{1}{2} \begin{pmatrix} \mathbbm{1} & -\mathbbm{1}\\ \mathbbm{1} & \mathbbm{1} \end{pmatrix} 
+%\begin{pmatrix} \mathbf{S} & 0\\ 0 & \mathbf{R} \end{pmatrix}
+%\begin{pmatrix} \mathbbm{1} & -\mathbbm{1}\\ \mathbbm{1} & \mathbbm{1} \end{pmatrix} 
+%\xi + \frac{1}{\sqrt{2}} \begin{pmatrix} \mathbbm{1} & -\mathbbm{1}\\ \mathbbm{1} & \mathbbm{1} \end{pmatrix}  \begin{pmatrix} \mathbf{s} \\ \mathbf{r} \end{pmatrix}.
+%\]
+%Here, $(\mathbf{S}, \mathbf{s}) = \mathbf{S}\tilde{\xi} + \mathbf{s}$ is the symplectic transformation corresponding to the Gaussian gate $A$, and $(\mathbf{R}, \mathbf{r}) = \mathbf{R}\tilde{\xi} + \mathbf{r}$ the symplectic transformation corresponding to gate $\G$, acting on a quadrature vector $\tilde{\xi}$. The vectors $\mathbf{s}, \mathbf{r}$ contain the real and imaginary part of the displacement, i.e., $\mathbf{s} = (s_{\text{Re}}, s_{\text{Im}})^T$
+%
+%%After the second beam splitter, we get the final quadrature vector
+%%\begin{widetext}
+%%\[\begin{pmatrix} \c_1' \\ \d' \\ \x_2' \\ \p_2' \end{pmatrix} =  \frac{1}{2}\begin{pmatrix}(s_{11}- r_{11})\c_1 +(s_{12}- r_{12})\d_1  -(s_{11}+ r_{11})\x_2 - (s_{12}+ r_{12}) \p_2  +  \alpha_1 - \beta_1\\
+%%(s_{21}- r_{21}) \c_1+ (s_{22}- r_{22}) \d_1 - (s_{21}+ r_{21}) \x_2 -(s_{22}+ r_{22}) \p_2  + \alpha_2  - \beta_2 \\
+%%(s_{11}+r_{11}) \c_1 + (s_{12}+r_{12}) \d_1 + (r_{11}-s_{11}) \x_2 + (r_{12}-s_{12}) \p_2 + \alpha_1   + \beta_1\\
+%%(s_{21}+r_{21}) \c_1 + ( s_{22}+ r_{22}) \d_1 + (r_{21}-s_{21}) \x_2 + ( r_{22}- s_{22}) \p_2 + \alpha_2  + \beta_2  \end{pmatrix}.\]
+%%\end{widetext}
+%This corresponds to following overall transformation:
+%\[ \frac{1}{2} \begin{pmatrix} \mathbf{S}-\mathbf{R} & -\mathbf{S}-\mathbf{R}\\ \mathbf{S}+\mathbf{R} & -\mathbf{S}+\mathbf{R}\end{pmatrix}
+%\xi + \frac{1}{\sqrt{2}} \begin{pmatrix} \mathbf{s}- \mathbf{r}\\  \mathbf{s} + \mathbf{r} \end{pmatrix}.
+%\]
+%Taking the expectation of the time evolved quadrature operators of the first mode with respect to the initial state $\ket{\psi} \otimes \ket{0}$ results in
+%\begin{multline*}
+%\c'=	\frac{1}{2} \bigg[ (s_{11}-r_{11}) \bra{\psi}\c_1\ket{\psi} \\ + (s_{12}-r_{12}) \bra{\psi}\d\ket{\psi} + s_{\text{Re}} - r_{\text{Re}} \bigg]
+%\end{multline*}
+%for the ``position'' quadrature, and
+%\begin{multline*}
+%\d' =	\frac{1}{2} \bigg[ (s_{21}-r_{21}) \bra{\psi}\c_1\ket{\psi} \\ +(s_{22}-r_{22}) \bra{\psi}\d\ket{\psi} + s_{\text{Im}} - r_{\text{Im}} \bigg]
+%\end{multline*}
+%for the ``momentum'' quadrature. Here we used that the expectations $\bra{0}\x_2\ket{0}$ and $\bra{0}\p_2\ket{0}$ evaluate to zero. The values $s_{11}, r_{11},...$ are the entries of $\mathbf{S}$ and $\mathbf{R}$. \\
+%
+%The operation is formally equivalent to the expectation of $(\c_1, \d_1)^{\dagger}$ with respect to $\ket{\psi} \otimes \ket{0}$ after the (non-symplectic) transformation
+%\[(\mathbf{S}-\mathbf{R})\begin{pmatrix} \c_1 \\ \d_1 \end{pmatrix} + \mathbf{s} - \mathbf{r},\]
+%which is what we required 
+%To get the sum of the two, we simply consider a homodyne measurement of in the second mode. \\
 
 
 \end{document}
