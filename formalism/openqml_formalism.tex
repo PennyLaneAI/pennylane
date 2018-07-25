@@ -189,12 +189,7 @@ the elementary rotations around the $x$, $y$ and~$z$ axes:
           0 & \e^{i \frac{\gamma}{2}}
         \end{pmatrix}\\
 \end{eqnarray*}
-Any $\SO(3)$ rotation can be expressed using three Euler angles, that is, three rotations around two orthogonal axes. A standard axis choice is~$zyz$. Due to the isomorphism $\SU(2)/\Z_2 \isom \SO(3)$ we obtain a similar \maria{similar to what?} \cg{I suppose similar to how one could/would decompose arbitrary rotations in $\mathbb R^3$ into such around the axes. Maybe mentioning the isomorphism is not even necessary. It is not so hard to see that every element of $SU(2)$ is of the form $
-  \begin{pmatrix}
-    a & b^*\\
-    -b & a^*
-  \end{pmatrix}
-$ with $|a|^2 + |b|^2 = 1$ and that all such matrices can be reached with the expression below.} decomposition
+Any $\SO(3)$ rotation can be expressed using three Euler angles, that is, three rotations around two orthogonal axes. A standard axis choice is~$zyz$. Due to the isomorphism $\SU(2)/\Z_2 \isom \SO(3)$ we obtain a similar decomposition
 for arbitrary single-qubit gates $S$:
 \begin{align}
 \label{eq:app:euler}
@@ -406,8 +401,7 @@ The central feature of OpenQML is that it can compute automatic gradients of exp
 Assume the model $f$ is described by a hybrid model graph $\mathcal{M}$. We want to take the derivative of an element $y_s$ of $f$'s output $y$ with respect to a model parameter $\mu$. Assume that $\mu$ is in the subset $\theta^*$ of the parameters $\theta$, and the subset parametrizes the node $n^*$. For now we assume that the subsets are disjoint, so that there is no parameter tie between nodes. Let $y_s \circ n^{(p)}_1 \circ ... \circ (n^*)^{(p)}$ be the chain of (quantum or classical nodes) that emerges from following the output $y_s$ in the opposite direction of the directed edges until we reach node $n^*$. Since there may be $N_p > 1$ of those paths, we used a superscript to denote the path index. All branches that do not lead back to $\theta_t$ are independent of $\mu$ and can be thought of as constants. We can formally derive a `backpropagation' mechanism for this model.\\
 
 The chain rule prescribes that the gradient with respect to the model parameter $\mu \in \theta_t$ is given by
-\[ \partial_{\mu \in \theta_t} y_s = \sum_{p=1}^{N_p} \frac{y}{n_1^{(p)}} \frac{ n^{(p)}_1}{n^{(p)}_{2}}  \cdots \frac{n^*}{\mu}. \]
-\cg{I suppose the fractions should be derivatives/gradients?}
+\[ \partial_{\mu \in \theta_t} y_s = \sum_{p=1}^{N_p} \frac{\partial y}{\partial n_1^{(p)}} \frac{ \partial n^{(p)}_1}{\partial n^{(p)}_{2}}  \cdots \frac{\partial n^*}{\partial \mu}. \]
 \begin{figure}[t]
 \begin{tikzpicture}
 \node[] at (-0.75,1.5) {Path p=1};
@@ -1165,7 +1159,6 @@ e^{i(\phi + \frac{\pi}{2})}\sin(\theta) \mathbbm{1} & 0  \end{pmatrix}, \]
 and consequently
 \[\partial_{\phi} \mathcal{B}_{BS}(\theta, \phi) = \frac{1}{2}\mathcal{B}_{BS}(\theta, \phi + \frac{\pi}{2}) - \frac{1}{2}\mathcal{B}_{BS}(\theta, \phi + \frac{3\pi}{2}). \]
 
-\cg{Beautiful! I think in \eqref{eq:beamsplitter_as_matrix} you mean to either write the action on the creation operators $a_1, a_2$ or you would need to write the BS as a $4\times4$ matrix. The final formulas for the gradients are of course untouched by this.}
 
 \paragraph{Cubic phase gate.}
 The cubic phase gate $V(\mu)$ is a non-linear gate with the effect
@@ -1180,26 +1173,42 @@ The derivative of the operation for $\hat{q} = \x, \p$ is equivalent to
 
 
 
-\subsubsection{Photon number resolution}
+\subsubsection{General case}
 
-Possibly the best we can hope for is to find a derivative expression for a fully Gaussian circuit with a subsequent photon number resolving measurement with observable $\ketbra{n}{n}$. \maria{This is the GBS-type setting we want to implement in the lab, so quite important. But even this looks nasty.}\\
+If we consider general observables $\hat{O}$ we could probably use a similar trick to the LCU-routine for qubits, using beam splitters. However, it is very difficult to decompose derivatives of gates into unitaries which represent elementary gate sequences 
 
-We have [Kruse et al 2018]
+\[ y = \bra{0}U^{\dagger} \G^{\dagger} V^{\dagger} \; \ketbra{n}{n} \; V \G U \ket{0} \]
+
+
+\subsubsection{Photon number measurements}
+Consider a fully Gaussian circuit with a subsequent photon number resolving measurement with observable $\ketbra{n}{n}$.  We have [Kruse et al 2018]
 \[y = \bra{0}U^{\dagger} \G^{\dagger} V^{\dagger} \; \ketbra{n}{n} \; V \G U \ket{0} =  \frac{1}{\bar{n}! \sqrt{|\sigma_{Q}|} }\text{Haf}(\mathbf{A}_S).\]
 The submatrix $\mathbf{A}_S$ depends on the photon sequence $\bar{n}$ which detemine which rows and columns of the circuit's A-matrix
 \[ \mathbf{A} =\begin{pmatrix}0 & \mathbbm{1} \\ \mathbbm{1} & 0 \end{pmatrix} \left[ \mathbbm{1} - \sigma_Q^{-1} \right],\]
 to construct it from. Here,
 \[\sigma_Q = \sigma + \frac{1}{2} \mathbbm{1},\]
 and $\sigma$ is the covariance matrix of the Gaussian state.
-\maria{Quick and dirty, the gradient would be something like
+Quick and dirty, the gradient would be something like
 \begin{multline}\partial_{\mu} y = -\frac{\sqrt{(|\sigma_Q| \tr \{ \sigma_Q^{-1} \partial_{\mu} \sigma \})}}{2\bar{n}! }\text{Haf}(\mathbf{A}_S) \\
 + \frac{1}{\bar{n}! \sqrt{|\sigma_{Q}|} )}\text{Haf}(\mathbf{A'}_S),
 \end{multline}
 with 
 \[\mathbf{A}' = \begin{pmatrix}0 & \mathbbm{1} \\ \mathbbm{1} & 0 \end{pmatrix} \sigma_Q^{-1}(\partial_{\mu} \sigma) \sigma_Q^{-1}.\] 
-That looks rather nasty, and I doubt that we can compute this naturally with the device. Hopeless?}
-\cg{Yeah, well, it is pretty much the whole point of photonic quantum computing that it is hard to compute these probabilities, and so it is no surprise that it is also hard to compute their derivative. If one is not in a fully Gaussian setting, I think there is little hope that one can get around gradient free methods.}
 
+\maria{(Attempt 2: Not working!)}
+
+Another starting point is to look at 
+\[tr \{\rho \ketbra{n}{n}  \} \]
+and 
+\[\ketbra{n}{n} = (\adag)^n \ketbra{0}{0} (\a)^n \]
+and consider the Heisenberg evolution of the mode operators for small photon numbers.
+\[ (\G \adag \G^{\dagger})^n \ketbra{0}{0} ( \G^{\dagger} \a \G)^n  = (\mathcal{B}_{\G} (\adag))^n \ketbra{0}{0} (\mathcal{B}_{\G} (\a))^n  \]
+
+
+\maria{(Attempt 3: Not working!)}
+One could use a CV-LCU trick. For a gate $ \G = \e^{i\mu H}$ with hermitian generator $H$, we get $\partial_{\mu} \G = i H \G$. We can decompose $iH$ into a sum of two unitaries:
+\[iH = i/2 \left[ \left( H +i \sqrt{1 - H^2}\right) +  \left( H -i \sqrt{1 - H^2} \right)\right] . \]
+The problem is, how could we decompose and implement these unitaries with a given gate set? They will in general depend on rather nonlinear gates... 
 
 %The LCU circuit is implemented with the help of an additional vacuum mode and beam splitters. We use the Heisenberg picture and will look at the evolution and measurement of the quadratures as an example. As explained above, we consider the observables $\c_1 = V^{\dagger} \x_1 V$ and $\d_1 = V^{\dagger} \p_1 V$, which result from evolving the original quadratures by the circuit $V$ that follows after the gate $\G$. \maria{How can we generalise?} \\
 %
