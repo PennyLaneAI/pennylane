@@ -929,7 +929,6 @@ and
 Subtracting the terms cancels the first two expectation values in $E_1$ and $E_2$ and adds the second ones, and the factor of $\frac{1}{2}$ ensures that we have the correct normalization.
 \end{proof}
 
-
 \subsection{Autodiff on a qubit-based quantum computer}
 
 We will now propose a way to estimate $E_1$ and $E_2$ on a qubit-based quantum computer, using a technique called a linear combination of unitaries (LCU). We will first consider the special case of Pauli rotations, in which the procedure is known to simplify considerably [REF MITARAI], and subsequently consider the more general case.\\
@@ -1010,6 +1009,7 @@ We can now use our knowledge of $p_0, p_1$ from the measurement together with $E
 
 Overall, on top of the ``normal operation mode'' of the device, this routine requires that we can apply the gate as well the unitaries from the derivative decomposition controlled by an ancilla. We need to estimate $K$ expectation values altogether. Furthermore, the decomposition of the derivative gate into (single-subsystem)  unitaries that can be implemented by the device has to be worked out once. We will show below that for interesting cases in qubit and CV architectures, the $A_k$ are represented by a single qubit gate.
 
+\cg{Interesting. The decomposition in \eqref{Eq:deriv_decomp} is more general than the decomposition into projectors that I proposed above. Consequently one can get away with less circuits to measure, but needs the capability to do controlled unitaries.} 
 
 \subsubsection{Decomposition of derivatives of single qubit gates}
 For the LCU trick to work in general, we need a decomposition of the derivative gate as in Eq. (\ref{Eq:deriv_decomp}). As remarked in \cite{schuld18cc}, for general single qubit gates parameterized as
@@ -1146,10 +1146,10 @@ and
 
 \paragraph{Beam splitter.}
 The beam splitter with $\theta$ and phase $\phi$ (using Strawberry Fields conventions) applied to modes $i$ and $j$ with quadrature vector $\xi = (x_i, p_i, x_j, p_j )^T$ applies the Bogoliubov transformation $B$ on the vector of quadrature operators,
-\[  \begin{pmatrix} \x'_i \\ \p'_i \\ \x'_j \\ \p'_j \end{pmatrix} =
+\begin{equation} \label{eq:beamsplitter_as_matrix} \begin{pmatrix} \x'_i \\ \p'_i \\ \x'_j \\ \p'_j \end{pmatrix} =
 \underbrace{\begin{pmatrix} \cos(\theta) \mathbbm{1} & -e^{-i\phi}\sin(\theta) \mathbbm{1}\\
 e^{i\phi}\sin(\theta) \mathbbm{1} & \cos(\theta) \mathbbm{1} \end{pmatrix}}_{\mathcal{B}_{BS}(\theta, \phi)} \begin{pmatrix} \x_i \\ \p_i \\ \x_j \\ \p_j \end{pmatrix}.
-\]
+\end{equation}
 
 The derivative of the transformation $ \mathcal{B}_{BS}(\theta, \phi)$ with respect to $\theta$ is given by the matrix
 \begin{eqnarray*}
@@ -1164,6 +1164,8 @@ For the phase parameter $\phi$, we get
 e^{i(\phi + \frac{\pi}{2})}\sin(\theta) \mathbbm{1} & 0  \end{pmatrix}, \]
 and consequently
 \[\partial_{\phi} \mathcal{B}_{BS}(\theta, \phi) = \frac{1}{2}\mathcal{B}_{BS}(\theta, \phi + \frac{\pi}{2}) - \frac{1}{2}\mathcal{B}_{BS}(\theta, \phi + \frac{3\pi}{2}). \]
+
+\cg{Beautiful! I think in \eqref{eq:beamsplitter_as_matrix} you mean to either write the action on the creation operators $a_1, a_2$ or you would need to write the BS as a $4\times4$ matrix. The final formulas for the gradients are of course untouched by this.}
 
 \paragraph{Cubic phase gate.}
 The cubic phase gate $V(\mu)$ is a non-linear gate with the effect
@@ -1196,7 +1198,7 @@ and $\sigma$ is the covariance matrix of the Gaussian state.
 with 
 \[\mathbf{A}' = \begin{pmatrix}0 & \mathbbm{1} \\ \mathbbm{1} & 0 \end{pmatrix} \sigma_Q^{-1}(\partial_{\mu} \sigma) \sigma_Q^{-1}.\] 
 That looks rather nasty, and I doubt that we can compute this naturally with the device. Hopeless?}
-
+\cg{Yeah, well, it is pretty much the whole point of photonic quantum computing that it is hard to compute these probabilities, and so it is no surprise that it is also hard to compute their derivative. If one is not in a fully Gaussian setting, I think there is little hope that one can get around gradient free methods.}
 
 
 %The LCU circuit is implemented with the help of an additional vacuum mode and beam splitters. We use the Heisenberg picture and will look at the evolution and measurement of the quadratures as an example. As explained above, we consider the observables $\c_1 = V^{\dagger} \x_1 V$ and $\d_1 = V^{\dagger} \p_1 V$, which result from evolving the original quadratures by the circuit $V$ that follows after the gate $\G$. \maria{How can we generalise?} \\
