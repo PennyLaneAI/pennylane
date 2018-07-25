@@ -1031,7 +1031,9 @@ but now  $\ket{0}$ denotes the vacuum state, $U, V$ are CV circuits and $\G$ is 
 
 We will show now that for homodyne measurements, the derivative of the quadrature expectation can in many cases of interest be estimated by estimating the expectations of slightly different circuits. For this we do not need the LCU trick from qubits. This can be shown using the Heisenberg picture. \\
 
-To make this claim more precise, denote the quadratures after the evolution with the circuit $V$ as $\c = V^{\dagger} \x V$ and $\d = V^{\dagger} \p V$. If $V$ is a Gaussian circuit, the modified quadratures are a linear combination of the original ones, while non-Gaussian circuits result in $\c, \d$ being polynomials in the original quadratures. \maria{Does $V$ have to be Gaussian in order for the idea below to work? Feeling stupid, but I just can't figure it out.} Let $\hat{q} = \x, \p$ be either of the two operators. We want to express the derivative of the expectation as a linear combination of expectations,
+To make this claim more precise, denote the quadratures after the evolution with the circuit $V$ as $\c = V^{\dagger} \x V$ and $\d = V^{\dagger} \p V$. If $V$ is a Gaussian circuit, the modified quadratures are a linear combination of the original ones, while non-Gaussian circuits result in $\c, \d$ being polynomials in the original quadratures. \maria{Does $V$ have to be Gaussian in order for the idea below to work? Feeling stupid, but I just can't figure it out.}
+\cg{At fist I was convinced that it would work in general, but now I have the following doubt: We are dealing with two representations here, the one in Hilbert space and the one in terms of creation and annihilation operators. The question is somehow, when is the right moment to switch representation. The Hilbert space representation has the advantage that operations are always linear. This is what allows us to ``pull'' the derivative past the state and the operation $V$ when deriving \eqref{Eq:der_of_exp}, irrespective of what $V$ is. If we use this representation, however, we need to calculate the derivatives in \eqref{Eq:der_of_exp} in Hilbert space. This is difficult for the CV operations and general qubit gates. We can, as you show here, elegantly compute the derivatives of the CV operations in their representation as maps on the creation operators. We would thus like do the whole calculation in this representation. However, the map $V$ is, as you also said, non-linear. If we want to compute the derivative with respect to some gate that is hidden behind such a $V$ in this representation, we thus need to use the chain rule. This problem goes away only if all stats and operations are Gaussian, i.e, linear operations on the creation operators. So, with this I think that the following only really woks for Gaussian circuits. Does that make sense?}
+Let $\hat{q} = \x, \p$ be either of the two operators. We want to express the derivative of the expectation as a linear combination of expectations,
 \begin{equation}
 	\partial_{\mu}\bra{\psi} \G(\mu)^{\dagger} \hat{q} \G(\mu) \ket{\psi} = \sum_{k=1}^K \gamma_k \bra{\psi} A_k^{\dagger} \hat{q} A_k \ket{\psi},
 	\label{Eq:sumofsympl}
@@ -1194,7 +1196,7 @@ Quick and dirty, the gradient would be something like
 \end{multline}
 with 
 \[\mathbf{A}' = \begin{pmatrix}0 & \mathbbm{1} \\ \mathbbm{1} & 0 \end{pmatrix} \sigma_Q^{-1}(\partial_{\mu} \sigma) \sigma_Q^{-1}.\] 
-
+\cg{As we discussed earlier, it seems pretty hopeless to calculate this. The reason is also clear: It is the whole point that calculating such probabilities is hard. Maybe one can do something for non-ideal particle number detectors? Like approximate their POVM elements by some polynomial in creation/annihilation operators and then take the derivative of that? It will not be the exact gradient but maybe it is good enough in practice?}
 
 \maria{(Attempt 2: Not working!)}
 
