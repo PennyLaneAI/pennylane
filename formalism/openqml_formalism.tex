@@ -1198,7 +1198,7 @@ and $\sigma$ is the covariance matrix of the Gaussian state.
 with 
 \[\mathbf{A}' = \begin{pmatrix}0 & \mathbbm{1} \\ \mathbbm{1} & 0 \end{pmatrix} \sigma_Q^{-1}(\partial_{\mu} \sigma) \sigma_Q^{-1}.\] 
 That looks rather nasty, and I doubt that we can compute this naturally with the device. Hopeless?}
-\cg{Yeah, well, it is pretty much the whole point of photonic quantum computing that it is hard to compute these probabilities, and so it is no surprise that it is also hard to compute their derivative. If one is not in a fully Gaussian setting, I think there is little hope that one can get around gradient free methods.}
+\cg{Yeah, well, it is pretty much the whole point of photonic quantum computing that it is hard to compute these probabilities, and so it is no surprise that it is also hard to compute their derivative. If one is not in a fully Gaussian setting or at least the observable has some easy decomposition into quadratures, I think there is little hope that one can get around gradient free methods.}
 
 
 %The LCU circuit is implemented with the help of an additional vacuum mode and beam splitters. We use the Heisenberg picture and will look at the evolution and measurement of the quadratures as an example. As explained above, we consider the observables $\c_1 = V^{\dagger} \x_1 V$ and $\d_1 = V^{\dagger} \p_1 V$, which result from evolving the original quadratures by the circuit $V$ that follows after the gate $\G$. \maria{How can we generalise?} \\
