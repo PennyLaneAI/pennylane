@@ -1271,7 +1271,119 @@ The problem is, how could we decompose and implement these unitaries with a give
 %To get the sum of the two, we simply consider a homodyne measurement of in the second mode. \\
 
 
+\section{Heisenberg representation of gates}
+For completeness, let's look at the effect of gates in the Heisenberg representation and how this affects differentiation formulas.
+At the highest level of generality, we have an operator algebra which contains all possible polynomials of the quadrature operators $\hat{x}$, $\hat{p}$, and $\mathbbm{1}$. For notational convenience, let us represent each of these operators in the form $\hat{O}_i$, i.e., 
+\begin{align}
+ \hat{O}_0 = & \mathbbm{1} \\
+ \hat{O}_1 = & \hat{x} \\
+ \hat{O}_2 = & \hat{p}.
+\end{align}
 
+Consider now a parameterized unitary gate $\mathcal{G}=\mathcal{G}_\theta$, which we rewrite in the Heisenberg picture as a transformation $\Omega$, i.e.,
+\begin{equation}
+ \mathcal{G}^\dagger \hat{O}_i \mathcal{G} = \Omega[\hat{O}_i].
+\end{equation}
+Suppose the gate is Gaussian. Then it will map the operators $\{\hat{O}_j\}$ linearly amongst themselves: 
+\begin{equation}
+ \Omega[\hat{O}_j] = \sum_{i=0}^2 c_{ij} \hat{O}_i.
+\end{equation}
+Such a transformation has a representation as a $3\times 3$ matrix $A$ with two indices, i.e., 
+\begin{equation}
+ [A]_{ij} = c_{ij}.
+\end{equation}
+
+Since the gate $\Omega$ is unitary, it is trace-preserving, so we have 
+\begin{align}
+ \mathrm{Tr}(\mathcal{G}\rho \mathcal{G}^\dagger) 
+ & = \mathrm{Tr}(\mathcal{G}^\dagger\mathbbm{1}\mathcal{G}\rho ) \nonumber \\
+ & = \mathrm{Tr}(\Omega[\mathbbm{1}]\rho ) \nonumber \\
+ & = 1,
+\end{align}
+which holds for all $\rho$. Hence $\Omega$ maps the identity to identity, or,
+\begin{align}
+ c_{00} = & 1 \\
+ c_{10} = & c_{20} = 0.
+\end{align}
+For convenience, we will break apart the matrix $A$ into the following block form:
+\begin{equation}
+ A = \left[
+       \begin{array}{c|cc}
+        1 & N \\
+        \hline
+        0 & M
+       \end{array}
+     \right],
+\end{equation}
+where
+\begin{equation}
+ N = \begin{bmatrix}
+      c_{01} & c_{02}
+     \end{bmatrix}
+\end{equation}
+and
+\begin{equation}
+ M = \begin{bmatrix}
+      c_{11} & c_{12} \\
+      c_{21} & c_{22}
+     \end{bmatrix}.
+\end{equation}
+
+The matrix $A$ specifies completely how the Gaussian gate $\Omega$ transforms the operators $\{\hat{O}_i\}$. What about higher powers of these operators, e.g., $\hat{x}^2$, $\hat{x}\hat{p}$, etc.?
+Using the fact that $\Omega$ is a unitary conjugation, we must have
+\begin{align}
+ \Omega[\hat{O}_i\hat{O}_j] 
+ & = \mathcal{G}^\dagger \hat{O}_i \hat{O}_j \mathcal{G} \nonumber \\
+ & = \mathcal{G}^\dagger \hat{O}_i \mathcal{G} \mathcal{G}^\dagger\hat{O}_j \mathcal{G} \nonumber\\
+ & = \Omega[\hat{O}_i] \Omega[\hat{O}_j].
+\end{align}
+Since the gate is Gaussian, it will not raise the order, so the result has only second-order or lower operator combinations:
+\begin{align}
+ \Omega[\hat{O}_i\hat{O}_j] 
+ & = \Omega[\hat{O}_i] \Omega[\hat{O}_j] \nonumber \\
+ & = \sum_{k=0}^2 \sum_{l=0}^2 c_{ki}c_{lj} \hat{O}_k \hat{O}_l.
+\end{align}
+Also notice that we don't really need to consider the effect of $\Omega[\hat{O}_0\hat{O}_j]$ or $\Omega[\hat{O}_i\hat{O}_0]$, since these products will be accounted for by the lower-order matrix $A$.
+As before, we can represent the effect of the transformation $\Omega$ on these second-order operators as a matrix $B$ whose matrix elements are determined by the coefficients $c_{ij}$. Interestingly, we now have a tensor product structure:
+\begin{equation}
+ [B]_{kl,ij} = c_{ki} c_{lj} = A_{ki}A_{lj} = [A\otimes A]_{kl,ij}.
+\end{equation}
+
+Moving to the issue of computing gradients, we can use the unitary conjugatation structure, along with the Leibniz rule, to deduce the gradient circuits for second-order operators:
+\begin{align}
+ \nabla_\theta\left(\Omega[\hat{O}_i\hat{O}_j] \right)
+ & = \nabla_\theta\left(\Omega[\hat{O}_i] \Omega[\hat{O}_j]\right) \nonumber \\
+ & = \nabla_\theta\left( \Omega[\hat{O}_i] \right)\Omega[\hat{O}_j] 
+ + \Omega[\hat{O}_i]\nabla_\theta \left( \Omega[\hat{O}_j] \right) \nonumber \\
+ & = \nabla_\theta\Omega [\hat{O}_i] \Omega[\hat{O}_j] 
+ + \Omega[\hat{O}_i]\nabla_\theta \Omega[\hat{O}_j],
+\end{align}
+where $\nabla_\theta\Omega$ is the derivative of the Bogoliubov transformation, as explored above.
+Thus, the derivative of the second-order operator decomposes naturally as we would expect from the Leibniz rule (remembering that the operators may not commute).
+
+As an first example, let's consider the phase-shift gate. For this, we have $\nabla_\phi\Omega_\phi = \Omega_{\phi+\frac{\pi}{2}}$. Looking at, for example, the effect on $\hat{O}_1\hat{O}_1=\hat{x}^2$, we have
+\begin{align}
+ \nabla_\phi\left( \Omega_\phi[\hat{x}^2] \right) 
+ & = \Omega_{\phi+\frac{\pi}{2}}[\hat{x}]\Omega_{\phi}[\hat{x}]
+   + \Omega_{\phi}[\hat{x}]\Omega_{\phi+\frac{\pi}{2}}[\hat{x}] \nonumber \\
+ & = \hat{x}_{\phi+\frac{\pi}{2}} \hat{x}_\phi + \hat{x}_\phi \hat{x}_{\phi+\frac{\pi}{2}} \nonumber \\
+ & = \hat{p}_\phi\hat{x}_\phi + \hat{x}_\phi\hat{p}_\phi \nonumber \\
+ & = \Omega_\phi[\hat{p}\hat{x} + \hat{x}\hat{p}].
+\end{align}
+Hence, we can compute the gradient of the phase shift gate $\Omega_\phi$ applied to $\hat{x}^2$ by replacing the operator with another one of the same order. The beamsplitter gate should follow similarly to the phase-shift gate.
+
+For a second example, we look at the (phaseless) squeeze gate. In this case, we have $\nabla_r\Omega_r = \Omega_{r-\log(\sqrt{2} - 1)} - \sqrt{2}\Omega_{r}$. Again, we look at the effect on $\hat{x}^2$, we have
+\begin{align}
+  \nabla_r\left( \Omega_r[\hat{x}^2] \right) 
+ & = & \left( \Omega_{r-\log(\sqrt{2} - 1)}[\hat{x}] - \sqrt{2}\Omega_{r}[\hat{x}] \right)\Omega_{r}[\hat{x}] \nonumber \\
+ &   & + \Omega_{r}[\hat{x}] \left( \Omega_{r-\log(\sqrt{2} - 1)}[\hat{x}] - \sqrt{2}\Omega_{r}[\hat{x}] \right) \nonumber \\
+ & = & 2\left( e^{-r}(\sqrt{2} - 1)\hat{x} - \sqrt{2}e^{-r}\hat{x} \right)e^{-r}\hat{x} \nonumber \\
+ & = & -2e^{-2r}\hat{x}^2 \nonumber \\
+ & = & -2\Omega_{r}[\hat{x}^2].
+\end{align}
+This case is simpler than the previous one, since (phaseless) squeezing does not mix $\hat{x}$ and $\hat{p}$.. The gradient of $\Omega_r$ acting on $\hat{x}^2$ is just $-2$ times the action of the same gate acting on the same operator.
+
+Using this recipe, we should be able to compute the gradients of any of the gates considered in the previous section when acting on higher-order quadrature powers (including cubic phase). The main concern is that some gates, when applied multiple times, may cause very quick blowup in the number of operators we have to keep track of, which may become inefficient.
 
 
 
