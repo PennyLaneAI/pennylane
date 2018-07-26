@@ -1133,7 +1133,7 @@ Squeezing a mode by a factor $z = r \e^{i\phi}$ with the squeezing operator $S(r
 Then
 \begin{eqnarray*} \partial_{r} \mathcal{B}_S(r, \phi) &=& \begin{pmatrix} -1 & 0 \\ 0 & 1 \end{pmatrix}
 \mathcal{B}_S(r, \phi) \\
-&=& \mathcal{B}_S(r+\log (\sqrt{2}-1), \phi) + \sqrt{2} \mathcal{B}_S(r, \phi),\end{eqnarray*}
+&=& \mathcal{B}_S(r-\log (\sqrt{2}-1), \phi) - \sqrt{2} \mathcal{B}_S(r, \phi),\end{eqnarray*}
 and
 \begin{eqnarray*} \partial_{\phi} \mathcal{B}_S(r, \phi) &=& \begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} -\sin \phi & \cos \phi \\ - \cos \phi & -\sin \phi \end{pmatrix}\\
 &=& \mathcal{B}_S(r, \phi + \frac{\pi}{2}).\end{eqnarray*}
@@ -1269,6 +1269,16 @@ The problem is, how could we decompose and implement these unitaries with a give
 %\[(\mathbf{S}-\mathbf{R})\begin{pmatrix} \c_1 \\ \d_1 \end{pmatrix} + \mathbf{s} - \mathbf{r},\]
 %which is what we required 
 %To get the sum of the two, we simply consider a homodyne measurement of in the second mode. \\
+
+
+
+
+
+
+
+ 
+
+
 
 
 \end{document}
