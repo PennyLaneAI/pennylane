@@ -7,7 +7,7 @@ Quantum circuits
 
 .. currentmodule:: openqml.circuit
 
-:class:`Quantum circuits <Circuit>` are abstract representations of the programs that quantum computers and simulators can execute.
+Quantum circuits, implemented by the :class:`Circuit` class, are abstract representations of the programs that quantum computers and simulators can execute.
 In OpenQML they are typically encapsulated inside :class:`QNode` instances in the computational graph.
 Each OpenQML plugin typically :meth:`provides <openqml.plugin.PluginAPI.templates>` a few ready-made parametrized circuit templates (variational quantum circuits)
 that can be used in quantum machine learning tasks, but the users can also build their own circuits
@@ -340,4 +340,5 @@ class QNode:
 
 
 # define the vector-Jacobian product function for QNode.evaluate
-autograd.extend.defvjp(QNode.evaluate, lambda ans, self, params: lambda g: g * self.gradient_angle(params), argnums=[1])
+#autograd.extend.defvjp(QNode.evaluate, lambda ans, self, params: lambda g: g * self.gradient_angle(params), argnums=[1])
+autograd.extend.defvjp(QNode.evaluate, lambda ans, self, params: lambda g: g * self.gradient_finite_diff(params), argnums=[1])
