@@ -31,6 +31,7 @@ Classes
 ----
 """
 
+import logging as log
 import warnings
 
 import numpy as np
@@ -53,8 +54,8 @@ tolerance = 1e-10
 class Gate(GateSpec):
     """Implements the quantum gates and observables.
     """
-    def __init__(self, name, n_sys, n_par, cls=None):
-        super().__init__(name, n_sys, n_par)
+    def __init__(self, name, n_sys, n_par, cls=None, par_domain='R'):
+        super().__init__(name, n_sys, n_par, grad=None, par_domain=par_domain)
         self.cls = cls  #: class: sf.ops.Operation subclass corresponding to the gate
 
     def execute(self, par, reg, sim):
@@ -100,7 +101,7 @@ class Observable(Gate):
             warnings.warn('No expectation value method defined for {}.'.format(self.cls))
             ev = 0
             var = 0
-        print('-----> observable: ev: {}, var: {}'.format(ev, var))
+        log.info('observable: ev: {}, var: {}'.format(ev, var))
 
         if n_eval != 0:
             # estimate the ev
@@ -116,7 +117,7 @@ Vac  = Gate('Vac', 1, 0, sfo.Vacuum)
 Coh  = Gate('Coh', 1, 2, sfo.Coherent)
 Squ  = Gate('Squ', 1, 2, sfo.Squeezed)
 The  = Gate('The', 1, 1, sfo.Thermal)
-Fock = Gate('Fock', 1, 1, sfo.Fock)
+Fock = Gate('Fock', 1, 1, sfo.Fock, par_domain='N')
 D = Gate('D', 1, 2, sfo.Dgate)
 S = Gate('S', 1, 2, sfo.Sgate)
 X = Gate('X', 1, 1, sfo.Xgate)
@@ -185,7 +186,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
         if temp in ('fock', 'tf'):
             kwargs.setdefault('cutoff_dim', 5)  # Fock space truncation dimension
             observables.append(MFock)
-            gates.extend([V, K])  # nongaussian gates: Fock state prep, cubic phase and Kerr  FIXME Fock requires an integer parameter, messes up a test if included here
+            gates.extend([Fock, V, K])  # nongaussian gates: Fock state prep, cubic phase and Kerr
         elif temp == 'gaussian':
             observables.append(MHe)  # TODO move to observables when the Fock basis backends support heterodyning
         else:

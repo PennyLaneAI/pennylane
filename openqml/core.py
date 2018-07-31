@@ -65,14 +65,13 @@ OPTIMIZER_NAMES = ["SGD", "Nelder-Mead", "Powell", "CG", "BFGS", "Newton-CG",
 class Optimizer:
     """Quantum circuit optimizer.
 
-    cost_func typically involves the evaluation of one or more :class:`~openqml.circuit.QNode` instances
-    representing variational quantum circuits.
-
     Optimization hyperparameters are given as keyword arguments.
 
     Args:
-      cost_func (callable): cost/error function
-      cost_grad (callable): gradient of the cost/error function
+      cost_func (callable): Cost/error function. Typically involves the evaluation of one or more :class:`~openqml.circuit.QNode` instances
+        representing variational quantum circuits. Takes two arguments: weights (array[float]) and optionally a batch of data item indices (Sequence[int]).
+      cost_grad (callable): Gradient of the cost/error function with respect to the weights. Takes the same argumets as ``cost_func``.
+        Typically obtained using autograd as :code:`cost_grad = autograd.grad(cost_func, 0)`.
       weights (array[float]): initial values for the weights/optimization parameters
       n_data (int): total number of data samples to be used in training
 

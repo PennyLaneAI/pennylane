@@ -65,7 +65,6 @@ import sys
 import importlib
 import logging as log
 import pkgutil
-import warnings
 
 import openqml
 from .circuit import Circuit
@@ -144,7 +143,7 @@ def load_plugin(name, plugin_dir=None):
     p = mod.init_plugin()
     temp = openqml.version()
     if p.plugin_api_version != temp:
-        warnings.warn('Plugin API version {} does not match OpenQML version {}.'.format(p.plugin_api_version, temp))
+        log.warning('Plugin API version {} does not match OpenQML version {}.'.format(p.plugin_api_version, temp))
     return p
 
 
@@ -236,9 +235,9 @@ class PluginAPI:
         if name is None:
             name = circuit.name
         else:
-            warnings.warn('Circuit stored under a different name.')
+            log.warning('Circuit stored under a different name.')
         if name in cls._circuits:
-            warnings.warn('Stored circuit replaced.')
+            log.warning('Stored circuit replaced.')
         cls._circuits[name] = circuit
 
     @classmethod

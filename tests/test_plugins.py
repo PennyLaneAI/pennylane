@@ -59,9 +59,7 @@ class BasicTest(BaseTest):
                 print(g)
                 # execute the demo circuit without measurement, then measure the observable manually
                 temp = p.execute_circuit('demo', params=[1.0, 2.0])
-                #temp = p.measure(g, 0, par=randn(g.n_par), n_eval=1000)
-                temp = p.measure(g, 0, par=0*randn(g.n_par), n_eval=1000)
-                print('Estimated EV:', temp)
+                temp = p.measure(g, 0, par=randn(g.n_par), n_eval=100)
 
         # try loading all the discovered plugins, test them
         for name in plugins:
