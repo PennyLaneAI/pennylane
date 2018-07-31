@@ -80,6 +80,24 @@ class OptTest(BaseTest):
         fig.show()
 
 
+    def test_opt_errors(self):
+        "Make sure faulty input raises an exception."
+        weights = np.array([0])
+        def f(p):
+            return 0
+
+        # initial weights must be given as an array
+        self.assertRaises(TypeError, Optimizer, *(f,f,0), optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, *(f,f,[0]), optimizer='SGD')
+
+        # optimizer has to be a callable or a known name
+        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Unknown')
+
+        # some algorithms do not use a gradient function
+        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Nelder-Mead')
+        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Powell')
+
+
     def test_opt(self):
         "Test all supported optimization algorithms on a simple optimization task."
 

@@ -9,5 +9,5 @@ Included plugins
 .. toctree::
    :maxdepth: 1
 
-   plugin_dummy
-   plugin_strawberryfields
+   plugins/dummy_plugin
+   plugins/strawberryfields

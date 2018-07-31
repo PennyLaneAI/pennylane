@@ -95,7 +95,8 @@ After the program is finished, in addition to the measured results we may treat 
 Assuming the program itself is deterministic, if there are no measurements we obtain the same final state each time (which in itself is a quantum probability distribution).
 If there are measurements :math:`A, B, \ldots` in the program, each run of the program instead samples the joint p.d.f. of the measurement results,
 which are not necessarily statistically independent.
-Due to entanglement, even the results of two measurements that seem independent on the circuit DAG (in the sense that neither :math:`A<B` nor :math:`B<A`) may actually depend on each other.
+Due to entanglement, even if two measurements seem independent on the circuit DAG (in the sense that neither :math:`A<B` nor :math:`B<A`),
+their results of may depend on each other.
 
 .. note::
 
@@ -103,9 +104,9 @@ Due to entanglement, even the results of two measurements that seem independent 
    0 and 1 are equally likely outcomes, but the results always are perfectly correlated.
 
 However, if neither :math:`A<B` nor :math:`B<A`, the measurements necessarily commute, and the relative order in which the measurements are performed does not affect the joint p.d.f. of the results.
-Furthermore, if we are only interested in expectation values of observables (and don't care about correlations), we may compute them as shown in the previous section.
+Furthermore, if we are only interested in the expectation values of the observables (and don't care about correlations), we may compute them as shown in the previous section.
 
-Let us now assume we wish to obtain (estimates for) the expectation values :math:`\expect{A}, \expect{B}, \ldots` of a measurement using SF.
+Let us now assume we wish to obtain (estimates for) the expectation values :math:`\expect{A}, \expect{B}, \ldots` of a set of measurements using SF.
 
 #. The simplest method is to run the circuit :math:`n` times and average the results for each measurement, resulting in an estimate for the expectation values.
    This is computationally inefficient for simulators, but may be a valid method for a hardware backend.
