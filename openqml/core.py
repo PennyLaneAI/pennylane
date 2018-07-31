@@ -115,6 +115,8 @@ class Optimizer:
         temp = self._hp['optimizer']
         if not callable(temp) and temp not in OPTIMIZER_NAMES:
             raise ValueError("The optimizer has to be either a callable or in the list of allowed optimizers, {}".format(OPTIMIZER_NAMES))
+        if temp in ['Nelder-Mead', 'Powell'] and cost_grad is not None:
+            raise ValueError("{} does not use a gradient function.".format(temp))
 
         if not isinstance(weights, np.ndarray) or len(weights.shape) != 1:
             raise TypeError('The weights must be given as a 1d array.')
@@ -200,10 +202,12 @@ class Optimizer:
 
 
     def train(self, max_steps=100):
-        """Train the system.
+        """Optimize the system.
 
         Args:
           max_steps (int): maximum number of steps for the algorithm
+        Returns:
+          float: final cost function value
         """
         if self._hp['regularizer'] is None:
             self.err_func = lambda x, batch=None: self._cost_func(x, batch)
