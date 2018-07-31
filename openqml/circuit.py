@@ -44,7 +44,7 @@ import autograd.numpy as np
 import autograd.extend
 
 import logging as log
-import warnings
+import numbers
 
 
 
@@ -61,12 +61,14 @@ class GateSpec:
       n_sys (int): number of subsystems it acts on
       n_par (int): number of real parameters it takes
       grad  (str): gradient computation method (generator, numeric?)
+      par_domain (str): domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats. Parameters outside the domain are truncated into it.
     """
-    def __init__(self, name, n_sys=1, n_par=1, grad=None):
+    def __init__(self, name, n_sys=1, n_par=1, grad=None, *, par_domain='R'):
         self.name  = name   #: str: name of the gate
         self.n_sys = n_sys  #: int: number of subsystems it acts on
         self.n_par = n_par  #: int: number of real parameters it takes
         self.grad  = grad   #: str: gradient computation method (generator, numeric?)
+        self.par_domain = par_domain  # str: domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats
 
     def __str__(self):
         return self.name +': {} params, {} subsystems'.format(self.n_par, self.n_sys)
@@ -80,7 +82,7 @@ class Command:
 
     Args:
       gate (GateSpec): quantum operation to apply
-      par (Sequence[float, ParRef]): parameter values
+      par (Sequence[float, int, ParRef]): parameter values
       reg (Sequence[int]): Subsystems to which the operation is applied. Note that the order matters here.
         TODO collections.OrderedDict to automatically avoid duplicate indices?
     """
@@ -91,6 +93,21 @@ class Command:
             raise ValueError('Wrong number of parameters.')
         if len(reg) != gate.n_sys:
             raise ValueError('Wrong number of subsystems.')
+
+        # convert fixed parameters into nonnegative integers if necessary,
+        # it's up to the user to make sure the free parameters (ParRefs) have integer values when evaluating the circuit
+        if gate.par_domain == 'N':
+            def convert_par_to_N(p):
+                if isinstance(p, ParRef):
+                    return p
+                if not isinstance(p, numbers.Integral):
+                    p = int(p)
+                    log.warning('Real parameter value truncated to int.')
+                if p < 0:
+                    p = 0
+                    log.warning('Negative parameter value set to zero.')
+                return p
+            par = list(map(convert_par_to_N, par))
 
         self.gate = gate  #: GateSpec: quantum operation to apply
         self.par  = par   #: Sequence[float, ParRef]: parameter values
@@ -188,16 +205,16 @@ class Circuit:
             return True
         ok = True
         if min(inds) < 0:
-            warnings.warn(msg + 'negative indices')
+            log.warning(msg + 'negative indices')
             ok = False
         n_ind = max(inds) +1
         if n_ind > len(inds)+10:
-            warnings.warn(msg + '> 10 unused indices')
+            log.warning(msg + '> 10 unused indices')
             return False
         temp = set(range(n_ind))
         temp -= inds
         if len(temp) != 0:
-            warnings.warn(msg + 'unused indices: {}'.format(temp))
+            log.warning(msg + 'unused indices: {}'.format(temp))
             return False
         return ok
 

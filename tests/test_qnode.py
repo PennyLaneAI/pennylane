@@ -48,7 +48,6 @@ class BasicTest(BaseTest):
         p = self.plugin('test node')
         q = QNode(self.circuit, p)
         params = randn(q.circuit.n_par)
-
         # gradient_angle cannot handle more-than-one-parameter gates
         self.assertRaises(ValueError, q.gradient_angle, params)
         # only order-1 and order-2 methods are available
@@ -69,7 +68,8 @@ class BasicTest(BaseTest):
             "Simple quantum classifier, trying to map inputs to outputs."
             ret = 0
             for d in data:
-                x = np.array([d[0], p[0]])
+                #x = np.array([d[0], p[0]])
+                x = np.concatenate((d[0:1], p[0:1]))
                 temp = q1.evaluate(x) -d[1]
                 ret += temp ** 2
             return ret
