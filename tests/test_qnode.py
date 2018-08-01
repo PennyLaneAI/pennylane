@@ -28,9 +28,9 @@ class BasicTest(BaseTest):
         params = randn(q.circuit.n_par)
         x0 = q.evaluate(params)
         # manual gradients
-        grad_fd1 = q.gradient_finite_diff(params, order=1)
-        grad_fd2 = q.gradient_finite_diff(params, order=2)
-        grad_angle = q.gradient_angle(params)
+        grad_fd1 = q.gradient(params, method='F', order=1)
+        grad_fd2 = q.gradient(params, method='F', order=2)
+        grad_angle = q.gradient(params, method='A')
         # automatic gradient
         grad = autograd.grad(q.evaluate)
         grad_auto = grad(params)
@@ -49,9 +49,9 @@ class BasicTest(BaseTest):
         q = QNode(self.circuit, p)
         params = randn(q.circuit.n_par)
         # gradient_angle cannot handle more-than-one-parameter gates
-        self.assertRaises(ValueError, q.gradient_angle, params)
-        # only order-1 and order-2 methods are available
-        self.assertRaises(ValueError, q.gradient_finite_diff, params, **{'order': 3})
+        self.assertRaises(ValueError, q.gradient, params, method='A')
+        # only order-1 and order-2 finite diff methods are available
+        self.assertRaises(ValueError, q.gradient, params, method='F', order=3)
 
 
     def test_autograd(self):
@@ -74,21 +74,21 @@ class BasicTest(BaseTest):
                 ret += temp ** 2
             return ret
 
-        def d_error(p, grad_func):
+        def d_error(p, grad_method):
             "Gradient of error, computed manually."
             ret = 0
             for d in data:
                 x = np.array([d[0], p[0]])
                 temp = q1.evaluate(x) -d[1]
-                ret += 2 * temp * grad_func(x, which=[1])
+                ret += 2 * temp * q1.gradient(x, which=[1], method=grad_method)
             return ret
 
         y0 = error(params)
         grad = autograd.grad(error)
         grad_auto = grad(params)
 
-        grad_fd1 = d_error(params, q1.gradient_finite_diff)
-        grad_angle = d_error(params, q1.gradient_angle)
+        grad_fd1 = d_error(params, 'F')
+        grad_angle = d_error(params, 'A')
         self.assertAllAlmostEqual(grad_fd1, grad_auto, self.tol)
         self.assertAllAlmostEqual(grad_angle, grad_auto, self.tol)
 
