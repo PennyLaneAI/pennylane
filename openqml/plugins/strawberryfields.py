@@ -55,7 +55,7 @@ class Gate(GateSpec):
     """Implements the quantum gates and observables.
     """
     def __init__(self, name, n_sys, n_par, cls=None, par_domain='R'):
-        super().__init__(name, n_sys, n_par, grad=None, par_domain=par_domain)
+        super().__init__(name, n_sys, n_par, grad_method='F', par_domain=par_domain)
         self.cls = cls  #: class: sf.ops.Operation subclass corresponding to the gate
 
     def execute(self, par, reg, sim):

@@ -32,8 +32,7 @@ QNode methods
 
 .. autosummary::
    evaluate
-   gradient_finite_diff
-   gradient_angle
+   gradient
 
 .. currentmodule:: openqml.circuit
 
@@ -60,15 +59,15 @@ class GateSpec:
       name  (str): name of the operation
       n_sys (int): number of subsystems it acts on
       n_par (int): number of real parameters it takes
-      grad  (str): gradient computation method (generator, numeric?)
-      par_domain (str): domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats. Parameters outside the domain are truncated into it.
+      grad_method (str): gradient computation method: 'A': angular, 'F': finite differences, TODO heisenberg picture method for CV circuits
+      par_domain  (str): domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats. Parameters outside the domain are truncated into it.
     """
-    def __init__(self, name, n_sys=1, n_par=1, grad=None, *, par_domain='R'):
+    def __init__(self, name, n_sys=1, n_par=1, *, grad_method='A', par_domain='R'):
         self.name  = name   #: str: name of the gate
         self.n_sys = n_sys  #: int: number of subsystems it acts on
         self.n_par = n_par  #: int: number of real parameters it takes
-        self.grad  = grad   #: str: gradient computation method (generator, numeric?)
-        self.par_domain = par_domain  # str: domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats
+        self.grad_method = grad_method  #: str: gradient computation method
+        self.par_domain  = par_domain   #: str: domain of the gate parameters
 
     def __str__(self):
         return self.name +': {} params, {} subsystems'.format(self.n_par, self.n_sys)
@@ -181,6 +180,14 @@ class Circuit:
         if not self.check_indices(self.pars.keys(), msg+'params: '):
             raise ValueError(msg +'parameter indices ambiguous.')
 
+        # determine the correct gradient computation method for each free parameter
+        def best_method(cmd_list):
+            # use the angle method iff every gate that depends on the parameter supports it
+            temp = [cmd.gate.grad_method == 'A' and cmd.gate.n_par == 1
+                    for cmd in cmd_list]
+            return 'A' if all(temp) else 'F'
+        self.grad_method = {k: best_method(v) for k, v in self.pars.items()}  #: dict[int->str]: map from free parameter index to gradient method
+
 
     @property
     def n_par(self):
@@ -245,100 +252,140 @@ class QNode:
 
         Args:
           params (Sequence[float]): circuit parameters
+
         Returns:
           vector[float]: (approximate) expectation value(s) of the measured observable(s)
         """
         return self.backend.execute_circuit(self.circuit, params, **kwargs)
 
 
-    def gradient_finite_diff(self, params, which=None, h=1e-7, order=1, **kwargs):
-        """Compute the gradient of the node using finite differences.
+    def gradient(self, params, which=None, method='B', *, h=1e-7, order=1, **kwargs):
+        """Compute the gradient of the node.
 
-        Given an n-parameter quantum circuit, this function computes its gradient with respect to the parameters
-        using the finite difference method.
+        Returns the gradient of the parametrized quantum circuit encapsulated in the QNode.
+
+        The gradient can be computed using several methods:
+
+        * finite differences ('F'). The first order method evaluates the circuit at n+1 points of the parameter space,
+          the second order method at 2n points, where n = len(which).
+        * angular method ('A'). Only works for one-parameter gates where the generator only has two unique eigenvalues.
+          The circuit is evaluated twice for each incidence of each parameter in the circuit.
+        * best known method for each parameter ('B'): uses the angular method if possible, otherwise finite differences.
+
+        .. todo:: For now only supports circuits with a scalar output value.
 
         Args:
           params (Sequence[float]): point in parameter space at which to evaluate the gradient
           which  (Sequence[int], None): return the gradient with respect to these parameters. None means all.
-          h (float): step size
-          order (int): Finite difference method order, 1 or 2. The order-1 method evaluates the circuit at n+1 points of the parameter space,
-            the order-2 method at 2n points.
+          method (str): gradient computation method. 'A': angular, 'F': finite differences, 'B': use the best known method for each parameter separately.
+
+        Keyword Args:
+          h (float): finite difference method step size
+          order (int): finite difference method order, 1 or 2
 
         Returns:
           vector[float]: gradient vector
         """
         if which is None:
             which = range(len(params))
-        which = set(which)  # make the indices unique
+        elif len(which) != len(set(which)):  # set removes duplicates
+            raise ValueError('Parameter indices must be unique.')
         params = np.asarray(params)
-        grad = np.zeros(len(which))
+
+        if method == 'A':
+            method = {k: 'A' for k in which}
+        elif method == 'F':
+            method = {k: 'F' for k in which}
+        elif method == 'B':
+            method = self.circuit.grad_method
+
+        if 'F' in method.values():
+            if order == 1:
+                # the value of the circuit at params, computed only once here
+                y0 = self.backend.execute_circuit(self.circuit, params, **kwargs)
+            else:
+                y0 = None
+
+        # compute the partial derivative w.r.t. each parameter using the proper method
+        grad = np.zeros(len(which), dtype=float)
+        for i, k in enumerate(which):
+            temp = method[k]
+            if temp == 'A':
+                grad[i] = self._pd_angle(params, k, **kwargs)
+            elif temp == 'F':
+                grad[i] = self._pd_finite_diff(params, k, h, order, y0, **kwargs)
+            else:
+                raise ValueError('Unknown gradient method.')
+        return grad
+
+
+    def _pd_finite_diff(self, params, idx, h=1e-7, order=1, y0=None, **kwargs):
+        """Partial derivative of the node using the finite difference method.
+
+        Args:
+          params (array[float]): point in parameter space at which to evaluate the partial derivative
+          idx    (int): return the partial derivative with respect to this parameter
+          h    (float): step size
+          order  (int): finite difference method order, 1 or 2
+          y0   (float): Value of the circuit at params. Should only be computed once.
+
+        Returns:
+          float: partial derivative of the node
+        """
         if order == 1:
-            # value at the evaluation point
-            x0 = self.backend.execute_circuit(self.circuit, params, **kwargs)
-            for i, k in enumerate(which):
-                # shift the k:th parameter by h
-                temp = params.copy()
-                temp[k] += h
-                x = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-                grad[i] = (x-x0) / h
+            # shift one parameter by h
+            temp = params.copy()
+            temp[idx] += h
+            y = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+            return (y-y0) / h
         elif order == 2:
             # symmetric difference
-            for i, k in enumerate(which):
-                # shift the k:th parameter by +-h/2
-                temp = params.copy()
-                temp[k] += 0.5*h
-                x2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-                temp[k] = params[k] -0.5*h
-                x1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-                grad[i] = (x2-x1) / h
+            # shift one parameter by +-h/2
+            temp = params.copy()
+            temp[idx] += 0.5*h
+            y2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+            temp[idx] = params[idx] -0.5*h
+            y1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+            return (y2-y1) / h
         else:
             raise ValueError('Order must be 1 or 2.')
-        return grad
 
 
-    def gradient_angle(self, params, which=None, **kwargs):
-        """Compute the gradient of the node using the angle method.
-
-        Given an n-parameter quantum circuit, this function computes its gradient with respect to the parameters
-        using the angle method. The method only works for one-parameter gates where the generator only has two unique eigenvalues.
-        The circuit is evaluated twice for each incidence of each parameter in the circuit.
+    def _pd_angle(self, params, idx, **kwargs):
+        """Partial derivative of the node using the angle method.
 
         Args:
-          params (Sequence[float]): point in parameter space at which to evaluate the gradient
-          which  (Sequence[int], None): return the gradient with respect to these parameters. None means all.
+          params (array[float]): point in parameter space at which to evaluate the partial derivative
+          idx    (int): return the partial derivative with respect to this parameter
 
         Returns:
-          vector[float]: gradient vector
+          float: partial derivative of the node
         """
-        if which is None:
-            which = range(len(params))
-        which = set(which)  # make the indices unique
-        params = np.asarray(params)
-        grad = np.zeros(len(which))
         n = self.circuit.n_par
-        for i, k in enumerate(which):
-            # find the Commands in which the parameter appears, use the product rule
-            for cmd in self.circuit.pars[k]:
-                if cmd.gate.n_par != 1:
-                    raise ValueError('For now we can only differentiate one-parameter gates.')
-                # we temporarily edit the Command so that parameter k is replaced by a new one,
-                # which we can modify without affecting other Commands depending on the original.
-                orig = cmd.par[0]
-                assert(orig.idx == k)
-                cmd.par[0] = ParRef(n)  # reference to a new, temporary parameter
-                self.circuit.pars[n] = None  # we just need to add something to the map, it's not actually used
-                # shift it by pi/2 and -pi/2
-                temp = np.r_[params, params[k]+np.pi/2]
-                x2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-                temp[-1] = params[k] -np.pi/2
-                x1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-                # restore the original parameter
-                cmd.par[0] = orig
-                del self.circuit.pars[n]
-                grad[i] += (x2-x1) / 2
-        return grad
+        pd = 0.0
+        # find the Commands in which the parameter appears, use the product rule
+        for cmd in self.circuit.pars[idx]:
+            if cmd.gate.n_par != 1:
+                raise ValueError('For now angular method can only differentiate one-parameter gates.')
+            if cmd.gate.grad_method != 'A':
+                raise ValueError('Attempted to use the angular method on a gate that does not support it.')
+            # we temporarily edit the Command so that parameter idx is replaced by a new one,
+            # which we can modify without affecting other Commands depending on the original.
+            orig = cmd.par[0]
+            assert(orig.idx == idx)
+            cmd.par[0] = ParRef(n)  # reference to a new, temporary parameter (this method only supports 1-parameter gates!)
+            self.circuit.pars[n] = None  # we just need to add something to the map, it's not actually used
+            # shift it by pi/2 and -pi/2
+            temp = np.r_[params, params[idx] +np.pi/2]
+            y2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+            temp[-1] = params[idx] -np.pi/2
+            y1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
+            # restore the original parameter
+            cmd.par[0] = orig
+            del self.circuit.pars[n]  # remove the temporary entry
+            pd += (y2-y1) / 2
+        return pd
 
 
 # define the vector-Jacobian product function for QNode.evaluate
-#autograd.extend.defvjp(QNode.evaluate, lambda ans, self, params: lambda g: g * self.gradient_angle(params), argnums=[1])
-autograd.extend.defvjp(QNode.evaluate, lambda ans, self, params: lambda g: g * self.gradient_finite_diff(params), argnums=[1])
+autograd.extend.defvjp(QNode.evaluate, lambda ans, self, params: lambda g: g * self.gradient(params), argnums=[1])
