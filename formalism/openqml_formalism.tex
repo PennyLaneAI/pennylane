@@ -891,6 +891,8 @@ where $W_j = \exp(-i (\pi/2) B_j)$.
 When simulating you don't have to evaluate the full circuit many times, even though the sum in the middle requires multiple $\Ad$ operations.
 Of course one has to be able to implement all the $W_j$ gates on the quantum device.
 }
+\cg{Nice! So what I did was not so useless after all :-) On the hardware, implementing the $W_j$ is however completely impossible, I fear.}
+
 
 \cg{I explored a number of further avenues based on results in (at first sight maybe unrelated fields that I remembered):}
 \begin{description}
@@ -898,11 +900,27 @@ Of course one has to be able to implement all the $W_j$ gates on the quantum dev
 \item [\cite{Garttner2017}] This is just one of several refernces I expored to see if the tools to measaure out of time ordered correlation functions (which are also non-hermition operators) could help us with the gradient estimation. After giving these papers a closer look I eneded up rather disappointed. All methods that I could find work only because of special assmptions on the states, such as them beein eigenstates of one of the observables making up the OTOC. Whithout such constain they do not work. 
 \item [Lemma 4.4 from \cite{Aaronson2011}]
   This is quite interesting! This lemma shows that any arbitrary matrix with small norm can be embedded as a submatrix into a large enough unitary matrix.
-  This should imply a general scheme to measure non-hermitian operators via post selection.
-  I will think about it a bit more.
+  I thought that this should imply a general scheme to measure non-hermitian operators via post selection, but it looks like it only sort of does:
+  Say that $X$ is a non-unitary operation that one would like to perform.
+  With Lemma 4.4. form \cite{Aaronson2011} one can extend the Hilbert space by adding one qubit initialized in $\ket{0}$ and then embed $\hat{Q}$ into the ``upper left corner'' of a unitary $\chi$ that acts on this larger Hilbert space.
+  By performing this unitary, measuring the ancilla qubit, and post-selecting on outcome $0$, corresponding the the POVM element $P_0 = \I \otimes \ketbra{0}{0}$, one can perform on any state $\rho$ in the system of interest the operation
+  \begin{equation}
+    \rho \mapsto  P_0 \chi^\dagger \rho \chi P_0  \propto  X^\dagger \rho X
+  \end{equation} 
+  In the notation of Section~\ref{sec:gradient_computation_Maria}, and in particular \eqref{Eq:term_to_estimate}, taking $X = A^{\dagger}  \hat{Q} \G$, this allows to estimate for example
+  \begin{equation}
+    |\bra{0} U^\dagger A^{\dagger}  \hat{Q} \G U \ket{0}|^2
+  \end{equation}
+  by starting in the vacuum, doing the preparation circuit $U$, performing the measurement of $\chi$ on the system plus ancilla, measuring the ancilla, doing the inverse $U^\dagger$ of the preparation circuit and then estimating the probability of getting vacuum out conditions on the ancilla measurement having resulted in $0$.
+  This is, again, not very practical, and on top of that I don't see how it could be used to estimate 
+  \begin{equation}
+    \bra{0} U^\dagger A^{\dagger}  \hat{Q} \G U \ket{0}
+  \end{equation}
+  or the real part of that (which is what we are actually interested in) instead of the absolute value squared.
+  Maybe someone else has an idea?
 \end{description}
 
-\section{Gradient computation (Maria)}
+\section{Gradient computation (Maria)}\label{sec:gradient_computation_Maria}
 \maria{Adding my attempts and notes here. We can merge the two when ready.}
 
 \subsection{Estimating gradients of expectation values with the LCU technique}
