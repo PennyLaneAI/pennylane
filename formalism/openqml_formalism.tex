@@ -892,6 +892,16 @@ When simulating you don't have to evaluate the full circuit many times, even tho
 Of course one has to be able to implement all the $W_j$ gates on the quantum device.
 }
 
+\cg{I explored a number of further avenues based on results in (at first sight maybe unrelated fields that I remembered):}
+\begin{description}
+\item [\cite{Pati2015}] As promised, I read this paper, which is terribly written. It is not so transparent, but the idea explained there in a very involved language seems to be nothing but a strategy to meaure in a post-selected ensemble. In the end this is more or less the same trick as in the Mitarai paper, so nothing exiting here. 
+\item [\cite{Garttner2017}] This is just one of several refernces I expored to see if the tools to measaure out of time ordered correlation functions (which are also non-hermition operators) could help us with the gradient estimation. After giving these papers a closer look I eneded up rather disappointed. All methods that I could find work only because of special assmptions on the states, such as them beein eigenstates of one of the observables making up the OTOC. Whithout such constain they do not work. 
+\item [Lemma 4.4 from \cite{Aaronson2011}]
+  This is quite interesting! This lemma shows that any arbitrary matrix with small norm can be embedded as a submatrix into a large enough unitary matrix.
+  This should imply a general scheme to measure non-hermitian operators via post selection.
+  I will think about it a bit more.
+\end{description}
+
 \section{Gradient computation (Maria)}
 \maria{Adding my attempts and notes here. We can merge the two when ready.}
 
