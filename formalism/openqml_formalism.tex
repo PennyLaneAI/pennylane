@@ -1099,6 +1099,54 @@ but now  $\ket{0}$ denotes the vacuum state, $U, V$ are CV circuits and $\G$ is 
 
 We will show now that for homodyne measurements, the derivative of the quadrature expectation can in many cases of interest be estimated by estimating the expectations of slightly different circuits. For this we do not need the LCU trick from qubits. This can be shown using the Heisenberg picture. \\
 
+-\cg{At fist I was convinced that it would work in general, but now I have the following doubt: We are dealing with two representations here, the one in Hilbert space and the one in terms of creation and annihilation operators. The question is somehow, when is the right moment to switch representation. The Hilbert space representation has the advantage that operations are always linear. This is what allows us to ``pull'' the derivative past the state and the operation $V$ when deriving \eqref{Eq:der_of_exp}, irrespective of what $V$ is. If we use this representation, however, we need to calculate the derivatives in \eqref{Eq:der_of_exp} in Hilbert space. This is difficult for the CV operations and general qubit gates. We can, as you show here, elegantly compute the derivatives of the CV operations in their representation as maps on the creation operators. We would thus like do the whole calculation in this representation. However, the map $V$ is, as you also said, non-linear. If we want to compute the derivative with respect to some gate that is hidden behind such a $V$ in this representation, we thus need to use the chain rule. This problem goes away only if all stats and operations are Gaussian, i.e, linear operations on the creation operators. So, with this I think that the following only really woks for Gaussian circuits. Does that make sense?}\maria{I don't think that is a valid concern because we do not want to compute the derivative of anything inside this nonlinear transform. It is therefore a blackbox for the purpose of derivation. So no chain rule required...My question is only, can we use the Bogoliubov transform on a quadrature vector that has previously been mapped by a nonlinear transform. Don't see why not, but I have never seen it done either.}
+\cg{I resurrected this comment, not because I want to be mean, but because I want to fully understand what is going on.
+Let's go through this slowly:
+We assume that only $\G$ depends on $\mu$.
+If we represent everything in Hilbert space, then we have
+\begin{equation}
+  \begin{split}
+    &\partial_{\mu} \bra{0}U^{\dagger} \G^{\dagger} V^{\dagger} \hat{O}V \G U \ket{0} \\
+    = &\bra{0}U^{\dagger} \partial_{\mu} (\G^{\dagger} V^{\dagger} \hat{O}V \G) U \ket{0}
+  \end{split}
+\end{equation}
+because of linearity and we can hence use the tricks described before.
+Now let's look at the same thing in the quadrature picture.
+For concreteness, let us chose $V = \I$, $\hat{O} = \hat{p}^2$, $U$ a a cubit phase gate with parameter $\gamma = 1$ and $\G$ as a phase rotation gate with parameter $\phi = \mu$ (with respect to which we want to differentiate).
+By direct calculation we have (if I didn't make any stupid mistakes)
+\begin{align}
+    &\G^\dagger V^\dagger \hat{O} V G = \G^\dagger \hat{p}^2 G \\
+    = &\sin^2(\mu) \hat{x}^2 + \cos^2(\mu) \hat{p}^2 - \sin(\mu) \cos(\mu) (\hat{x} \hat{p} + \hat{p} \hat{x})
+\end{align}
+and hence
+\begin{align}
+  &U^\dagger \G^\dagger V^\dagger \hat{O} V G U \nonumber\\
+  = &\sin^2(\mu) \hat{x}^2 + \cos^2(\mu) \big( \hat{p}^2 + (\hat{p} \hat{x}^2 + \hat{x}^2 \hat{p}) + \hat{x}^4 \big)\\
+  - &\sin(\mu) \cos(\mu) \big( \hat{x} (\hat{p}+\hat{x}^2)+ (\hat{p}+\hat{x}^2) \hat{x}  \big) \nonumber.
+\end{align}
+If I take the derivative with respect to $\mu$ at $\mu=0$ only the last term survives and I get
+\begin{equation}
+  \partial_\mu\Big|_{\mu=0} U^\dagger \G^\dagger V^\dagger \hat{O} V G U 
+  = - \hat{x}\hat{p} - \hat{p}\hat{x} - 2 \hat{x}^3 .
+\end{equation}
+Now, let's do the same calculation again, assuming that we can pull the derivative $\partial_\mu$ past the outer $U^\dagger \cdot U$ (despite it being a non-linear gate), so that we can directly apply \eqref{eq:derivative_rhase_rotation}, without having to use a chain rule.
+We then get that
+\begin{align}
+  \partial_\mu &(U^\dagger \G^\dagger V^\dagger \hat{O} V G U) \nonumber\\
+  = &U^\dagger (\partial_\mu( R(\mu)^\dagger \hat{p}^2 R(\mu) )) U \\
+  = &U^\dagger R(\mu+\frac{\pi}{2})^\dagger \hat{p}^2 R(\mu+\frac{\pi}{2}) U \\
+  = &U^\dagger (R(\mu+\frac{\pi}{2})^\dagger \hat{p} R(\mu+\frac{\pi}{2}))^2 U \\
+  = &U^\dagger (-\cos(\mu) \hat{x} - \sin(\mu) \hat{p})^2 U \\
+  = &U^\dagger (\cos^2(\mu) \hat{x}^2 + \sin^2(\mu) \hat{p}^2 + \cos(\mu) \sin(\mu) (\hat{x} \hat{p} + \hat{p} \hat{x})) U
+\end{align}
+At $\mu = 0$ only the first term survives and we hence get
+\begin{align}
+  \partial_\mu &U^\dagger \G^\dagger V^\dagger \hat{O} V G U \nonumber\\
+    = &U^\dagger \hat{x}^2 U = \hat{x}^2 ,
+\end{align}
+which is different from what we had before.
+Maybe I am just making a trivial mistake in my calculation? Or maybe I am missing something obvious?
+}
 To make this claim more precise, denote the quadratures after the evolution with the circuit $V$ as $\c = V^{\dagger} \x V$ and $\d = V^{\dagger} \p V$. If $V$ is a Gaussian circuit, the modified quadratures are a linear combination of the original ones, while non-Gaussian circuits result in $\c, \d$ being polynomials in the original quadratures. \maria{Does $V$ have to be Gaussian in order for the idea below to work? }
 Let $\hat{q} = \x, \p$ be either of the two operators. We want to express the derivative of the expectation as a linear combination of expectations,
 \begin{equation}
@@ -1139,7 +1187,9 @@ and hence
 This effectively exchanges the position and momentum quadratures of the mode.\\
 
 We therefore have
-\[\partial_{\phi}\bra{\psi} R(\phi)^{\dagger} \hat{q} R(\phi) \ket{\psi} =  \bra{\psi} R(\phi + \frac{\pi}{2})^{\dagger} \hat{q} R(\phi + \frac{\pi}{2}) \ket{\psi}. \]
+\begin{equation} \label{eq:derivative_rhase_rotation}
+  \partial_{\phi}\bra{\psi} R(\phi)^{\dagger} \hat{q} R(\phi) \ket{\psi} =  \bra{\psi} R(\phi + \frac{\pi}{2})^{\dagger} \hat{q} R(\phi + \frac{\pi}{2}) \ket{\psi}. 
+\end{equation}
 
 \paragraph{Displacement.}
 
