@@ -1058,18 +1058,15 @@ A second Hadamard prepares
 \[ \frac{1}{2} \left( \ket{0} (\G + A) \ket{\psi} + \ket{1} (\G - A) \ket{\psi} \right). \]
 A measurement of the ancilla selects one of the two branches and results in state
 $\frac{1}{2 \sqrt{p_0}} (\G + A) \ket{\psi}$ with probability
-\ville{Factors of $1/4$ were missing here}
-\[p_0  = \textcolor{purple}{\frac{1}{4}} \bra{\psi} (\G + A)^{\dagger} (\G + A) \ket{\psi},\]
+\[p_0  = \frac{1}{4} \bra{\psi} (\G + A)^{\dagger} (\G + A) \ket{\psi},\]
 or in state $\frac{1}{2\sqrt{p_1}} (\G - A) \ket{\psi}$ with probability
-\[p_1 = \textcolor{purple}{\frac{1}{4}} \bra{\psi} (\G - A)^{\dagger} (\G - A) \ket{\psi}.   \]
+\[p_1 = \frac{1}{4} \bra{\psi} (\G - A)^{\dagger} (\G - A) \ket{\psi}.   \]
 Note that this is not a conditional measurement: Either result contributes to the final estimate. We measure the expectation of $\hat{Q}$ with respect to the final state. If the ancilla was in state $0$, we contribute the result to the estimation of
 \[\tilde{E}_0 =  \frac{1}{4 p_0} \bra{\psi} (\G + A)^{\dagger} \hat{Q} (\G + A) \ket{\psi}, \]
 and if the ancilla was in state $1$ we contribute the result towards the estimation of
 \[\tilde{E}_1 =  \frac{1}{4 p_1} \bra{\psi} (\G - A)^{\dagger} \hat{Q} (\G - A) \ket{\psi}. \]
 We can now use our knowledge of $p_0, p_1$ from the measurement together with $E_0 = 4 p_0 \tilde{E}_0$ and $E_1 = 4 p_1 \tilde{E}_1$ to compute the desired estimate (\ref{Eq:term_to_estimate}),
-\[\bra{\psi} A^{\dagger}  \hat{Q} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{Q} A  \ket{\psi} = 2 p_0 \tilde{E}_0 + 2 p_1 \tilde{E}_1.
-\text{\ville{Subtraction?}}
-\]
+\[\bra{\psi} A^{\dagger}  \hat{Q} \G \ket{\psi} +  \bra{\psi}\G^{\dagger} \hat{Q} A  \ket{\psi} = 2 p_0 \tilde{E}_0 - 2 p_1 \tilde{E}_1.\]
 
 
 
