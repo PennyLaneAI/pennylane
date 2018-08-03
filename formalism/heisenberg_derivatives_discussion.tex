@@ -1,0 +1,273 @@
+\documentclass[aps,pra,10pt,onecolumn,notitlepage, groupedaddress,nofootinbib]{revtex4-1}
+
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}% Include figure files
+\usepackage{bm,bbm}% bold math
+\usepackage{hyperref}% add hypertext capabilities
+\usepackage[margin=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{qcircuit}
+\usepackage{multirow}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}%[section]
+
+
+\DeclareMathOperator{\re}{Re}
+\DeclareMathOperator{\im}{Im}
+\DeclareMathOperator{\tr}{Tr}
+\DeclareMathOperator{\Ad}{Ad}
+\DeclareMathOperator{\ad}{ad}
+\DeclareMathOperator{\diag}{diag}  % diagonal vector of the given matrix / diagonal matrix with the given vector as diagonal
+\DeclareMathOperator{\Ker}{Ker}    % kernel
+\DeclareMathOperator{\Imag}{Imag}  % image
+\DeclareMathOperator{\spec}{spec}  % eigenvalue spectrum
+\DeclareMathOperator{\lcm}{lcm}    % least common multiple
+
+\newcommand{\isom}{\cong} % isomorphic to
+\newcommand{\conj}[1]{\overline{#1}} % complex conjugate
+\newcommand{\mnorm}[1]{\ensuremath{\left\| #1 \right\|}} % matrix norm
+
+\newcommand{\de}[2]{\frac{d #1}{d #2}}   % derivative
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}  % partial derivative
+\newcommand{\hc}{\text{h.c.}}  % hermitian conjugate
+
+\newcommand{\be}{\begin{equation}}
+\newcommand{\ee}{\end{equation}}
+\newcommand{\bpm}{\begin{pmatrix}}
+\newcommand{\epm}{\end{pmatrix}}
+
+\newcommand{\naturals}{\ensuremath{\mathbb N}}
+\newcommand{\Z}{\ensuremath{\mathbb Z}}  % integer numbers
+\newcommand{\Q}{\ensuremath{\mathbb Q}}  % rational numbers
+\newcommand{\R}{\ensuremath{\mathbb R}}  % real numbers
+\newcommand{\C}{\ensuremath{\mathbb C}}  % complex numbers
+\newcommand{\K}{\ensuremath{\mathbb K}}  % any field
+\newcommand{\I}{\mathbbm{1}} % vector space identity op
+
+\newcommand{\SL}{\text{SL}} % special linear group
+\newcommand{\GL}{\text{GL}} % general linear group
+\newcommand{\OO}{\text{O}}  % orthogonal group
+\newcommand{\SO}{\text{SO}} % special orthogonal group
+\newcommand{\U}{\text{U}}   % unitary group
+\newcommand{\SU}{\text{SU}} % special unitary group
+\newcommand{\Sp}{\text{Sp}} % symplectic group
+
+
+\newcommand{\CNOT}{\text{CNOT}}
+
+\newcommand{\comm}[2]{\ensuremath{\left[#1, #2\right]}}             % commutator
+\newcommand{\acomm}[2]{\ensuremath{\left\{#1, #2\right\}}}          % anticommutator
+\newcommand{\ket}[1]{\ensuremath{\left| #1 \right \rangle}}
+\newcommand{\bra}[1]{\ensuremath{\left \langle #1 \right |}}
+\newcommand{\braket}[2]{\ensuremath{\left\langle #1\left|#2 \right.\right\rangle}}
+\newcommand{\ketbra}[2]{\ket{#1}\bra{#2}}
+%\newcommand{\vect}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\inprod}[2]{\ensuremath{\left\langle #1, #2 \right\rangle}}  % inner product
+\newcommand{\lieprod}[2]{\ensuremath{\left[#1, #2\right]}}          % Lie product
+\newcommand{\liealg}[1]{\ensuremath{\mathfrak{#1}}}                 % Lie algebra
+\newcommand{\expect}[1]{\ensuremath{\left\langle #1 \right\rangle}} % expectation value
+\newcommand{\tracep}[1]{\ensuremath{\trace\left( #1 \right)}}
+
+
+\renewcommand{\a}{\hat{a}}
+\newcommand{\adag}{\hat{a}^{\dagger}}
+\newcommand{\x}{\hat{x}}
+\newcommand{\p}{\hat{p}}
+\renewcommand{\c}{\hat{c}}
+\renewcommand{\d}{\hat{d}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bp}{\mathbf{p}}
+\newcommand{\bq}{\mathbf{q}}
+\newcommand{\e}{\mathrm{e}}
+\newcommand{\bad}{\bm{\hat a}^\dagger}
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\G}{\mathcal{G}}
+\newcommand{\cR}{\mathcal{R}}
+
+\newcommand{\sidenote}[1]{\marginpar{\footnotesize{\textcolor{red}{-#1}}}}
+
+\newcommand{\nathan}[1]{\textcolor{blue}{Nathan: #1}}
+\newcommand{\maria}[1]{\textcolor{orange}{Maria: #1}}
+\newcommand{\ville}[1]{\textcolor{purple}{Ville: #1}}
+\newcommand{\cg}[1]{\textcolor{cyan!80!black}{Christian G.: #1}}
+
+%quantum and classical node stypes
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usetikzlibrary{shapes.multipart}
+\definecolor{quantum1}{HTML}{8EDBCE}
+\definecolor{quantum2}{HTML}{3F605B}
+\definecolor{exp1}{HTML}{9AB9ED}
+\definecolor{exp2}{HTML}{204177}
+\definecolor{classical}{HTML}{EBBA92}
+\tikzset{input node/.style={}}
+\tikzset{quantum node/.style={draw, align=center, anchor=west, inner sep=5pt,rounded corners=4pt, rectangle split, rectangle split horizontal, rectangle split parts=2, rectangle split part fill={quantum1,quantum2}, every two node part/.style={text = white}}}
+\tikzset{classical node/.style={draw, rectangle,align=center, anchor=west, thin, fill=classical, inner sep=5pt}}
+%\tikzset{expectation node/.style={draw, align=center, anchor=west, inner sep=5pt, rectangle split, rectangle split horizontal, rectangle split parts=2, rectangle split part fill={exp1,exp2}, every two node part/.style={text = white}}}
+\tikzset{output node/.style={}}
+\tikzset{out label/.style={midway, above}}
+\tikzset{connector/.style={anchor=center, opacity=0.}}
+\tikzset{samples label/.style={at start, below, xshift=4pt}}
+
+
+\begin{document}
+
+\title{OpenQML - Discussion}
+
+
+\date{\today}
+
+\maketitle
+
+-\cg{At fist I was convinced that it would work in general, but now I have the following doubt: We are dealing with two representations here, the one in Hilbert space and the one in terms of creation and annihilation operators. The question is somehow, when is the right moment to switch representation. The Hilbert space representation has the advantage that operations are always linear. This is what allows us to ``pull'' the derivative past the state and the operation $V$ when deriving \eqref{Eq:der_of_exp}, irrespective of what $V$ is. If we use this representation, however, we need to calculate the derivatives in \eqref{Eq:der_of_exp} in Hilbert space. This is difficult for the CV operations and general qubit gates. We can, as you show here, elegantly compute the derivatives of the CV operations in their representation as maps on the creation operators. We would thus like do the whole calculation in this representation. However, the map $V$ is, as you also said, non-linear. If we want to compute the derivative with respect to some gate that is hidden behind such a $V$ in this representation, we thus need to use the chain rule. This problem goes away only if all stats and operations are Gaussian, i.e, linear operations on the creation operators. So, with this I think that the following only really woks for Gaussian circuits. Does that make sense?}\\
+
+\maria{I don't think that is a valid concern because we do not want to compute the derivative of anything inside this nonlinear transform. It is therefore a blackbox for the purpose of derivation. So no chain rule required...My question is only, can we use the Bogoliubov transform on a quadrature vector that has previously been mapped by a nonlinear transform. Don't see why not, but I have never seen it done either.}\\
+
+\cg{I resurrected this comment, not because I want to be mean, but because I want to fully understand what is going on.
+Let's go through this slowly:
+We assume that only $\G$ depends on $\mu$.
+If we represent everything in Hilbert space, then we have
+\begin{equation}
+  \begin{split}
+    &\partial_{\mu} \bra{0}U^{\dagger} \G^{\dagger} V^{\dagger} \hat{O}V \G U \ket{0} \\
+    = &\bra{0}U^{\dagger} \partial_{\mu} (\G^{\dagger} V^{\dagger} \hat{O}V \G) U \ket{0}
+  \end{split}
+\end{equation}
+because of linearity and we can hence use the tricks described before.
+Now let's look at the same thing in the quadrature picture.
+For concreteness, let us chose $V = \I$, $\hat{O} = \hat{p}^2$, $U$ a a cubit phase gate with parameter $\gamma = 1$ and $\G$ as a phase rotation gate with parameter $\phi = \mu$ (with respect to which we want to differentiate).
+By direct calculation we have (if I didn't make any stupid mistakes)
+\begin{align}
+    &\G^\dagger V^\dagger \hat{O} V G = \G^\dagger \hat{p}^2 G \\
+    = &\sin^2(\mu) \hat{x}^2 + \cos^2(\mu) \hat{p}^2 - \sin(\mu) \cos(\mu) (\hat{x} \hat{p} + \hat{p} \hat{x})
+\end{align}
+and hence
+\begin{align}
+  &U^\dagger \G^\dagger V^\dagger \hat{O} V G U \nonumber\\
+  = &\sin^2(\mu) \hat{x}^2 + \cos^2(\mu) \big( \hat{p}^2 + (\hat{p} \hat{x}^2 + \hat{x}^2 \hat{p}) + \hat{x}^4 \big)\\
+  - &\sin(\mu) \cos(\mu) \big( \hat{x} (\hat{p}+\hat{x}^2)+ (\hat{p}+\hat{x}^2) \hat{x}  \big) \nonumber.
+\end{align}
+If I take the derivative with respect to $\mu$ at $\mu=0$ only the last term survives and I get
+\begin{equation}
+  \partial_\mu\Big|_{\mu=0} U^\dagger \G^\dagger V^\dagger \hat{O} V G U 
+  = - \hat{x}\hat{p} - \hat{p}\hat{x} - 2 \hat{x}^3 .
+\end{equation}
+Now, let's do the same calculation again, assuming that we can pull the derivative $\partial_\mu$ past the outer $U^\dagger \cdot U$ (despite it being a non-linear gate), so that we can directly apply \eqref{eq:derivative_rhase_rotation}, without having to use a chain rule.
+We then get that
+\begin{align}
+  \partial_\mu &(U^\dagger \G^\dagger V^\dagger \hat{O} V G U) \nonumber\\
+  = &U^\dagger (\partial_\mu( R(\mu)^\dagger \hat{p}^2 R(\mu) )) U \\
+  = &U^\dagger R(\mu+\frac{\pi}{2})^\dagger \hat{p}^2 R(\mu+\frac{\pi}{2}) U \\
+  = &U^\dagger (R(\mu+\frac{\pi}{2})^\dagger \hat{p} R(\mu+\frac{\pi}{2}))^2 U \\
+  = &U^\dagger (-\cos(\mu) \hat{x} - \sin(\mu) \hat{p})^2 U \\
+  = &U^\dagger (\cos^2(\mu) \hat{x}^2 + \sin^2(\mu) \hat{p}^2 + \cos(\mu) \sin(\mu) (\hat{x} \hat{p} + \hat{p} \hat{x})) U
+\end{align}
+At $\mu = 0$ only the first term survives and we hence get
+\begin{align}
+  \partial_\mu &U^\dagger \G^\dagger V^\dagger \hat{O} V G U \nonumber\\
+    = &U^\dagger \hat{x}^2 U = \hat{x}^2 ,
+\end{align}
+which is different from what we had before.
+Maybe I am just making a trivial mistake in my calculation? Or maybe I am missing something obvious?
+}\\
+
+\maria{I get the same results when I reproduce your calculations (although I'd suggest using the Strawberryfields convention for the rotation? Will do so in the following!). The reason for the ``paradox'' is indeed that for non-Gaussian gates the derivative rules of the gates don't hold any more because we have to consider the derivatives of higher orders, not only the Buguliubov transform in the $\x, \p$ subspace.
+In the spirit of Nathan's approach in the manuscript, let's look at the Heisenberg evolution of the entire vector of quadrature monomials,
+\[ \xi = (1, \x, \p , \x^2, \x \p,...)^T,\]
+for your example. A rotation gate is given by the matrix (here written as a table to keep track of the terms)\\
+\begin{center}
+\def\arraystretch{1.5}
+\footnotesize
+\begin{tabular}{ccccccccccccccccc}
+& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{x}\hat{p}^2$} & \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hdots$} \\  
+\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &  $\hdots$\\ 
+\textcolor{gray}{$\hat{x}$} & 0 & $\cos \phi$ & $-\sin \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0  & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{p}$} & 0 & $\sin \phi$ & $ \cos \phi$ & 0 & 0 & 0 & 0 & 0 & 0  & 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{x}^2$} & 0 & 0 & 0 & $\cos^2 \phi$ & $- a$ & $- a$  & $\sin^2 \phi$ &  0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{x}\hat{p}$} & 0 & 0 & 0 & $ a$ & $\cos^2 \phi$ & $-\sin^2 \phi$  & $-a$  & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & $a$ & $-\sin^2 \phi$  & $\cos^2 \phi$ & $-a$ &  0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{p}^2$} & 0 & 0 & 0 & $\sin^2 \phi$ & $a$ & $a$  & $\cos^2 \phi$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{x}^3$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $\cos^3 \phi$ & $- c$ & $- c$ & $ -c$ & $ b$ & $b$ & $b$ & $-\sin^3 \phi$ &  $\hdots$ \\ 
+\textcolor{gray}{$\hat{x}^2\hat{p}$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $c$ & $\cos^3 \phi$ & $-b$ & $-b$ & $\sin^3 \phi$ & $-c$  & $-c$ & $b$ &  $\hdots$ \\ 
+\textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & • & • & • & • & • & • & • & • & • & • & • & • & •  & •& •  \\ 
+\textcolor{gray}{$\hat{p}\hat{x}^2$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $c$ & $-b$ & $-b$ & $\cos^3 \phi$ & $-c$ & $-c$  & $\sin^3 \phi$ & $b$ &  $\hdots$ \\ 
+\textcolor{gray}{$\hat{p}^2\hat{x}$} & • & • & • & • & • & • & • & • & • & • & • & • & •  & •& •  \\ 
+\textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} & • & • & • & • & • & • & • & • & • & • & • & • & •  & • & • \\ 
+\textcolor{gray}{$\hat{x}\hat{p}^2$} & • & • & • & • & • & • & • & • & • & • & • & • & •  & •& •  \\ 
+\textcolor{gray}{$\hat{p}^3$} & • & • & • & • & • & • & • & • & • & • & • & • & •  & •& •  \\ 
+\textcolor{gray}{$\hat{x}^4$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & (*) \\ 
+\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & •& •  \\ 
+\end{tabular}   \\
+(*) fourth order terms
+\end{center}
+with
+\begin{eqnarray*}
+a &=& \cos \phi \sin \phi \\
+b &=& \cos \phi \sin^2 \phi \\
+c &=& \cos^2 \phi \sin \phi 
+\end{eqnarray*}
+One can see nicely the Gaussian structure in the block-diagonals for the subspaces of a given polynomial order, which means that applying a sequence of Gaussians to an operator it does not leave the subspace. 
+The cubic phase gate is given by the matrix
+\begin{center}
+\def\arraystretch{1.5}
+\footnotesize
+\begin{tabular}{cccccccccccccccccc}
+& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hat{x}^4$} & \textcolor{gray}{$\hdots$} \\  
+\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+\textcolor{gray}{$\hat{x}$}  & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{p}$}  & 0 & 0 & 1 & $\gamma$ & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{x}^2$}  & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{x}\hat{p}$}  & 0 & 0 & 0 & 0 & 1 & 0 & 0 & $\gamma$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{p}\hat{x}$}  & 0 & 0 & 0 & 0 & 0 & 1 & 0 & $\gamma$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & $\gamma$ & 0 & $\gamma$ & 0 & 0 & 0 & 0 & $\gamma^2$ & $\hdots$\\ 
+\textcolor{gray}{$\hat{x}^3$} & • & • & • & • & • & • & • & • & • & • & • & • & • & •& • & • \\ 
+\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & •& • \\ 
+\end{tabular}   
+\end{center}  
+Their product $UR$ is given by
+\begin{center}
+\def\arraystretch{1.5}
+\footnotesize
+\begin{tabular}{ccccccccccccccccc}
+& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^3$}  & \textcolor{gray}{$\hdots$} \\  
+\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 &  $\hdots$ \\ 
+\textcolor{gray}{$\hat{x}$}  & 0 & $\cos \phi$ & $-\sin \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0  & 0 & $\hdots$\\ 
+\textcolor{gray}{$\hat{p}$}  & 0 & $\sin \phi$ & $ \cos \phi$ & $\gamma \cos^2 \phi$ & $-\gamma a$ & $-\gamma a$  & $\gamma\sin^2 \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &  $\hdots$\\ 
+\textcolor{gray}{$\hat{x}^2$} & 0 & 0 & 0 & $\cos^2 \phi$ & $- a$ & $- a$  & $\sin^2 \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{x}\hat{p}$} & 0 & 0 & 0 & $ a$ & $\cos^2 \phi$ & $-\sin^2 \phi$  & $- a$ & $\gamma \cos^3 \phi$ & $- \gamma c$ & $-\gamma c$ & $ -\gamma c$ & $\gamma b$ & $\gamma b$ & $ \gamma b$ & $-\gamma \sin^3 \phi$  \\ 
+\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & $ a$ & $-\sin^2 \phi$  & $\cos^2 \phi$ & $- a$ & $\gamma \cos^3 \phi$ & $-\gamma c$ & $-\gamma c$ & $ -\gamma c$ & $\gamma b$ & $\gamma b$ & $\gamma b$ & $-\gamma \sin^3 \phi$ \\ 
+\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & $\sin^2 \phi$ & $a$ & $a$  & $\cos^2 \phi$ & $ 2\gamma c$ & $\gamma (\cos^3-b) \phi$ & $-2\gamma b$ & $\gamma(\cos^3 \phi-b)$ & $\gamma(\sin^3 \phi -c)$ & $-2\gamma c$  & $\gamma (\sin^3 \phi -c)$ & $2\gamma b$ & $\gamma^2$(*) \\ 
+\textcolor{gray}{$\hat{x}^3$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • \\ 
+\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • \\ 
+\end{tabular}   
+(*) fourth order terms
+\end{center}
+Now, even the $\p$ quadrature after the evolution (shown by the corresponding row in the table) contains four terms that come from the ``quadratic subspace block-diagonal'' of the rotation gate. By the way, this problem should not appear if the non-Gaussian gate was applied before the Gaussian one!
+\textbf{In conclusion, I think the problem is not that the derivative does not pass through the cubic phase gate, but that the derivation rules only work for Gaussian circuits and homodyne detection.} Which also answers an open question to me. 
+The next step would be to find out if we can find the ``correct derivative rules''?
+ }
+ 
+ 
+%% Matrix template:
+%\begin{center}
+%\def\arraystretch{1.5}
+%\footnotesize
+%\begin{tabular}{cccccccccccccccccc}
+%& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hat{x}^4$} & \textcolor{gray}{$\hdots$} \\  
+%\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\textcolor{gray}{$\hat{x}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\textcolor{gray}{$\hat{p}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\textcolor{gray}{$\hat{x}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\textcolor{gray}{$\hat{x}\hat{p}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\textcolor{gray}{$\hat{x}^3$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\textcolor{gray}{$\vdots$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
+%\end{tabular}   
+%\end{center} 
+%
+
+
+\end{document}
