@@ -249,6 +249,20 @@ Now, even the $\p$ quadrature after the evolution (shown by the corresponding ro
 The next step would be to find out if we can find the ``correct derivative rules''?
  }
  
+\nathan{In the interest of moving forward on this and not getting side-tracked, isn't the ``correct derivative rule'' just the chain rule (while being careful to account for noncommutativity)? Given a particular monomial of the quadrature operators, e.g., $\hat{O}=\hat{x}^a\hat{p}^b$, and any unitary conjugation $M$, then we can always write the transformation $M[\hat{O}]$ as
+\begin{equation}
+ M[\hat{O}] = \left(M[\hat{x}]\right)^a \left(M[\hat{p}]\right)^b.
+\end{equation}
+From this form, any gradient computation can just follow the chain rule:
+\begin{align*}
+ \nabla_\theta M[\hat{O}] 
+ = &\left(\nabla_\theta M[\hat{x}]\right) \left(M[\hat{x}]\right)^{a-1}\left(M[\hat{p}]\right)^b \\
+   & + \left(M[\hat{x}]\right)\left(\nabla_\theta M[\hat{x}]\right)\left(M[\hat{x}]\right)^{a-2} \left(M[\hat{p}]\right)^b \\
+   & + \dots \\
+   & +  \left(M[\hat{x}]\right)^a \left(M[\hat{p}]\right)^{b-1}\left(\nabla_\theta M[\hat{p}]\right)
+\end{align*}
+At this stage, we can plug in the known formulas for $M[\hat{x}]$ and $M[\hat{p}]$, giving us expressions for the full gradient $\nabla_\theta M[\hat{O}]$. This has extra overhead compared to the qubit method; there, no higher-order powers of any operators appear (since Pauli operators are projectors). But this is still manageable, in principle: the overall number of computations is of the same order as the power of the monomial. The hard part is to assure that the measurement operators of interest (which may be built from having higher-order gates next to simpler measurement operators) are bounded or sparse polynomials in $\hat{x}$ and $\hat{p}$ (e.g., the circuit contains only a couple cubic phase gates). 
+}
  
 %% Matrix template:
 %\begin{center}
