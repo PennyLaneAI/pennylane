@@ -88,29 +88,16 @@ class Observable(Gate):
         """
         if self.n_sys != 1:
             raise ValueError('This plugin supports only one-qubit observables.')
+        sim.eng.flush()
+        if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
+            ev = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(self.cls)+'0'), reg)
 
-        state = sim.eng.run(**sim.init_kwargs)
-        n_eval = sim.n_eval
+        var = 0
 
-        if self.cls == sfo.MeasureHomodyne:
-            ev, var = state.quad_expectation(reg[0], *par)
-        elif self.cls == sfo.MeasureFock:
-            ev = state.mean_photon(reg[0])  # FIXME should return var too!
-            var = 0
-        else:
-            warnings.warn('No expectation value method defined for {}.'.format(self.cls))
-            ev = 0
-            var = 0
         log.info('observable: ev: {}, var: {}'.format(ev, var))
 
-        if n_eval != 0:
-            # estimate the ev
-            # TODO implement sampling in SF
-            # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            ev = np.random.normal(ev, np.sqrt(var / n_eval))
-
-        sim.eng.register[reg[0]].val = ev  # TODO HACK: store the result (there should be a SF method for computing and storing the expectation value!)
-
+        #sim.eng.register[reg[0]].val = ev  # TODO HACK: In the SF plugin the expecation value is stored in the register of the simulator and it is argued there that SF should have a method to store expectation values. I am not sure I agree with that. I think storage of the expectation values should be done in the openqml plugin.
+        return ev
 
 # gates (and state preparations)
 H = Gate('H', 1, 0, pq.ops.HGate)
@@ -143,7 +130,9 @@ CZ = Gate('CZ', 2, 0, pq.ops.C(pq.ops.ZGate)) #Controlled version of a gate.
 
 
 # measurements
-Measure = Observable('MFock', 1, 0, pq.ops.Measure)
+MeasureX = Observable('MFock', 1, 0, pq.ops.X)
+MeasureY = Observable('MFock', 1, 0, pq.ops.Y)
+MeasureZ = Observable('MFock', 1, 0, pq.ops.Z)
 
 
 demo = [
@@ -154,7 +143,7 @@ demo = [
 # circuit templates
 _circuit_list = [
   Circuit(demo, 'demo'),
-  Circuit(demo +[Command(Measure, [0], [])], 'demo_ev', out=[1]),
+  Circuit(demo +[Command(MeasureZ, [0], [])], 'demo_ev', out=[0]),
 ]
 
 
@@ -183,13 +172,13 @@ class PluginAPI(openqml.plugin.PluginAPI):
         # gate and observable sets depend on the backend, so they have to be instance properties
         #gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Rx, Ry, Rz, R, CRz, CNOT]
         gates = [H, X, Y, Z, S, T]
-        observables = [Measure]
+        observables = [MeasureX, MeasureY, MeasureZ]
         if self.backend == 'Simulator':
             pass
         elif self.backend == 'ClassicalSimulator':
             gates = [X, Z, CNOT]
         elif self.backend == 'IBMBackend':
-            ibm_backend = projectq.backends.IBMBackend()
+            ibm_backend = pq.backends.IBMBackend()
             gates = [gate for gate in gates if ibm_backend.is_available(gate.cls)]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
@@ -212,10 +201,10 @@ class PluginAPI(openqml.plugin.PluginAPI):
     def measure(self, A, reg, par=[], n_eval=0):
         temp = self.n_eval  # store the original
         self.n_eval = n_eval
-        with self.eng:
-            A.execute(par, [reg], self)  # compute the expectation value
+
+        ev = A.execute(par, [reg], self)  # compute the expectation value
         self.n_eval = temp  # restore it
-        return self.eng.register[reg].val
+        return ev
 
     def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
         super().execute_circuit(circuit, params, reset=reset, **kwargs)
@@ -239,21 +228,19 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
         # input the program
         reg = self.eng.allocate_qureg(circuit.n_sys)
+        expectation_values = {}
         for cmd in circuit.seq:
             # prepare the parameters
             par = map(parmap, cmd.par)
             # execute the gate
-            print("Gate="+cmd.gate.name)
-            print("cmd.reg="+str(cmd.reg))
-            print("reg="+str(reg))
-            cmd.gate.execute(par, [reg[i] for i in cmd.reg], self)  #MUST construct a projctQ register here instead form cmd.reg
+            expectation_values[reg[0]] = cmd.gate.execute(par, [reg[i] for i in cmd.reg], self)
 
         pq.ops.Measure | reg # avoid am unfriendly error message by ProjectQ: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
         self.eng.flush()
 
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
-            return np.array([reg[idx].val for idx in circuit.out])
+            return np.array([expectation_values[idx] for idx in circuit.out])
 
 
 
