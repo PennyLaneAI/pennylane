@@ -137,13 +137,14 @@ MeasureZ = Observable('MFock', 1, 0, pq.ops.Z)
 
 demo = [
     Command(Rx,  [0], [ParRef(0)]),
+    Command(Rx,  [1], [ParRef(1)]),
 #    Command(CNOT, [0, 1], []),
 ]
 
 # circuit templates
 _circuit_list = [
   Circuit(demo, 'demo'),
-  Circuit(demo +[Command(MeasureZ, [0], [])], 'demo_ev', out=[0]),
+  Circuit(demo +[Command(MeasureZ, [0])], 'demo_ev', out=[0]),
 ]
 
 
@@ -199,10 +200,13 @@ class PluginAPI(openqml.plugin.PluginAPI):
             #self.eng.reset()
 
     def measure(self, A, reg, par=[], n_eval=0):
+        if isinstance(reg, int):
+            reg = [reg]
+
         temp = self.n_eval  # store the original
         self.n_eval = n_eval
 
-        ev = A.execute(par, [reg], self)  # compute the expectation value
+        ev = A.execute(par, [self.reg[i] for i in reg], self)  # compute the expectation value
         self.n_eval = temp  # restore it
         return ev
 
@@ -227,16 +231,17 @@ class PluginAPI(openqml.plugin.PluginAPI):
             return p
 
         # input the program
-        reg = self.eng.allocate_qureg(circuit.n_sys)
-        expectation_values = {}
-        for cmd in circuit.seq:
-            # prepare the parameters
-            par = map(parmap, cmd.par)
-            # execute the gate
-            expectation_values[reg[0]] = cmd.gate.execute(par, [reg[i] for i in cmd.reg], self)
+        with pq.meta.Compute(self.eng):
+            self.reg = self.eng.allocate_qureg(circuit.n_sys)
+            expectation_values = {}
+            for cmd in circuit.seq:
+                # prepare the parameters
+                par = map(parmap, cmd.par)
+                # execute the gate
+                expectation_values[cmd.reg[0]] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
 
-        pq.ops.Measure | reg # avoid am unfriendly error message by ProjectQ: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
         self.eng.flush()
+        pq.meta.Uncompute(self.eng)
 
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
