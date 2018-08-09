@@ -147,7 +147,7 @@ Measure = Observable('MFock', 1, 0, pq.ops.Measure)
 
 
 demo = [
-    Command(Rx,  [0], [ParRef(0), 0]),
+    Command(Rx,  [0], [ParRef(0)]),
     Command(CNOT, [0, 1], []),
 ]
 
@@ -165,12 +165,12 @@ class PluginAPI(openqml.plugin.PluginAPI):
     Keyword Args:
       backend (str): backend name
     """
-    plugin_name = 'Strawberry Fields OpenQML plugin'
+    plugin_name = 'ProjectQ OpenQML plugin'
     plugin_api_version = '0.1.0'
     plugin_version = '0.1.0'
     author = 'Xanadu Inc.'
     _circuits = {c.name: c for c in _circuit_list}
-    _capabilities = {'backend': list("Simulator", "ClassicalSimulator", "IBMBackend")}
+    _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
 
     def __init__(self, name='default', **kwargs):
         super().__init__(name, **kwargs)
@@ -181,7 +181,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
         # backend-specific capabilities
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
-        gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Px, Py, Pz, R, CRz, CNOT]
+        gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Rx, Ry, Rz, R, CRz, CNOT]
         observables = [Measure]
         if self.backend == 'Simulator':
             pass
@@ -189,7 +189,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             gates = [X, Z, CNOT]
         elif self.backend == 'IBMBackend':
             ibm_backend = projectq.backends.IBMBackend()
-            gates = filter(lambda gate: ibm_backend.is_available(gate.cls) == True, gates)
+            gates = [gate for gate in gates if ibm_backend.is_available(gate.cls)]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
@@ -221,11 +221,15 @@ class PluginAPI(openqml.plugin.PluginAPI):
         circuit = self.circuit
 
         # set the required number of subsystems
-        n = circuit.n_sys
+
         if self.eng is None:
-            self.eng = sfe.Engine(num_subsystems=n, hbar=2)  # FIXME add **self.init_kwargs here when SF is updated, remove hbar=2
-        elif self.eng.num_subsystems != n:  # FIXME change to init_num_subsystems when SF is updated to next version
-            raise ValueError("Trying to execute a {}-mode circuit '{}' on a {}-mode state.".format(n, circuit.name, self.eng.num_subsystems))
+            if self.backend == 'Simulator':
+                backend = pq.backends.Simulator()
+            elif self.backend == 'ClassicalSimulator':
+                backend = pq.backends.ClassicalSimulator()
+            elif self.backend == 'IBMBackend':
+                backend = pq.backends.IBMBackend()
+        self.eng = pq.MainEngine(backend)
 
         def parmap(p):
             "Mapping function for gate parameters. Replaces ParRefs with the corresponding parameter values."
@@ -242,7 +246,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 # execute the gate
                 cmd.gate.execute(par, cmd.reg, self)
 
-        self.eng.run(**self.init_kwargs)  # FIXME remove **kwargs here when SF is updated
+        self.eng.run(**self.init_kwargs)
 
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
