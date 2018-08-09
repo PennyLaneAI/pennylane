@@ -70,6 +70,8 @@ class Gate(GateSpec):
         # construct the Operation instance
         G = self.cls(*par)
         # apply it
+        print("reg="+str(reg))
+        print("G="+str(self.cls))
         G | reg
 
 
@@ -88,10 +90,17 @@ class Observable(Gate):
         """
         if self.n_sys != 1:
             raise ValueError('This plugin supports only one-qubit observables.')
-        sim.eng.flush()
-        if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
-            #            ev = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(self.cls)+'0'), reg)
-            ev = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str('X0')), reg)
+
+        if type(sim.eng.backend).__name__ == 'Simulator':
+            sim.eng.flush()
+            if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
+                ev = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(str(self.cls)+'0')), reg)
+            else:
+                raise NotImplementedError("Estimation of expectation values not yet implemented the observable {}.".format(self.cls))
+        elif type(sim.eng.backend).__name__ == 'ClassicalSimulator':
+            ev = sim.eng.backend.read_bit(reg[0])
+        else:
+            raise NotImplementedError("Estimation of expectation values not yet implemented for the {} backend.".format(self.backend))
 
         var = 0
 
@@ -124,16 +133,16 @@ R = Gate('R', 1, 1, pq.ops.R) #(angle) Phase-shift gate (equivalent to Rz up to 
 #pq.ops.QFTGate #(instance of) pq.ops.QFTGate
 #pq.ops.QubitOperator) #([term, coefficient]) A sum of terms acting on qubits, e.g., 0.5 * ‘X0 X5’ + 0.3 * ‘Z1 Z2’.
 CRz = Gate('CRz', 1, 1, pq.ops.CRz) #(angle) Shortcut for C(Rz(angle), n=1).
-#CNOT = Gate('CNOT', 2, 0, pq.ops.C(pq.ops.NOT)) #Controlled version of a gate.
+CNOT = Gate('CNOT', 2, 0, pq.ops.CNOT) #Controlled version of a gate.
 CZ = Gate('CZ', 2, 0, pq.ops.C(pq.ops.ZGate)) #Controlled version of a gate.
 #pq.ops.Toffoli) #Controlled version of a gate.
 #n, 1, pq.ops.TimeEvolution) #(time, hamiltonian) Gate for time evolution under a Hamiltonian (QubitOperator object).
 
 
 # measurements
-MeasureX = Observable('MFock', 1, 0, pq.ops.X)
-MeasureY = Observable('MFock', 1, 0, pq.ops.Y)
-MeasureZ = Observable('MFock', 1, 0, pq.ops.Z)
+MeasureX = Observable('X', 1, 0, pq.ops.X)
+MeasureY = Observable('Y', 1, 0, pq.ops.Y)
+MeasureZ = Observable('Z', 1, 0, pq.ops.Z)
 
 
 demo = [
@@ -162,7 +171,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
     author = 'Xanadu Inc.'
     _circuits = {c.name: c for c in _circuit_list}
     #_capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
-    _capabilities = {'backend': list(["Simulator"])}
+    _capabilities = {'backend': list(["Simulator"])} #todo: the IBMBackend needs account data and can thus not be used during during unit tests - disabled for now, ClassicalSimulator produces a "maximum recursion depth exceeded" exceeded error - disabled for now as couldn't get it to work quickly and of limited use
 
     def __init__(self, name='default', **kwargs):
         super().__init__(name, **kwargs)
@@ -174,15 +183,21 @@ class PluginAPI(openqml.plugin.PluginAPI):
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
         #gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Rx, Ry, Rz, R, CRz, CNOT]
-        gates = [H, X, Y, Z, S, T]
+        gates = [H, X, Y, Z, S, T, SqrtX, Swap]
         observables = [MeasureX, MeasureY, MeasureZ]
         if self.backend == 'Simulator':
             pass
         elif self.backend == 'ClassicalSimulator':
-            gates = [X, Z]
+            classical_backend = pq.backends.ClassicalSimulator()
+            eng = pq.MainEngine(classical_backend)
+            reg = eng.allocate_qureg(1)
+            gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(), [reg]))]
+            observables = [MeasureZ]
         elif self.backend == 'IBMBackend':
             ibm_backend = pq.backends.IBMBackend()
-            gates = [gate for gate in gates if ibm_backend.is_available(gate.cls)]
+            eng = pq.MainEngine(ibm_backend)
+            reg = eng.allocate_qureg(1)
+            gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(), [reg]))]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
@@ -240,15 +255,15 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 # prepare the parameters
                 par = map(parmap, cmd.par)
                 # execute the gate
-                expectation_values[cmd.reg[0]] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
+                expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
 
-        #self.eng.flush()
-        #pq.meta.Uncompute(self.eng)
-        pq.ops.All(pq.ops.Measure) | self.reg
+        if self.backend == 'Simulator':
+            pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
 
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
-            return np.array([expectation_values[idx] for idx in circuit.out])
+            return np.array([expectation_values[tuple([idx])] for idx in circuit.out])
+            pass
 
 
 
