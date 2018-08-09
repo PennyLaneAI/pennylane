@@ -10,8 +10,12 @@ ProjectQ plugin
 This plugin provides the interface between OpenQML and ProjecQ.
 It enables OpenQML to optimize quantum circuits simulable with ProjectQ.
 
-Strawberry Fields supports several different backends for executing quantum circuits.
-The default is a NumPy-based Fock basis simulator, but also a TensorFlow-based Fock basis simulator and a Gaussian simulator are available.
+ProjecQ supports several different backends. Of those the following are useful in the current context:
+
+- projectq.backends.Simulator([gate_fusion, ...])	Simulator is a compiler engine which simulates a quantum computer using C++-based kernels.
+- projectq.backends.ClassicalSimulator()	        A simple introspective simulator that only permits classical operations.
+- projectq.backends.IBMBackend([use_hardware, ...])	The IBM Backend class, which stores the circuit, transforms it to JSON QASM, and sends the circuit through the IBM API.
+
 See PluginAPI._capabilities['backend'] for a list of backend options.
 
 Functions
@@ -39,9 +43,11 @@ import numpy as np
 import openqml.plugin
 from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
 
-import strawberryfields as sf
-import strawberryfields.ops as sfo
-import strawberryfields.engine as sfe
+import projectq as pq
+
+# import strawberryfields as sf
+# import strawberryfields.ops as sfo
+# import strawberryfields.engine as sfe
 
 
 # tolerance for numerical errors
@@ -159,17 +165,17 @@ _circuit_list = [
 
 
 class PluginAPI(openqml.plugin.PluginAPI):
-    """Strawberry Fields OpenQML plugin API class.
+    """ProjectQ OpenQML plugin API class.
 
     Keyword Args:
       backend (str): backend name
-      cutoff_dim (int): Hilbert space truncation dimension for Fock basis backends
     """
     plugin_name = 'Strawberry Fields OpenQML plugin'
     plugin_api_version = '0.1.0'
     plugin_version = sf.version()
     author = 'Xanadu Inc.'
     _circuits = {c.name: c for c in _circuit_list}
+    _capabilities = {'backend': list("Simulator", "ClassicalSimulator", "IBMBackend")}
 
     def __init__(self, name='default', **kwargs):
         super().__init__(name, **kwargs)
@@ -178,19 +184,19 @@ class PluginAPI(openqml.plugin.PluginAPI):
         kwargs.setdefault('backend', 'fock')
 
         # backend-specific capabilities
-        temp = kwargs['backend']
-        self.backend = temp  #: str: backend name
+        self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
         gates = [Vac, Coh, Squ, The, D, S, X, Z, R, F, P, BS, S2, CX, CZ]
         observables = [MHo]
-        if temp in ('fock', 'tf'):
-            kwargs.setdefault('cutoff_dim', 5)  # Fock space truncation dimension
-            observables.append(MFock)
-            gates.extend([Fock, V, K])  # nongaussian gates: Fock state prep, cubic phase and Kerr
-        elif temp == 'gaussian':
-            observables.append(MHe)  # TODO move to observables when the Fock basis backends support heterodyning
+        if self.backend == 'Simulator':
+            pass
+        elif self.backend == 'ClassicalSimulator':
+            pass
+        elif self.backend == 'IBMBackend':
+            pass
         else:
-            raise ValueError("Unknown backend '{}'.".format(temp))
+            raise ValueError("Unknown backend '{}'.".format(self.backend))
+
         self._gates = {g.name: g for g in gates}
         self._observables = {g.name: g for g in observables}
 
@@ -198,7 +204,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
         self.eng = None  #: strawberryfields.engine.Engine: engine for executing SF programs
 
     def __str__(self):
-        return super().__str__() +'Backend: ' +self.backend +'\n'
+        return super().__str__() +'ProjecQ with Backend: ' +self.backend +'\n'
 
     def reset(self):
         # reset the engine and backend
@@ -257,9 +263,5 @@ def init_plugin():
     Returns:
       class: plugin API class
     """
-    # find out which SF backends are available
-    temp = list(sf.backends.supported_backends.keys())
-    temp.remove('base')  # HACK
-    PluginAPI._capabilities['backend'] = sorted(temp)
 
     return PluginAPI
