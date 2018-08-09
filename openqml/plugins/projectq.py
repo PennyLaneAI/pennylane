@@ -69,9 +69,8 @@ class Gate(GateSpec):
         """
         # construct the Operation instance
         G = self.cls(*par)
+        reg = tuple(reg) #I get an index out of bounds exceptoin if reg is a list of qbits and don't understand why. Therefore I convert to tuple.
         # apply it
-        print("reg="+str(reg))
-        print("G="+str(self.cls))
         G | reg
 
 
@@ -120,7 +119,7 @@ SqrtX = Gate('SqrtX', 1, 0, pq.ops.SqrtXGate)
 Swap = Gate('Swap', 2, 0, pq.ops.SwapGate)
 SqrtSwap = Gate('SqrtSwap', 2, 0, pq.ops.SqrtSwapGate)
 #Entangle = Gate('Entangle', n, 0, pq.ops.EntangleGate
-Ph = Gate('Ph', 0, 1, pq.ops.Ph) #(angle) Phase gate (global phase)
+#Ph = Gate('Ph', 0, 1, pq.ops.Ph) #(angle) Phase gate (global phase)
 Rx = Gate('Rx', 1, 1, pq.ops.Rx) #(angle) RotationX gate class
 Ry = Gate('Ry', 1, 1, pq.ops.Ry) #(angle) RotationY gate class
 Rz = Gate('Rz', 1, 1, pq.ops.Rz) #(angle) RotationZ gate class
@@ -183,7 +182,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
         #gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Rx, Ry, Rz, R, CRz, CNOT]
-        gates = [H, X, Y, Z, S, T, SqrtX, Swap]
+        gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Rx, Ry, Rz]
         observables = [MeasureX, MeasureY, MeasureZ]
         if self.backend == 'Simulator':
             pass
@@ -206,6 +205,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
         self.init_kwargs = kwargs  #: dict: initialization arguments
         self.eng = None
+        self.reg = None
 
     def __str__(self):
         return super().__str__() +'ProjecQ with Backend: ' +self.backend +'\n'
@@ -263,8 +263,6 @@ class PluginAPI(openqml.plugin.PluginAPI):
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
             return np.array([expectation_values[tuple([idx])] for idx in circuit.out])
-            pass
-
 
 
 def init_plugin():
