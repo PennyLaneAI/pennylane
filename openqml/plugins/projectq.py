@@ -45,11 +45,6 @@ from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
 
 import projectq as pq
 
-# import strawberryfields as sf
-# import strawberryfields.ops as sfo
-# import strawberryfields.engine as sfe
-
-
 # tolerance for numerical errors
 tolerance = 1e-10
 
@@ -62,7 +57,7 @@ class Gate(GateSpec):
     """
     def __init__(self, name, n_sys, n_par, cls=None, par_domain='R'):
         super().__init__(name, n_sys, n_par, grad_method='F', par_domain=par_domain)
-        self.cls = cls  #: class: sf.ops.Operation subclass corresponding to the gate
+        self.cls = cls  #: class: pq subclass corresponding to the gate
 
     def execute(self, par, reg, sim):
         """Applies a single gate or measurement on the current system state.
@@ -85,6 +80,7 @@ class Observable(Gate):
     Since we are only interested in the expectation values, there is no need to project the state after the measurement.
     See :ref:`measurements`.
     """
+    #todo: Do we assume that all the observables in the circuit are consequtive, and commute?
     def execute(self, par, reg, sim):
         """Estimates the expectation value of the observable in the current system state.
 
@@ -93,9 +89,7 @@ class Observable(Gate):
         if self.n_sys != 1:
             raise ValueError('This plugin supports only one-qubit observables.')
 
-        #A = self.cls(*par)  # Operation instance
-        # run the queued program so that we obtain the state before the measurement
-        state = sim.eng.run(**sim.init_kwargs)  # FIXME remove **kwargs here when SF is updated
+        state = sim.eng.run(**sim.init_kwargs)
         n_eval = sim.n_eval
 
         if self.cls == sfo.MeasureHomodyne:
@@ -119,47 +113,48 @@ class Observable(Gate):
 
 
 # gates (and state preparations)
-Vac  = Gate('Vac', 1, 0, sfo.Vacuum)
-Coh  = Gate('Coh', 1, 2, sfo.Coherent)
-Squ  = Gate('Squ', 1, 2, sfo.Squeezed)
-The  = Gate('The', 1, 1, sfo.Thermal)
-Fock = Gate('Fock', 1, 1, sfo.Fock, par_domain='N')
-D = Gate('D', 1, 2, sfo.Dgate)
-S = Gate('S', 1, 2, sfo.Sgate)
-X = Gate('X', 1, 1, sfo.Xgate)
-Z = Gate('Z', 1, 1, sfo.Zgate)
-R = Gate('R', 1, 1, sfo.Rgate)
-F = Gate('Fourier', 1, 0, sfo.Fouriergate)
-P = Gate('P', 1, 1, sfo.Pgate)
-V = Gate('V', 1, 1, sfo.Vgate)
-K = Gate('K', 1, 1, sfo.Kgate)
-BS = Gate('BS', 2, 2, sfo.BSgate)
-S2 = Gate('S2', 2, 2, sfo.S2gate)
-CX = Gate('CX', 2, 1, sfo.CXgate)
-CZ = Gate('CZ', 2, 1, sfo.CZgate)
+H = Gate('H', 1, 0, pq.ops.H)
+X = Gate('X', 1, 0, pq.ops.X)
+Y = Gate('Y', 1, 0, pq.ops.Y)
+Z = Gate('Z', 1, 0, pq.ops.Z)
+S = Gate('S', 1, 0, pq.ops.S)
+T = Gate('T', 1, 0, pq.ops.T)
+SqrtX = Gate('SqrtX', 1, 0, pq.ops.SqrtX)
+Swap = Gate('Swap', 2, 0, pq.ops.Swap)
+SqrtSwap = Gate('SqrtSwap', 2, 0, pq.ops.SqrtSwap)
+#Entangle = Gate('Entangle', n, 0, pq.ops.Entangle
+Ph = Gate('Ph', 0, 1, pq.ops.Ph) #(angle) Phase gate (global phase)
+Rx = Gate('Rx', 1, 1, pq.ops.Rx) #(angle) RotationX gate class
+Ry = Gate('Ry', 1, 1, pq.ops.Ry) #(angle) RotationY gate class
+Rz = Gate('Rz', 1, 1, pq.ops.Rz) #(angle) RotationZ gate class
+R = Gate('R', 1, 1, pq.ops.R) #(angle) Phase-shift gate (equivalent to Rz up to a global phase)
+#pq.ops.DaggeredGate) #(gate) Wrapper class allowing to execute the inverse of a gate, even when it does not define one.
+#pq.ops.ControlledGate) #(gate[, n]) Controlled version of a gate.
+#pq.ops.C) #(gate[, n]) Return n-controlled version of the provided gate.
+#n, 0, pq.ops.All Shortcut) #(instance of) pq.ops.Tensor
+#n, 0, pq.ops.Tensor) #(gate) Wrapper class allowing to apply a (single-qubit) gate to every qubit in a quantum register.
+#pq.ops.QFT Shortcut) #(instance of) pq.ops.QFTGate
+#pq.ops.QubitOperator) #([term, coefficient]) A sum of terms acting on qubits, e.g., 0.5 * ‘X0 X5’ + 0.3 * ‘Z1 Z2’.
+CRz = Gate('CRz', 1, 1, pq.ops.CRz) #(angle) Shortcut for C(Rz(angle), n=1).
+CNOT = Gate('CNOT', 2, 0, pq.ops.CNOT) #Controlled version of a gate.
+#pq.ops.CZ) #Controlled version of a gate.
+#pq.ops.Toffoli) #Controlled version of a gate.
+#n, 1, pq.ops.TimeEvolution) #(time, hamiltonian) Gate for time evolution under a Hamiltonian (QubitOperator object).
+
 
 # measurements
-MFock = Observable('MFock', 1, 0, sfo.MeasureFock)
-MHo   = Observable('MHomodyne', 1, 1, sfo.MeasureHomodyne)
-#MX    = Observable('MX', 1, 0, sfo.MeasureX)
-#MP    = Observable('MP', 1, 0, sfo.MeasureP)
-MHe   = Observable('MHeterodyne', 1, 0, sfo.MeasureHeterodyne)
+Measure = Observable('MFock', 1, 0, pq.ops.Measure)
 
 
 demo = [
-    Command(S,  [0], [ParRef(0), 0]),
-    Command(BS, [0, 1], [np.pi/4, 0]),
-    Command(R,  [0], [np.pi/3]),
-    Command(D,  [1], [ParRef(1), np.pi/3]),
-    Command(BS, [0, 1], [-np.pi/4, 0]),
-    Command(R,  [0], [ParRef(1)]),
-    Command(BS, [0, 1], [np.pi/4, 0]),
+    Command(Rx,  [0], [ParRef(0), 0]),
+    Command(CNOT, [0, 1], []),
 ]
 
 # circuit templates
 _circuit_list = [
   Circuit(demo, 'demo'),
-  Circuit(demo +[Command(MHo, [0], [0])], 'demo_ev', out=[0]),
+  Circuit(demo +[Command(Measure, [0], [])], 'demo_ev', out=[1]),
 ]
 
 
@@ -172,7 +167,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
     """
     plugin_name = 'Strawberry Fields OpenQML plugin'
     plugin_api_version = '0.1.0'
-    plugin_version = sf.version()
+    plugin_version = '0.1.0'
     author = 'Xanadu Inc.'
     _circuits = {c.name: c for c in _circuit_list}
     _capabilities = {'backend': list("Simulator", "ClassicalSimulator", "IBMBackend")}
@@ -181,19 +176,20 @@ class PluginAPI(openqml.plugin.PluginAPI):
         super().__init__(name, **kwargs)
 
         # sensible defaults
-        kwargs.setdefault('backend', 'fock')
+        kwargs.setdefault('backend', 'Simulator')
 
         # backend-specific capabilities
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
-        gates = [Vac, Coh, Squ, The, D, S, X, Z, R, F, P, BS, S2, CX, CZ]
-        observables = [MHo]
+        gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Px, Py, Pz, R, CRz, CNOT]
+        observables = [Measure]
         if self.backend == 'Simulator':
             pass
         elif self.backend == 'ClassicalSimulator':
-            pass
+            gates = [X, Z, CNOT]
         elif self.backend == 'IBMBackend':
-            pass
+            ibm_backend = projectq.backends.IBMBackend()
+            gates = filter(lambda gate: ibm_backend.is_available(gate.cls) == True, gates)
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
@@ -201,15 +197,15 @@ class PluginAPI(openqml.plugin.PluginAPI):
         self._observables = {g.name: g for g in observables}
 
         self.init_kwargs = kwargs  #: dict: initialization arguments
-        self.eng = None  #: strawberryfields.engine.Engine: engine for executing SF programs
+        self.eng = None
 
     def __str__(self):
         return super().__str__() +'ProjecQ with Backend: ' +self.backend +'\n'
 
     def reset(self):
-        # reset the engine and backend
+        """Resets the engine and backend"""
         if self.eng is not None:
-            self.eng = None  # FIXME this is wasteful, now we construct a new Engine and backend after each reset (because the next circuit may have a different num_subsystems)
+            self.eng = None  #todo: this is wasteful, now we construct a new Engine and backend after each reset (because the next circuit may have a different num_subsystems)
             #self.eng.reset()
 
     def measure(self, A, reg, par=[], n_eval=0):
