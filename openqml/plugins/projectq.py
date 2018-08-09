@@ -75,7 +75,6 @@ class Gate(GateSpec):
         G = self.cls(*par)
         reg = tuple(reg) #I get an index out of bounds exceptoin if reg is a list of qbits and don't understand why. Therefore I convert to tuple.
         # apply it
-        print("G="+str(type(G)))
         G | reg
 
 
@@ -96,7 +95,7 @@ class Observable(Gate):
             raise ValueError('This plugin supports only one-qubit observables.')
 
         if type(sim.eng.backend).__name__ == 'Simulator':
-            sim.eng.flush()
+            sim.eng.flush(deallocate_qubits=False)
             if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
                 ev = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(str(self.cls)+'0')), reg)
             else:
@@ -158,7 +157,8 @@ MeasureZ = Observable('Z', 1, 0, pq.ops.Z)
 demo = [
     Command(Rx,  [0], [ParRef(0)]),
     Command(Rx,  [1], [ParRef(1)]),
-#    Command(CNOT, [0, 1], []),
+    Command(CNOT, [0, 1], []),
+    Command(H, [1], []),
 ]
 
 # circuit templates
@@ -223,6 +223,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
     def reset(self):
         """Resets the engine and backend"""
         if self.eng is not None:
+            self._deallocate() #produces a segfault even if we do not deallocate during flush()!
             self.eng = None  #todo: this is wasteful, now we construct a new Engine and backend after each reset (because the next circuit may have a different num_subsystems)
             #self.eng.reset()
 
@@ -267,12 +268,25 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 # execute the gate
                 expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
 
-        if self.backend == 'Simulator':
-            pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
+        #self._deallocate() #deallocating here with the first deallocate() version makes all errors go away, but then subsequent calls to measure() will yield bogus results...
 
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
             return np.array([expectation_values[tuple([idx])] for idx in circuit.out])
+
+    def shutdown(self):
+        self._deallocate() #only calling this here is not enough to make all errors disappear
+
+    # Two possible functions to do the deallocation: The first one is wastefull, the second leads to a segfault...
+    def _deallocate(self):
+        if self.eng is not None and self.backend == 'Simulator':
+            pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
+
+    def _deallocate2(self):
+        if self.eng is not None and self.backend == 'Simulator':
+            for qubit in self.reg:
+                self.eng.deallocate_qubit(qubit)
+
 
 
 def init_plugin():
