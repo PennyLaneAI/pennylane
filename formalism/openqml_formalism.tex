@@ -54,6 +54,7 @@
 \newcommand{\SU}{\text{SU}} % special unitary group
 \newcommand{\Sp}{\text{Sp}} % symplectic group
 
+\newcommand{\cell}[2][c]{\begin{tabular}[#1]{@{}l@{}}#2\end{tabular}}
 
 \newcommand{\CNOT}{\text{CNOT}}
 
@@ -638,167 +639,106 @@ We will perform the analysis in the Heisenberg picture where we are interested i
 \begin{equation}
  \mathcal{G}^\dagger \hat{O}_j \mathcal{G} = \Omega[\hat{O}_j].
 \end{equation}
-
-\subsubsection{Gaussian gates}
-Suppose the gate is Gaussian and $i=0,1,2$. Then it will map the operators $\{\hat{O}_j\}$ linearly amongst themselves: 
+$\Omega$ can be expressed as a linear transformation
+\begin{equation}
+ \Omega[\hat{O}_j] = \sum_{i=0}^{K} c_{ij} \hat{O}_i.
+\end{equation}
+on the quadrature monomials $\hat{O}_i$. In principle, $K$ can go to infinity.
+ 
+\subsubsection{Observables in the linear subspace}
+Suppose the gate $\Omega = \Omega_G$ is Gaussian, then $K=2$, and the transformation only mixes the observables $j=0,1,2$ that are at most linear in the quadratures: 
 \begin{equation}
  \Omega[\hat{O}_j] = \sum_{i=0}^2 c_{ij} \hat{O}_i.
+ \label{Eq:omega_gaussian}
 \end{equation}
 Such a transformation has a representation as a $3\times 3$ matrix $A$ with two indices, i.e., 
 \begin{equation}
  [A]_{ij} = c_{ij},
 \end{equation}
-acting on the vector of quadratures up to linear order, $\xi = (\hat{O}_0, \hat{O}_1, \hat{O}_2)^T$, to produce the `new quadratures' as mixtures of the original ones, $\xi' = A \xi$. The matrix $A$ specifies completely how the Gaussian gate $\Omega$ transforms the operators $\{\hat{O}_j\}$, $j=0,1,2$. Moreover, since this is a linear transformation we can compute the derivative $\partial_{\mu} \mathcal{G}^\dagger \hat{O}_j \mathcal{G}$ by taking the derivative  $\partial_{\mu}A$ of $A$. For example, the transformation of $\xi$ by a phase rotation gate $R(\phi)$ is represented by 
+acting on the vector of quadratures up to linear order, $\xi = (\hat{O}_0, \hat{O}_1, \hat{O}_2)^T$, to produce the `new quadratures' as mixtures of the original ones, $\xi' = A \xi$. The matrix $A$ specifies completely how the Gaussian gate $\Omega$ transforms the operators $\{\hat{O}_j\}$, $j=0,1,2$. Moreover, we can compute the derivatives $\partial_{\mu} \mathcal{G}^\dagger \hat{O}_j \mathcal{G}, j=0,1,2$ by looking at the derivative  $\partial_{\mu}A$ of $A$. For example, the transformation of $\xi$ by a phase rotation gate $R(\phi)$ is represented by 
 \[
-	\xi' =  \underbrace{\begin{pmatrix} \cos(\phi) & -\sin(\phi) \\
-	\sin(\phi) & \cos(\phi) \end{pmatrix}}_{A_R(\phi)}\xi, 
+	\xi' =  \underbrace{
+	\begin{pmatrix} 
+	1 & 0 & 0 \\ 
+	0 & \cos(\phi) & -\sin(\phi) \\ 
+	0 & \sin(\phi) & \cos(\phi) 
+	\end{pmatrix}}_{A_R(\phi)} \xi, 
 \]
 and has the derivative
 \[ 
-	\partial_{\phi} \; A_R(\phi) = \begin{pmatrix} -\sin(\phi) & -\cos(\phi) \\
-	\cos(\phi) & -\sin(\phi) \end{pmatrix} = A_R(\phi+ \frac{\pi}{2}).
-\]
-This effectively exchanges the position and momentum quadratures of the mode. Hence \maria{Check order of daggers}, 
-\[ 
-	\partial_{\phi} \; R(\phi)^{\dagger} \hat{O}_j R(\phi) = R(\phi+ \frac{\pi}{2})^{\dagger} \hat{O}_j R(\phi+ \frac{\pi}{2})
-\]
-for $j = 0,1,2$. If $\partial_{\mu}A$ does not represent a Gaussian gate, we can use the trick from above and decompose it into a linear combination of Gaussian gates. For example, consider a beam splitter. Since the beam splitter is a $2$-mode gate, we consider the $6$-dimensional quadrature vector $\xi^{(2)} =(\mathbbm{1}_a, \mathbbm{1}_b, \x_a, \x_b, \p_a, \p_b )^T$, where the index $a, b$ indicates which mode the quadrature refers to. The linear Heisenberg transformation is now represented by a $6 \times 6$-dimensional matrix
-\begin{equation} \label{eq:beamsplitter_as_matrix} 
-A(\theta, \phi) = \begin{pmatrix} 
-\mathbbm{1} & 0 & 0\\
-0 & \cos(\theta) \mathbbm{1} & -e^{-i\phi}\sin(\theta) \mathbbm{1}\\
-0 & e^{i\phi}\sin(\theta) \mathbbm{1} & \cos(\theta) \mathbbm{1} \end{pmatrix}.
-\end{equation}
-
-Its derivative with respect to the phase parameter $\phi$ is given by
-\[ 
-	\partial_{\phi} A_{BS}(\theta, \phi) = 
-	\begin{pmatrix} 0 & 0 & 0 \\ 
-	0 & 0 & - e^{-i(\phi + \frac{\pi}{2})} \sin(\theta) \mathbbm{1}\\
-	0 & e^{i(\phi + \frac{\pi}{2})}\sin(\theta) \mathbbm{1} & 0  
+	\partial_{\phi} \; A_R(\phi) = 
+	\begin{pmatrix}0 & 0 & 0 \\ 
+	0 &  -\sin(\phi) & -\cos(\phi) \\ 
+	0 & \cos(\phi) & -\sin(\phi) 
 	\end{pmatrix}.
 \]
-This is itself not a representation of a beam splitter, however, we can decompose it into a weighed sum of two beam splitters, 
-\[\partial_{\phi} A_{BS}(\theta, \phi) = \frac{1}{2}A_{BS}(\theta, \phi + \frac{\pi}{2}) - \frac{1}{2}A_{BS}(\theta, \phi + \frac{3\pi}{2}). \]
-The derivative with respect to the phase of the transformation of a quadrature by a beam splitter gate is hence
-\begin{multline} 
-	\partial_{\phi} BS(\theta, \phi)^\dagger \hat{O}_j BS(\theta, \phi) =  \frac{1}{2} BS(\theta, \phi+ \frac{\pi}{2})^\dagger \hat{O}_j 	BS(\theta, \phi+ \frac{\pi}{2}) \\
-	- \frac{1}{2} BS(\theta, \phi + \frac{3\pi}{2})^\dagger \hat{O}_j BS(\theta, \phi + \frac{3\pi}{2}) 
+The derivative is not a representation of a rotation gate, but we can decompose it into a linear combination of such representations,
+\[\partial_{\phi} \; A_R(\phi) =  \frac{1}{2} A_R(\phi + \frac{\pi}{2}) - \frac{1}{2} A_R(\phi + \frac{3\pi}{2}). \]  
+Hence, 
+\begin{multline}
+	\partial_{\phi} \; R(\phi)^{\dagger} \hat{O}_j R(\phi) = \frac{1}{2}R(\phi+ \frac{\pi}{2})^{\dagger} \hat{O}_j R(\phi+ \frac{\pi}{2}) \\ 
+	- \frac{1}{2} R(\phi+ \frac{3\pi}{2})^{\dagger} \hat{O}_j R(\phi+ \frac{3\pi}{2})
 \end{multline}
+for $j = 0,1,2$. \\
 
+If we consider $2$-mode gates, we have to use the $6$-dimensional quadrature-monomial vector $\xi^{(2)} =(\mathbbm{1}_a, \mathbbm{1}_b, \x_a, \x_b, \p_a, \p_b )^T$, where the index $a, b$ indicates which mode the quadrature refers to. The Heisenberg transformation $A$ is now represented by a $6 \times 6$-dimensional matrix. We summarise the ``derivatives'' of important Gaussian gates in Table \ref{Tbl:cv_gate_derivatives}.
 
+What happens if $W, V \neq \mathbbm{1}$ ? $W$, the circuit applied before the gate $\G$ that we derive for, can be arbitrary, since the derivation of the coefficients $c_{ij}$ in Equation (\ref{Eq:omega_gaussian}) does not change if the $\hat{O}_j$ are linear combinations of other monomials. Howeverm $V$, the circuit applied after $\G$, plays a role. If $V$ is non-Gaussian, it mixes higher-order monomials $j>2$ for which the rules in Table \ref{Tbl:cv_gate_derivatives} are not valid since we did not consider higher order coefficients $c_{ij}$. If the variational circuit is parametrised in all gates, we can only use this trick to compute derivatives for the parameters up to the first non-Gaussian gate in the circuit. \\
 
-
-
-
-
-We list the derivatives of important Gaussian gates in Table \ref{Tbl:cv_gate_derivatives}. \\
 
 \begin{table*}
-\begin{tabular}{p{2.5cm} cclc}
-Gate $\G$ & Heis. trans &linear repres $A$ & deriv of linear repres & deriv of Heis. trans\\   \hline \hline
-Phase rotation $R(\phi)$, $\phi \in \mathbb{R}$
-& 
-$R(\phi)^{\dagger} \hat{O}_j R(\phi)$ 
+\begin{tabular}{lll}
+Gate $\G$ & linear representation & derivative of representation\\   \hline \hline
+\cell{Phase rotation\\ $R(\phi)$}
 &  
-$\begin{pmatrix} 1 & 0 & 0 \\ 0 & \cos(\phi) & -\sin(\phi) \\ 0 &
-\sin(\phi) & \cos(\phi) \end{pmatrix}$ 
-& 
-$\partial_{\phi} A = 
-\begin{pmatrix}1 & 0 & 0 \\ 0 &  -\sin(\phi) & -\cos(\phi) \\ 0 &
-\cos(\phi) & -\sin(\phi) \end{pmatrix}$ 
-& 
-$R(\phi+ \frac{\pi}{2})^{\dagger} \hat{O}_j R(\phi+ \frac{\pi}{2})$\\  
-Displacement $D(\alpha)$ 
-& 
-$D(\alpha)^{\dagger} \hat{O}_j D(\alpha)$ 
+$A_R(\phi) = \begin{pmatrix} 
+1 & 0          & 0 \\ 
+0 & \cos(\phi) & -\sin(\phi) \\ 
+0 & \sin(\phi) & \cos(\phi) 
+\end{pmatrix}$ 
+&
+$\partial_{\phi} \; A_R(\phi) =  
+\frac{1}{2} A_R(\phi + \frac{\pi}{2}) 
+- \frac{1}{2} A_R(\phi + \frac{3\pi}{2})$\\   \hline 
+\cell{Displacement\\ $D(\alpha_{\text{Im}}, \alpha_{\text{Re}})$} 
 &  
-$\begin{pmatrix}
+$A_D(\alpha_{\text{Re}}, \alpha_{\text{Im}}) = \begin{pmatrix}
 1 & 0 & 0 \\
-2\text{Re}(\alpha) & 1 & 0  \\
-2\text{Im}(\alpha) & 0 & 1 \\
+2\alpha_{\text{Re}} & 1 & 0  \\
+2\alpha_{\text{Im}} & 0 & 1 \\
 \end{pmatrix}$ 
 & 
-$ \partial_{\text{Re}(\alpha)} A = 
-\begin{pmatrix}
-0 & 0 & 0 \\
-2 & 0 & 0  \\
-0 & 0 & 0 \\
-\end{pmatrix}$ 
-& 
-$\frac{1}{2}D(1+i0)^{\dagger} \hat{O}_j D(1+i0) - \frac{1}{2}D(-1+i0)^{\dagger} \hat{O}_j D(-1+i0)$\\  
-& 
+\cell{$\partial_{\alpha_{\text{Re}}} A = \frac{1}{2}A(1,0) - \frac{1}{2}A(-1,0)$\\
+$\partial_{\alpha_{\text{Im}}} A = \frac{1}{2}A(0,1) - \frac{1}{2}A(0,-1)$
+}\\  \hline 
+\cell{Squeezing\footnote{The squeezing gate $\tilde{S}$ in SF has an imaginary parameter $\phi$ which defines the angle of the squeezing. $\tilde{S}(r, \phi) = R(\frac{\phi}{2})S(r)R(\frac{\phi}{2})^{\dagger}$. The derivation of the rotations can be executed as specified in this table} \\ $S(r)$}
 &  
+$A_S(r) = \begin{pmatrix} 
+\e^{-r} & 0 
+\\ 0 & \e^{r} 
+\end{pmatrix}$
 & 
-$ \partial_{\text{Im}(\alpha)} A = 
-\begin{pmatrix}
-0 & 0 & 0 \\
-0 & 0 & 0  \\
-2 & 0 & 0 \\
-\end{pmatrix}$ 
-&
-$\frac{1}{2}D(0+i)^{\dagger} \hat{O}_j D(0+i) - \frac{1}{2}D(0-i)^{\dagger} \hat{O}_j D(0-i)$\\  
-Squeezing 
+\cell{$\partial_{r} A(r, \phi) = $\\
+}
+\\ \hline 
+\cell{Beam splitter\\ $B(\theta, \phi)$} 
 & 
-&  
+$A_B(\theta, \phi) = \begin{pmatrix} 
+\mathbbm{1} & 0 & 0\\
+0 & \cos(\theta) \mathbbm{1} & -e^{-i\phi}\sin(\theta) \mathbbm{1}\\
+0 & e^{i\phi}\sin(\theta) \mathbbm{1} & \cos(\theta) \mathbbm{1} \end{pmatrix} $
 & 
-& \\  
-Beam splitter 
-& 
-&
-$\begin{pmatrix} -\sin(\theta) \mathbbm{1} & -e^{-i\phi}\cos(\theta) \mathbbm{1}\\
-e^{i\phi}\cos(\theta) \mathbbm{1} & -\sin(\theta) \mathbbm{1} \end{pmatrix}  $
-& 
-& \\  
-& 
-&
-& 
-& \\  
+\cell{$\partial_{\theta} A_B(\theta, \phi) =  \frac{1}{2} A_B(\theta + \frac{\pi}{2}, \phi) - \frac{1}{2} A_B(\theta + \frac{3\pi}{2}, \phi)$ \\ 
+$\partial_{\phi} A(\theta, \phi) =  \frac{1}{2} A_B(\theta, \phi+ \frac{\pi}{2}) - \frac{1}{2} A_B(\theta, \phi + \frac{3\pi}{2})$}
+\\   \hline \hline 
 \end{tabular}
-\caption{\maria{We use SF conventions with $\hbar=2$.}}
+\caption{We use the gate definitions laid out in the StrawberryFields documentation [REF] with $\hbar=2$. All parameters are real-valued.}
 \label{Tbl:cv_gate_derivatives}
 \end{table*}
 
+\subsubsection{Higher order observables}
 
-
-
-\paragraph{Squeezing.}
-Squeezing a mode by a factor $z = r \e^{i\phi}$ with the squeezing operator $S(r, \phi)$ corresponds to the Bogoliubov transformation
-\[ \begin{pmatrix} \x'\\ \p' \end{pmatrix} = \underbrace{\begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} \cos \phi & \sin \phi \\ - \sin \phi & \cos \phi \end{pmatrix}}_{\mathcal{B}_S(r, \phi)} \begin{pmatrix} \x \\ \p \end{pmatrix}. \]
-Then
-\begin{eqnarray*} \partial_{r} \mathcal{B}_S(r, \phi) &=& \begin{pmatrix} -1 & 0 \\ 0 & 1 \end{pmatrix}
-\mathcal{B}_S(r, \phi) \\
-&=& \mathcal{B}_S(r-\log (\sqrt{2}-1), \phi) - \sqrt{2} \mathcal{B}_S(r, \phi),\end{eqnarray*}
-and
-\begin{eqnarray*} \partial_{\phi} \mathcal{B}_S(r, \phi) &=& \begin{pmatrix} \e^{-r} & 0 \\ 0 & \e^{r} \end{pmatrix} \begin{pmatrix} -\sin \phi & \cos \phi \\ - \cos \phi & -\sin \phi \end{pmatrix}\\
-&=& \mathcal{B}_S(r, \phi + \frac{\pi}{2}).\end{eqnarray*}
-
-
-
-\paragraph{Beam splitter.}
-
-
-
-\paragraph{Cubic phase gate.}
-The cubic phase gate $V(\mu)$ is a non-linear gate with the effect
-\[V(\gamma)^{\dagger} \x V(\gamma) = \x, \;\; V(\gamma)^{\dagger} \p V(\gamma) = \p + \gamma \x^2. \]
-Therefore, 
-\begin{eqnarray}
-\partial_{\gamma} V(\gamma)^{\dagger} \x V(\gamma) &=& 0\\
-\partial_{\gamma} V(\gamma)^{\dagger} \p V(\gamma) &=& \x^2.
-\end{eqnarray} 
-The derivative of the operation for $\hat{q} = \x, \p$ is equivalent to 
-\[ \partial_{\gamma} V(\gamma)^{\dagger} \hat{p} V(\gamma) =   V\left(1 \right)^{\dagger} \hat{p} V \left(1 \right) -  \hat{p}.
-\]
-
-
-
-
-
-
-
-
-For higher powers of the quadratures, i.e. $i > 2$, we can use the fact that $\Omega$ is a unitary conjugation, so that we must have
+For observables that are higher powers of the quadratures, i.e. $j > 2$, we can use the fact that $\Omega$ is a unitary conjugation, so that we must have
 \begin{align}
  \Omega[\hat{O}_i\hat{O}_j] 
  & = \mathcal{G}^\dagger \hat{O}_i \hat{O}_j \mathcal{G} \nonumber \\
@@ -827,8 +767,7 @@ Moving to the issue of computing gradients, we can use the unitary conjugatation
  + \Omega[\hat{O}_i]\nabla_\theta \Omega[\hat{O}_j],
 \end{align}
 where $\nabla_\theta\Omega$ is the derivative of the Bogoliubov transformation, as explored above.
-Thus, the derivative of the second-order operator decomposes naturally as we would expect from the Leibniz rule (remembering that the operators may not commute).
-
+Thus, the derivative of the second-order operator decomposes naturally as we would expect from the Leibniz rule (remembering that the operators may not commute). \maria{How can we use that in practice? These terms do not translate to expectation values any more...?}
 
 
 
@@ -848,7 +787,7 @@ Thus, the derivative of the second-order operator decomposes naturally as we wou
 
 
 \clearpage
-\appendix
+\textsc{•}\appendix
 \section{Gradient computation (Ville)}
 
 In this section we explore issues related to computing gradients of variational quantum circuits.
@@ -1240,7 +1179,7 @@ Of course one has to be able to implement all the $W_j$ gates on the quantum dev
 
 
 
-\subsubsection{General case}
+\section{Maria (remainder)}
 
 If we consider general observables $\hat{O}$ we could probably use a similar trick to the LCU-routine for qubits, using beam splitters. However, it is very difficult to decompose derivatives of gates into unitaries which represent elementary gate sequences 
 
