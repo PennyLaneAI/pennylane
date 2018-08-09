@@ -52,6 +52,10 @@ tolerance = 1e-10
 #  define the gate set
 #========================================================
 
+
+
+
+
 class Gate(GateSpec):
     """Implements the quantum gates and observables.
     """
@@ -71,6 +75,7 @@ class Gate(GateSpec):
         G = self.cls(*par)
         reg = tuple(reg) #I get an index out of bounds exceptoin if reg is a list of qbits and don't understand why. Therefore I convert to tuple.
         # apply it
+        print("G="+str(type(G)))
         G | reg
 
 
@@ -109,6 +114,15 @@ class Observable(Gate):
         return ev
 
 # gates (and state preparations)
+class CNOTClass(pq.ops.BasicGate):
+    def __new__(*par):
+        return pq.ops.C(pq.ops.XGate())
+
+class CZClass(pq.ops.BasicGate):
+    def __new__(*par):
+        return pq.ops.C(pq.ops.ZGate())
+
+
 H = Gate('H', 1, 0, pq.ops.HGate)
 X = Gate('X', 1, 0, pq.ops.XGate)
 Y = Gate('Y', 1, 0, pq.ops.YGate)
@@ -118,23 +132,20 @@ T = Gate('T', 1, 0, pq.ops.TGate)
 SqrtX = Gate('SqrtX', 1, 0, pq.ops.SqrtXGate)
 Swap = Gate('Swap', 2, 0, pq.ops.SwapGate)
 SqrtSwap = Gate('SqrtSwap', 2, 0, pq.ops.SqrtSwapGate)
-#Entangle = Gate('Entangle', n, 0, pq.ops.EntangleGate
-#Ph = Gate('Ph', 0, 1, pq.ops.Ph) #(angle) Phase gate (global phase)
+#Entangle = Gate('Entangle', n, 0, pq.ops.EntangleGate) acts on all
+#Ph = Gate('Ph', 0, 1, pq.ops.Ph) #(angle) Phase gate (global phase) acts on 0 qubits
 Rx = Gate('Rx', 1, 1, pq.ops.Rx) #(angle) RotationX gate class
 Ry = Gate('Ry', 1, 1, pq.ops.Ry) #(angle) RotationY gate class
 Rz = Gate('Rz', 1, 1, pq.ops.Rz) #(angle) RotationZ gate class
 R = Gate('R', 1, 1, pq.ops.R) #(angle) Phase-shift gate (equivalent to Rz up to a global phase)
-#pq.ops.DaggeredGate) #(gate) Wrapper class allowing to execute the inverse of a gate, even when it does not define one.
-#pq.ops.ControlledGate) #(gate[, n]) Controlled version of a gate.
-#pq.ops.C) #(gate[, n]) Return n-controlled version of the provided gate.
-#n, 0, pq.ops.AllGate #(instance of) pq.ops.Tensor
-#n, 0, pq.ops.Tensor #(gate) Wrapper class allowing to apply a (single-qubit) gate to every qubit in a quantum register.
-#pq.ops.QFTGate #(instance of) pq.ops.QFTGate
+#n, 0, pq.ops.AllGate #(instance of) pq.ops.Tensor acts on all qubits
+#n, 0, pq.ops.Tensor #(gate) Wrapper class allowing to apply a (single-qubit) gate to every qubit in a quantum register. acts on all qubits
+#pq.ops.QFTGate #(instance of) pq.ops.QFTGate acts on all qubits
 #pq.ops.QubitOperator) #([term, coefficient]) A sum of terms acting on qubits, e.g., 0.5 * ‘X0 X5’ + 0.3 * ‘Z1 Z2’.
-CRz = Gate('CRz', 1, 1, pq.ops.CRz) #(angle) Shortcut for C(Rz(angle), n=1).
-CNOT = Gate('CNOT', 2, 0, pq.ops.CNOT) #Controlled version of a gate.
-CZ = Gate('CZ', 2, 0, pq.ops.C(pq.ops.ZGate)) #Controlled version of a gate.
-#pq.ops.Toffoli) #Controlled version of a gate.
+CRz = Gate('CRz', 2, 1, pq.ops.CRz) #(angle) Shortcut for C(Rz(angle), n=1).
+CNOT = Gate('CNOT', 2, 0, CNOTClass) #Controlled version of a gate.
+CZ = Gate('CZ', 2, 0, CZClass) #Controlled version of a gate.
+Toffoli = Gate('Toffoli', 3, 0, pq.ops.Toffoli) #Controlled version of a gate.
 #n, 1, pq.ops.TimeEvolution) #(time, hamiltonian) Gate for time evolution under a Hamiltonian (QubitOperator object).
 
 
@@ -181,8 +192,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
         # backend-specific capabilities
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
-        #gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Rx, Ry, Rz, R, CRz, CNOT]
-        gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Rx, Ry, Rz]
+        gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Rx, Ry, Rz, R, CRz, CNOT, CZ]
         observables = [MeasureX, MeasureY, MeasureZ]
         if self.backend == 'Simulator':
             pass
