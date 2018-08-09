@@ -113,16 +113,16 @@ class Observable(Gate):
 
 
 # gates (and state preparations)
-H = Gate('H', 1, 0, pq.ops.H)
-X = Gate('X', 1, 0, pq.ops.X)
-Y = Gate('Y', 1, 0, pq.ops.Y)
-Z = Gate('Z', 1, 0, pq.ops.Z)
-S = Gate('S', 1, 0, pq.ops.S)
-T = Gate('T', 1, 0, pq.ops.T)
-SqrtX = Gate('SqrtX', 1, 0, pq.ops.SqrtX)
-Swap = Gate('Swap', 2, 0, pq.ops.Swap)
-SqrtSwap = Gate('SqrtSwap', 2, 0, pq.ops.SqrtSwap)
-#Entangle = Gate('Entangle', n, 0, pq.ops.Entangle
+H = Gate('H', 1, 0, pq.ops.HGate)
+X = Gate('X', 1, 0, pq.ops.XGate)
+Y = Gate('Y', 1, 0, pq.ops.YGate)
+Z = Gate('Z', 1, 0, pq.ops.ZGate)
+S = Gate('S', 1, 0, pq.ops.SGate)
+T = Gate('T', 1, 0, pq.ops.TGate)
+SqrtX = Gate('SqrtX', 1, 0, pq.ops.SqrtXGate)
+Swap = Gate('Swap', 2, 0, pq.ops.SwapGate)
+SqrtSwap = Gate('SqrtSwap', 2, 0, pq.ops.SqrtSwapGate)
+#Entangle = Gate('Entangle', n, 0, pq.ops.EntangleGate
 Ph = Gate('Ph', 0, 1, pq.ops.Ph) #(angle) Phase gate (global phase)
 Rx = Gate('Rx', 1, 1, pq.ops.Rx) #(angle) RotationX gate class
 Ry = Gate('Ry', 1, 1, pq.ops.Ry) #(angle) RotationY gate class
@@ -131,13 +131,13 @@ R = Gate('R', 1, 1, pq.ops.R) #(angle) Phase-shift gate (equivalent to Rz up to 
 #pq.ops.DaggeredGate) #(gate) Wrapper class allowing to execute the inverse of a gate, even when it does not define one.
 #pq.ops.ControlledGate) #(gate[, n]) Controlled version of a gate.
 #pq.ops.C) #(gate[, n]) Return n-controlled version of the provided gate.
-#n, 0, pq.ops.All Shortcut) #(instance of) pq.ops.Tensor
-#n, 0, pq.ops.Tensor) #(gate) Wrapper class allowing to apply a (single-qubit) gate to every qubit in a quantum register.
-#pq.ops.QFT Shortcut) #(instance of) pq.ops.QFTGate
+#n, 0, pq.ops.AllGate #(instance of) pq.ops.Tensor
+#n, 0, pq.ops.Tensor #(gate) Wrapper class allowing to apply a (single-qubit) gate to every qubit in a quantum register.
+#pq.ops.QFTGate #(instance of) pq.ops.QFTGate
 #pq.ops.QubitOperator) #([term, coefficient]) A sum of terms acting on qubits, e.g., 0.5 * ‘X0 X5’ + 0.3 * ‘Z1 Z2’.
 CRz = Gate('CRz', 1, 1, pq.ops.CRz) #(angle) Shortcut for C(Rz(angle), n=1).
-CNOT = Gate('CNOT', 2, 0, pq.ops.CNOT) #Controlled version of a gate.
-#pq.ops.CZ) #Controlled version of a gate.
+CNOT = Gate('CNOT', 2, 0, pq.ops.C(pq.ops.NOT)) #Controlled version of a gate.
+CZ = Gate('CZ', 2, 0, pq.ops.C(pq.ops.ZGate)) #Controlled version of a gate.
 #pq.ops.Toffoli) #Controlled version of a gate.
 #n, 1, pq.ops.TimeEvolution) #(time, hamiltonian) Gate for time evolution under a Hamiltonian (QubitOperator object).
 
@@ -148,7 +148,7 @@ Measure = Observable('MFock', 1, 0, pq.ops.Measure)
 
 demo = [
     Command(Rx,  [0], [ParRef(0)]),
-    Command(CNOT, [0, 1], []),
+#    Command(CNOT, [0, 1], []),
 ]
 
 # circuit templates
@@ -181,7 +181,8 @@ class PluginAPI(openqml.plugin.PluginAPI):
         # backend-specific capabilities
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
-        gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Rx, Ry, Rz, R, CRz, CNOT]
+        #gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Ph, Rx, Ry, Rz, R, CRz, CNOT]
+        gates = [H, X, Y, Z, S, T]
         observables = [Measure]
         if self.backend == 'Simulator':
             pass
@@ -221,7 +222,6 @@ class PluginAPI(openqml.plugin.PluginAPI):
         circuit = self.circuit
 
         # set the required number of subsystems
-
         if self.eng is None:
             if self.backend == 'Simulator':
                 backend = pq.backends.Simulator()
@@ -238,15 +238,18 @@ class PluginAPI(openqml.plugin.PluginAPI):
             return p
 
         # input the program
-        reg = self.eng.register
-        with self.eng:
-            for cmd in circuit.seq:
-                # prepare the parameters
-                par = map(parmap, cmd.par)
-                # execute the gate
-                cmd.gate.execute(par, cmd.reg, self)
+        reg = self.eng.allocate_qureg(circuit.n_sys)
+        for cmd in circuit.seq:
+            # prepare the parameters
+            par = map(parmap, cmd.par)
+            # execute the gate
+            print("Gate="+cmd.gate.name)
+            print("cmd.reg="+str(cmd.reg))
+            print("reg="+str(reg))
+            cmd.gate.execute(par, [reg[i] for i in cmd.reg], self)  #MUST construct a projctQ register here instead form cmd.reg
 
-        self.eng.run(**self.init_kwargs)
+        pq.ops.Measure | reg # avoid am unfriendly error message by ProjectQ: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
+        self.eng.flush()
 
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
