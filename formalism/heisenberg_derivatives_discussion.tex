@@ -151,7 +151,7 @@ and hence
 \end{align}
 If I take the derivative with respect to $\mu$ at $\mu=0$ only the last term survives and I get
 \begin{equation}
-  \partial_\mu\Big|_{\mu=0} U^\dagger \G^\dagger V^\dagger \hat{O} V G U 
+  \partial_\mu\Big|_{\mu=0} U^\dagger \G^\dagger V^\dagger \hat{O} V G U
   = - \hat{x}\hat{p} - \hat{p}\hat{x} - 2 \hat{x}^3 .
 \end{equation}
 Now, let's do the same calculation again, assuming that we can pull the derivative $\partial_\mu$ past the outer $U^\dagger \cdot U$ (despite it being a non-linear gate), so that we can directly apply \eqref{eq:derivative_rhase_rotation}, without having to use a chain rule.
@@ -181,24 +181,24 @@ for your example. A rotation gate is given by the matrix (here written as a tabl
 \def\arraystretch{1.5}
 \footnotesize
 \begin{tabular}{ccccccccccccccccc}
-& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{x}\hat{p}^2$} & \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hdots$} \\  
-\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &  $\hdots$\\ 
-\textcolor{gray}{$\hat{x}$} & 0 & $\cos \phi$ & $-\sin \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0  & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{p}$} & 0 & $\sin \phi$ & $ \cos \phi$ & 0 & 0 & 0 & 0 & 0 & 0  & 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{x}^2$} & 0 & 0 & 0 & $\cos^2 \phi$ & $- a$ & $- a$  & $\sin^2 \phi$ &  0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{x}\hat{p}$} & 0 & 0 & 0 & $ a$ & $\cos^2 \phi$ & $-\sin^2 \phi$  & $-a$  & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & $a$ & $-\sin^2 \phi$  & $\cos^2 \phi$ & $-a$ &  0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{p}^2$} & 0 & 0 & 0 & $\sin^2 \phi$ & $a$ & $a$  & $\cos^2 \phi$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{x}^3$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $\cos^3 \phi$ & $- c$ & $- c$ & $ -c$ & $ b$ & $b$ & $b$ & $-\sin^3 \phi$ &  $\hdots$ \\ 
-\textcolor{gray}{$\hat{x}^2\hat{p}$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $c$ & $\cos^3 \phi$ & $-b$ & $-b$ & $\sin^3 \phi$ & $-c$  & $-c$ & $b$ &  $\hdots$ \\ 
-\textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & *& *  \\ 
-\textcolor{gray}{$\hat{p}\hat{x}^2$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $c$ & $-b$ & $-b$ & $\cos^3 \phi$ & $-c$ & $-c$  & $\sin^3 \phi$ & $b$ &  $\hdots$ \\ 
-\textcolor{gray}{$\hat{p}^2\hat{x}$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & *& *  \\ 
-\textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & * & * \\ 
-\textcolor{gray}{$\hat{x}\hat{p}^2$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & *& *  \\ 
-\textcolor{gray}{$\hat{p}^3$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & *& *  \\ 
-\textcolor{gray}{$\hat{x}^4$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & (*) \\ 
-\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & •& •  \\ 
+& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{x}\hat{p}^2$} & \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hdots$} \\
+\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &  $\hdots$\\
+\textcolor{gray}{$\hat{x}$} & 0 & $\cos \phi$ & $-\sin \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0  & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{p}$} & 0 & $\sin \phi$ & $ \cos \phi$ & 0 & 0 & 0 & 0 & 0 & 0  & 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{x}^2$} & 0 & 0 & 0 & $\cos^2 \phi$ & $- a$ & $- a$  & $\sin^2 \phi$ &  0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{x}\hat{p}$} & 0 & 0 & 0 & $ a$ & $\cos^2 \phi$ & $-\sin^2 \phi$  & $-a$  & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & $a$ & $-\sin^2 \phi$  & $\cos^2 \phi$ & $-a$ &  0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{p}^2$} & 0 & 0 & 0 & $\sin^2 \phi$ & $a$ & $a$  & $\cos^2 \phi$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{x}^3$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $\cos^3 \phi$ & $- c$ & $- c$ & $ -c$ & $ b$ & $b$ & $b$ & $-\sin^3 \phi$ &  $\hdots$ \\
+\textcolor{gray}{$\hat{x}^2\hat{p}$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $c$ & $\cos^3 \phi$ & $-b$ & $-b$ & $\sin^3 \phi$ & $-c$  & $-c$ & $b$ &  $\hdots$ \\
+\textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & *& *  \\
+\textcolor{gray}{$\hat{p}\hat{x}^2$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $c$ & $-b$ & $-b$ & $\cos^3 \phi$ & $-c$ & $-c$  & $\sin^3 \phi$ & $b$ &  $\hdots$ \\
+\textcolor{gray}{$\hat{p}^2\hat{x}$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & *& *  \\
+\textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & * & * \\
+\textcolor{gray}{$\hat{x}\hat{p}^2$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & *& *  \\
+\textcolor{gray}{$\hat{p}^3$} & * & * & * & * & * & * & * & * & * & * & * & * & *  & *& *  \\
+\textcolor{gray}{$\hat{x}^4$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & (*) \\
+\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & •& •  \\
 \end{tabular}   \\
 (*) fourth order terms
 \end{center}
@@ -206,67 +206,82 @@ with
 \begin{eqnarray*}
 a &=& \cos \phi \sin \phi \\
 b &=& \cos \phi \sin^2 \phi \\
-c &=& \cos^2 \phi \sin \phi 
+c &=& \cos^2 \phi \sin \phi
 \end{eqnarray*}
-One can see nicely the Gaussian structure in the block-diagonals for the subspaces of a given polynomial order, which means that applying a sequence of Gaussians to an operator it does not leave the subspace. 
+One can see nicely the Gaussian structure in the block-diagonals for the subspaces of a given polynomial order, which means that applying a sequence of Gaussians to an operator it does not leave the subspace.
 The cubic phase gate is given by the matrix
 \begin{center}
 \def\arraystretch{1.5}
 \footnotesize
 \begin{tabular}{cccccccccccccccccc}
-& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hat{x}^4$} & \textcolor{gray}{$\hdots$} \\  
-\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-\textcolor{gray}{$\hat{x}$}  & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{p}$}  & 0 & 0 & 1 & $\gamma$ & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{x}^2$}  & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{x}\hat{p}$}  & 0 & 0 & 0 & 0 & 1 & 0 & 0 & $\gamma$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{p}\hat{x}$}  & 0 & 0 & 0 & 0 & 0 & 1 & 0 & $\gamma$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & $\gamma$ & 0 & $\gamma$ & 0 & 0 & 0 & 0 & $\gamma^2$ & $\hdots$\\ 
-\textcolor{gray}{$\hat{x}^3$} & • & • & • & • & • & • & • & • & • & • & • & • & • & •& • & • \\ 
-\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & •& • \\ 
-\end{tabular}   
-\end{center}  
+& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hat{x}^4$} & \textcolor{gray}{$\hdots$} \\
+\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+\textcolor{gray}{$\hat{x}$}  & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{p}$}  & 0 & 0 & 1 & $\gamma$ & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{x}^2$}  & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{x}\hat{p}$}  & 0 & 0 & 0 & 0 & 1 & 0 & 0 & $\gamma$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{p}\hat{x}$}  & 0 & 0 & 0 & 0 & 0 & 1 & 0 & $\gamma$ & 0 & 0 & 0 & 0& 0 & 0 & 0 & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & $\gamma$ & 0 & $\gamma$ & 0 & 0 & 0 & 0 & $\gamma^2$ & $\hdots$\\
+\textcolor{gray}{$\hat{x}^3$} & • & • & • & • & • & • & • & • & • & • & • & • & • & •& • & • \\
+\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & •& • \\
+\end{tabular}
+\end{center}
 Their product $UR$ is given by
 \begin{center}
 \def\arraystretch{1.5}
 \footnotesize
 \begin{tabular}{ccccccccccccccccc}
-& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^3$}  & \textcolor{gray}{$\hdots$} \\  
-\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 &  $\hdots$ \\ 
-\textcolor{gray}{$\hat{x}$}  & 0 & $\cos \phi$ & $-\sin \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0  & 0 & $\hdots$\\ 
-\textcolor{gray}{$\hat{p}$}  & 0 & $\sin \phi$ & $ \cos \phi$ & $\gamma \cos^2 \phi$ & $-\gamma a$ & $-\gamma a$  & $\gamma\sin^2 \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &  $\hdots$\\ 
+& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^3$}  & \textcolor{gray}{$\hdots$} \\
+\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 &  $\hdots$ \\
+\textcolor{gray}{$\hat{x}$}  & 0 & $\cos \phi$ & $-\sin \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0  & 0 & $\hdots$\\
+\textcolor{gray}{$\hat{p}$}  & 0 & $\sin \phi$ & $ \cos \phi$ & $\gamma \cos^2 \phi$ & $-\gamma a$ & $-\gamma a$  & $\gamma\sin^2 \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &  $\hdots$\\
 \textcolor{gray}{$\hat{x}^2$} & 0 & 0 & 0 & $\cos^2 \phi$ & $- a$ & $- a$  & $\sin^2 \phi$ & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & $\hdots$\\
-\textcolor{gray}{$\hat{x}\hat{p}$} & 0 & 0 & 0 & $ a$ & $\cos^2 \phi$ & $-\sin^2 \phi$  & $- a$ & $\gamma \cos^3 \phi$ & $- \gamma c$ & $-\gamma c$ & $ -\gamma c$ & $\gamma b$ & $\gamma b$ & $ \gamma b$ & $-\gamma \sin^3 \phi$  \\ 
-\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & $ a$ & $-\sin^2 \phi$  & $\cos^2 \phi$ & $- a$ & $\gamma \cos^3 \phi$ & $-\gamma c$ & $-\gamma c$ & $ -\gamma c$ & $\gamma b$ & $\gamma b$ & $\gamma b$ & $-\gamma \sin^3 \phi$ \\ 
-\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & $\sin^2 \phi$ & $a$ & $a$  & $\cos^2 \phi$ & $ 2\gamma c$ & $\gamma (\cos^3-b) \phi$ & $-2\gamma b$ & $\gamma(\cos^3 \phi-b)$ & $\gamma(\sin^3 \phi -c)$ & $-2\gamma c$  & $\gamma (\sin^3 \phi -c)$ & $2\gamma b$ & $\gamma^2$(*) \\ 
-\textcolor{gray}{$\hat{x}^3$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • \\ 
-\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • \\ 
-\end{tabular}   
+\textcolor{gray}{$\hat{x}\hat{p}$} & 0 & 0 & 0 & $ a$ & $\cos^2 \phi$ & $-\sin^2 \phi$  & $- a$ & $\gamma \cos^3 \phi$ & $- \gamma c$ & $-\gamma c$ & $ -\gamma c$ & $\gamma b$ & $\gamma b$ & $ \gamma b$ & $-\gamma \sin^3 \phi$  \\
+\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & $ a$ & $-\sin^2 \phi$  & $\cos^2 \phi$ & $- a$ & $\gamma \cos^3 \phi$ & $-\gamma c$ & $-\gamma c$ & $ -\gamma c$ & $\gamma b$ & $\gamma b$ & $\gamma b$ & $-\gamma \sin^3 \phi$ \\
+\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & $\sin^2 \phi$ & $a$ & $a$  & $\cos^2 \phi$ & $ 2\gamma c$ & $\gamma (\cos^3-b) \phi$ & $-2\gamma b$ & $\gamma(\cos^3 \phi-b)$ & $\gamma(\sin^3 \phi -c)$ & $-2\gamma c$  & $\gamma (\sin^3 \phi -c)$ & $2\gamma b$ & $\gamma^2$(*) \\
+\textcolor{gray}{$\hat{x}^3$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • \\
+\textcolor{gray}{$\vdots$} & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • \\
+\end{tabular}
 (*) fourth order terms
 \end{center}
 Now, even the $\p$ quadrature after the evolution (shown by the corresponding row in the table) contains four terms that come from the ``quadratic subspace block-diagonal'' of the rotation gate. By the way, this problem should not appear if the non-Gaussian gate was applied before the Gaussian one!
-\textbf{In conclusion, I think the problem is not that the derivative does not pass through the cubic phase gate, but that the derivation rules only work for Gaussian circuits and homodyne detection.} Which also answers an open question to me. 
+\textbf{In conclusion, I think the problem is not that the derivative does not pass through the cubic phase gate, but that the derivation rules only work for Gaussian circuits and homodyne detection.} Which also answers an open question to me.
 The next step would be to find out if we can find the ``correct derivative rules''?
  }
- 
- 
+
+\nathan{In the interest of moving forward on this and not getting side-tracked, isn't the ``correct derivative rule'' just the chain rule (while being careful to account for noncommutativity)? Given a particular monomial of the quadrature operators, e.g., $\hat{O}=\hat{x}^a\hat{p}^b$, and any unitary conjugation $M$, then we can always write the transformation $M[\hat{O}]$ as
+\begin{equation}
+ M[\hat{O}] = \left(M[\hat{x}]\right)^a \left(M[\hat{p}]\right)^b.
+\end{equation}
+From this form, any gradient computation can just follow the chain rule:
+\begin{align*}
+ \nabla_\theta M[\hat{O}]
+ = &\left(\nabla_\theta M[\hat{x}]\right) \left(M[\hat{x}]\right)^{a-1}\left(M[\hat{p}]\right)^b \\
+   & + \left(M[\hat{x}]\right)\left(\nabla_\theta M[\hat{x}]\right)\left(M[\hat{x}]\right)^{a-2} \left(M[\hat{p}]\right)^b \\
+   & + \dots \\
+   & +  \left(M[\hat{x}]\right)^a \left(M[\hat{p}]\right)^{b-1}\left(\nabla_\theta M[\hat{p}]\right)
+\end{align*}
+At this stage, we can plug in the known formulas for $M[\hat{x}]$ and $M[\hat{p}]$, giving us expressions for the full gradient $\nabla_\theta M[\hat{O}]$. This has extra overhead compared to the qubit method; there, no higher-order powers of any operators appear (since Pauli operators are projectors). But this is still manageable, in principle: the overall number of computations is of the same order as the power of the monomial. The hard part is to assure that the measurement operators of interest (which may be built from having higher-order gates next to simpler measurement operators) are bounded or sparse polynomials in $\hat{x}$ and $\hat{p}$ (e.g., the circuit contains only a couple cubic phase gates).
+}
+\cg{Yes, I think it is.}
+
 %% Matrix template:
 %\begin{center}
 %\def\arraystretch{1.5}
 %\footnotesize
 %\begin{tabular}{cccccccccccccccccc}
-%& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hat{x}^4$} & \textcolor{gray}{$\hdots$} \\  
-%\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\textcolor{gray}{$\hat{x}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\textcolor{gray}{$\hat{p}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\textcolor{gray}{$\hat{x}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\textcolor{gray}{$\hat{x}\hat{p}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\textcolor{gray}{$\hat{x}^3$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\textcolor{gray}{$\vdots$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\ 
-%\end{tabular}   
-%\end{center} 
+%& \textcolor{gray}{$1$} & \textcolor{gray}{$\hat{x}$} & \textcolor{gray}{$\hat{p}$} & \textcolor{gray}{$\hat{x}^2$} & \textcolor{gray}{$\hat{x}\hat{p}$} & \textcolor{gray}{$\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{p}^2$} & \textcolor{gray}{$\hat{x}^3$} & \textcolor{gray}{$\hat{x}^2\hat{p}$} & \textcolor{gray}{$\hat{x}\hat{p}\hat{x}$} & \textcolor{gray}{$\hat{x}\hat{p}^2$} &  \textcolor{gray}{$\hat{p}^2\hat{x}$} &  \textcolor{gray}{$\hat{p}\hat{x}\hat{p}$} &  \textcolor{gray}{$\hat{p}\hat{x}^2$} &  \textcolor{gray}{$\hat{p}^3$} & \textcolor{gray}{$\hat{x}^4$} & \textcolor{gray}{$\hdots$} \\
+%\textcolor{gray}{$1$} & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\textcolor{gray}{$\hat{x}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\textcolor{gray}{$\hat{p}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\textcolor{gray}{$\hat{x}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\textcolor{gray}{$\hat{x}\hat{p}$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\textcolor{gray}{$\hat{p}\hat{x}$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\textcolor{gray}{$\hat{p}^2$}  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\textcolor{gray}{$\hat{x}^3$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\textcolor{gray}{$\vdots$} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0& 0 & 0 & 0 & $\hdots$ \\
+%\end{tabular}
+%\end{center}
 %
 
 
