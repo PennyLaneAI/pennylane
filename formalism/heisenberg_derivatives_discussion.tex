@@ -263,8 +263,9 @@ From this form, any gradient computation can just follow the chain rule:
 \end{align*}
 At this stage, we can plug in the known formulas for $M[\hat{x}]$ and $M[\hat{p}]$, giving us expressions for the full gradient $\nabla_\theta M[\hat{O}]$. This has extra overhead compared to the qubit method; there, no higher-order powers of any operators appear (since Pauli operators are projectors). But this is still manageable, in principle: the overall number of computations is of the same order as the power of the monomial. The hard part is to assure that the measurement operators of interest (which may be built from having higher-order gates next to simpler measurement operators) are bounded or sparse polynomials in $\hat{x}$ and $\hat{p}$ (e.g., the circuit contains only a couple cubic phase gates).
 }
-\cg{Yes, I think it is.}
-
+\cg{Yes, I think it is.}\\
+\maria{Yes, that is true, but I struggle to see how that solves the problem. We have to be able to decompose this expression into transformations that represent elementary gates, and even if we can do that it would probably be a different expression for every monomial...
+And still, if we apply a non-Gaussian gate after the one that we derive for (say, a phase rotation), the problem is to find a gate decomposition of $\partial A$ where $A$ is no longer the 3x3 matrix in the examples we considered, but $A$ contains all rows/columns that correspond to monomials that are ``used'' by the non-Gaussian gate. In other words, we have to find a decomposition that fulfills many more constraints, so that we can use it generically. Or am I blind?}
 %% Matrix template:
 %\begin{center}
 %\def\arraystretch{1.5}

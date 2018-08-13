@@ -683,7 +683,7 @@ for $j = 0,1,2$. \\
 
 If we consider $2$-mode gates, we have to use the $6$-dimensional quadrature-monomial vector $\xi^{(2)} =(\mathbbm{1}_a, \mathbbm{1}_b, \x_a, \x_b, \p_a, \p_b )^T$, where the index $a, b$ indicates which mode the quadrature refers to. The Heisenberg transformation $A$ is now represented by a $6 \times 6$-dimensional matrix. We summarise the ``derivatives'' of important Gaussian gates in Table \ref{Tbl:cv_gate_derivatives}.
 
-What happens if $W, V \neq \mathbbm{1}$ ? $W$, the circuit applied before the gate $\G$ that we derive for, can be arbitrary, since the derivation of the coefficients $c_{ij}$ in Equation (\ref{Eq:omega_gaussian}) does not change if the $\hat{O}_j$ are linear combinations of other monomials. Howeverm $V$, the circuit applied after $\G$, plays a role. If $V$ is non-Gaussian, it mixes higher-order monomials $j>2$ for which the rules in Table \ref{Tbl:cv_gate_derivatives} are not valid since we did not consider higher order coefficients $c_{ij}$. If the variational circuit is parametrised in all gates, we can only use this trick to compute derivatives for the parameters up to the first non-Gaussian gate in the circuit. \\
+What happens if $W, V \neq \mathbbm{1}$ ? $W$, the circuit applied before the gate $\G$ that we derive for, can be arbitrary, since the derivation of the coefficients $c_{ij}$ in Equation (\ref{Eq:omega_gaussian}) does not change if the $\hat{O}_j$ are linear combinations of other monomials. However $V$, the circuit applied after $\G$ has to be Gaussian for the above trick to work. If $V$ is non-Gaussian, it mixes higher-order monomials $j>2$ for which the rules in Table \ref{Tbl:cv_gate_derivatives} are not valid since we did not consider higher order coefficients $c_{ij}$ when computing $\partial_{\mu}A$. If the variational circuit is parametrised in all gates, we can only use this trick to compute derivatives for the parameters up to the first non-Gaussian gate in the circuit. \\
 
 
 \begin{table*}
@@ -718,7 +718,7 @@ $A_S(r) = \begin{pmatrix}
 \\ 0 & \e^{r} 
 \end{pmatrix}$
 & 
-\cell{$\partial_{r} A(r, \phi) = $\\
+\cell{$\partial_{r} A(r) =   A(r + \log (\frac{\sqrt{5} + 1}{2}) ) -  A(r + \log (\frac{\sqrt{5} - 1}{2})) $\\
 }
 \\ \hline 
 \cell{Beam splitter\\ $B(\theta, \phi)$} 
