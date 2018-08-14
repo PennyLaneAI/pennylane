@@ -1,0 +1,22 @@
+{%- if pagename != "search" %}
+<div class="sidebar-block search-block">
+  <div class="sidebar-wrapper">
+  <!-- <div id="project-name">{{ theme_project_nav_name or shorttitle }}</div> -->
+    <a href="{{ homepage() }}">
+      <div id="project-name">
+        <!-- <img src="{{ pathto('_static/strawberry_fields.png', 1) }}" width=100%></img> -->
+        <p style="font-size:28px;margin:0;padding:0;line-height:1;text-transform:none!important">OpenQML</p>
+      </div>
+    </a>
+    <div id="main-search">
+      <form class="form-inline" action="{{ pathto('search') }}" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+{%- endif %}
