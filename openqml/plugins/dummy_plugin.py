@@ -213,7 +213,7 @@ demo = [
     Command(rx, [0], [ParRef(0)]),
     Command(cnot, [0, 1]),
     Command(ry, [0], [-1.6]),
-    Command(ry, [1], [ParRef(0)]),
+    Command(ry, [1], [-1.3 * ParRef(0)]),
     Command(cnot, [1, 0]),
     Command(rx, [0], [ParRef(1)]),
     Command(cnot, [0, 1])
@@ -368,15 +368,9 @@ class PluginAPI(openqml.plugin.PluginAPI):
         elif self.n != circuit.n_sys:
             raise ValueError("Trying to execute a {}-qubit circuit '{}' on a {}-qubit state.".format(circuit.n_sys, circuit.name, self.n))
 
-        def parmap(p):
-            "Mapping function for gate parameters. Replaces ParRefs with the corresponding parameter values."
-            if isinstance(p, ParRef):
-                return params[p.idx]
-            return p
-
         for cmd in circuit.seq:
             # prepare the parameters
-            par = map(parmap, cmd.par)
+            par = ParRef.map(cmd.par, params)
             # apply the gate to the current state
             self._state = cmd.gate.execute(par, cmd.reg, self)
 

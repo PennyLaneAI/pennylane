@@ -85,7 +85,7 @@ class Observable(Gate):
         The arguments are the same as for :meth:`Gate.execute`.
         """
         if self.n_sys != 1:
-            raise ValueError('This plugin supports only one-qubit observables.')
+            raise ValueError('This plugin supports only one-mode observables.')
 
         #A = self.cls(*par)  # Operation instance
         # run the queued program so that we obtain the state before the measurement
@@ -225,18 +225,12 @@ class PluginAPI(openqml.plugin.PluginAPI):
         elif self.eng.num_subsystems != n:  # FIXME change to init_num_subsystems when SF is updated to next version
             raise ValueError("Trying to execute a {}-mode circuit '{}' on a {}-mode state.".format(n, circuit.name, self.eng.num_subsystems))
 
-        def parmap(p):
-            "Mapping function for gate parameters. Replaces ParRefs with the corresponding parameter values."
-            if isinstance(p, ParRef):
-                return params[p.idx]
-            return p
-
         # input the program
         reg = self.eng.register
         with self.eng:
             for cmd in circuit.seq:
                 # prepare the parameters
-                par = map(parmap, cmd.par)
+                par = ParRef.map(cmd.par, params)
                 # execute the gate
                 cmd.gate.execute(par, cmd.reg, self)
 

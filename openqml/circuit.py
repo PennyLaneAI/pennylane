@@ -42,6 +42,7 @@ QNode methods
 import autograd.numpy as np
 import autograd.extend
 
+import copy
 import logging as log
 import numbers
 
@@ -81,7 +82,7 @@ class Command:
 
     Args:
       gate (GateSpec): quantum operation to apply
-      par (Sequence[float, int, ParRef]): parameter values
+      par (Sequence[float, int, ParRef]): parameter values, each either a fixed immediate value or a reference to a free parameter
       reg (Sequence[int]): Subsystems to which the operation is applied. Note that the order matters here.
         TODO collections.OrderedDict to automatically avoid duplicate indices?
     """
@@ -120,16 +121,45 @@ class ParRef:
     """Parameter reference.
 
     Represents a free circuit parameter (with a non-fixed value).
-    Each time the circuit is executed, it is given a vector of parameter values. ParRef is essentially an index into that vector.
+    Each time the circuit is executed, it is given a vector of parameter values.
+    ParRef is essentially an index into that vector, with a possible scalar multiplier.
 
     Args:
       idx (int): parameter index >= 0
     """
     def __init__(self, idx):
-        self.idx = idx  #: int: parameter index
+        self.idx  = idx  #: int: parameter index
+        self.mult = 1.0  #: float: parameter scalar multiplier
 
     def __str__(self):
-        return 'ParRef: {}'.format(self.idx)
+        temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
+        return 'ParRef: p{}'.format(self.idx) + temp
+
+    def __neg__(self):
+        """Unary negation."""
+        temp = copy.copy(self)
+        temp.mult = -temp.mult
+        return temp
+
+    def __mul__(self, scalar):
+        """Right multiplication by scalars."""
+        temp = copy.copy(self)
+        temp.mult *= scalar
+        return temp
+
+    __rmul__ = __mul__ # """Left multiplication by scalars."""
+
+    @staticmethod
+    def map(par, par_free):
+        """Mapping function for gate parameters. Replaces ParRefs with their actual values.
+
+        Args:
+          par (Sequence[float, int, ParRef]): parameter values to map, each either a fixed immediate value or a reference to a free parameter
+          par_free    (Sequence[float, int]): values for the free parameters
+        Returns:
+          list[float, int]: mapped parameters
+        """
+        return [par_free[p.idx] * p.mult if isinstance(p, ParRef) else p for p in par]
 
 
 class Circuit:
@@ -375,17 +405,22 @@ class QNode:
             # which we can modify without affecting other Commands depending on the original.
             orig = cmd.par[0]
             assert(orig.idx == idx)
-            cmd.par[0] = ParRef(n)  # reference to a new, temporary parameter (this method only supports 1-parameter gates!)
+            # reference to a new, temporary parameter with index n, otherwise identical with orig (this method only supports 1-parameter gates!)
+            temp_par = copy.copy(orig)
+            temp_par.idx = n
+            cmd.par[0] = temp_par
             self.circuit.pars[n] = None  # we just need to add something to the map, it's not actually used
-            # shift it by pi/2 and -pi/2
-            temp = np.r_[params, params[idx] +np.pi/2]
+
+            # shift the new parameter value by this amount
+            shift = np.pi / (2 * orig.mult)
+            temp = np.r_[params, params[idx] +shift]
             y2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-            temp[-1] = params[idx] -np.pi/2
+            temp[-1] = params[idx] -shift
             y1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
             # restore the original parameter
             cmd.par[0] = orig
             del self.circuit.pars[n]  # remove the temporary entry
-            pd += (y2-y1) / 2
+            pd += (y2-y1) * (orig.mult / 2)
         return pd
 
 
