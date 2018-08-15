@@ -109,23 +109,25 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         elif backend == 'IBMBackend':
-            #The IBMBackend does not allow multiple measurements, we thus reset it and perform the measurement on the result of a fake circuit
-            sim.reset()
-            sim.execute_circuit(Circuit([Command(Rx, [0], [i]) for i in range(len(reg))], 'fake identity'))
-            sim.eng.flush()
-            if self.cls == pq.ops.Z:
-                # sim.eng.backend.main_engine.mapper = pq.cengines.LinearMapper(len(reg)) # todo: Find out why ProjectQ does not set a mapper internally. This results in an exception here.
-                # probabilities = sim.eng.backend.get_probabilities(reg)
-                # print('IBMBackend probabilities'+str(probabilities))
-                expectation_value = 0
-                variance = 0
+            # #The IBMBackend does not allow multiple measurements, we thus reset it and perform the measurement on the result of a fake circuit
+            # sim.reset()
+            # sim.execute_circuit(Circuit([Command(Rx, [0], [i]) for i in range(len(reg))], 'fake identity'))
+            # sim.eng.flush()
+            # if self.cls == pq.ops.Z:
+            #     if sim.eng.backend.main_engine.mapper is None:
+            #         sim.eng.backend.main_engine.mapper = pq.cengines.LinearMapper(len(reg)) # todo: Find out why ProjectQ does not set a mapper internally. This results in an exception here.
+            #         sim.eng.backend.main_engine.mapper.current_mapping = {i:sim.reg[i].id for i in range(len(reg))}
+            #     probabilities = sim.eng.backend.get_probabilities(reg)
+            #     print('IBMBackend probabilities'+str(probabilities))
+            #     expectation_value = 0
+            #     variance = 0
             # elif self.cls == AllZClass:
             #     probabilities = sim.eng.backend.get_probabilities(reg)
             #     print('IBMBackend probabilities'+str(probabilities))
             #     expectation_value = 0
             #     variance = 0
-            else:
-                raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
+            #else:
+            raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         else:
             raise NotImplementedError("Estimation of expectation values not yet implemented for the {} backend.".format(backend))
 
@@ -204,7 +206,7 @@ CNOT = Gate('CNOT', 2, 0, CNOTClass)
 CZ = Gate('CZ', 2, 0, CZClass)
 #Toffoli = Gate('Toffoli', 3, 0, ToffoliClass)
 #pq.ops.TimeEvolution #Gate for time evolution under a Hamiltonian (QubitOperator object).
-AllZ = Gate('AllZ', 1, 0, AllZClass)
+AllZ = Gate('AllZ', 1, 0, AllZClass) #todo: 1 should be replaced by a way to specify "all"
 
 # measurements
 MeasureX = Observable('X', 1, 0, pq.ops.X)
@@ -259,7 +261,6 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
         # sensible defaults
         kwargs.setdefault('backend', 'Simulator')
-
 
 #        kwargs.setdefault('num_runs', 2)
         kwargs.setdefault('verbose', 'True')
