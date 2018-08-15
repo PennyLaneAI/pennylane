@@ -38,6 +38,7 @@ Classes
 import logging as log
 
 import numpy as np
+from numpy.random import (randn,)
 
 import openqml.plugin
 from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
@@ -85,8 +86,9 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
         if self.n_sys != 1:
             raise ValueError('This plugin supports only single qubit observables.')
 
+        sim.eng.flush(deallocate_qubits=False)
+
         if backend == 'Simulator':
-            sim.eng.flush(deallocate_qubits=False)
             if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
                 expectationValue = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(self.cls)+'0'), reg)
                 variance = 1 - expectationValue**2
@@ -121,13 +123,24 @@ class CNOTClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
 class CZClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     """Class for the CNOT gate.
 
-    Contrary to other gates, ProjectQ does not have a class for the CNOT gate,
+    Contrary to other gates, ProjectQ does not have a class for the CZ gate,
     as it is implemented as a meta-gate.
     For consistency we define this class, whose constructor is made to retun
     a gate with the correct properties by overwriting __new__().
     """
     def __new__(*par): # pylint: disable=no-method-argument
         return pq.ops.C(pq.ops.ZGate())
+
+# class ToffoliClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+#     """Class for the Toffoli gate.
+
+#     Contrary to other gates, ProjectQ does not have a class for the Toffoli gate,
+#     as it is implemented as a meta-gate.
+#     For consistency we define this class, whose constructor is made to retun
+#     a gate with the correct properties by overwriting __new__().
+#     """
+#     def __new__(*par): # pylint: disable=no-method-argument
+#         return pq.ops.Toffoli()
 
 
 #gates
@@ -152,7 +165,7 @@ R = Gate('R', 1, 1, pq.ops.R) #(angle) Phase-shift gate (equivalent to Rz up to 
 CRz = Gate('CRz', 2, 1, pq.ops.CRz) #(angle) Shortcut for C(Rz(angle), n=1).
 CNOT = Gate('CNOT', 2, 0, CNOTClass)
 CZ = Gate('CZ', 2, 0, CZClass)
-Toffoli = Gate('Toffoli', 3, 0, pq.ops.Toffoli)
+#Toffoli = Gate('Toffoli', 3, 0, ToffoliClass)
 #pq.ops.TimeEvolution #Gate for time evolution under a Hamiltonian (QubitOperator object).
 
 
@@ -218,16 +231,16 @@ class PluginAPI(openqml.plugin.PluginAPI):
         if self.backend == 'Simulator':
             pass
         elif self.backend == 'ClassicalSimulator':
-            classical_backend = pq.backends.ClassicalSimulator(**kwargs)
+            classical_backend = pq.backends.ClassicalSimulator()
             eng = pq.MainEngine(classical_backend)
-            reg = eng.allocate_qureg(1)
-            gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(), [reg]))]
+            reg = eng.allocate_qureg(3)
+            gates = [gate for gate in gates if gate.n_par==0 and classical_backend.is_available(pq.ops.Command(eng, gate.cls(), [[reg[i]] for i in range(0,gate.n_sys)]))]
             observables = [MeasureZ]
         elif self.backend == 'IBMBackend':
             ibm_backend = pq.backends.IBMBackend(**kwargs)
             eng = pq.MainEngine(ibm_backend)
-            reg = eng.allocate_qureg(1)
-            gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(), [reg]))]
+            reg = eng.allocate_qureg(3)
+            gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(), [[reg[i]] for i in range(0,gate.n_sys)]))]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
@@ -292,7 +305,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             if self.backend == 'Simulator':
                 backend = pq.backends.Simulator(**kwargs)
             elif self.backend == 'ClassicalSimulator':
-                backend = pq.backends.ClassicalSimulator(**kwargs)
+                backend = pq.backends.ClassicalSimulator()
             elif self.backend == 'IBMBackend':
                 backend = pq.backends.IBMBackend(**kwargs)
             self.eng = pq.MainEngine(backend)
@@ -304,6 +317,8 @@ class PluginAPI(openqml.plugin.PluginAPI):
             for cmd in circuit.seq:
                 # prepare the parameters
                 par = map(parmap, cmd.par)
+                if cmd.gate.name not in self._gates:
+                    raise ValueError("The cirquit contains the gate {}, which is not supportde by the backend {}.".format(cmd.gate.name, self.backend))
                 # execute the gate
                 expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
 
