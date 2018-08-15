@@ -242,7 +242,7 @@ class PluginAPI:
 
     @classmethod
     def get_circuit(cls, name):
-        """Find a register quantum circuit by name.
+        """Find a registered quantum circuit by name.
 
         Args:
           name (str): name given to the circuit
@@ -271,12 +271,12 @@ class PluginAPI:
     def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
         """Execute a parametrized quantum circuit with the specified parameter values.
 
-        :meth:`PluginAPI.execute_circuit` mostly just checks argument validity and sets certain instance variables,
+        :meth:`openqml.plugin.PluginAPI.execute_circuit` mostly just checks argument validity and sets certain instance variables,
         the subclasses are expected to provide the actual functionality by overriding this method.
 
         Args:
           circuit (Circuit, str): circuit to execute, or the name of a predefined circuit
-          params  (Sequence[float]): values of the non-fixed parameters
+          params  (Sequence[float]): values of the free parameters
           reset   (bool): should the backend state be reset before the execution?
 
         Keyword Args:
@@ -284,7 +284,7 @@ class PluginAPI:
             For simulator backends, zero yields the exact result.
 
         Returns:
-          vector[float], None: If the circuit has output observable(s) defined return the expectation value(s), otherwise None.
+          vector[float], None: If the circuit has output observable(s) defined return the estimated expectation value(s), otherwise None.
         """
         if not isinstance(circuit, Circuit):
             # look it up by name

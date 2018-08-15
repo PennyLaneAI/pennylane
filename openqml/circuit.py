@@ -109,7 +109,7 @@ class Command:
             par = list(map(convert_par_to_N, par))
 
         self.gate = gate  #: GateSpec: quantum operation to apply
-        self.par  = par   #: Sequence[float, ParRef]: parameter values
+        self.par  = par   #: Sequence[float, int, ParRef]: parameter values
         self.reg  = reg   #: Sequence[int]: subsystems to which the operation is applied
 
     def __str__(self):
@@ -119,7 +119,7 @@ class Command:
 class ParRef:
     """Parameter reference.
 
-    Represents a circuit parameter with a non-fixed value.
+    Represents a free circuit parameter (with a non-fixed value).
     Each time the circuit is executed, it is given a vector of parameter values. ParRef is essentially an index into that vector.
 
     Args:
@@ -154,7 +154,7 @@ class Circuit:
     def __init__(self, seq, name='', out=None):
         self.seq  = list(seq)  #: list[Command]:
         self.name = name  #: str: circuit name
-        self.pars = {}    #: dict[int->list[Command]]: map from non-fixed parameter index to the list of Commands (in this circuit!) that depend on it
+        self.pars = {}    #: dict[int->list[Command]]: map from free parameter index to the list of Commands (in this circuit!) that depend on it
         self.out = out    #: Sequence[int]: subsystem indices for circuit output
 
         # TODO check the validity of the circuit?
@@ -186,15 +186,15 @@ class Circuit:
             temp = [cmd.gate.grad_method == 'A' and cmd.gate.n_par == 1
                     for cmd in cmd_list]
             return 'A' if all(temp) else 'F'
-        self.grad_method = {k: best_method(v) for k, v in self.pars.items()}  #: dict[int->str]: map from free parameter index to gradient method
+        self.grad_method = {k: best_method(v) for k, v in self.pars.items()}  #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
 
 
     @property
     def n_par(self):
-        """Number of non-fixed parameters used in the circuit.
+        """Number of free parameters in the circuit.
 
         Returns:
-          int: number of non-fixed parameters
+          int: number of free parameters
         """
         return len(self.pars)
 
@@ -204,6 +204,7 @@ class Circuit:
 
         Args:
           inds (set[int]): set of indices
+          msg       (str): head of the possible error message
 
         Returns:
           bool: True if the indices are ok
@@ -235,8 +236,9 @@ class Circuit:
 class QNode:
     """Quantum node in the computational graph, encapsulating a circuit and a backend for executing it.
 
-    Each quantum node is defined by a :class:`Circuit` instance representing the quantum program, and
-    a :class:`~openqml.plugin.PluginAPI` instance representing the backend to execute it on.
+    Args:
+      circuit (Circuit): quantum circuit representing the program
+      backend (~openqml.plugin.PluginAPI): backend for executing the program
     """
     def __init__(self, circuit, backend):
         self.circuit = circuit  #: Circuit: quantum circuit representing the program
@@ -255,6 +257,8 @@ class QNode:
 
         Returns:
           vector[float]: (approximate) expectation value(s) of the measured observable(s)
+
+        The keyword arguments are passed on to :meth:`openqml.plugin.PluginAPI.execute_circuit`.
         """
         return self.backend.execute_circuit(self.circuit, params, **kwargs)
 
@@ -277,7 +281,7 @@ class QNode:
         Args:
           params (Sequence[float]): point in parameter space at which to evaluate the gradient
           which  (Sequence[int], None): return the gradient with respect to these parameters. None means all.
-          method (str): gradient computation method. 'A': angular, 'F': finite differences, 'B': use the best known method for each parameter separately.
+          method (str): gradient computation method, see above
 
         Keyword Args:
           h (float): finite difference method step size
@@ -292,10 +296,8 @@ class QNode:
             raise ValueError('Parameter indices must be unique.')
         params = np.asarray(params)
 
-        if method == 'A':
-            method = {k: 'A' for k in which}
-        elif method == 'F':
-            method = {k: 'F' for k in which}
+        if method in ('A', 'F'):
+            method = {k: method for k in which}
         elif method == 'B':
             method = self.circuit.grad_method
 
