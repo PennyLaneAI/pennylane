@@ -252,6 +252,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             self.eng = None
 
     def measure(self, A, reg, par=[], n_eval=0):
+        """ """
         if isinstance(reg, int):
             reg = [reg]
 
@@ -298,20 +299,38 @@ class PluginAPI(openqml.plugin.PluginAPI):
             return np.array([expectation_values[tuple([idx])] for idx in circuit.out])
 
     def shutdown(self):
+        """Shutdown.
+
+        """
         pass
 
-    # Two possible functions to do the deallocation: The first one is very wastefull, the second leads to a segfault...
     def _deallocate(self):
+        """Deallocate all qubits to make ProjectQ happy
+
+        See also: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
+
+        Drawback: This is probably rather resource intensive.
+        """
         if self.eng is not None and self.backend == 'Simulator':
             pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
 
     def _deallocate2(self):
+        """Another proposal for how to deallocate all qubits to make ProjectQ happy
+
+        Unsuitable because: Produces a segmentation fault.
+        """
         if self.eng is not None and self.backend == 'Simulator':
              for qubit in self.reg:
-                 print("deallocating qubit "+str(qubit.id)+" of "+str(self.circuit.n_sys))
-                 print("qubit ")
-                 #self.eng.deallocate_qubit(qubit)
+                 self.eng.deallocate_qubit(qubit)
 
+    def _deallocate3(self):
+        """Another proposal for how to deallocate all qubits to make ProjectQ happy
+
+        Unsuitable because: Throws an error if the probability for the given collapse is 0.
+        """
+        if self.eng is not None and self.backend == 'Simulator':
+            self.eng.flush()
+            self.eng.backend.collapse_wavefunction(self.reg, [0 for i in range(len(self.reg))])
 
 
 def init_plugin():
