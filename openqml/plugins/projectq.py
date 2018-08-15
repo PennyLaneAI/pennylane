@@ -251,15 +251,28 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 self._deallocate()
             self.eng = None
 
-    def measure(self, A, reg, par=[], n_eval=0):
+    def measure(self, observable, reg, par=[], n_eval=0):
         """ """
+        return self.expection_value(observable, reg, par, n_eval)
+
+    def expection_value(self, observable, reg, par=[], n_eval=0):
+        """Compute the expection value.
+
+        Returns the expectation value of the given observable in the given qubits.
+
+        Args:
+          observable (Observable): observable to compute the expectatoin value for
+          reg (Sequence[int]): subsystems for which to do the computation
+          par (Sequence[float]): parameters of the observable
+          n_eval (int): number of samples from which to compute the expectation value
+        """
         if isinstance(reg, int):
             reg = [reg]
 
         temp = self.n_eval  # store the original
         self.n_eval = n_eval
 
-        ev = A.execute(par, [self.reg[i] for i in reg], self)  # compute the expectation value
+        ev = observable.execute(par, [self.reg[i] for i in reg], self)
         self.n_eval = temp  # restore it
         return ev
 
