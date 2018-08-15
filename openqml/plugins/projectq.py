@@ -109,11 +109,12 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         elif backend == 'IBMBackend':
-            sim.execute_circuit(Circuit([Command(Rx, [0], [0])], 'fake identity'))
+            sim.execute_circuit(Circuit([Command(Rx, [0], [i]) for i in range(len(reg))], 'fake identity'))
             sim.eng.flush()
             if self.cls == pq.ops.Z:
-                probabilities = sim.eng.backend.get_probabilities(reg)
-                print('IBMBackend probabilities'+str(probabilities))
+                # sim.eng.backend.main_engine.mapper = pq.cengines.LinearMapper(len(reg)) # todo: Find out why ProjectQ does not set a mapper internally. This results in an exception here.
+                # probabilities = sim.eng.backend.get_probabilities(reg)
+                # print('IBMBackend probabilities'+str(probabilities))
                 expectation_value = 0
                 variance = 0
             # elif self.cls == AllZClass:
@@ -256,6 +257,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
         # sensible defaults
         kwargs.setdefault('backend', 'Simulator')
 
+
 #        kwargs.setdefault('num_runs', 2)
         kwargs.setdefault('verbose', 'True')
 #        kwargs.setdefault('device', 'ibmqx4')
@@ -270,16 +272,18 @@ class PluginAPI(openqml.plugin.PluginAPI):
         elif self.backend == 'ClassicalSimulator':
             classical_backend = pq.backends.ClassicalSimulator()
             eng = pq.MainEngine(classical_backend)
-            reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
-            gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
+            with pq.meta.Compute(eng):
+                reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
+                gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
             observables = [MeasureZ]
         elif self.backend == 'IBMBackend':
             import inspect
             self.ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
             ibm_backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
             eng = pq.MainEngine(ibm_backend)
-            reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
-            gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
+            with pq.meta.Compute(eng):
+                reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
+                gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
             observables = [MeasureZ]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
@@ -349,10 +353,12 @@ class PluginAPI(openqml.plugin.PluginAPI):
             elif self.backend == 'IBMBackend':
                 backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
             self.eng = pq.MainEngine(backend)
-            self.reg = self.eng.allocate_qureg(circuit.n_sys)
+            self.reg = None
 
         # input the program
         with pq.meta.Compute(self.eng):
+            if self.reg is None:
+                self.reg = self.eng.allocate_qureg(circuit.n_sys)
             expectation_values = {}
             for cmd in circuit.seq:
                 # prepare the parameters
