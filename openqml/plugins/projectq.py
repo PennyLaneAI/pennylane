@@ -100,6 +100,8 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
                 variance = 0
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
+        elif backend == 'IBMBackend':
+            pass
         else:
             raise NotImplementedError("Estimation of expectation values not yet implemented for the {} backend.".format(backend))
 
@@ -131,16 +133,27 @@ class CZClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     def __new__(*par): # pylint: disable=no-method-argument
         return pq.ops.C(pq.ops.ZGate())
 
-# class ToffoliClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
-#     """Class for the Toffoli gate.
+class ToffoliClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+    """Class for the Toffoli gate.
 
-#     Contrary to other gates, ProjectQ does not have a class for the Toffoli gate,
-#     as it is implemented as a meta-gate.
-#     For consistency we define this class, whose constructor is made to retun
-#     a gate with the correct properties by overwriting __new__().
-#     """
-#     def __new__(*par): # pylint: disable=no-method-argument
-#         return pq.ops.Toffoli()
+    Contrary to other gates, ProjectQ does not have a class for the Toffoli gate,
+    as it is implemented as a meta-gate.
+    For consistency we define this class, whose constructor is made to retun
+    a gate with the correct properties by overwriting __new__().
+    """
+    def __new__(*par): # pylint: disable=no-method-argument
+        return pq.ops.C(pq.ops.ZGate(), 2)
+
+class AllZClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+    """Class for the AllZ gate.
+
+    Contrary to other gates, ProjectQ does not have a class for the AllZ gate,
+    as it is implemented as a meta-gate.
+    For consistency we define this class, whose constructor is made to retun
+    a gate with the correct properties by overwriting __new__().
+    """
+    def __new__(*par): # pylint: disable=no-method-argument
+        return pq.ops.Tensor(pq.ops.ZGate())
 
 
 #gates
@@ -167,13 +180,13 @@ CNOT = Gate('CNOT', 2, 0, CNOTClass)
 CZ = Gate('CZ', 2, 0, CZClass)
 #Toffoli = Gate('Toffoli', 3, 0, ToffoliClass)
 #pq.ops.TimeEvolution #Gate for time evolution under a Hamiltonian (QubitOperator object).
-
+AllZ = Gate('AllZ', 0, 0, AllZClass)
 
 # measurements
 MeasureX = Observable('X', 1, 0, pq.ops.X)
 MeasureY = Observable('Y', 1, 0, pq.ops.Y)
 MeasureZ = Observable('Z', 1, 0, pq.ops.Z)
-
+MeasureAllZ = Observable('AllZ', 0, 0, AllZClass) #todo: 0 should be replaced by a way to specify "all"
 
 demo = [
     Command(Rx,  [0], [ParRef(0)]),
@@ -234,16 +247,16 @@ class PluginAPI(openqml.plugin.PluginAPI):
             classical_backend = pq.backends.ClassicalSimulator()
             eng = pq.MainEngine(classical_backend)
             reg = eng.allocate_qureg(3)
-            gates = [gate for gate in gates if gate.n_par==0 and classical_backend.is_available(pq.ops.Command(eng, gate.cls(), [[reg[i]] for i in range(0,gate.n_sys)]))]
+            gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
             observables = [MeasureZ]
         elif self.backend == 'IBMBackend':
             import inspect
-            print("kwargs="+str(kwargs))
-            ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
-            ibm_backend = pq.backends.IBMBackend(**ibm_backend_kwargs)
+            self.ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
+            ibm_backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
             eng = pq.MainEngine(ibm_backend)
             reg = eng.allocate_qureg(3)
             gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
+            observables = [MeasureAllZ]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
@@ -310,7 +323,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             elif self.backend == 'ClassicalSimulator':
                 backend = pq.backends.ClassicalSimulator()
             elif self.backend == 'IBMBackend':
-                backend = pq.backends.IBMBackend(**kwargs)
+                backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
             self.eng = pq.MainEngine(backend)
             self.reg = self.eng.allocate_qureg(circuit.n_sys)
 
@@ -320,7 +333,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             for cmd in circuit.seq:
                 # prepare the parameters
                 par = map(parmap, cmd.par)
-                if cmd.gate.name not in self._gates:
+                if cmd.gate.name not in self._gates and cmd.gate.name not in self._observables:
                     raise ValueError("The cirquit contains the gate {}, which is not supportde by the backend {}.".format(cmd.gate.name, self.backend))
                 # execute the gate
                 expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
