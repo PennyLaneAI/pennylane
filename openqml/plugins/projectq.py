@@ -10,7 +10,7 @@ ProjectQ plugin
 This plugin provides the interface between OpenQML and ProjecQ.
 It enables OpenQML to optimize quantum circuits simulable with ProjectQ.
 
-ProjecQ supports several different backends. Of those the following are useful in the current context:
+ProjecQ supports several different backends. Of those, the following are useful in the current context:
 
 - projectq.backends.Simulator([gate_fusion, ...])	Simulator is a compiler engine which simulates a quantum computer using C++-based kernels.
 - projectq.backends.ClassicalSimulator()	        A simple introspective simulator that only permits classical operations.
@@ -36,7 +36,6 @@ Classes
 """
 
 import logging as log
-import warnings
 
 import numpy as np
 
@@ -45,21 +44,11 @@ from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
 
 import projectq as pq
 
-# tolerance for numerical errors
-tolerance = 1e-10
 
-#========================================================
-#  define the gate set
-#========================================================
-
-
-
-
-
-class Gate(GateSpec):
+class Gate(GateSpec): # pylint: disable=too-few-public-methods
     """Implements the quantum gates and observables.
     """
-    def __init__(self, name, n_sys, n_par, cls=None, par_domain='R'):
+    def __init__(self, name, n_sys, n_par, cls=None, par_domain='R'): # pylint: disable=too-many-arguments
         super().__init__(name, n_sys, n_par, grad_method='F', par_domain=par_domain)
         self.cls = cls  #: class: pq subclass corresponding to the gate
 
@@ -71,57 +60,77 @@ class Gate(GateSpec):
           reg   (Sequence[int]): subsystems to which the gate is applied
           sim (~openqml.plugin.PluginAPI): simulator instance keeping track of the system state and measurement results
         """
-        # construct the Operation instance
         G = self.cls(*par)
-        reg = tuple(reg) #I get an index out of bounds exceptoin if reg is a list of qbits and don't understand why. Therefore I convert to tuple.
-        # apply it
+        reg = tuple(reg)
         G | reg
 
 
-class Observable(Gate):
+class Observable(Gate): # pylint: disable=too-few-public-methods
     """Implements hermitian observables.
 
     We assume that all the observables in the circuit are consequtive, and commute.
     Since we are only interested in the expectation values, there is no need to project the state after the measurement.
     See :ref:`measurements`.
     """
-    #todo: Do we assume that all the observables in the circuit are consequtive, and commute?
     def execute(self, par, reg, sim):
         """Estimates the expectation value of the observable in the current system state.
 
-        The arguments are the same as for :meth:`Gate.execute`.
+        Args:
+          par (Sequence[float]): gate parameters
+          reg   (Sequence[int]): subsystems to which the gate is applied
+          sim (~openqml.plugin.PluginAPI): simulator instance keeping track of the system state and measurement results
         """
-        if self.n_sys != 1:
-            raise ValueError('This plugin supports only one-qubit observables.')
+        backend = type(sim.eng.backend).__name__
 
-        if type(sim.eng.backend).__name__ == 'Simulator':
+        if self.n_sys != 1:
+            raise ValueError('This plugin supports only single qubit observables.')
+
+        if backend == 'Simulator':
             sim.eng.flush(deallocate_qubits=False)
             if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
-                ev = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(str(self.cls)+'0')), reg)
+                expectationValue = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(self.cls)+'0'), reg)
+                variance = 1 - expectationValue**2
             else:
-                raise NotImplementedError("Estimation of expectation values not yet implemented the observable {}.".format(self.cls))
-        elif type(sim.eng.backend).__name__ == 'ClassicalSimulator':
-            ev = sim.eng.backend.read_bit(reg[0])
+                raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls, backend))
+        elif backend == 'ClassicalSimulator':
+            if self.cls == pq.ops.Z:
+                expectationValue = sim.eng.backend.read_bit(reg[0])
+                variance = 0
+            else:
+                raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         else:
-            raise NotImplementedError("Estimation of expectation values not yet implemented for the {} backend.".format(self.backend))
+            raise NotImplementedError("Estimation of expectation values not yet implemented for the {} backend.".format(backend))
 
-        var = 0
+        log.info('observable: ev: %s, var: %s', expectationValue, variance)
 
-        log.info('observable: ev: {}, var: {}'.format(ev, var))
+        return expectationValue, variance
 
-        #sim.eng.register[reg[0]].val = ev  # TODO HACK: In the SF plugin the expecation value is stored in the register of the simulator and it is argued there that SF should have a method to store expectation values. I am not sure I agree with that. I think storage of the expectation values should be done in the openqml plugin.
-        return ev
 
-# gates (and state preparations)
-class CNOTClass(pq.ops.BasicGate):
-    def __new__(*par):
+class CNOTClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+    """Class for the CNOT gate.
+
+    Contrary to other gates, ProjectQ does not have a class for the CNOT gate,
+    as it is implemented as a meta-gate.
+    For consistency we define this class, whose constructor is made to retun
+    a gate with the correct properties by overwriting __new__().
+    """
+    def __new__(*par): # pylint: disable=no-method-argument
         return pq.ops.C(pq.ops.XGate())
 
-class CZClass(pq.ops.BasicGate):
-    def __new__(*par):
+
+class CZClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+    """Class for the CNOT gate.
+
+    Contrary to other gates, ProjectQ does not have a class for the CNOT gate,
+    as it is implemented as a meta-gate.
+    For consistency we define this class, whose constructor is made to retun
+    a gate with the correct properties by overwriting __new__().
+    """
+    def __new__(*par): # pylint: disable=no-method-argument
         return pq.ops.C(pq.ops.ZGate())
 
 
+#gates
 H = Gate('H', 1, 0, pq.ops.HGate)
 X = Gate('X', 1, 0, pq.ops.XGate)
 Y = Gate('Y', 1, 0, pq.ops.YGate)
@@ -131,21 +140,20 @@ T = Gate('T', 1, 0, pq.ops.TGate)
 SqrtX = Gate('SqrtX', 1, 0, pq.ops.SqrtXGate)
 Swap = Gate('Swap', 2, 0, pq.ops.SwapGate)
 SqrtSwap = Gate('SqrtSwap', 2, 0, pq.ops.SqrtSwapGate)
-#Entangle = Gate('Entangle', n, 0, pq.ops.EntangleGate) acts on all
-#Ph = Gate('Ph', 0, 1, pq.ops.Ph) #(angle) Phase gate (global phase) acts on 0 qubits
+#Entangle = Gate('Entangle', n, 0, pq.ops.EntangleGate) #This gate acts on all qubits
+#Ph = Gate('Ph', 0, 1, pq.ops.Ph) #This gate acts on all qubits or non, depending on how one looks at it...
 Rx = Gate('Rx', 1, 1, pq.ops.Rx) #(angle) RotationX gate class
 Ry = Gate('Ry', 1, 1, pq.ops.Ry) #(angle) RotationY gate class
 Rz = Gate('Rz', 1, 1, pq.ops.Rz) #(angle) RotationZ gate class
 R = Gate('R', 1, 1, pq.ops.R) #(angle) Phase-shift gate (equivalent to Rz up to a global phase)
-#n, 0, pq.ops.AllGate #(instance of) pq.ops.Tensor acts on all qubits
-#n, 0, pq.ops.Tensor #(gate) Wrapper class allowing to apply a (single-qubit) gate to every qubit in a quantum register. acts on all qubits
-#pq.ops.QFTGate #(instance of) pq.ops.QFTGate acts on all qubits
-#pq.ops.QubitOperator) #([term, coefficient]) A sum of terms acting on qubits, e.g., 0.5 * ‘X0 X5’ + 0.3 * ‘Z1 Z2’.
+#pq.ops.AllGate , which is the same as pq.ops.Tensor, is a meta gate that acts on all qubits
+#pq.ops.QFTGate #This gate acts on all qubits
+#pq.ops.QubitOperator #A sum of terms acting on qubits, e.g., 0.5 * ‘X0 X5’ + 0.3 * ‘Z1 Z2’
 CRz = Gate('CRz', 2, 1, pq.ops.CRz) #(angle) Shortcut for C(Rz(angle), n=1).
-CNOT = Gate('CNOT', 2, 0, CNOTClass) #Controlled version of a gate.
-CZ = Gate('CZ', 2, 0, CZClass) #Controlled version of a gate.
-Toffoli = Gate('Toffoli', 3, 0, pq.ops.Toffoli) #Controlled version of a gate.
-#n, 1, pq.ops.TimeEvolution) #(time, hamiltonian) Gate for time evolution under a Hamiltonian (QubitOperator object).
+CNOT = Gate('CNOT', 2, 0, CNOTClass)
+CZ = Gate('CZ', 2, 0, CZClass)
+Toffoli = Gate('Toffoli', 3, 0, pq.ops.Toffoli)
+#pq.ops.TimeEvolution #Gate for time evolution under a Hamiltonian (QubitOperator object).
 
 
 # measurements
