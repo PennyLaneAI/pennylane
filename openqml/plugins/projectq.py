@@ -83,30 +83,50 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
         """
         backend = type(sim.eng.backend).__name__
 
-        if self.n_sys != 1:
-            raise ValueError('This plugin supports only single qubit observables.')
+        if backend == 'IBMBackend' and hasattr(sim.eng, 'already_a_measurement_performed') and sim.eng.already_a_measurement_performed ==True :
+            raise NotImplementedError("Only a single measurement is possible on the IBMBackend.")
+        else:
+            sim.eng.already_a_measurement_performed = True
 
-        sim.eng.flush(deallocate_qubits=False)
+
+
+        if self.n_sys != 1 and backend != 'IBMBackend':
+            raise ValueError('This plugin with the %s backend supports only single qubit observables.', backend)
 
         if backend == 'Simulator':
+            sim.eng.flush(deallocate_qubits=False)
             if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
                 expectationValue = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(self.cls)+'0'), reg)
                 variance = 1 - expectationValue**2
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls, backend))
         elif backend == 'ClassicalSimulator':
+            sim.eng.flush(deallocate_qubits=False)
             if self.cls == pq.ops.Z:
                 expectationValue = sim.eng.backend.read_bit(reg[0])
                 variance = 0
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         elif backend == 'IBMBackend':
-            pass
+            sim.eng.flush()
+            if self.cls == pq.ops.Z:
+                sim.eng.backend._run()
+                probabilities = sim.eng.backend.get_probabilities(reg)
+                print('IBMBackend probabilities'+str(probabilities))
+                expectationValue = 0
+                variance = 0
+            elif self.cls == AllZClass:
+                #sim.eng._run()
+                probabilities = sim.eng.backend.get_probabilities(reg)
+                print('IBMBackend probabilities'+str(probabilities))
+                expectationValue = 0
+                variance = 0
+            else:
+                raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         else:
             raise NotImplementedError("Estimation of expectation values not yet implemented for the {} backend.".format(backend))
 
         log.info('observable: ev: %s, var: %s', expectationValue, variance)
-
         return expectationValue, variance
 
 
@@ -186,19 +206,19 @@ AllZ = Gate('AllZ', 0, 0, AllZClass)
 MeasureX = Observable('X', 1, 0, pq.ops.X)
 MeasureY = Observable('Y', 1, 0, pq.ops.Y)
 MeasureZ = Observable('Z', 1, 0, pq.ops.Z)
-MeasureAllZ = Observable('AllZ', 0, 0, AllZClass) #todo: 0 should be replaced by a way to specify "all"
+MeasureAllZ = Observable('AllZ', 1, 0, AllZClass) #todo: 1 should be replaced by a way to specify "all"
 
 demo = [
     Command(Rx,  [0], [ParRef(0)]),
     Command(Rx,  [1], [ParRef(1)]),
     Command(CNOT, [0, 1], []),
-    Command(H, [1], []),
 ]
 
 # circuit templates
 _circuit_list = [
-  Circuit(demo, 'demo'),
-  Circuit(demo +[Command(MeasureZ, [0])], 'demo_ev', out=[0]),
+    Circuit(demo, 'demo'),
+    Circuit(demo +[Command(MeasureZ, [0])], 'demo_ev', out=[0]),
+    Circuit(demo +[Command(MeasureZ, [1])], 'demo_ev', out=[1]),
 ]
 
 
@@ -228,13 +248,17 @@ class PluginAPI(openqml.plugin.PluginAPI):
     author = 'Xanadu Inc.'
     _circuits = {c.name: c for c in _circuit_list}
     #_capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
-    _capabilities = {'backend': list(["Simulator", "IBMBackend"])} #todo: the IBMBackend needs account data and can thus not be used during during unit tests - disabled for now, ClassicalSimulator produces a "maximum recursion depth exceeded" exceeded error - disabled for now as couldn't get it to work quickly and of limited use
+    _capabilities = {'backend': list(["Simulator", "IBMBackend"])}
 
     def __init__(self, name='default', **kwargs):
         super().__init__(name, **kwargs)
 
         # sensible defaults
         kwargs.setdefault('backend', 'Simulator')
+
+#        kwargs.setdefault('num_runs', 2)
+#        kwargs.setdefault('verbose', 'True')
+#        kwargs.setdefault('device', 'ibmqx4')
 
         # backend-specific capabilities
         self.backend = kwargs['backend']
@@ -256,7 +280,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             eng = pq.MainEngine(ibm_backend)
             reg = eng.allocate_qureg(3)
             gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
-            observables = [MeasureAllZ]
+            observables = [MeasureZ]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
