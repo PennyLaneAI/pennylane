@@ -52,12 +52,34 @@ In other words, we can use the same quantum computation device to compute quantu
 Quantum nodes
 -------------
 
+:html:`<br>`
+
+.. figure:: ./_static/quantum_node.svg
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+    A quantum node contains a quantum circuit. Quantum nodes interface with classical information via gate parameters :math:`\bm{\theta}` and expectation values :math:`\langle \hat{B} \rangle`.
+
+:html:`<br>`
+
 To perform a computation that includes both classical and quantum computing devices, how do we interface them? Because of the inbuilt barriers between the quantum and the classical worlds, we need effective methods for inserting and extracting classical data from a quantum computing device. As well, we would like this interface to be compatible with essential components of machine learning like the backpropagation algorithm. This leads us to the idea of a quantum node: a basic computational unit -- performed by a quantum circuit -- which evaluates a quantum function. Classical data is input to the quantum circuit through the gate parameters of the circuit; classical data is extracted by evaluating expectation values of measurement results.
 
 Hybrid computational graphs
 ---------------------------
 
-In other hybrid quantum-classical methods, quantum circuits are used to evaluate classically intractable parameterized functions, and a classical co-processor is used primarily to post-process circuit outputs. But why should the division of labour be so regimented. In a **true hybrid** computational model, both the classical and the quantum devices are responsible for arbitrary parts of an overall computation, subject to the rules of quantum nodes. This allows quantum and classical devices to be used jointly, each forming an integral and inseparable part of the computation.
+:html:`<br>`
+
+.. figure:: ./_static/hybrid_graph.svg
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+    An 'true hybrid' quantum-classical computational graph.
+
+:html:`<br>`
+
+In other hybrid quantum-classical methods, quantum circuits are used to evaluate classically intractable parameterized functions, and a classical co-processor is used primarily to post-process circuit outputs. But why should the division of labour be so regimented? In a **true hybrid** computational model, both the classical and the quantum devices are responsible for arbitrary parts of an overall computation, subject to the rules of quantum nodes. This allows quantum and classical devices to be used jointly, each forming an integral and inseparable part of the computation.
 
 <=================================>
 
