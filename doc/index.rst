@@ -48,7 +48,6 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :hidden:
 
    introduction
-   TODO
    conventions
    references
 

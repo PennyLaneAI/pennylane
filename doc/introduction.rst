@@ -16,7 +16,7 @@ Main features of OpenQML:
 - *Device independent*: the same quantum circuit model can be **run on different backends**
 
 Key ideas
-=============
+---------
 
 The main principle underlying OpenQML is to make the interface between the quantum and classical worlds seamless. Wherever possible, the quantum and classical components of a hybrid machine learning model should coexist on the same conceptual level, as computational **devices** which we program to evaluate mathematical functions. 
 
@@ -75,7 +75,7 @@ Since quantum functions may be intractable to compute on classical computers, we
 
 In other words, we can use the same quantum computation device to compute quantum functions and also **gradients of quantum functions**. This is accomplished with minor assistance of a classical coprocessor, which performs the summation.
 
-
+.. note:: In situations where no formula for quantum gradients is known, OpenQML supports approximate gradient estimation using the finite-differences method.
 
 Quantum nodes
 -------------
@@ -93,7 +93,7 @@ To perform a computation that includes both classical and quantum computing devi
 
 :html:`<br>`
 
-This leads us to the idea of a quantum node: a basic computational unit -- performed by a quantum circuit -- which evaluates a quantum function. Classical data is input to the quantum circuit through the gate parameters of the circuit; classical data is extracted by evaluating expectation values of measurement results.
+This leads us to the idea of a quantum node: a basic computational unit -- performed by a quantum circuit -- which evaluates a quantum function. Classical data is input to the quantum circuit through the gate parameters of the circuit; classical data is extracted by evaluating expectation values of measurement results. **Quantum information never enters or leaves a node**.
 
 Hybrid computational graphs
 ---------------------------
