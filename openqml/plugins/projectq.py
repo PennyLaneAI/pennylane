@@ -243,7 +243,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             ibm_backend = pq.backends.IBMBackend(**ibm_backend_kwargs)
             eng = pq.MainEngine(ibm_backend)
             reg = eng.allocate_qureg(3)
-            gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(), [[reg[i]] for i in range(0,gate.n_sys)]))]
+            gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
