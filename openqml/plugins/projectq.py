@@ -88,46 +88,46 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
         else:
             sim.eng.already_a_measurement_performed = True
 
-
-
         if self.n_sys != 1 and backend != 'IBMBackend':
             raise ValueError('This plugin with the %s backend supports only single qubit observables.', backend)
 
         if backend == 'Simulator':
             sim.eng.flush(deallocate_qubits=False)
             if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
-                expectationValue = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(self.cls)+'0'), reg)
-                variance = 1 - expectationValue**2
+                expectation_value = sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(self.cls)+'0'), reg)
+                variance = 1 - expectation_value**2
+            elif self.cls == AllZClass:
+                expectation_value = [ sim.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(pq.ops.Z)+'0'), [qubit]) for qubit in sim.reg]
+                variance = [1 - e**2 for e in expectation_value]
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls, backend))
         elif backend == 'ClassicalSimulator':
             sim.eng.flush(deallocate_qubits=False)
             if self.cls == pq.ops.Z:
-                expectationValue = sim.eng.backend.read_bit(reg[0])
+                expectation_value = sim.eng.backend.read_bit(reg[0])
                 variance = 0
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         elif backend == 'IBMBackend':
+            sim.execute_circuit(Circuit([Command(Rx, [0], [0])], 'fake identity'))
             sim.eng.flush()
             if self.cls == pq.ops.Z:
-                sim.eng.backend._run()
                 probabilities = sim.eng.backend.get_probabilities(reg)
                 print('IBMBackend probabilities'+str(probabilities))
-                expectationValue = 0
+                expectation_value = 0
                 variance = 0
-            elif self.cls == AllZClass:
-                #sim.eng._run()
-                probabilities = sim.eng.backend.get_probabilities(reg)
-                print('IBMBackend probabilities'+str(probabilities))
-                expectationValue = 0
-                variance = 0
+            # elif self.cls == AllZClass:
+            #     probabilities = sim.eng.backend.get_probabilities(reg)
+            #     print('IBMBackend probabilities'+str(probabilities))
+            #     expectation_value = 0
+            #     variance = 0
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         else:
             raise NotImplementedError("Estimation of expectation values not yet implemented for the {} backend.".format(backend))
 
-        log.info('observable: ev: %s, var: %s', expectationValue, variance)
-        return expectationValue, variance
+        log.info('observable: ev: %s, var: %s', expectation_value, variance)
+        return expectation_value, variance
 
 
 class CNOTClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
@@ -200,7 +200,7 @@ CNOT = Gate('CNOT', 2, 0, CNOTClass)
 CZ = Gate('CZ', 2, 0, CZClass)
 #Toffoli = Gate('Toffoli', 3, 0, ToffoliClass)
 #pq.ops.TimeEvolution #Gate for time evolution under a Hamiltonian (QubitOperator object).
-AllZ = Gate('AllZ', 0, 0, AllZClass)
+AllZ = Gate('AllZ', 1, 0, AllZClass)
 
 # measurements
 MeasureX = Observable('X', 1, 0, pq.ops.X)
@@ -257,20 +257,20 @@ class PluginAPI(openqml.plugin.PluginAPI):
         kwargs.setdefault('backend', 'Simulator')
 
 #        kwargs.setdefault('num_runs', 2)
-#        kwargs.setdefault('verbose', 'True')
+        kwargs.setdefault('verbose', 'True')
 #        kwargs.setdefault('device', 'ibmqx4')
 
         # backend-specific capabilities
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
         gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Rx, Ry, Rz, R, CRz, CNOT, CZ]
-        observables = [MeasureX, MeasureY, MeasureZ]
+        observables = [MeasureX, MeasureY, MeasureZ, MeasureAllZ]
         if self.backend == 'Simulator':
             pass
         elif self.backend == 'ClassicalSimulator':
             classical_backend = pq.backends.ClassicalSimulator()
             eng = pq.MainEngine(classical_backend)
-            reg = eng.allocate_qureg(3)
+            reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
             gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
             observables = [MeasureZ]
         elif self.backend == 'IBMBackend':
@@ -278,7 +278,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             self.ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
             ibm_backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
             eng = pq.MainEngine(ibm_backend)
-            reg = eng.allocate_qureg(3)
+            reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
             gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
             observables = [MeasureZ]
         else:
@@ -358,9 +358,11 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 # prepare the parameters
                 par = map(parmap, cmd.par)
                 if cmd.gate.name not in self._gates and cmd.gate.name not in self._observables:
-                    raise ValueError("The cirquit contains the gate {}, which is not supportde by the backend {}.".format(cmd.gate.name, self.backend))
+                    raise ValueError("The cirquit contains the gate {}, which is not supported by the {} backend.".format(cmd.gate.name, self.backend))
                 # execute the gate
                 expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
+
+        print('expectation_values='+str(expectation_values))
 
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
