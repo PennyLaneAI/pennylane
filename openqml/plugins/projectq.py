@@ -215,7 +215,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
     author = 'Xanadu Inc.'
     _circuits = {c.name: c for c in _circuit_list}
     #_capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
-    _capabilities = {'backend': list(["Simulator"])} #todo: the IBMBackend needs account data and can thus not be used during during unit tests - disabled for now, ClassicalSimulator produces a "maximum recursion depth exceeded" exceeded error - disabled for now as couldn't get it to work quickly and of limited use
+    _capabilities = {'backend': list(["Simulator", "IBMBackend"])} #todo: the IBMBackend needs account data and can thus not be used during during unit tests - disabled for now, ClassicalSimulator produces a "maximum recursion depth exceeded" exceeded error - disabled for now as couldn't get it to work quickly and of limited use
 
     def __init__(self, name='default', **kwargs):
         super().__init__(name, **kwargs)
@@ -237,7 +237,10 @@ class PluginAPI(openqml.plugin.PluginAPI):
             gates = [gate for gate in gates if gate.n_par==0 and classical_backend.is_available(pq.ops.Command(eng, gate.cls(), [[reg[i]] for i in range(0,gate.n_sys)]))]
             observables = [MeasureZ]
         elif self.backend == 'IBMBackend':
-            ibm_backend = pq.backends.IBMBackend(**kwargs)
+            import inspect
+            print("kwargs="+str(kwargs))
+            ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
+            ibm_backend = pq.backends.IBMBackend(**ibm_backend_kwargs)
             eng = pq.MainEngine(ibm_backend)
             reg = eng.allocate_qureg(3)
             gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(), [[reg[i]] for i in range(0,gate.n_sys)]))]
