@@ -109,6 +109,8 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         elif backend == 'IBMBackend':
+            #The IBMBackend does not allow multiple measurements, we thus reset it and perform the measurement on the result of a fake circuit
+            sim.reset()
             sim.execute_circuit(Circuit([Command(Rx, [0], [i]) for i in range(len(reg))], 'fake identity'))
             sim.eng.flush()
             if self.cls == pq.ops.Z:
@@ -140,7 +142,8 @@ class CNOTClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     a gate with the correct properties by overwriting __new__().
     """
     def __new__(*par): # pylint: disable=no-method-argument
-        return pq.ops.C(pq.ops.XGate())
+        #return pq.ops.C(pq.ops.XGate())
+        return pq.ops.C(pq.ops.NOT)
 
 
 class CZClass(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
@@ -283,7 +286,15 @@ class PluginAPI(openqml.plugin.PluginAPI):
             eng = pq.MainEngine(ibm_backend)
             with pq.meta.Compute(eng):
                 reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
-                gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
+                gates = [gate for gate in gates if ((gate.n_par > 0 and ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))) or (gate.n_par==0 and ibm_backend.is_available(pq.ops.Command(eng, gate.cls(), [[reg[i]] for i in range(0,gate.n_sys)]))))]
+                gates+=[CNOT]
+                # todo: find out why ibm_backend.is_available() returns false for CNOT, see also here: https://github.com/ProjectQ-Framework/ProjectQ/issues/257
+                # print('IBM supports the following gates: '+str([gate.name for gate in gates]))
+                # print('ibm_backend.is_available(CNOTClass)='+str(ibm_backend.is_available(pq.ops.Command(eng, CNOTClass(), [[reg[0]], [reg[1]]]))) )
+                # print('ibm_backend.is_available(CNOT)='+str(ibm_backend.is_available(pq.ops.Command(eng, pq.ops.CNOT, [[reg[0]], [reg[1]]]))) )
+                # print('CNOTClass()==NOT: '+str(CNOTClass()==pq.ops.NOT))
+                # print('C(NOT)==NOT: '+str(pq.ops.C(pq.ops.NOT)==pq.ops.NOT))
+                # print('CNOT==NOT: '+str(pq.ops.CNOT==pq.ops.NOT))
             observables = [MeasureZ]
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
