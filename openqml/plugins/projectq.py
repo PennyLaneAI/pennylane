@@ -182,6 +182,19 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
     Keyword Args:
       backend (str): backend name
+
+    Keyword Args for Simulator backend:
+      gate_fusion (bool): If True, gates are cached and only executed once a certain gate-size has been reached (only has an effect for the c++ simulator).
+      rnd_seed (int): Random seed (uses random.randint(0, 4294967295) by default).
+
+    Keyword Args for IBMBackend backend:
+      use_hardware (bool): If True, the code is run on the IBM quantum chip (instead of using the IBM simulator)
+      num_runs (int): Number of runs to collect statistics. (default is 1024)
+      verbose (bool): If True, statistics are printed, in addition to the measurement result being registered (at the end of the circuit).
+      user (string): IBM Quantum Experience user name
+      password (string): IBM Quantum Experience password
+      device (string): Device to use (‘ibmqx4’, or ‘ibmqx5’) if use_hardware is set to True. Default is ibmqx4.
+      retrieve_execution (int): Job ID to retrieve instead of re-running the circuit (e.g., if previous run timed out).
     """
     plugin_name = 'ProjectQ OpenQML plugin'
     plugin_api_version = '0.1.0'
@@ -205,13 +218,13 @@ class PluginAPI(openqml.plugin.PluginAPI):
         if self.backend == 'Simulator':
             pass
         elif self.backend == 'ClassicalSimulator':
-            classical_backend = pq.backends.ClassicalSimulator()
+            classical_backend = pq.backends.ClassicalSimulator(**kwargs)
             eng = pq.MainEngine(classical_backend)
             reg = eng.allocate_qureg(1)
             gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(), [reg]))]
             observables = [MeasureZ]
         elif self.backend == 'IBMBackend':
-            ibm_backend = pq.backends.IBMBackend()
+            ibm_backend = pq.backends.IBMBackend(**kwargs)
             eng = pq.MainEngine(ibm_backend)
             reg = eng.allocate_qureg(1)
             gates = [gate for gate in gates if ibm_backend.is_available(pq.ops.Command(eng, gate.cls(), [reg]))]
@@ -228,12 +241,15 @@ class PluginAPI(openqml.plugin.PluginAPI):
     def __str__(self):
         return super().__str__() +'ProjecQ with Backend: ' +self.backend +'\n'
 
+    def __del__(self):
+        self.reset()
+
     def reset(self):
         """Resets the engine and backend"""
         if self.eng is not None:
-            self._deallocate() #produces a segfault even if we do not deallocate during flush()!
-            self.eng = None  #todo: this is wasteful, now we construct a new Engine and backend after each reset (because the next circuit may have a different num_subsystems)
-            #self.eng.reset()
+            if self.backend == 'Simulator':
+                self._deallocate()
+            self.eng = None
 
     def measure(self, A, reg, par=[], n_eval=0):
         if isinstance(reg, int):
@@ -250,25 +266,26 @@ class PluginAPI(openqml.plugin.PluginAPI):
         super().execute_circuit(circuit, params, reset=reset, **kwargs)
         circuit = self.circuit
 
-        # set the required number of subsystems
-        if self.eng is None:
-            if self.backend == 'Simulator':
-                backend = pq.backends.Simulator()
-            elif self.backend == 'ClassicalSimulator':
-                backend = pq.backends.ClassicalSimulator()
-            elif self.backend == 'IBMBackend':
-                backend = pq.backends.IBMBackend()
-        self.eng = pq.MainEngine(backend)
-
         def parmap(p):
             "Mapping function for gate parameters. Replaces ParRefs with the corresponding parameter values."
             if isinstance(p, ParRef):
                 return params[p.idx]
             return p
 
+        # set the required number of subsystems
+        if self.eng is None or self.reg is None or self.circuit.n_sys != len(self.reg):
+            self.reset()
+            if self.backend == 'Simulator':
+                backend = pq.backends.Simulator(**kwargs)
+            elif self.backend == 'ClassicalSimulator':
+                backend = pq.backends.ClassicalSimulator(**kwargs)
+            elif self.backend == 'IBMBackend':
+                backend = pq.backends.IBMBackend(**kwargs)
+            self.eng = pq.MainEngine(backend)
+            self.reg = self.eng.allocate_qureg(circuit.n_sys)
+
         # input the program
         with pq.meta.Compute(self.eng):
-            self.reg = self.eng.allocate_qureg(circuit.n_sys)
             expectation_values = {}
             for cmd in circuit.seq:
                 # prepare the parameters
@@ -276,24 +293,24 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 # execute the gate
                 expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
 
-        #self._deallocate() #deallocating here with the first deallocate() version makes all errors go away, but then subsequent calls to measure() will yield bogus results...
-
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
             return np.array([expectation_values[tuple([idx])] for idx in circuit.out])
 
     def shutdown(self):
-        self._deallocate() #only calling this here is not enough to make all errors disappear
+        pass
 
-    # Two possible functions to do the deallocation: The first one is wastefull, the second leads to a segfault...
+    # Two possible functions to do the deallocation: The first one is very wastefull, the second leads to a segfault...
     def _deallocate(self):
         if self.eng is not None and self.backend == 'Simulator':
             pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
 
     def _deallocate2(self):
         if self.eng is not None and self.backend == 'Simulator':
-            for qubit in self.reg:
-                self.eng.deallocate_qubit(qubit)
+             for qubit in self.reg:
+                 print("deallocating qubit "+str(qubit.id)+" of "+str(self.circuit.n_sys))
+                 print("qubit ")
+                 #self.eng.deallocate_qubit(qubit)
 
 
 
