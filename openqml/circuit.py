@@ -51,7 +51,7 @@ __all__ = ['GateSpec', 'Command', 'ParRef', 'Circuit', 'QNode']
 
 
 class GateSpec:
-    """A type of quantum operation supported by a backend, and its properies.
+    """A type of quantum operation supported by a backend, and its properties.
 
     GateSpec is used to describe both unitary quantum gates and measurements/observables.
 
