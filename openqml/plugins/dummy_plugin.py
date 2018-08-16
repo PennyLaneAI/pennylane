@@ -163,7 +163,7 @@ class Gate(GateSpec):
 class Observable(Gate):
     """Implements single-qubit hermitian observables.
 
-    We assume that all the observables in the circuit are consequtive, and commute.
+    We assume that all the observables in the circuit are consecutive, and commute.
     Since we are only interested in the expectation values, there is no need to project the state after the measurement.
     See :ref:`measurements`.
     """
