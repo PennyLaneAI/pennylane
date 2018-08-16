@@ -44,10 +44,11 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
 
 .. toctree::
    :maxdepth: 1
-   :caption: Theory
+   :caption: Concepts
    :hidden:
 
    introduction
+   autograd_quantum
    conventions
    references
 
