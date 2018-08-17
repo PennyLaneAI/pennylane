@@ -36,6 +36,7 @@ Classes
 """
 
 import logging as log
+import warnings
 
 import numpy as np
 from numpy.random import (randn,)
@@ -210,6 +211,12 @@ MeasureY = Observable('Y', 1, 0, pq.ops.Y)
 MeasureZ = Observable('Z', 1, 0, pq.ops.Z)
 MeasureAllZ = Observable('AllZ', 1, 0, AllZClass) #todo: 1 should be replaced by a way to specify "all"
 
+
+classical_demo = [
+    Command(X,  [0], []),
+    Command(Swap, [0, 1], []),
+]
+
 demo = [
     Command(Rx,  [0], [ParRef(0)]),
     Command(Rx,  [1], [ParRef(1)]),
@@ -218,9 +225,11 @@ demo = [
 
 # circuit templates
 _circuit_list = [
+    Circuit(classical_demo, 'classical_demo'),
+    Circuit(classical_demo+[Command(MeasureZ, [0])], 'classical_demo_ev'),
     Circuit(demo, 'demo'),
-    Circuit(demo +[Command(MeasureZ, [0])], 'demo_ev', out=[0]),
-    Circuit(demo +[Command(MeasureZ, [1])], 'demo_ev', out=[1]),
+    Circuit(demo+[Command(MeasureZ, [0])], 'demo_ev0', out=[0]),
+    Circuit(demo+[Command(MeasureAllZ, [0])], 'demo_ev', out=[0]),
 ]
 
 
@@ -249,8 +258,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
     plugin_version = '0.1.0'
     author = 'Xanadu Inc.'
     _circuits = {c.name: c for c in _circuit_list}
-    #_capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
-    _capabilities = {'backend': list(["Simulator", "IBMBackend"])} # todo: re-activate all backends
+    _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
 
     def __init__(self, name='default', **kwargs):
         super().__init__(name, **kwargs)
@@ -277,20 +285,20 @@ class PluginAPI(openqml.plugin.PluginAPI):
         elif self.backend == 'IBMBackend':
             import inspect
             self.ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
-            ibm_backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
-            eng = pq.MainEngine(ibm_backend, engine_list=pq.setups.ibm.get_engine_list())
-            with pq.meta.Compute(eng):
-                reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
-                gates = [gate for gate in gates if (ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), ([reg[i]] for i in range(0,gate.n_sys)))) or gate == CNOT)] #todo: do not treat CNOT as a special case one it is understood why ibm_backend.is_available() returns false for CNOT, see also here: https://github.com/ProjectQ-Framework/ProjectQ/issues/257
+            # ibm_backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
+            # eng = pq.MainEngine(ibm_backend, engine_list=pq.setups.ibm.get_engine_list())
+            # with pq.meta.Compute(eng):
+            #     reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
+            #     #gates = [gate for gate in gates if (ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), ([reg[i]] for i in range(0,gate.n_sys)))) or gate == CNOT)] #todo: do not treat CNOT as a special case one it is understood why ibm_backend.is_available() returns false for CNOT, see also here: https://github.com/ProjectQ-Framework/ProjectQ/issues/257
 
-                # print('IBM supports the following gates: '+str([gate.name for gate in gates]))
-                # print('ibm_backend.is_available(CNOTClass)='+str(ibm_backend.is_available(pq.ops.Command(eng, CNOTClass(), ([reg[0]], [reg[1]]) ))) )
-                # print('ibm_backend.is_available(CNOT)='+str(ibm_backend.is_available(pq.ops.Command(eng, pq.ops.CNOT, ([reg[0]], [reg[1]]) ))) )
-                # print('ibm_backend.is_available(X+control)='+str(ibm_backend.is_available(   pq.ops.Command(engine=eng, gate=pq.ops.X, qubits=([reg[0]],), controls=[reg[1]])    )) )
-                # print('CNOTClass()==NOT: '+str(CNOTClass()==pq.ops.NOT))
-                # print('C(NOT)==NOT: '+str(pq.ops.C(pq.ops.NOT)==pq.ops.NOT))
-                # print('CNOT==NOT: '+str(pq.ops.CNOT==pq.ops.NOT))
-
+            #     # print('IBM supports the following gates: '+str([gate.name for gate in gates]))
+            #     # print('ibm_backend.is_available(CNOTClass)='+str(ibm_backend.is_available(pq.ops.Command(eng, CNOTClass(), ([reg[0]], [reg[1]]) ))) )
+            #     # print('ibm_backend.is_available(CNOT)='+str(ibm_backend.is_available(pq.ops.Command(eng, pq.ops.CNOT, ([reg[0]], [reg[1]]) ))) )
+            #     # print('ibm_backend.is_available(X+control)='+str(ibm_backend.is_available(   pq.ops.Command(engine=eng, gate=pq.ops.X, qubits=([reg[0]],), controls=[reg[1]])    )) )
+            #     # print('CNOTClass()==NOT: '+str(CNOTClass()==pq.ops.NOT))
+            #     # print('C(NOT)==NOT: '+str(pq.ops.C(pq.ops.NOT)==pq.ops.NOT))
+            #     # print('CNOT==NOT: '+str(pq.ops.CNOT==pq.ops.NOT))
+            gates = [H, X, Y, Z, S, T, SqrtX, Swap, Rx, Ry, Rz, R, CRz, CNOT, CZ]
             observables = [MeasureZ,MeasureAllZ]
             if 'num_runs' in self.ibm_backend_kwargs:
                 self.n_eval = self.ibm_backend_kwargs['num_runs']
@@ -379,14 +387,15 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 # prepare the parameters
                 par = map(parmap, cmd.par)
                 if cmd.gate.name not in self._gates and cmd.gate.name not in self._observables:
-                    raise ValueError("The cirquit contains the gate {}, which is not supported by the {} backend.".format(cmd.gate.name, self.backend))
+                    warnings.warn("The cirquit {} contains the gate {}, which is not supported by the {} backend. Abortig execution of this circuit.".format(circuit, cmd.gate.name, self.backend))
+                    break
                 # execute the gate
                 expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
 
         #print('expectation_values='+str(expectation_values))
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
-            return np.array([expectation_values[tuple([idx])] for idx in circuit.out])
+            return np.array([expectation_values[tuple([idx])] for idx in circuit.out if tuple([idx]) in expectation_values])
 
     def shutdown(self):
         """Shutdown.
