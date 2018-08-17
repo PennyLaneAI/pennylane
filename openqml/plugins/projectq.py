@@ -258,8 +258,6 @@ class PluginAPI(openqml.plugin.PluginAPI):
         # sensible defaults
         kwargs.setdefault('backend', 'Simulator')
 
-        kwargs.setdefault('verbose', True)
-
         # backend-specific capabilities
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
@@ -343,17 +341,6 @@ class PluginAPI(openqml.plugin.PluginAPI):
         temp = self.n_eval  # store the original
         self.n_eval = n_eval
 
-        if self.backend == 'IBMBackend':
-            #The IBMBackend does not allow multiple measurements, if the simulation does not hold a state ready to measue, we thus reset the backend and perform the measurement on the state of a fake circuit
-            # sim.reset()
-            # sim.execute_circuit(Circuit([Command(Rx, [0], [i]) for i in range(len(reg))], 'fake identity'))
-            # sim.eng.flush()
-            # if self.eng.backend.main_engine.mapper is None:
-            #     sim.eng.backend.main_engine.mapper = pq.cengines.LinearMapper(len(reg)) # todo: Find out why ProjectQ does not set a mapper internally. This results in an exception here.
-            #     sim.eng.backend.main_engine.mapper.current_mapping = {i:sim.reg[i].id for i in range(len(reg))}
-            # probabilities = self.eng.backend.get_probabilities(reg)
-            pass
-
         expectation_value, variance = observable.execute(par, [self.reg[i] for i in reg], self)
         self.n_eval = temp  # restore it
         return expectation_value, variance
@@ -396,8 +383,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
                 # execute the gate
                 expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
 
-        print('expectation_values='+str(expectation_values))
-
+        #print('expectation_values='+str(expectation_values))
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
             return np.array([expectation_values[tuple([idx])] for idx in circuit.out])
