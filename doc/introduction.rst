@@ -29,7 +29,7 @@ The core of OpenQML is designed around four main concepts:
     :width: 70%
     :target: javascript:void(0);
 
-    A quantum function is a function which is can be evaluated by measurements of a programmable quantum computer circuit.
+    A quantum function is a function which is evaluated by measurements of a programmable quantum computer circuit.
 
 :html:`<br>`
 
@@ -38,7 +38,7 @@ The primary motivation for building quantum computers is that they should be abl
 :ref:`autograd_quantum`
 -----------------------
 
-In many modern machine learning applications, the ability to automatically compute analytic gradients has shown tremendous practical value. Can we have this same built-in functionality for quantum functions? Yes!
+In many modern machine learning applications, the ability to automatically compute analytic gradients has shown tremendous practical value. OpenQML extends this key machine learning to quantum functions.
 
 Since qfuncs may be intractable to compute on classical computers, we might expect that the gradients of qfuncs to be similarly complex. Fortunately, for a given qfunc :math:`f(x;\bm{\theta})`, we can often write the gradient :math:`\nabla_{\bm{\theta}}f(x;\bm{\theta})` as a linear combination of qfuncs, but with shifted parameters: 
 
@@ -53,13 +53,13 @@ Since qfuncs may be intractable to compute on classical computers, we might expe
 
 :html:`<br>`
 
-In other words, we can use the same quantum computation device to compute quantum functions and also **gradients of quantum functions**. This is accomplished with minor assistance of a classical coprocessor, which combines terms in the linear combination. 
+In other words, we can use the same quantum computation device to compute quantum functions and also **gradients of quantum functions**. This is accomplished with minor assistance of a classical coprocessor, which combines the terms in the linear combination. 
 
 
 :ref:`quantum_nodes`
 --------------------
 
-How do we interface classical and quantum computing devices to perform a computation? Because of the inbuilt barriers between the quantum and the classical worlds, we need effective methods for inserting and extracting classical data from a quantum computing device. As well, we would like this interface to be compatible with essential components of machine learning like the backpropagation algorithm. 
+How do we interface classical and quantum computing devices to perform more complex calculations? Because of the inbuilt barriers between the quantum and the classical worlds, we need effective methods for inserting and extracting classical data from the quantum device. As well, we would like this interface to be compatible with essential components of machine learning like the backpropagation algorithm. 
 
 :html:`<br>`
 
@@ -72,7 +72,7 @@ How do we interface classical and quantum computing devices to perform a computa
 
 :html:`<br>`
 
-This leads us to the idea of a quantum node: a basic computational unit -- performed by a quantum circuit -- which evaluates a qfunc. Classical data is input to the quantum circuit through the gate parameters of the circuit; classical data is extracted by evaluating expectation values of measurement results. **Quantum information never enters or leaves a node**.
+This leads us to the idea of a quantum node: a basic computational unit -- performed by a quantum circuit -- which evaluates a qfunc. Classical data is input to the quantum circuit through the gate parameters of the circuit; classical data is extracted by evaluating expectation values of measurement results. **Quantum information never enters or exits a quantum node**.
 
 :ref:`hybrid_computation`
 --------------------------
@@ -88,4 +88,4 @@ This leads us to the idea of a quantum node: a basic computational unit -- perfo
 
 :html:`<br>`
 
-In most proposed hybrid algorithms, quantum circuits are used to evaluate qfuncs, and a classical co-processor is used primarily to post-process circuit outputs. But why should the division of labour be so regimented? In a **true hybrid** computational model, both the classical and the quantum devices are responsible for arbitrary parts of an overall computation, subject to the rules of quantum nodes. This allows quantum and classical devices to be used jointly, each forming an integral and inseparable part of the computation.
+In most proposed hybrid algorithms, quantum circuits are used to evaluate quantum functions, and a classical co-processor is used primarily to post-process circuit outputs. But why should the division of labour be so regimented? In a **true hybrid** computational model, both the classical and the quantum devices are responsible for arbitrary parts of an overall computation, subject to the rules of quantum nodes. This allows quantum and classical devices to be used jointly, each forming an integral and inseparable part of the computation.

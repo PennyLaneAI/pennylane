@@ -6,15 +6,16 @@
 Quantum gradients
 =================
 
-A quantum function (*qfunc*) is any parameterized function :math:`f(x;\bm{\theta})` which can be evaluated on a quantum circuit via the Born rule:
+:html:`<br>`
 
-.. math:: f(x; \bm{\theta}) = \langle \hat{B} \rangle = \langle 0 | U^\dagger(x;\bm{\theta})\hat{B}U(x;\bm{\theta}) | 0 \rangle.
+.. figure:: ./_static/quantum_gradient.svg
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
 
-Here, :math:`\hat{B}` is an observable measured at the circuit output and :math:`| 0 \rangle` is a fixed initial state (e.g., the vacuum or a spin-down state). Both the input :math:`x` and the parameters :math:`\bm{\theta}` enter the quantum circuit as arguments used in the gates which are used to build the unitary :math:`U(x;\bm{\theta})`. For convenience, we can also write the unitary conjugation as a transformation :math:`\mathcal{C}_U` acting on the operator :math:`\hat{B}`:
+    Decomposing the gradient of a qfunc as a linear combination of qfuncs.
 
-.. math:: U^\dagger(x;\bm{\theta})\hat{B}U(x;\bm{\theta}) = \mathcal{C}_U(\hat{B}).
-
-Note that the measurement operator :math:`\hat{B}` has no dependence on the the input :math:`x` or the parameters :math:`\bm{\theta}`.
+:html:`<br>`
 
 Gradients of quantum functions
 ------------------------------
@@ -41,8 +42,6 @@ Since the equations governing quantum circuits are linear, we can pass the gradi
 .. math:: \nabla_{\theta_i}U(x;\bm{\theta}) = U_N(\theta_{N}) U_{N-1}(\theta_{N-1}) \cdots \left[ \nabla_{\theta_i} U_i(\theta_i) \right] \cdots U_1(\theta_1) U_0(x).
 
 Note: It might also be useful to have a quantum device that can evaluate standalone gradients, e.g., for calculating forces in quantum chemistry
-
-
 
 
 Backpropagation through hybrid computations
