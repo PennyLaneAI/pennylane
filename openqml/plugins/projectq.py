@@ -44,7 +44,7 @@ import openqml.plugin
 from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
 
 import projectq as pq
-
+import projectq.setups.ibm
 
 class Gate(GateSpec): # pylint: disable=too-few-public-methods
     """Implements the quantum gates and observables.
@@ -88,9 +88,6 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
         else:
             sim.eng.already_a_measurement_performed = True
 
-        if self.n_sys != 1 and backend != 'IBMBackend':
-            raise ValueError('This plugin with the %s backend supports only single qubit observables.', backend)
-
         if backend == 'Simulator':
             sim.eng.flush(deallocate_qubits=False)
             if self.cls == pq.ops.X or self.cls == pq.ops.Y or self.cls == pq.ops.Z:
@@ -109,25 +106,24 @@ class Observable(Gate): # pylint: disable=too-few-public-methods
             else:
                 raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
         elif backend == 'IBMBackend':
-            # #The IBMBackend does not allow multiple measurements, we thus reset it and perform the measurement on the result of a fake circuit
-            # sim.reset()
-            # sim.execute_circuit(Circuit([Command(Rx, [0], [i]) for i in range(len(reg))], 'fake identity'))
-            # sim.eng.flush()
-            # if self.cls == pq.ops.Z:
-            #     if sim.eng.backend.main_engine.mapper is None:
-            #         sim.eng.backend.main_engine.mapper = pq.cengines.LinearMapper(len(reg)) # todo: Find out why ProjectQ does not set a mapper internally. This results in an exception here.
-            #         sim.eng.backend.main_engine.mapper.current_mapping = {i:sim.reg[i].id for i in range(len(reg))}
-            #     probabilities = sim.eng.backend.get_probabilities(reg)
-            #     print('IBMBackend probabilities'+str(probabilities))
-            #     expectation_value = 0
-            #     variance = 0
-            # elif self.cls == AllZClass:
-            #     probabilities = sim.eng.backend.get_probabilities(reg)
-            #     print('IBMBackend probabilities'+str(probabilities))
-            #     expectation_value = 0
-            #     variance = 0
-            #else:
-            raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls), backend)
+            pq.ops.R(0) | sim.reg[0]# todo:remove this once https://github.com/ProjectQ-Framework/ProjectQ/issues/259 is resolved
+            pq.ops.All(pq.ops.Measure) | sim.reg
+            sim.eng.flush()
+            if self.cls == pq.ops.Z:
+                probabilities = sim.eng.backend.get_probabilities(reg)
+                #print("IBM probabilities="+str(probabilities))
+                if '1' in probabilities:
+                    expectation_value = 2*probabilities['1']-1
+                else:
+                    expectation_value = -(2*probabilities['0']-1)
+                variance = 1 - expectation_value**2
+            elif self.cls == AllZClass:
+                probabilities = sim.eng.backend.get_probabilities(sim.reg)
+                #print("IBM all probabilities="+str(probabilities))
+                expectation_value = [ ((2*sum(p for (state,p) in probabilities.items() if state[i] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[i] == '0')-1)) for i in range(len(sim.reg)) ]
+                variance = [1 - e**2 for e in expectation_value]
+            else:
+                raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(self.cls, backend))
         else:
             raise NotImplementedError("Estimation of expectation values not yet implemented for the {} backend.".format(backend))
 
@@ -254,7 +250,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
     author = 'Xanadu Inc.'
     _circuits = {c.name: c for c in _circuit_list}
     #_capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
-    _capabilities = {'backend': list(["Simulator", "IBMBackend"])}
+    _capabilities = {'backend': list(["Simulator", "IBMBackend"])} # todo: re-activate all backends
 
     def __init__(self, name='default', **kwargs):
         super().__init__(name, **kwargs)
@@ -262,15 +258,15 @@ class PluginAPI(openqml.plugin.PluginAPI):
         # sensible defaults
         kwargs.setdefault('backend', 'Simulator')
 
-#        kwargs.setdefault('num_runs', 2)
-        kwargs.setdefault('verbose', 'True')
-#        kwargs.setdefault('device', 'ibmqx4')
+        kwargs.setdefault('verbose', True)
 
         # backend-specific capabilities
         self.backend = kwargs['backend']
         # gate and observable sets depend on the backend, so they have to be instance properties
         gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Rx, Ry, Rz, R, CRz, CNOT, CZ]
         observables = [MeasureX, MeasureY, MeasureZ, MeasureAllZ]
+        self.n_eval = 0
+
         if self.backend == 'Simulator':
             pass
         elif self.backend == 'ClassicalSimulator':
@@ -284,19 +280,24 @@ class PluginAPI(openqml.plugin.PluginAPI):
             import inspect
             self.ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
             ibm_backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
-            eng = pq.MainEngine(ibm_backend)
+            eng = pq.MainEngine(ibm_backend, engine_list=pq.setups.ibm.get_engine_list())
             with pq.meta.Compute(eng):
                 reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
-                gates = [gate for gate in gates if ((gate.n_par > 0 and ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))) or (gate.n_par==0 and ibm_backend.is_available(pq.ops.Command(eng, gate.cls(), [[reg[i]] for i in range(0,gate.n_sys)]))))]
-                gates+=[CNOT]
-                # todo: find out why ibm_backend.is_available() returns false for CNOT, see also here: https://github.com/ProjectQ-Framework/ProjectQ/issues/257
+                gates = [gate for gate in gates if (ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), ([reg[i]] for i in range(0,gate.n_sys)))) or gate == CNOT)] #todo: do not treat CNOT as a special case one it is understood why ibm_backend.is_available() returns false for CNOT, see also here: https://github.com/ProjectQ-Framework/ProjectQ/issues/257
+
                 # print('IBM supports the following gates: '+str([gate.name for gate in gates]))
-                # print('ibm_backend.is_available(CNOTClass)='+str(ibm_backend.is_available(pq.ops.Command(eng, CNOTClass(), [[reg[0]], [reg[1]]]))) )
-                # print('ibm_backend.is_available(CNOT)='+str(ibm_backend.is_available(pq.ops.Command(eng, pq.ops.CNOT, [[reg[0]], [reg[1]]]))) )
+                # print('ibm_backend.is_available(CNOTClass)='+str(ibm_backend.is_available(pq.ops.Command(eng, CNOTClass(), ([reg[0]], [reg[1]]) ))) )
+                # print('ibm_backend.is_available(CNOT)='+str(ibm_backend.is_available(pq.ops.Command(eng, pq.ops.CNOT, ([reg[0]], [reg[1]]) ))) )
+                # print('ibm_backend.is_available(X+control)='+str(ibm_backend.is_available(   pq.ops.Command(engine=eng, gate=pq.ops.X, qubits=([reg[0]],), controls=[reg[1]])    )) )
                 # print('CNOTClass()==NOT: '+str(CNOTClass()==pq.ops.NOT))
                 # print('C(NOT)==NOT: '+str(pq.ops.C(pq.ops.NOT)==pq.ops.NOT))
                 # print('CNOT==NOT: '+str(pq.ops.CNOT==pq.ops.NOT))
-            observables = [MeasureZ]
+
+            observables = [MeasureZ,MeasureAllZ]
+            if 'num_runs' in self.ibm_backend_kwargs:
+                self.n_eval = self.ibm_backend_kwargs['num_runs']
+            else:
+                self.n_eval = 1024
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
@@ -316,18 +317,19 @@ class PluginAPI(openqml.plugin.PluginAPI):
     def reset(self):
         """Resets the engine and backend"""
         if self.eng is not None:
-            if self.backend == 'Simulator':
-                self._deallocate()
+            self._deallocate()
             self.eng = None
 
     def measure(self, observable, reg, par=[], n_eval=0):
         """ """
-        return self.expection_value(observable, reg, par, n_eval)
+        return self.measurement_statistics(observable, reg, par, n_eval)
 
-    def expection_value(self, observable, reg, par=[], n_eval=0):
+    def measurement_statistics(self, observable, reg, par=[], n_eval=0):
         """Compute the expection value.
 
         Returns the expectation value of the given observable in the given qubits.
+
+        This method is only used during testing of the plugin.
 
         Args:
           observable (Observable): observable to compute the expectatoin value for
@@ -341,9 +343,20 @@ class PluginAPI(openqml.plugin.PluginAPI):
         temp = self.n_eval  # store the original
         self.n_eval = n_eval
 
-        ev = observable.execute(par, [self.reg[i] for i in reg], self)
+        if self.backend == 'IBMBackend':
+            #The IBMBackend does not allow multiple measurements, if the simulation does not hold a state ready to measue, we thus reset the backend and perform the measurement on the state of a fake circuit
+            # sim.reset()
+            # sim.execute_circuit(Circuit([Command(Rx, [0], [i]) for i in range(len(reg))], 'fake identity'))
+            # sim.eng.flush()
+            # if self.eng.backend.main_engine.mapper is None:
+            #     sim.eng.backend.main_engine.mapper = pq.cengines.LinearMapper(len(reg)) # todo: Find out why ProjectQ does not set a mapper internally. This results in an exception here.
+            #     sim.eng.backend.main_engine.mapper.current_mapping = {i:sim.reg[i].id for i in range(len(reg))}
+            # probabilities = self.eng.backend.get_probabilities(reg)
+            pass
+
+        expectation_value, variance = observable.execute(par, [self.reg[i] for i in reg], self)
         self.n_eval = temp  # restore it
-        return ev
+        return expectation_value, variance
 
     def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
         super().execute_circuit(circuit, params, reset=reset, **kwargs)
@@ -360,11 +373,14 @@ class PluginAPI(openqml.plugin.PluginAPI):
             self.reset()
             if self.backend == 'Simulator':
                 backend = pq.backends.Simulator(**kwargs)
+                self.eng = pq.MainEngine(backend)
             elif self.backend == 'ClassicalSimulator':
                 backend = pq.backends.ClassicalSimulator()
+                self.eng = pq.MainEngine(backend)
             elif self.backend == 'IBMBackend':
                 backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
-            self.eng = pq.MainEngine(backend)
+                self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
+
             self.reg = None
 
         # input the program
@@ -399,7 +415,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
         Drawback: This is probably rather resource intensive.
         """
-        if self.eng is not None and self.backend == 'Simulator':
+        if self.eng is not None and self.backend == 'Simulator' or self.backend == 'IBMBackend':
             pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
 
     def _deallocate2(self):
@@ -407,7 +423,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
         Unsuitable because: Produces a segmentation fault.
         """
-        if self.eng is not None and self.backend == 'Simulator':
+        if self.eng is not None and self.backend == 'Simulator' or self.backend == 'IBMBackend':
              for qubit in self.reg:
                  self.eng.deallocate_qubit(qubit)
 
@@ -416,10 +432,18 @@ class PluginAPI(openqml.plugin.PluginAPI):
 
         Unsuitable because: Throws an error if the probability for the given collapse is 0.
         """
-        if self.eng is not None and self.backend == 'Simulator':
+        if self.eng is not None and self.backend == 'Simulator' or self.backend == 'IBMBackend':
             self.eng.flush()
             self.eng.backend.collapse_wavefunction(self.reg, [0 for i in range(len(self.reg))])
 
+
+    def requires_credentials():
+        """Check whether this plugin requires credentials
+        """
+        if self.backend == 'IBMBackend':
+            return True
+        else:
+            return False
 
 def init_plugin():
     """Initialize the plugin.
