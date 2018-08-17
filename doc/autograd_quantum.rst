@@ -3,11 +3,8 @@
 
 .. _autograd_quantum:
 
-Automatic differentiation of quantum functions
-==============================================
-
-Quantum functions
-------------------------------
+Quantum gradients
+=================
 
 A quantum function (*qfunc*) is any parameterized function :math:`f(x;\bm{\theta})` which can be evaluated on a quantum circuit via the Born rule:
 
@@ -52,4 +49,7 @@ Backpropagation through hybrid computations
 -------------------------------------------
 
 - how does a gradient computation work in a hybrid quantum-classical computation?
+
+
+.. note:: In situations where no formula for quantum gradients is known, OpenQML supports approximate gradient estimation using numerical methods.
 
