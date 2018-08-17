@@ -54,8 +54,10 @@ tolerance = 1e-10
 class Gate(GateSpec):
     """Implements the quantum gates and observables.
     """
-    def __init__(self, name, n_sys, n_par, cls=None, par_domain='R'):
-        super().__init__(name, n_sys, n_par, grad_method='F', par_domain=par_domain)
+    def __init__(self, name, n_sys, n_par, cls=None, grad_recipe=None, *, par_domain='R'):
+        # if a recipe is provided, use the angular method
+        grad_method = 'F' if grad_recipe is None else 'A'
+        super().__init__(name, n_sys, n_par, par_domain=par_domain, grad_method=grad_method, grad_recipe=grad_recipe)
         self.cls = cls  #: class: sf.ops.Operation subclass corresponding to the gate
 
     def execute(self, par, reg, sim):
@@ -89,6 +91,7 @@ class Observable(Gate):
 
         #A = self.cls(*par)  # Operation instance
         # run the queued program so that we obtain the state before the measurement
+        # FIXME this only works for simulator backends, not hardware!
         state = sim.eng.run(**sim.init_kwargs)  # FIXME remove **kwargs here when SF is updated
         n_eval = sim.n_eval
 
@@ -118,16 +121,21 @@ Coh  = Gate('Coh', 1, 2, sfo.Coherent)
 Squ  = Gate('Squ', 1, 2, sfo.Squeezed)
 The  = Gate('The', 1, 1, sfo.Thermal)
 Fock = Gate('Fock', 1, 1, sfo.Fock, par_domain='N')
-D = Gate('D', 1, 2, sfo.Dgate)
-S = Gate('S', 1, 2, sfo.Sgate)
-X = Gate('X', 1, 1, sfo.Xgate)
-Z = Gate('Z', 1, 1, sfo.Zgate)
-R = Gate('R', 1, 1, sfo.Rgate)
+
+# TODO More gradient formulas! At least all gaussian gates should have one.
+
+Ds = 1.0  # gradient computation shift for displacements
+D = Gate('D', 1, 2, sfo.Dgate, [(0.5/Ds, Ds), None])  # TODO d\tilde{D}(r, phi)/dr does not depend on r! The gradient formula can be simplified further, we can make do with smaller displacements!
+X = Gate('X', 1, 1, sfo.Xgate, [(0.5/Ds, Ds)])
+Z = Gate('Z', 1, 1, sfo.Zgate, [(0.5/Ds, Ds)])
+Ss = 1.0  # gradient computation shift for squeezing
+S = Gate('S', 1, 2, sfo.Sgate, [(0.5/np.sinh(Ss), Ss), None])
+R = Gate('R', 1, 1, sfo.Rgate, [None])
 F = Gate('Fourier', 1, 0, sfo.Fouriergate)
 P = Gate('P', 1, 1, sfo.Pgate)
 V = Gate('V', 1, 1, sfo.Vgate)
 K = Gate('K', 1, 1, sfo.Kgate)
-BS = Gate('BS', 2, 2, sfo.BSgate)
+BS = Gate('BS', 2, 2, sfo.BSgate, [None, None])  # both parameters are rotation-like
 S2 = Gate('S2', 2, 2, sfo.S2gate)
 CX = Gate('CX', 2, 1, sfo.CXgate)
 CZ = Gate('CZ', 2, 1, sfo.CZgate)
@@ -141,13 +149,16 @@ MHe   = Observable('MHeterodyne', 1, 0, sfo.MeasureHeterodyne)
 
 
 demo = [
-    Command(S,  [0], [ParRef(0), 0]),
+    Command(D,  [0], [ParRef(0), ParRef(1)]),
+    Command(S,  [0], [ParRef(2), ParRef(3)]),
     Command(BS, [0, 1], [np.pi/4, 0]),
-    Command(R,  [0], [np.pi/3]),
-    Command(D,  [1], [ParRef(1), np.pi/3]),
+    Command(X,  [0], [ParRef(4)]),
+    Command(Z,  [1], [ParRef(5)]),
+    Command(D,  [0], [0.8, 0.7]),
+    Command(D,  [1], [0.5, -1.2]),
+    Command(BS, [0, 1], [ParRef(6), ParRef(7)]),
+    Command(R,  [0], [ParRef(8)]),
     Command(BS, [0, 1], [-np.pi/4, 0]),
-    Command(R,  [0], [ParRef(1)]),
-    Command(BS, [0, 1], [np.pi/4, 0]),
 ]
 
 # circuit templates

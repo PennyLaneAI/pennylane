@@ -209,24 +209,23 @@ swap = Gate('SWAP', 2, 0, SWAP)
 # observables
 ev_z = Observable('z', 1, 0, Z)
 
+# demo circuit, contains every gate fully parametrized
 demo = [
     Command(rx, [0], [ParRef(0)]),
     Command(cnot, [0, 1]),
-    Command(ry, [0], [-1.6]),
-    Command(ry, [1], [-1.3 * ParRef(0)]),
+    Command(ry, [0], [-ParRef(1)]),
+    Command(rz, [1], [1.5 * ParRef(2)]),
     Command(cnot, [1, 0]),
-    Command(rx, [0], [ParRef(1)]),
-    Command(cnot, [0, 1])
+    Command(r3, [0], [ParRef(3), ParRef(4), ParRef(5)]),
+    Command(cnot, [0, 1]),
+    Command(r3, [0], [1.1, 0.3, -0.8]),
+    Command(swap, [0, 1]),
 ]
 
 # circuit templates
 _circuit_list = [
     Circuit(demo, 'demo'),
-    Circuit(demo +[Command(ev_z, [0])], 'demo_ev', out=[0]),
-    Circuit([
-        Command(r3, [0], [ParRef(0), 0.3, -0.2]),
-        Command(swap, [0, 1]),
-    ], 'rubbish'),
+    Circuit(demo +[Command(ev_z, [0]), Command(ev_z, [1])], 'demo_ev', out=[0]),  # demo with measurements
     Circuit([  # data classifier circuit, ParRef(0) represents the data
         Command(rx, [0], [ParRef(0)]),
         Command(cnot, [0, 1]),
