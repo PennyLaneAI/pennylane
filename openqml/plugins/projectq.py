@@ -278,16 +278,15 @@ class PluginAPI(openqml.plugin.PluginAPI):
         elif self.backend == 'ClassicalSimulator':
             classical_backend = pq.backends.ClassicalSimulator()
             eng = pq.MainEngine(classical_backend)
-            with pq.meta.Compute(eng):
-                reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
-                gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
+            reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
+            gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
             observables = [MeasureZ]
         elif self.backend == 'IBMBackend':
             import inspect
             self.ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
             # ibm_backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
             # eng = pq.MainEngine(ibm_backend, engine_list=pq.setups.ibm.get_engine_list())
-            # with pq.meta.Compute(eng):
+            # if True:
             #     reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
             #     #gates = [gate for gate in gates if (ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), ([reg[i]] for i in range(0,gate.n_sys)))) or gate == CNOT)] #todo: do not treat CNOT as a special case one it is understood why ibm_backend.is_available() returns false for CNOT, see also here: https://github.com/ProjectQ-Framework/ProjectQ/issues/257
 
@@ -379,18 +378,17 @@ class PluginAPI(openqml.plugin.PluginAPI):
             self.reg = None
 
         # input the program
-        with pq.meta.Compute(self.eng):
-            if self.reg is None:
-                self.reg = self.eng.allocate_qureg(circuit.n_sys)
-            expectation_values = {}
-            for cmd in circuit.seq:
-                # prepare the parameters
-                par = map(parmap, cmd.par)
-                if cmd.gate.name not in self._gates and cmd.gate.name not in self._observables:
-                    warnings.warn("The cirquit {} contains the gate {}, which is not supported by the {} backend. Abortig execution of this circuit.".format(circuit, cmd.gate.name, self.backend))
-                    break
-                # execute the gate
-                expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
+        if self.reg is None:
+            self.reg = self.eng.allocate_qureg(circuit.n_sys)
+        expectation_values = {}
+        for cmd in circuit.seq:
+            # prepare the parameters
+            par = map(parmap, cmd.par)
+            if cmd.gate.name not in self._gates and cmd.gate.name not in self._observables:
+                warnings.warn("The cirquit {} contains the gate {}, which is not supported by the {} backend. Abortig execution of this circuit.".format(circuit, cmd.gate.name, self.backend))
+                break
+            # execute the gate
+            expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
 
         #print('expectation_values='+str(expectation_values))
         if circuit.out is not None:
