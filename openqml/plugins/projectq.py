@@ -36,7 +36,6 @@ Classes
 """
 
 import logging as log
-import warnings
 
 import numpy as np
 from numpy.random import (randn,)
@@ -266,12 +265,25 @@ class PluginAPI(openqml.plugin.PluginAPI):
         # sensible defaults
         kwargs.setdefault('backend', 'Simulator')
 
+        # translate some aguments
+        for k,v in {'log':'verbose'}.items():
+            if k in kwargs:
+                kwargs.setdefault(v, kwargs[k])
+
+        # clean some arguments
+        if 'num_runs' in kwargs:
+            if isinstance(kwargs['num_runs'], int) and kwargs['num_runs']>0:
+                self.n_eval = kwargs['num_runs']
+            else:
+                self.n_eval = 0
+                del(kwargs['num_runs'])
+
         # backend-specific capabilities
         self.backend = kwargs['backend']
+
         # gate and observable sets depend on the backend, so they have to be instance properties
         gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Rx, Ry, Rz, R, CRz, CNOT, CZ]
         observables = [MeasureX, MeasureY, MeasureZ, MeasureAllZ]
-        self.n_eval = 0
 
         if self.backend == 'Simulator':
             pass
@@ -299,10 +311,6 @@ class PluginAPI(openqml.plugin.PluginAPI):
             #     # print('CNOT==NOT: '+str(pq.ops.CNOT==pq.ops.NOT))
             gates = [H, X, Y, Z, S, T, SqrtX, Swap, Rx, Ry, Rz, R, CRz, CNOT, CZ]
             observables = [MeasureZ,MeasureAllZ]
-            if 'num_runs' in self.ibm_backend_kwargs:
-                self.n_eval = self.ibm_backend_kwargs['num_runs']
-            else:
-                self.n_eval = 1024
         else:
             raise ValueError("Unknown backend '{}'.".format(self.backend))
 
@@ -313,8 +321,11 @@ class PluginAPI(openqml.plugin.PluginAPI):
         self.eng = None
         self.reg = None
 
+    def __repr__(self):
+        return super().__repr__() +'Backend: ' +self.backend +'\n'
+
     def __str__(self):
-        return super().__str__() +'ProjecQ with Backend: ' +self.backend +'\n'
+        return super().__str__() +'Backend: ' +self.backend +'\n'
 
     def __del__(self):
         self.reset()
@@ -342,6 +353,9 @@ class PluginAPI(openqml.plugin.PluginAPI):
           par (Sequence[float]): parameters of the observable
           n_eval (int): number of samples from which to compute the expectation value
         """
+        if n_eval != 0:
+            log.warning("Non-zero value of n_eval ignored, as the IBMBackend does not support setting n_eval on the fly and all other backends yield exact expectation values.")
+
         if isinstance(reg, int):
             reg = [reg]
 
@@ -385,7 +399,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             # prepare the parameters
             par = map(parmap, cmd.par)
             if cmd.gate.name not in self._gates and cmd.gate.name not in self._observables:
-                warnings.warn("The cirquit {} contains the gate {}, which is not supported by the {} backend. Abortig execution of this circuit.".format(circuit, cmd.gate.name, self.backend))
+                log.warning("The cirquit {} contains the gate {}, which is not supported by the {} backend. Abortig execution of this circuit.".format(circuit, cmd.gate.name, self.backend))
                 break
             # execute the gate
             expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
@@ -430,7 +444,7 @@ class PluginAPI(openqml.plugin.PluginAPI):
             self.eng.backend.collapse_wavefunction(self.reg, [0 for i in range(len(self.reg))])
 
 
-    def requires_credentials():
+    def requires_credentials(self):
         """Check whether this plugin requires credentials
         """
         if self.backend == 'IBMBackend':
