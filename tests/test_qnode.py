@@ -3,37 +3,63 @@ Unit tests for the :mod:`openqml` :class:`QNode` class.
 """
 
 import unittest
+import logging as log
+log.getLogger()
 
 import autograd
-import autograd.numpy as np
-from autograd.numpy.random import (randn,)
 
-from defaults import openqml, BaseTest
-from openqml.plugin import (load_plugin,)
-from openqml.circuit import (QNode,)
+from openqml import numpy as np
+from defaults import openqml as qm, BaseTest
+
+
+def circuit1(x, y, z):
+    qm.RX(x, [0])
+    qm.CNOT([0, 1])
+    qm.RY(-1.6, [0])
+    qm.RY(y, [1])
+    qm.CNOT([1, 0])
+    qm.RX(z, [0])
+    qm.CNOT([0, 1])
+    qm.expectation.PauliZ(0)
+
+
+def rubbish_circuit(x):
+    qm.Rot(x, 0.3, -0.2, [0])
+    qm.SWAP([0, 1])
+    qm.expectation.PauliZ(0)
+
+
+def circuit_data(in_data, x):
+    qm.RX(in_data, [0])
+    qm.CNOT([0, 1])
+    qm.RY(-1.6, [0])
+    qm.RY(in_data, [1])
+    qm.CNOT([1, 0])
+    qm.RX(x, [0])
+    qm.CNOT([0, 1])
+    qm.expectation.PauliZ(0)
 
 
 class BasicTest(BaseTest):
     """ABC for tests.
     """
     def setUp(self):
-        self.plugin = load_plugin('dummy_plugin')
+        self.dev = qm.device('default.qubit', wires=2)
 
     def test_qnode(self):
         "Quantum node and node gradient evaluation."
+        log.info('test_qnode')
 
-        self.circuit = self.plugin.get_circuit('demo_ev')
-        p = self.plugin('test node')
-        q = QNode(self.circuit, p)
-        params = randn(q.circuit.n_par)
-        x0 = q.evaluate(params)
+        qnode = qm.QNode(circuit1, self.dev)
+        params = np.random.randn(qnode.num_variables)
+
         # manual gradients
-        grad_fd1 = q.gradient(params, method='F', order=1)
-        grad_fd2 = q.gradient(params, method='F', order=2)
-        grad_angle = q.gradient(params, method='A')
+        grad_fd1 = qnode.gradient(params, method='F', order=1)
+        grad_fd2 = qnode.gradient(params, method='F', order=2)
+        grad_angle = qnode.gradient(params, method='A')
+
         # automatic gradient
-        grad = autograd.grad(q.evaluate)
-        grad_auto = grad(params)
+        grad_auto = qm.grad(qnode, *params)
 
         # gradients computed with different methods must agree
         self.assertAllAlmostEqual(grad_fd1, grad_fd2, self.tol)
@@ -43,34 +69,37 @@ class BasicTest(BaseTest):
 
     def test_qnode_fail(self):
         "Expected failures."
-        self.circuit = self.plugin.get_circuit('rubbish')
+        log.info('test_qnode_fail')
+        qnode = qm.QNode(rubbish_circuit, self.dev)
+        params = np.random.randn(qnode.num_variables)
+        qnode(params)
 
-        p = self.plugin('test node')
-        q = QNode(self.circuit, p)
-        params = randn(q.circuit.n_par)
         # gradient_angle cannot handle more-than-one-parameter gates
-        self.assertRaises(ValueError, q.gradient, params, method='A')
+        with self.assertRaisesRegex(ValueError, "only differentiate one-parameter gates"):
+            res = qnode.gradient(params, method='A')
+
         # only order-1 and order-2 finite diff methods are available
-        self.assertRaises(ValueError, q.gradient, params, method='F', order=3)
+        with self.assertRaisesRegex(ValueError, "Order must be 1 or 2"):
+            qnode.gradient(params, method='F', order=3)
 
 
     def test_autograd(self):
         "Automatic differentiation of a computational graph containing quantum nodes."
+        log.info('test_autograd')
 
-        self.circuit = self.plugin.get_circuit('demo_ev')
-        self.assertEqual(self.circuit.n_par, 2)
-        p1 = self.plugin('node 1')
-        q1 = QNode(self.circuit, p1)
-        params = randn(q1.circuit.n_par -1)  # input data is the first parameter
-        data = randn(3, 2)
+        qnode = qm.QNode(circuit_data, self.dev)
+        self.assertEqual(qnode.num_variables, 2)
+
+        # input data is the first parameter
+        params = np.random.randn(qnode.num_variables - 1)
+        data = np.random.randn(3, 2)
 
         def error(p):
             "Simple quantum classifier, trying to map inputs to outputs."
             ret = 0
             for d in data:
-                #x = np.array([d[0], p[0]])
-                x = np.concatenate((d[0:1], p[0:1]))
-                temp = q1.evaluate(x) -d[1]
+                x = np.array([d[0], p[0]])
+                temp = qnode(x) - d[1]
                 ret += temp ** 2
             return ret
 
@@ -79,23 +108,24 @@ class BasicTest(BaseTest):
             ret = 0
             for d in data:
                 x = np.array([d[0], p[0]])
-                temp = q1.evaluate(x) -d[1]
-                ret += 2 * temp * q1.gradient(x, which=[1], method=grad_method)
+                temp = qnode(x) - d[1]
+                ret += 2 * temp * qnode.gradient(x, which=[1], method=grad_method)
             return ret
 
         y0 = error(params)
         grad = autograd.grad(error)
         grad_auto = grad(params)
+        # grad_auto = qm.grad(error, *params)
 
         grad_fd1 = d_error(params, 'F')
         grad_angle = d_error(params, 'A')
+        self.assertAllAlmostEqual(grad_fd1, grad_angle, self.tol)
         self.assertAllAlmostEqual(grad_fd1, grad_auto, self.tol)
         self.assertAllAlmostEqual(grad_angle, grad_auto, self.tol)
 
 
-
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', QNode class.')
+    print('Testing OpenQML version ' + qm.version() + ', QNode class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,):

@@ -3,17 +3,36 @@ Unit tests for the :mod:`openqml` :class:`Optimizer` class.
 """
 
 import unittest
-from matplotlib.pyplot import figure
+import logging as log
+log.getLogger()
+
 
 import autograd
 import autograd.numpy as np
 from autograd.numpy.random import (randn,)
 
-from defaults import openqml, BaseTest
-from openqml.plugin import (load_plugin,)
-from openqml.circuit import (QNode,)
-from openqml.core import (Optimizer,)
+from matplotlib.pyplot import figure
 
+from defaults import openqml as qm, BaseTest
+from openqml import Optimizer, QNode
+
+
+def circuit(*args):
+    qm.RX(args[0], 0)
+    qm.CNOT([0, 1])
+    qm.RX(args[1], 0)
+    qm.RZ(2.7, 1)
+    qm.CNOT([0, 1])
+    qm.RX(-1.8, 0)
+    qm.RZ(args[2], 1)
+    qm.RX(args[6], 1)
+    qm.RZ(args[7], 1)
+    qm.CNOT([0, 1])
+    qm.RX(args[3], 0)
+    qm.RZ(args[4], 1)
+    qm.CNOT([0, 1])
+    qm.RX(args[5], 0)
+    qm.expectation.PauliZ(0)
 
 
 class OptTest(BaseTest):
@@ -39,7 +58,7 @@ class OptTest(BaseTest):
           float: mapped data
         """
         par = np.concatenate((np.array([0.5*np.pi * data_in]), weights))
-        return self.q.evaluate(par)[0]
+        return self.qnode(par)
 
 
     def cost(self, weights, data_sample=None):
@@ -62,7 +81,7 @@ class OptTest(BaseTest):
         cost = 0
         for d in data:
             temp = self.map_data(d[0], weights) -d[1]
-            cost = cost +temp ** 2
+            cost = cost + temp ** 2
         return cost
 
 
@@ -87,32 +106,26 @@ class OptTest(BaseTest):
             return 0
 
         # initial weights must be given as an array
-        self.assertRaises(TypeError, Optimizer, *(f,f,0), optimizer='SGD')
-        self.assertRaises(TypeError, Optimizer, *(f,f,[0]), optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, *(f,0), optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, *(f,[0]), optimizer='SGD')
 
         # optimizer has to be a callable or a known name
-        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Unknown')
-
-        # some algorithms do not use a gradient function
-        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Nelder-Mead')
-        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Powell')
+        self.assertRaises(ValueError, Optimizer, *(f,weights), optimizer='Unknown')
 
 
     def test_opt(self):
         "Test all supported optimization algorithms on a simple optimization task."
 
-        self.plugin = load_plugin('dummy_plugin')
-        self.circuit = self.plugin.get_circuit('opt_ev')
-        p = self.plugin('test node')
-        q = QNode(self.circuit, p)
-        self.q = q
-        x0 = randn(q.circuit.n_par -1)  # one circuit param is used to encode the data
-        grad = autograd.grad(self.cost, 0)  # gradient with respect to weights
+        self.dev = qm.device('default.qubit', wires=2)
+        qnode = QNode(circuit, self.dev)
+        self.qnode = qnode
+
+        x0 = randn(7)  # one circuit param is used to encode the data
 
         temp = 0.30288  # expected minimal cost
         tol = 0.001
 
-        o = Optimizer(self.cost, grad, x0, n_data=self.data.shape[0], optimizer='SGD')
+        o = Optimizer(self.cost, x0, n_data=self.data.shape[0], optimizer='SGD')
         o.set_hp(batch_size=4)
         c = o.train(100)
         self.plot_result(o.weights)
@@ -121,19 +134,14 @@ class OptTest(BaseTest):
         opts = ['BFGS', 'CG', 'L-BFGS-B', 'TNC', 'SLSQP']
         opts_nograd = ['Nelder-Mead', 'Powell']
 
-        for opt in opts:
-            o = Optimizer(self.cost, grad, x0, optimizer=opt)
-            c = o.train()
-            self.assertAlmostEqual(c, temp, delta=tol)
-
-        for opt in opts_nograd:
-            o = Optimizer(self.cost, None, x0, optimizer=opt)
+        for opt in opts+opts_nograd:
+            o = Optimizer(self.cost, x0, optimizer=opt)
             c = o.train()
             self.assertAlmostEqual(c, temp, delta=tol)
 
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', Optimizer class.')
+    print('Testing OpenQML version ' + qm.version() + ', Optimizer class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (OptTest,):

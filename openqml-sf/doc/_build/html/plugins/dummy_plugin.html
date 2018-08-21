@@ -1,0 +1,671 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link href="https://fonts.googleapis.com/css?family=Noto+Serif" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../_static/css/bootstrap-theme.min.css" />
+  <link rel="stylesheet" type="text/css" href="../_static/css/nanoscroller.css" />
+  <script defer src="https://use.fontawesome.com/releases/v5.0.2/js/all.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+       "HTML-CSS": { scale: 90, linebreaks: { automatic: true } },
+       TeX: {
+         Macros: {
+           pr : ['|\#1\\rangle\\langle\#1|',1],
+           ket: ['\\left| \#1\\right\\rangle',1],
+           bra: ['\\left\\langle \#1\\right|',1],
+           xket: ['\\left| \#1\\right\\rangle_x',1],
+           xbra: ['\\left\\langle \#1\\right|_x',1],
+           braket: ['\\langle \#1 \\rangle',1],
+           braketD: ['\\langle \#1 \\mid \#2 \\rangle',2],
+           braketT: ['\\langle \#1 \\mid \#2 \\mid \#3 \\rangle',3],
+           ketbra: ['| #1 \\rangle \\langle #2 |',2],
+           hc: ['\\text{h.c.}',0],
+           cc: ['\\text{c.c.}',0],
+           h: ['\\hat',0],
+           nn: ['\\nonumber',0],
+           di: ['\\frac{d}{d \#1}',1],
+           uu: ['\\mathcal{U}',0],
+           inn: ['\\text{in}',0],
+           out: ['\\text{out}',0],
+           vac: ['\\text{vac}',0],
+           I: ['I',0],
+           x: ['\\hat{x}',0],
+           p: ['\\hat{p}',0],
+           a: ['\\hat{a}',0],
+           ad: ['\\hat{a}^\\dagger',0],
+           n: ['\\hat{n}',0],
+           nbar: ['\\overline{n}',0],
+           sech: ['\\mathrm{sech~}',0],
+           tanh: ['\\mathrm{tanh~}',0],
+           re: ['\\text{Re}',0],
+           im: ['\\text{Im}',0],
+           tr: ['\\mathrm{Tr} #1',1],
+           sign: ['\\text{sign}',0],
+           overlr: ['\\overset\\leftrightarrow{\#1}',1],
+           overl: ['\\overset\leftarrow{\#1}',1],
+           overr: ['\\overset\rightarrow{\#1}',1],
+           avg: ['\\left< \#1 \\right>',1],
+           slashed: ['\\cancel{\#1}',1],
+           bold: ['\\boldsymbol{\#1}',1],
+           d: ['\\mathrm d',0],
+           expect: ["\\langle #1 \\rangle",1],
+           pde: ["\\frac{\\partial}{\\partial \#1}",1],
+           R: ["\\mathbb{R}",0],
+           C: ["\\mathbb{C}",0],
+           Ad: ["\\text{Ad}",0],
+           Var: ["\\text{Var}",0],
+           bx: ["\\mathbf{x}", 0],
+           bm: ["\\boldsymbol{\#1}",1]
+         }
+       }
+     });
+     </script>
+  
+    <title>Example OpenQML plugin &#8212; OpenQML 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/xanadu.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Strawberry Fields plugin" href="strawberryfields.html" />
+    <link rel="prev" title="Included plugins" href="included_plugins.html" />
+  
+  <link rel="apple-touch-icon" href="../_static/logo_new.png" />
+  
+   
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="strawberryfields.html" title="Strawberry Fields plugin"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="included_plugins.html" title="Included plugins"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">OpenQML 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="included_plugins.html" accesskey="U">Included plugins</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column" class="nano css-transitions-only-after-page-load">
+    <div class="sphinxsidebar nano-content"><a href="http://xanadu.ai" class="text-logo">
+	<img src="../_static/logo_new.png" class="logo active" width=80%></img>
+	<img src="../_static/logo_new_small.png" class="logo-small" width=80%></img>
+	<!-- <span id="project-name">OpenQML</span> -->
+</a>
+<div class="sidebar-block search-block">
+  <div class="sidebar-wrapper">
+  <!-- <div id="project-name">OpenQML</div> -->
+    <a href="
+    ../index.html">
+      <div id="project-name">
+        <!-- <img src="../_static/strawberry_fields.png" width=100%></img> -->
+        <p style="font-size:28px;margin:0;padding:0;line-height:1;text-transform:none!important">OpenQML</p>
+      </div>
+    </a>
+    <div id="main-search">
+      <form class="form-inline" action="../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+<div class="sidebar-block">
+<!--   <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div> -->
+  <div class="sidebar-toc">
+    
+    
+      <p class="caption"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installing.html">Installation and downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research.html">Research and contribution</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../autograd_quantum.html">Automatic differentiation of quantum functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../conventions.html">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References and further reading</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core.html">Core classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../circuit.html">Quantum circuits</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Plugins</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../plugins.html">Plugin system</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="included_plugins.html">Included plugins</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Example OpenQML plugin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="strawberryfields.html">Strawberry Fields plugin</a></li>
+</ul>
+</li>
+</ul>
+
+    
+  </div>
+</div>
+      
+    </div>
+  </div>
+        <div id="content">
+          <div id="right-column">
+            
+            <div role="navigation" aria-label="breadcrumbs navigation">
+              <ol class="breadcrumb">
+                <li><a href="../index.html">Docs</a></li>
+                
+                  <li><a href="included_plugins.html">Included plugins</a></li>
+                
+                <li>Example OpenQML plugin</li>
+                    <li style="float: right;" class="showsource">
+                      <a href="https://github.com/XanaduAI/openqml/blob/master/doc/plugins/dummy_plugin.rst" class="reference-external" rel="nofollow">
+                        <i class="fab fa-github"></i>
+                        Show on GitHub
+                      </a>
+                    </li>
+                  <li style="float: right;" class="showsource">
+                    <a href="../_sources/plugins/dummy_plugin.rst.txt" class="reference-external" rel="nofollow">
+                      Show Source
+                    </a>
+                  </li>
+              </ol>
+            </div>
+            
+            <div class="document clearer body">
+              
+  <span class="target" id="module-openqml.plugins.dummy_plugin"></span><div class="section" id="example-openqml-plugin">
+<h1>Example OpenQML plugin<a class="headerlink" href="#example-openqml-plugin" title="Permalink to this headline">¶</a></h1>
+<p><strong>Module name:</strong> <a class="reference internal" href="#module-openqml.plugins.dummy_plugin" title="openqml.plugins.dummy_plugin"><code class="xref py py-mod docutils literal notranslate"><span class="pre">openqml.plugins.dummy_plugin</span></code></a></p>
+<p>The dummy plugin is meant to be used as a template for writing OpenQML plugin modules for new backends.
+It implements all the <a class="reference internal" href="../plugins.html#openqml.plugin.PluginAPI" title="openqml.plugin.PluginAPI"><code class="xref py py-class docutils literal notranslate"><span class="pre">PluginAPI</span></code></a> methods and provides a very simple pure state
+simulation of a qubit-based quantum circuit architecture.</p>
+<div class="section" id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.init_plugin" title="openqml.plugins.dummy_plugin.init_plugin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_plugin</span></code></a>()</td>
+<td>Initialize the plugin.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.spectral_decomposition_qubit" title="openqml.plugins.dummy_plugin.spectral_decomposition_qubit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spectral_decomposition_qubit</span></code></a>(A)</td>
+<td>Spectral decomposition of a 2*2 Hermitian matrix.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.frx" title="openqml.plugins.dummy_plugin.frx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">frx</span></code></a>(theta)</td>
+<td>One-qubit rotation about the x axis.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.fry" title="openqml.plugins.dummy_plugin.fry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fry</span></code></a>(theta)</td>
+<td>One-qubit rotation about the y axis.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.frz" title="openqml.plugins.dummy_plugin.frz"><code class="xref py py-obj docutils literal notranslate"><span class="pre">frz</span></code></a>(theta)</td>
+<td>One-qubit rotation about the z axis.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.fr3" title="openqml.plugins.dummy_plugin.fr3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fr3</span></code></a>(a,&nbsp;b,&nbsp;c)</td>
+<td>Arbitrary one-qubit rotation using three Euler angles.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.Gate" title="openqml.plugins.dummy_plugin.Gate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Gate</span></code></a>(name,&nbsp;n_sys,&nbsp;n_par[,&nbsp;func])</td>
+<td>Implements the quantum gates.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.Observable" title="openqml.plugins.dummy_plugin.Observable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Observable</span></code></a>(name,&nbsp;n_sys,&nbsp;n_par[,&nbsp;func])</td>
+<td>Implements single-qubit hermitian observables.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#openqml.plugins.dummy_plugin.PluginAPI" title="openqml.plugins.dummy_plugin.PluginAPI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PluginAPI</span></code></a>([name])</td>
+<td>Example implementation of an OpenQML plugin API class.</td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<dl class="function">
+<dt id="openqml.plugins.dummy_plugin.spectral_decomposition_qubit">
+<code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">spectral_decomposition_qubit</code><span class="sig-paren">(</span><em>A</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#spectral_decomposition_qubit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.spectral_decomposition_qubit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Spectral decomposition of a 2*2 Hermitian matrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>A</strong> (<em>array</em>) – 2*2 Hermitian matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>(a, P): eigenvalues and hermitian projectors</dt>
+<dd>such that <span class="math notranslate">\(A = \sum_k a_k P_k\)</span>.</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(vector[float], list[array[complex]])</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="openqml.plugins.dummy_plugin.frx">
+<code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">frx</code><span class="sig-paren">(</span><em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#frx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.frx" title="Permalink to this definition">¶</a></dt>
+<dd><p>One-qubit rotation about the x axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>theta</strong> (<em>float</em>) – rotation angle</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">unitary 2x2 rotation matrix <span class="math notranslate">\(e^{-i \sigma_x \theta/2}\)</span></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="openqml.plugins.dummy_plugin.fry">
+<code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">fry</code><span class="sig-paren">(</span><em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#fry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.fry" title="Permalink to this definition">¶</a></dt>
+<dd><p>One-qubit rotation about the y axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>theta</strong> (<em>float</em>) – rotation angle</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">unitary 2x2 rotation matrix <span class="math notranslate">\(e^{-i \sigma_y \theta/2}\)</span></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="openqml.plugins.dummy_plugin.frz">
+<code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">frz</code><span class="sig-paren">(</span><em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#frz"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.frz" title="Permalink to this definition">¶</a></dt>
+<dd><p>One-qubit rotation about the z axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>theta</strong> (<em>float</em>) – rotation angle</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">unitary 2x2 rotation matrix <span class="math notranslate">\(e^{-i \sigma_z \theta/2}\)</span></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="openqml.plugins.dummy_plugin.fr3">
+<code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">fr3</code><span class="sig-paren">(</span><em>a</em>, <em>b</em>, <em>c</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#fr3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.fr3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Arbitrary one-qubit rotation using three Euler angles.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>a</strong><strong>,</strong><strong>b</strong><strong>,</strong><strong>c</strong> (<em>float</em>) – rotation angles</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">unitary 2x2 rotation matrix rz(c) &#64; ry(b) &#64; rz(a)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">array</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="openqml.plugins.dummy_plugin.Gate">
+<em class="property">class </em><code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">Gate</code><span class="sig-paren">(</span><em>name</em>, <em>n_sys</em>, <em>n_par</em>, <em>func=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#Gate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.Gate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements the quantum gates.</p>
+<dl class="attribute">
+<dt id="openqml.plugins.dummy_plugin.Gate.func">
+<code class="descname">func</code><em class="property"> = None</em><a class="headerlink" href="#openqml.plugins.dummy_plugin.Gate.func" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>callable</em> – function that returns the gate matrix</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="openqml.plugins.dummy_plugin.Gate.execute">
+<code class="descname">execute</code><span class="sig-paren">(</span><em>par</em>, <em>reg</em>, <em>sim</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#Gate.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.Gate.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies a single gate or measurement on the current system state.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>par</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – gate parameters</li>
+<li><strong>reg</strong> (<em>Sequence</em><em>[</em><em>int</em><em>]</em>) – subsystems to which the gate is applied</li>
+<li><strong>sim</strong> (<a class="reference internal" href="../plugins.html#openqml.plugin.PluginAPI" title="openqml.plugin.PluginAPI"><em>PluginAPI</em></a>) – simulator instance keeping track of the system state and measurement results</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">evolved system state vector</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">vector[complex]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="openqml.plugins.dummy_plugin.Observable">
+<em class="property">class </em><code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">Observable</code><span class="sig-paren">(</span><em>name</em>, <em>n_sys</em>, <em>n_par</em>, <em>func=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#Observable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.Observable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements single-qubit hermitian observables.</p>
+<p>We assume that all the observables in the circuit are consequtive, and commute.
+Since we are only interested in the expectation values, there is no need to project the state after the measurement.
+See <a class="reference internal" href="../conventions.html#measurements"><span class="std std-ref">Observables and measurements in OpenQML and Strawberry Fields</span></a>.</p>
+<dl class="method">
+<dt id="openqml.plugins.dummy_plugin.Observable.execute">
+<code class="descname">execute</code><span class="sig-paren">(</span><em>par</em>, <em>reg</em>, <em>sim</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#Observable.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.Observable.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimates the expectation value of the observable in the current system state.</p>
+<p>The arguments and return value are the same as for <a class="reference internal" href="#openqml.plugins.dummy_plugin.Gate.execute" title="openqml.plugins.dummy_plugin.Gate.execute"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Gate.execute()</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="openqml.plugins.dummy_plugin.PluginAPI">
+<em class="property">class </em><code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">PluginAPI</code><span class="sig-paren">(</span><em>name='default'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#PluginAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.PluginAPI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Example implementation of an OpenQML plugin API class.</p>
+<p>Provides a very simple simulation of a qubit-based quantum circuit architecture.</p>
+<dl class="method">
+<dt id="openqml.plugins.dummy_plugin.PluginAPI.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#PluginAPI.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.PluginAPI.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset the backend state.</p>
+<p>After the reset the backend should be as if it was just constructed.
+Most importantly the quantum state is reset to its initial value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="openqml.plugins.dummy_plugin.PluginAPI.expand_one">
+<code class="descname">expand_one</code><span class="sig-paren">(</span><em>U</em>, <em>reg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#PluginAPI.expand_one"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.PluginAPI.expand_one" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expand a one-qubit operator into a full system operator.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>U</strong> (<em>array</em>) – 2*2 matrix</li>
+<li><strong>reg</strong> (<em>Sequence</em><em>[</em><em>int</em><em>]</em>) – target subsystem</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">2^n*2^n matrix</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="openqml.plugins.dummy_plugin.PluginAPI.expand_two">
+<code class="descname">expand_two</code><span class="sig-paren">(</span><em>U</em>, <em>reg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#PluginAPI.expand_two"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.PluginAPI.expand_two" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expand a two-qubit operator into a full system operator.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>U</strong> (<em>array</em>) – 4x4 matrix</li>
+<li><strong>reg</strong> (<em>Sequence</em><em>[</em><em>int</em><em>]</em>) – two target subsystems (order matters!)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">2^n*2^n matrix</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="openqml.plugins.dummy_plugin.PluginAPI.ev">
+<code class="descname">ev</code><span class="sig-paren">(</span><em>A</em>, <em>reg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#PluginAPI.ev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.PluginAPI.ev" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expectation value of a one-qubit observable in the current state.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> (<em>array</em>) – 2*2 hermitian matrix corresponding to the observable</li>
+<li><strong>reg</strong> (<em>Sequence</em><em>[</em><em>int</em><em>]</em>) – target subsystem</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">expectation value <span class="math notranslate">\(\expect{A} = \bra{\psi}A\ket{\psi}\)</span></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="openqml.plugins.dummy_plugin.PluginAPI.measure">
+<code class="descname">measure</code><span class="sig-paren">(</span><em>A</em>, <em>reg</em>, <em>par=[]</em>, <em>n_eval=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#PluginAPI.measure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.PluginAPI.measure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Measure the expectation value of an observable in the current state of the circuit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> (<a class="reference internal" href="../circuit.html#openqml.circuit.GateSpec" title="openqml.circuit.GateSpec"><em>GateSpec</em></a>) – Hermitian observable</li>
+<li><strong>reg</strong> (<em>int</em>) – target subsystem</li>
+<li><strong>par</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – parameters for the observable</li>
+<li><strong>n_eval</strong> (<em>int</em>) – If zero return the exact expectation value,
+otherwise estimate it by averaging n_eval measurements.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(estimated) expectation value</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="openqml.plugins.dummy_plugin.PluginAPI.execute_circuit">
+<code class="descname">execute_circuit</code><span class="sig-paren">(</span><em>circuit</em>, <em>params=[]</em>, <em>*</em>, <em>reset=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#PluginAPI.execute_circuit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.PluginAPI.execute_circuit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a parametrized quantum circuit with the specified parameter values.</p>
+<p><a class="reference internal" href="../plugins.html#openqml.plugin.PluginAPI.execute_circuit" title="openqml.plugin.PluginAPI.execute_circuit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">openqml.plugin.PluginAPI.execute_circuit()</span></code></a> mostly just checks argument validity and sets certain instance variables,
+the subclasses are expected to provide the actual functionality by overriding this method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>circuit</strong> (<a class="reference internal" href="../circuit.html#openqml.circuit.Circuit" title="openqml.circuit.Circuit"><em>Circuit</em></a><em>, </em><em>str</em>) – circuit to execute, or the name of a predefined circuit</li>
+<li><strong>params</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – values of the free parameters</li>
+<li><strong>reset</strong> (<em>bool</em>) – should the backend state be reset before the execution?</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><p class="first"><strong>n_eval</strong> (<em>int</em>) – How many times should the circuit be evaluated (or sampled) to estimate the measurement results?
+For simulator backends, zero yields the exact result.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">If the circuit has output observable(s) defined return the estimated expectation value(s), otherwise None.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">vector[float], None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="openqml.plugins.dummy_plugin.init_plugin">
+<code class="descclassname">openqml.plugins.dummy_plugin.</code><code class="descname">init_plugin</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/openqml/plugins/dummy_plugin.html#init_plugin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openqml.plugins.dummy_plugin.init_plugin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the plugin.</p>
+<p>Every plugin must define this function.
+It should perform whatever initializations are necessary, and then return the API class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">plugin API class</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">class</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+            </div>
+              
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-xanadu" href="included_plugins.html" title="previous chapter (use the left arrow)"><i class="fas fa-arrow-left"></i> Previous</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-xanadu" href="strawberryfields.html" title="next chapter (use the right arrow)">Next <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+          </div>
+          <div class="clearfix"></div>
+        </div>
+
+
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="strawberryfields.html" title="Strawberry Fields plugin"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="included_plugins.html" title="Included plugins"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">OpenQML 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="included_plugins.html" >Included plugins</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../_static/js/bootstrap.js"></script>
+<script type="text/javascript" src="../_static/js/nanoscroller.min.js"></script>
+<script type="text/javascript">
+    $(".nano").nanoScroller();
+</script>
+<script type="text/javascript">
+    if ($('.current').length) {
+        var target = $('.current')[0]
+        var rect = target.getBoundingClientRect();
+        if (rect.bottom > window.innerHeight) {
+            $('.text-logo').addClass('active');
+            $('.logo').removeClass('active');
+            $('.logo-small').addClass('active');
+            $(".nano").nanoScroller({ scrollTo: $('.current') });
+        } else {
+            // $('.text-logo').addClass('active');
+            // $('.logo').removeClass('active');
+            // $('.logo-small').addClass('active');
+            $(".nano").nanoScroller({ scrollTop: 93 });
+        }
+    }
+    if ($('#search-documentation').length) {} else {
+        $(".nano").on("update", function(event, values){
+            $('.text-logo').toggleClass('active', $('.sphinxsidebar').scrollTop() > 0);
+            var act = $('.text-logo').hasClass('active');
+            if(act){
+                $('.logo').removeClass('active');
+                $('.logo-small').addClass('active');
+            }
+        });
+    }
+    $(".nano").bind("scrolltop", function(e){
+        $('.logo-small').removeClass('active');
+        $('.logo').addClass('active');
+    });
+    $(document).ready(function () {
+        $(".css-transitions-only-after-page-load").each(function (index, element) {
+            setTimeout(function () { $(element).removeClass("css-transitions-only-after-page-load") }, 10);
+        });
+    });
+</script>
+  <div class="footer">
+    Copyright 2018, Xanadu Inc. Documentation created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>
