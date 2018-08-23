@@ -38,13 +38,19 @@ Classes
 import logging as log
 
 import numpy as np
+from openqml import Device, DeviceError
+from openqml import Variable
+
 from numpy.random import (randn,)
 
-import openqml.plugin
-from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
+# import openqml.plugins
+# from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
 
 import projectq as pq
 import projectq.setups.ibm
+
+from ._version import __version__
+
 
 class Gate(GateSpec): # pylint: disable=too-few-public-methods
     """Implements the quantum gates and observables.
