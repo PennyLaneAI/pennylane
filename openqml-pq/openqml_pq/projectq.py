@@ -232,9 +232,46 @@ _circuit_list = [
 ]
 
 
+class ProjectQSimulator(ProjectQDevice):
+    """ProjectQ Simulator device for OpenQML.
 
-class PluginAPI(openqml.plugin.PluginAPI):
-    """ProjectQ OpenQML plugin API class.
+    Keyword Args:
+      backend (str): backend name
+
+    Keyword Args:
+      gate_fusion (bool): If True, gates are cached and only executed once a certain gate-size has been reached (only has an effect for the c++ simulator).
+      rnd_seed (int): Random seed (uses random.randint(0, 4294967295) by default).
+    """
+    def __init__(self, name='default', **kwargs):
+        kwargs.set('backend', 'Simulator')
+        super().__init__(name, **kwargs)
+
+
+class ProjectQClassicalSimulator(ProjectQDevice):
+    """ProjectQ ClassicalSimulator device for OpenQML.
+    """
+    def __init__(self, name='default', **kwargs):
+        kwargs.set('backend', 'ClassicalSimulator')
+        super().__init__(name, **kwargs)
+
+class ProjectQIBMBackend(ProjectQDevice):
+    """ProjectQ IBMBackend device for OpenQML.
+
+    Keyword Args:
+      use_hardware (bool): If True, the code is run on the IBM quantum chip (instead of using the IBM simulator)
+      num_runs (int): Number of runs to collect statistics. (default is 1024)
+      verbose (bool): If True, statistics are printed, in addition to the measurement result being registered (at the end of the circuit).
+      user (string): IBM Quantum Experience user name
+      password (string): IBM Quantum Experience password
+      device (string): Device to use (‘ibmqx4’, or ‘ibmqx5’) if use_hardware is set to True. Default is ibmqx4.
+      retrieve_execution (int): Job ID to retrieve instead of re-running the circuit (e.g., if previous run timed out).
+    """
+    def __init__(self, name='default', **kwargs):
+        kwargs.set('backend', 'IBMBackend')
+        super().__init__(name, **kwargs)
+
+class ProjectQDevice(Device):
+    """ProjectQ device for OpenQML.
 
     Keyword Args:
       backend (str): backend name
@@ -253,9 +290,10 @@ class PluginAPI(openqml.plugin.PluginAPI):
       retrieve_execution (int): Job ID to retrieve instead of re-running the circuit (e.g., if previous run timed out).
     """
     plugin_name = 'ProjectQ OpenQML plugin'
-    plugin_api_version = '0.1.0'
-    plugin_version = '0.1.0'
-    author = 'Xanadu Inc.'
+    short_name = 'projectq'
+    api_version = '0.1.0'
+    plugin_version = __version__
+    author = 'Christian Gogolin'
     _circuits = {c.name: c for c in _circuit_list}
     _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
 
@@ -451,15 +489,3 @@ class PluginAPI(openqml.plugin.PluginAPI):
             return True
         else:
             return False
-
-def init_plugin():
-    """Initialize the plugin.
-
-    Every plugin must define this function.
-    It should perform whatever initializations are necessary, and then return an API class.
-
-    Returns:
-      class: plugin API class
-    """
-
-    return PluginAPI

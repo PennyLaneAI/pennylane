@@ -36,9 +36,9 @@ info = {
                 ],
     'entry_points': {
         'openqml.plugins': [
-            'projectq = openqml_pq:ProjectQ',
-            # 'strawberryfields.fock = openqml_sf:StrawberryFieldsFock',
-            # 'strawberryfields.gaussian = openqml_sf:StrawberryFieldsGaussian'
+            'projectq.simulator = openqml_pq:ProjectQSimulator',
+            'projectq.classical = openqml_pq:ProjectQClassicalSimulator',
+            'projectq.ibm = openqml_pq:ProjectQIBMBackend',
             ],
         },
     'description': 'OpenQML plugin for ProjectQ',
