@@ -35,10 +35,11 @@ info = {
     'url': 'http://xanadu.ai',
     'license': 'Apache License 2.0',
     'packages': [
-                    'openqml',
-                    'openqml.ops',
-                    'openqml.plugins'
-                ],
+        'openqml',
+        'openqml.ops',
+        'openqml.expectation',
+        'openqml.plugins'
+    ],
     'entry_points': {
         'openqml.plugins': [
             'default.qubit = openqml.plugins:DefaultQubit'
