@@ -21,10 +21,8 @@ with open("openqml_sf/_version.py") as f:
 	version = f.readlines()[-1].split()[-1].strip("\"'")
 
 
-requirements = [
-    "strawberryfields",
-    "openqml"
-]
+with open("requirements.txt") as f:
+    requirements = [line.strip() for line in f.readlines()]
 
 info = {
     'name': 'OpenQML-SF',
