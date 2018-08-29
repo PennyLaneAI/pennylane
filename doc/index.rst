@@ -4,9 +4,14 @@ OpenQML
 :Release: |release|
 :Date: |today|
 
-OpenQML is a Python library for solving quantum machine learning problems on various quantum computing
-platforms, including Strawberry Fields :cite:`killoran2018strawberry`.
+OpenQML is a Python library for building and training machine learning models which include quantum computer circuits.
 
+Main features of OpenQML:
+
+- *Follow the gradient*: **automatic differentiation** of quantum circuits
+- *Best of both worlds*: support for **hybrid quantum & classical** models
+- *Batteries included*: built-in **optimization and machine learning** tools
+- *Device independent*: the same quantum circuit model can be **run on different backends**
 
 Getting started
 ===============
@@ -43,12 +48,15 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    research
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Concepts
+   :titlesonly:
+   :caption: Key concepts
    :hidden:
 
    introduction
+   qfuncs
    autograd_quantum
+   quantum_nodes
+   hybrid_computation
    conventions
    references
 
