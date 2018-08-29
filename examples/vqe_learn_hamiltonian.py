@@ -1,16 +1,27 @@
 """Variational quantum eigensolver example.
+<<<<<<< HEAD
 
+=======
+>>>>>>> d22739a2f4b1cb3e09f1cc7910801d7fd4fbfbe8
 In this demo we use a fixed quantum circuit
 and optimize the (classical) Hamiltonian parameters
 to lower the energy expectation. """
 
 import openqml as qm
 from openqml import numpy as np
+<<<<<<< HEAD
+=======
+import autograd
+>>>>>>> d22739a2f4b1cb3e09f1cc7910801d7fd4fbfbe8
 
 dev1 = qm.device('default.qubit', wires=2)
 
 
 def ansatz():
+<<<<<<< HEAD
+=======
+    qm.QubitStateVector(np.array([1,1,0,1])/np.sqrt(3), wires=[0, 1])
+>>>>>>> d22739a2f4b1cb3e09f1cc7910801d7fd4fbfbe8
     qm.Rot(0.4, 0.3, 1.3, [0])
     qm.CNOT([0, 1])
 
@@ -48,10 +59,14 @@ def cost(weights, batch):
 
 # initialize x with random value
 x0 = np.random.randn(3)
-print('Initial rotation angles:', x0)
 
 o = qm.Optimizer(cost, x0)
 
 # train the device
 o.train(max_steps=100)
+
+print('Initial rotation angles:', x0)
+o.train(max_steps=100)
+o.weights
+
 
