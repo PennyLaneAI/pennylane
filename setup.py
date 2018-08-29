@@ -37,6 +37,7 @@ info = {
     'packages': [
                     'openqml',
                     'openqml.ops',
+                    'openqml.expectation',
                     'openqml.plugins'
                 ],
     'entry_points': {
