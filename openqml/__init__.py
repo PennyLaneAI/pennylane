@@ -40,7 +40,7 @@ log.captureWarnings(True)
 
 # get list of installed plugin devices
 plugin_devices = {
-    entry.name: entry.load() for entry in iter_entry_points('openqml.plugins')
+    entry.name: entry for entry in iter_entry_points('openqml.plugins')
 }
 
 
@@ -48,7 +48,7 @@ def device(name, *args, **kwargs):
     """Load a plugin Device class and return the instance to the user."""
     if name in plugin_devices:
         # load plugin device
-        p = plugin_devices[name](*args, **kwargs)
+        p = plugin_devices[name].load()(*args, **kwargs)
 
         if p.api_version != __version__:
             log.warning('Plugin API version {} does not match OpenQML version {}.'.format(p.plugin_api_version, temp))
