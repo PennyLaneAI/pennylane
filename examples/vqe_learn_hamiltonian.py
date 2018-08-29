@@ -39,22 +39,19 @@ def circuit_X():
 def cost(weights, batch):
     """Cost (error) function to be minimized."""
 
-    expZ = circuit_Z(weights)
-    expX = circuit_X(weights)
-    expY = circuit_Y(weights)
+    expZ = circuit_Z()
+    expX = circuit_X()
+    expY = circuit_Y()
 
     return weights[0]*expX + weights[1]*expY - weights[2]*expZ
 
 
 # initialize x with random value
 x0 = np.random.randn(3)
+print('Initial rotation angles:', x0)
+
 o = qm.Optimizer(cost, x0)
 
 # train the device
 o.train(max_steps=100)
-o.weights
 
-
-# print the results
-print('Initial rotation angles:', x0)
-print('Optimized rotation angles:', o.weights)
