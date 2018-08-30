@@ -57,7 +57,7 @@ import projectq.setups.ibm #todo only import this if necessary
 
 # import operations
 from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R)
-from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot)
+from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, Hermitian)
 
 from ._version import __version__
 
@@ -83,13 +83,7 @@ operator_map = {
     #:SqrtSwap, #todo: implement
     #:R, #todo: implement
     #:AllZGate, #todo: implement
-}
-observable_map = {
-    'PauliX': XGate,
-    'PauliY': YGate,
-    'PauliZ': ZGate,
     #'Hermitian': #todo: implement
-    #:AllZGate, #todo: implement
 }
 
 class ProjectQDevice(Device):
@@ -118,8 +112,11 @@ class ProjectQDevice(Device):
     author = 'Christian Gogolin'
     _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
 
-    def __init__(self, name='default', **kwargs):
-        super().__init__(name, **kwargs)
+    def __init__(self, wires, *, shots=0, **kwargs):
+
+        if 'backend' in kwargs:
+            del(kwargs['backend'])
+        super().__init__(self.short_name, shots)
 
         # sensible defaults
         kwargs.setdefault('backend', 'Simulator')
@@ -137,8 +134,8 @@ class ProjectQDevice(Device):
                 self.n_eval = 0
                 del(kwargs['num_runs'])
 
+        self.wires = wires
         self.backend = kwargs['backend']
-
         self.init_kwargs = kwargs
         self.eng = None
         self.reg = None
@@ -188,6 +185,11 @@ class ProjectQDevice(Device):
         self.n_eval = temp  # restore it
         return expectation_value, variance
 
+
+
+
+
+
     def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
         super().execute_circuit(circuit, params, reset=reset, **kwargs)
         circuit = self.circuit
@@ -221,7 +223,7 @@ class ProjectQDevice(Device):
             # prepare the parameters
             par = map(parmap, cmd.par)
             if cmd.gate.name not in self._gates and cmd.gate.name not in self._observables:
-                log.warning("The cirquit {} contains the gate {}, which is not supported by the {} backend. Abortig execution of this circuit.".format(circuit, cmd.gate.name, self.backend))
+                log.warning("The circuit {} contains the gate {}, which is not supported by the {} backend. Abortig execution of this circuit.".format(circuit, cmd.gate.name, self.backend))
                 break
             # execute the gate
             expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
@@ -230,6 +232,28 @@ class ProjectQDevice(Device):
         if circuit.out is not None:
             # return the estimated expectation values for the requested modes
             return np.array([expectation_values[tuple([idx])] for idx in circuit.out if tuple([idx]) in expectation_values])
+
+
+
+
+
+
+
+    def execute(self):
+        """ """
+        #todo: I hope this function will become superflous, see https://github.com/XanaduAI/openqml/issues/18
+        self._out = self.execute_queued()
+
+    def execute_queued(self):
+        """Apply the queued operations to the device, and measure the expectation."""
+        self.reg = self.eng.allocate_qureg(self.wires)
+
+        expectation_values = {}
+
+
+
+        return 1 #todo: handling of output should be better encapsulated from the plugin developers
+
 
     def shutdown(self):
         """Shutdown.
@@ -287,11 +311,14 @@ class ProjectQSimulator(ProjectQDevice):
     """
     short_name = 'projectq.simulator'
     _gates = set(operator_map.keys())
-    _observables = set(observable_map.keys())
+    _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate, Hermitian] ])
     _circuits = {}
-    def __init__(self, name='default', **kwargs):
-        kwargs.set('backend', 'Simulator')
-        super().__init__(name, **kwargs)
+    def __init__(self, **kwargs):
+        kwargs['backend'] = 'Simulator'
+        super().__init__(**kwargs)
+
+        backend = pq.backends.Simulator(**kwargs)
+        self.eng = pq.MainEngine(backend)
 
 
 class ProjectQClassicalSimulator(ProjectQDevice):
@@ -299,11 +326,15 @@ class ProjectQClassicalSimulator(ProjectQDevice):
     """
     short_name = 'projectq.classicalsimulator'
     _gates = set([ key for (key,val) in operator_map.items() if val in [XGate, CNOT] ])
-    _observables = set([ key for (key,val) in observable_map.items() if val in [ZGate] ])
+    _observables = set([ key for (key,val) in operator_map.items() if val in [ZGate, AllZGate] ])
     _circuits = {}
-    def __init__(self, name='default', **kwargs):
+    def __init__(self, **kwargs):
         kwargs.set('backend', 'ClassicalSimulator')
-        super().__init__(name, **kwargs)
+        super().__init__(**kwargs)
+
+        backend = pq.backends.ClassicalSimulator()
+        self.eng = pq.MainEngine(backend)
+
 
 class ProjectQIBMBackend(ProjectQDevice):
     """ProjectQ IBMBackend device for OpenQML.
@@ -319,8 +350,11 @@ class ProjectQIBMBackend(ProjectQDevice):
     """
     short_name = 'projectq.ibmbackend'
     _gates = set([ key for (key,val) in operator_map.items() if val in [HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, Rx, Ry, Rz, R, CNOT, CZ] ])
-    _observables = set([ key for (key,val) in observable_map.items() if val in [ZGate, AllZGate] ])
+    _observables = set([ key for (key,val) in operator_map.items() if val in [ZGate, AllZGate] ])
     _circuits = {}
-    def __init__(self, name='default', **kwargs):
+    def __init__(self, **kwargs):
         kwargs.set('backend', 'IBMBackend')
-        super().__init__(name, **kwargs)
+        super().__init__(**kwargs)
+
+        backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
+        self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
