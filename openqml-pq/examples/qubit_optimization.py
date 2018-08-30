@@ -9,9 +9,10 @@ from openqml import numpy as np
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--backend", default='simulator', choices=['simulator', 'classical', 'ibm'], help="backend to use")
+parser.add_argument("--backend", default='simulator', choices=['simulator', 'ibm'], help="backend to use")
 parser.add_argument("--user", help="IBM Quantum Experience user name")
 parser.add_argument("--password", help="IBM Quantum Experience password")
+parser.add_argument("--optimizer", default="SGD", choices=qm.optimizer.OPTIMIZER_NAMES, help="IBM Quantum Experience password")
 args = parser.parse_args()
 
 dev1 = qm.device('projectq.'+args.backend, wires=2, **vars(args))
@@ -33,7 +34,7 @@ def cost(x, batched):
 
 # initialize x with random value
 x0 = np.random.randn(3)
-o = qm.Optimizer(cost, x0, optimizer='SGD')
+o = qm.Optimizer(cost, x0, optimizer=args.optimizer)
 
 # train the circuit
 c = o.train(max_steps=100)

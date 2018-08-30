@@ -333,6 +333,7 @@ class ProjectQIBMBackend(ProjectQDevice):
             raise ValueError('An IBM Quantum Experience password specified via the "password" keyword argument is required')
 
         kwargs['backend'] = 'IBMBackend'
+        kwargs['verbose'] = True #todo: remove when done testing
         super().__init__(wires, **kwargs)
 
     def reset(self):
