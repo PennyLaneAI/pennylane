@@ -51,7 +51,7 @@ def cost(weights, batch):
     return weights[0]*expX + weights[1]*expY - weights[2]*expZ
 
 
-# initialize x with random value
+# initialize weights with random values
 weights0 = np.random.randn(3)
 
 # train the device
