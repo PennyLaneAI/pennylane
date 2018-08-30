@@ -112,12 +112,9 @@ class ProjectQDevice(Device):
     author = 'Christian Gogolin'
     _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
 
-    def __init__(self, wires, eng, **kwargs):
+    def __init__(self, wires, **kwargs):
         kwargs.setdefault('shots', 0)
         super().__init__(self.short_name, kwargs['shots'])
-
-        # sensible defaults
-        kwargs.setdefault('backend', 'Simulator')
 
         # translate some aguments
         for k,v in {'log':'verbose'}.items():
@@ -134,8 +131,13 @@ class ProjectQDevice(Device):
 
         self.wires = wires
         self.backend = kwargs['backend']
-        self.init_kwargs = kwargs
-        self.eng = eng
+        del(kwargs['backend'])
+        self.kwargs = kwargs
+        self.eng = None
+        self.reg = None
+        self.reset() #actual initialization is done here based on self.kwargs and self.backend
+
+    def reset(self):
         self.reg = self.eng.allocate_qureg(self.wires)
 
     def __repr__(self):
@@ -144,21 +146,14 @@ class ProjectQDevice(Device):
     def __str__(self):
         return super().__str__() +'Backend: ' +self.backend +'\n'
 
-    def __del__(self):
-        #self.reset()
-        self._deallocate()
-        pass
-
-    def reset(self):
-        """Resets the engine and backend"""
-        if self.eng is not None:
-            self._deallocate()
-            #self.eng = None #todo: how to deal with eng during reset in the new API?
+    # def __del__(self):
+    #     self._deallocate()
 
     def execute(self):
         """ """
         #todo: I hope this function will become superflous, see https://github.com/XanaduAI/openqml/issues/18
         self._out = self.execute_queued()
+        self._deallocate()
 
     def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
@@ -232,6 +227,9 @@ class ProjectQDevice(Device):
             return False
 
 
+    def filter_kwargs_for_backend(self, kwargs):
+        return { key:value for key,value in kwargs.items() if key in self._backend_kwargs }
+
 class ProjectQSimulator(ProjectQDevice):
     """ProjectQ Simulator device for OpenQML.
 
@@ -242,15 +240,27 @@ class ProjectQSimulator(ProjectQDevice):
       gate_fusion (bool): If True, gates are cached and only executed once a certain gate-size has been reached (only has an effect for the c++ simulator).
       rnd_seed (int): Random seed (uses random.randint(0, 4294967295) by default).
     """
+
     short_name = 'projectq.simulator'
     _gates = set(operator_map.keys())
     _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate, Hermitian] ])
     _circuits = {}
+    _backend_kwargs = ['gate_fusion', 'rnd_seed']
+
     def __init__(self, wires, **kwargs):
-        backend = pq.backends.Simulator(**kwargs)
-        eng = pq.MainEngine(backend)
         kwargs['backend'] = 'Simulator'
-        super().__init__(wires, eng, **kwargs)
+        super().__init__(wires, **kwargs)
+
+    def reset(self):
+        """Resets the engine and backend
+
+        After the reset the Device should be as if it was just constructed.
+        Most importantly the quantum state is reset to its initial value.
+        """
+        backend = pq.backends.Simulator(self.filter_kwargs_for_backend(self.kwargs))
+        self.eng = pq.MainEngine(backend)
+        super().reset()
+
 
     def measure(self, observable, wires):
         self.eng.flush(deallocate_qubits=False)
@@ -269,16 +279,26 @@ class ProjectQSimulator(ProjectQDevice):
 class ProjectQClassicalSimulator(ProjectQDevice):
     """ProjectQ ClassicalSimulator device for OpenQML.
     """
+
     short_name = 'projectq.classicalsimulator'
     _gates = set([ key for (key,val) in operator_map.items() if val in [XGate, CNOT] ])
     _observables = set([ key for (key,val) in operator_map.items() if val in [ZGate, AllZGate] ])
     _circuits = {}
-    def __init__(self, wires, **kwargs):
-        backend = pq.backends.ClassicalSimulator()
-        eng = pq.MainEngine(backend)
-        kwargs['backend'] = 'ClassicalSimulator'
-        super().__init__(wires, eng, **kwargs)
+    _backend_kwargs = []
 
+    def __init__(self, wires, **kwargs):
+        kwargs['backend'] = 'ClassicalSimulator'
+        super().__init__(wires, **kwargs)
+
+    def reset(self):
+        """Resets the engine and backend
+
+        After the reset the Device should be as if it was just constructed.
+        Most importantly the quantum state is reset to its initial value.
+        """
+        backend = pq.backends.ClassicalSimulator(self.filter_kwargs_for_backend(self.kwargs))
+        self.eng = pq.MainEngine(backend)
+        super().reset()
 
 class ProjectQIBMBackend(ProjectQDevice):
     """ProjectQ IBMBackend device for OpenQML.
@@ -296,8 +316,18 @@ class ProjectQIBMBackend(ProjectQDevice):
     _gates = set([ key for (key,val) in operator_map.items() if val in [HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, Rx, Ry, Rz, R, CNOT, CZ] ])
     _observables = set([ key for (key,val) in operator_map.items() if val in [ZGate, AllZGate] ])
     _circuits = {}
+    _backend_kwargs = ['use_hardware', 'num_runs', 'verbose', 'user', 'password', 'device', 'retrieve_execution']
+
     def __init__(self, wires, **kwargs):
-        backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
-        eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
         kwargs['backend'] = 'IBMBackend'
-        super().__init__(wires, eng, **kwargs)
+        super().__init__(wires, **kwargs)
+
+    def reset(self):
+        """Resets the engine and backend
+
+        After the reset the Device should be as if it was just constructed.
+        Most importantly the quantum state is reset to its initial value.
+        """
+        backend = pq.backends.IBMBackend(self.filter_kwargs_for_backend(self.kwargs))
+        self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
+        super().reset()
