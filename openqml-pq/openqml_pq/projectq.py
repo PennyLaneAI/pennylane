@@ -89,8 +89,8 @@ operator_map = {
 class ProjectQDevice(Device):
     """ProjectQ device for OpenQML.
 
-    Keyword Args:
-      backend (str): backend name
+    Args:
+       wires (int): The number of qubits of the device.
 
     Keyword Args for Simulator backend:
       gate_fusion (bool): If True, gates are cached and only executed once a certain gate-size has been reached (only has an effect for the c++ simulator).
@@ -233,8 +233,8 @@ class ProjectQDevice(Device):
 class ProjectQSimulator(ProjectQDevice):
     """ProjectQ Simulator device for OpenQML.
 
-    Keyword Args:
-      backend (str): backend name
+    Args:
+       wires (int): The number of qubits of the device.
 
     Keyword Args:
       gate_fusion (bool): If True, gates are cached and only executed once a certain gate-size has been reached (only has an effect for the c++ simulator).
@@ -257,7 +257,7 @@ class ProjectQSimulator(ProjectQDevice):
         After the reset the Device should be as if it was just constructed.
         Most importantly the quantum state is reset to its initial value.
         """
-        backend = pq.backends.Simulator(self.filter_kwargs_for_backend(self.kwargs))
+        backend = pq.backends.Simulator(**self.filter_kwargs_for_backend(self.kwargs))
         self.eng = pq.MainEngine(backend)
         super().reset()
 
@@ -271,13 +271,16 @@ class ProjectQSimulator(ProjectQDevice):
             expectation_value = [ self.eng.backend.get_expectation_value(pq.ops.QubitOperator("Z"+'0'), [qubit]) for qubit in self.reg]
             variance = [1 - e**2 for e in expectation_value]
         else:
-            raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(observable, backend))
+            raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(observable, self.backend))
 
         return expectation_value#, variance
 
 
 class ProjectQClassicalSimulator(ProjectQDevice):
     """ProjectQ ClassicalSimulator device for OpenQML.
+
+    Args:
+       wires (int): The number of qubits of the device.
     """
 
     short_name = 'projectq.classicalsimulator'
@@ -296,12 +299,15 @@ class ProjectQClassicalSimulator(ProjectQDevice):
         After the reset the Device should be as if it was just constructed.
         Most importantly the quantum state is reset to its initial value.
         """
-        backend = pq.backends.ClassicalSimulator(self.filter_kwargs_for_backend(self.kwargs))
+        backend = pq.backends.ClassicalSimulator(**self.filter_kwargs_for_backend(self.kwargs))
         self.eng = pq.MainEngine(backend)
         super().reset()
 
 class ProjectQIBMBackend(ProjectQDevice):
     """ProjectQ IBMBackend device for OpenQML.
+
+    Args:
+       wires (int): The number of qubits of the device.
 
     Keyword Args:
       use_hardware (bool): If True, the code is run on the IBM quantum chip (instead of using the IBM simulator)
@@ -312,6 +318,7 @@ class ProjectQIBMBackend(ProjectQDevice):
       device (string): Device to use (‘ibmqx4’, or ‘ibmqx5’) if use_hardware is set to True. Default is ibmqx4.
       retrieve_execution (int): Job ID to retrieve instead of re-running the circuit (e.g., if previous run timed out).
     """
+
     short_name = 'projectq.ibmbackend'
     _gates = set([ key for (key,val) in operator_map.items() if val in [HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, Rx, Ry, Rz, R, CNOT, CZ] ])
     _observables = set([ key for (key,val) in operator_map.items() if val in [ZGate, AllZGate] ])
@@ -320,8 +327,6 @@ class ProjectQIBMBackend(ProjectQDevice):
 
     def __init__(self, wires, **kwargs):
         # check that necessary arguments are given
-        print(kwargs)
-
         if 'user' not in kwargs:
             raise ValueError('An IBM Quantum Experience user name specified via the "user" keyword argument is required')
         if 'password' not in kwargs:
@@ -336,6 +341,29 @@ class ProjectQIBMBackend(ProjectQDevice):
         After the reset the Device should be as if it was just constructed.
         Most importantly the quantum state is reset to its initial value.
         """
-        backend = pq.backends.IBMBackend(self.filter_kwargs_for_backend(self.kwargs))
+        backend = pq.backends.IBMBackend(**self.filter_kwargs_for_backend(self.kwargs))
         self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
         super().reset()
+
+    def measure(self, observable, wires):
+        pq.ops.R(0) | self.reg[0]# todo:remove this once https://github.com/ProjectQ-Framework/ProjectQ/issues/259 is resolved
+
+        pq.ops.All(pq.ops.Measure) | self.reg
+        self.eng.flush()
+        if observable == 'PauliZ':
+            probabilities = self.eng.backend.get_probabilities(self.reg[wires])
+            #print("IBM probabilities="+str(probabilities))
+            if '1' in probabilities:
+                expectation_value = 2*probabilities['1']-1
+            else:
+                expectation_value = -(2*probabilities['0']-1)
+            variance = 1 - expectation_value**2
+        elif observable == 'AllPauliZ':
+            probabilities = self.eng.backend.get_probabilities(self.reg)
+            #print("IBM all probabilities="+str(probabilities))
+            expectation_value = [ ((2*sum(p for (state,p) in probabilities.items() if state[i] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[i] == '0')-1)) for i in range(len(self.reg)) ]
+            variance = [1 - e**2 for e in expectation_value]
+        else:
+            raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(observable, self.backend))
+
+        return expectation_value#, variance
