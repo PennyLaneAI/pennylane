@@ -285,13 +285,12 @@ class PluginAPI:
 
         Returns:
           vector[float], None: If the circuit has output observable(s) defined return the estimated expectation value(s), otherwise None.
+
+        .. todo:: Return also a vector of the corresponding variances.
         """
         if not isinstance(circuit, Circuit):
             # look it up by name
-            try:
-                circuit = self._circuits[circuit]
-            except KeyError:
-                raise KeyError("Unknown circuit '{}'".format(circuit))
+            circuit = self.get_circuit(circuit)
         self.circuit = circuit  #: Circuit: quantum circuit to execute
 
         temp = len(params)
