@@ -4,7 +4,6 @@ In this demo, we perform rotation on one qubit, entangle it via a CNOT
 gate to a second qubit, and then measure the second qubit projected onto PauliZ.
 We then optimize the circuit such the resulting expectation value is 1.
 """
-#todo
 import openqml as qm
 from openqml import numpy as np
 

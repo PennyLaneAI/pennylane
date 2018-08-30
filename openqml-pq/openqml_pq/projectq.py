@@ -1,4 +1,16 @@
 # Copyright 2018 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 r"""
 ProjectQ plugin
 ========================
@@ -34,23 +46,51 @@ Classes
 
 ----
 """
-
 import logging as log
-
 import numpy as np
+from numpy.random import (randn,)
 from openqml import Device, DeviceError
 from openqml import Variable
 
-from numpy.random import (randn,)
-
-# import openqml.plugins
-# from openqml.circuit import (GateSpec, Command, ParRef, Circuit)
-
 import projectq as pq
-import projectq.setups.ibm
+import projectq.setups.ibm #todo only import this if necessary
+
+# import operations
+from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R)
+from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot)
 
 from ._version import __version__
 
+
+operator_map = {
+    'PauliX': XGate,
+    'PauliY': YGate,
+    'PauliZ': ZGate,
+    'CNOT': CNOT,
+    'CZ': CZ,
+    'SWAP': SwapGate,
+    'RX': Rx,
+    'RY': Ry,
+    'RZ': Rz,
+    'Rot': Rot,
+    #'PhaseShift': #todo: implement
+    #'QubitStateVector': #todo: implement
+    #'QubitUnitary': #todo: implement
+    #:H, #todo: implement
+    #:S, #todo: implement
+    #:T, #todo: implement
+    #:SqrtX, #todo: implement
+    #:SqrtSwap, #todo: implement
+    #:R, #todo: implement
+    #:AllZGate, #todo: implement
+}
+observable_map = {
+    'PauliX': XGate,
+    'PauliY': YGate,
+    'PauliZ': ZGate,
+    #'Hermitian': #todo: implement
+    #:AllZGate, #todo: implement
+}
 
 class ProjectQDevice(Device):
     """ProjectQ device for OpenQML.
@@ -76,7 +116,6 @@ class ProjectQDevice(Device):
     api_version = '0.1.0'
     plugin_version = __version__
     author = 'Christian Gogolin'
-    _circuits = {c.name: c for c in _circuit_list}
     _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
 
     def __init__(self, name='default', **kwargs):
@@ -98,46 +137,9 @@ class ProjectQDevice(Device):
                 self.n_eval = 0
                 del(kwargs['num_runs'])
 
-        # backend-specific capabilities
         self.backend = kwargs['backend']
 
-        # gate and observable sets depend on the backend, so they (currently still) have to be instance properties
-        gates = [H, X, Y, Z, S, T, SqrtX, Swap, SqrtSwap, Rx, Ry, Rz, R, CRz, CNOT, CZ]
-        observables = [MeasureX, MeasureY, MeasureZ, MeasureAllZ]
-
-        if self.backend == 'Simulator':
-            pass
-        elif self.backend == 'ClassicalSimulator':
-            classical_backend = pq.backends.ClassicalSimulator()
-            eng = pq.MainEngine(classical_backend)
-            reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
-            gates = [gate for gate in gates if classical_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), [[reg[i]] for i in range(0,gate.n_sys)]))]
-            observables = [MeasureZ]
-        elif self.backend == 'IBMBackend':
-            import inspect
-            self.ibm_backend_kwargs = {param:kwargs[param] for param in inspect.signature(pq.backends.IBMBackend).parameters if param in kwargs}
-            # ibm_backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
-            # eng = pq.MainEngine(ibm_backend, engine_list=pq.setups.ibm.get_engine_list())
-            # if True:
-            #     reg = eng.allocate_qureg(max([gate.n_sys for gate in gates]))
-            #     #gates = [gate for gate in gates if (ibm_backend.is_available(pq.ops.Command(eng, gate.cls(*randn(gate.n_par)), ([reg[i]] for i in range(0,gate.n_sys)))) or gate == CNOT)] #todo: do not treat CNOT as a special case one it is understood why ibm_backend.is_available() returns false for CNOT, see also here: https://github.com/ProjectQ-Framework/ProjectQ/issues/257
-
-            #     # print('IBM supports the following gates: '+str([gate.name for gate in gates]))
-            #     # print('ibm_backend.is_available(CNOTClass)='+str(ibm_backend.is_available(pq.ops.Command(eng, CNOTClass(), ([reg[0]], [reg[1]]) ))) )
-            #     # print('ibm_backend.is_available(CNOT)='+str(ibm_backend.is_available(pq.ops.Command(eng, pq.ops.CNOT, ([reg[0]], [reg[1]]) ))) )
-            #     # print('ibm_backend.is_available(X+control)='+str(ibm_backend.is_available(   pq.ops.Command(engine=eng, gate=pq.ops.X, qubits=([reg[0]],), controls=[reg[1]])    )) )
-            #     # print('CNOTClass()==NOT: '+str(CNOTClass()==pq.ops.NOT))
-            #     # print('C(NOT)==NOT: '+str(pq.ops.C(pq.ops.NOT)==pq.ops.NOT))
-            #     # print('CNOT==NOT: '+str(pq.ops.CNOT==pq.ops.NOT))
-            gates = [H, X, Y, Z, S, T, SqrtX, Swap, Rx, Ry, Rz, R, CRz, CNOT, CZ]
-            observables = [MeasureZ,MeasureAllZ]
-        else:
-            raise ValueError("Unknown backend '{}'.".format(self.backend))
-
-        self._gates = {g.name: g for g in gates}
-        self._observables = {g.name: g for g in observables}
-
-        self.init_kwargs = kwargs  #: dict: initialization arguments
+        self.init_kwargs = kwargs
         self.eng = None
         self.reg = None
 
@@ -283,6 +285,10 @@ class ProjectQSimulator(ProjectQDevice):
       gate_fusion (bool): If True, gates are cached and only executed once a certain gate-size has been reached (only has an effect for the c++ simulator).
       rnd_seed (int): Random seed (uses random.randint(0, 4294967295) by default).
     """
+    short_name = 'projectq.simulator'
+    _gates = set(operator_map.keys())
+    _observables = set(observable_map.keys())
+    _circuits = {}
     def __init__(self, name='default', **kwargs):
         kwargs.set('backend', 'Simulator')
         super().__init__(name, **kwargs)
@@ -291,6 +297,10 @@ class ProjectQSimulator(ProjectQDevice):
 class ProjectQClassicalSimulator(ProjectQDevice):
     """ProjectQ ClassicalSimulator device for OpenQML.
     """
+    short_name = 'projectq.classicalsimulator'
+    _gates = set([ key for (key,val) in operator_map.items() if val in [XGate, CNOT] ])
+    _observables = set([ key for (key,val) in observable_map.items() if val in [ZGate] ])
+    _circuits = {}
     def __init__(self, name='default', **kwargs):
         kwargs.set('backend', 'ClassicalSimulator')
         super().__init__(name, **kwargs)
@@ -307,6 +317,10 @@ class ProjectQIBMBackend(ProjectQDevice):
       device (string): Device to use (‘ibmqx4’, or ‘ibmqx5’) if use_hardware is set to True. Default is ibmqx4.
       retrieve_execution (int): Job ID to retrieve instead of re-running the circuit (e.g., if previous run timed out).
     """
+    short_name = 'projectq.ibmbackend'
+    _gates = set([ key for (key,val) in operator_map.items() if val in [HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, Rx, Ry, Rz, R, CNOT, CZ] ])
+    _observables = set([ key for (key,val) in observable_map.items() if val in [ZGate, AllZGate] ])
+    _circuits = {}
     def __init__(self, name='default', **kwargs):
         kwargs.set('backend', 'IBMBackend')
         super().__init__(name, **kwargs)
