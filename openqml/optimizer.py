@@ -135,7 +135,7 @@ class Optimizer:
 
         if not isinstance(weights, np.ndarray) or len(weights.shape) != 1:
             raise TypeError('The weights must be given as a 1d array.')
-        self._weights = weights  #: array[float]: optimization parameters
+        self._weights = weights.copy()  #: array[float]: optimization parameters
 
 
     @property
