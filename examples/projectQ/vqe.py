@@ -46,9 +46,9 @@ def circuit_Z(weights):
 def cost(weights, batch):  # Todo: remove batch
     """Cost (error) function to be minimized."""
 
-    expZ = circuit_Z(weights)
     expX = circuit_X(weights)
     expY = circuit_Y(weights)
+    expZ = circuit_Z(weights)
 
     return 0.1*expX + 0.5*expY - 0.3*expZ
 

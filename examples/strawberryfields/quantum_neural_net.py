@@ -1,8 +1,7 @@
-"""Variational quantum eigensolver example.
+"""Continuous-variable quantum neural network.
 
-In this demo we use a variational circuit as an ansatz for
-a VQE, and optimize the circuit to lower the energy expectation
-of a user-defined Hamiltonian.
+In this demo we implement the cv-qnn of Ref XXX with the
+example of function fitting.
 """
 
 import openqml as qm
@@ -50,7 +49,7 @@ def layer(W, b):
 
 @qm.qfunc(dev1)
 def quantum_neural_net(weights, x):
-    """QNode"""
+    """The quantum neural net variational circuit."""
 
     # Encode 2-d input into quantum state
     qm.Displacement(x[0], [0])
@@ -76,23 +75,32 @@ def cost(weights, features, labels):  # Todo: remove batch
 
 
 # initialize x with random value
-num_layers = 2
 
 def make_random_layer(num_modes):
     """ Randomly initialised layer."""
     W = np.random.randn(num_modes, num_modes)
     b = np.random.randn(num_modes)
-    return (W, b)
+    return W, b
 
+
+num_layers = 2
+
+# load function data
+data = np.loadtxt("sine.txt")
 
 weights0 = [make_random_layer(2) for _ in range(num_layers)]
 o = qm.Optimizer(cost, weights0)
 
-# train the circuit
-o.train(max_steps=100)
+# train the circuit: HOW TO FEED IN DATA?
+batch_size = 3
+steps = 10
+for steps in range(steps):
+    batch_index = np.random.integer(batch_size)
+    batch = data[batch_index]
+    o.step(X=batch[:, 1:], y=batch[:, 0])
+    print(o.cost())
 
 # print the results
 print('Initial rotation angles:', weights0)
 print('Optimized rotation angles:', o.weights)
 
-# Does not learn!!!!!!!!!!????????
