@@ -7,12 +7,14 @@ We then optimize the circuit such the resulting expectation value is 1.
 import openqml as qm
 from openqml import numpy as np
 
-dev1 = qm.device('projectq.simulator')
+dev1 = qm.device('projectq.simulator', wires=2)
 
 @qm.qfunc(dev1)
 def circuit(x, y, z):
     """QNode"""
-    qm.Rot(x, y, z, [0])
+    qm.RZ(z, [0])
+    qm.RY(y, [0])
+    qm.RX(x, [0])
     qm.CNOT([0, 1])
     qm.expectation.PauliZ(1)
 
