@@ -153,7 +153,6 @@ class ProjectQDevice(Device):
         """ """
         #todo: I hope this function will become superflous, see https://github.com/XanaduAI/openqml/issues/18
         self._out = self.execute_queued()
-        self._deallocate()
 
     def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
@@ -162,11 +161,13 @@ class ProjectQDevice(Device):
             if operation.name not in operator_map:
                 raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
 
-            p = [x.val if isinstance(x, Variable) else x for x in operation.params]
+            par = [x.val if isinstance(x, Variable) else x for x in operation.params]
             #expectation_values[tuple(operation.wires)] = self.apply(operator_map[operation.name](*p), self.reg, operation.wires)
-            self.apply(operator_map[operation.name](*p), operation.wires)
+            self.apply(operation.name, operation.wires, *par)
         # return the estimated expectation values for the requested modes
-        return self.measure(self._observe.name, self._observe.wires)
+        result = self.measure(self._observe.name, self._observe.wires)
+        self._deallocate()
+        return result
 
         # if self._observe.wires is not None:
         #     if isinstance(self._observe.wires, int):
@@ -174,7 +175,11 @@ class ProjectQDevice(Device):
         #     else:
         #         return np.array([expectation_values[tuple([idx])] for idx in self._observe.wires if tuple([idx]) in expectation_values])
 
-    def apply(self, gate, wires):
+    def apply(self, gate_name, wires, *par):
+        if gate_name not in self._gates:
+            raise ValueError('Gate {} not supported on this backend'.format(gate))
+
+        gate = operator_map[gate_name](*par)
         if isinstance(wires, int):
             gate | self.reg[wires]
         else:
@@ -334,6 +339,9 @@ class ProjectQIBMBackend(ProjectQDevice):
 
         kwargs['backend'] = 'IBMBackend'
         kwargs['verbose'] = True #todo: remove when done testing
+        kwargs['log'] = True #todo: remove when done testing
+        kwargs['use_hardware'] = True #todo: remove when done testing
+        kwargs['num_runs'] = 3 #todo: remove when done testing
         super().__init__(wires, **kwargs)
 
     def reset(self):
