@@ -65,7 +65,7 @@ class AllZGate(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
 class Rot(pq.ops.BasicGate):
     """ """
     def __new__(*par):
-        return pq.ops.Rz(par[2]) @ (pq.ops.Rz(par[1]) @ pq.ops.Rz(par[0]))
+        raise NotImplementedError("Hermitian is not yet implemented")
 
 
 class Hermitian(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
