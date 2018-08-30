@@ -135,7 +135,7 @@ class ProjectQDevice(Device):
         self.kwargs = kwargs
         self.eng = None
         self.reg = None
-        self.reset() #actual initialization is done here based on self.kwargs and self.backend
+        #self.reset() #the actual initialization is done in reset(), but we don't need to call this manually as Device does it for us during __enter__()
 
     def reset(self):
         self.reg = self.eng.allocate_qureg(self.wires)
@@ -156,7 +156,7 @@ class ProjectQDevice(Device):
 
     def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
-        expectation_values = {}
+        #expectation_values = {}
         for operation in self._queue:
             if operation.name not in operator_map:
                 raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
@@ -164,7 +164,7 @@ class ProjectQDevice(Device):
             par = [x.val if isinstance(x, Variable) else x for x in operation.params]
             #expectation_values[tuple(operation.wires)] = self.apply(operator_map[operation.name](*p), self.reg, operation.wires)
             self.apply(operation.name, operation.wires, *par)
-        # return the estimated expectation values for the requested modes
+
         result = self.measure(self._observe.name, self._observe.wires)
         self._deallocate()
         return result
@@ -223,17 +223,18 @@ class ProjectQDevice(Device):
             self.eng.backend.collapse_wavefunction(self.reg, [0 for i in range(len(self.reg))])
 
 
-    def requires_credentials(self):
-        """Check whether this plugin requires credentials
-        """
-        if self.backend == 'IBMBackend':
-            return True
-        else:
-            return False
+    # def requires_credentials(self):
+    #     """Check whether this plugin requires credentials
+    #     """
+    #     if self.backend == 'IBMBackend':
+    #         return True
+    #     else:
+    #         return False
 
 
     def filter_kwargs_for_backend(self, kwargs):
         return { key:value for key,value in kwargs.items() if key in self._backend_kwargs }
+
 
 class ProjectQSimulator(ProjectQDevice):
     """ProjectQ Simulator device for OpenQML.
@@ -359,6 +360,7 @@ class ProjectQIBMBackend(ProjectQDevice):
 
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
+
         if observable == 'PauliZ':
             probabilities = self.eng.backend.get_probabilities(self.reg[wires])
             #print("IBM probabilities="+str(probabilities))
