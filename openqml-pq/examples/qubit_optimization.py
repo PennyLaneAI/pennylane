@@ -7,7 +7,14 @@ We then optimize the circuit such the resulting expectation value is 1.
 import openqml as qm
 from openqml import numpy as np
 
-dev1 = qm.device('projectq.simulator', wires=2)
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--backend", default='simulator', choices=['simulator', 'classical', 'ibm'], help="backend to use")
+parser.add_argument("--user", help="IBM Quantum Experience user name")
+parser.add_argument("--password", help="IBM Quantum Experience password")
+args = parser.parse_args()
+
+dev1 = qm.device('projectq.'+args.backend, wires=2, **vars(args))
 
 @qm.qfunc(dev1)
 def circuit(x, y, z):

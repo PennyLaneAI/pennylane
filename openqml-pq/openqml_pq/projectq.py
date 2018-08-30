@@ -319,6 +319,14 @@ class ProjectQIBMBackend(ProjectQDevice):
     _backend_kwargs = ['use_hardware', 'num_runs', 'verbose', 'user', 'password', 'device', 'retrieve_execution']
 
     def __init__(self, wires, **kwargs):
+        # check that necessary arguments are given
+        print(kwargs)
+
+        if 'user' not in kwargs:
+            raise ValueError('An IBM Quantum Experience user name specified via the "user" keyword argument is required')
+        if 'password' not in kwargs:
+            raise ValueError('An IBM Quantum Experience password specified via the "password" keyword argument is required')
+
         kwargs['backend'] = 'IBMBackend'
         super().__init__(wires, **kwargs)
 
