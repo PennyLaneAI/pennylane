@@ -1208,8 +1208,7 @@ Again, $A$~does not have to be gaussian.
 
 Now we will show Eq.~\eqref{eq:d_cv_shift}
 can be derived for various gaussian CV gates.
-
-Let us denote the 2D rotation matrix by
+For later use, let us denote the 2D rotation matrix by
 \be
 \hat{R}(\phi) =
 \begin{pmatrix}
@@ -1255,30 +1254,26 @@ $\partial_\phi \hat{R}(\phi) = \hat{R}(\phi+\pi/2) = -\hat{R}(\phi-\pi/2)$.
 
 \subsubsection{Displacement: $D(z) = e^{z a^\dagger -z^* a}$}
 
+\newcommand{\sca}{\sqrt{\frac{2}{\lambda}} \:}
+
+The displacement parameter~$z$ behaves additively with position and momentum,
+which is why we encounter the scaling factor~$\sca$.
+
+Let us use polar coordinates: $z = r e^{i\phi}$.
 \begin{align*}
-\Admap{D}(\sqrt{\frac{\lambda}{2}} \: z) = D(r, \phi) =
+\Admap{D}(r, \phi)
+=
 \begin{pmatrix}
   1 & 0 & 0\\
-  r \cos \phi & 1 & 0\\
-  r \sin \phi & 0 & 1
+  \sca r \cos \phi & 1 & 0\\
+  \sca r \sin \phi & 0 & 1
 \end{pmatrix},
 \end{align*}
 
 \begin{align*}
-\pd{}{\re z} \Admap{D}(\sqrt{\frac{\lambda}{2}} \: z)
-=
-\begin{pmatrix}
-  0 & 0 & 0\\
-  1 & 0 & 0\\
-  0 & 0 & 0
-\end{pmatrix}
-= \frac{1}{2s} (\Admap{D}(\sqrt{\frac{\lambda}{2}} \: (s, 0)) -\Admap{D}(\sqrt{\frac{\lambda}{2}} \: (-s, 0)))
-\end{align*}
-Likewise for $\im z$.
-Alternatively, using the polar coordinates,
-\begin{align*}
 \pd{}{r} \Admap{D}(r, \phi)
 =
+\sca
 \begin{pmatrix}
   0 & 0 & 0\\
   \cos \phi & 0 & 0\\
@@ -1291,6 +1286,7 @@ Alternatively, using the polar coordinates,
 \begin{align*}
 \pd{}{\phi} \Admap{D}(r, \phi)
 =
+\sca
 \begin{pmatrix}
   0 & 0 & 0\\
   -r \sin \phi & 0 & 0\\
@@ -1318,6 +1314,7 @@ we have
 \Admap{R}(-\phi/2).
 \end{align*}
 
+Let us find the correct linear combination for $\pd{}{r} \Admap{S}(r, \phi)$:
 \begin{align*}
 \pd{}{r} \Admap{S}(r, \phi)
 &=
@@ -1328,7 +1325,7 @@ we have
   0 & 0 & e^r
 \end{pmatrix}
 \Admap{R}(-\phi/2)\\
-&= pS(r+a, \phi) +qS(r+b, \phi).
+&= p\Admap{S}(r+a, \phi) +q\Admap{S}(r+b, \phi).
 \end{align*}
 Hence we must have
 \begin{align*}
@@ -1341,12 +1338,12 @@ $b = -a$, and
 $p=(e^a-e^{-a})^{-1} = (2 \sinh a)^{-1}$, and thus
 \begin{align*}
 \pd{}{r} \Admap{S}(r, \phi)
-&= \frac{1}{2 \sinh a} (S(r+a, \phi) -S(r-a, \phi)).
+&= \frac{1}{2 \sinh a} (\Admap{S}(r+a, \phi) -\Admap{S}(r-a, \phi)).
 \end{align*}
 We also obtain
 \begin{align*}
 \pd{}{\phi} \Admap{S}(r, \phi)
-&= \frac{1}{2}(S(r, \phi+\pi/2) -S(r, \phi-\pi/2)).
+&= \frac{1}{2}(\Admap{S}(r, \phi+\pi/2) -\Admap{S}(r, \phi-\pi/2)).
 \end{align*}
 
 
@@ -1373,9 +1370,9 @@ we have
 &=
 \begin{pmatrix}
   1 & 0 & 0 & 0 & 0\\
-  0 & \block(2,2){\cos(\theta)\I} & \block(2,2){\sin(\theta)\hat{R}(\phi)}\\
+  0 & \block(2,2){\cos(\theta)\I_2} & \block(2,2){\sin(\theta)\hat{R}(\phi)}\\
   0\\
-  0 & \block(2,2){-\sin(\theta)\hat{R}^\dagger(\phi)} & \block(2,2){\cos(\theta)\I}\\
+  0 & \block(2,2){-\sin(\theta)\hat{R}^\dagger(\phi)} & \block(2,2){\cos(\theta)\I_2}\\
   0
 \end{pmatrix},
 \end{align*}
@@ -1384,9 +1381,9 @@ since
 \Admap{R_1}(\phi) =
 \begin{pmatrix}
   1 & 0 & 0 & 0 & 0\\
-  0 & \block(2,2){\hat{R}(\phi)} & \block(2,2){0}\\
+  0 & \block(2,2){\hat{R}(\phi)} & \block(2,2){0_2}\\
   0\\
-  0 & \block(2,2){0} & \block(2,2){\I_2}\\
+  0 & \block(2,2){0_2} & \block(2,2){\I_2}\\
   0
 \end{pmatrix}.
 \end{align*}
