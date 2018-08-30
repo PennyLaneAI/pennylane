@@ -42,6 +42,7 @@ QNode methods
 import autograd.numpy as np
 import autograd.extend
 
+import copy
 import logging as log
 import numbers
 
@@ -51,23 +52,34 @@ __all__ = ['GateSpec', 'Command', 'ParRef', 'Circuit', 'QNode']
 
 
 class GateSpec:
-    """A type of quantum operation supported by a backend, and its properties.
+    r"""A type of quantum operation supported by a backend, and its properties.
 
     GateSpec is used to describe both unitary quantum gates and measurements/observables.
+    GateSpec instances are immutable, and normally there is just one for each type of gate.
 
     Args:
       name  (str): name of the operation
-      n_sys (int): number of subsystems it acts on
+      n_sys (int): number of subsystems it acts on. Zero means the operation is not specific to any subset of subsystems.
       n_par (int): number of real parameters it takes
-      grad_method (str): gradient computation method: 'A': angular, 'F': finite differences, TODO heisenberg picture method for CV circuits
       par_domain  (str): domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats. Parameters outside the domain are truncated into it.
+      grad_method (str): gradient computation method: 'A': angular, 'F': finite differences
+      grad_recipe (list[tuple[float]]): gradient recipe for the 'A' method. One tuple for each parameter: (multiplier c_k, parameter shift s_k). None means (0.5, \pi/2) (the most common case).
+
+    .. math:: \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}} = c_k (Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots))
+
+    To find out in detail how the circuit gradients are computed, see :ref:`circuit_gradients`.
     """
-    def __init__(self, name, n_sys=1, n_par=1, *, grad_method='A', par_domain='R'):
+    def __init__(self, name, n_sys=1, n_par=1, *, par_domain='R', grad_method='A', grad_recipe=None):
         self.name  = name   #: str: name of the gate
         self.n_sys = n_sys  #: int: number of subsystems it acts on
         self.n_par = n_par  #: int: number of real parameters it takes
-        self.grad_method = grad_method  #: str: gradient computation method
         self.par_domain  = par_domain   #: str: domain of the gate parameters
+        self.grad_method = grad_method  #: str: gradient computation method
+        if grad_method == 'A' and grad_recipe is None:
+            grad_recipe = [None] * n_par  # default recipe for every parameter
+        if grad_recipe is not None and len(grad_recipe) != n_par:
+            raise ValueError('Gradient recipe must have one entry for each parameter!')
+        self.grad_recipe = grad_recipe
 
     def __str__(self):
         return self.name +': {} params, {} subsystems'.format(self.n_par, self.n_sys)
@@ -81,9 +93,10 @@ class Command:
 
     Args:
       gate (GateSpec): quantum operation to apply
-      par (Sequence[float, int, ParRef]): parameter values
       reg (Sequence[int]): Subsystems to which the operation is applied. Note that the order matters here.
-        TODO collections.OrderedDict to automatically avoid duplicate indices?
+      par (Sequence[float, int, ParRef]): parameter values, each either a fixed immediate value or a reference to a free parameter
+
+    .. todo:: Use collections.OrderedDict to automatically avoid duplicate indices?
     """
     def __init__(self, gate, reg, par=[]):
         #if not isinstance(reg, Sequence):
@@ -120,16 +133,45 @@ class ParRef:
     """Parameter reference.
 
     Represents a free circuit parameter (with a non-fixed value).
-    Each time the circuit is executed, it is given a vector of parameter values. ParRef is essentially an index into that vector.
+    Each time the circuit is executed, it is given a vector of parameter values as input.
+    ParRef is essentially an index into that vector, with a possible scalar multiplier.
 
     Args:
       idx (int): parameter index >= 0
     """
     def __init__(self, idx):
-        self.idx = idx  #: int: parameter index
+        self.idx  = idx  #: int: parameter index
+        self.mult = 1.0  #: float: parameter scalar multiplier
 
     def __str__(self):
-        return 'ParRef: {}'.format(self.idx)
+        temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
+        return 'ParRef: p{}'.format(self.idx) + temp
+
+    def __neg__(self):
+        """Unary negation."""
+        temp = copy.copy(self)
+        temp.mult = -temp.mult
+        return temp
+
+    def __mul__(self, scalar):
+        """Right multiplication by scalars."""
+        temp = copy.copy(self)
+        temp.mult *= scalar
+        return temp
+
+    __rmul__ = __mul__ # """Left multiplication by scalars."""
+
+    @staticmethod
+    def map(par, par_free):
+        """Mapping function for gate parameters. Replaces ParRefs with their actual values.
+
+        Args:
+          par (Sequence[float, int, ParRef]): parameter values to map, each either a fixed immediate value or a reference to a free parameter
+          par_free    (Sequence[float, int]): values for the free parameters
+        Returns:
+          list[float, int]: mapped parameters
+        """
+        return [par_free[p.idx] * p.mult if isinstance(p, ParRef) else p for p in par]
 
 
 class Circuit:
@@ -154,7 +196,7 @@ class Circuit:
     def __init__(self, seq, name='', out=None):
         self.seq  = list(seq)  #: list[Command]:
         self.name = name  #: str: circuit name
-        self.pars = {}    #: dict[int->list[Command]]: map from free parameter index to the list of Commands (in this circuit!) that depend on it
+        self.pars = {}    #: dict[int->list[(Command, int)]]: map from free parameter index to the list of Commands (in this circuit!) that depend on it. The second element in the tuple is the index of the parameter within the Command.
         self.out = out    #: Sequence[int]: subsystem indices for circuit output
 
         # TODO check the validity of the circuit?
@@ -162,9 +204,9 @@ class Circuit:
         subsys = set()
         for cmd in self.seq:
             subsys.update(cmd.reg)
-            for p in cmd.par:
+            for k, p in enumerate(cmd.par):
                 if isinstance(p, ParRef):
-                    self.pars.setdefault(p.idx, []).append(cmd)
+                    self.pars.setdefault(p.idx, []).append((cmd, k))  # free parameter p.idx appears in cmd as gate parameter number k
         self.n_sys = len(subsys)  #: int: number of subsystems
 
         msg = "Circuit '{}': ".format(self.name)
@@ -181,13 +223,11 @@ class Circuit:
             raise ValueError(msg +'parameter indices ambiguous.')
 
         # determine the correct gradient computation method for each free parameter
-        def best_method(cmd_list):
+        def best_method(par_dep_list):
             # use the angle method iff every gate that depends on the parameter supports it
-            temp = [cmd.gate.grad_method == 'A' and cmd.gate.n_par == 1
-                    for cmd in cmd_list]
+            temp = [cmd.gate.grad_method == 'A' for cmd, _ in par_dep_list]
             return 'A' if all(temp) else 'F'
         self.grad_method = {k: best_method(v) for k, v in self.pars.items()}  #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
-
 
     @property
     def n_par(self):
@@ -197,6 +237,15 @@ class Circuit:
           int: number of free parameters
         """
         return len(self.pars)
+
+    @property
+    def n_out(self):
+        """Circuit output array dimension.
+
+        Returns:
+          int: output array dimension
+        """
+        return len(self.out)
 
     @staticmethod
     def check_indices(inds, msg):
@@ -264,7 +313,7 @@ class QNode:
 
 
     def gradient(self, params, which=None, method='B', *, h=1e-7, order=1, **kwargs):
-        """Compute the gradient of the node.
+        """Compute the gradient (or Jacobian) of the node.
 
         Returns the gradient of the parametrized quantum circuit encapsulated in the QNode.
 
@@ -272,11 +321,16 @@ class QNode:
 
         * finite differences ('F'). The first order method evaluates the circuit at n+1 points of the parameter space,
           the second order method at 2n points, where n = len(which).
-        * angular method ('A'). Only works for one-parameter gates where the generator only has two unique eigenvalues.
+        * angular method ('A'). Works for all one-parameter gates where the generator only has two unique eigenvalues, e.g. all one-qubit gates.
+          Additionally can be used in CV systems for gaussian circuits containing only first-order observables.
           The circuit is evaluated twice for each incidence of each parameter in the circuit.
         * best known method for each parameter ('B'): uses the angular method if possible, otherwise finite differences.
 
-        .. todo:: For now only supports circuits with a scalar output value.
+        .. note::
+
+           The finite difference method cannot tolerate any statistical noise in the circuit output, since it compares
+           the output at two points infinitesimally close to each other. Hence the 'F' method requires exact expectation values,
+           i.e. `n_eval=0`.
 
         Args:
           params (Sequence[float]): point in parameter space at which to evaluate the gradient
@@ -286,9 +340,11 @@ class QNode:
         Keyword Args:
           h (float): finite difference method step size
           order (int): finite difference method order, 1 or 2
+          n_eval (int): How many times should the circuit be evaluated (or sampled) to estimate the expectation values?
+            For simulator backends, zero yields the exact result.
 
         Returns:
-          vector[float]: gradient vector
+          array[float]: gradient vector/Jacobian matrix, shape == (n_out, len(which))
         """
         if which is None:
             which = range(len(params))
@@ -309,7 +365,9 @@ class QNode:
                 y0 = None
 
         # compute the partial derivative w.r.t. each parameter using the proper method
-        grad = np.zeros(len(which), dtype=float)
+        #grad = np.zeros((self.circuit.n_out, len(which)), dtype=float)
+        # FIXME autograd.grad does not play well with a Jacobian, see test_qnode.py
+        grad = np.zeros((len(which),), dtype=float)
         for i, k in enumerate(which):
             temp = method[k]
             if temp == 'A':
@@ -366,26 +424,35 @@ class QNode:
         n = self.circuit.n_par
         pd = 0.0
         # find the Commands in which the parameter appears, use the product rule
-        for cmd in self.circuit.pars[idx]:
-            if cmd.gate.n_par != 1:
-                raise ValueError('For now angular method can only differentiate one-parameter gates.')
+        for cmd, parnum in self.circuit.pars[idx]:
             if cmd.gate.grad_method != 'A':
                 raise ValueError('Attempted to use the angular method on a gate that does not support it.')
-            # we temporarily edit the Command so that parameter idx is replaced by a new one,
-            # which we can modify without affecting other Commands depending on the original.
-            orig = cmd.par[0]
+            # we temporarily edit the Command such that parameter idx is replaced by a new one,
+            # which we can modify without affecting other Commands that depend on the same parameter.
+            orig = cmd.par[parnum]
             assert(orig.idx == idx)
-            cmd.par[0] = ParRef(n)  # reference to a new, temporary parameter (this method only supports 1-parameter gates!)
+            # reference to a new, temporary parameter with index n, otherwise identical with orig (this method only supports 1-parameter gates!)
+            temp_par = copy.copy(orig)
+            temp_par.idx = n
+            cmd.par[parnum] = temp_par
             self.circuit.pars[n] = None  # we just need to add something to the map, it's not actually used
-            # shift it by pi/2 and -pi/2
-            temp = np.r_[params, params[idx] +np.pi/2]
+
+            # get the gradient recipe for this parameter
+            recipe = cmd.gate.grad_recipe[parnum]
+            multiplier = 0.5 if recipe is None else recipe[0]
+            multiplier *= orig.mult
+            # shift the temp parameter value by +- this amount
+            shift = np.pi / 2 if recipe is None else recipe[1]
+            shift /= orig.mult
+
+            temp = np.r_[params, params[idx] +shift]
             y2 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
-            temp[-1] = params[idx] -np.pi/2
+            temp[-1] = params[idx] -shift
             y1 = self.backend.execute_circuit(self.circuit, temp, **kwargs)
             # restore the original parameter
-            cmd.par[0] = orig
+            cmd.par[parnum] = orig
             del self.circuit.pars[n]  # remove the temporary entry
-            pd += (y2-y1) / 2
+            pd += (y2-y1) * multiplier
         return pd
 
 

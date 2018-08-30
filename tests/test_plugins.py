@@ -28,8 +28,12 @@ class BasicTest(BaseTest):
         # nonexistent plugin exception
         self.assertRaises(ValueError, load_plugin, 'nonexistent_plugin')
 
-        def test_plugin(p):
-            "Tests for each individual plugin."
+        def test_backend(p):
+            """Tests for each individual plugin/backend.
+
+            Args:
+              p (PluginAPI): backend to test
+            """
             self.assertTrue(isinstance(p, PluginAPI))
             print()
             print(p)
@@ -54,11 +58,21 @@ class BasicTest(BaseTest):
                 print(c)
                 p.execute_circuit(c, randn(c.n_par))
 
+            # nonexistent template
+            self.assertRaises(KeyError, p.get_circuit, 'nonexistent_template')
+            self.assertRaises(KeyError, p.execute_circuit, 'nonexistent_template')
+
+            c = p.get_circuit('demo')
+
+            # wrong number of parameters
+            self.assertRaises(ValueError, p.execute_circuit, c, params=randn(c.n_par-1))
+            self.assertRaises(ValueError, p.execute_circuit, c, params=randn(c.n_par+1))
+
             print('\nInteractive measurements:')
             for g in p.observables.values():
                 print(g)
                 # execute the demo circuit without measurement, then measure the observable manually
-                temp = p.execute_circuit('demo', params=[1.0, 2.0])
+                temp = p.execute_circuit(c, randn(c.n_par))
                 temp = p.measure(g, 0, par=randn(g.n_par), n_eval=100)
 
         # try loading all the discovered plugins, test them
@@ -70,11 +84,11 @@ class BasicTest(BaseTest):
             temp = p.capabilities().get('backend')
             if temp is None:
                 # test the default version
-                test_plugin(p())
+                test_backend(p())
             else:
                 # test all backends
                 for k in temp:
-                    test_plugin(p(backend=k))
+                    test_backend(p(backend=k))
                     print('-' * 80)
 
 
