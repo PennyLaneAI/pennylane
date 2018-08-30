@@ -76,13 +76,13 @@ operator_map = {
     #'PhaseShift': #todo: implement
     #'QubitStateVector': #todo: implement
     #'QubitUnitary': #todo: implement
-    #:H, #todo: implement
-    #:S, #todo: implement
-    #:T, #todo: implement
-    #:SqrtX, #todo: implement
-    #:SqrtSwap, #todo: implement
-    #:R, #todo: implement
-    #:AllZGate, #todo: implement
+    #: H, #todo: implement
+    #: S, #todo: implement
+    #: T, #todo: implement
+    #: SqrtX, #todo: implement
+    #: SqrtSwap, #todo: implement
+    #: R, #todo: implement
+    #'AllPauliZ': AllZGate, #todo: implement
     #'Hermitian': #todo: implement
 }
 
@@ -145,97 +145,15 @@ class ProjectQDevice(Device):
         return super().__str__() +'Backend: ' +self.backend +'\n'
 
     def __del__(self):
-        self.reset()
+        #self.reset()
+        self._deallocate()
+        pass
 
     def reset(self):
         """Resets the engine and backend"""
         if self.eng is not None:
             self._deallocate()
-            self.eng = None #todo: how to deal with eng during reset?
-
-    def measure(self, observable, reg, par=[], n_eval=0):
-        """ """
-        return self.measurement_statistics(observable, reg, par, n_eval)
-
-    def measurement_statistics(self, observable, reg, par=[], n_eval=0):
-        """Compute the expection value.
-
-        Returns the expectation value of the given observable in the given qubits.
-
-        This method is only used during testing of the plugin.
-
-        Args:
-          observable (Observable): observable to compute the expectatoin value for
-          reg (Sequence[int]): subsystems for which to do the computation
-          par (Sequence[float]): parameters of the observable
-          n_eval (int): number of samples from which to compute the expectation value
-        """
-        if n_eval != 0:
-            log.warning("Non-zero value of n_eval ignored, as the IBMBackend does not support setting n_eval on the fly and all other backends yield exact expectation values.")
-
-        if isinstance(reg, int):
-            reg = [reg]
-
-        temp = self.n_eval  # store the original
-        self.n_eval = n_eval
-
-        expectation_value, variance = observable.execute(par, [self.reg[i] for i in reg], self)
-        self.n_eval = temp  # restore it
-        return expectation_value, variance
-
-
-
-
-
-
-    def execute_circuit(self, circuit, params=[], *, reset=True, **kwargs):
-        super().execute_circuit(circuit, params, reset=reset, **kwargs)
-        circuit = self.circuit
-
-        def parmap(p):
-            "Mapping function for gate parameters. Replaces ParRefs with the corresponding parameter values."
-            if isinstance(p, ParRef):
-                return params[p.idx]
-            return p
-
-        # set the required number of subsystems
-        if self.eng is None or self.reg is None or self.circuit.n_sys != len(self.reg):
-            self.reset()
-            if self.backend == 'Simulator':
-                backend = pq.backends.Simulator(**kwargs)
-                self.eng = pq.MainEngine(backend)
-            elif self.backend == 'ClassicalSimulator':
-                backend = pq.backends.ClassicalSimulator()
-                self.eng = pq.MainEngine(backend)
-            elif self.backend == 'IBMBackend':
-                backend = pq.backends.IBMBackend(**self.ibm_backend_kwargs)
-                self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
-
-            self.reg = None
-
-        # input the program
-        if self.reg is None:
-            self.reg = self.eng.allocate_qureg(circuit.n_sys)
-        expectation_values = {}
-        for cmd in circuit.seq:
-            # prepare the parameters
-            par = map(parmap, cmd.par)
-            if cmd.gate.name not in self._gates and cmd.gate.name not in self._observables:
-                log.warning("The circuit {} contains the gate {}, which is not supported by the {} backend. Abortig execution of this circuit.".format(circuit, cmd.gate.name, self.backend))
-                break
-            # execute the gate
-            expectation_values[tuple(cmd.reg)] = cmd.gate.execute(par, [self.reg[i] for i in cmd.reg], self)
-
-        #print('expectation_values='+str(expectation_values))
-        if circuit.out is not None:
-            # return the estimated expectation values for the requested modes
-            return np.array([expectation_values[tuple([idx])] for idx in circuit.out if tuple([idx]) in expectation_values])
-
-
-
-
-
-
+            #self.eng = None #todo: how to deal with eng during reset in the new API?
 
     def execute(self):
         """ """
@@ -250,18 +168,25 @@ class ProjectQDevice(Device):
                 raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
 
             p = [x.val if isinstance(x, Variable) else x for x in operation.params]
-            expectation_values[tuple(operation.wires)] = self.apply(operator_map[operation.name](*p), self.reg, operation.wires)
+            #expectation_values[tuple(operation.wires)] = self.apply(operator_map[operation.name](*p), self.reg, operation.wires)
+            self.apply(operator_map[operation.name](*p), operation.wires)
+        # return the estimated expectation values for the requested modes
+        return self.measure(self._observe.name, self._observe.wires)
 
-        if self._observe.wires is not None:
-            # return the estimated expectation values for the requested modes
-            return np.array([expectation_values[tuple([idx])] for idx in self._observe.wires if tuple([idx]) in expectation_values])
+        # if self._observe.wires is not None:
+        #     if isinstance(self._observe.wires, int):
+        #         return expectation_values[tuple([self._observe.wires])]
+        #     else:
+        #         return np.array([expectation_values[tuple([idx])] for idx in self._observe.wires if tuple([idx]) in expectation_values])
 
-
-    def apply(self, op, q, wires):
+    def apply(self, gate, wires):
         if isinstance(wires, int):
-            op | q[wires]
+            gate | self.reg[wires]
         else:
-            op | [q[i] for i in wires]
+            gate | tuple([self.reg[i] for i in wires])
+
+    def measure(self, observable, wires):
+        raise NotImplementedError("measure() is not yet implemented for this backend")
 
     def shutdown(self):
         """Shutdown.
@@ -326,6 +251,19 @@ class ProjectQSimulator(ProjectQDevice):
         eng = pq.MainEngine(backend)
         kwargs['backend'] = 'Simulator'
         super().__init__(wires, eng, **kwargs)
+
+    def measure(self, observable, wires):
+        self.eng.flush(deallocate_qubits=False)
+        if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
+            expectation_value = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), self.reg)
+            variance = 1 - expectation_value**2
+        elif observable == 'AllPauliZ':
+            expectation_value = [ self.eng.backend.get_expectation_value(pq.ops.QubitOperator("Z"+'0'), [qubit]) for qubit in self.reg]
+            variance = [1 - e**2 for e in expectation_value]
+        else:
+            raise NotImplementedError("Estimation of expectation values not yet implemented for the observable {} in backend {}.".format(observable, backend))
+
+        return expectation_value#, variance
 
 
 class ProjectQClassicalSimulator(ProjectQDevice):
