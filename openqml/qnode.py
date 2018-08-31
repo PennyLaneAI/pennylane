@@ -114,7 +114,6 @@ class QNode:
 
         self.variables = p
 
-        self.device.reset()
         # evaluate device
         with self.device:
             self.func(*p, **kwargs)
