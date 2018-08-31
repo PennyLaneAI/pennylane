@@ -12,7 +12,7 @@ from autograd.numpy.random import (randn,)
 from defaults import openqml, BaseTest
 from openqml.plugin import (load_plugin,)
 from openqml.circuit import (QNode,)
-from openqml.core import (Optimizer,)
+from openqml.optimize import (Optimizer,)
 
 
 
@@ -33,7 +33,7 @@ class OptTest(BaseTest):
         """Maps input data using a parametrized quantum circuit.
 
         Args:
-          data_in (float): input data
+          data_in (float): input data item
           weights (array[float]): optimization parameters
         Returns:
           float: mapped data
@@ -42,23 +42,17 @@ class OptTest(BaseTest):
         return self.q.evaluate(par)[0]
 
 
-    def cost(self, weights, data_sample=None):
+    def cost(self, weights, data):
         """Cost (error) function to be minimized.
 
         Implements a quantum classifier, trying to map input data to output data.
 
         Args:
           weights (array[float]): optimization parameters
-          data_sample (array[int], None): For stochastic gradient methods, indices of the data samples to use in the error calculation.
-            If None, all data samples are used.
+          data    (array[float]): data to use in the error calculation
         Returns:
           float: cost
         """
-        if data_sample is None:
-            data = self.data
-        else:
-            data = self.data[data_sample]
-
         cost = 0
         for d in data:
             temp = self.map_data(d[0], weights) -d[1]
@@ -87,15 +81,19 @@ class OptTest(BaseTest):
             return 0
 
         # initial weights must be given as an array
-        self.assertRaises(TypeError, Optimizer, *(f,f,0), optimizer='SGD')
-        self.assertRaises(TypeError, Optimizer, *(f,f,[0]), optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, f,f,0, optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, f,f,[0], optimizer='SGD')
 
         # optimizer has to be a callable or a known name
-        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Unknown')
+        self.assertRaises(ValueError, Optimizer, f,f,weights, optimizer='unknown')
 
         # some algorithms do not use a gradient function
-        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Nelder-Mead')
-        self.assertRaises(ValueError, Optimizer, *(f,f,weights), optimizer='Powell')
+        self.assertRaises(ValueError, Optimizer, f,f,weights, optimizer='Nelder-Mead')
+        self.assertRaises(ValueError, Optimizer, f,f,weights, optimizer='Powell')
+
+        # only L2 regularization is supported for now
+        temp = Optimizer(f,f,weights, regularizer='unknown')
+        self.assertRaises(ValueError, temp.train)
 
 
     def test_opt(self):
@@ -106,15 +104,15 @@ class OptTest(BaseTest):
         p = self.plugin('test node')
         q = QNode(self.circuit, p)
         self.q = q
-        x0 = randn(q.circuit.n_par -1)  # one circuit param is used to encode the data
+        #x0 = randn(q.circuit.n_par -1)  # one circuit param is used to encode the data
+        x0 = np.array([1.11, -0.897, -0.929, -1.54, -0.865,  0.727, 0.140])
         grad = autograd.grad(self.cost, 0)  # gradient with respect to weights
 
         temp = 0.30288  # expected minimal cost
         tol = 0.001
 
-        o = Optimizer(self.cost, grad, x0, n_data=self.data.shape[0], optimizer='SGD')
-        o.set_hp(batch_size=4)
-        c = o.train(100)
+        o = Optimizer(self.cost, grad, x0, optimizer='SGD')
+        c = o.train(100, error_goal=0.32, data=self.data, batch_size=4)
         self.plot_result(o.weights)
         self.assertAlmostLess(c, temp, delta=0.2)  # SGD requires more iterations to converge well
 
@@ -122,13 +120,15 @@ class OptTest(BaseTest):
         opts_nograd = ['Nelder-Mead', 'Powell']
 
         for opt in opts:
+            print(80 * '-')
             o = Optimizer(self.cost, grad, x0, optimizer=opt)
-            c = o.train()
+            c = o.train(data=self.data)
             self.assertAlmostEqual(c, temp, delta=tol)
 
         for opt in opts_nograd:
+            print(80 * '-')
             o = Optimizer(self.cost, None, x0, optimizer=opt)
-            c = o.train()
+            c = o.train(data=self.data)
             self.assertAlmostEqual(c, temp, delta=tol)
 
 

@@ -66,7 +66,7 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :caption: API
    :hidden:
 
-   core
+   optimize
    circuit
 
 
