@@ -87,7 +87,7 @@ class StrawberryFieldsFock(Device):
         self.state = None
         super().__init__(self.short_name, shots)
 
-    def execute(self):
+    def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
         if self.eng:
             self.eng.reset()
