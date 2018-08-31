@@ -151,7 +151,7 @@ class ProjectQDevice(Device):
 
     def execute(self):
         """ """
-        #todo: I hope this function will become superflous, see https://github.com/XanaduAI/openqml/issues/18
+        #todo: I hope this function will become superfluous, see https://github.com/XanaduAI/openqml/issues/18
         self._out = self.execute_queued()
 
     def execute_queued(self):
@@ -165,7 +165,7 @@ class ProjectQDevice(Device):
             #expectation_values[tuple(operation.wires)] = self.apply(operator_map[operation.name](*p), self.reg, operation.wires)
             self.apply(operation.name, operation.wires, *par)
 
-        result = self.measure(self._observe.name, self._observe.wires)
+        result = self.expectation(self._observe.name, self._observe.wires)
         self._deallocate()
         return result
 
@@ -185,8 +185,8 @@ class ProjectQDevice(Device):
         else:
             gate | tuple([self.reg[i] for i in wires])
 
-    def measure(self, observable, wires):
-        raise NotImplementedError("measure() is not yet implemented for this backend")
+    def expectation(self, observable, wires):
+        raise NotImplementedError("expectation() is not yet implemented for this backend")
 
     def shutdown(self):
         """Shutdown.
@@ -268,7 +268,7 @@ class ProjectQSimulator(ProjectQDevice):
         super().reset()
 
 
-    def measure(self, observable, wires):
+    def expectation(self, observable, wires):
         self.eng.flush(deallocate_qubits=False)
         if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
             expectation_value = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), self.reg)
@@ -339,10 +339,10 @@ class ProjectQIBMBackend(ProjectQDevice):
             raise ValueError('An IBM Quantum Experience password specified via the "password" keyword argument is required')
 
         kwargs['backend'] = 'IBMBackend'
-        kwargs['verbose'] = True #todo: remove when done testing
-        kwargs['log'] = True #todo: remove when done testing
-        kwargs['use_hardware'] = True #todo: remove when done testing
-        kwargs['num_runs'] = 3 #todo: remove when done testing
+        #kwargs['verbose'] = True #todo: remove when done testing
+        #kwargs['log'] = True #todo: remove when done testing
+        #kwargs['use_hardware'] = False #todo: remove when done testing
+        #kwargs['num_runs'] = 3 #todo: remove when done testing
         super().__init__(wires, **kwargs)
 
     def reset(self):
@@ -355,14 +355,14 @@ class ProjectQIBMBackend(ProjectQDevice):
         self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
         super().reset()
 
-    def measure(self, observable, wires):
+    def expectation(self, observable, wires):
         pq.ops.R(0) | self.reg[0]# todo:remove this once https://github.com/ProjectQ-Framework/ProjectQ/issues/259 is resolved
 
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
 
         if observable == 'PauliZ':
-            probabilities = self.eng.backend.get_probabilities(self.reg[wires])
+            probabilities = self.eng.backend.get_probabilities([self.reg[wires]])
             #print("IBM probabilities="+str(probabilities))
             if '1' in probabilities:
                 expectation_value = 2*probabilities['1']-1
