@@ -60,7 +60,7 @@ from scipy.optimize import minimize, OptimizeResult
 
 
 class StopOptimization(Exception):
-    "Exception for stopping the optimization."
+    "Exception for stopping the optimization prematurely."
     pass
 
 
@@ -160,7 +160,7 @@ class Optimizer:
                             'regularizer': None,
                             'print_every': 5,
         }  #: dict[str->*]: default hyperparameters
-        self._hp = self._default_hp  #: dict[str->*]: hyperparameters
+        self._hp = self._default_hp.copy()  #: dict[str->*]: hyperparameters
         self._hp.update(kwargs) # update with user-given hyperparameters
         self.print_hp(log.info)
 
@@ -224,7 +224,7 @@ class Optimizer:
         Additional keyword args are passed on to the optimizer function.
 
         Returns:
-          float: final error function value
+          scipy.optimize.OptimizeResult: dict subclass containing the results of the optimization run
         """
         self.stop = False
 
@@ -243,7 +243,7 @@ class Optimizer:
         if data is None:
             # no data was given, error function takes one parameter
             self.err_func = lambda x: self._cost_func(x) +reg(x)
-            self.err_grad = lambda x: self._cost_grad(x) +reg(x)
+            self.err_grad = lambda x: self._cost_grad(x) +reg(x, grad=True)
         else:
             # error function takes two parameters, weights and data batch
             self.err_func = lambda x, batch=data: self._cost_func(x, batch) +reg(x)
@@ -299,23 +299,26 @@ class Optimizer:
 
         except StopOptimization as exc:
             # TODO the callback should maybe store more optimization information than just the last x
-            print("\nOptimization successful: False")
-            print("Number of iterations performed: ", self.nit)
-            print("Reason for termination: ", exc)
+            opt = OptimizeResult({'success': False,
+                                  'x': self._weights,
+                                  'nit': self.nit,
+                                  'message': str(exc)})
         else:
+            # optimization ended on its own
             self._weights = opt.x
-            print("\nOptimization successful: ", opt.success)
-            try:
-                print("Number of iterations performed: ", opt.nit)
-            except AttributeError:
-                print("Number of iterations performed: Not applicable to solver.")
-            print("Final parameters: ", opt.x)
-            print("Reason for termination: ", opt.message)
 
-        err = self.err_func(self._weights)
-        print('\nFinal error: {:.6g}\n'.format(err))
+        print('\nOptimization successful:', opt.success)
+        print('Reason for termination:', opt.message)
+        try:
+            print('Number of iterations performed:', opt.nit)
+        except AttributeError:
+            print('Number of iterations performed: Not applicable to solver.')
+        print('Final parameters:', opt.x)
+
+        opt.fun = self.err_func(self._weights)  # TODO some optimizers may return this on their own
+        print('Final error: {:.6g}\n'.format(opt.fun))
 
         # restore default handler
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-        return err
+        return opt

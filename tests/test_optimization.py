@@ -112,9 +112,9 @@ class OptTest(BaseTest):
         tol = 0.001
 
         o = Optimizer(self.cost, grad, x0, optimizer='SGD')
-        c = o.train(100, error_goal=0.32, data=self.data, batch_size=4)
+        res = o.train(100, error_goal=0.32, data=self.data, batch_size=4)
         self.plot_result(o.weights)
-        self.assertAlmostLess(c, temp, delta=0.2)  # SGD requires more iterations to converge well
+        self.assertAlmostLess(res.fun, temp, delta=0.2)  # SGD requires more iterations to converge well
 
         opts = ['BFGS', 'CG', 'L-BFGS-B', 'TNC', 'SLSQP']
         opts_nograd = ['Nelder-Mead', 'Powell']
@@ -122,14 +122,14 @@ class OptTest(BaseTest):
         for opt in opts:
             print(80 * '-')
             o = Optimizer(self.cost, grad, x0, optimizer=opt)
-            c = o.train(data=self.data)
-            self.assertAlmostEqual(c, temp, delta=tol)
+            res = o.train(data=self.data)
+            self.assertAlmostEqual(res.fun, temp, delta=tol)
 
         for opt in opts_nograd:
             print(80 * '-')
             o = Optimizer(self.cost, None, x0, optimizer=opt)
-            c = o.train(data=self.data)
-            self.assertAlmostEqual(c, temp, delta=tol)
+            res = o.train(data=self.data)
+            self.assertAlmostEqual(res.fun, temp, delta=tol)
 
 
 if __name__ == '__main__':

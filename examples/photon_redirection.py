@@ -22,7 +22,7 @@ import openqml
 
 from openqml.plugin import (load_plugin,)
 from openqml.circuit import *
-from openqml.core import (Optimizer,)
+from openqml.optimize import (Optimizer,)
 
 
 
@@ -42,6 +42,8 @@ if __name__ == '__main__':
     o = p.observables
     MFock = o['MFock']  # Fock basis measurement
 
+    BS.grad_method = 'F'  # TODO FIXME: we do not yet support analytic CV circuit differentiation with order-2 observables like n
+
     # gate sequence for our two-mode circuit with one free parameter
     seq = [
         Command(Fock, [0], [1]),                # prepare mode 0 in the |1> state
@@ -53,12 +55,11 @@ if __name__ == '__main__':
     # construct a quantum node out of the circuit and the backend
     q = QNode(circuit, p)
 
-    def cost(x, _dummy):
+    def cost(x):
         """Cost (error) function to be minimized.
 
         Args:
           x (array[float]): optimization parameters
-          _dummy (Sequence[int]): unused batching argument
         """
         temp = q.evaluate(x)  # photon number expectation value <n> in mode 1
         return (temp[0] -1) ** 2  # <n> should be 1
@@ -66,5 +67,5 @@ if __name__ == '__main__':
     x0 = randn(q.circuit.n_par)    # initial parameter values
     grad = autograd.grad(cost, 0)  # gradient of the cost function with respect to the parameters
     o = Optimizer(cost, grad, x0, optimizer='BFGS')  # set up an optimizer using the BFGS algorithm
-    c = o.train()
+    res = o.train()
     print('Optimized beamsplitter angle: pi *', o.weights / np.pi)
