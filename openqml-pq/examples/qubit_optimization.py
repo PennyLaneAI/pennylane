@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--backend", default='simulator', choices=['simulator', 'ibm'], help="backend to use")
 parser.add_argument("--user", help="IBM Quantum Experience user name")
 parser.add_argument("--password", help="IBM Quantum Experience password")
-parser.add_argument("--optimizer", default="SGD", choices=qm.optimizer.OPTIMIZER_NAMES, help="IBM Quantum Experience password")
+parser.add_argument("--optimizer", default="SGD", choices=qm.optimizer.OPTIMIZER_NAMES, help="optimizer to use")
 args = parser.parse_args()
 
 dev1 = qm.device('projectq.'+args.backend, wires=2, **vars(args))
