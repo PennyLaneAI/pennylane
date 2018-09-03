@@ -149,11 +149,6 @@ class ProjectQDevice(Device):
     # def __del__(self):
     #     self._deallocate()
 
-    def execute(self):
-        """ """
-        #todo: I hope this function will become superfluous, see https://github.com/XanaduAI/openqml/issues/18
-        self._out = self.execute_queued()
-
     def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
         #expectation_values = {}
