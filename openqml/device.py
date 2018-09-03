@@ -136,9 +136,17 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    @abc.abstractmethod
     def execute(self):
         """Apply the queued operations to the device, and measure the expectation."""
+        self._out = self.execute_queued()
+
+    @abc.abstractmethod
+    def execute_queued(self):
+        """Called during execute(). To be implemented by each plugin.
+
+        Returns:
+          float: expectation value(s) #todo: This should become an array type to handle multiple expectation values.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod

@@ -214,7 +214,7 @@ class DefaultQubit(Device):
         self._state = None
         super().__init__(self.short_name, shots)
 
-    def execute(self):
+    def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
         if self._state is None:
             # init the state vector to |00..0>
