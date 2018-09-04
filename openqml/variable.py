@@ -24,8 +24,9 @@ class Variable:
       idx (int): parameter index >= 0
       val (int or complex or float): initial value of the variable (optional)
     """
-    def __init__(self, idx, val=None):
+    def __init__(self, idx, name=None, val=None):
         self.idx = idx  #: int: parameter index
+        self.name = name
         self.val = val
 
     def __str__(self):

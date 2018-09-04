@@ -33,8 +33,6 @@ o = qm.Optimizer(cost, init_weights, optimizer='Nelder-Mead')
 # train the circuit
 c = o.train(max_steps=100)
 
-from autograd import grad
-
 # print the results
 print('Initial [alpha, r] parameters:', init_weights)
 print('Optimized [alpha, r] parameter:', o.weights)

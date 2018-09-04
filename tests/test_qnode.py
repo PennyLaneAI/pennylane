@@ -59,7 +59,7 @@ class BasicTest(BaseTest):
         grad_angle = qnode.gradient(params, method='A')
 
         # automatic gradient
-        grad_auto = qm.grad(qnode, *params)
+        grad_auto = qm.grad(qnode, params)
 
         # gradients computed with different methods must agree
         self.assertAllAlmostEqual(grad_fd1, grad_fd2, self.tol)
