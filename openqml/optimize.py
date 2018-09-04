@@ -54,20 +54,15 @@ import numpy as np
 from scipy.optimize import minimize, OptimizeResult
 
 
-# optimization parameters
-#Par = namedtuple('Par', 'name, init, regul')
-#Par.__new__.__defaults__ = ('', 0, False)
-
-
 class StopOptimization(Exception):
     "Exception for stopping the optimization prematurely."
     pass
 
 
-OPTIMIZER_NAMES = ["SGD", "Nelder-Mead", "Powell", "CG", "BFGS", "Newton-CG",
-                   "L-BFGS-B", "TNC", "COBYLA", "SLSQP", "dogleg", "trust-ncg",
-                   "trust-exact", "trust-krylov"]
-
+# scipy.optimize.minimize methods that do not require the Hessian, plus our own methods
+OPTIMIZER_NAMES = ['SGD',                                      # our own methods
+                   'Nelder-Mead', 'Powell', 'COBYLA',          # do not use the gradient
+                   'CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP']   # require the gradient
 
 
 def optimize_SGD(err_func, err_grad, x0, *, data, max_steps=100, ilr=0.1, decay=0.03, batch_size=None, callback=None):
@@ -261,9 +256,6 @@ class Optimizer:
             "Called when SIGINT is received, for example when the user presses ctrl-c."
             self.stop = True
 
-        # catch ctrl-c gracefully
-        signal.signal(signal.SIGINT, signal_handler)
-
         def callback(x, err=None):
             """Callback function executed by the optimizer after every iteration.
 
@@ -283,8 +275,11 @@ class Optimizer:
 
         log.info('Iteration       Cost')
         log.info('------------------------')
-
         optimizer = self._hp['optimizer']
+
+        # catch ctrl-c gracefully
+        signal.signal(signal.SIGINT, signal_handler)
+
         try:
             if optimizer == 'SGD':   # stochastic gradient descent
                 if data is None:
@@ -307,6 +302,9 @@ class Optimizer:
             # optimization ended on its own
             self._weights = opt.x
 
+        # restore default handler
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
         print('\nOptimization successful:', opt.success)
         print('Reason for termination:', opt.message)
         try:
@@ -317,8 +315,5 @@ class Optimizer:
 
         opt.fun = self.err_func(self._weights)  # TODO some optimizers may return this on their own
         print('Final error: {:.6g}\n'.format(opt.fun))
-
-        # restore default handler
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
 
         return opt

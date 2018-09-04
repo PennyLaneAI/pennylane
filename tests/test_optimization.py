@@ -116,9 +116,8 @@ class OptTest(BaseTest):
         self.plot_result(o.weights)
         self.assertAlmostLess(res.fun, temp, delta=0.2)  # SGD requires more iterations to converge well
 
-        opts = ['BFGS', 'CG', 'L-BFGS-B', 'TNC', 'SLSQP']
-        opts_nograd = ['Nelder-Mead', 'Powell']
-
+        opts = ['CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP']
+        opts_nograd = ['Nelder-Mead', 'Powell', 'COBYLA']
         for opt in opts:
             print(80 * '-')
             o = Optimizer(self.cost, grad, x0, optimizer=opt)
@@ -128,7 +127,7 @@ class OptTest(BaseTest):
         for opt in opts_nograd:
             print(80 * '-')
             o = Optimizer(self.cost, None, x0, optimizer=opt)
-            res = o.train(data=self.data)
+            res = o.train(200, data=self.data)
             self.assertAlmostEqual(res.fun, temp, delta=tol)
 
 
