@@ -58,9 +58,9 @@ def device(name, *args, **kwargs):
         raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
 
 
-def grad(func, *args):
+def grad(func, args):
     """Wrapper around the autograd.grad function."""
-    return _grad(func)(numpy.asarray(args))
+    return _grad(func)(*args)
 
 
 def version():

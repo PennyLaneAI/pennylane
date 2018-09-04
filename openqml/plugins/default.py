@@ -261,7 +261,7 @@ class DefaultQubit(Device):
                 n0 = np.random.binomial(self.shots, p0)
                 ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
 
-        self._out = ev  # store the result
+        return ev  # return the result
 
     @classmethod
     def _get_operator_matrix(cls, A):
