@@ -127,7 +127,7 @@ class StrawberryFieldsFock(Device):
             # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
             ex = np.random.normal(ex, np.sqrt(var / self.shots))
 
-        self._out = ex
+        return ex
 
     def reset(self):
         """Reset the device"""
