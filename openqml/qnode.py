@@ -292,6 +292,9 @@ def QNode_vjp(ans, self, params, *args, **kwargs):
     """Returns the vector Jacobian product for a QNode, as a function
     of the QNode evaluation at the specified parameter values.
     """
+    if isinstance(params, numbers.Number):
+        params = [params]
+
     p = list(params) + list(args)
     return lambda g: g * self.gradient(p)
 

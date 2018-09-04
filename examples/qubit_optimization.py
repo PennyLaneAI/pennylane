@@ -14,12 +14,12 @@ def circuit(x, y, z):
     """QNode"""
     qm.Rot(x, y, z, [0])
     qm.CNOT([0, 1])
-    qm.expectation.PauliZ(1)
+    return qm.expectation.PauliZ(1)
 
 
 def cost(x, batched):
     """Cost (error) function to be minimized."""
-    return np.abs(circuit(x)-1)
+    return np.abs(circuit(x)-1/np.sqrt(2))
 
 
 # initialize x with random value
@@ -33,4 +33,4 @@ c = o.train(max_steps=100)
 print('Initial rotation angles:', x0)
 print('Optimized rotation angles:', o.weights)
 print('Circuit output at rotation angles:', circuit(*o.weights))
-print('Circuit gradient at rotation angles:', qm.grad(circuit, *o.weights)[0])
+print('Circuit gradient at rotation angles:', qm.grad(circuit, o.weights)[0])
