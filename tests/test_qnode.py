@@ -41,7 +41,7 @@ def circuit_data(in_data, x):
 
 
 class BasicTest(BaseTest):
-    """ABC for tests.
+    """Qnode tests.
     """
     def setUp(self):
         self.dev = qm.device('default.qubit', wires=2)
