@@ -69,6 +69,26 @@ class QubitGradientTest(BaseTest):
             manualgrad_val = (circuit(theta + np.pi / 2) - circuit(theta - np.pi / 2)) / 2
             self.assertAlmostEqual(autograd_val, manualgrad_val, delta=1e-3)
 
+    def test_Rot(self):
+        "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
+
+        @qm.qfunc(self.dev)
+        def circuit(x,y,z):
+            qm.Rot(x,y,z, [0])
+            return qm.expectation.PauliZ(0)
+
+        grad_fn = autograd.grad(circuit)
+
+        eye = np.eye(3)
+        for theta in thetas:
+            angle_inputs = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+            autograd_val = grad_fn(angle_inputs)
+            for idx in range(3):
+                onehot_idx = eye[idx]
+                manualgrad_val = (circuit(angle_inputs + np.pi / 2 * onehot_idx) - circuit(angle_inputs - np.pi / 2 * onehot_idx)) / 2
+                self.assertAlmostEqual(autograd_val[idx], manualgrad_val, delta=1e-3)
+
+
 
 if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', automatic gradients.')
