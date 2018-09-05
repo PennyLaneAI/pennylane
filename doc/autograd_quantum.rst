@@ -17,8 +17,20 @@ Quantum gradients
 
 :html:`<br>`
 
-Gradients of quantum functions
+.. todo:: add preamble here: discuss why we care about gradients (ML and possibly chemistry), and reiterate basic idea that the gradient of a qfunc is in many cases a linear combo of qfuncs
+
+Computing gradients of quantum functions
 ------------------------------
+
+.. todo:: Need to introduce clean unified definitions up front, then derive the formulas in a way which keeps CV and qubit formalisms on same page as long as possible.
+
+For convenience, let us rewrite the unitary conjugation performed by a quantum circuit as a transformation :math:`\mathcal{C}_U` acting on the operator :math:`\hat{B}`:
+
+.. math:: U^\dagger(x;\bm{\theta})\hat{B}U(x;\bm{\theta}) = \mathcal{C}_U(\hat{B}).
+
+With this notation, a qfunc is simply the matrix element 
+
+.. math:: f(x; \bm{\theta}) = \langle 0 | U^\dagger(x;\bm{\theta})\hat{B}U(x;\bm{\theta}) | 0 \rangle = \langle 0 | \mathcal{C}_U(\hat{B}) | 0 \rangle.
 
 If the transformation :math:`\mathcal{C}_U` depends smoothly on a parameter :math:`\theta_i`, then the associated quantum function will have a well-defined gradient:
 
@@ -30,7 +42,7 @@ What does this gradient look like? To answer this, we will have to specify how t
 
 .. note:: For convenience, we have used the input :math:`x` as the argument for gate :math:`U_0` and the parameters :math:`\bm{\theta}` for the remaining gates. This is not required. Inputs and parameters can be arbitrarily assigned to different gates.
 
-Each of these gates takes the form :math:`U_{j}(\gamma_j)=\exp{(i\gamma_j H_j)}` where :math:`H_j` is a Hermitian operator which generates the gate and :math:`\gamma_j` is the gate parameter. We have also suppressed the subsystems that these gates have been applied to, since it doesn't affect the gradient formula.
+Each of these gates is unitary, and therefore must have the form :math:`U_{j}(\gamma_j)=\exp{(i\gamma_j H_j)}` where :math:`H_j` is a Hermitian operator which generates the gate and :math:`\gamma_j` is the gate parameter. We have also suppressed the subsystems that these gates have been applied to, since it doesn't affect the gradient formula.
 
 Acting on a single one-parameter gate, the gradient formula is straightforward:
 
@@ -41,8 +53,19 @@ Since the equations governing quantum circuits are linear, we can pass the gradi
 
 .. math:: \nabla_{\theta_i}U(x;\bm{\theta}) = U_N(\theta_{N}) U_{N-1}(\theta_{N-1}) \cdots \left[ \nabla_{\theta_i} U_i(\theta_i) \right] \cdots U_1(\theta_1) U_0(x).
 
-Note: It might also be useful to have a quantum device that can evaluate standalone gradients, e.g., for calculating forces in quantum chemistry
+For convenience, let us absorb any gates applied before gate :math:`i` (with indices lower than :math:`i`) into the initial state: :math:`|\psi_{i-1}\rangle = U_{i-1}(\theta_{i-1}) \cdots U_{1}(\theta_{1})|0\rangle`. 
+Similarly, any gates applied after gate :math:`i` are combined with the observable :math:`\hat{B}`:
+:math:`\hat{B}_{i+1} = U_{N}(\theta_{N}) \cdots U_{i+1}(\theta_{i+1}) \hat{B} U_{i+1}^\dagger(\theta_{i+1}) \cdots U_{N}^\dagger(\theta_{N})`. 
 
+With this simplification, the qfunc becomes
+
+.. math:: f(x; \bm{\theta}) = \langle \psi_{i-1} | U_i(\theta_i) \hat{B}_{i+1} U_i^\dagger(\theta_i) | \psi_{i-1} \rangle
+
+and its gradient has the form
+
+.. math:: \nabla_{\theta_i}f(x; \bm{\theta}) = i\langle \psi_{i-1} | \left[H_i, \hat{B}_{i} \right] | \psi_{i-1} \rangle,
+
+where :math:`\left[H_i, \hat{B}_{i} \right] = H_i \hat{B}_{i} - \hat{B}_{i} H_i` is the commutator.
 
 Backpropagation through hybrid computations
 -------------------------------------------
@@ -51,4 +74,7 @@ Backpropagation through hybrid computations
 
 
 .. note:: In situations where no formula for quantum gradients is known, OpenQML supports approximate gradient estimation using numerical methods.
+
+
+.. note:: It may also be useful to have a quantum device evaluate standalone gradients, e.g., for calculating forces in quantum chemistry.
 

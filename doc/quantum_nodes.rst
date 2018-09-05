@@ -21,7 +21,7 @@ There are two common ways to interface between the classical and quantum domains
 
 2. **Measurement of a quantum circuit**: Measurements convert quantum information (the state of a quantum system) into classical information (the measurement value). Measurement often have a distribution of outcomes, with the pattern becoming clear only after a sufficient number of measurements are taken. To simplify things, we will work with expectation values (i.e., averages) of measurement outcomes as our primary mechanism for obtaining classical information from quantum. This is also important for reproducability in the evaluation of quantum functions.
 
-**Need a figure which shows the difference between classical and quantum information**
+**Need a figure which shows the difference between classical and quantum information?**
 
 The quantum node abstraction
 ============================
@@ -45,6 +45,9 @@ A quantum node is a computational encapsulation of a quantum function :math:`f(x
 So long as we provide some mechanism for evaluating quantum nodes (i.e., a quantum computing device or simulator), a classical computing device can treat it as it would any other callable function which manipulates classical data. We can thus connect quantum nodes with classical transformations to build complex multistage hybrid quantum-classical computations.
 
 
+add: data is input through the gate parameters of the circuit, and extracted by evaluating expectation values.
 
+Classical information is input to a quantum node via the gate parameters and extracted via expectation values of measurements.
 
+**Discuss compatability of Qnode abstraction with ML techniques**: We would also like this interface to be compatible with essential components of machine learning like the backpropagation algorithm. 
 
