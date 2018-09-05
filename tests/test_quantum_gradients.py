@@ -36,7 +36,7 @@ def circuit(*args):
 
 
 class OptTest(BaseTest):
-    """Optimizer tests.
+    """ABC for tests.
     """
     def setUp(self):
         # arbitrary classification data
