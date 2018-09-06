@@ -92,42 +92,62 @@ class QNode:
     def __init__(self, func, device):
         self.func = func
         self.device = device
-        self.variables = []
         self.variable_ops = {}
 
         # determine number of variables
         sig = signature(func).parameters.items()
         self.num_variables = len([key for key, p in sig])# if p.kind == p.POSITIONAL_OR_KEYWORD])
 
+    def construct(self, *args, **kwargs):
+        """Constructs the quantum circuit, and creates the variable mapping"""
+        self.device.reset()
+
+        # wrap each argument with a Variable class
+        variables = []
+        for idx, val in enumerate(_flatten(args)):
+            # Note: kwargs are assumed to not be variables by default;
+            # should we change this?
+            variables.append(Variable(idx, val=val))
+
+        # generate device queue
+        with self.device:
+            self.func(*variables, **kwargs)
+
+        self.num_variables = len(variables)
+        self.variable_ops = {}
+
+        # map each variable to the operations which depend on it
+        for op in self.device._queue:
+            for idx, p in enumerate(op.params):
+                if isinstance(p, Variable):
+                    self.variable_ops.setdefault(p.idx, []).append((op, idx))
+
+        # map from free parameter index to the gradient method to be used with that parameter
+        self.grad_method = {k: self.best_method(v) for k, v in self.variable_ops.items()}
+
     @primitive
     def __call__(self, *args, **kwargs):
         """Evaluates the quantum function on the specified device, and returns
         the output expectation value."""
 
-        self.variables = []
-        self.device._queue = []
+        if len(args) == 1 and isinstance(args[0], np.ndarray):
+            # HACK: args are being passed as a list, try unpacking arguments
+            # Should be a better way to deal with autograd passing the arguments
+            # in the form (np.array([...]), )
+            args = args[0]
 
-        # wrap each argument with a Variable class
-        p = []
-        for idx, val in enumerate(_flatten(args)):
-            p.append(Variable(idx, val=val))
-
-        self.variables = p
-
-        # evaluate device
-        with self.device:
-            self.func(*p, **kwargs)
+        self.device.reset()
 
         if not self.variable_ops:
-            # map each variable to the operations which depend on it
-            for op in self.device._queue:
-                for p in op.params:
-                    if isinstance(p, Variable):
-                        self.variable_ops.setdefault(p.idx, []).append(op)
+            # construct the circuit
+            self.construct(*args, **kwargs)
 
-            # map from free parameter index to the gradient method to be used with that parameter
-            self.grad_method = {k: self.best_method(v) for k, v in self.variable_ops.items()}
+        # update variables to new values passed in args
+        for idx, val in enumerate(args):
+            for op, p_idx in self.variable_ops[idx]:
+                op.params[p_idx].val = val
 
+        self.device.execute()
         return self.expectation
 
     @property
@@ -138,7 +158,7 @@ class QNode:
     def best_method(self, ops):
         """determine the correct gradient computation method for each free parameter"""
         # use the angle method iff every gate that depends on the parameter supports it
-        list_of_methods = [op.grad_method == 'A' and len(op.params) == 1 for op in ops]
+        list_of_methods = [op.grad_method == 'A' and len(op.params) == 1 for op, _ in ops]
 
         if all(list_of_methods):
             return 'A'
@@ -182,6 +202,10 @@ class QNode:
         elif len(which) != len(set(which)):  # set removes duplicates
             raise ValueError('Parameter indices must be unique.')
         params = np.asarray(params)
+
+        if not self.variable_ops:
+            # construct the circuit
+            self.construct(*params, **kwargs)
 
         if method in ('A', 'F'):
             method = {k: method for k in which}
@@ -252,10 +276,10 @@ class QNode:
         Returns:
           float: partial derivative of the node.
         """
-        n = len(self.variables)
+        n = self.num_variables
         pd = 0.0
         # find the Commands in which the parameter appears, use the product rule
-        for op in self.variable_ops[idx]:
+        for op, p_idx in self.variable_ops[idx]:
             if len(op.params) != 1:
                 raise ValueError('For now angular method can only differentiate one-parameter gates.')
             if op.grad_method != 'A':
