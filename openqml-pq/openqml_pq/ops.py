@@ -18,7 +18,7 @@ import projectq as pq
 # Extra Operations in OpenQML provided by this plugin
 
 class S(Operation):
-    r"""Continuous-variable position displacement in the phase space.
+    r"""S gate.
 
     .. math::
         S() = \begin(pmatrix)1&0\\0&i\end(pmatrix)
@@ -28,6 +28,54 @@ class S(Operation):
     """
     def __init__(self, wires):
         super().__init__('S', [], wires)
+
+class T(Operation):
+    r"""T gate.
+
+    .. math::
+        T() = \begin(pmatrix)1&0\\0&exp(i \pi / 4)\end(pmatrix)
+
+    Args:
+        wires (int): the subsystem the Operation acts on.
+    """
+    def __init__(self, wires):
+        super().__init__('T', [], wires)
+
+class SqrtX(Operation):
+    r"""Square toot X gate.
+
+    .. math::
+        SqrtX() = \begin(pmatrix)1+i&1-i\\1-i&1+i\end(pmatrix)
+
+    Args:
+        wires (int): the subsystem the Operation acts on.
+    """
+    def __init__(self, wires):
+        super().__init__('SqrtX', [], wires)
+
+class SqrtSwap(Operation):
+    r"""Square SWAP gate.
+
+    .. math::
+        SqrtSwap() = \begin(pmatrix)1&0&0&0\\0&(1+i)/2&(1-i)/2&0\\0&(1-i)/2 &(1+i)/2&0\\0&0&0&1\end(pmatrix)
+
+    Args:
+        wires (seq[int]): the subsystems the Operation acts on.
+    """
+    def __init__(self, wires):
+        super().__init__('SqrtSwap', [], wires)
+
+class AllZ(Operation):
+    r"""Z on all qubits.
+
+    .. math::
+        AllZ() = Z \otimes\dots\otimes Z
+
+    Args:
+        wires (seq[int]): the subsystems the Operation acts on.
+    """
+    def __init__(self, wires):
+        super().__init__('SqrtSwap', [], wires)
 
 
 # Wrapper classes for Operations that are missing a class in ProjectQ

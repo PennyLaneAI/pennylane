@@ -72,19 +72,18 @@ operator_map = {
     'RX': Rx,
     'RY': Ry,
     'RZ': Rz,
-    'Rot': Rot,
-    'PhaseShift': Ph, #todo: PhaseShift is supposedly single qubit?
+    'PhaseShift': R,
     'QubitStateVector': StatePreparation,
     'Hadamard': HGate,
-
-    'S': SGate, #todo: not supported by OpenQML
-    #: TGate, #todo: not supported by OpenQML
-    #: SqrtXGate, #todo: not supported by OpenQML
-    #: SqrtSwapGate, #todo: not supported by OpenQML
-    #: R, #todo: not supported by OpenQML
-
-    #'QubitUnitary': QubitUnitary, #todo: not natively supported by ProjectQ
-    #'AllZGate': AllZGate, #todo: not natively supported by OpenQML
+    #gates not native to OpenQML
+    'S': SGate,
+    'T': TGate,
+    'SqrtX': SqrtXGate,
+    'SqrtSwap': SqrtSwapGate,
+    'AllZ': AllZGate,
+    #gates not implemented in ProjectQ
+    'Rot': Rot,
+    'QubitUnitary': QubitUnitary,
 }
 
 class ProjectQDevice(Device):
