@@ -12,8 +12,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Additional gates"""
+from openqml import Operation
 import projectq as pq
 
+# Extra Operations in OpenQML provided by this plugin
+
+class S(Operation):
+    r"""S gate.
+
+    .. math::
+        S() = \begin(pmatrix)1&0\\0&i\end(pmatrix)
+
+    Args:
+        wires (int): the subsystem the Operation acts on.
+    """
+    def __init__(self, wires):
+        super().__init__('S', [], wires)
+
+class T(Operation):
+    r"""T gate.
+
+    .. math::
+        T() = \begin(pmatrix)1&0\\0&exp(i \pi / 4)\end(pmatrix)
+
+    Args:
+        wires (int): the subsystem the Operation acts on.
+    """
+    def __init__(self, wires):
+        super().__init__('T', [], wires)
+
+class SqrtX(Operation):
+    r"""Square toot X gate.
+
+    .. math::
+        SqrtX() = \begin(pmatrix)1+i&1-i\\1-i&1+i\end(pmatrix)
+
+    Args:
+        wires (int): the subsystem the Operation acts on.
+    """
+    def __init__(self, wires):
+        super().__init__('SqrtX', [], wires)
+
+class SqrtSwap(Operation):
+    r"""Square SWAP gate.
+
+    .. math::
+        SqrtSwap() = \begin(pmatrix)1&0&0&0\\0&(1+i)/2&(1-i)/2&0\\0&(1-i)/2 &(1+i)/2&0\\0&0&0&1\end(pmatrix)
+
+    Args:
+        wires (seq[int]): the subsystems the Operation acts on.
+    """
+    def __init__(self, wires):
+        super().__init__('SqrtSwap', [], wires)
+
+class AllZ(Operation):
+    r"""Z on all qubits.
+
+    .. math::
+        AllZ() = Z \otimes\dots\otimes Z
+    """
+    def __init__(self):
+        super().__init__('AllZ', [], [])
+
+
+# Wrapper classes for Operations that are missing a class in ProjectQ
 
 class CNOT(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     """Class for the CNOT gate.
@@ -61,14 +123,18 @@ class AllZGate(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     def __new__(*par): # pylint: disable=no-method-argument
         return pq.ops.Tensor(pq.ops.ZGate())
 
-
 class Rot(pq.ops.BasicGate):
-    """ """
-    def __new__(*par):
-        raise NotImplementedError("Hermitian is not yet implemented")
+    """Class for the arbitrary single qubit rotation gate.
 
-
-class Hermitian(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
-    """ """
+    ProjectQ does not currently have an arbitrary single qubit rotation gate.
+    """
     def __new__(*par):
-        raise NotImplementedError("Hermitian is not yet implemented")
+        raise NotImplementedError("ProjectQ does not currently have an arbitrary single qubit rotation gate.") #todo: update depending on https://github.com/ProjectQ-Framework/ProjectQ/issues/268
+
+class QubitUnitary(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+    """Class for the QubitUnitary gate.
+
+    ProjectQ does not currently have an arbitrary QubitUnitary gate.
+    """
+    def __new__(*par):
+        raise NotImplementedError("ProjectQ does not currently have an arbitrary single qubit unitary gate.") #todo: update depending on https://github.com/ProjectQ-Framework/ProjectQ/issues/268
