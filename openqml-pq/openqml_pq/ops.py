@@ -70,12 +70,9 @@ class AllZ(Operation):
 
     .. math::
         AllZ() = Z \otimes\dots\otimes Z
-
-    Args:
-        wires (seq[int]): the subsystems the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('SqrtSwap', [], wires)
+    def __init__(self):
+        super().__init__('AllZ', [], [])
 
 
 # Wrapper classes for Operations that are missing a class in ProjectQ
