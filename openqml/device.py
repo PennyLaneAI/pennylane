@@ -154,7 +154,7 @@ class Device(abc.ABC):
         with self.execute_queued_with():
             for operation in self._queue:
                 if self.supported(operation.name):
-                    raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
+                    raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
 
                 par = [x.val if isinstance(x, Variable) else x for x in operation.params]
                 self.apply(operation.name, operation.wires, *par)
@@ -178,16 +178,12 @@ class Device(abc.ABC):
 
         return MockClassForWithStatment()
 
-
-    @abc.abstractmethod
     def supported(self, gate_name):
         raise NotImplementedError
 
-    @abc.abstractmethod
     def apply(self, gate_name, wires, *par):
         raise NotImplementedError
 
-    @abc.abstractmethod
     def expectation(self, observable, wires):
         raise NotImplementedError
 

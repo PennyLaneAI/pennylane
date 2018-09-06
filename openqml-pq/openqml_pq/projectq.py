@@ -165,14 +165,11 @@ class ProjectQDevice(Device):
         return gate_name not in operator_map
 
     def apply(self, gate_name, wires, *par):
-        if gate_name not in self.gates:
-            raise ValueError('Gate {} not supported on this backend'.format(gate))
-
         gate = operator_map[gate_name](*par)
         if isinstance(wires, int):
-            gate | self.reg[wires]
+            gate | self.reg[wires] #pylint: disable=pointless-statement
         else:
-            gate | tuple([self.reg[i] for i in wires])
+            gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
     def expectation(self, observable, wires):
         raise NotImplementedError("expectation() is not yet implemented for this backend")
@@ -255,7 +252,7 @@ class ProjectQSimulator(ProjectQDevice):
 
 
     def expectation(self, observable, wires):
-        self.eng.flush(deallocate_qubits=False)
+        self.eng.flush(deallocate_qubits=False) #todo: maybe better do this in post_execute_queued()?
         if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
             expectation_value = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), self.reg)
             variance = 1 - expectation_value**2
@@ -340,8 +337,8 @@ class ProjectQIBMBackend(ProjectQDevice):
         super().reset()
 
     def expectation(self, observable, wires):
-        pq.ops.All(pq.ops.Measure) | self.reg
-        self.eng.flush()
+        pq.ops.All(pq.ops.Measure) | self.reg #todo: maybe better do this in post_execute_queued()?
+        self.eng.flush() #todo: maybe better do this in post_execute_queued()?
 
         if observable == 'PauliZ':
             probabilities = self.eng.backend.get_probabilities([self.reg[wires]])

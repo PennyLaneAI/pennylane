@@ -84,64 +84,56 @@ class StrawberryFieldsFock(Device):
         self.cutoff = cutoff
         self.hbar = hbar
         self.eng = None
+        self.q = None
         self.state = None
         super().__init__(self.short_name, shots)
 
-    # def execute_queued(self):
-    #     """Apply the queued operations to the device, and measure the expectation."""
-    #     if self.eng:
-    #         self.eng.reset()
-    #         self.reset()
-
-    #     self.eng, q = sf.Engine(self.wires, hbar=self.hbar)
-
-    #     with self.eng:
-    #         for operation in self._queue:
-    #             if operation.name not in operator_map:
-    #                 raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
-
-    #             p = [x.val if isinstance(x, Variable) else x for x in operation.params]
-    #             op = operator_map[operation.name](*p)
-    #             if isinstance(operation.wires, int):
-    #                 op | q[operation.wires]
-    #             else:
-    #                 op | [q[i] for i in operation.wires]
-
-    #     self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
-
-    #     # calculate expectation value
-    #     reg = self._observe.wires
-    #     if self._observe.name == 'Fock':
-    #         ex = self.state.mean_photon(reg)
-    #         var = 0
-    #     elif self._observe.name == 'X':
-    #         ex, var = self.state.quad_expectation(reg, 0)
-    #     elif self._observe.name == 'P':
-    #         ex, var = self.state.quad_expectation(reg, np.pi/2)
-    #     elif self._observe.name == 'Homodyne':
-    #         ex, var = self.state.quad_expectation(reg, *self.observe.params)
-
-    #     if self.shots != 0:
-    #         # estimate the expectation value
-    #         # use central limit theorem, sample normal distribution once, only ok
-    #         # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-    #         ex = np.random.normal(ex, np.sqrt(var / self.shots))
-
-    #     return ex
+    def pre_execute_queued(self):
+        self.reset()
+        self.eng, self.q = sf.Engine(self.wires, hbar=self.hbar)
 
     def execute_queued_with(self):
         return self.eng
 
-    def apply():
-        pass
+    def apply(self, gate_name, wires, *par):
+        gate = operator_map[gate_name](*par)
+        if isinstance(wires, int):
+            gate | self.q[wires] #pylint: disable=pointless-statement
+        else:
+            gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
     def expectation(self, observable, wires):
-        pass
+        self.state = self.eng.run('fock', cutoff_dim=self.cutoff) #todo: maybe better do this in post_execute_queued()?
 
+        # calculate expectation value
+        if self._observe.name == 'Fock':
+            expectation_value = self.state.mean_photon(wires)
+            variance = 0
+        elif self._observe.name == 'X':
+            expectation_value, variance = self.state.quad_expectation(wires, 0)
+        elif self._observe.name == 'P':
+            expectation_value, variance = self.state.quad_expectation(wires, np.pi/2)
+        elif self._observe.name == 'Homodyne':
+            expectation_value, variance = self.state.quad_expectation(wires, *self.observe.params)
 
+        if self.shots != 0:
+            # estimate the expectation value
+            # use central limit theorem, sample normal distribution once, only ok
+            # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+            expectation_value = np.random.normal(expectation_value, np.sqrt(var / self.shots))
+
+        return expectation_value#, variance
+
+    def supported(self, gate_name):
+        if gate_name not in operator_map:
+            raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
 
     def reset(self):
         """Reset the device"""
         if self.eng is not None:
+            self.eng.reset()
             self.eng = None
+        if self.state is not None:
             self.state = None
+        if self.q is not None:
+            self.q = None
