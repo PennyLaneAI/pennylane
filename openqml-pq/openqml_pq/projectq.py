@@ -55,8 +55,9 @@ from openqml import Variable
 import projectq as pq
 
 # import operations
-from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R)
-from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, Hermitian)
+from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R, Ph, StatePreparation, HGate, SGate, TGate, SqrtXGate, SqrtSwapGate
+)
+from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, QubitUnitary)
 
 from ._version import __version__
 
@@ -72,17 +73,18 @@ operator_map = {
     'RY': Ry,
     'RZ': Rz,
     'Rot': Rot,
-    #'PhaseShift': #todo: implement
-    #'QubitStateVector': #todo: implement
-    #'QubitUnitary': #todo: implement
-    #: H, #todo: implement
-    #: S, #todo: implement
-    #: T, #todo: implement
-    #: SqrtX, #todo: implement
-    #: SqrtSwap, #todo: implement
-    #: R, #todo: implement
-    #'AllPauliZ': AllZGate, #todo: implement
-    #'Hermitian': #todo: implement
+    'PhaseShift': Ph, #todo: PhaseShift is supposedly single qubit?
+    'QubitStateVector': StatePreparation,
+    'Hadamard': HGate,
+
+    'S': SGate, #todo: not supported by OpenQML
+    #: TGate, #todo: not supported by OpenQML
+    #: SqrtXGate, #todo: not supported by OpenQML
+    #: SqrtSwapGate, #todo: not supported by OpenQML
+    #: R, #todo: not supported by OpenQML
+
+    #'QubitUnitary': QubitUnitary, #todo: not natively supported by ProjectQ
+    #'AllZGate': AllZGate, #todo: not natively supported by OpenQML
 }
 
 class ProjectQDevice(Device):
@@ -229,7 +231,7 @@ class ProjectQSimulator(ProjectQDevice):
 
     short_name = 'projectq.simulator'
     _gates = set(operator_map.keys())
-    _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate, Hermitian] ])
+    _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate] ])
     _circuits = {}
     _backend_kwargs = ['gate_fusion', 'rnd_seed']
 
