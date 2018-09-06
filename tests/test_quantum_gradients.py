@@ -6,15 +6,10 @@ import unittest
 import logging as log
 log.getLogger()
 
-
 import autograd
 import autograd.numpy as np
-from autograd.numpy.random import (randn,)
-
-from matplotlib.pyplot import figure
 
 from defaults import openqml as qm, BaseTest
-from openqml import Optimizer, QNode
 
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
@@ -26,6 +21,7 @@ class QubitGradientTest(BaseTest):
 
     def test_RX_gradient(self):
         "Tests that the automatic gradient of a Pauli X-rotation is correct."
+        log.info('test_RX_gradient')
 
         @qm.qfunc(self.dev)
         def circuit(x):
@@ -41,6 +37,7 @@ class QubitGradientTest(BaseTest):
 
     def test_RY_gradient(self):
         "Tests that the automatic gradient of a Pauli Y-rotation is correct."
+        log.info('test_RY_gradient')
 
         @qm.qfunc(self.dev)
         def circuit(x):
@@ -56,6 +53,7 @@ class QubitGradientTest(BaseTest):
 
     def test_RZ_gradient(self):
         "Tests that the automatic gradient of a Pauli Z-rotation is correct."
+        log.info('test_RZ_gradient')
 
         @qm.qfunc(self.dev)
         def circuit(x):
@@ -71,6 +69,7 @@ class QubitGradientTest(BaseTest):
 
     def test_Rot(self):
         "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
+        log.info('test_Rot')
 
         @qm.qfunc(self.dev)
         def circuit(x,y,z):

@@ -24,7 +24,7 @@ def circuit(x, y, z):
     qm.RY(y, [0])
     qm.RX(x, [0])
     qm.CNOT([0, 1])
-    qm.expectation.PauliZ(1)
+    return qm.expectation.PauliZ(1)
 
 
 def cost(x, batched):
@@ -43,4 +43,4 @@ c = o.train(max_steps=100)
 print('Initial rotation angles:', x0)
 print('Optimized rotation angles:', o.weights)
 print('Circuit output at rotation angles:', circuit(*o.weights))
-print('Circuit gradient at rotation angles:', qm.grad(circuit, *o.weights)[0])
+print('Circuit gradient at rotation angles:', qm.grad(circuit, o.weights)[0])
