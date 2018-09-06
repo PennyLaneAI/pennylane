@@ -17,13 +17,14 @@ class QubitGradientTest(BaseTest):
     """Tests of the automatic gradient method for qubit gates.
     """
     def setUp(self):
-        self.dev = qm.device('default.qubit', wires=1)
+        self.qubit_dev1 = qm.device('default.qubit', wires=1)
+        self.qubit_dev2 = qm.device('default.qubit', wires=2)
 
     def test_RX_gradient(self):
         "Tests that the automatic gradient of a Pauli X-rotation is correct."
         log.info('test_RX_gradient')
 
-        @qm.qfunc(self.dev)
+        @qm.qfunc(self.qubit_dev1)
         def circuit(x):
             qm.RX(x, [0])
             return qm.expectation.PauliZ(0)
@@ -39,7 +40,7 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a Pauli Y-rotation is correct."
         log.info('test_RY_gradient')
 
-        @qm.qfunc(self.dev)
+        @qm.qfunc(self.qubit_dev1)
         def circuit(x):
             qm.RY(x, [0])
             return qm.expectation.PauliZ(0)
@@ -55,7 +56,7 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a Pauli Z-rotation is correct."
         log.info('test_RZ_gradient')
 
-        @qm.qfunc(self.dev)
+        @qm.qfunc(self.qubit_dev1)
         def circuit(x):
             qm.RZ(x, [0])
             return qm.expectation.PauliZ(0)
@@ -71,7 +72,7 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
         log.info('test_Rot')
 
-        @qm.qfunc(self.dev)
+        @qm.qfunc(self.qubit_dev1)
         def circuit(x,y,z):
             qm.Rot(x,y,z, [0])
             return qm.expectation.PauliZ(0)
@@ -87,9 +88,9 @@ class QubitGradientTest(BaseTest):
                 manualgrad_val = (circuit(angle_inputs + np.pi / 2 * onehot_idx) - circuit(angle_inputs - np.pi / 2 * onehot_idx)) / 2
                 self.assertAlmostEqual(autograd_val[idx], manualgrad_val, delta=self.tol)
 
-    def test_gradient_functions_agree(self):
+    def test_qfunc_gradients(self):
         "Tests that the various ways of computing the gradient of a qfunc all agree."
-        log.info('test_gradient_functions_agree')
+        log.info('test_qfunc_gradients')
 
         def circuit(x, y, z):
             qm.RX(x, [0])
@@ -101,7 +102,7 @@ class QubitGradientTest(BaseTest):
             qm.CNOT([0, 1])
             return qm.expectation.PauliZ(0)
 
-        qnode = qm.QNode(circuit, qm.device('default.qubit', wires=2))
+        qnode = qm.QNode(circuit, self.qubit_dev2)
         params = np.array([0.1, -1.6, np.pi / 5])
 
         # manual gradients
@@ -116,6 +117,57 @@ class QubitGradientTest(BaseTest):
         self.assertAllAlmostEqual(grad_fd1, grad_fd2, self.tol)
         self.assertAllAlmostEqual(grad_fd1, grad_angle, self.tol)
         self.assertAllAlmostEqual(grad_fd1, grad_auto, self.tol)
+
+    def test_hybrid_gradients(self):
+        "Tests that the various ways of computing the gradient of a hybrid computation all agree."
+        log.info('test_hybrid_gradients')
+
+        # input data is the first parameter
+        def classifier_circuit(in_data, x):
+            qm.RX(in_data, [0])
+            qm.CNOT([0, 1])
+            qm.RY(-1.6, [0])
+            qm.RY(in_data, [1])
+            qm.CNOT([1, 0])
+            qm.RX(x, [0])
+            qm.CNOT([0, 1])
+            return qm.expectation.PauliZ(0)
+
+        classifier = qm.QNode(classifier_circuit, self.qubit_dev2)
+
+        param = -0.1259
+        in_data = np.array([-0.1, -0.88, np.exp(0.5)])
+        out_data = np.array([1.5, np.pi / 3, 0.0])
+
+        def error(p):
+            "Total square error of classifier predictions."
+            ret = 0
+            for d_in, d_out in zip(in_data, out_data):
+                args = np.array([d_in, p])
+                square_diff = (classifier(args) - d_out) ** 2
+                ret = ret + square_diff
+            return ret
+
+        def d_error(p, grad_method):
+            "Gradient of error, computed manually."
+            ret = 0
+            for d_in, d_out in zip(in_data, out_data):
+                args = np.array([d_in, p])
+                diff = (classifier(args) - d_out)
+                ret = ret + 2 * diff * classifier.gradient(args, which=[1], method=grad_method)
+            return ret
+
+        y0 = error(param)
+        grad = autograd.grad(error)
+        grad_auto = grad(param)
+
+        grad_fd1 = d_error(param, 'F')
+        grad_angle = d_error(param, 'A')
+
+        # gradients computed with different methods must agree
+        self.assertAllAlmostEqual(grad_fd1, grad_angle, self.tol)
+        self.assertAllAlmostEqual(grad_fd1, grad_auto, self.tol)
+        self.assertAllAlmostEqual(grad_angle, grad_auto, self.tol)
 
 
 if __name__ == '__main__':
