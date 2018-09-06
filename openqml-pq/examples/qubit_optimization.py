@@ -24,7 +24,7 @@ def circuit(x, y, z):
     qm.RY(y, [0])
     qm.RX(x, [0])
     qm.CNOT([0, 1])
-    qm.expectation.PauliZ(1)
+    return qm.expectation.PauliZ(1)
 
 
 def cost(x, batched):
