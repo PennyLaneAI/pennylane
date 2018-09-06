@@ -120,7 +120,7 @@ class OptTest(BaseTest):
         qnode = QNode(circuit, self.dev)
         self.qnode = qnode
 
-        x0 = randn(7)  # one circuit param is used to encode the data
+        x0 = np.array([-0.71690972, -0.55632194,  0.74297438, -1.15401698,  0.62766983,  2.55008079, -0.27567698]) #fix "random" values to make the test pass/fail deterministically
 
         temp = 0.30288  # expected minimal cost
         tol = 0.001
