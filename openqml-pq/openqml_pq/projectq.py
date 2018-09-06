@@ -229,7 +229,8 @@ class ProjectQSimulator(ProjectQDevice):
 
 
     def expectation(self, observable, wires):
-        self.eng.flush(deallocate_qubits=False) #todo: maybe better do this in post_execute_queued()?
+        self.eng.flush(deallocate_qubits=False)
+
         if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
             expectation_value = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), self.reg)
             variance = 1 - expectation_value**2
@@ -314,8 +315,8 @@ class ProjectQIBMBackend(ProjectQDevice):
         super().reset()
 
     def expectation(self, observable, wires):
-        pq.ops.All(pq.ops.Measure) | self.reg #todo: maybe better do this in post_execute_queued()?
-        self.eng.flush() #todo: maybe better do this in post_execute_queued()?
+        pq.ops.All(pq.ops.Measure) | self.reg
+        self.eng.flush()
 
         if observable == 'PauliZ':
             probabilities = self.eng.backend.get_probabilities([self.reg[wires]])
