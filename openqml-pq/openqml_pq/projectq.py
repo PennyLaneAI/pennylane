@@ -53,7 +53,6 @@ from openqml import Device, DeviceError
 from openqml import Variable
 
 import projectq as pq
-import projectq.setups.ibm #todo only import this if necessary
 
 # import operations
 from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R)
@@ -146,9 +145,6 @@ class ProjectQDevice(Device):
     def __str__(self):
         return super().__str__() +'Backend: ' +self.backend +'\n'
 
-    # def __del__(self):
-    #     self._deallocate()
-
     def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
         for operation in self._queue:
@@ -175,11 +171,8 @@ class ProjectQDevice(Device):
     def expectation(self, observable, wires):
         raise NotImplementedError("expectation() is not yet implemented for this backend")
 
-    def shutdown(self):
-        """Shutdown.
-
-        """
-        pass
+    # def __del__(self):
+    #     self._deallocate()
 
     def _deallocate(self):
         """Deallocate all qubits to make ProjectQ happy
@@ -325,11 +318,9 @@ class ProjectQIBMBackend(ProjectQDevice):
         if 'password' not in kwargs:
             raise ValueError('An IBM Quantum Experience password specified via the "password" keyword argument is required')
 
+        import projectq.setups.ibm
+
         kwargs['backend'] = 'IBMBackend'
-        #kwargs['verbose'] = True #todo: remove when done testing
-        #kwargs['log'] = True #todo: remove when done testing
-        #kwargs['use_hardware'] = False #todo: remove when done testing
-        #kwargs['num_runs'] = 3 #todo: remove when done testing
         super().__init__(wires, **kwargs)
 
     def reset(self):
@@ -343,8 +334,6 @@ class ProjectQIBMBackend(ProjectQDevice):
         super().reset()
 
     def expectation(self, observable, wires):
-        pq.ops.R(0) | self.reg[0]# todo:remove this once https://github.com/ProjectQ-Framework/ProjectQ/issues/259 is resolved
-
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
 
