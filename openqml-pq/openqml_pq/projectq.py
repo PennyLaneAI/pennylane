@@ -145,19 +145,6 @@ class ProjectQDevice(Device):
     def __str__(self):
         return super().__str__() +'Backend: ' +self.backend +'\n'
 
-    # def execute_queued(self):
-    #     """Apply the queued operations to the device, and measure the expectation."""
-    #     for operation in self._queue:
-    #         if operation.name not in operator_map:
-    #             raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
-
-    #         par = [x.val if isinstance(x, Variable) else x for x in operation.params]
-    #         self.apply(operation.name, operation.wires, *par)
-
-    #     result = self.expectation(self._observe.name, self._observe.wires)
-    #     self._deallocate()
-    #     return result
-
     def post_execute_queued(self):
         self._deallocate()
 
@@ -204,16 +191,6 @@ class ProjectQDevice(Device):
         if self.eng is not None and self.backend == 'Simulator' or self.backend == 'IBMBackend':
             self.eng.flush()
             self.eng.backend.collapse_wavefunction(self.reg, [0 for i in range(len(self.reg))])
-
-
-    # def requires_credentials(self):
-    #     """Check whether this plugin requires credentials
-    #     """
-    #     if self.backend == 'IBMBackend':
-    #         return True
-    #     else:
-    #         return False
-
 
     def filter_kwargs_for_backend(self, kwargs):
         return { key:value for key,value in kwargs.items() if key in self._backend_kwargs }
