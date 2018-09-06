@@ -16,6 +16,7 @@
 import abc
 import logging
 
+from .variable import Variable
 
 logging.getLogger()
 
@@ -138,15 +139,56 @@ class Device(abc.ABC):
 
     def execute(self):
         """Apply the queued operations to the device, and measure the expectation."""
+        self.pre_execute_queued()
         self._out = self.execute_queued()
+        self.post_execute_queued()
 
-    @abc.abstractmethod
     def execute_queued(self):
-        """Called during execute(). To be implemented by each plugin.
+        """Called during execute().
+
+        Instead of overwriting this, consider implementing a suitable subset of pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
 
         Returns:
           float: expectation value(s) #todo: This should become an array type to handle multiple expectation values.
         """
+        with self.execute_queued_with():
+            for operation in self._queue:
+                if self.supported(operation.name):
+                    raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
+
+                par = [x.val if isinstance(x, Variable) else x for x in operation.params]
+                self.apply(operation.name, operation.wires, *par)
+
+        return self.expectation(self._observe.name, self._observe.wires)
+
+
+    def pre_execute_queued(self):
+        pass
+
+    def post_execute_queued(self):
+        pass
+
+    def execute_queued_with(self):
+        class MockClassForWithStatment(object): # pylint: disable=too-few-public-methods
+            """Mock class as a default for the with statement in execute_queued()."""
+            def __enter__(self):
+                pass
+            def __exit__(self, type, value, traceback):
+                pass
+
+        return MockClassForWithStatment()
+
+
+    @abc.abstractmethod
+    def supported(self, gate_name):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def apply(self, gate_name, wires, *par):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def expectation(self, observable, wires):
         raise NotImplementedError
 
     @abc.abstractmethod

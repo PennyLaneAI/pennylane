@@ -87,47 +87,58 @@ class StrawberryFieldsFock(Device):
         self.state = None
         super().__init__(self.short_name, shots)
 
-    def execute_queued(self):
-        """Apply the queued operations to the device, and measure the expectation."""
-        if self.eng:
-            self.eng.reset()
-            self.reset()
+    # def execute_queued(self):
+    #     """Apply the queued operations to the device, and measure the expectation."""
+    #     if self.eng:
+    #         self.eng.reset()
+    #         self.reset()
 
-        self.eng, q = sf.Engine(self.wires, hbar=self.hbar)
+    #     self.eng, q = sf.Engine(self.wires, hbar=self.hbar)
 
-        with self.eng:
-            for operation in self._queue:
-                if operation.name not in operator_map:
-                    raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
+    #     with self.eng:
+    #         for operation in self._queue:
+    #             if operation.name not in operator_map:
+    #                 raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
 
-                p = [x.val if isinstance(x, Variable) else x for x in operation.params]
-                op = operator_map[operation.name](*p)
-                if isinstance(operation.wires, int):
-                    op | q[operation.wires]
-                else:
-                    op | [q[i] for i in operation.wires]
+    #             p = [x.val if isinstance(x, Variable) else x for x in operation.params]
+    #             op = operator_map[operation.name](*p)
+    #             if isinstance(operation.wires, int):
+    #                 op | q[operation.wires]
+    #             else:
+    #                 op | [q[i] for i in operation.wires]
 
-        self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
+    #     self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
-        # calculate expectation value
-        reg = self._observe.wires
-        if self._observe.name == 'Fock':
-            ex = self.state.mean_photon(reg)
-            var = 0
-        elif self._observe.name == 'X':
-            ex, var = self.state.quad_expectation(reg, 0)
-        elif self._observe.name == 'P':
-            ex, var = self.state.quad_expectation(reg, np.pi/2)
-        elif self._observe.name == 'Homodyne':
-            ex, var = self.state.quad_expectation(reg, *self.observe.params)
+    #     # calculate expectation value
+    #     reg = self._observe.wires
+    #     if self._observe.name == 'Fock':
+    #         ex = self.state.mean_photon(reg)
+    #         var = 0
+    #     elif self._observe.name == 'X':
+    #         ex, var = self.state.quad_expectation(reg, 0)
+    #     elif self._observe.name == 'P':
+    #         ex, var = self.state.quad_expectation(reg, np.pi/2)
+    #     elif self._observe.name == 'Homodyne':
+    #         ex, var = self.state.quad_expectation(reg, *self.observe.params)
 
-        if self.shots != 0:
-            # estimate the expectation value
-            # use central limit theorem, sample normal distribution once, only ok
-            # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            ex = np.random.normal(ex, np.sqrt(var / self.shots))
+    #     if self.shots != 0:
+    #         # estimate the expectation value
+    #         # use central limit theorem, sample normal distribution once, only ok
+    #         # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+    #         ex = np.random.normal(ex, np.sqrt(var / self.shots))
 
-        return ex
+    #     return ex
+
+    def execute_queued_with(self):
+        return self.eng
+
+    def apply():
+        pass
+
+    def expectation(self, observable, wires):
+        pass
+
+
 
     def reset(self):
         """Reset the device"""
