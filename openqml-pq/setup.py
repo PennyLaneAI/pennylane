@@ -23,7 +23,7 @@ with open("openqml_pq/_version.py") as f:
 
 with open("requirements.txt") as f:
     #requirements = [line.strip() for line in f.readlines()]
-    requirements = ['projectq', 'openqml']
+    requirements = ['projectq>=0.4.1', 'openqml']
 
 info = {
     'name': 'OpenQML-PQ',
