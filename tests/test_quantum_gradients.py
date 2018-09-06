@@ -10,6 +10,10 @@ import autograd
 import autograd.numpy as np
 
 from defaults import openqml as qm, BaseTest
+from openqml.plugins.default import frx as Rx, frz as Rz
+
+def expZ(state):
+    return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
@@ -168,6 +172,36 @@ class QubitGradientTest(BaseTest):
         self.assertAllAlmostEqual(grad_fd1, grad_angle, self.tol)
         self.assertAllAlmostEqual(grad_fd1, grad_auto, self.tol)
         self.assertAllAlmostEqual(grad_angle, grad_auto, self.tol)
+
+    def test_qnode_gradient_fanout(self):
+        "Tests that the correct gradient is computed for qnodes which use the same parameter in multiple gates."
+        log.info('test_qnode_gradient_fanout')
+
+        def circuit(reused_param, other_param):
+            qm.RX(reused_param, [0])
+            qm.RZ(other_param, [0])
+            qm.RX(reused_param, [0])
+            return qm.expectation.PauliZ(0)
+
+        f = qm.QNode(circuit, self.qubit_dev1)
+        zero_state = np.array([1., 0.])
+
+        for reused_p in thetas:
+            for theta in thetas:
+                other_p = theta ** 2 / 11
+
+                # autograd gradient
+                grad = autograd.grad(f)
+                grad_eval = grad(reused_p, other_p)
+
+                # manual gradient
+                grad_true0 = (expZ(Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Rx(reused_p) @ zero_state) \
+                    -expZ(Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Rx(0.) @ zero_state)) / 2
+                grad_true1 = (expZ(Rx(reused_p) @ Rz(other_p) @ Rx(reused_p + np.pi / 2) @ zero_state) \
+                    -expZ(Rx(reused_p) @ Rz(other_p) @ Rx(reused_p - np.pi / 2) @ zero_state)) / 2
+                grad_true = grad_true0 + grad_true1 # product rule
+
+                self.assertAlmostEqual(grad_eval[0], grad_true, delta=self.tol)
 
 
 if __name__ == '__main__':
