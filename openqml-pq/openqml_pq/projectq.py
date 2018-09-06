@@ -151,27 +151,19 @@ class ProjectQDevice(Device):
 
     def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
-        #expectation_values = {}
         for operation in self._queue:
             if operation.name not in operator_map:
                 raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
 
             par = [x.val if isinstance(x, Variable) else x for x in operation.params]
-            #expectation_values[tuple(operation.wires)] = self.apply(operator_map[operation.name](*p), self.reg, operation.wires)
             self.apply(operation.name, operation.wires, *par)
 
         result = self.expectation(self._observe.name, self._observe.wires)
         self._deallocate()
         return result
 
-        # if self._observe.wires is not None:
-        #     if isinstance(self._observe.wires, int):
-        #         return expectation_values[tuple([self._observe.wires])]
-        #     else:
-        #         return np.array([expectation_values[tuple([idx])] for idx in self._observe.wires if tuple([idx]) in expectation_values])
-
     def apply(self, gate_name, wires, *par):
-        if gate_name not in self._gates:
+        if gate_name not in self.gates:
             raise ValueError('Gate {} not supported on this backend'.format(gate))
 
         gate = operator_map[gate_name](*par)
