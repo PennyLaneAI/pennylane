@@ -53,11 +53,11 @@ from openqml import Device, DeviceError
 from openqml import Variable
 
 import projectq as pq
-import projectq.setups.ibm #todo only import this if necessary
 
 # import operations
-from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R)
-from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, Hermitian)
+from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R, Ph, StatePreparation, HGate, SGate, TGate, SqrtXGate, SqrtSwapGate
+)
+from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, QubitUnitary)
 
 from ._version import __version__
 
@@ -72,18 +72,18 @@ operator_map = {
     'RX': Rx,
     'RY': Ry,
     'RZ': Rz,
+    'PhaseShift': R,
+    'QubitStateVector': StatePreparation,
+    'Hadamard': HGate,
+    #gates not native to OpenQML
+    'S': SGate,
+    'T': TGate,
+    'SqrtX': SqrtXGate,
+    'SqrtSwap': SqrtSwapGate,
+    'AllZ': AllZGate,
+    #gates not implemented in ProjectQ
     'Rot': Rot,
-    #'PhaseShift': #todo: implement
-    #'QubitStateVector': #todo: implement
-    #'QubitUnitary': #todo: implement
-    #: H, #todo: implement
-    #: S, #todo: implement
-    #: T, #todo: implement
-    #: SqrtX, #todo: implement
-    #: SqrtSwap, #todo: implement
-    #: R, #todo: implement
-    #'AllPauliZ': AllZGate, #todo: implement
-    #'Hermitian': #todo: implement
+    'QubitUnitary': QubitUnitary,
 }
 
 class ProjectQDevice(Device):
@@ -146,32 +146,21 @@ class ProjectQDevice(Device):
     def __str__(self):
         return super().__str__() +'Backend: ' +self.backend +'\n'
 
-    # def __del__(self):
-    #     self._deallocate()
-
     def execute_queued(self):
         """Apply the queued operations to the device, and measure the expectation."""
-        #expectation_values = {}
         for operation in self._queue:
             if operation.name not in operator_map:
                 raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
 
             par = [x.val if isinstance(x, Variable) else x for x in operation.params]
-            #expectation_values[tuple(operation.wires)] = self.apply(operator_map[operation.name](*p), self.reg, operation.wires)
             self.apply(operation.name, operation.wires, *par)
 
         result = self.expectation(self._observe.name, self._observe.wires)
         self._deallocate()
         return result
 
-        # if self._observe.wires is not None:
-        #     if isinstance(self._observe.wires, int):
-        #         return expectation_values[tuple([self._observe.wires])]
-        #     else:
-        #         return np.array([expectation_values[tuple([idx])] for idx in self._observe.wires if tuple([idx]) in expectation_values])
-
     def apply(self, gate_name, wires, *par):
-        if gate_name not in self._gates:
+        if gate_name not in self.gates:
             raise ValueError('Gate {} not supported on this backend'.format(gate))
 
         gate = operator_map[gate_name](*par)
@@ -183,11 +172,8 @@ class ProjectQDevice(Device):
     def expectation(self, observable, wires):
         raise NotImplementedError("expectation() is not yet implemented for this backend")
 
-    def shutdown(self):
-        """Shutdown.
-
-        """
-        pass
+    # def __del__(self):
+    #     self._deallocate()
 
     def _deallocate(self):
         """Deallocate all qubits to make ProjectQ happy
@@ -244,7 +230,7 @@ class ProjectQSimulator(ProjectQDevice):
 
     short_name = 'projectq.simulator'
     _gates = set(operator_map.keys())
-    _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate, Hermitian] ])
+    _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate] ])
     _circuits = {}
     _backend_kwargs = ['gate_fusion', 'rnd_seed']
 
@@ -333,11 +319,9 @@ class ProjectQIBMBackend(ProjectQDevice):
         if 'password' not in kwargs:
             raise ValueError('An IBM Quantum Experience password specified via the "password" keyword argument is required')
 
+        import projectq.setups.ibm
+
         kwargs['backend'] = 'IBMBackend'
-        #kwargs['verbose'] = True #todo: remove when done testing
-        #kwargs['log'] = True #todo: remove when done testing
-        #kwargs['use_hardware'] = False #todo: remove when done testing
-        #kwargs['num_runs'] = 3 #todo: remove when done testing
         super().__init__(wires, **kwargs)
 
     def reset(self):
@@ -351,8 +335,6 @@ class ProjectQIBMBackend(ProjectQDevice):
         super().reset()
 
     def expectation(self, observable, wires):
-        pq.ops.R(0) | self.reg[0]# todo:remove this once https://github.com/ProjectQ-Framework/ProjectQ/issues/259 is resolved
-
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
 
