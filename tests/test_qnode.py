@@ -12,17 +12,6 @@ from openqml import numpy as np
 from defaults import openqml as qm, BaseTest
 
 
-def circuit1(x, y, z):
-    qm.RX(x, [0])
-    qm.CNOT([0, 1])
-    qm.RY(-1.6, [0])
-    qm.RY(y, [1])
-    qm.CNOT([1, 0])
-    qm.RX(z, [0])
-    qm.CNOT([0, 1])
-    qm.expectation.PauliZ(0)
-
-
 def rubbish_circuit(x):
     qm.Rot(x, 0.3, -0.2, [0])
     qm.SWAP([0, 1])
@@ -45,27 +34,6 @@ class BasicTest(BaseTest):
     """
     def setUp(self):
         self.dev = qm.device('default.qubit', wires=2)
-
-    def test_qnode(self):
-        "Quantum node and node gradient evaluation."
-        log.info('test_qnode')
-
-        qnode = qm.QNode(circuit1, self.dev)
-        params = np.random.randn(qnode.num_variables)
-
-        # manual gradients
-        grad_fd1 = qnode.gradient(params, method='F', order=1)
-        grad_fd2 = qnode.gradient(params, method='F', order=2)
-        grad_angle = qnode.gradient(params, method='A')
-
-        # automatic gradient
-        grad_auto = qm.grad(qnode, params)
-
-        # gradients computed with different methods must agree
-        self.assertAllAlmostEqual(grad_fd1, grad_fd2, self.tol)
-        self.assertAllAlmostEqual(grad_fd1, grad_angle, self.tol)
-        self.assertAllAlmostEqual(grad_fd1, grad_auto, self.tol)
-
 
     def test_qnode_fail(self):
         "Expected failures."
