@@ -196,9 +196,9 @@ class QubitGradientTest(BaseTest):
 
                 # manual gradient
                 grad_true0 = (expZ(Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Rx(reused_p) @ zero_state) \
-                    -expZ(Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Rx(0.) @ zero_state)) / 2
+                             -expZ(Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Rx(0.) @ zero_state)) / 2
                 grad_true1 = (expZ(Rx(reused_p) @ Rz(other_p) @ Rx(reused_p + np.pi / 2) @ zero_state) \
-                    -expZ(Rx(reused_p) @ Rz(other_p) @ Rx(reused_p - np.pi / 2) @ zero_state)) / 2
+                             -expZ(Rx(reused_p) @ Rz(other_p) @ Rx(reused_p - np.pi / 2) @ zero_state)) / 2
                 grad_true = grad_true0 + grad_true1 # product rule
 
                 self.assertAlmostEqual(grad_eval[0], grad_true, delta=self.tol)
