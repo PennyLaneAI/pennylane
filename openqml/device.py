@@ -85,7 +85,6 @@ class Device(abc.ABC):
         if self._observe is None:
             raise DeviceError('A qfunc must always conclude with a classical expectation value.')
         Device._current_context = None
-        self.execute()
 
     @property
     def gates(self):
