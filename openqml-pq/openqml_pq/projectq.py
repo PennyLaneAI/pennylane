@@ -61,7 +61,7 @@ from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, Hermitian)
 from ._version import __version__
 
 
-operator_map = {
+operator_map = { #todo: make this a class property
     'PauliX': XGate,
     'PauliY': YGate,
     'PauliZ': ZGate,
@@ -145,18 +145,24 @@ class ProjectQDevice(Device):
     def __str__(self):
         return super().__str__() +'Backend: ' +self.backend +'\n'
 
-    def execute_queued(self):
-        """Apply the queued operations to the device, and measure the expectation."""
-        for operation in self._queue:
-            if operation.name not in operator_map:
-                raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
+    # def execute_queued(self):
+    #     """Apply the queued operations to the device, and measure the expectation."""
+    #     for operation in self._queue:
+    #         if operation.name not in operator_map:
+    #             raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
 
-            par = [x.val if isinstance(x, Variable) else x for x in operation.params]
-            self.apply(operation.name, operation.wires, *par)
+    #         par = [x.val if isinstance(x, Variable) else x for x in operation.params]
+    #         self.apply(operation.name, operation.wires, *par)
 
-        result = self.expectation(self._observe.name, self._observe.wires)
+    #     result = self.expectation(self._observe.name, self._observe.wires)
+    #     self._deallocate()
+    #     return result
+
+    def post_execute_queued(self):
         self._deallocate()
-        return result
+
+    def supported(self, gate_name):
+        return gate_name not in operator_map
 
     def apply(self, gate_name, wires, *par):
         if gate_name not in self.gates:
