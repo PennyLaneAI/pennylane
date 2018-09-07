@@ -85,7 +85,7 @@ class PluginTest(BaseTest):
                     gate_num_par_args = len(gate_fullargspec.args)-2
                     gate_pars = np.random.randn(gate_num_par_args)
 
-                    gate_class(*gate_pars, [0,1])
+                    gate_class(*gate_pars, [0,1,3])#todo: find out how to know the number of subsystems a gate is supposed to act on...
                     return observable_class(*observable_pars, [0])
 
                 circuit()
