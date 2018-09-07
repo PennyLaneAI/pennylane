@@ -11,6 +11,7 @@ from pkg_resources import iter_entry_points
 import inspect
 
 import openqml as qm
+import numpy as np
 
 # import autograd
 # import autograd.numpy as np
@@ -71,9 +72,6 @@ class PluginTest(BaseTest):
 
                 #from openqml import Expectation
 
-
-
-
                 @qm.qfunc(dev)
                 def circuit(*par):
 
@@ -82,9 +80,12 @@ class PluginTest(BaseTest):
                     print(type(cla))
                     observable_fullargspec = inspect.getfullargspec(cla.__init__)
                     print(observable_fullargspec)
+                    observable_num_par_args = len(observable_fullargspec.args)-2
+                    print(observable_num_par_args)
+                    observable_pars = np.random.randn(observable_num_par_args)
 
                     #getattr(qm, gate)(*par, [0])
-                    return cla(0)
+                    return cla(*observable_pars, [0])
 
                 circuit(2)
 
