@@ -17,6 +17,30 @@ def expZ(state):
 
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
+class QuadratureGradientTest(BaseTest):
+    """Tests of the automatic gradient method for circuits acting on quadratures.
+    """
+    def setUp(self):
+        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1)
+        self.fock_dev2 = qm.device('strawberryfields.fock', wires=2)
+        self.gaussian_dev1 = qm.device('strawberryfields.gaussian', wires=1)
+        self.gaussian_dev2 = qm.device('strawberryfields.gaussian', wires=2)
+
+    def test_rotation(self):
+        "Tests that the automatic gradient of a phase space rotation is correct."
+        log.info('test_rotation')
+
+        @qm.qfunc(self.fock_dev1)
+        def circuit(x):
+            qm.Rotation(x, [0])
+            return qm.expectation.PauliZ(0)
+
+        grad_fn = autograd.grad(circuit)
+
+        for theta in thetas:
+            x = grad_fn(theta)
+
+
 class QubitGradientTest(BaseTest):
     """Tests of the automatic gradient method for qubit gates.
     """
@@ -211,7 +235,7 @@ if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', automatic gradients.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (QubitGradientTest,):
+    for t in (QubitGradientTest,QuadratureGradientTest):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 
