@@ -74,10 +74,6 @@ class BasicTest(BaseTest):
         params = np.random.randn(qnode.num_variables)
         qnode(params)
 
-        # gradient_angle cannot handle more-than-one-parameter gates
-        with self.assertRaisesRegex(ValueError, "only differentiate one-parameter gates"):
-            res = qnode.gradient(params, method='A')
-
         # only order-1 and order-2 finite diff methods are available
         with self.assertRaisesRegex(ValueError, "Order must be 1 or 2"):
             qnode.gradient(params, method='F', order=3)
