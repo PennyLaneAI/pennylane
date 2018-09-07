@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """OpenQML parameterised variable class"""
+import copy
 
 class Variable:
     """Stores the parameter reference.
@@ -28,17 +29,37 @@ class Variable:
         self.idx = idx  #: int: parameter index
         self.name = name
         self.val = val
+        self.mult = 1.0  #: float: parameter scalar multiplier
 
     def __str__(self):
-        return 'Variable: {}'.format(self.idx)
+        temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
+        return 'Variable {}: name = {} value = {}{}'.format(self.idx, self.name, self.value, temp)
 
-    # def __add__(self, other):
-    #     if isinstance(other, Variable):
-    #         return
-    #     self.val += other
+    def __neg__(self):
+        """Unary negation."""
+        temp = copy.copy(self)
+        temp.mult = -temp.mult
+        return temp
 
-    # def __mul__(self, other):
-    #     self.val *= other
+    def __mul__(self, scalar):
+        """Right multiplication by scalars."""
+        temp = copy.copy(self)
+        temp.mult *= scalar
+        return temp
 
-    # def __div__(self, other):
-    #     self.val /= other
+    __rmul__ = __mul__ # """Left multiplication by scalars."""
+
+    @staticmethod
+    def map(par, values):
+        """Mapping function for gate parameters.
+        Replaces Variables with their actual values.
+
+        Args:
+            par (Sequence[float, int, ParRef]): parameter values to map, each either
+                a fixed immediate value or a reference to a free parameter
+            values (Sequence[float, int]): values for the free parameters
+
+        Returns:
+            list[float, int]: mapped parameters
+        """
+        return [values[p.idx] * p.mult if isinstance(p, Variable) else p for p in par]

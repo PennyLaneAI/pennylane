@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import copy
 import collections
 from inspect import signature
 
@@ -166,7 +166,7 @@ class QNode:
         return 'F'
 
     def gradient(self, params, which=None, method='B', *, h=1e-7, order=1, **kwargs):
-        """Compute the gradient of the node.
+        """Compute the gradient (or Jacobian) of the node.
 
         Returns the gradient of the parametrized quantum circuit encapsulated in the QNode.
 
@@ -175,11 +175,17 @@ class QNode:
         * Finite differences (``'F'``). The first order method evaluates the circuit at
           n+1 points of the parameter space, the second order method at 2n points,
           where n = len(which).
-        * Angular method (``'A'``). Only works for one-parameter gates where the generator
-          only has two unique eigenvalues. The circuit is evaluated twice for each incidence
+        * Angular method (``'A'``). Works for all one-parameter gates where the generator
+          only has two unique eigenvalues. Additionally can be used in CV systems for gaussian
+          circuits containing only first-order observables.The circuit is evaluated twice for each incidence
           of each parameter in the circuit.
         * Best known method for each parameter (``'B'``): uses the angular method if
           possible, otherwise finite differences.
+
+        .. note::
+           The finite difference method cannot tolerate any statistical noise in the circuit output,
+           since it compares the output at two points infinitesimally close to each other. Hence the
+           'F' method requires exact expectation values, i.e. `shots=0`.
 
         Args:
             params (Sequence[float]): point in parameter space at which to evaluate the gradient
@@ -190,9 +196,11 @@ class QNode:
         Keyword Args:
             h (float): finite difference method step size
             order (int): finite difference method order, 1 or 2
+            shots (int): How many times should the circuit be evaluated (or sampled) to estimate
+                the expectation values. For simulator backends, zero yields the exact result.
 
         Returns:
-            vector[float]: gradient vector
+            array[float]: gradient vector/Jacobian matrix, shape == (n_out, len(which))
         """
         if isinstance(params, numbers.Number):
             params = [params]
@@ -201,6 +209,7 @@ class QNode:
             which = range(len(params))
         elif len(which) != len(set(which)):  # set removes duplicates
             raise ValueError('Parameter indices must be unique.')
+
         params = np.asarray(params)
 
         if not self.variable_ops:
@@ -220,7 +229,10 @@ class QNode:
                 y0 = None
 
         # compute the partial derivative w.r.t. each parameter using the proper method
-        grad = np.zeros(len(which), dtype=float)
+        # grad = np.zeros(len(which), dtype=float)
+        # FIXME autograd.grad does not play well with a Jacobian, see test_qnode.py
+        grad = np.zeros((len(which),), dtype=float)
+
         for i, k in enumerate(which):
             par_method = method[k]
             if par_method == 'A':
@@ -280,35 +292,49 @@ class QNode:
         pd = 0.0
         # find the Commands in which the parameter appears, use the product rule
         for op, p_idx in self.variable_ops[idx]:
-            if len(op.params) != 1:
-                raise ValueError('For now angular method can only differentiate one-parameter gates.')
             if op.grad_method != 'A':
                 raise ValueError('Attempted to use the angular method on a gate that does not support it.')
 
-            # # we temporarily edit the Command so that parameter idx is replaced by a new one,
-            # # which we can modify without affecting other Commands depending on the original.
-            # orig = op.params[0]
-            # assert(orig.idx == idx)
-            # op.params[0] = Variable(n, orig)  # reference to a new, temporary parameter (this method only supports 1-parameter gates!)
-            # self.variable_ops[n] = None  # we just need to add something to the map, it's not actually used
-            # # shift it by pi/2 and -pi/2
-            # shift_params = np.r_[params, params[idx] + np.pi/2]
-            # print('here', *shift_params)
-            # y2 = self.__call__(*shift_params, **kwargs)
-            # shift_params[-1] = params[idx] - np.pi/2
-            # y1 = self.__call__(*shift_params, **kwargs)
-            # # restore the original parameter
-            # op.params[0] = orig
-            # del self.variable_ops[n]  # remove the temporary entry
-            # pd += (y2-y1) / 2
+            # we temporarily edit the Command such that parameter p_idx is replaced by a new one,
+            # which we can modify without affecting other Commands depending on the original.
+            orig = op.params[p_idx]
+            assert(orig.idx == idx)
 
-            # shift it by pi/2 and -pi/2
-            shift_params = params.copy()
-            shift_params[idx] = params[idx] + np.pi/2
+            # reference to a new, temporary parameter with index n, otherwise identical with orig
+            temp_var = copy.copy(orig)
+            temp_var.idx = n
+            op.params[p_idx] = temp_var
+
+            # we just need to add something to the map, it's not actually used
+            self.variable_ops[n] = [[op, p_idx]]
+
+            # get the gradient recipe for this parameter
+            recipe = op.grad_recipe[p_idx]
+            multiplier = 0.5 if recipe is None else recipe[0]
+            multiplier *= orig.mult
+
+            # shift the temp parameter value by +- this amount
+            shift = np.pi / 2 if recipe is None else recipe[1]
+            shift /= orig.mult
+
+            shift_params = np.r_[params, params[idx] + shift]
             y2 = self.__call__(*shift_params, **kwargs)
-            shift_params[idx] = params[idx] - np.pi/2
+            shift_params[-1] = params[idx] - shift
             y1 = self.__call__(*shift_params, **kwargs)
-            pd += (y2-y1) / 2
+
+            # restore the original parameter
+            op.params[p_idx] = orig
+            # remove the temporary entry
+            del self.variable_ops[n]
+            pd += (y2-y1) * multiplier
+
+            # # shift it by pi/2 and -pi/2
+            # shift_params = params.copy()
+            # shift_params[idx] = params[idx] + np.pi/2
+            # y2 = self.__call__(*shift_params, **kwargs)
+            # shift_params[idx] = params[idx] - np.pi/2
+            # y1 = self.__call__(*shift_params, **kwargs)
+            # pd += (y2-y1) / 2
         return pd
 
 

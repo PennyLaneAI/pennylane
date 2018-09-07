@@ -38,7 +38,7 @@ class OperationFactory(type):
 
 
 class Operation(metaclass=OperationFactory):
-    """A type of quantum operation supported by a plugin, and its properties.
+    r"""A type of quantum operation supported by a plugin, and its properties.
 
     Operation is used to describe unitary quantum gates.
 
@@ -46,15 +46,32 @@ class Operation(metaclass=OperationFactory):
         name  (str): name of the operation
         wires (seq): subsystems it acts on
         params (seq): operation parameters
-        grad_method (str): gradient computation method: 'A': angular, 'F': finite differences.
         par_domain  (str): domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats.
             Parameters outside the domain are truncated into it.
+        grad_method (str): gradient computation method: 'A': angular, 'F': finite differences.
+        grad_recipe (list[tuple[float]]): gradient recipe for the 'A' method. One tuple for each parameter:
+            (multiplier c_k, parameter shift s_k). None means (0.5, \pi/2) (the most common case).
+
+            .. math:: \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}} = c_k (Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots))
+
+            To find out in detail how the circuit gradients are computed, see :ref:`circuit_gradients`.
     """
-    def __init__(self, name, params, wires, *, grad_method='A', par_domain='R'):
+    def __init__(self, name, params, wires, *, par_domain='R', grad_method='A', grad_recipe=None):
         self.name  = name   #: str: name of the gate
         self.params = params  #: seq: operation parameters
-        self.grad_method = grad_method  #: str: gradient computation method
         self.par_domain  = par_domain   #: str: domain of the gate parameters
+
+        self.grad_method = grad_method  #: str: gradient computation method
+
+        # default recipe for every parameter
+        self.grad_recipe = [None] * len(self.params)
+
+        if grad_recipe is not None:
+
+            if len(grad_recipe) != len(self.params):
+                raise ValueError('Gradient recipe must have one entry for each parameter!')
+
+            self.grad_recipe = grad_recipe
 
         if isinstance(wires, int):
             self.wires = [wires]
