@@ -79,7 +79,7 @@ class StrawberryFieldsFock(Device):
     _observables = {'Fock', 'X', 'P', 'Homodyne'}
     _circuits = {}
 
-    def __init__(self, wires, *, shots=0, cutoff=5, hbar=2):
+    def __init__(self, wires, *, shots=0, cutoff, hbar=2):
         self.wires = wires
         self.cutoff = cutoff
         self.hbar = hbar
