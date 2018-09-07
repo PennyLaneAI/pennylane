@@ -113,6 +113,8 @@ class StrawberryFieldsGaussian(Device):
             ex, var = self.state.quad_expectation(reg, *self._observe.params)
         elif self._observe.name == 'Displacement':
             ex = self.state.displacement(modes=reg)
+        else:
+            raise ValueError('Observable '+self._observe.name+' not implemented.')
 
         if self.shots != 0:
             # estimate the expectation value
