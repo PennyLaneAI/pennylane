@@ -67,10 +67,8 @@ class Operation(metaclass=OperationFactory):
         self.grad_recipe = [None] * len(self.params)
 
         if grad_recipe is not None:
-
             if len(grad_recipe) != len(self.params):
                 raise ValueError('Gradient recipe must have one entry for each parameter!')
-
             self.grad_recipe = grad_recipe
 
         if isinstance(wires, int):

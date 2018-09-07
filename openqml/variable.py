@@ -33,7 +33,7 @@ class Variable:
 
     def __str__(self):
         temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
-        return 'Variable {}: name = {} value = {}{}'.format(self.idx, self.name, self.value, temp)
+        return 'Variable {}: name = {} value = {}{}'.format(self.idx, self.name, self.val, temp)
 
     def __neg__(self):
         """Unary negation."""

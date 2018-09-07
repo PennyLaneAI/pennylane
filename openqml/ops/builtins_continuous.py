@@ -26,9 +26,8 @@ class Rotation(Operation):
         phi (float): the rotation angle.
         wires (int): the subsystem the Operation acts on.
     """
-
     def __init__(self, phi, wires):
-        super().__init__('Rotation', [phi], wires)
+        super().__init__('Rotation', [phi], wires, grad_recipe=[None])
 
 
 class Displacement(Operation):
@@ -49,7 +48,10 @@ class Displacement(Operation):
         wires (int): the subsystem the Operation acts on.
     """
     def __init__(self, a, phi, wires):
-        super().__init__('Displacement', [a, phi], wires)
+        shift = 1 # gradient computation shift for displacements
+        # TODO d\tilde{D}(r, phi)/dr does not depend on r!
+        # The gradient formula can be simplified further, we can make do with smaller displacements.
+        super().__init__('Displacement', [a, phi], wires, grad_recipe=[(0.5/shift, shift), None])
 
 
 class Squeezing(Operation):
@@ -74,8 +76,9 @@ class Squeezing(Operation):
         wires (int or seq[int]): the subsystem(s) the Operation acts on.
     """
     def __init__(self, r, phi, wires):
+        shift = 1.0 # gradient computation shift for squeezing
         if isinstance(wires, int) or len(wires) == 1:
-            super().__init__('Squeezing', [r, phi], wires)
+            super().__init__('Squeezing', [r, phi], wires, grad_recipe=[(0.5/np.sinh(shift), shift), None])
         elif len(wires) == 2:
             super().__init__('TwoModeSqueezing', [r, phi], wires)
 
@@ -91,7 +94,7 @@ class QuadraticPhase(Operation):
         wires (int): the subsystem the Operation acts on.
     """
     def __init__(self, s, wires):
-        super().__init__('QuadraticPhase', [s], wires)
+        super().__init__('QuadraticPhase', [s], wires, grad_method='F')
 
 
 class CubicPhase(Operation):
@@ -105,7 +108,7 @@ class CubicPhase(Operation):
         wires (int): the subsystem the Operation acts on.
     """
     def __init__(self, gamma, wires):
-        super().__init__('CubicPhase', [gamma], wires)
+        super().__init__('CubicPhase', [gamma], wires, grad_method='F')
 
 
 class Kerr(Operation):
@@ -127,9 +130,9 @@ class Kerr(Operation):
     """
     def __init__(self, kappa, wires):
         if isinstance(wires, int) or len(wires) == 1:
-            super().__init__('Kerr', [kappa], wires)
+            super().__init__('Kerr', [kappa], wires, grad_method='F')
         elif len(wires) == 2:
-            super().__init__('CrossKerr', [kappa], wires)
+            super().__init__('CrossKerr', [kappa], wires, grad_method='F')
 
 
 class Beamsplitter(Operation):
@@ -148,7 +151,8 @@ class Beamsplitter(Operation):
         wires (seq[int]): sequence of two subsystems the Operation acts on.
     """
     def __init__(self, theta, phi, wires):
-        super().__init__('Beamsplitter', [theta, phi], wires)
+        # For the beamsplitter, both parameters are rotation-like
+        super().__init__('Beamsplitter', [theta, phi], wires, grad_recipe=[None, None])
 
 
 class ControlledAddition(Operation):
@@ -163,7 +167,7 @@ class ControlledAddition(Operation):
         wires (seq[int]): sequence of two subsystems the Operation acts on.
     """
     def __init__(self, s, wires):
-        super().__init__('ControlledAddition', [s], wires)
+        super().__init__('ControlledAddition', [s], wires, grad_method='F')
 
 
 class ControlledPhase(Operation):
@@ -178,7 +182,7 @@ class ControlledPhase(Operation):
         wires (seq[int]): sequence of two subsystems the Operation acts on.
     """
     def __init__(self, s, wires):
-        super().__init__('ControlledPhase', [s], wires)
+        super().__init__('ControlledPhase', [s], wires, grad_method='F')
 
 
 #=============================================================================
@@ -195,7 +199,7 @@ class CoherentState(Operation):
         wires (int): subsystem the Operation acts on.
     """
     def __init__(self, a, phi, wires):
-        super().__init__('CoherentState', [a, phi], wires)
+        super().__init__('CoherentState', [a, phi], wires, grad_method='F')
 
 
 class SqueezedState(Operation):
@@ -207,7 +211,7 @@ class SqueezedState(Operation):
         wires (int): subsystem the Operation acts on.
     """
     def __init__(self, r, phi, wires):
-        super().__init__('SqueezedState', [r, phi], wires)
+        super().__init__('SqueezedState', [r, phi], wires, grad_method='F')
 
 
 class DisplacedSqueezedState(Operation):
@@ -228,7 +232,7 @@ class DisplacedSqueezedState(Operation):
         wires (int): subsystem the Operation acts on.
     """
     def __init__(self, alpha, r, phi, wires):
-        super().__init__('DisplacedSqueezedState', [alpha, r, phi], wires)
+        super().__init__('DisplacedSqueezedState', [alpha, r, phi], wires, grad_method='F')
 
 
 class FockState(Operation):
@@ -239,7 +243,7 @@ class FockState(Operation):
         wires (int): subsystem the Operation acts on.
     """
     def __init__(self, n, wires):
-        super().__init__('FockState', [n], wires, par_domain='N')
+        super().__init__('FockState', [n], wires, par_domain='N', grad_method='F')
 
 
 class ThermalState(Operation):
@@ -250,7 +254,7 @@ class ThermalState(Operation):
         wires (int): subsystem the Operation acts on.
     """
     def __init__(self, n, wires):
-        super().__init__('ThermalState', [n], wires)
+        super().__init__('ThermalState', [n], wires, grad_method='F')
 
 
 class CatState(Operation):
@@ -270,7 +274,7 @@ class CatState(Operation):
         wires (int): subsystem the Operation acts on.
     """
     def __init__(self, a, p, wires):
-        super().__init__('CatState', [a, p], wires)
+        super().__init__('CatState', [a, p], wires, grad_method='F')
 
 
 class FockStateVector(Operation):
@@ -282,7 +286,7 @@ class FockStateVector(Operation):
         wires (int or seq[int]): subsystem(s) the Operation acts on.
     """
     def __init__(self, state, wires):
-        super().__init__('FockStateVector', [state], wires)
+        super().__init__('FockStateVector', [state], wires, grad_method='F')
 
 
 class FockDensityMatrix(Operation):
@@ -294,7 +298,7 @@ class FockDensityMatrix(Operation):
         wires (int or seq[int]): subsystem(s) the Operation acts on.
     """
     def __init__(self, state, wires):
-        super().__init__('FockDensityMatrix', [state], wires)
+        super().__init__('FockDensityMatrix', [state], wires, grad_method='F')
 
 
 class GaussianState(Operation):
@@ -307,4 +311,4 @@ class GaussianState(Operation):
         wires (int or seq[int]): subsystem(s) the Operation acts on.
     """
     def __init__(self, r, V, wires):
-        super().__init__('GaussianState', [r, V], wires)
+        super().__init__('GaussianState', [r, V], wires, grad_method='F')
