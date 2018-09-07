@@ -73,21 +73,22 @@ class PluginTest(BaseTest):
                 #from openqml import Expectation
 
                 @qm.qfunc(dev)
-                def circuit(*par):
+                def circuit():
 
-                    cla = getattr(qm.expectation, observable)
-                    print(cla)
-                    print(type(cla))
-                    observable_fullargspec = inspect.getfullargspec(cla.__init__)
-                    print(observable_fullargspec)
+                    observable_class = getattr(qm.expectation, observable)
+                    observable_fullargspec = inspect.getfullargspec(observable_class.__init__)
                     observable_num_par_args = len(observable_fullargspec.args)-2
-                    print(observable_num_par_args)
                     observable_pars = np.random.randn(observable_num_par_args)
 
-                    #getattr(qm, gate)(*par, [0])
-                    return cla(*observable_pars, [0])
+                    gate_class = getattr(qm, gate)
+                    gate_fullargspec = inspect.getfullargspec(gate_class.__init__)
+                    gate_num_par_args = len(gate_fullargspec.args)-2
+                    gate_pars = np.random.randn(gate_num_par_args)
 
-                circuit(2)
+                    gate_class(*gate_pars, [0,1])
+                    return observable_class(*observable_pars, [0])
+
+                circuit()
 
 
 if __name__ == '__main__':
