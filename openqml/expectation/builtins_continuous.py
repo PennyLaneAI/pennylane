@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a beamsplitter operation"""
+"""This module contains operations for the default phase space observables"""
+
 from .expectation import Expectation
 
 
 class Fock(Expectation):
-    r"""Returns the expectation value in the Fock space.
-
-    This is equivalent to the mean particle number.
+    r"""Returns the photon-number expectation value in the phase space.
 
     Args:
         wires (int): the subsystem the operation acts on.

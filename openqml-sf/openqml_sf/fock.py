@@ -65,7 +65,7 @@ class StrawberryFieldsFock(Device):
     """StrawberryFields Fock device for OpenQML.
 
     wires (int): the number of modes to initialize the device in.
-    cutoff (int): the Fock space truncation. Must be specified before
+    cutoff_dim (int): the Fock space truncation. Must be specified before
         applying a qfunc.
     hbar (float): the convention chosen in the canonical commutation
         relation [x, p] = i hbar. The default value is hbar=2.
@@ -79,9 +79,9 @@ class StrawberryFieldsFock(Device):
     _observables = {'Fock', 'X', 'P', 'Homodyne'}
     _circuits = {}
 
-    def __init__(self, wires, *, shots=0, cutoff=None, hbar=2):
+    def __init__(self, wires, *, shots=0, cutoff_dim, hbar=2):
         self.wires = wires
-        self.cutoff = cutoff
+        self.cutoff = cutoff_dim
         self.hbar = hbar
         self.eng = None
         self.state = None
