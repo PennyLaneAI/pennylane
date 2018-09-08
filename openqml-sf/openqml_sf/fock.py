@@ -70,7 +70,7 @@ class StrawberryFieldsFock(Device):
     hbar (float): the convention chosen in the canonical commutation
         relation [x, p] = i hbar. The default value is hbar=2.
     """
-    name = 'Strawberry Fields OpenQML plugin'
+    name = 'Strawberry Fields Fock OpenQML plugin'
     short_name = 'strawberryfields.fock'
     api_version = '0.1.0'
     version = __version__
@@ -110,26 +110,30 @@ class StrawberryFieldsFock(Device):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
         # calculate expectation value
-        reg = self._observe.wires
-        if self._observe.name == 'Fock':
-            ex = self.state.mean_photon(reg)
-            var = 0
-        elif self._observe.name == 'X':
-            ex, var = self.state.quad_expectation(reg, 0)
-        elif self._observe.name == 'P':
-            ex, var = self.state.quad_expectation(reg, np.pi/2)
-        elif self._observe.name == 'Homodyne':
-            ex, var = self.state.quad_expectation(reg, *self.observe.params)
-        else:
-            raise DeviceError("Observable {} not supported by StrawberryFieldsFock simulator".format(self._observe.name))
+        ev_list = [] # list of returned expectation values
+        for expectation in self._observe:
+            reg = expectation.wires
+            if expectation.name == 'Fock':
+                ex = self.state.mean_photon(reg)
+                var = 0
+            elif expectation.name == 'X':
+                ex, var = self.state.quad_expectation(reg, 0)
+            elif expectation.name == 'P':
+                ex, var = self.state.quad_expectation(reg, np.pi/2)
+            elif expectation.name == 'Homodyne':
+                ex, var = self.state.quad_expectation(reg, *expectation.params)
+            else:
+                raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
 
-        if self.shots != 0:
-            # estimate the expectation value
-            # use central limit theorem, sample normal distribution once, only ok
-            # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            ex = np.random.normal(ex, np.sqrt(var / self.shots))
+            if self.shots != 0:
+                # estimate the expectation value
+                # use central limit theorem, sample normal distribution once, only ok
+                # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+                ex = np.random.normal(ex, np.sqrt(var / self.shots))
 
-        return ex
+            ev_list.append(ex)
+
+        return ev_list
 
     def reset(self):
         """Reset the device"""

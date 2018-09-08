@@ -23,6 +23,8 @@ import numbers
 import autograd.numpy as np
 from autograd.extend import primitive, defvjp
 
+from .device import QuantumFunctionError
+from .expectation import Expectation
 from .variable import Variable
 
 
@@ -93,6 +95,7 @@ class QNode:
         self.func = func
         self.device = device
         self.variable_ops = {}
+        self.device._observe = []
 
         # determine number of variables
         sig = signature(func).parameters.items()
@@ -101,19 +104,52 @@ class QNode:
     def construct(self, *args, **kwargs):
         """Constructs the quantum circuit, and creates the variable mapping"""
         self.device.reset()
+        self.device._observe = []
 
         # wrap each argument with a Variable class
         variables = []
-        for idx, val in enumerate(_flatten(args)):
-            # Note: kwargs are assumed to not be variables by default;
-            # should we change this?
-            variables.append(Variable(idx, val=val))
+        var_idx = 0
+
+        # Note: kwargs are assumed to not be variables by default;
+        # should we change this?
+        for val in args:
+            if isinstance(val, collections.Sequence):
+                val = np.asarray(val)
+
+            if isinstance(val, np.ndarray):
+                # if arg value is a numpy array, create numpy array of same shape
+                temp_var = [Variable(var_idx+i, val=val) for i in range(np.prod(val.shape))]
+                temp_var = np.asarray(temp_var, dtype=np.object).reshape(val.shape)
+
+                # increment counter
+                var_idx += np.prod(val.shape)
+            else:
+                temp_var = Variable(var_idx, val=val)
+                var_idx += 1
+
+            variables.append(temp_var)
 
         # generate device queue
         with self.device:
-            self.func(*variables, **kwargs)
+            res = self.func(*variables, **kwargs)
 
-        self.num_variables = len(variables)
+        # qfunc return validation
+        if isinstance(res, Expectation):
+            self.return_type = float
+            self.return_length = 1
+        elif isinstance(res, collections.Sequence):
+            # for multiple expectation values, we only support tuples or lists.
+            self.return_length = len(res)
+            if isinstance(res, tuple):
+                self.return_type = tuple
+            elif isinstance(res, list):
+                self.return_type = list
+        else:
+            # explicitly raise an error if no expectation object is returned
+            raise QuantumFunctionError("A quantum function must return either a single expectation "
+                                       "value or a list/tuple of expectation values per wire.")
+
+        self.num_variables = var_idx
         self.variable_ops = {}
 
         # map each variable to the operations which depend on it
@@ -129,6 +165,7 @@ class QNode:
     def __call__(self, *args, **kwargs):
         """Evaluates the quantum function on the specified device, and returns
         the output expectation value."""
+        self.device.reset()
 
         if len(args) == 1 and isinstance(args[0], np.ndarray):
             # HACK: args are being passed as a list, try unpacking arguments
@@ -136,14 +173,12 @@ class QNode:
             # in the form (np.array([...]), )
             args = args[0]
 
-        self.device.reset()
-
         if not self.variable_ops:
             # construct the circuit
             self.construct(*args, **kwargs)
 
         # update variables to new values passed in args
-        for idx, val in enumerate(args):
+        for idx, val in enumerate(_flatten(args)):
             for op, p_idx in self.variable_ops[idx]:
                 op.params[p_idx].val = val
 
@@ -153,7 +188,10 @@ class QNode:
     @property
     def expectation(self):
         """Expectation value of the QNode"""
-        return self.device._out
+        if isinstance(self.return_type(), float):
+            return self.device._out[0]
+
+        return self.return_type(self.device._out)
 
     def best_method(self, ops):
         """determine the correct gradient computation method for each free parameter"""
@@ -210,7 +248,7 @@ class QNode:
         elif len(which) != len(set(which)):  # set removes duplicates
             raise ValueError('Parameter indices must be unique.')
 
-        params = np.asarray(params)
+        # params = np.asarray(params)
 
         if not self.variable_ops:
             # construct the circuit
@@ -224,23 +262,22 @@ class QNode:
         if 'F' in method.values():
             if order == 1:
                 # the value of the circuit at params, computed only once here
-                y0 = self.__call__(*params, **kwargs)
+                y0 = np.asarray(self.__call__(*params, **kwargs))
             else:
                 y0 = None
 
         # compute the partial derivative w.r.t. each parameter using the proper method
-        # grad = np.zeros(len(which), dtype=float)
-        # FIXME autograd.grad does not play well with a Jacobian, see test_qnode.py
-        grad = np.zeros((len(which),), dtype=float)
+        grad = np.zeros((len(which), self.return_length), dtype=float)
 
         for i, k in enumerate(which):
             par_method = method[k]
             if par_method == 'A':
-                grad[i] = self._pd_angle(params, k, **kwargs)
+                grad[i, :] = self._pd_angle(params, k, **kwargs)
             elif par_method == 'F':
-                grad[i] = self._pd_finite_diff(params, k, h, order, y0, **kwargs)
+                grad[i, :] = self._pd_finite_diff(params, k, h, order, y0, **kwargs)
             else:
                 raise ValueError('Unknown gradient method.')
+
         return grad
 
 
@@ -260,18 +297,18 @@ class QNode:
         """
         if order == 1:
             # shift one parameter by h
-            shift_params = params.copy()
+            shift_params = np.asarray(list(_flatten(params.copy())))
             shift_params[idx] += h
-            y = self.__call__(*shift_params, **kwargs)
+            y = np.asarray(self.__call__(*shift_params, **kwargs))
             return (y-y0) / h
         elif order == 2:
             # symmetric difference
             # shift one parameter by +-h/2
-            shift_params = params.copy()
+            shift_params = np.asarray(list(_flatten(params.copy())))
             shift_params[idx] += 0.5*h
-            y2 = self.__call__(*shift_params, **kwargs)
+            y2 = np.asarray(self.__call__(*shift_params, **kwargs))
             shift_params[idx] = params[idx] -0.5*h
-            y1 = self.__call__(*shift_params, **kwargs)
+            y1 = np.asarray(self.__call__(*shift_params, **kwargs))
             return (y2-y1) / h
         else:
             raise ValueError('Order must be 1 or 2.')
@@ -318,9 +355,9 @@ class QNode:
             shift /= orig.mult
 
             shift_params = np.r_[params, params[idx] + shift]
-            y2 = self.__call__(*shift_params, **kwargs)
+            y2 = np.asarray(self.__call__(*shift_params, **kwargs))
             shift_params[-1] = params[idx] - shift
-            y1 = self.__call__(*shift_params, **kwargs)
+            y1 = np.asarray(self.__call__(*shift_params, **kwargs))
 
             # restore the original parameter
             op.params[p_idx] = orig
@@ -328,13 +365,6 @@ class QNode:
             del self.variable_ops[n]
             pd += (y2-y1) * multiplier
 
-            # # shift it by pi/2 and -pi/2
-            # shift_params = params.copy()
-            # shift_params[idx] = params[idx] + np.pi/2
-            # y2 = self.__call__(*shift_params, **kwargs)
-            # shift_params[idx] = params[idx] - np.pi/2
-            # y1 = self.__call__(*shift_params, **kwargs)
-            # pd += (y2-y1) / 2
         return pd
 
 

@@ -13,6 +13,16 @@
 # limitations under the License.
 """OpenQML parameterised variable class"""
 import copy
+import collections
+
+import numpy as np
+
+
+def _get_nested(seq, t):
+    """Multidimensional sequence indexing"""
+    if len(t) > 1:
+        return get_nested(seq[t[0]], t[1:])
+    return seq[t[0]]
 
 class Variable:
     """Stores the parameter reference.
@@ -30,6 +40,7 @@ class Variable:
         self.name = name
         self.val = val
         self.mult = 1.0  #: float: parameter scalar multiplier
+        self.dim = np.asarray(self.val).shape
 
     def __str__(self):
         temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
@@ -63,3 +74,13 @@ class Variable:
             list[float, int]: mapped parameters
         """
         return [values[p.idx] * p.mult if isinstance(p, Variable) else p for p in par]
+
+    def __getitem__(self, idx):
+        """nested sequence indexing"""
+        if isinstance(self.val, collections.Sequence):
+            return get_nested(self.val, tuple(idx))
+
+        if isinstance(self.val, np.ndarray):
+            return self.val[idx]
+
+        raise IndexError("Variable type does not support indexing.")

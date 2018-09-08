@@ -16,7 +16,7 @@ def circuit(theta):
     """
     qm.FockState(1, wires=0)
     qm.Beamsplitter(theta, 0, wires=[0, 1])
-    qm.expectation.Fock(wires=1)
+    return qm.expectation.Fock(wires=1)
 
 def cost(theta, batched):
     """Cost (error) function to be minimized.
