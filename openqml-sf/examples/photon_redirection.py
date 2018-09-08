@@ -5,7 +5,7 @@ In this demo we optimize an optical quantum circuit to redirect a photon from mo
 import openqml as qm
 from openqml import numpy as np
 
-dev1 = qm.device('strawberryfields.fock', wires=2, cutoff=5)
+dev1 = qm.device('strawberryfields.fock', wires=2, cutoff_dim=5)
 
 @qm.qfunc(dev1)
 def circuit(theta):

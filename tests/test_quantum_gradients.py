@@ -34,8 +34,8 @@ class QuadratureGradientTest(BaseTest):
     """Tests of the automatic gradient method for circuits acting on quadratures.
     """
     def setUp(self):
-        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1)
-        self.fock_dev2 = qm.device('strawberryfields.fock', wires=2)
+        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1, cutoff_dim=5)
+        self.fock_dev2 = qm.device('strawberryfields.fock', wires=2, cutoff_dim=5)
         self.gaussian_dev1 = qm.device('strawberryfields.gaussian', wires=1)
         self.gaussian_dev2 = qm.device('strawberryfields.gaussian', wires=2)
 
@@ -46,7 +46,7 @@ class QuadratureGradientTest(BaseTest):
         @qm.qfunc(self.fock_dev1)
         def circuit(x):
             qm.Rotation(x, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expectation.X(0)
 
         grad_fn = autograd.grad(circuit)
 
