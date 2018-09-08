@@ -23,12 +23,36 @@ import autograd
 import autograd.numpy as np
 
 from defaults import openqml as qm, BaseTest
-from openqml.plugins.default import frx as Rx, frz as Rz
+from openqml.plugins.default import frx as Rx, fry as Ry, frz as Rz
 
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
+
+class QuadratureGradientTest(BaseTest):
+    """Tests of the automatic gradient method for circuits acting on quadratures.
+    """
+    def setUp(self):
+        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1)
+        self.fock_dev2 = qm.device('strawberryfields.fock', wires=2)
+        self.gaussian_dev1 = qm.device('strawberryfields.gaussian', wires=1)
+        self.gaussian_dev2 = qm.device('strawberryfields.gaussian', wires=2)
+
+    def test_rotation(self):
+        "Tests that the automatic gradient of a phase space rotation is correct."
+        log.info('test_rotation')
+
+        @qm.qfunc(self.fock_dev1)
+        def circuit(x):
+            qm.Rotation(x, [0])
+            return qm.expectation.PauliZ(0)
+
+        grad_fn = autograd.grad(circuit)
+
+        for theta in thetas:
+            x = grad_fn(theta)
+
 
 class QubitGradientTest(BaseTest):
     """Tests of the automatic gradient method for qubit gates.
@@ -190,8 +214,10 @@ class QubitGradientTest(BaseTest):
         "Tests that the correct gradient is computed for qnodes which use the same parameter in multiple gates."
         log.info('test_qnode_gradient_fanout')
 
+        extra_param = 0.31
         def circuit(reused_param, other_param):
-            qm.RX(reused_param, [0])
+            qm.RX(extra_param, [0])
+            qm.RY(reused_param, [0])
             qm.RZ(other_param, [0])
             qm.RX(reused_param, [0])
             return qm.expectation.PauliZ(0)
@@ -200,18 +226,19 @@ class QubitGradientTest(BaseTest):
         zero_state = np.array([1., 0.])
 
         for reused_p in thetas:
-            for theta in thetas:
-                other_p = theta ** 2 / 11
+            reused_p = reused_p ** 3 / 19
+            for other_p in thetas:
+                other_p = other_p ** 2 / 11
 
                 # autograd gradient
                 grad = autograd.grad(f)
                 grad_eval = grad(reused_p, other_p)
 
                 # manual gradient
-                grad_true0 = (expZ(Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Rx(reused_p) @ zero_state) \
-                             -expZ(Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Rx(0.) @ zero_state)) / 2
-                grad_true1 = (expZ(Rx(reused_p) @ Rz(other_p) @ Rx(reused_p + np.pi / 2) @ zero_state) \
-                             -expZ(Rx(reused_p) @ Rz(other_p) @ Rx(reused_p - np.pi / 2) @ zero_state)) / 2
+                grad_true0 = (expZ(Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state) \
+                             -expZ(Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state)) / 2
+                grad_true1 = (expZ(Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state) \
+                             -expZ(Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state)) / 2
                 grad_true = grad_true0 + grad_true1 # product rule
 
                 self.assertAlmostEqual(grad_eval[0], grad_true, delta=self.tol)
@@ -221,7 +248,7 @@ if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', automatic gradients.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (QubitGradientTest,):
+    for t in (QubitGradientTest,QuadratureGradientTest):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 
