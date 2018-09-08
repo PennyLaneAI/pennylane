@@ -45,7 +45,7 @@ def circuit(*args):
     qm.RZ(args[4], 1)
     qm.CNOT([0, 1])
     qm.RX(args[5], 0)
-    qm.expectation.PauliZ(0)
+    return qm.expectation.PauliZ(0)
 
 
 class OptTest(BaseTest):

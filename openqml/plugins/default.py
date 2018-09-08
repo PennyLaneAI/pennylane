@@ -242,26 +242,30 @@ class DefaultQubit(Device):
                 raise ValueError('This plugin supports only one- and two-qubit gates.')
             self._state = U @ self._state
 
-        # measurement/expectation value <psi|A|psi>
-        A = DefaultQubit._get_operator_matrix(self._observe)
-        if self.shots == 0:
-            # exact expectation value
-            ev = self.ev(A, [self._observe.wires])
-        else:
-            # estimate the ev
-            if 0:
-                # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-                ev = self.ev(A, self._observe.wires)
-                var = self.ev(A**2, self._observe.wires) - ev**2  # variance
-                ev = np.random.normal(ev, np.sqrt(var / self.shots))
+        ev_list = [] # list of returned expectation values
+        for expectation in self._observe:
+            # measurement/expectation value <psi|A|psi>
+            A = DefaultQubit._get_operator_matrix(expectation)
+            if self.shots == 0:
+                # exact expectation value
+                ev = self.ev(A, [expectation.wires])
             else:
-                # sample Bernoulli distribution n_eval times / binomial distribution once
-                a, P = spectral_decomposition_qubit(A)
-                p0 = self.ev(P[0], self._observe.wires)  # probability of measuring a[0]
-                n0 = np.random.binomial(self.shots, p0)
-                ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
+                # estimate the ev
+                if 0:
+                    # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+                    ev = self.ev(A, expectation.wires)
+                    var = self.ev(A**2, expectation.wires) - ev**2  # variance
+                    ev = np.random.normal(ev, np.sqrt(var / self.shots))
+                else:
+                    # sample Bernoulli distribution n_eval times / binomial distribution once
+                    a, P = spectral_decomposition_qubit(A)
+                    p0 = self.ev(P[0], expectation.wires)  # probability of measuring a[0]
+                    n0 = np.random.binomial(self.shots, p0)
+                    ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
 
-        return ev  # return the result
+            ev_list.append(ev)
+
+        return ev_list  # return the result
 
     @classmethod
     def _get_operator_matrix(cls, A):

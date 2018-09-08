@@ -40,6 +40,11 @@ class DeviceError(Exception):
     pass
 
 
+class QuantumFunctionError(Exception):
+    """Exception raised when an illegal operation is defined in a quantum function."""
+    pass
+
+
 class Device(abc.ABC):
     """Abstract base class for devices."""
     _current_context = None
@@ -62,7 +67,7 @@ class Device(abc.ABC):
 
         self._out = None  # this attribute stores the expectation output
         self._queue = []  # this list stores the operations to be queued to the device
-        self._observe = None # the measurement operation to be performed
+        self._observe = [] # the measurement operation to be performed
 
     def __repr__(self):
         """String representation."""
@@ -82,9 +87,12 @@ class Device(abc.ABC):
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
-        if self._observe is None:
-            raise DeviceError('A qfunc must always conclude with a classical expectation value.')
         Device._current_context = None
+
+        measured_wires = [e.wires for e in self._observe]
+        # check that no wires are measured twice
+        if len(measured_wires) != len(set(measured_wires)):
+            raise QuantumFunctionError('Each wire in the quantum wire can only be measured once.')
 
     @property
     def gates(self):

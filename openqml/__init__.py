@@ -18,7 +18,7 @@ from pkg_resources import iter_entry_points
 from autograd import numpy
 from autograd import grad as _grad
 
-from .device import Device, DeviceError
+from .device import Device, DeviceError, QuantumFunctionError
 from .expectation import Expectation
 from .ops import *
 from .qfunc import qfunc

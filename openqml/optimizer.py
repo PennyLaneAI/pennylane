@@ -197,7 +197,7 @@ class Optimizer:
                 batch = None
 
             # take a step against the gradient  TODO does not ensure that the cost goes down, should it?
-            grad = self.err_grad(x, batch)
+            grad = self.err_grad(x, batch).flatten()
             decayed_lr = init_lr / (1 +decay*step)
             x -= decayed_lr * grad
             cost = self.err_func(x)
@@ -226,10 +226,10 @@ class Optimizer:
         """
         if self._hp['regularizer'] is None:
             self.err_func = lambda x, batch=None: self._cost_func(x, batch)
-            self.err_grad = lambda x, batch=None: self._cost_grad(x, batch)
+            self.err_grad = lambda x, batch=None: self._cost_grad(x, batch).flatten()
         else:
             self.err_func = lambda x, batch=None: self._cost_func(x, batch) +self._reg_cost_L2(x)
-            self.err_grad = lambda x, batch=None: self._cost_grad(x, batch) +self._reg_cost_L2(x, grad=True)
+            self.err_grad = lambda x, batch=None: self._cost_grad(x, batch).flatten() +self._reg_cost_L2(x, grad=True)
 
         if self._cost_grad is None:
             self.err_grad = None

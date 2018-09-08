@@ -123,7 +123,7 @@ class QubitGradientTest(BaseTest):
         eye = np.eye(3)
         for theta in thetas:
             angle_inputs = np.array([theta, theta ** 3, np.sqrt(2) * theta])
-            autograd_val = grad_fn(angle_inputs)
+            autograd_val = grad_fn(*angle_inputs)
             for idx in range(3):
                 onehot_idx = eye[idx]
                 manualgrad_val = (circuit(angle_inputs + np.pi / 2 * onehot_idx) - circuit(angle_inputs - np.pi / 2 * onehot_idx)) / 2
@@ -200,7 +200,7 @@ class QubitGradientTest(BaseTest):
 
         y0 = error(param)
         grad = autograd.grad(error)
-        grad_auto = grad(param)
+        grad_auto = grad([param])
 
         grad_fd1 = d_error(param, 'F')
         grad_angle = d_error(param, 'A')

@@ -68,4 +68,4 @@ class Expectation(metaclass=ExpectationFactory):
         if Device._current_context is None:
             raise DeviceError("Quantum expectations can only be used inside a qfunc or a device context manager.")
         else:
-            Device._current_context._observe = self
+            Device._current_context._observe.append(self)
