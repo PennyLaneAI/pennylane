@@ -120,6 +120,8 @@ class StrawberryFieldsFock(Device):
             ex, var = self.state.quad_expectation(reg, np.pi/2)
         elif self._observe.name == 'Homodyne':
             ex, var = self.state.quad_expectation(reg, *self.observe.params)
+        else:
+            raise DeviceError("Observable {} not supported by StrawberryFieldsFock simulator".format(self._observe.name))
 
         if self.shots != 0:
             # estimate the expectation value
