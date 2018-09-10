@@ -35,16 +35,18 @@ class Variable:
       idx (int): parameter index >= 0
       val (int or complex or float): initial value of the variable (optional)
     """
+    free_param_values = None #: array[float]: current free parameter values, TEST, a bit hackish
+
     def __init__(self, idx, name=None, val=None):
         self.idx = idx  #: int: parameter index
         self.name = name
-        self.val = val
+        #self.val = val
         self.mult = 1.0  #: float: parameter scalar multiplier
-        self.dim = np.asarray(self.val).shape
+        #self.dim = np.asarray(self.val).shape
 
     def __str__(self):
         temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
-        return 'Variable {}: name = {} value = {}{}'.format(self.idx, self.name, self.val, temp)
+        return 'Variable {}: name = {}, {}'.format(self.idx, self.name, temp)
 
     def __neg__(self):
         """Unary negation."""
@@ -60,8 +62,7 @@ class Variable:
 
     __rmul__ = __mul__ # """Left multiplication by scalars."""
 
-    @staticmethod
-    def map(par, values):
+    def getval(self):
         """Mapping function for gate parameters.
         Replaces Variables with their actual values.
 
@@ -71,11 +72,11 @@ class Variable:
             values (Sequence[float, int]): values for the free parameters
 
         Returns:
-            list[float, int]: mapped parameters
+            float: mapped parameter
         """
-        return [values[p.idx] * p.mult if isinstance(p, Variable) else p for p in par]
+        return self.free_param_values[self.idx] * self.mult
 
-    def __getitem__(self, idx):
+    def UNUSED__getitem__(self, idx):
         """nested sequence indexing"""
         if isinstance(self.val, collections.Sequence):
             return get_nested(self.val, tuple(idx))

@@ -11,8 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a beamsplitter Operation"""
-from .operation import Operation
+"""This module contains a beamsplitter Operation
+
+
+.. todo::
+
+   FIXME the gradient computation assumes all parameters are real (floats), some docstrings here allow complex or even array parameter values.
+   Possible solution: disallow such operations to depend on free parameters, this way they won't be differentiated.
+"""
+
+import numpy as np
+
+from openqml.operation import Operation
+
+#__all__ = [Beamsplitter, ControlledAddition, ControlledPhase, Displacement, Kerr, CrossKerr, QuadraticPhase, Rotation, Squeezing, TwoModeSqueezing, CubicPhase,
+#  CatState, CoherentState, FockDensityMatrix, DisplacedSqueezedState, FockState, FockStateVector, SqueezedState, ThermalState, GaussianState]
 
 
 class Rotation(Operation):
@@ -24,10 +37,7 @@ class Rotation(Operation):
 
     Args:
         phi (float): the rotation angle.
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, phi, wires):
-        super().__init__('Rotation', [phi], wires, grad_recipe=[None])
 
 
 class Displacement(Operation):
@@ -39,30 +49,39 @@ class Displacement(Operation):
 
     where :math:`\alpha = r e^{i\phi}` has magnitude :math:`r\geq 0` and phase :math:`\phi`.
 
-    The gate is parameterized so that a user can specify a single complex number :math:`a=\alpha`
-    or use the polar form :math:`a = r, \phi` and still get the same result.
+    The gate is parameterized so that a user can specify a single complex number :math:`\alpha=a`
+    or use the polar form :math:`\alpha = r e^{i\phi}` and still get the same result.
 
     Args:
         a (complex): displacement parameter :math:`\alpha`
-        phi (float): extra (optional) phase angle :math:`\phi`
-        wires (int): the subsystem the Operation acts on.
+        phi (float): phase angle :math:`\phi`
     """
-    def __init__(self, a, phi, wires):
-        shift = 1 # gradient computation shift for displacements
-        # TODO d\tilde{D}(r, phi)/dr does not depend on r!
-        # The gradient formula can be simplified further, we can make do with smaller displacements.
-        super().__init__('Displacement', [a, phi], wires, grad_recipe=[(0.5/shift, shift), None])
+    n_params = 2
+    shift = 1.0
+    grad_recipe = [(0.5/shift, shift), None]
+    # TODO d\tilde{D}(r, phi)/dr does not depend on r!
+    # The gradient formula can be simplified further, we can make do with smaller displacements.
 
 
 class Squeezing(Operation):
     r"""Continuous-variable phase space squeezing.
 
-    This Operation can act on a single mode,
-
     .. math::
         S(z) = \exp\left(\frac{1}{2}(z^* a^2 -z {a^\dagger}^2)\right)
 
-    or on two modes,
+    where :math:`z = r e^{i\phi}`.
+
+    Args:
+        r (float): squeezing amount
+        phi (float): squeezing phase angle :math:`\phi`
+    """
+    n_params = 2
+    shift = 1.0
+    grad_recipe = [(0.5/np.sinh(shift), shift), None]
+
+
+class TwoModeSqueezing(Operation):
+    r"""Continuous-variable phase space two-mode squeezing.
 
     .. math::
         S_2(z) = \exp\left(z^* ab -z a^\dagger b^\dagger \right)
@@ -73,14 +92,10 @@ class Squeezing(Operation):
     Args:
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
-        wires (int or seq[int]): the subsystem(s) the Operation acts on.
     """
-    def __init__(self, r, phi, wires):
-        shift = 1.0 # gradient computation shift for squeezing
-        if isinstance(wires, int) or len(wires) == 1:
-            super().__init__('Squeezing', [r, phi], wires, grad_recipe=[(0.5/np.sinh(shift), shift), None])
-        elif len(wires) == 2:
-            super().__init__('TwoModeSqueezing', [r, phi], wires)
+    n_params = 2
+    n_wires = 2
+    grad_method = 'F'
 
 
 class QuadraticPhase(Operation):
@@ -91,10 +106,8 @@ class QuadraticPhase(Operation):
 
     Args:
         s (float): parameter
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, s, wires):
-        super().__init__('QuadraticPhase', [s], wires, grad_method='F')
+    grad_method = 'F'
 
 
 class CubicPhase(Operation):
@@ -105,34 +118,33 @@ class CubicPhase(Operation):
 
     Args:
         gamma (float): parameter
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, gamma, wires):
-        super().__init__('CubicPhase', [gamma], wires, grad_method='F')
+    grad_method = 'F'
 
 
 class Kerr(Operation):
     r"""Continuous-variable Kerr interaction.
 
-    This Operation can act on a single mode,
-
     .. math::
         K(\kappa) = e^{i \kappa \hat{n}^2}
 
-    or on two modes, to perform the Cross-Kerr interaction:
+    Args:
+        kappa (float): parameter
+    """
+    grad_method = 'F'
+
+
+class CrossKerr(Operation):
+    r"""Continuous-variable Cross-Kerr interaction.
 
     .. math::
         CK(\kappa) = e^{i \kappa \hat{n}_1\hat{n}_2}
 
     Args:
         kappa (float): parameter
-        wires (int or seq[int]): the subsystem(s) the Operation acts on.
     """
-    def __init__(self, kappa, wires):
-        if isinstance(wires, int) or len(wires) == 1:
-            super().__init__('Kerr', [kappa], wires, grad_method='F')
-        elif len(wires) == 2:
-            super().__init__('CrossKerr', [kappa], wires, grad_method='F')
+    n_wires = 2
+    grad_method = 'F'
 
 
 class Beamsplitter(Operation):
@@ -148,11 +160,10 @@ class Beamsplitter(Operation):
         phi (float): Phase angle :math:`\phi`. The reflection amplitude of the
             beamsplitter is :math:`r = e^{i\phi}\sin(\theta)`.
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
-        wires (seq[int]): sequence of two subsystems the Operation acts on.
     """
-    def __init__(self, theta, phi, wires):
-        # For the beamsplitter, both parameters are rotation-like
-        super().__init__('Beamsplitter', [theta, phi], wires, grad_recipe=[None, None])
+    n_params = 2
+    n_wires = 2
+    # For the beamsplitter, both parameters are rotation-like
 
 
 class ControlledAddition(Operation):
@@ -164,10 +175,9 @@ class ControlledAddition(Operation):
 
     Args:
         s (float): addition multiplier
-        wires (seq[int]): sequence of two subsystems the Operation acts on.
     """
-    def __init__(self, s, wires):
-        super().__init__('ControlledAddition', [s], wires, grad_method='F')
+    n_wires = 2
+    grad_method = 'F'
 
 
 class ControlledPhase(Operation):
@@ -179,10 +189,9 @@ class ControlledPhase(Operation):
 
     Args:
         s (float):  phase shift multiplier
-        wires (seq[int]): sequence of two subsystems the Operation acts on.
     """
-    def __init__(self, s, wires):
-        super().__init__('ControlledPhase', [s], wires, grad_method='F')
+    n_wires = 2
+    grad_method = 'F'
 
 
 #=============================================================================
@@ -196,10 +205,9 @@ class CoherentState(Operation):
     Args:
         a (complex): displacement parameter :math:`\alpha`
         phi (float): phase angle :math:`\phi`
-        wires (int): subsystem the Operation acts on.
     """
-    def __init__(self, a, phi, wires):
-        super().__init__('CoherentState', [a, phi], wires, grad_method='F')
+    n_params = 2
+    grad_method = 'F'
 
 
 class SqueezedState(Operation):
@@ -208,10 +216,9 @@ class SqueezedState(Operation):
     Args:
         r (float): squeezing magnitude
         phi (float): squeezing angle :math:`\phi`
-        wires (int): subsystem the Operation acts on.
     """
-    def __init__(self, r, phi, wires):
-        super().__init__('SqueezedState', [r, phi], wires, grad_method='F')
+    n_params = 2
+    grad_method = 'F'
 
 
 class DisplacedSqueezedState(Operation):
@@ -229,10 +236,9 @@ class DisplacedSqueezedState(Operation):
         alpha (complex): displacement parameter
         r (float): squeezing magnitude
         phi (float): squeezing angle :math:`\phi`
-        wires (int): subsystem the Operation acts on.
     """
-    def __init__(self, alpha, r, phi, wires):
-        super().__init__('DisplacedSqueezedState', [alpha, r, phi], wires, grad_method='F')
+    n_params = 3
+    grad_method = 'F'
 
 
 class FockState(Operation):
@@ -240,10 +246,9 @@ class FockState(Operation):
 
     Args:
         n (int): Fock state to prepare
-        wires (int): subsystem the Operation acts on.
     """
-    def __init__(self, n, wires):
-        super().__init__('FockState', [n], wires, par_domain='N', grad_method='F')
+    par_domain = 'N'
+    grad_method = 'F'
 
 
 class ThermalState(Operation):
@@ -251,10 +256,8 @@ class ThermalState(Operation):
 
     Args:
         n (float): mean thermal population of the mode
-        wires (int): subsystem the Operation acts on.
     """
-    def __init__(self, n, wires):
-        super().__init__('ThermalState', [n], wires, grad_method='F')
+    grad_method = 'F'
 
 
 class CatState(Operation):
@@ -271,10 +274,9 @@ class CatState(Operation):
         alpha (complex): displacement parameter
         p (float): parity, where :math:`\phi=p\pi`. ``p=0`` corresponds to an even
             cat state, and ``p=1`` an odd cat state.
-        wires (int): subsystem the Operation acts on.
     """
-    def __init__(self, a, p, wires):
-        super().__init__('CatState', [a, p], wires, grad_method='F')
+    n_params = 2
+    grad_method = 'F'
 
 
 class FockStateVector(Operation):
@@ -283,10 +285,9 @@ class FockStateVector(Operation):
     Args:
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode.
-        wires (int or seq[int]): subsystem(s) the Operation acts on.
     """
-    def __init__(self, state, wires):
-        super().__init__('FockStateVector', [state], wires, grad_method='F')
+    n_wires = 0
+    grad_method = 'F'
 
 
 class FockDensityMatrix(Operation):
@@ -295,10 +296,9 @@ class FockDensityMatrix(Operation):
     Args:
         state (array): a single mode two-dimensional matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode.
-        wires (int or seq[int]): subsystem(s) the Operation acts on.
     """
-    def __init__(self, state, wires):
-        super().__init__('FockDensityMatrix', [state], wires, grad_method='F')
+    n_wires = 0
+    grad_method = 'F'
 
 
 class GaussianState(Operation):
@@ -308,7 +308,7 @@ class GaussianState(Operation):
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`.
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix.
-        wires (int or seq[int]): subsystem(s) the Operation acts on.
     """
-    def __init__(self, r, V, wires):
-        super().__init__('GaussianState', [r, V], wires, grad_method='F')
+    n_params = 2
+    n_wires = 0
+    grad_method = 'F'

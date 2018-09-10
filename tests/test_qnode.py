@@ -48,7 +48,7 @@ class BasicTest(BaseTest):
         "Tests that expected failures correctly raise exceptions."
         log.info('test_qnode_fail')
         qnode = qm.QNode(rubbish_circuit, self.qubit_dev2)
-        params = np.random.randn(qnode.num_variables)
+        params = np.random.randn(1)
 
         # only order-1 and order-2 finite diff methods are available
         with self.assertRaisesRegex(ValueError, "Order must be 1 or 2"):
@@ -84,9 +84,9 @@ class BasicTest(BaseTest):
         a, b, c = 0.5, 0.54, 0.3
 
         def circuit1(x, y, z):
-            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), wires=[0, 1])
-            qm.Rot(x, y, z, wires=0)
-            qm.CNOT(wires=[0, 1])
+            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+            qm.Rot(x, y, z, 0)
+            qm.CNOT([0, 1])
             return [qm.expectation.PauliZ(0), qm.expectation.PauliY(1)]
 
         circuit1 = qm.QNode(circuit1, self.qubit_dev2)
@@ -94,9 +94,9 @@ class BasicTest(BaseTest):
         positional_grad = circuit1.gradient([a, b, c])
 
         def circuit2(x, array):
-            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), wires=[0, 1])
-            qm.Rot(x, array[0], array[1], wires=0)
-            qm.CNOT(wires=[0, 1])
+            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+            qm.Rot(x, array[0], array[1], 0)
+            qm.CNOT([0, 1])
             return [qm.expectation.PauliZ(0), qm.expectation.PauliY(1)]
 
         circuit2 = qm.QNode(circuit2, self.qubit_dev2)
@@ -107,7 +107,7 @@ class BasicTest(BaseTest):
         list_grad = circuit2.gradient([a, [b, c]])
 
         self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
-        self.assertAllAlmostEqual(positional_grad[:2, :2], array_grad, delta=self.tol)
+        self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
 
     def test_multiple_expectation_same_wire(self):
         "Tests that qnodes raise error for multiple expectation values on the same wire."
@@ -156,9 +156,9 @@ class BasicTest(BaseTest):
         a, b, c = 0.5, 0.54, 0.3
 
         def circuit(x, y, z):
-            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), wires=[0, 1])
-            qm.Rot(x, y, z, wires=0)
-            qm.CNOT(wires=[0, 1])
+            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+            qm.Rot(x, y, z, 0)
+            qm.CNOT([0, 1])
             return [qm.expectation.PauliZ(0), qm.expectation.PauliY(1)]
 
         circuit = qm.QNode(circuit, self.qubit_dev2)
@@ -182,15 +182,15 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(expected_jacobian(a, b, c), res, delta=self.tol)
 
         # compare our manual Jacobian computation to autograd
-        jac = autograd.elementwise_grad(circuit, 0)
+        jac = autograd.jacobian(circuit.evaluate, 0)
         res = jac(a, b, c)
         self.assertAllAlmostEqual(expected_jacobian(a, b, c), res, delta=self.tol)
 
         # we can also use an array input in the QFunc to use autograd.jacobian
         def circuit(weights):
-            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), wires=[0, 1])
-            qm.Rot(weights[0], weights[1], weights[2], wires=0)
-            qm.CNOT(wires=[0, 1])
+            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+            qm.Rot(weights[0], weights[1], weights[2], 0)
+            qm.CNOT([0, 1])
             return [qm.expectation.PauliZ(0), qm.expectation.PauliY(1)]
 
         circuit = qm.QNode(circuit, self.qubit_dev2)

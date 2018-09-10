@@ -19,8 +19,9 @@ from autograd import numpy
 from autograd import grad as _grad
 
 from .device import Device, DeviceError, QuantumFunctionError
-from .expectation import Expectation
 from .ops import *
+import openqml.expectation
+from openqml.operation import Expectation
 from .qfunc import qfunc
 from .qnode import QNode
 from .optimizer import Optimizer
@@ -32,7 +33,7 @@ logLevel = 'info'
 numeric_level = getattr(log, logLevel.upper(), 10)
 log.basicConfig(
     level=numeric_level,
-    format='\n%(asctime)s %(levelname)s %(message)s',
+    format='%(asctime)s %(levelname)s %(message)s',
     datefmt='%H:%M:%S'
 )
 log.captureWarnings(True)
@@ -68,5 +69,5 @@ def version():
     return __version__
 
 # short names
-Op = Operation
-Ex = Expectation
+#Op = Operation
+#Ex = Expectation
