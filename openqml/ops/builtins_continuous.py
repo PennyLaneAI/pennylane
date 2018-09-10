@@ -14,6 +14,8 @@
 """This module contains a beamsplitter Operation"""
 from .operation import Operation
 
+from autograd.numpy import sinh
+
 
 class Rotation(Operation):
     r"""Continuous-variable phase space rotation.
@@ -78,7 +80,7 @@ class Squeezing(Operation):
     def __init__(self, r, phi, wires):
         shift = 1.0 # gradient computation shift for squeezing
         if isinstance(wires, int) or len(wires) == 1:
-            super().__init__('Squeezing', [r, phi], wires, grad_recipe=[(0.5/np.sinh(shift), shift), None])
+            super().__init__('Squeezing', [r, phi], wires, grad_recipe=[(0.5/sinh(shift), shift), None])
         elif len(wires) == 2:
             super().__init__('TwoModeSqueezing', [r, phi], wires)
 
