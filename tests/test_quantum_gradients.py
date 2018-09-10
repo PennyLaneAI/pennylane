@@ -28,30 +28,103 @@ from openqml.plugins.default import frx as Rx, fry as Ry, frz as Rz
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
+hbar = 2
+mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
+sqz_vals = np.linspace(0., 1.5, 5)
 
 class QuadratureGradientTest(BaseTest):
     """Tests of the automatic gradient method for circuits acting on quadratures.
     """
     def setUp(self):
-        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1, cutoff_dim=5)
-        self.fock_dev2 = qm.device('strawberryfields.fock', wires=2, cutoff_dim=5)
+        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=20)
+        self.fock_dev1s = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=60) # squeezing tests are highly sensitive to low cutoffs
+        self.fock_dev2 = qm.device('strawberryfields.fock', wires=2, hbar=hbar, cutoff_dim=10)
         self.gaussian_dev1 = qm.device('strawberryfields.gaussian', wires=1)
         self.gaussian_dev2 = qm.device('strawberryfields.gaussian', wires=2)
 
-    def test_rotation(self):
+    def test_rotation_gradient(self):
         "Tests that the automatic gradient of a phase space rotation is correct."
-        log.info('test_rotation')
+        log.info('test_rotation_gradient')
+
+        alpha = 0.5
 
         @qm.qfunc(self.fock_dev1)
-        def circuit(x):
-            qm.Rotation(x, [0])
+        def circuit(y):
+            qm.Displacement(alpha, 0., [0])
+            qm.Rotation(y, [0])
             return qm.expectation.X(0)
 
         grad_fn = autograd.grad(circuit)
 
         for theta in thetas:
-            x = grad_fn(theta)
+            autograd_val = grad_fn(theta)
+            # qfunc evalutes to hbar * alpha * cos(theta)
+            manualgrad_val = - hbar * alpha * np.sin(theta)
+
+            self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
+
+    def test_beamsplitter_gradient(self):
+        "Tests that the automatic gradient of a beamsplitter is correct."
+        log.info('test_beamsplitter_gradient')
+
+        alpha = 0.5
+
+        @qm.qfunc(self.fock_dev2)
+        def circuit(y):
+            qm.Displacement(alpha, 0., [0])
+            qm.Beamsplitter(y, 0, [0, 1])
+            return qm.expectation.X(0)
+
+        grad_fn = autograd.grad(circuit)
+
+        for theta in thetas:
+            autograd_val = grad_fn(theta)
+            # qfunc evalutes to hbar * alpha * cos(theta)
+            manualgrad_val = - hbar * alpha * np.sin(theta)
+
+            self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
+
+    def test_displacement_gradient(self):
+        "Tests that the automatic gradient of a phase space displacement is correct."
+        log.info('test_displacement_gradient')
+
+        @qm.qfunc(self.fock_dev1)
+        def circuit(a):
+            qm.Displacement(a, 0., [0])
+            return qm.expectation.X(0)
+
+        grad_fn = autograd.grad(circuit)
+
+        for mag in mag_alphas:
+            for theta in thetas:
+                alpha = mag * np.exp(1j * theta)
+
+                autograd_val = grad_fn(alpha)
+                # qfunc evalutes to hbar * Re(alpha)
+                manualgrad_val = hbar
+
+                self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
+
+    def test_squeeze_gradient(self):
+        "Tests that the automatic gradient of a phase space squeezing is correct."
+        log.info('test_squeeze_gradient')
+
+        alpha = 0.5
+
+        @qm.qfunc(self.fock_dev1s)
+        def circuit(y):
+            qm.Displacement(alpha, 0., [0])
+            qm.Squeezing(y, 0., [0])
+            return qm.expectation.X(0)
+
+        grad_fn = autograd.grad(circuit)
+
+        for r in sqz_vals:
+            autograd_val = grad_fn(r)
+            # qfunc evaluates to -exp(-r) * hbar * Re(alpha)
+            manualgrad_val = -np.exp(-r) * hbar * alpha
+            self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
 
 
 class QubitGradientTest(BaseTest):
@@ -248,7 +321,7 @@ if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', automatic gradients.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (QubitGradientTest,QuadratureGradientTest):
+    for t in (QuadratureGradientTest,QubitGradientTest):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 
