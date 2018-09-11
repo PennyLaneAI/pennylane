@@ -16,12 +16,10 @@ import os
 import logging as log
 from pkg_resources import iter_entry_points
 
-import toml
-from appdirs import user_config_dir
-
 from autograd import numpy
 from autograd import grad as _grad
 
+from .configuration import Configuration
 from .device import Device, DeviceError, QuantumFunctionError
 from .expectation import Expectation
 from .ops import *
@@ -30,6 +28,7 @@ from .qnode import QNode
 from .optimizer import Optimizer
 from .variable import Variable
 from ._version import __version__
+
 
 # set up logger
 logLevel = 'info'
@@ -42,29 +41,8 @@ log.basicConfig(
 log.captureWarnings(True)
 
 
-def safe_get(dct, *keys):
-    """Safely return value from a nested dictionary."""
-    for key in keys:
-        try:
-            dct = dct[key]
-        except KeyError:
-            return {}
-    return dct
-
-
-def load_config(path):
-    """Load a configuration file."""
-    with open(path) as f:
-        config = toml.load(f)
-
-
 # Look for an existing configuration file
-config = None
-for directory in os.curdir, user_config_dir('openqml'), os.environ.get("OPENQML_CONF", ""):
-    try:
-        load_config(os.path.join(directory, 'config.toml'))
-    except FileNotFoundError:
-        log.warning('No OpenQML configuration file found.')
+default_config = Configuration()
 
 
 # get list of installed plugin devices
@@ -74,24 +52,28 @@ plugin_devices = {
 
 
 def device(name, *args, **kwargs):
-    """Load a plugin Device class and return the instance to the user."""
+    """Load a plugin Device class and return the instance to the user.
+
+    Args:
+        name (str): the name of the device to load.
+
+    Keyword Args:
+        config (openqml.Configuration): an OpenQML configuration object
+            that contains global and/or device specific configurations.
+    """
     if name in plugin_devices:
         options = {}
 
-        if config is not None:
-            # load global configuration settings if available
-            global_config = safe_get(config, 'main')
-            # load plugin configuration settings if available
-            plugin_config = safe_get(config, name.split('.')[0], 'global')
-            # load device configuration settings if available
-            device_config = safe_get(config, *name.split('.'))
+        # load global configuration settings if available
+        config = kwargs.get('config', default_config)
 
+        if config:
             # combine with configuration options with keyword arguments.
             # Keyword arguments take preference, followed by device options,
             # followed by plugin options, followed by global options.
-            options.update(global_config)
-            options.update(plugin_config)
-            options.update(device_config)
+            options.update(config['main'])
+            options.update(config[name.split('.')[0]+'global'])
+            options.update(config[name])
 
         options.update(kwargs)
 
@@ -114,6 +96,7 @@ def grad(func, args):
 def version():
     """Version number"""
     return __version__
+
 
 # short names
 Op = Operation
