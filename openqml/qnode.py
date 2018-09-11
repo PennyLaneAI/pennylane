@@ -343,7 +343,7 @@ class QNode:
             else:
                 raise ValueError('Unknown gradient method.')
 
-        return grad.flatten() #grad.T #grad.flatten() # FIXME
+        return grad  #grad.flatten() # FIXME
 
 
     def _pd_finite_diff(self, params, idx, h=1e-7, order=1, y0=None, **kwargs):
