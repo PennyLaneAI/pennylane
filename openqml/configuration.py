@@ -74,8 +74,8 @@ class Configuration:
         keys = key.split('.')
         self.safe_set(self._config, value, *keys)
 
-    def __nonzero__(self):
-        return self._config
+    def __bool__(self):
+        return bool(self._config)
 
     @staticmethod
     def safe_set(dct, value, *keys):
