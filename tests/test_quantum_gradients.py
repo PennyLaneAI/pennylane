@@ -113,17 +113,18 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
         log.info('test_Rot')
 
-        @qm.qfunc(self.qubit_dev1)
+        #@qm.qfunc(self.qubit_dev1)
         def circuit(x,y,z):
             qm.Rot(x,y,z, [0])
             return qm.expectation.PauliZ(0)
 
-        grad_fn = autograd.grad(circuit)
+        circuit = qm.QNode(circuit, self.qubit_dev1)
+        grad_fn = autograd.grad(circuit.evaluate)
 
         eye = np.eye(3)
         for theta in thetas:
             angle_inputs = np.array([theta, theta ** 3, np.sqrt(2) * theta])
-            autograd_val = grad_fn(*angle_inputs)
+            autograd_val = grad_fn(angle_inputs)
             for idx in range(3):
                 onehot_idx = eye[idx]
                 manualgrad_val = (circuit(angle_inputs + np.pi / 2 * onehot_idx) - circuit(angle_inputs - np.pi / 2 * onehot_idx)) / 2
@@ -152,7 +153,8 @@ class QubitGradientTest(BaseTest):
         grad_angle = qnode.gradient(params, method='A')
 
         # automatic gradient
-        grad_auto = qm.grad(qnode, params)
+        grad_fn = autograd.grad(qnode.evaluate)
+        grad_auto = grad_fn(params)
 
         # gradients computed with different methods must agree
         self.assertAllAlmostEqual(grad_fd1, grad_fd2, self.tol)
@@ -184,8 +186,8 @@ class QubitGradientTest(BaseTest):
             "Total square error of classifier predictions."
             ret = 0
             for d_in, d_out in zip(in_data, out_data):
-                args = np.array([d_in, p])
-                square_diff = (classifier(args) - d_out) ** 2
+                #args = np.array([d_in, p])
+                square_diff = (classifier(d_in, p) - d_out) ** 2
                 ret = ret + square_diff
             return ret
 
