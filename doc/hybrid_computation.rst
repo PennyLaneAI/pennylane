@@ -20,3 +20,4 @@ TODO
 :html:`<br>`
 
 
+.. todo:: Sell the idea that we can differentiate end-to-end through a hybrid computation
