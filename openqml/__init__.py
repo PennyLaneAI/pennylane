@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Top level OpenQML module"""
+import os
 import logging as log
 from pkg_resources import iter_entry_points
+
+import toml
+from appdirs import user_config_dir
 
 from autograd import numpy
 from autograd import grad as _grad
@@ -38,6 +42,31 @@ log.basicConfig(
 log.captureWarnings(True)
 
 
+def safe_get(dct, *keys):
+    """Safely return value from a nested dictionary."""
+    for key in keys:
+        try:
+            dct = dct[key]
+        except KeyError:
+            return {}
+    return dct
+
+
+def load_config(path):
+    """Load a configuration file."""
+    with open(path) as f:
+        config = toml.load(f)
+
+
+# Look for an existing configuration file
+config = None
+for directory in os.curdir, user_config_dir('openqml'), os.environ.get("OPENQML_CONF", ""):
+    try:
+        load_config(os.path.join(directory, 'config.toml'))
+    except FileNotFoundError:
+        log.warning('No OpenQML configuration file found.')
+
+
 # get list of installed plugin devices
 plugin_devices = {
     entry.name: entry for entry in iter_entry_points('openqml.plugins')
@@ -47,8 +76,27 @@ plugin_devices = {
 def device(name, *args, **kwargs):
     """Load a plugin Device class and return the instance to the user."""
     if name in plugin_devices:
+        options = {}
+
+        if config is not None:
+            # load global configuration settings if available
+            global_config = safe_get(config, 'main')
+            # load plugin configuration settings if available
+            plugin_config = safe_get(config, name.split('.')[0], 'global')
+            # load device configuration settings if available
+            device_config = safe_get(config, *name.split('.'))
+
+            # combine with configuration options with keyword arguments.
+            # Keyword arguments take preference, followed by device options,
+            # followed by plugin options, followed by global options.
+            options.update(global_config)
+            options.update(plugin_config)
+            options.update(device_config)
+
+        options.update(kwargs)
+
         # load plugin device
-        p = plugin_devices[name].load()(*args, **kwargs)
+        p = plugin_devices[name].load()(*args, **options)
 
         if p.api_version != __version__:
             log.warning('Plugin API version {} does not match OpenQML version {}.'.format(p.plugin_api_version, temp))
