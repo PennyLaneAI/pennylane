@@ -22,7 +22,7 @@ shots = 0
 ## and to also set options specific to certain device.
 
 [strawberryfields.global]
-## Gloabl options for the StrawberryFields plugin.
+## Global options for the StrawberryFields plugin.
 ## If not specified, the OpenQML default is used.
 ##
 ## These global options may be overwritten by specifying
@@ -39,7 +39,7 @@ hbar = 1
     ## Default options for the Fock simulator
 
     ## Set the default Fock space truncation
-    cutoff = 10
+    cutoff_dim = 10
 
     ## set the default number of shots
     # shots = 0
@@ -76,7 +76,7 @@ hbar = 1
     # use_hardware = true
 
     ## Device to use (‘ibmqx4’, or ‘ibmqx5’)
-    # device (string):
+    # device =
 
     ## Number of runs used to collect statistics
     # num_runs = 1024

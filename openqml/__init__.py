@@ -68,11 +68,11 @@ def device(name, *args, **kwargs):
         config = kwargs.get('config', default_config)
 
         if config:
-            # combine with configuration options with keyword arguments.
+            # combine configuration options with keyword arguments.
             # Keyword arguments take preference, followed by device options,
             # followed by plugin options, followed by global options.
             options.update(config['main'])
-            options.update(config[name.split('.')[0]+'global'])
+            options.update(config[name.split('.')[0]+'.global'])
             options.update(config[name])
 
         options.update(kwargs)

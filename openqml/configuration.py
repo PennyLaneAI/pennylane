@@ -11,6 +11,103 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+Configuration module
+====================
+
+**Module name:** :mod:`openqml.configuration`
+
+.. currentmodule:: openqml.configuration
+
+This module contains the `~openqml.Configuration` class, which is used to
+load, store, save, and modify configuration options for OpenQML and all
+supported plugins and devices.
+
+Behaviour
+---------
+
+On first import, OpenQML attempts to load the configuration file `config.toml`, by
+scanning the following three directories in order of preference:
+
+1. The current directory
+2. The path stored in the environment variable ``OPENQML_CONF``
+2. The default user configuration directory:
+
+   * On Linux: ``~/.config/openqml``
+   * On Windows: ``~C:\Users\USERNAME\AppData\Local\Xanadu\openqml``
+   * On MacOS: ``~/Library/Preferences/openqml``
+
+If no configuration file is found, a warning message will be displayed in the logs,
+and all device parameters will need to be passed as keyword arguments when
+loading the device.
+
+The user can access the initialized configuration via `openqml.config`, view the
+loaded configuration filepath, print the configurations options, access and modify
+them via keys (i.e. ``openqml.config['main.shots']``), and save/load new configuration files.
+
+Configuration files
+-------------------
+
+The configuration file `config.toml` uses the `TOML standard <https://github.com/toml-lang/toml>`_,
+and has the following format:
+
+.. code-block:: toml
+
+    [main]
+    shots = 0
+
+    [strawberryfields.global]
+    hbar = 1
+    shots = 100
+
+        [strawberryfields.fock]
+        cutoff_dim = 10
+        hbar = 0.5
+
+        [strawberryfields.gaussian]
+
+    [projectq.global]
+
+        [projectq.simulator]
+        gate_fusion = True
+
+        [projectq.ibmbackend]
+        user = johnsmith
+        password = secret123
+        use_hardware = true
+        device = 'ibmqx4'
+        num_runs = 1024
+
+Main OpenQML options, that are passed to all loaded devices, are provided under the ``[main]``
+section. Alternatively, options can be specified on a per-plugin basis, by setting the options under
+``[plugin.global]``. For example, in the above configuration file, the Strawberry Fields
+devices will be loaded with a default of ``shots = 100``, rather than ``shots = 0``. Finally,
+you can also specify settings on a device-by-device basis, by placing the options under the
+``[plugin.device]`` settings.
+
+Methods
+-------
+
+.. currentmodule:: openqml.configuration.Configuration
+
+.. autosummary::
+    path
+    load
+    save
+
+Helper methods
+--------------
+
+.. autosummary::
+    safe_set
+    safe_get
+
+Code details
+------------
+
+.. currentmodule:: openqml.configuration
+
+"""
 import os
 import logging as log
 
@@ -25,18 +122,23 @@ class Configuration:
 
     This class is responsible for loading, saving, and storing OpenQML
     and plugin/device configurations.
+
+    Args:
+        name (str): filename of the configuration file. Default ``'config.toml'``.
+        This should be a valid TOML file. You may also pass an absolute
+        or a relative file path to the configuration file.
     """
     def __init__(self, name='config.toml'):
         # Look for an existing configuration file
         self._config = {}
-        self._filename = None
-        self._name = 'config.toml'
-        self._user_config_dir = user_config_dir('openqml')
+        self._filepath = None
+        self._name = name
+        self._user_config_dir = user_config_dir('openqml', 'Xanadu')
         self._env_config_dir = os.environ.get("OPENQML_CONF", "")
 
         # search the current directory the directory under environment
         # variable OPENQML_CONF, and default user config directory, in that order.
-        directories = [os.curdir, self._env_config_dir, self._user_config_dir]
+        directories = [os.curdir, self._env_config_dir, self._user_config_dir, '']
         for idx, directory in enumerate(directories):
             try:
                 self._filepath = os.path.join(directory, self._name)
@@ -47,22 +149,36 @@ class Configuration:
                     log.warning('No OpenQML configuration file found.')
 
     def __str__(self):
-        return self._config
+        if self._config:
+            return "{}".format(self._config)
+        return ""
 
     def __repr__(self):
-        return "OpenQML Configuration <{}>".format(self._filename)
+        return "OpenQML Configuration <{}>".format(self._filepath)
 
     @property
-    def filename(self):
-        return self._filename
+    def path(self):
+        """Return the path of the loaded configuration file.
+
+        Returns:
+            str: If no configuration is loaded, this returns ``None``."""
+        return self._filepath
 
     def load(self, filepath):
-        """Load a configuration file."""
+        """Load a configuration file.
+
+        Args:
+            filepath (str): path to the configuration file.
+        """
         with open(filepath, 'r') as f:
             self._config = toml.load(f)
 
     def save(self, filepath):
-        """Save a configuration file."""
+        """Save a configuration file.
+
+        Args:
+            filepath (str): path to the configuration file.
+        """
         with open(filepath, 'w') as f:
             toml.dump(self._config, f)
 
@@ -79,7 +195,16 @@ class Configuration:
 
     @staticmethod
     def safe_set(dct, value, *keys):
-        """Safely set value from a nested dictionary."""
+        """Safely set the value of a key from a nested dictionary.
+
+        If any key provided does not exist, a dictionary containing the
+        remaining keys is dynamically created and set to the required value.
+
+        Args:
+            dct (dict): the dictionary to set the value of.
+            value: the value to set. Can be any valid type.
+            *keys: each additional argument corresponds to a nested key.
+        """
         for key in keys[:-1]:
             dct = dct.setdefault(key, {})
 
@@ -87,7 +212,17 @@ class Configuration:
 
     @staticmethod
     def safe_get(dct, *keys):
-        """Safely return value from a nested dictionary."""
+        """Safely return value from a nested dictionary.
+
+        If any key provided does not exist, an empty dictionary is returned.
+
+        Args:
+            dct (dict): the dictionary to set the value of.
+            *keys: each additional argument corresponds to a nested key.
+
+        Returns:
+            value corresponding to ``dct[keys[0]][keys[1]]`` etc.
+        """
         for key in keys:
             try:
                 dct = dct[key]
