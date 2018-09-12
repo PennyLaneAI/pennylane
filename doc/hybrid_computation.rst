@@ -21,3 +21,8 @@ TODO
 
 
 .. todo:: Sell the idea that we can differentiate end-to-end through a hybrid computation
+
+Backpropagation through hybrid computations
+-------------------------------------------
+
+- how does a gradient computation work in a hybrid quantum-classical computation?
