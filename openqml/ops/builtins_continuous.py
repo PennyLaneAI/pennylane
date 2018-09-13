@@ -19,15 +19,33 @@
    FIXME the gradient computation assumes all parameters are real (floats), some docstrings here allow complex or even array parameter values.
    Possible solution: disallow such operations to depend on free parameters, this way they won't be differentiated.
 """
-
 import numpy as np
-
 from openqml.operation import Operation
-
-#__all__ = [Beamsplitter, ControlledAddition, ControlledPhase, Displacement, Kerr, CrossKerr, QuadraticPhase, Rotation, Squeezing, TwoModeSqueezing, CubicPhase,
-#  CatState, CoherentState, FockDensityMatrix, DisplacedSqueezedState, FockState, FockStateVector, SqueezedState, ThermalState, GaussianState]
-
 from autograd.numpy import sinh
+
+
+__all__ = [
+    'Beamsplitter',
+    'ControlledAddition',
+    'ControlledPhase',
+    'Displacement',
+    'Kerr',
+    'CrossKerr',
+    'QuadraticPhase',
+    'Rotation',
+    'Squeezing',
+    'TwoModeSqueezing',
+    'CubicPhase',
+    'CatState',
+    'CoherentState',
+    'FockDensityMatrix',
+    'DisplacedSqueezedState',
+    'FockState',
+    'FockStateVector',
+    'SqueezedState',
+    'ThermalState',
+    'GaussianState'
+]
 
 
 class Rotation(Operation):

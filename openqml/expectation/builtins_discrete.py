@@ -16,7 +16,7 @@
 from openqml.operation import Expectation
 
 
-# __all__ = [PauliX, PauliY, PauliZ, Hermitian]
+__all__ = ['PauliX', 'PauliY', 'PauliZ', 'Hermitian']
 
 
 class PauliX(Expectation):

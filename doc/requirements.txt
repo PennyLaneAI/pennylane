@@ -1,0 +1,4 @@
+sphinxcontrib-bibtex
+ipykernel
+nbsphinx
+pygments-github-lexers

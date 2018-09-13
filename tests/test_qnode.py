@@ -87,7 +87,7 @@ class BasicTest(BaseTest):
             qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
             qm.Rot(x, y, z, 0)
             qm.CNOT([0, 1])
-            return [qm.expectation.PauliZ(0), qm.expectation.PauliY(1)]
+            return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
 
         circuit1 = qm.QNode(circuit1, self.qubit_dev2)
         positional_res = circuit1(a, b, c)
@@ -97,7 +97,7 @@ class BasicTest(BaseTest):
             qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
             qm.Rot(x, array[0], array[1], 0)
             qm.CNOT([0, 1])
-            return [qm.expectation.PauliZ(0), qm.expectation.PauliY(1)]
+            return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
 
         circuit2 = qm.QNode(circuit2, self.qubit_dev2)
         array_res = circuit2(a, np.array([b, c]))
@@ -119,7 +119,7 @@ class BasicTest(BaseTest):
             qm.RZ(y, [0])
             qm.RX(z, [0])
             qm.CNOT([0, 1])
-            return [qm.expectation.PauliY(1), qm.expectation.PauliZ(1)]
+            return qm.expectation.PauliY(1), qm.expectation.PauliZ(1)
 
         with self.assertRaisesRegex(qm.QuantumFunctionError, "can only be measured once"):
             circuit(0.5,0.54,0.3)
@@ -137,7 +137,7 @@ class BasicTest(BaseTest):
             qm.CNOT([0, 1])
             qm.RY(y, [0])
             qm.RX(z, [0])
-            return [qm.expectation.PauliY(0), qm.expectation.PauliZ(1)]
+            return qm.expectation.PauliY(0), qm.expectation.PauliZ(1)
 
         res = circuit(a, b, c)
 
@@ -159,7 +159,7 @@ class BasicTest(BaseTest):
             qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
             qm.Rot(x, y, z, 0)
             qm.CNOT([0, 1])
-            return [qm.expectation.PauliZ(0), qm.expectation.PauliY(1)]
+            return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
 
         circuit = qm.QNode(circuit, self.qubit_dev2)
         res = circuit.gradient([a, b, c])
@@ -182,7 +182,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(expected_jacobian(a, b, c), res, delta=self.tol)
 
         # compare our manual Jacobian computation to autograd
-        jac = autograd.jacobian(circuit.evaluate, 0)
+        jac = autograd.jacobian(circuit, 0)
         res = jac(a, b, c)
         self.assertAllAlmostEqual(expected_jacobian(a, b, c), res, delta=self.tol)
 
@@ -191,7 +191,7 @@ class BasicTest(BaseTest):
             qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
             qm.Rot(weights[0], weights[1], weights[2], 0)
             qm.CNOT([0, 1])
-            return [qm.expectation.PauliZ(0), qm.expectation.PauliY(1)]
+            return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
 
         circuit = qm.QNode(circuit, self.qubit_dev2)
 
