@@ -38,7 +38,7 @@ def cost(weights, batched):
     """Cost (error) function to be minimized.
 
     Args:
-        r (float): squeezing parameter
+        weigts (float): weights #todo: batched?
     """
     return np.abs(circuit(*weights)-1)
 
@@ -51,7 +51,8 @@ o = qm.Optimizer(cost, init_weights, optimizer=args.optimizer)
 c = o.train(max_steps=100)
 
 # print the results
-print('Initial rotation angles:', xyz0)
-print('Optimized rotation angles:', o.weights)
+print('Initial [x,y,z] rotation angles:', init_weights)
+print('Optimized [x,y,z] rotation angles:', o.weights)
 print('Circuit output at rotation angles:', circuit(*o.weights))
 print('Circuit gradient at rotation angles:', qm.grad(circuit, o.weights)[0])
+print('Cost gradient at optimized parameters:', qm.grad(cost, [o.weights, None]))

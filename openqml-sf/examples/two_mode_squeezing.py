@@ -12,6 +12,7 @@ def circuit(alpha, r):
     """Two mode squeezing with PNR on mode 1
 
     Args:
+        alpha (float): displacement parameter
         r (float): squeezing parameter
     """
     qm.Displacement(alpha, 0, wires=[0])
@@ -22,11 +23,11 @@ def cost(weights, batched):
     """Cost (error) function to be minimized.
 
     Args:
-        r (float): squeezing parameter
+        weigts (float): weights #todo: batched?
     """
     return np.abs(circuit(*weights)-1)
 
-# initialize r with random value
+# initialize alpha and r with random value
 init_weights = np.random.randn(2)
 o = qm.Optimizer(cost, init_weights, optimizer='SGD')
 
