@@ -26,8 +26,11 @@ class S(Operation):
     Args:
         wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('S', [], wires)
+    # def __init__(self, wires):
+    #     super().__init__('S', [], wires)
+    n_params = 0
+    n_wires = 1
+
 
 class T(Operation):
     r"""T gate.
@@ -38,8 +41,10 @@ class T(Operation):
     Args:
         wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('T', [], wires)
+    # def __init__(self, wires):
+    #     super().__init__('T', [], wires)
+    n_params = 0
+    n_wires = 1
 
 class SqrtX(Operation):
     r"""Square toot X gate.
@@ -50,8 +55,10 @@ class SqrtX(Operation):
     Args:
         wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('SqrtX', [], wires)
+    # def __init__(self, wires):
+    #     super().__init__('SqrtX', [], wires)
+    n_params = 0
+    n_wires = 1
 
 class SqrtSwap(Operation):
     r"""Square SWAP gate.
@@ -62,8 +69,10 @@ class SqrtSwap(Operation):
     Args:
         wires (seq[int]): the subsystems the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('SqrtSwap', [], wires)
+    # def __init__(self, wires):
+    #     super().__init__('SqrtSwap', [], wires)
+    n_params = 0
+    n_wires = 2
 
 class AllZ(Operation):
     r"""Z on all qubits.
@@ -71,8 +80,11 @@ class AllZ(Operation):
     .. math::
         AllZ() = Z \otimes\dots\otimes Z
     """
-    def __init__(self):
-        super().__init__('AllZ', [], [])
+    # def __init__(self):
+    #     super().__init__('AllZ', [], [])
+    n_params = 0
+    n_wires = 0 #todo: how to represent a gate that acts on all wires?
+
 
 
 # Wrapper classes for Operations that are missing a class in ProjectQ
