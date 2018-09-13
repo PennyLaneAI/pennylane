@@ -36,7 +36,7 @@ operator_map = {
     'CatState:': Catstate,
     'CoherentState': Coherent,
     'FockDensityMatrix': DensityMatrix,
-    'DisplacedSqueezed': DisplacedSqueezed,
+    'DisplacedSqueezedState': DisplacedSqueezed,
     'FockState': Fock,
     'FockStateVector': Ket,
     'SqueezedState': Squeezed,
@@ -52,11 +52,7 @@ operator_map = {
     'Rotation': Rgate,
     'TwoModeSqueezing': S2gate,
     'Squeezing': Sgate,
-    'CubicPhase': Vgate,
-    # 'XDisplacement': Xgate,
-    # 'PDisplacement': Zgate,
-    # 'MeasureFock': MeasureFock,
-    # 'MeasureHomodyne': MeasureHomodyne
+    'CubicPhase': Vgate
 }
 
 
