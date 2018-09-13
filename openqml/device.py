@@ -144,7 +144,7 @@ class Device(abc.ABC):
                 if self.supported(operation.name):
                     raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
 
-                par = [x.val if isinstance(x, Variable) else x for x in operation.params]
+                par = operation.parameters()
                 self.apply(operation.name, operation.wires, *par)
 
             return np.array([self.expectation(observable.name, observable.wires) for observable in observe], dtype=np.float64)
