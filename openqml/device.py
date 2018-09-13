@@ -128,6 +128,7 @@ class Device(abc.ABC):
         self.pre_execute_queued()
         self._out = self.execute_queued()
         self.post_execute_queued()
+        return self._out
 
     def execute_queued(self):
         """Called during execute().
