@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Top level OpenQML module"""
+import os
 import logging as log
 from pkg_resources import iter_entry_points
 
 from autograd import numpy
 from autograd import grad as _grad
 
+from .configuration import Configuration
 from .device import Device, DeviceError, QuantumFunctionError
 from .ops import *
 import openqml.expectation
@@ -27,6 +29,7 @@ from .qnode import QNode
 from .optimizer import Optimizer
 from .variable import Variable
 from ._version import __version__
+
 
 # set up logger
 logLevel = 'info'
@@ -39,6 +42,10 @@ log.basicConfig(
 log.captureWarnings(True)
 
 
+# Look for an existing configuration file
+default_config = Configuration()
+
+
 # get list of installed plugin devices
 plugin_devices = {
     entry.name: entry for entry in iter_entry_points('openqml.plugins')
@@ -46,10 +53,33 @@ plugin_devices = {
 
 
 def device(name, *args, **kwargs):
-    """Load a plugin Device class and return the instance to the user."""
+    """Load a plugin Device class and return the instance to the user.
+
+    Args:
+        name (str): the name of the device to load.
+
+    Keyword Args:
+        config (openqml.Configuration): an OpenQML configuration object
+            that contains global and/or device specific configurations.
+    """
     if name in plugin_devices:
+        options = {}
+
+        # load global configuration settings if available
+        config = kwargs.get('config', default_config)
+
+        if config:
+            # combine configuration options with keyword arguments.
+            # Keyword arguments take preference, followed by device options,
+            # followed by plugin options, followed by global options.
+            options.update(config['main'])
+            options.update(config[name.split('.')[0]+'.global'])
+            options.update(config[name])
+
+        options.update(kwargs)
+
         # load plugin device
-        p = plugin_devices[name].load()(*args, **kwargs)
+        p = plugin_devices[name].load()(*args, **options)
 
         if p.api_version != __version__:
             log.warning('Plugin API version {} does not match OpenQML version {}.'.format(p.plugin_api_version, temp))
@@ -67,6 +97,7 @@ def grad(func, args):
 def version():
     """Version number"""
     return __version__
+
 
 # short names
 #Op = Operation

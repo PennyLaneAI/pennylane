@@ -31,7 +31,7 @@ import openqml
 
 
 # defaults
-TOLERANCE = 1e-6
+TOLERANCE = 1e-5
 
 
 def get_commandline_args():

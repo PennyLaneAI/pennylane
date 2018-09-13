@@ -18,7 +18,6 @@ The core of OpenQML is designed around four main concepts:
 
 4. **Hybrid computation**: a computing model which seamlessly integrates both classical and quantum nodes
 
-
 :ref:`qfuncs`
 -------------
 
