@@ -18,11 +18,11 @@ args = parser.parse_args()
 dev1 = qm.device('projectq.'+args.backend, wires=2, **vars(args))
 
 @qm.qfunc(dev1)
-def circuit(x, y, z):
+def circuit(xyz):
     """QNode"""
-    qm.RZ(z, [0])
-    qm.RY(y, [0])
-    qm.RX(x, [0])
+    qm.RZ(xyz[0], [0])
+    qm.RY(xyz[1], [0])
+    qm.RX(xyz[2], [0])
     qm.CNOT([0, 1])
     return qm.expectation.PauliZ(wires=1)
 

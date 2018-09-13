@@ -49,7 +49,6 @@ class QuantumFunctionError(Exception):
 class Device(abc.ABC):
     """Abstract base class for devices."""
     name = ''          #: str: official device plugin name
-    short_name = ''    #: str: name used to load device plugin
     api_version = ''   #: str: version of OpenQML for which the plugin was made
     version = ''       #: str: version of the device plugin itself
     author = ''        #: str: plugin author(s)
@@ -142,12 +141,12 @@ class Device(abc.ABC):
         with self.execute_queued_with():
             for operation in queue:
                 if self.supported(operation.name):
-                    raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
+                    raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.name))
 
                 par = operation.parameters()
                 self.apply(operation.name, operation.wires, *par)
 
-            return np.array([self.expectation(observable.name, observable.wires) for observable in observe], dtype=np.float64)
+            return np.array([self.expectation(observable.name, observable.wires, observable.par) for observable in observe], dtype=np.float64)
 
 
     def pre_execute_queued(self):

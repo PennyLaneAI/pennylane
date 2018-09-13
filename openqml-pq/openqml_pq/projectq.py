@@ -50,7 +50,6 @@ import logging as log
 import numpy as np
 from numpy.random import (randn,)
 from openqml import Device, DeviceError
-from openqml import Variable
 
 import projectq as pq
 
@@ -232,20 +231,16 @@ class ProjectQSimulator(ProjectQDevice):
     def expectation(self, observable, wires):
         self.eng.flush(deallocate_qubits=False)
 
-        ev_list = [] # list of returned expectation values
-        for expectation in self._observe:
-            if expectation.name == 'PauliX' or expectation.name == 'PauliY' or expectation.name == 'PauliZ':
-                ev = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), self.reg)
-                variance = 1 - ev**2
-            elif expectation.name == 'AllPauliZ':
-                ev = [ self.eng.backend.get_expectation_value(pq.ops.QubitOperator("Z"+'0'), [qubit]) for qubit in self.reg]
-                variance = [1 - e**2 for e in ev]
-            else:
-                raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
+        if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
+            ev = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), self.reg)
+            variance = 1 - ev**2
+        elif observable == 'AllPauliZ':
+            ev = [ self.eng.backend.get_expectation_value(pq.ops.QubitOperator("Z"+'0'), [qubit]) for qubit in self.reg]
+            variance = [1 - e**2 for e in ev]
+        else:
+            raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
 
-            ev_list.append(ev)
-
-        return np.array(ev_list, dtype=np.float64)
+        return ev
 
 
 class ProjectQClassicalSimulator(ProjectQDevice):
@@ -323,24 +318,20 @@ class ProjectQIBMBackend(ProjectQDevice):
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
 
-        ev_list = [] # list of returned expectation values
-        for expectation in self._observe:
-            if expectation.name == 'PauliZ':
-                probabilities = self.eng.backend.get_probabilities([self.reg[wires]])
-                #print("IBM probabilities="+str(probabilities))
-                if '1' in probabilities:
-                    ev = 2*probabilities['1']-1
-                else:
-                    ev = -(2*probabilities['0']-1)
-                variance = 1 - ev**2
-            elif expectation.name == 'AllPauliZ':
-                probabilities = self.eng.backend.get_probabilities(self.reg)
-                #print("IBM all probabilities="+str(probabilities))
-                ev = [ ((2*sum(p for (state,p) in probabilities.items() if state[i] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[i] == '0')-1)) for i in range(len(self.reg)) ]
-                variance = [1 - e**2 for e in ev]
+        if observable == 'PauliZ':
+            probabilities = self.eng.backend.get_probabilities([self.reg[wires]])
+            #print("IBM probabilities="+str(probabilities))
+            if '1' in probabilities:
+                ev = 2*probabilities['1']-1
             else:
-                raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
+                ev = -(2*probabilities['0']-1)
+            variance = 1 - ev**2
+        elif observable == 'AllPauliZ':
+            probabilities = self.eng.backend.get_probabilities(self.reg)
+            #print("IBM all probabilities="+str(probabilities))
+            ev = [ ((2*sum(p for (state,p) in probabilities.items() if state[i] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[i] == '0')-1)) for i in range(len(self.reg)) ]
+            variance = [1 - e**2 for e in ev]
+        else:
+            raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
 
-            ev_list.append(ex)
-
-        return np.array(ev_list, dtype=np.float64)
+        return ev
