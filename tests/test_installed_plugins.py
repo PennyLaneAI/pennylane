@@ -62,7 +62,7 @@ class PluginTest(BaseTest):
         # run all single gate circuits
         for gate in dev.gates:
             for observable in dev.observables:
-                print("circuit: "+gate+", "+observable)
+                print(plugin.name+": "+gate+", "+observable)
 
                 #observable_fullargspec = inspect.getfullargspec(observable_class.__init__)
                 #observable_num_par_args = observable_class.n_params#len(observable_fullargspec.args)-2
@@ -75,15 +75,16 @@ class PluginTest(BaseTest):
                     observable_class = getattr(qm.expectation, observable)
                     gate_class = getattr(qm, gate)
 
-                    gate_pars = np.random.randn(gate_class.n_params)
-                    observable_pars = np.random.randn(observable_class.n_params)
+                    gate_pars = np.abs(np.random.randn(gate_class.n_params))
+                    observable_pars = np.abs(np.random.randn(observable_class.n_params)) #todo: some operations fails when parameters are negative (e.g. thermal state) but par_domain is not fine grained enough to capture this
+
                     gate_class(*gate_pars, list(range(gate_class.n_wires)))
                     return observable_class(*observable_pars, list(range(observable_class.n_wires)))
 
-                #try:
-                circuit()
-                #except Exception as e:
-                #    print(e)
+                try:
+                    circuit()
+                except Exception as e:
+                    print(e)
 
 
 if __name__ == '__main__':

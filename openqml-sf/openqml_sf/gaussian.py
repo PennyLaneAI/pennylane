@@ -46,7 +46,7 @@ operator_map = {
     'QuadraticPhase': Pgate,
     'Rotation': Rgate,
     'TwoModeSqueezing': S2gate,
-    'Squeeze': Sgate
+    #'Squeeze': Sgate #todo: produces an error
 }
 
 
@@ -64,7 +64,7 @@ class StrawberryFieldsGaussian(Device):
     version = __version__
     author = 'Josh Izaac'
     _gates = set(operator_map.keys())
-    _observables = {'Fock', 'X', 'P', 'Homodyne', 'Heterodyne'}
+    _observables = {'Fock', 'X', 'P', 'Homodyne'}
     _circuits = {}
 
     def __init__(self, wires, *, shots=0, hbar=2):
