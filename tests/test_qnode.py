@@ -180,15 +180,14 @@ class BasicTest(BaseTest):
         # compare our manual Jacobian computation to theoretical result
         self.assertAllAlmostEqual(expected_jacobian(a, b, c), res, delta=self.tol)
 
-        #Note: the below code will not pass, since we are overloading the `gradient` function to return
-        # either a gradient or a jacobian (whichever is relevant)
-        # autograd.jacobian internally uses the gradient function to compute jacobians, so if `QNode.gradient` does not
-        # return a true gradient, then `jacobian` will not work as expected
-
         # compare our manual Jacobian computation to autograd
-        jac = autograd.jacobian(circuit)
-        res = jac(a, b, c)
-        #self.assertAllAlmostEqual(expected_jacobian(a, b, c), res, delta=self.tol)
+        # not sure if this is the intended usage of jacobian
+        jac0 = autograd.jacobian(circuit, 0)
+        jac1 = autograd.jacobian(circuit, 1)
+        jac2 = autograd.jacobian(circuit, 2)
+        res = np.stack([jac0(a,b,c), jac1(a,b,c), jac2(a,b,c)]).T
+
+        self.assertAllAlmostEqual(expected_jacobian(a, b, c), res, delta=self.tol)
 
         # we can also use an array input in the QFunc to use autograd.jacobian
         #def circuit(weights):
