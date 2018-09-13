@@ -321,7 +321,7 @@ class QNode:
         if self.output_dim == 1:
             return grad[:, 0]
 
-        return grad
+        return grad.T
 
     def _pd_finite_diff(self, params, idx, h=1e-7, order=1, y0=None, **kwargs):
         """Partial derivative of the node using the finite difference method.
@@ -415,7 +415,13 @@ def QNode_vjp(ans, self, args, **kwargs):
     """Returns the vector Jacobian product for a QNode, as a function
     of the QNode evaluation at the specified parameter values.
     """
-    return lambda g: g * self.gradient(args, **kwargs)
+    def f(g):
+        if len(g.shape) == 0:
+            return g * self.gradient(args, **kwargs)
+        else:
+            return g @ self.gradient(args, **kwargs)
+    return f
+#    return lambda g:
 
 
 # define the vector-Jacobian product function for QNode.__call__()
