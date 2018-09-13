@@ -20,21 +20,21 @@ def ansatz():
 def circuit_Z():
     """QNode"""
     ansatz()
-    qm.expectation.PauliZ(1)
+    return qm.expectation.PauliZ(1)
 
 
 @qm.qfunc(dev1)
 def circuit_Y():
     """QNode"""
     ansatz()
-    qm.expectation.PauliY(1)
+    return qm.expectation.PauliY(1)
 
 
 @qm.qfunc(dev1)
 def circuit_X():
     """QNode"""
     ansatz()
-    qm.expectation.PauliX(1)
+    return qm.expectation.PauliX(1)
 
 
 def cost(weights, batch):

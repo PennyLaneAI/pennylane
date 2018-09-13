@@ -16,7 +16,7 @@ def circuit(alpha, r):
     """
     qm.Displacement(alpha, 0, wires=[0])
     qm.Squeezing(r, 0, wires=[0, 1])
-    qm.expectation.Fock(wires=1)
+    return qm.expectation.Fock(wires=1)
 
 def cost(weights, batched):
     """Cost (error) function to be minimized.

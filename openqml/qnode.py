@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import copy
 import collections
-from inspect import signature
 
 import logging as log
 log.getLogger()
@@ -21,18 +20,68 @@ log.getLogger()
 import numbers
 
 import autograd.numpy as np
-from autograd.extend import primitive, defvjp
+import autograd.extend as ae
+import autograd.builtins
 
+from .device import QuantumFunctionError
+import openqml.operation
 from .variable import Variable
 
 
 def _flatten(x):
-    """Flatten an irregular iterator"""
-    for item in x:
-        if isinstance(item, collections.Iterable) and not isinstance(item, (str, bytes)):
+    """Iterate through an arbitrarily nested structure, flattening it in depth-first order.
+
+    See also :func:`_unflatten`.
+
+    Args:
+      x (array, Iterable, other): each element of the Iterable may be of the same types as x
+    Yieds:
+      other: elements of x in depth-first order
+    """
+    if isinstance(x, np.ndarray):
+        yield from _flatten(x.flat)  # should we allow object arrays? or just "yield from x.flat"?
+    elif isinstance(x, collections.Iterable) and not isinstance(x, (str, bytes)):
+        for item in x:
             yield from _flatten(item)
-        else:
-            yield item
+    else:
+        yield x
+
+
+def _unflatten(flat, model):
+    """Restores an arbitrary nested structure to a flattened iterable.
+
+    See also :func:`_flatten`.
+
+    Args:
+      flat (array): 1D array of items
+      model (array, Iterable, Number): model nested structure
+    Returns:
+      (other, array): first elements of flat arranged into the nested structure of model, unused elements of flat
+    """
+    if isinstance(model, np.ndarray):
+        idx = model.size
+        res = flat[:idx].reshape(model.shape)
+        return res, flat[idx:]
+    elif isinstance(model, collections.Iterable):
+        res = []
+        for x in model:
+            val, flat = _unflatten(flat, x)
+            res.append(val)
+        return res, flat
+    elif isinstance(model, numbers.Number):
+        return flat[0], flat[1:]
+    else:
+        raise TypeError('Unsupported type in the model: {}'.format(type(model)))
+
+
+def unflatten(flat, model):
+    """Wrapper for :func:`_unflatten`.
+    """
+    res, tail = _unflatten(np.asarray(flat), model)
+    if len(tail) != 0:
+        raise ValueError('Flattened iterable has more elements than the model.')
+    return res
+
 
 
 class QNode:
@@ -51,7 +100,7 @@ class QNode:
             qm.Zrotation(x, 0)
             qm.CNOT(0,1)
             qm.Yrotation(x**2, 1)
-            qm.expectation.Z(0)
+            return qm.expectation.Z(0)
 
     To produce a valid QNode, the qfunc must consist of
     only OpenQML operators and expectation values, one per line, and must
@@ -80,7 +129,7 @@ class QNode:
                 qm.Zrotation(x, 0)
                 qm.CNOT(0,1)
                 qm.Yrotation(x**2, 1)
-                qm.expectation.Z(0)
+                return qm.expectation.Z(0)
 
             result = my_quantum_function(np.pi/4)
 
@@ -89,64 +138,137 @@ class QNode:
             one per line, ending with an expectation value.
         device (openqml.Device): an OpenQML-compatible device.
     """
+    _current_context = None  #: QNode: for building Operation sequences by executing qfuncs
+
     def __init__(self, func, device):
         self.func = func
         self.device = device
-        self.variables = []
+        self.variable_ops = {}  #: dict[int->list[(Operation, int)]]: Mapping from free parameter index to the list of Operations (in this circuit) that depend on it. The second element of the tuple is the index of the parameter within the Operation.
+
+
+    def construct(self, args, **kwargs):
+        """Constructs the quantum circuit, and creates the variable mapping.
+
+        args represent the free parameters passed to the circuit.
+        Here we are not concerned with their values, but their structure.
+        Each free param is replaced with a Variable instance.
+
+        .. note:: kwargs are assumed to not be variables by default; should we change this?
+
+        Returns:
+        """
         self.variable_ops = {}
+        self._queue   = []
+        self._observe = []  # TODO remove, combine with _queue
 
-        # determine number of variables
-        sig = signature(func).parameters.items()
-        self.num_variables = len([key for key, p in sig])# if p.kind == p.POSITIONAL_OR_KEYWORD])
+        # flatten the args, replace each with a Variable instance with a unique index
+        temp = [Variable(idx) for idx, val in enumerate(_flatten(args))]
+        self.num_variables = len(temp)
 
-    @primitive
+        # arrange the newly created Variables in the nested structure of args
+        variables = unflatten(temp, args)
+
+        # set up the context for Operation entry
+        if QNode._current_context is None:
+            QNode._current_context = self
+        else:
+            raise QuantumFunctionError('Should not happen.')
+        # generate the program queue by executing the qfunc
+        try:
+            res = self.func(*variables, **kwargs)
+        finally:
+            # remove the context
+            QNode._current_context = None
+
+        # qfunc return validation
+        if isinstance(res, openqml.operation.Expectation):
+            self.output_type = float
+            self.output_dim = 1
+            res = [res]
+        elif isinstance(res, collections.Sequence):
+            # for multiple expectation values, we only support tuples or lists.
+            self.output_dim = len(res)
+            if isinstance(res, tuple):
+                self.output_type = tuple
+            elif isinstance(res, list):  # FIXME
+                self.output_type = list
+        else:
+            raise QuantumFunctionError("A quantum function must return either a single expectation value or a list/tuple of expectation values.")
+
+        self.out_wires = [ex.wires[0] for ex in res]  # FIXME for now only 1-wire ev:s
+
+
+        # check that no wires are measured twice
+        measured_wires = [ex.wires[0] for ex in self._observe]
+        if len(measured_wires) != len(set(measured_wires)):
+            raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
+
+        # TODO remove when _observe is removed
+        self._queue.extend(self._observe)
+        del self._observe
+
+        # map each free variable to the operations which depend on it
+        for op in self._queue:
+            for idx, p in enumerate(op.params):
+                if isinstance(p, Variable):
+                    self.variable_ops.setdefault(p.idx, []).append((op, idx))
+
+        # map from free parameter index to the gradient method to be used with that parameter
+        self.grad_method = {k: self.best_method(v) for k, v in self.variable_ops.items()}
+
+
     def __call__(self, *args, **kwargs):
+        """Wrapper."""
+        args = autograd.builtins.tuple(args)  # prevents autograd boxed arguments from going through to evaluate
+        return self.evaluate(args, **kwargs)  # args as one tuple
+
+    @ae.primitive
+    def evaluate(self, args, **kwargs):
         """Evaluates the quantum function on the specified device, and returns
         the output expectation value."""
 
-        self.variables = []
-        self.device._queue = []
-
-        # wrap each argument with a Variable class
-        p = []
-        for idx, val in enumerate(_flatten(args)):
-            p.append(Variable(idx, val=val))
-
-        self.variables = p
-
-        # evaluate device
-        with self.device:
-            self.func(*p, **kwargs)
+        #if len(args) == 1 and isinstance(args[0], np.ndarray):
+            # HACK: args are being passed as a list, try unpacking arguments
+            # Should be a better way to deal with autograd passing the arguments
+            # in the form (np.array([...]), )
+        #    args = args[0]
 
         if not self.variable_ops:
-            # map each variable to the operations which depend on it
-            for op in self.device._queue:
-                for p in op.params:
-                    if isinstance(p, Variable):
-                        self.variable_ops.setdefault(p.idx, []).append(op)
+            # construct the circuit
+            self.construct(args, **kwargs)
 
-            # map from free parameter index to the gradient method to be used with that parameter
-            self.grad_method = {k: self.best_method(v) for k, v in self.variable_ops.items()}
+        # store the new free parameter values in the Variable class
+        Variable.free_param_values = np.array(list(_flatten(args)))
 
-        return self.expectation
+        self.device.reset()
+        ret = self.device.execute(self._queue)
+        return ret[self.out_wires]
 
-    @property
-    def expectation(self):
-        """Expectation value of the QNode"""
-        return self.device._out
 
-    def best_method(self, ops):
-        """determine the correct gradient computation method for each free parameter"""
+    #@property
+    #def expectation(self):
+    #    """Expectation value of the QNode"""
+    #    if isinstance(self.output_type(), float):
+    #        return self.device._out[0]
+    #    return self.output_type(self.device._out)
+
+    @staticmethod
+    def best_method(ops):
+        """Determine the correct gradient computation method for each free parameter.
+
+        Args:
+          ops (list[(Operation, int)]): Operations that depend on this free parameter
+        Returns:
+          str: gradient method to be used
+        """
         # use the angle method iff every gate that depends on the parameter supports it
-        list_of_methods = [op.grad_method == 'A' and len(op.params) == 1 for op in ops]
-
-        if all(list_of_methods):
+        if all(op.grad_method == 'A' for op, _ in ops):
             return 'A'
-
         return 'F'
 
-    def gradient(self, params, which=None, method='B', *, h=1e-7, order=1, **kwargs):
-        """Compute the gradient of the node.
+
+    def gradient(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
+        """Compute the gradient (or Jacobian) of the node.
 
         Returns the gradient of the parametrized quantum circuit encapsulated in the QNode.
 
@@ -155,14 +277,20 @@ class QNode:
         * Finite differences (``'F'``). The first order method evaluates the circuit at
           n+1 points of the parameter space, the second order method at 2n points,
           where n = len(which).
-        * Angular method (``'A'``). Only works for one-parameter gates where the generator
-          only has two unique eigenvalues. The circuit is evaluated twice for each incidence
+        * Angular method (``'A'``). Works for all one-parameter gates where the generator
+          only has two unique eigenvalues. Additionally can be used in CV systems for gaussian
+          circuits containing only first-order observables.The circuit is evaluated twice for each incidence
           of each parameter in the circuit.
         * Best known method for each parameter (``'B'``): uses the angular method if
           possible, otherwise finite differences.
 
+        .. note::
+           The finite difference method cannot tolerate any statistical noise in the circuit output,
+           since it compares the output at two points infinitesimally close to each other. Hence the
+           'F' method requires exact expectation values, i.e. `shots=0`.
+
         Args:
-            params (Sequence[float]): point in parameter space at which to evaluate the gradient
+            params (nested): point in parameter space at which to evaluate the gradient
             which  (Sequence[int], None): return the gradient with respect to these parameters.
                 None means all.
             method (str): gradient computation method, see above
@@ -170,18 +298,23 @@ class QNode:
         Keyword Args:
             h (float): finite difference method step size
             order (int): finite difference method order, 1 or 2
+            shots (int): How many times should the circuit be evaluated (or sampled) to estimate
+                the expectation values. For simulator backends, zero yields the exact result.
 
         Returns:
-            vector[float]: gradient vector
+            array[float]: gradient vector/Jacobian matrix, shape == (n_out, len(which))
         """
-        if isinstance(params, numbers.Number):
-            params = [params]
+        flat_params = np.array(list(_flatten(params)))
+        #print('grad params:', flat_params)
 
         if which is None:
-            which = range(len(params))
+            which = range(len(flat_params))
         elif len(which) != len(set(which)):  # set removes duplicates
             raise ValueError('Parameter indices must be unique.')
-        params = np.asarray(params)
+
+        if not self.variable_ops:
+            # construct the circuit
+            self.construct(params, **kwargs)
 
         if method in ('A', 'F'):
             method = {k: method for k in which}
@@ -191,21 +324,26 @@ class QNode:
         if 'F' in method.values():
             if order == 1:
                 # the value of the circuit at params, computed only once here
-                y0 = self.__call__(*params, **kwargs)
+                y0 = np.asarray(self.evaluate(flat_params, **kwargs))
             else:
                 y0 = None
 
         # compute the partial derivative w.r.t. each parameter using the proper method
-        grad = np.zeros(len(which), dtype=float)
+        grad = np.zeros((len(which), self.output_dim), dtype=float)
+
         for i, k in enumerate(which):
+            if k not in self.variable_ops:
+                # unused parameter
+                continue
             par_method = method[k]
             if par_method == 'A':
-                grad[i] = self._pd_angle(params, k, **kwargs)
+                grad[i, :] = self._pd_angle(flat_params, k, **kwargs)
             elif par_method == 'F':
-                grad[i] = self._pd_finite_diff(params, k, h, order, y0, **kwargs)
+                grad[i, :] = self._pd_finite_diff(flat_params, k, h, order, y0, **kwargs)
             else:
                 raise ValueError('Unknown gradient method.')
-        return grad
+
+        return grad  #grad.flatten() # FIXME
 
 
     def _pd_finite_diff(self, params, idx, h=1e-7, order=1, y0=None, **kwargs):
@@ -222,20 +360,19 @@ class QNode:
         Returns:
             float: partial derivative of the node.
         """
+        shift_params = params.copy()
         if order == 1:
             # shift one parameter by h
-            shift_params = params.copy()
             shift_params[idx] += h
-            y = self.__call__(*shift_params, **kwargs)
+            y = np.asarray(self.evaluate(shift_params, **kwargs))
             return (y-y0) / h
         elif order == 2:
             # symmetric difference
             # shift one parameter by +-h/2
-            shift_params = params.copy()
             shift_params[idx] += 0.5*h
-            y2 = self.__call__(*shift_params, **kwargs)
+            y2 = np.asarray(self.evaluate(shift_params, **kwargs))
             shift_params[idx] = params[idx] -0.5*h
-            y1 = self.__call__(*shift_params, **kwargs)
+            y1 = np.asarray(self.evaluate(shift_params, **kwargs))
             return (y2-y1) / h
         else:
             raise ValueError('Order must be 1 or 2.')
@@ -252,52 +389,61 @@ class QNode:
         Returns:
           float: partial derivative of the node.
         """
-        n = len(self.variables)
+        n = self.num_variables
         pd = 0.0
         # find the Commands in which the parameter appears, use the product rule
-        for op in self.variable_ops[idx]:
-            if len(op.params) != 1:
-                raise ValueError('For now angular method can only differentiate one-parameter gates.')
+        for op, p_idx in self.variable_ops[idx]:
             if op.grad_method != 'A':
                 raise ValueError('Attempted to use the angular method on a gate that does not support it.')
 
-            # # we temporarily edit the Command so that parameter idx is replaced by a new one,
-            # # which we can modify without affecting other Commands depending on the original.
-            # orig = op.params[0]
-            # assert(orig.idx == idx)
-            # op.params[0] = Variable(n, orig)  # reference to a new, temporary parameter (this method only supports 1-parameter gates!)
-            # self.variable_ops[n] = None  # we just need to add something to the map, it's not actually used
-            # # shift it by pi/2 and -pi/2
-            # shift_params = np.r_[params, params[idx] + np.pi/2]
-            # print('here', *shift_params)
-            # y2 = self.__call__(*shift_params, **kwargs)
-            # shift_params[-1] = params[idx] - np.pi/2
-            # y1 = self.__call__(*shift_params, **kwargs)
-            # # restore the original parameter
-            # op.params[0] = orig
-            # del self.variable_ops[n]  # remove the temporary entry
-            # pd += (y2-y1) / 2
+            # we temporarily edit the Command such that parameter p_idx is replaced by a new one,
+            # which we can modify without affecting other Commands depending on the original.
+            orig = op.params[p_idx]
+            assert(orig.idx == idx)
 
-            # shift it by pi/2 and -pi/2
-            shift_params = params.copy()
-            shift_params[idx] = params[idx] + np.pi/2
-            y2 = self.__call__(*shift_params, **kwargs)
-            shift_params[idx] = params[idx] - np.pi/2
-            y1 = self.__call__(*shift_params, **kwargs)
-            pd += (y2-y1) / 2
+            # reference to a new, temporary parameter with index n, otherwise identical with orig
+            temp_var = copy.copy(orig)
+            temp_var.idx = n
+            op.params[p_idx] = temp_var
+
+            # we just need to add something to the map, it's not actually used
+            self.variable_ops[n] = [[op, p_idx]]
+            #self.vars.append(temp_var)
+
+            # get the gradient recipe for this parameter
+            recipe = op.grad_recipe[p_idx]
+            multiplier = 0.5 if recipe is None else recipe[0]
+            multiplier *= orig.mult
+
+            # shift the temp parameter value by +- this amount
+            shift = np.pi / 2 if recipe is None else recipe[1]
+            shift /= orig.mult
+
+            shift_params = np.r_[params, params[idx] + shift]
+            y2 = np.asarray(self.evaluate(shift_params, **kwargs))
+            shift_params[-1] = params[idx] - shift
+            y1 = np.asarray(self.evaluate(shift_params, **kwargs))
+
+            # restore the original parameter
+            op.params[p_idx] = orig
+            # remove the temporary entry
+            del self.variable_ops[n]
+            #del self.vars[n]
+            pd += (y2-y1) * multiplier
+
         return pd
 
 
-def QNode_vjp(ans, self, params, *args, **kwargs):
+#def QNode_vjp(ans, self, params, *args, **kwargs):
+def QNode_vjp(ans, self, args, **kwargs):
     """Returns the vector Jacobian product for a QNode, as a function
     of the QNode evaluation at the specified parameter values.
     """
-    if isinstance(params, numbers.Number):
-        params = [params]
-
-    p = list(params) + list(args)
-    return lambda g: g * self.gradient(p)
+    #if isinstance(params, numbers.Number):
+    #    params = [params]
+    #p = list(params) + list(args)
+    return lambda g: g * self.gradient(args, **kwargs)
 
 
 # define the vector-Jacobian product function for QNode.__call__()
-defvjp(QNode.__call__, QNode_vjp, argnums=[1])
+ae.defvjp(QNode.evaluate, QNode_vjp, argnums=[1])
