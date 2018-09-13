@@ -32,6 +32,7 @@ class BasicTest(BaseTest):
         m = nr.randn(n)  # parameter multipliers
         par_fixed = nr.randn(n)  # fixed parameter values
         par_free  = nr.randn(n)  # free parameter values
+        Variable.free_param_values = par_free
 
         # test __str__()
         p = Variable(0)
@@ -41,7 +42,8 @@ class BasicTest(BaseTest):
 
         def check(par, res):
             "Apply the parameter mapping, compare with the expected result."
-            self.assertAllAlmostEqual(Variable.map(par, par_free), res, self.tol)
+            temp = np.array([p.getval() if isinstance(p, Variable) else p for p in par])
+            self.assertAllAlmostEqual(temp, res, self.tol)
 
         # mapping function must yield the correct parameter values
         par = [m[k] * Variable(k) for k in range(n)]

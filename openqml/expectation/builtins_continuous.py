@@ -13,37 +13,27 @@
 # limitations under the License.
 """This module contains operations for the default phase space observables"""
 
-from .expectation import Expectation
+from openqml.operation import Expectation
 
+
+# __all__ = [Heterodyne, Homodyne, Fock, P, X]
 
 class Fock(Expectation):
     r"""Returns the photon-number expectation value in the phase space.
 
-    Args:
-        wires (int): the subsystem the operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('Fock', [], wires)
 
 
 class X(Expectation):
     r"""Returns the position expectation value in the phase space.
 
-    Args:
-        wires (int): the subsystem the operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('X', [], wires)
 
 
 class P(Expectation):
     r"""Returns the momentum expectation value in the phase space.
 
-    Args:
-        wires (int): the subsystem the operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('P', [], wires)
 
 
 class Homodyne(Expectation):
@@ -52,17 +42,11 @@ class Homodyne(Expectation):
     Args:
         phi (float): axis in the phase space at which to calculate
             the homodyne measurement.
-        wires (int): the subsystem the operation acts on.
     """
-    def __init__(self, phi, wires):
-        super().__init__('Homodyne', [phi], wires)
+    n_params = 1
 
 
 class Heterodyne(Expectation):
     r"""Returns the displacement expectation value in the phase space.
 
-    Args:
-        wires (int): the subsystem the operation acts on.
     """
-    def __init__(self, phi, wires):
-        super().__init__('Heterodyne', [], wires)
