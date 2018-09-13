@@ -12,80 +12,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains a beamsplitter Operation"""
-from .operation import Operation
+
+
+from openqml.operation import Operation
+
+# __all__ = [CNOT, CZ, Hadamard, PauliX, PauliY, PauliZ, PhaseShift, Rot, RX, RY, RZ, SWAP, QubitStateVector, QubitUnitary]
 
 
 class Hadamard(Operation):
     r"""The Hadamard operator.
-
-    Args:
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('Hadamard', [], wires)
+    n_params = 0
 
 
 class PauliX(Operation):
     r"""The Pauli X operator.
-
-    Args:
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('PauliX', [], wires)
+    n_params = 0
 
 
 class PauliY(Operation):
     r"""The Pauli Y operator.
-
-    Args:
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('PauliY', [], wires)
+    n_params = 0
 
 
 class PauliZ(Operation):
     r"""The Pauli Z operator.
-
-    Args:
-        wires (int]): the subsystem the Operation acts on.
     """
-    def __init__(self, wires):
-        super().__init__('PauliZ', [], wires)
+    n_params = 0
 
 
 class CNOT(Operation):
     r"""The controlled-NOT operator.
 
-    Args:
-        wires (seq[int]): the two subsystems the CNOT acts on.
-            The first subsystem corresponds to the control qubit.
+    The first subsystem corresponds to the control qubit.
     """
-    def __init__(self, wires):
-        super().__init__('CNOT', [], wires)
+    n_params = 0
+    n_wires = 2
 
 
 class CZ(Operation):
     r"""The controlled-Z operator.
 
-    Args:
-        wires (seq[int]): the two subsystems the CNOT acts on.
-            The first subsystem corresponds to the control qubit.
+    The first subsystem corresponds to the control qubit.
     """
-    def __init__(self, wires):
-        super().__init__('CZ', [], wires)
+    n_params = 0
+    n_wires = 2
 
 
 class SWAP(Operation):
     r"""The swap operator.
-
-    Args:
-        wires (seq[int]): the two subsystems the CNOT acts on.
-            The first subsystem corresponds to the control qubit.
     """
-    def __init__(self, wires):
-        super().__init__('SWAP', [], wires)
+    n_params = 0
+    n_wires = 2
 
 
 class RX(Operation):
@@ -95,10 +75,7 @@ class RX(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, phi, wires):
-        super().__init__('RX', [phi], wires)
 
 
 class RY(Operation):
@@ -108,10 +85,7 @@ class RY(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, phi, wires):
-        super().__init__('RY', [phi], wires)
 
 
 class RZ(Operation):
@@ -121,10 +95,15 @@ class RZ(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, phi, wires):
-        super().__init__('RZ', [phi], wires)
+
+
+class PhaseShift(Operation):
+    r"""Arbitrary single qubit local phase shift.
+
+    Args:
+        phi (float): phase shift :math:`\phi`
+    """
 
 
 class Rot(Operation):
@@ -136,21 +115,8 @@ class Rot(Operation):
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
         rho (float): rotation angle :math:`\rho`
-        wires (int): the subsystem the Operation acts on.
     """
-    def __init__(self, phi, theta, rho, wires):
-        super().__init__('Rot', [phi, theta, rho], wires)
-
-
-class PhaseShift(Operation):
-    r"""Arbitrary single qubit local phase shift.
-
-    Args:
-        phi (float): phase shift :math:`\phi`
-        wires (int): the subsystem the Operation acts on.
-    """
-    def __init__(self, phi, wires):
-        super().__init__('PhaseShift', [phi], wires)
+    n_params = 3
 
 
 #=============================================================================
@@ -162,11 +128,9 @@ class QubitStateVector(Operation):
     r"""Prepare subsystems using the given ket vector in the Fock basis.
 
     Args:
-        state (array): a state vector of size 2**wires.
-        wires (int or seq[int]): subsystem(s) the Operation acts on.
+        state (array[complex]): a state vector of size 2**len(wires)
     """
-    def __init__(self, state, wires):
-        super().__init__('QubitStateVector', [state], wires)
+    n_wires = 0
 
 
 #=============================================================================
@@ -178,8 +142,6 @@ class QubitUnitary(Operation):
     r"""Apply an arbitrary unitary matrix.
 
     Args:
-        U (array): square unitary matrix.
-        wires (int or seq[int]): subsystem(s) the Operation acts on.
+        U (array[complex]): square unitary matrix
     """
-    def __init__(self, U, wires):
-        super().__init__('QubitUnitary', [U], wires)
+    n_wires = 0

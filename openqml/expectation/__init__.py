@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the operations"""
-from .expectation import Expectation
-from .builtins_continuous import (Heterodyne, Homodyne, Fock, P, X)
-from .builtins_discrete import (PauliX, PauliY, PauliZ, Hermitian)
+
+from .builtins_continuous import *
+from .builtins_discrete import *
