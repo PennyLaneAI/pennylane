@@ -35,7 +35,7 @@ from ._version import __version__
 
 operator_map = {
     'CoherentState': Coherent,
-    'DisplacedSqueezed': DisplacedSqueezed,
+    'DisplacedSqueezedState': DisplacedSqueezed,
     'SqueezedState': Squeezed,
     'ThermalState': Thermal,
     'GaussianState': Gaussian,
@@ -46,11 +46,7 @@ operator_map = {
     'QuadraticPhase': Pgate,
     'Rotation': Rgate,
     'TwoModeSqueezing': S2gate,
-    'Squeeze': Sgate,
-    # 'XDisplacement': Xgate,
-    # 'PDisplacement': Zgate,
-    # 'MeasureHomodyne': MeasureHomodyne,
-    # 'MeasureHeterodyne': MeasureHeterodyne
+    'Squeeze': Sgate
 }
 
 
