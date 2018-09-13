@@ -14,9 +14,9 @@ def circuit(theta):
     Args:
         theta (float): beamsplitter angle
     """
-    qm.FockState(1, wires=0)
-    qm.Beamsplitter(theta, 0, wires=[0, 1])
-    return qm.expectation.Fock(wires=1)
+    qm.FockState(1, [0])
+    qm.Beamsplitter(theta, 0, [0, 1])
+    return qm.expectation.Fock([1])
 
 def cost(theta, batched):
     """Cost (error) function to be minimized.
