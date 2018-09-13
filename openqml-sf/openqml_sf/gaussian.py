@@ -112,7 +112,7 @@ class StrawberryFieldsGaussian(Device):
             elif expectation.name == 'Displacement':
                 ex = self.state.displacement(modes=reg)
             else:
-                raise DeviceError("Observable {} not supported by {}".format(expectation.name, expectation.name))
+                raise DeviceError("Observable {} not supported by {}".format(expectation.name, self.name))
 
             if self.shots != 0:
                 # estimate the expectation value
