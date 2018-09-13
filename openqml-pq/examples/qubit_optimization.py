@@ -18,24 +18,34 @@ args = parser.parse_args()
 dev1 = qm.device('projectq.'+args.backend, wires=2, **vars(args))
 
 @qm.qfunc(dev1)
-def circuit(xyz):
-    """QNode"""
-    qm.RZ(xyz[0], [0])
-    qm.RY(xyz[1], [0])
-    qm.RX(xyz[2], [0])
-    qm.CNOT([0, 1])
+def circuit(x, y, z):
+    """Single quit rotation and CNOT
+
+    Args:
+        x (float): x rotation angle
+        y (float): y rotation angle
+        z (float): z rotation angle
+    """
+    qm.RZ(z, wires=[0])
+    qm.RY(y, wires=[0])
+    qm.RX(x, wires=[0])
+    qm.CNOT(wires=[0, 1])
     return qm.expectation.PauliZ(wires=1)
 
 circuit = qm.QNode(circuit, dev1)
 
-def cost(xyz, batched):
-    """Cost (error) function to be minimized."""
-    return np.abs(circuit(*xyz)-1)
+def cost(weights, batched):
+    """Cost (error) function to be minimized.
+
+    Args:
+        r (float): squeezing parameter
+    """
+    return np.abs(circuit(*weights)-1)
 
 
 # initialize x with random value
-xyz0 = np.random.randn(3)
-o = qm.Optimizer(cost, xyz0, optimizer=args.optimizer)
+init_weights = np.random.randn(3)
+o = qm.Optimizer(cost, init_weights, optimizer=args.optimizer)
 
 # train the circuit
 c = o.train(max_steps=100)

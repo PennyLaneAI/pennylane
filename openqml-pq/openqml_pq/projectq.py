@@ -158,7 +158,7 @@ class ProjectQDevice(Device):
         else:
             gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
-    def expectation(self, observable, wires):
+    def expectation(self, observable, wires, *par):
         raise NotImplementedError("expectation() is not yet implemented for this backend")
 
     # def __del__(self):
@@ -228,7 +228,7 @@ class ProjectQSimulator(ProjectQDevice):
         super().reset()
 
 
-    def expectation(self, observable, wires):
+    def expectation(self, observable, wires, *par):
         self.eng.flush(deallocate_qubits=False)
 
         if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
@@ -314,7 +314,7 @@ class ProjectQIBMBackend(ProjectQDevice):
         self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
         super().reset()
 
-    def expectation(self, observable, wires):
+    def expectation(self, observable, wires, *par):
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
 
