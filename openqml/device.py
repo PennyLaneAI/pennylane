@@ -47,7 +47,6 @@ class QuantumFunctionError(Exception):
 
 class Device(abc.ABC):
     """Abstract base class for devices."""
-    _current_context = None
     name = ''          #: str: official device plugin name
     short_name = ''    #: str: name used to load device plugin
     api_version = ''   #: str: version of OpenQML for which the plugin was made
@@ -64,10 +63,7 @@ class Device(abc.ABC):
         # number of circuit evaluations used to estimate
         # expectation values of observables. 0 means the exact ev is returned.
         self.shots = shots
-
         self._out = None  # this attribute stores the expectation output
-        self._queue = []  # this list stores the operations to be queued to the device
-        self._observe = [] # the measurement operation to be performed
 
     def __repr__(self):
         """String representation."""
@@ -77,22 +73,6 @@ class Device(abc.ABC):
         """Verbose string representation."""
         return self.__repr__() +'\nName: ' +self.name +'\nAPI version: ' +self.api_version\
             +'\nPlugin version: ' +self.version +'\nAuthor: ' +self.author +'\n'
-
-    def __enter__(self):
-        if Device._current_context is None:
-            Device._current_context = self
-            self.reset()
-        else:
-            raise DeviceError('Only one device can be active at a time.')
-        return self
-
-    def __exit__(self, exc_type, exc_value, tb):
-        Device._current_context = None
-
-        measured_wires = [e.wires for e in self._observe]
-        # check that no wires are measured twice
-        if len(measured_wires) != len(set(measured_wires)):
-            raise QuantumFunctionError('Each wire in the quantum wire can only be measured once.')
 
     @property
     def gates(self):
@@ -143,17 +123,9 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self):
-        """Apply the queued operations to the device, and measure the expectation."""
-        self._out = self.execute_queued()
-
     @abc.abstractmethod
-    def execute_queued(self):
-        """Called during execute(). To be implemented by each plugin.
-
-        Returns:
-          float: expectation value(s) #todo: This should become an array type to handle multiple expectation values.
-        """
+    def execute(self, queue):
+        """Apply the queue of operations to the device, and measure the expectation."""
         raise NotImplementedError
 
     @abc.abstractmethod
