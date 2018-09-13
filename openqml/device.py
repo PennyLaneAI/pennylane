@@ -171,7 +171,7 @@ class Device(abc.ABC):
     def apply(self, gate_name, wires, *par):
         raise NotImplementedError
 
-    def expectation(self, observable, wires):
+    def expectation(self, observable, wires, *par):
         raise NotImplementedError
 
     @abc.abstractmethod
