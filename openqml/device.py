@@ -146,7 +146,7 @@ class Device(abc.ABC):
                 par = operation.parameters()
                 self.apply(operation.name, operation.wires, *par)
 
-            return np.array([self.expectation(observable.name, observable.wires, observable.par) for observable in observe], dtype=np.float64)
+            return np.array([self.expectation(observable.name, observable.wires, observable.params) for observable in observe], dtype=np.float64)
 
 
     def pre_execute_queued(self):
