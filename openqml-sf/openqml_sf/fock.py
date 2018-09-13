@@ -106,26 +106,28 @@ class StrawberryFieldsFock(Device):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
         ev_list = [] # list of returned expectation values
-        for expectation in self._observe:  
+        for expectation in self._observe:
             # calculate expectation value
-            if self._observe.name == 'Fock':
+            if expectation.name == 'Fock':
                 expectation_value = self.state.mean_photon(wires)
                 variance = 0
-            elif self._observe.name == 'X':
+            elif expectation.name == 'X':
                 expectation_value, variance = self.state.quad_expectation(wires, 0)
-            elif self._observe.name == 'P':
+            elif expectation.name == 'P':
                 expectation_value, variance = self.state.quad_expectation(wires, np.pi/2)
-            elif self._observe.name == 'Homodyne':
+            elif expectation.name == 'Homodyne':
                 expectation_value, variance = self.state.quad_expectation(wires, *self.observe.params)
+            else:
+                raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
 
             if self.shots != 0:
                 # estimate the expectation value
                 # use central limit theorem, sample normal distribution once, only ok
                 # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
                 expectation_value = np.random.normal(expectation_value, np.sqrt(var / self.shots))
-           
+
             ev_list.append(ex)
-        
+
         return ev_list
 
     def supported(self, gate_name):
