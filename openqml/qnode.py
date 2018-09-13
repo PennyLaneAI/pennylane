@@ -143,10 +143,8 @@ class QNode:
     def __init__(self, func, device):
         self.func = func
         self.device = device
+        self.variable_ops = {}  #: dict[int->list[(Operation, int)]]: Mapping from free parameter index to the list of Operations (in this circuit) that depend on it. The second element of the tuple is the index of the parameter within the Operation.
 
-        # Mapping from free parameter index to the list of Operations (in this circuit) that depend on it.
-        # The second element of the tuple is the index of the parameter within the Operation.
-        self.variable_ops = {}  #: dict[int->list[(Operation, int)]]
 
     def construct(self, args, **kwargs):
         """Constructs the quantum circuit, and creates the variable mapping.
@@ -174,7 +172,7 @@ class QNode:
         if QNode._current_context is None:
             QNode._current_context = self
         else:
-            raise QuantumFunctionError('Operation can only be applied to a single QNode.')
+            raise QuantumFunctionError('Should not happen.')
         # generate the program queue by executing the qfunc
         try:
             res = self.func(*variables, **kwargs)
