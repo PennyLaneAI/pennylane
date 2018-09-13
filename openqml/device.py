@@ -16,6 +16,7 @@
 import abc
 import logging
 
+import autograd.numpy as np
 
 logging.getLogger()
 
@@ -123,14 +124,14 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self):
+    def execute(self, queue, observe):
         """Apply the queued operations to the device, and measure the expectation."""
         self.pre_execute_queued()
-        self._out = self.execute_queued()
+        self._out = self.execute_queued(queue, observe)
         self.post_execute_queued()
         return self._out
 
-    def execute_queued(self):
+    def execute_queued(self, queue, observe):
         """Called during execute().
 
         Instead of overwriting this, consider implementing a suitable subset of pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
@@ -139,14 +140,14 @@ class Device(abc.ABC):
           float: expectation value(s) #todo: This should become an array type to handle multiple expectation values.
         """
         with self.execute_queued_with():
-            for operation in self._queue:
+            for operation in queue:
                 if self.supported(operation.name):
                     raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
 
                 par = [x.val if isinstance(x, Variable) else x for x in operation.params]
                 self.apply(operation.name, operation.wires, *par)
 
-        return self.expectation(self._observe.name, self._observe.wires)
+            return np.array([self.expectation(observable.name, observable.wires) for observable in observe], dtype=np.float64)
 
 
     def pre_execute_queued(self):
