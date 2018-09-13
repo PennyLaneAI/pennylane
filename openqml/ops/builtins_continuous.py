@@ -27,6 +27,8 @@ from openqml.operation import Operation
 #__all__ = [Beamsplitter, ControlledAddition, ControlledPhase, Displacement, Kerr, CrossKerr, QuadraticPhase, Rotation, Squeezing, TwoModeSqueezing, CubicPhase,
 #  CatState, CoherentState, FockDensityMatrix, DisplacedSqueezedState, FockState, FockStateVector, SqueezedState, ThermalState, GaussianState]
 
+from autograd.numpy import sinh
+
 
 class Rotation(Operation):
     r"""Continuous-variable phase space rotation.

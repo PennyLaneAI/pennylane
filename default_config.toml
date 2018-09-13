@@ -1,0 +1,86 @@
+## =================================================================
+##     MAIN OPENQML CONFIGURATION OPTIONS
+## =================================================================
+## This section contains the main OpenQML configuration options.
+## These options apply globally to OpenQML and all loaded plugins
+## and devices which support them.
+##
+## To overide these default configuration settings per device/plugin,
+## please use the per-device settings below.
+
+## set the default number of shots/runs used
+## to determine expectation value statistics
+[main]
+shots = 0
+
+# =================================================================
+#     PLUGIN AND DEVICE OPTIONS
+# =================================================================
+## This section contains the OpenQML configuration options for each
+## installed plugin or device. These configuration options allow you
+## to set global configuration options on a device-by-device basis.
+## and to also set options specific to certain device.
+
+[strawberryfields.global]
+## Global options for the StrawberryFields plugin.
+## If not specified, the OpenQML default is used.
+##
+## These global options may be overwritten by specifying
+## the defaults for the Fock and Gaussian simulators below.
+
+## Set the default value of hbar
+hbar = 1
+
+## set the default number of shots/runs used
+## to determine expectation value statistics
+# shots = 0
+
+    [strawberryfields.fock]
+    ## Default options for the Fock simulator
+
+    ## Set the default Fock space truncation
+    cutoff_dim = 10
+
+    ## set the default number of shots
+    # shots = 0
+
+    ## Set the default value of hbar
+    # hbar = 1
+
+    [strawberryfields.gaussian]
+    ## Default options for the Gaussian simulator
+
+    ## set the default number of shots
+    # shots = 0
+
+    ## Set the default value of hbar
+    # hbar = 1
+
+[projectq.global]
+## Options for the ProjectQ plugin.
+
+    [projectq.simulator]
+    ## If True, gates are cached and only executed once a
+    ## certain gate-size has been reached
+    # gate_fusion =
+
+    ## Random seed (uses random.randint(0, 4294967295) by default)
+    # rnd_seed =
+
+    [projectq.ibmbackend]
+    ## IBM Quantum Experience user name and password
+    # user =
+    # password =
+
+    ## Whether to use the IBM quantum chip instead of the IBM simulator
+    # use_hardware = true
+
+    ## Device to use (‘ibmqx4’, or ‘ibmqx5’)
+    # device =
+
+    ## Number of runs used to collect statistics
+    # num_runs = 1024
+
+    ## If True, statistics are printed, in addition to the
+    ## measurement result being registered (at the end of the circuit).
+    # verbose = false
