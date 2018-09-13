@@ -20,6 +20,8 @@
    Possible solution: disallow such operations to depend on free parameters, this way they won't be differentiated.
 """
 import numpy as np
+import scipy as sp
+
 from openqml.operation import Operation
 
 
@@ -47,6 +49,19 @@ __all__ = [
 ]
 
 
+def _h_rot(phi):
+    """Utility function, returns the Heisenberg transformation of a phase rotation gate.
+
+    Args:
+      phi (float): rotation angle
+    Returns:
+      array[float]: transformation matrix
+    """
+    c = np.cos(phi)
+    s = np.sin(phi)
+    return sp.block_diag(1, np.array([[c, -s], [s, c]]))
+
+
 class Rotation(Operation):
     r"""Continuous-variable phase space rotation.
 
@@ -57,6 +72,8 @@ class Rotation(Operation):
     Args:
         phi (float): the rotation angle.
     """
+    def heisenberg_transform(self):
+        return _h_rot(self.par_values[0])
 
 
 class Displacement(Operation):
@@ -80,6 +97,12 @@ class Displacement(Operation):
     grad_recipe = [(0.5/shift, shift), None]
     # TODO d\tilde{D}(r, phi)/dr does not depend on r!
     # The gradient formula can be simplified further, we can make do with smaller displacements.
+    def heisenberg_transform(self):
+        p = self.par_values
+        c = np.cos(p[1])
+        s = np.sin(p[1])
+        scale = 2  # \sqrt(2 \hbar)
+        return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
 
 class Squeezing(Operation):
@@ -97,6 +120,10 @@ class Squeezing(Operation):
     n_params = 2
     shift = 1.0
     grad_recipe = [(0.5/np.sinh(shift), shift), None]
+    def heisenberg_transform(self):
+        p = self.par_values
+        R = _h_rot(p[1] / 2)
+        return R @ np.diag([1, np.exp(-p[0]), np.exp(p[0])]) @ R.T
 
 
 class TwoModeSqueezing(Operation):

@@ -19,22 +19,28 @@ from openqml.operation import Expectation
 __all__ = ['Heterodyne', 'Homodyne', 'Fock', 'P', 'X']
 
 
-class Fock(Expectation):
+class Fock(Expectation):   # FIXME nondescriptive name
     r"""Returns the photon-number expectation value in the phase space.
 
+    The photon number operator is :math:`n = a^\dagger a = \frac{1}{2\hbar}(x^2 +p^2) -\I/2`.
     """
+    def heisenberg_expand(self):
+        return np.diag([-0.5, 0.25, 0.25])
 
 
 class X(Expectation):
     r"""Returns the position expectation value in the phase space.
-
     """
+    def heisenberg_expand(self):
+        return np.array([0, 1, 0])
 
 
 class P(Expectation):
     r"""Returns the momentum expectation value in the phase space.
 
     """
+    def heisenberg_expand(self):
+        return np.array([0, 0, 1])
 
 
 class Homodyne(Expectation):
@@ -45,6 +51,10 @@ class Homodyne(Expectation):
             the homodyne measurement.
     """
     n_params = 1
+    def heisenberg_expand(self):
+        phi = self.par_values[0]
+        return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
+
 
 
 class Heterodyne(Expectation):
