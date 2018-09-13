@@ -124,7 +124,7 @@ class Device(abc.ABC):
         return cls._capabilities
 
     @abc.abstractmethod
-    def execute(self, queue):
+    def execute(self, queue, observe):
         """Apply the queue of operations to the device, and measure the expectation."""
         raise NotImplementedError
 

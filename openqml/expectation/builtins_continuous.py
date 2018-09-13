@@ -16,7 +16,8 @@
 from openqml.operation import Expectation
 
 
-# __all__ = [Heterodyne, Homodyne, Fock, P, X]
+__all__ = ['Heterodyne', 'Homodyne', 'Fock', 'P', 'X']
+
 
 class Fock(Expectation):
     r"""Returns the photon-number expectation value in the phase space.

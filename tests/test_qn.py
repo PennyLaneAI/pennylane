@@ -36,14 +36,23 @@ if __name__ == '__main__':
     def cost(x):
         p = pars(x)
         temp = 1 * q(*p)
-        print('returning:', temp)
+        # print('returning:', temp)
         return temp
 
     #g_cost = ag.jacobian(cost, 0)
-    g_cost = ag.grad(cost, 0)
+    g_circuit = ag.grad(q, argnum=[0,1,2])
+    g_cost = ag.grad(cost)
 
     p = pars(0.2)
+    h = 1e-8
+
     print('qnode:', q(*p))
     print('qnode grad:', q.gradient(p))
+    print('qnode: FD grad of pars', (q(*pars(0.2+h))-q(*p))/h)
+    # for some reason, last derivative is [0,0] instead of [0, -0.00312056]
+    print('qnode auto grad:', g_circuit(*p))
+
     print('cost:', cost(0.2))
+    print('cost FD grad:', (cost(0.2+h)-cost(0.2))/h)
+    # as a result, this gives 0
     print('cost auto grad:', g_cost(0.2))

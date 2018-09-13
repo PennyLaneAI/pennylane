@@ -92,8 +92,8 @@ class BasicTest(BaseTest):
         config.save('test_config.toml')
 
         result = toml.load('test_config.toml')
-        self.assertEqual(config._config, result)
         os.remove('test_config.toml')
+        self.assertEqual(config._config, result)
 
     def test_get_item(self):
         """Test getting items."""

@@ -60,7 +60,8 @@ class Operation:
     r"""A type of quantum operation supported by a plugin, and its properties.
 
     * Each Operation subclass represents a type of quantum operation.
-    * Each instance of these subclasses represents an application of the operation with given parameter values to a given sequence of subsystems.
+    * Each instance of these subclasses represents an application of the
+      operation with given parameter values to a given sequence of subsystems.
 
     Operation is used to describe unitary quantum gates.
 
@@ -68,26 +69,37 @@ class Operation:
         *params (tuple[float, int, Variable]): operation parameters
         wires (Sequence[int]): subsystems it acts on
 
-    The gradient recipe (multiplier :math:`c_k`, parameter shift :math:`s_k`) works as follows:
+    The gradient recipe (multiplier :math:`c_k`, parameter shift :math:`s_k`)
+    works as follows:
 
-    .. math:: \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}} = c_k (Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots))
+    .. math::
+
+        \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}}
+        = c_k (Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots))
 
     To find out in detail how the circuit gradients are computed, see :ref:`circuit_gradients`.
     """
     n_params = 1        #: int: number of parameters the operation takes
-    n_wires  = 1        #: int: number of subsystems the operation acts on. The value 0 means any number of subsystems is OK.
+    n_wires  = 1        #: int: number of subsystems the operation acts on.The value 0 means any number of subsystems is OK.
     par_domain  = 'R'   #: str: Domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats. Parameters outside the domain are truncated into it.
     grad_method = 'A'   #: str: gradient computation method; 'A': angular, 'F': finite differences, None: may not be differentiated.
     grad_recipe = None  #: list[tuple[float]]: Gradient recipe for the 'A' method. One tuple for each parameter, (multiplier c_k, parameter shift s_k). None means (0.5, \pi/2) (the most common case).
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         self.name  = self.__class__.__name__   #: str: name of the operation
 
         # extract the arguments
-        wires = args[-1]   # last argument is wires
-        params = args[:-1]
+        if 'wires' in kwargs:
+            params = args
+            wires = kwargs['wires']
+        else:
+            params = args[:-1]
+            wires = args[-1]
+
         if len(params) != self.n_params:
-            raise ValueError('{}: wrong number of parameters.'.format(self.name))
+            raise ValueError("{}: wrong number of parameters. "
+                             "{} parameters passed, {} expected.".format(self.name, params, self.n_params))
+
         self.params = list(params)  #: list[float, int, Variable]: operation parameters, both fixed and free
 
         # check the grad_recipe validity
@@ -95,26 +107,27 @@ class Operation:
             if self.grad_recipe is None:
                 # default recipe for every parameter
                 self.grad_recipe = [None] * self.n_params
-            else:
-                assert len(self.grad_recipe) == self.n_params, 'Gradient recipe must have one entry for each parameter!'
-        else:
-            assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
+            elif len(self.grad_recipe) != self.n_params:
+                raise ValueError('Gradient recipe must have one entry for each parameter.')
+        elif self.grad_recipe is not None:
+                raise ValueError('Gradient recipe is only used by the A method.')
 
         # apply the operation on the given wires
         if isinstance(wires, int):
             wires = [wires]
+
         if self.n_wires != 0 and len(wires) != self.n_wires:
-            raise ValueError('{}: wrong number of subsystems.'.format(self.name))
+            raise ValueError("{}: wrong number of wires. "
+                             "{} wires requested, {} expected.".format(self.name, len(wires), self.n_wires))
+
         self.wires = wires  #: Sequence[int]: subsystems the operation acts on
         self.queue()
-
 
     def __str__(self):
         """Print the operation name and some information."""
         return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
 
-
-    def par_values(self):
+    def parameters(self):
         """Current parameter values.
 
         Fixed parameters are returned as is, free parameters represented by :class:`Variable` instances are replaced by their current numerical value.
@@ -122,8 +135,7 @@ class Operation:
         Returns:
           list[float]: parameter values
         """
-        return [x.getval() if isinstance(x, Variable) else x for x in self.params]
-
+        return [x.val if isinstance(x, Variable) else x for x in self.params]
 
     def queue(self):
         """Append the operation to a QNode queue."""
@@ -144,8 +156,8 @@ class Expectation(Operation):
     grad_recipe = None
 
     def queue(self):
-        """Append the expectation to a QNode queue."""
+        """Append the operation to a QNode queue."""
         if oq.QNode._current_context is None:
-            raise oq.QuantumFunctionError("Quantum expectations can only be used inside a qfunc.")
+            raise oq.QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
         else:
             oq.QNode._current_context._observe.append(self)
