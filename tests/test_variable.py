@@ -42,7 +42,7 @@ class BasicTest(BaseTest):
 
         def check(par, res):
             "Apply the parameter mapping, compare with the expected result."
-            temp = np.array([p.getval() if isinstance(p, Variable) else p for p in par])
+            temp = np.array([p.val if isinstance(p, Variable) else p for p in par])
             self.assertAllAlmostEqual(temp, res, self.tol)
 
         # mapping function must yield the correct parameter values

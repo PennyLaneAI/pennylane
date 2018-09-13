@@ -37,7 +37,7 @@ class QuadratureGradientTest(BaseTest):
     """Tests of the automatic gradient method for circuits acting on quadratures.
     """
     def setUp(self):
-        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=20)
+        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=25)
         self.fock_dev1s = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=60) # squeezing tests are highly sensitive to low cutoffs
         self.fock_dev2 = qm.device('strawberryfields.fock', wires=2, hbar=hbar, cutoff_dim=10)
         self.gaussian_dev1 = qm.device('strawberryfields.gaussian', wires=1)
@@ -316,7 +316,7 @@ class QubitGradientTest(BaseTest):
                              -expZ(Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state)) / 2
                 grad_true = grad_true0 + grad_true1 # product rule
 
-                self.assertAlmostEqual(grad_eval[0], grad_true, delta=self.tol)
+                self.assertAlmostEqual(grad_eval, grad_true, delta=self.tol)
 
 
 if __name__ == '__main__':

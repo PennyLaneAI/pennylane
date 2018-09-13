@@ -235,7 +235,11 @@ class Optimizer:
             self.err_grad = None
 
         x0 = self._weights  # initial weights
-        log.info('Initial cost: {:.6g}'.format(self.err_func(x0)))
+        cost0 = self.err_func(x0)
+        if isinstance(cost0, float):
+            cost0 = [cost0]
+
+        log.info('Initial cost: {:.6g}'.format(*cost0))
 
         def signal_handler(sig, frame):
             "Called when SIGINT is received, for example when the user presses ctrl-c."

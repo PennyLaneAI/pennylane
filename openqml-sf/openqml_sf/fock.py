@@ -14,7 +14,6 @@
 """This module contains the device class and context manager"""
 import numpy as np
 from openqml import Device, DeviceError
-from openqml import Variable
 
 import strawberryfields as sf
 
@@ -87,7 +86,7 @@ class StrawberryFieldsFock(Device):
         self.state = None
         super().__init__(self.short_name, shots)
 
-    def execute_queued(self):
+    def execute(self, queue, observe):
         """Apply the queued operations to the device, and measure the expectation."""
         if self.eng:
             self.eng.reset()
@@ -96,11 +95,11 @@ class StrawberryFieldsFock(Device):
         self.eng, q = sf.Engine(self.wires, hbar=self.hbar)
 
         with self.eng:
-            for operation in self._queue:
+            for operation in queue:
                 if operation.name not in operator_map:
                     raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
 
-                p = [x.val if isinstance(x, Variable) else x for x in operation.params]
+                p = operation.parameters()
                 op = operator_map[operation.name](*p)
                 if isinstance(operation.wires, int):
                     op | q[operation.wires]
@@ -111,7 +110,7 @@ class StrawberryFieldsFock(Device):
 
         # calculate expectation value
         ev_list = [] # list of returned expectation values
-        for expectation in self._observe:
+        for expectation in observe:
             reg = expectation.wires
             if expectation.name == 'Fock':
                 ex = self.state.mean_photon(reg)
@@ -123,7 +122,7 @@ class StrawberryFieldsFock(Device):
             elif expectation.name == 'Homodyne':
                 ex, var = self.state.quad_expectation(reg, *expectation.params)
             else:
-                raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
+                raise DeviceError("Observable {} not supported by {}".format(expectation.name, expectation.name))
 
             if self.shots != 0:
                 # estimate the expectation value
@@ -133,7 +132,7 @@ class StrawberryFieldsFock(Device):
 
             ev_list.append(ex)
 
-        return ev_list
+        return np.array(ev_list, dtype=np.float64)
 
     def reset(self):
         """Reset the device"""

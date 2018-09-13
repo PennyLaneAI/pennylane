@@ -19,11 +19,12 @@ from pkg_resources import iter_entry_points
 from autograd import numpy
 from autograd import grad as _grad
 
+import openqml.expectation
+from openqml.operation import Expectation
+
 from .configuration import Configuration
 from .device import Device, DeviceError, QuantumFunctionError
 from .ops import *
-import openqml.expectation
-from openqml.operation import Expectation
 from .qfunc import qfunc
 from .qnode import QNode
 from .optimizer import Optimizer
@@ -97,8 +98,3 @@ def grad(func, args):
 def version():
     """Version number"""
     return __version__
-
-
-# short names
-#Op = Operation
-#Ex = Expectation
