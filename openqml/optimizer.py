@@ -122,11 +122,12 @@ class Optimizer:
         else:
             self._cost_grad = grad(cost_func, 0)  #: callable: gradient of _cost_func
 
-        print("HYPERPARAMETERS:\n")
+        log.info("HYPERPARAMETERS:\n")
         for key in sorted(self._hp):
             temp = '' if key in kwargs else ' (default)'
-            print('{:20s}{!s:10s}{}'.format(key, self._hp[key], temp))
-        print()
+            log.info('{:20s}{!s:10s}{}'.format(key, self._hp[key], temp))
+
+        log.info('\n')
 
         temp = self._hp['optimizer']
         if not callable(temp) and temp not in OPTIMIZER_NAMES:
@@ -239,7 +240,7 @@ class Optimizer:
         if isinstance(cost0, float):
             cost0 = [cost0]
 
-        log.info('Initial cost: {:.6g}'.format(*cost0))
+        log.info('Initial cost: {:.6g}\n'.format(*cost0))
 
         def signal_handler(sig, frame):
             "Called when SIGINT is received, for example when the user presses ctrl-c."
@@ -273,22 +274,24 @@ class Optimizer:
 
         except StopOptimization as exc:
             # TODO the callback should maybe store more optimization information than just the last x
-            print("\nOptimisation successful: False")
-            print("Number of iterations performed: ", self.nit)
-            print("Reason for termination: ", exc)
+            log.info("\n")
+            log.warning("Optimisation successful: False")
+            log.warning("Number of iterations performed: ", self.nit)
+            log.warning("Reason for termination: {}".format(exc))
         else:
             self._weights = opt.x
 
-            print("\nOptimisation successful: ", opt.success)
+            log.info("\n")
+            log.info("Optimisation successful: {}".format(opt.success))
             try:
-                print("Number of iterations performed: ", opt.nit)
+                log.info("Number of iterations performed: {}".format(opt.nit))
             except AttributeError:
-                print("Number of iterations performed: Not applicable to solver.")
-            print("Final parameters: ", opt.x)
-            print("Reason for termination: ", opt.message)
+                log.info("Number of iterations performed: Not applicable to solver.")
+            log.info("Final parameters: {}".format(opt.x))
+            log.info("Reason for termination: {}".format(opt.message))
 
         cost = self.err_func(self._weights)
-        print('\nFinal cost: {:.6g}\n'.format(cost))
+        log.info('Final cost: {:.6g}\n'.format(cost))
 
         # restore default handler
         signal.signal(signal.SIGINT, signal.SIG_DFL)
