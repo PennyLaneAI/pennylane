@@ -65,12 +65,12 @@ class StrawberryFieldsFock(Device):
     """StrawberryFields Fock device for OpenQML.
 
     wires (int): the number of modes to initialize the device in.
-    cutoff (int): the Fock space truncation. Must be specified before
+    cutoff_dim (int): the Fock space truncation. Must be specified before
         applying a qfunc.
     hbar (float): the convention chosen in the canonical commutation
         relation [x, p] = i hbar. The default value is hbar=2.
     """
-    name = 'Strawberry Fields OpenQML plugin'
+    name = 'Strawberry Fields Fock OpenQML plugin'
     short_name = 'strawberryfields.fock'
     api_version = '0.1.0'
     version = __version__
@@ -79,9 +79,9 @@ class StrawberryFieldsFock(Device):
     _observables = {'Fock', 'X', 'P', 'Homodyne'}
     _circuits = {}
 
-    def __init__(self, wires, *, shots=0, cutoff=None, hbar=2):
+    def __init__(self, wires, *, shots=0, cutoff_dim, hbar=2):
         self.wires = wires
-        self.cutoff = cutoff
+        self.cutoff = cutoff_dim
         self.hbar = hbar
         self.eng = None
         self.q = None
@@ -103,26 +103,30 @@ class StrawberryFieldsFock(Device):
             gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
     def expectation(self, observable, wires):
-        self.state = self.eng.run('fock', cutoff_dim=self.cutoff) #todo: maybe better do this in post_execute_queued()?
+        self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
-        # calculate expectation value
-        if self._observe.name == 'Fock':
-            expectation_value = self.state.mean_photon(wires)
-            variance = 0
-        elif self._observe.name == 'X':
-            expectation_value, variance = self.state.quad_expectation(wires, 0)
-        elif self._observe.name == 'P':
-            expectation_value, variance = self.state.quad_expectation(wires, np.pi/2)
-        elif self._observe.name == 'Homodyne':
-            expectation_value, variance = self.state.quad_expectation(wires, *self.observe.params)
+        ev_list = [] # list of returned expectation values
+        for expectation in self._observe:  
+            # calculate expectation value
+            if self._observe.name == 'Fock':
+                expectation_value = self.state.mean_photon(wires)
+                variance = 0
+            elif self._observe.name == 'X':
+                expectation_value, variance = self.state.quad_expectation(wires, 0)
+            elif self._observe.name == 'P':
+                expectation_value, variance = self.state.quad_expectation(wires, np.pi/2)
+            elif self._observe.name == 'Homodyne':
+                expectation_value, variance = self.state.quad_expectation(wires, *self.observe.params)
 
-        if self.shots != 0:
-            # estimate the expectation value
-            # use central limit theorem, sample normal distribution once, only ok
-            # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            expectation_value = np.random.normal(expectation_value, np.sqrt(var / self.shots))
-
-        return expectation_value#, variance
+            if self.shots != 0:
+                # estimate the expectation value
+                # use central limit theorem, sample normal distribution once, only ok
+                # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+                expectation_value = np.random.normal(expectation_value, np.sqrt(var / self.shots))
+           
+            ev_list.append(ex)
+        
+        return ev_list
 
     def supported(self, gate_name):
         if gate_name not in operator_map:

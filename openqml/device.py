@@ -41,9 +41,13 @@ class DeviceError(Exception):
     pass
 
 
+class QuantumFunctionError(Exception):
+    """Exception raised when an illegal operation is defined in a quantum function."""
+    pass
+
+
 class Device(abc.ABC):
     """Abstract base class for devices."""
-    _current_context = None
     name = ''          #: str: official device plugin name
     short_name = ''    #: str: name used to load device plugin
     api_version = ''   #: str: version of OpenQML for which the plugin was made
@@ -60,10 +64,7 @@ class Device(abc.ABC):
         # number of circuit evaluations used to estimate
         # expectation values of observables. 0 means the exact ev is returned.
         self.shots = shots
-
         self._out = None  # this attribute stores the expectation output
-        self._queue = []  # this list stores the operations to be queued to the device
-        self._observe = None # the measurement operation to be performed
 
     def __repr__(self):
         """String representation."""
@@ -73,20 +74,6 @@ class Device(abc.ABC):
         """Verbose string representation."""
         return self.__repr__() +'\nName: ' +self.name +'\nAPI version: ' +self.api_version\
             +'\nPlugin version: ' +self.version +'\nAuthor: ' +self.author +'\n'
-
-    def __enter__(self):
-        if Device._current_context is None:
-            Device._current_context = self
-            self.reset()
-        else:
-            raise DeviceError('Only one device can be active at a time.')
-        return self
-
-    def __exit__(self, exc_type, exc_value, tb):
-        if self._observe is None:
-            raise DeviceError('A qfunc must always conclude with a classical expectation value.')
-        Device._current_context = None
-        self.execute()
 
     @property
     def gates(self):

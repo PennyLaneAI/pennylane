@@ -12,12 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the operations"""
-from .operation import Operation
 
-from .builtins_continuous import (CatState, CoherentState, FockDensityMatrix, DisplacedSqueezedState,
-                                  FockState, FockStateVector, SqueezedState, ThermalState, GaussianState)
-from .builtins_continuous import (Beamsplitter, ControlledAddition, ControlledPhase, Displacement,
-                                  Kerr, QuadraticPhase, Rotation, Squeezing, CubicPhase)
-
-from .builtins_discrete import (CNOT, CZ, Hadamard, PauliX, PauliY, PauliZ, PhaseShift, Rot, RX, RY, RZ,
-                                SWAP, QubitStateVector, QubitUnitary)
+from .builtins_continuous import *
+from .builtins_discrete import *
