@@ -80,10 +80,10 @@ class PluginTest(BaseTest):
                     gate_class(*gate_pars, list(range(gate_class.n_wires)))
                     return observable_class(*observable_pars, list(range(observable_class.n_wires)))
 
-                try:
-                    circuit()
-                except Exception as e:
-                    print(e)
+                #try:
+                circuit()
+                #except Exception as e:
+                #    print(e)
 
 
 if __name__ == '__main__':
