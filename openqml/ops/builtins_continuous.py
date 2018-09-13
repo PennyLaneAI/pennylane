@@ -21,7 +21,6 @@
 """
 import numpy as np
 from openqml.operation import Operation
-from autograd.numpy import sinh
 
 
 __all__ = [

@@ -80,7 +80,7 @@ class Operation:
     To find out in detail how the circuit gradients are computed, see :ref:`circuit_gradients`.
     """
     n_params = 1        #: int: number of parameters the operation takes
-    n_wires  = 1        #: int: number of subsystems the operation acts on.The value 0 means any number of subsystems is OK.
+    n_wires  = 1        #: int: number of subsystems the operation acts on. The value 0 means any number of subsystems is OK.
     par_domain  = 'R'   #: str: Domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': floats. Parameters outside the domain are truncated into it.
     grad_method = 'A'   #: str: gradient computation method; 'A': angular, 'F': finite differences, None: may not be differentiated.
     grad_recipe = None  #: list[tuple[float]]: Gradient recipe for the 'A' method. One tuple for each parameter, (multiplier c_k, parameter shift s_k). None means (0.5, \pi/2) (the most common case).
@@ -107,10 +107,10 @@ class Operation:
             if self.grad_recipe is None:
                 # default recipe for every parameter
                 self.grad_recipe = [None] * self.n_params
-            elif len(self.grad_recipe) != self.n_params:
-                raise ValueError('Gradient recipe must have one entry for each parameter.')
-        elif self.grad_recipe is not None:
-                raise ValueError('Gradient recipe is only used by the A method.')
+            else:
+                assert len(self.grad_recipe) == self.n_params, 'Gradient recipe must have one entry for each parameter!'
+        else:
+            assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
 
         # apply the operation on the given wires
         if isinstance(wires, int):
@@ -156,8 +156,8 @@ class Expectation(Operation):
     grad_recipe = None
 
     def queue(self):
-        """Append the operation to a QNode queue."""
+        """Append the expectation to a QNode queue."""
         if oq.QNode._current_context is None:
-            raise oq.QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
+            raise oq.QuantumFunctionError("Quantum expectations can only be used inside a qfunc.")
         else:
             oq.QNode._current_context._observe.append(self)
