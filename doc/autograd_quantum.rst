@@ -6,6 +6,22 @@
 Quantum gradients
 =================
 
+Automatic differentiation
+-------------------------
+
+Derivatives are ubiquitous throughout science and engineering. In recent years, automatic differentiation has become a key feature in many numerical software libraries, in particular for machine learning (e.g., Theano_, Autograd_, Tensorflow_, or Pytorch_). 
+
+Generally speaking, automatic differentiation is the ability for a software library to compute the derivatives of arbitrary numerical code. If you write an algorithm to compute some function :math:`g(x)` (which may include mathematical expressions, but also control flow statements like :code:`if`, :code:`for`, etc.), then automatic differentiation provides an algorithm for :math:`\frac{d}{dx}g(x)` with the same degree of complexity as the original function.
+
+*Automatic* differentiation should be distinguished from other forms of differentiation. *Manual differentiation*, where an expression is differentiated by hand (often on paper), is extremely time-consuming and error-prone. In *numerical differentiation*, such as the finite-difference method familiar from high-school calculus, the derivative of a function is approximated by numerically evaluating the function at two infinitesimaly separated points. However, this method can sometimes be imprecise to do the constraints of floating-point arithmetic.
+
+Computing gradients of quantum functions
+----------------------------------------
+
+:ref:`qfuncs` are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute gradients of a quantum function, we could use this information in an optimization or machine learning algorithm, tuning the quantum circuit to produce a desired output. While numerical differentiation is an option, OpenQML is the first software library to support **automatic differentiation of quantum circuits** [#]_.
+
+How is this accomplished? It turns out that the gradient of a quantum function :math:`f(x;\bm{\theta})` can in many cases be expressed as a linear combination of other quantum functions. In fact, these other quantum functions typically use the same circuit, differing only in a shift of the argument. 
+
 :html:`<br>`
 
 .. figure:: ./_static/quantum_gradient.svg
@@ -17,10 +33,10 @@ Quantum gradients
 
 :html:`<br>`
 
-.. todo:: add preamble here: discuss why we care about gradients (ML and possibly chemistry), and reiterate basic idea that the gradient of a qfunc is in many cases a linear combo of qfuncs
+Making a rough analogy to classically computable functions, this is similar to how the derivative of the function :math:`f(x)=\sin(x)` is identical to :math:`\frac{1}{2}\sin(x+\frac{\pi}{2}) - \frac{1}{2}\sin(x-\frac{\pi}{2})`. So the same underlying algorithm can be reused to compute both :math:`\sin(x)` and its derivative (by evaluating at :math:`x\pm\frac{\pi}{2}`). This intuition holds for many quantum functions of interest: the same circuit can be used to compute both the qfunc and gradients of the qfunc [#]_.
 
-Computing gradients of quantum functions
-------------------------------
+A more technical explanation
+----------------------------
 
 .. todo:: Need to introduce clean unified definitions up front, then derive the formulas in a way which keeps CV and qubit formalisms on same page as long as possible.
 
@@ -67,14 +83,15 @@ and its gradient has the form
 
 where :math:`\left[H_i, \hat{B}_{i} \right] = H_i \hat{B}_{i} - \hat{B}_{i} H_i` is the commutator.
 
-Backpropagation through hybrid computations
--------------------------------------------
-
-- how does a gradient computation work in a hybrid quantum-classical computation?
-
-
-.. note:: In situations where no formula for quantum gradients is known, OpenQML supports approximate gradient estimation using numerical methods.
+.. _Theano: https://github.com/Theano/Theano
+.. _Autograd: https://github.com/HIPS/autograd
+.. _Tensorflow: http://tensorflow.org/
+.. _Pytorch: https://pytorch.org/
 
 
-.. note:: It may also be useful to have a quantum device evaluate standalone gradients, e.g., for calculating forces in quantum chemistry.
+.. rubric:: Footnotes
+
+.. [#] This should be contrasted with software which can perform automatic differentiation on classical simulations of quantum circuits, such as `Strawberry Fields <https://strawberryfields.readthedocs.io/en/latest/>`_. 
+
+.. [#] In situations where no formula for automatic quantum gradients is known, OpenQML falls back to approximate gradient estimation using numerical methods.
 

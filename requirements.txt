@@ -1,3 +1,5 @@
 numpy
 scipy
 autograd
+toml
+appdirs

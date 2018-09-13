@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """OpenQML parameterised variable class"""
+import copy
+import collections
+
+import numpy as np
+
+
+def _get_nested(seq, t):
+    """Multidimensional sequence indexing"""
+    if len(t) > 1:
+        return get_nested(seq[t[0]], t[1:])
+    return seq[t[0]]
 
 class Variable:
     """Stores the parameter reference.
@@ -24,21 +35,53 @@ class Variable:
       idx (int): parameter index >= 0
       val (int or complex or float): initial value of the variable (optional)
     """
+    free_param_values = None #: array[float]: current free parameter values, TEST, a bit hackish
+
     def __init__(self, idx, name=None, val=None):
         self.idx = idx  #: int: parameter index
         self.name = name
-        self.val = val
+        #self.val = val
+        self.mult = 1.0  #: float: parameter scalar multiplier
+        #self.dim = np.asarray(self.val).shape
 
     def __str__(self):
-        return 'Variable: {}'.format(self.idx)
+        temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
+        return 'Variable {}: name = {}, {}'.format(self.idx, self.name, temp)
 
-    # def __add__(self, other):
-    #     if isinstance(other, Variable):
-    #         return
-    #     self.val += other
+    def __neg__(self):
+        """Unary negation."""
+        temp = copy.copy(self)
+        temp.mult = -temp.mult
+        return temp
 
-    # def __mul__(self, other):
-    #     self.val *= other
+    def __mul__(self, scalar):
+        """Right multiplication by scalars."""
+        temp = copy.copy(self)
+        temp.mult *= scalar
+        return temp
 
-    # def __div__(self, other):
-    #     self.val /= other
+    __rmul__ = __mul__ # """Left multiplication by scalars."""
+
+    def getval(self):
+        """Mapping function for gate parameters.
+        Replaces Variables with their actual values.
+
+        Args:
+            par (Sequence[float, int, ParRef]): parameter values to map, each either
+                a fixed immediate value or a reference to a free parameter
+            values (Sequence[float, int]): values for the free parameters
+
+        Returns:
+            float: mapped parameter
+        """
+        return self.free_param_values[self.idx] * self.mult
+
+    def UNUSED__getitem__(self, idx):
+        """nested sequence indexing"""
+        if isinstance(self.val, collections.Sequence):
+            return get_nested(self.val, tuple(idx))
+
+        if isinstance(self.val, np.ndarray):
+            return self.val[idx]
+
+        raise IndexError("Variable type does not support indexing.")
