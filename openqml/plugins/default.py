@@ -248,18 +248,18 @@ class DefaultQubit(Device):
         self._state = None
         super().__init__(self.short_name, shots)
 
-    def execute(self, queue):
+    def execute(self, queue, observe):
         """Apply the queued operations to the device, and measure the expectation."""
         if self._state is None:
             # init the state vector to |00..0>
             self._state = np.zeros(2**self.wires, dtype=complex)
             self._state[0] = 1
-            self._out = np.full(self.wires, np.nan)
+            self._out = []
 
         # apply the operations
-        for op in queue:
+        for op in queue+observe:
             if op.name == 'QubitStateVector':
-                state = np.asarray(op.params[0])
+                state = np.asarray(op.params[0], dtype=np.float64)
                 if state.ndim == 1 and state.shape[0] == 2**self.wires:
                     self._state = state
                 else:
@@ -295,9 +295,9 @@ class DefaultQubit(Device):
                         p0 = self.ev(P[0], op.wires)  # probability of measuring a[0]
                         n0 = np.random.binomial(self.shots, p0)
                         ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
-                self._out[op.wires[0]] = ev  # TODO for now only 1-wire ev:s
+                self._out.append(ev)  # TODO for now only 1-wire ev:s
 
-        return self._out  # return the result
+        return np.array(self._out, dtype=np.float64)  # return the result
 
     @classmethod
     def _get_operator_matrix(cls, A):
@@ -316,7 +316,7 @@ class DefaultQubit(Device):
             return operator_map[A.name]
 
         # current parameter values
-        p = A.par_values()
+        p = A.parameters()
         return operator_map[A.name](*p)
 
     def ev(self, A, wires):

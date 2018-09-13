@@ -71,7 +71,7 @@ class OptTest(BaseTest):
           float: mapped data
         """
         par = np.concatenate((np.array([0.5*np.pi * data_in]), weights))
-        return self.qnode(par)
+        return self.qnode(*par)
 
 
     def cost(self, weights, data_sample=None):

@@ -14,9 +14,9 @@ def circuit(alpha, r):
     Args:
         r (float): squeezing parameter
     """
-    qm.Displacement(alpha, 0, [0])
-    qm.Squeezing(r, 0, [0, 1])
-    return qm.expectation.Fock([1])
+    qm.Displacement(alpha, 0, wires=[0])
+    qm.TwoModeSqueezing(r, 0, wires=[0, 1])
+    return qm.expectation.Fock(wires=1)
 
 def cost(weights, batched):
     """Cost (error) function to be minimized.
@@ -24,11 +24,11 @@ def cost(weights, batched):
     Args:
         r (float): squeezing parameter
     """
-    return np.abs(circuit(weights)-1)
+    return np.abs(circuit(*weights)-1)
 
 # initialize r with random value
 init_weights = np.random.randn(2)
-o = qm.Optimizer(cost, init_weights, optimizer='Nelder-Mead')
+o = qm.Optimizer(cost, init_weights, optimizer='SGD')
 
 # train the circuit
 c = o.train(max_steps=100)

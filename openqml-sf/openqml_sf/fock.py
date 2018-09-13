@@ -14,7 +14,6 @@
 """This module contains the device class and context manager"""
 import numpy as np
 from openqml import Device, DeviceError
-from openqml import Variable
 
 import strawberryfields as sf
 
@@ -37,7 +36,7 @@ operator_map = {
     'CatState:': Catstate,
     'CoherentState': Coherent,
     'FockDensityMatrix': DensityMatrix,
-    'DisplacedSqueezed': DisplacedSqueezed,
+    'DisplacedSqueezedState': DisplacedSqueezed,
     'FockState': Fock,
     'FockStateVector': Ket,
     'SqueezedState': Squeezed,
@@ -53,11 +52,7 @@ operator_map = {
     'Rotation': Rgate,
     'TwoModeSqueezing': S2gate,
     'Squeezing': Sgate,
-    'CubicPhase': Vgate,
-    # 'XDisplacement': Xgate,
-    # 'PDisplacement': Zgate,
-    # 'MeasureFock': MeasureFock,
-    # 'MeasureHomodyne': MeasureHomodyne
+    'CubicPhase': Vgate
 }
 
 
@@ -105,6 +100,7 @@ class StrawberryFieldsFock(Device):
     def expectation(self, observable, wires):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
+        # calculate expectation value
         ev_list = [] # list of returned expectation values
         for expectation in self._observe:
             # calculate expectation value
@@ -128,7 +124,7 @@ class StrawberryFieldsFock(Device):
 
             ev_list.append(ex)
 
-        return ev_list
+        return np.array(ev_list, dtype=np.float64)
 
     def supported(self, gate_name):
         if gate_name not in operator_map:

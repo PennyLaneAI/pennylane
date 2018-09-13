@@ -16,7 +16,6 @@
 import abc
 import logging
 
-from .variable import Variable
 
 logging.getLogger()
 

@@ -40,9 +40,7 @@ class Variable:
     def __init__(self, idx, name=None, val=None):
         self.idx = idx  #: int: parameter index
         self.name = name
-        #self.val = val
         self.mult = 1.0  #: float: parameter scalar multiplier
-        #self.dim = np.asarray(self.val).shape
 
     def __str__(self):
         temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
@@ -62,7 +60,8 @@ class Variable:
 
     __rmul__ = __mul__ # """Left multiplication by scalars."""
 
-    def getval(self):
+    @property
+    def val(self):
         """Mapping function for gate parameters.
         Replaces Variables with their actual values.
 
@@ -75,13 +74,3 @@ class Variable:
             float: mapped parameter
         """
         return self.free_param_values[self.idx] * self.mult
-
-    def UNUSED__getitem__(self, idx):
-        """nested sequence indexing"""
-        if isinstance(self.val, collections.Sequence):
-            return get_nested(self.val, tuple(idx))
-
-        if isinstance(self.val, np.ndarray):
-            return self.val[idx]
-
-        raise IndexError("Variable type does not support indexing.")

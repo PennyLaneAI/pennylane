@@ -17,20 +17,20 @@ def circuit(x, y, z):
     return qm.expectation.PauliZ(1)
 
 
-def cost(x, batched):
+def cost(weights, batched):
     """Cost (error) function to be minimized."""
-    return np.abs(circuit(x)-1/np.sqrt(2))
+    return np.abs(circuit(*weights)-1/np.sqrt(2))
 
 
 # initialize x with random value
-x0 = np.random.randn(3)
-o = qm.Optimizer(cost, x0, optimizer='SGD')
+weights0 = np.random.randn(3)
+o = qm.Optimizer(cost, weights0, optimizer='SGD')
 
 # train the circuit
 c = o.train(max_steps=100)
 
 # print the results
-print('Initial rotation angles:', x0)
+print('Initial rotation angles:', weights0)
 print('Optimized rotation angles:', o.weights)
 print('Circuit output at rotation angles:', circuit(*o.weights))
-print('Circuit gradient at rotation angles:', qm.grad(circuit, o.weights)[0])
+print('Circuit gradient at rotation angles:', qm.grad(circuit, o.weights))
