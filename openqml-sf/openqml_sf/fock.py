@@ -97,7 +97,7 @@ class StrawberryFieldsFock(Device):
         else:
             gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
-    def expectation(self, observable, wires):
+    def expectation(self, observable, wires, *par):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
         # calculate expectation value
@@ -109,9 +109,9 @@ class StrawberryFieldsFock(Device):
         elif observable == 'P':
             expectation_value, variance = self.state.quad_expectation(wires, np.pi/2)
         elif observable == 'Homodyne':
-            expectation_value, variance = self.state.quad_expectation(wires, *self.observe.params)
+            expectation_value, variance = self.state.quad_expectation(wires, *par)
         else:
-            raise DeviceError("Observable {} not supported by {}".format(observable, self.name))
+            raise DeviceError("Observable {} not supported by {}".format(observable.name, self.name))
 
         if self.shots != 0:
             # estimate the expectation value
@@ -123,7 +123,7 @@ class StrawberryFieldsFock(Device):
 
     def supported(self, gate_name):
         if gate_name not in operator_map:
-            raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
+            raise DeviceError("Operation {} not supported by device {}".format(gate_name, self.name))
 
     def reset(self):
         """Reset the device"""
