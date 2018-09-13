@@ -63,7 +63,6 @@ class Device(abc.ABC):
         # number of circuit evaluations used to estimate
         # expectation values of observables. 0 means the exact ev is returned.
         self.shots = shots
-        self._out = None  # this attribute stores the expectation output
 
     def __repr__(self):
         """String representation."""
@@ -102,15 +101,6 @@ class Device(abc.ABC):
           dict[str->Circuit]: circuit templates
         """
         return self._circuits
-
-    @property
-    def result(self):
-        """Get the circuit result.
-
-        Returns:
-            float or int
-        """
-        return self._out
 
     @classmethod
     def capabilities(cls):
