@@ -136,7 +136,7 @@ class Device(abc.ABC):
         Instead of overwriting this, consider implementing a suitable subset of pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
 
         Returns:
-          float: expectation value(s) #todo: This should become an array type to handle multiple expectation values.
+          float: expectation value(s) #todo: This is now a numpy array
         """
         with self.execute_queued_with():
             for operation in queue:
@@ -146,16 +146,23 @@ class Device(abc.ABC):
                 par = operation.parameters()
                 self.apply(operation.name, operation.wires, *par)
 
+            for observable in observe:
+                if self.supported(observable.name):
+                    raise DeviceError("Observable {} not supported on device {}".format(operation.name, self.name))
+
             return np.array([self.expectation(observable.name, observable.wires, observable.params) for observable in observe], dtype=np.float64)
 
 
     def pre_execute_queued(self):
+        """Called during execute() before the individual gates and observables are executed."""
         pass
 
     def post_execute_queued(self):
+        """Called during execute() after the individual gates and observables have been executed."""
         pass
 
     def execute_queued_with(self):
+        """Called during execute(). You can overwrite this function to return an objects, the individual apply() and expectation() calls are then executed in the context of that object. See the implementation of execute_queued() for mote details."""
         class MockClassForWithStatment(object): # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute_queued()."""
             def __enter__(self):
@@ -166,12 +173,15 @@ class Device(abc.ABC):
         return MockClassForWithStatment()
 
     def supported(self, gate_name):
+        """Return whether a gate with the give gate_name is supported by this plugin. """
         raise NotImplementedError
 
     def apply(self, gate_name, wires, *par):
+        """Apply the gate with name gate_name to wires with parameters *par."""
         raise NotImplementedError
 
     def expectation(self, observable, wires, *par):
+        """Return the expectation value of observable on wires with paramters *par."""
         raise NotImplementedError
 
     @abc.abstractmethod

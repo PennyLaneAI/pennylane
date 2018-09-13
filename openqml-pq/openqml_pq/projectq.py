@@ -158,8 +158,8 @@ class ProjectQDevice(Device):
         else:
             gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
-    def expectation(self, observable, wires, *par):
-        raise NotImplementedError("expectation() is not yet implemented for this backend")
+    # def expectation(self, observable, wires, *par):
+    #     raise NotImplementedError("expectation() is not yet implemented for this backend")
 
     # def __del__(self):
     #     self._deallocate()
