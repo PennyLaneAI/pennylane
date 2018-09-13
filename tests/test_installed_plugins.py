@@ -72,20 +72,23 @@ class PluginTest(BaseTest):
 
                 #from openqml import Expectation
 
+                observable_class = getattr(qm.expectation, observable)
+                observable_fullargspec = inspect.getfullargspec(observable_class.__init__)
+                observable_num_par_args = len(observable_fullargspec.args)-2
+                observable_pars = np.random.randn(observable_num_par_args)
+
+                gate_class = getattr(qm, gate)
+                gate_fullargspec = inspect.getfullargspec(gate_class.__init__)
+                gate_num_par_args = len(gate_fullargspec.args)-2
+                gate_pars = np.random.randn(gate_num_par_args)
+
+                gate_n_wires = gate_class.n_wires
+
                 @qm.qfunc(dev)
                 def circuit():
 
-                    observable_class = getattr(qm.expectation, observable)
-                    observable_fullargspec = inspect.getfullargspec(observable_class.__init__)
-                    observable_num_par_args = len(observable_fullargspec.args)-2
-                    observable_pars = np.random.randn(observable_num_par_args)
 
-                    gate_class = getattr(qm, gate)
-                    gate_fullargspec = inspect.getfullargspec(gate_class.__init__)
-                    gate_num_par_args = len(gate_fullargspec.args)-2
-                    gate_pars = np.random.randn(gate_num_par_args)
-
-                    gate_class(*gate_pars, [0,1,3])#todo: find out how to know the number of subsystems a gate is supposed to act on...
+                    gate_class(*gate_pars, list(range(gate_n_wires)))
                     return observable_class(*observable_pars, [0])
 
                 circuit()
