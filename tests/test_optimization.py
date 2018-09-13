@@ -1,3 +1,16 @@
+# Copyright 2018 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Unit tests for the :mod:`openqml` :class:`Optimizer` class.
 """
@@ -32,7 +45,7 @@ def circuit(*args):
     qm.RZ(args[4], 1)
     qm.CNOT([0, 1])
     qm.RX(args[5], 0)
-    qm.expectation.PauliZ(0)
+    return qm.expectation.PauliZ(0)
 
 
 class OptTest(BaseTest):
@@ -120,7 +133,7 @@ class OptTest(BaseTest):
         qnode = QNode(circuit, self.dev)
         self.qnode = qnode
 
-        x0 = randn(7)  # one circuit param is used to encode the data
+        x0 = np.array([-0.71690972, -0.55632194,  0.74297438, -1.15401698,  0.62766983,  2.55008079, -0.27567698]) #fix "random" values to make the test pass/fail deterministically
 
         temp = 0.30288  # expected minimal cost
         tol = 0.001

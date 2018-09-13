@@ -55,8 +55,9 @@ from openqml import Variable
 import projectq as pq
 
 # import operations
-from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R)
-from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, Hermitian)
+from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R, Ph, StatePreparation, HGate, SGate, TGate, SqrtXGate, SqrtSwapGate
+)
+from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, QubitUnitary)
 
 from ._version import __version__
 
@@ -71,18 +72,18 @@ operator_map = { #todo: make this a class property
     'RX': Rx,
     'RY': Ry,
     'RZ': Rz,
+    'PhaseShift': R,
+    'QubitStateVector': StatePreparation,
+    'Hadamard': HGate,
+    #gates not native to OpenQML
+    'S': SGate,
+    'T': TGate,
+    'SqrtX': SqrtXGate,
+    'SqrtSwap': SqrtSwapGate,
+    'AllZ': AllZGate,
+    #gates not implemented in ProjectQ
     'Rot': Rot,
-    #'PhaseShift': #todo: implement
-    #'QubitStateVector': #todo: implement
-    #'QubitUnitary': #todo: implement
-    #: H, #todo: implement
-    #: S, #todo: implement
-    #: T, #todo: implement
-    #: SqrtX, #todo: implement
-    #: SqrtSwap, #todo: implement
-    #: R, #todo: implement
-    #'AllPauliZ': AllZGate, #todo: implement
-    #'Hermitian': #todo: implement
+    'QubitUnitary': QubitUnitary,
 }
 
 class ProjectQDevice(Device):
@@ -209,7 +210,7 @@ class ProjectQSimulator(ProjectQDevice):
 
     short_name = 'projectq.simulator'
     _gates = set(operator_map.keys())
-    _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate, Hermitian] ])
+    _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate] ])
     _circuits = {}
     _backend_kwargs = ['gate_fusion', 'rnd_seed']
 

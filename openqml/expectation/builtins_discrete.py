@@ -11,38 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a beamsplitter operation"""
-from .expectation import Expectation
+"""This module contains operations for the default qubit observables"""
+
+from openqml.operation import Expectation
+
+
+# __all__ = [PauliX, PauliY, PauliZ, Hermitian]
 
 
 class PauliX(Expectation):
     r"""Returns the Pauli-X expectation value.
 
-    Args:
-        wires (int): the subsystem to measure.
     """
-    def __init__(self, wires):
-        super().__init__('PauliX', [], wires)
 
 
 class PauliY(Expectation):
     r"""Returns the Pauli-Y expectation value.
 
-    Args:
-        wires (int): the subsystem to measure.
     """
-    def __init__(self, wires):
-        super().__init__('PauliY', [], wires)
 
 
 class PauliZ(Expectation):
     r"""Returns the Pauli-Z expectation value.
 
-    Args:
-        wires (int): the subsystem to measure.
     """
-    def __init__(self, wires):
-        super().__init__('PauliZ', [], wires)
 
 
 class Hermitian(Expectation):
@@ -50,7 +42,5 @@ class Hermitian(Expectation):
 
     Args:
         A (array): square hermitian matrix.
-        wires (int): the subsystem to measure.
     """
-    def __init__(self, A, wires):
-        super().__init__('Hermitian', [A], wires)
+    n_params = 1

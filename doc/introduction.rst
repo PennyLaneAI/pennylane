@@ -18,7 +18,6 @@ The core of OpenQML is designed around four main concepts:
 
 4. **Hybrid computation**: a computing model which seamlessly integrates both classical and quantum nodes
 
-
 :ref:`qfuncs`
 -------------
 
@@ -42,7 +41,7 @@ The primary motivation for building quantum computers is that they should be abl
 
 A core element of modern machine learning libraries is the automatic computation of analytic gradients. OpenQML extends this key feature to quantum functions.
 
-Evaluating qfuncs is inefficient on classical computers, so we might expect the gradients of qfuncs to be similarly intractable. Fortunately, we can often write the gradient of a qfunc :math:`\nabla_{\bm{\theta}}f(x;\bm{\theta})` as a linear combination of closely related qfuncs: 
+Evaluating qfuncs is inefficient on classical computers, so we might expect the gradients of qfuncs to be similarly intractable. Fortunately, we can often compute the gradient of a qfunc :math:`\nabla_{\bm{\theta}}f(x;\bm{\theta})` exactly using a linear combination of closely related qfuncs: 
 
 :html:`<br>`
 
