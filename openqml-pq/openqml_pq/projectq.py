@@ -245,7 +245,7 @@ class ProjectQSimulator(ProjectQDevice):
 
             ev_list.append(ev)
 
-        return ev_list
+        return np.array(ev_list, dtype=np.float64)
 
 
 class ProjectQClassicalSimulator(ProjectQDevice):
@@ -343,4 +343,4 @@ class ProjectQIBMBackend(ProjectQDevice):
 
             ev_list.append(ex)
 
-        return ev_list
+        return np.array(ev_list, dtype=np.float64)
