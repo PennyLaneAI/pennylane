@@ -127,6 +127,7 @@ class Operation:
         """Print the operation name and some information."""
         return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
 
+    @property
     def parameters(self):
         """Current parameter values.
 
@@ -145,6 +146,29 @@ class Operation:
             oq.QNode._current_context._queue.append(self)
 
 
+    def heisenberg_transform(self):
+        """Heisenberg representation of the adjoint action of the gate.
+
+        Given a unitary quantum gate :math:`U`, we may consider its adjoint action in the Heisenberg picture,
+        :math:`\text{Ad}_{U^\dagger}`. If the gate is gaussian, its adjoint action conserves the order
+        of any observables that are polynomials in :math:`\vec{E} = (\I, x, p)`. This also means it maps
+        :math:`\text{span} \vec{E}` into itself:
+
+        .. math:: \text{Ad}_{U^\dagger} E_i = \sum_j \tilde{U}_{ij} E_j
+
+        For multimode gates, we use the operator basis :math:`\vec{E} = (\I, x_1, p_1, x_2, p_2, \ldots)`.
+
+        For gaussian CV gates, this method returns the transformation matrix for the current parameter values
+        of the Operation. The method is not defined for nongaussian (and non-CV) gates.
+
+        Returns:
+          array[float]: :math:`\tilde{U}`
+        """
+        pass
+
+    heisenberg_transform = None  # disable the method, we just want the docstring here
+
+
 
 class Expectation(Operation):
     """A type of expectation value measurement supported by a device, and its properties.
@@ -161,3 +185,23 @@ class Expectation(Operation):
             raise oq.QuantumFunctionError("Quantum expectations can only be used inside a qfunc.")
         else:
             oq.QNode._current_context._observe.append(self)
+
+    def heisenberg_expand(self):
+        """Expansion of the observable in the :math:`\vec{E} = (\I, x, p)` basis.
+
+        For first-order observables returns a vector of expansion coefficients,
+        :math:`A = \sum_i q_i E_i`.
+
+        For second-order observables returns a symmetric matrix,
+        :math:`B = \sum_{ij} q_{ij} E_i E_j`
+
+        See :meth:`Operation.heisenberg_transform`.
+
+        The method is not defined for non-CV observables.
+
+        Returns:
+          array[float]: :math:`q`
+        """
+        pass
+
+    heisenberg_expand = None  # disable the method, we just want the docstring here
