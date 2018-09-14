@@ -139,6 +139,7 @@ class Device(abc.ABC):
           float: expectation value(s) #todo: This is now a numpy array
         """
         with self.execute_queued_with():
+            self.pre_execute_operations()
             for operation in queue:
                 if not self.supported(operation.name):
                     raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.name))
@@ -146,7 +147,12 @@ class Device(abc.ABC):
                 par = operation.parameters()
                 self.apply(operation.name, operation.wires, *par)
 
-            return np.array([self.expectation(observable.name, observable.wires, observable.params) for observable in observe], dtype=np.float64)
+            self.post_execute_operations()
+
+            self.pre_execute_expectations()
+            expectations = np.array([self.expectation(observable.name, observable.wires, observable.params) for observable in observe], dtype=np.float64)
+            self.post_execute_expectations()
+            return expectations
 
 
     def pre_execute_queued(self):
@@ -155,6 +161,23 @@ class Device(abc.ABC):
 
     def post_execute_queued(self):
         """Called during execute() after the individual gates and observables have been executed."""
+        pass
+
+    def pre_execute_operations(self):
+        """Called during execute() before the individual gates are executed."""
+        pass
+
+    def post_execute_operations(self):
+        """Called during execute() after the individual gates have been executed."""
+        pass
+
+
+    def pre_execute_expectations(self):
+        """Called during execute() before the individual observables are executed."""
+        pass
+
+    def post_execute_expectations(self):
+        """Called during execute() after the individual observables have been executed."""
         pass
 
     def execute_queued_with(self):
