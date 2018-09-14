@@ -46,7 +46,7 @@ operator_map = {
     'QuadraticPhase': Pgate,
     'Rotation': Rgate,
     'TwoModeSqueezing': S2gate,
-    #'Squeeze': Sgate #todo: produces an error
+    'Squeeze': Sgate
 }
 
 
