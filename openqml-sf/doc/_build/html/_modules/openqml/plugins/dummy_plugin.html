@@ -1,0 +1,662 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link href="https://fonts.googleapis.com/css?family=Noto+Serif" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/nanoscroller.css" />
+  <script defer src="https://use.fontawesome.com/releases/v5.0.2/js/all.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="text/x-mathjax-config">
+     MathJax.Hub.Config({
+       "HTML-CSS": { scale: 90, linebreaks: { automatic: true } },
+       TeX: {
+         Macros: {
+           pr : ['|\#1\\rangle\\langle\#1|',1],
+           ket: ['\\left| \#1\\right\\rangle',1],
+           bra: ['\\left\\langle \#1\\right|',1],
+           xket: ['\\left| \#1\\right\\rangle_x',1],
+           xbra: ['\\left\\langle \#1\\right|_x',1],
+           braket: ['\\langle \#1 \\rangle',1],
+           braketD: ['\\langle \#1 \\mid \#2 \\rangle',2],
+           braketT: ['\\langle \#1 \\mid \#2 \\mid \#3 \\rangle',3],
+           ketbra: ['| #1 \\rangle \\langle #2 |',2],
+           hc: ['\\text{h.c.}',0],
+           cc: ['\\text{c.c.}',0],
+           h: ['\\hat',0],
+           nn: ['\\nonumber',0],
+           di: ['\\frac{d}{d \#1}',1],
+           uu: ['\\mathcal{U}',0],
+           inn: ['\\text{in}',0],
+           out: ['\\text{out}',0],
+           vac: ['\\text{vac}',0],
+           I: ['I',0],
+           x: ['\\hat{x}',0],
+           p: ['\\hat{p}',0],
+           a: ['\\hat{a}',0],
+           ad: ['\\hat{a}^\\dagger',0],
+           n: ['\\hat{n}',0],
+           nbar: ['\\overline{n}',0],
+           sech: ['\\mathrm{sech~}',0],
+           tanh: ['\\mathrm{tanh~}',0],
+           re: ['\\text{Re}',0],
+           im: ['\\text{Im}',0],
+           tr: ['\\mathrm{Tr} #1',1],
+           sign: ['\\text{sign}',0],
+           overlr: ['\\overset\\leftrightarrow{\#1}',1],
+           overl: ['\\overset\leftarrow{\#1}',1],
+           overr: ['\\overset\rightarrow{\#1}',1],
+           avg: ['\\left< \#1 \\right>',1],
+           slashed: ['\\cancel{\#1}',1],
+           bold: ['\\boldsymbol{\#1}',1],
+           d: ['\\mathrm d',0],
+           expect: ["\\langle #1 \\rangle",1],
+           pde: ["\\frac{\\partial}{\\partial \#1}",1],
+           R: ["\\mathbb{R}",0],
+           C: ["\\mathbb{C}",0],
+           Ad: ["\\text{Ad}",0],
+           Var: ["\\text{Var}",0],
+           bx: ["\\mathbf{x}", 0],
+           bm: ["\\boldsymbol{\#1}",1]
+         }
+       }
+     });
+     </script>
+  
+    <title>openqml.plugins.dummy_plugin &#8212; OpenQML 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/xanadu.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  
+  <link rel="apple-touch-icon" href="../../../_static/logo_new.png" />
+  
+   
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">OpenQML 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column" class="nano css-transitions-only-after-page-load">
+    <div class="sphinxsidebar nano-content"><a href="http://xanadu.ai" class="text-logo">
+	<img src="../../../_static/logo_new.png" class="logo active" width=80%></img>
+	<img src="../../../_static/logo_new_small.png" class="logo-small" width=80%></img>
+	<!-- <span id="project-name">OpenQML</span> -->
+</a>
+<div class="sidebar-block search-block">
+  <div class="sidebar-wrapper">
+  <!-- <div id="project-name">OpenQML</div> -->
+    <a href="
+    ../../../index.html">
+      <div id="project-name">
+        <!-- <img src="../../../_static/strawberry_fields.png" width=100%></img> -->
+        <p style="font-size:28px;margin:0;padding:0;line-height:1;text-transform:none!important">OpenQML</p>
+      </div>
+    </a>
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+<div class="sidebar-block">
+<!--   <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div> -->
+  <div class="sidebar-toc">
+    
+    
+      <p class="caption"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installing.html">Installation and downloads</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../research.html">Research and contribution</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../autograd_quantum.html">Automatic differentiation of quantum functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../conventions.html">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../references.html">References and further reading</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../core.html">Core classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../circuit.html">Quantum circuits</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Plugins</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../plugins.html">Plugin system</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plugins/included_plugins.html">Included plugins</a></li>
+</ul>
+
+    
+  </div>
+</div>
+      
+    </div>
+  </div>
+        <div id="content">
+          <div id="right-column">
+            
+            <div role="navigation" aria-label="breadcrumbs navigation">
+              <ol class="breadcrumb">
+                <li><a href="../../../index.html">Docs</a></li>
+                
+                  <li><a href="../../index.html">Module code</a></li>
+                
+                <li>openqml.plugins.dummy_plugin</li>
+              </ol>
+            </div>
+            
+            <div class="document clearer body">
+              
+  <h1>Source code for openqml.plugins.dummy_plugin</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2018 Xanadu Quantum Technologies Inc.</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example OpenQML plugin</span>
+<span class="sd">======================</span>
+
+<span class="sd">**Module name:** :mod:`openqml.plugins.dummy_plugin`</span>
+
+<span class="sd">.. currentmodule:: openqml.plugins.dummy_plugin</span>
+
+<span class="sd">The dummy plugin is meant to be used as a template for writing OpenQML plugin modules for new backends.</span>
+<span class="sd">It implements all the :class:`~openqml.plugin.PluginAPI` methods and provides a very simple pure state</span>
+<span class="sd">simulation of a qubit-based quantum circuit architecture.</span>
+
+<span class="sd">Functions</span>
+<span class="sd">---------</span>
+
+<span class="sd">.. autosummary::</span>
+<span class="sd">   init_plugin</span>
+<span class="sd">   spectral_decomposition_qubit</span>
+<span class="sd">   frx</span>
+<span class="sd">   fry</span>
+<span class="sd">   frz</span>
+<span class="sd">   fr3</span>
+
+<span class="sd">Classes</span>
+<span class="sd">-------</span>
+
+<span class="sd">.. autosummary::</span>
+<span class="sd">   Gate</span>
+<span class="sd">   Observable</span>
+<span class="sd">   PluginAPI</span>
+
+<span class="sd">----</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="k">import</span> <span class="n">expm</span><span class="p">,</span> <span class="n">eigh</span>
+
+<span class="kn">import</span> <span class="nn">openqml.plugin</span>
+<span class="kn">from</span> <span class="nn">openqml.circuit</span> <span class="k">import</span> <span class="p">(</span><span class="n">GateSpec</span><span class="p">,</span> <span class="n">Command</span><span class="p">,</span> <span class="n">ParRef</span><span class="p">,</span> <span class="n">Circuit</span><span class="p">)</span>
+
+
+<span class="c1"># tolerance for numerical errors</span>
+<span class="n">tolerance</span> <span class="o">=</span> <span class="mf">1e-10</span>
+
+<span class="c1">#========================================================</span>
+<span class="c1">#  utilities</span>
+<span class="c1">#========================================================</span>
+
+<div class="viewcode-block" id="spectral_decomposition_qubit"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.spectral_decomposition_qubit">[docs]</a><span class="k">def</span> <span class="nf">spectral_decomposition_qubit</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Spectral decomposition of a 2*2 Hermitian matrix.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      A (array): 2*2 Hermitian matrix</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors</span>
+<span class="sd">        such that :math:`A = \sum_k a_k P_k`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">d</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">v</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span>
+        <span class="n">P</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">conj</span><span class="p">(),</span> <span class="n">temp</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">d</span><span class="p">,</span> <span class="n">P</span></div>
+
+
+<span class="c1">#========================================================</span>
+<span class="c1">#  fixed gates</span>
+<span class="c1">#========================================================</span>
+
+<span class="n">I</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="c1"># Pauli matrices</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="n">j</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+<span class="n">CNOT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="n">SWAP</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+
+<span class="c1">#========================================================</span>
+<span class="c1">#  parametrized gates</span>
+<span class="c1">#========================================================</span>
+
+<div class="viewcode-block" id="frx"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.frx">[docs]</a><span class="k">def</span> <span class="nf">frx</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;One-qubit rotation about the x axis.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      theta (float): rotation angle</span>
+<span class="sd">    Returns:</span>
+<span class="sd">      array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">expm</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">theta</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">X</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="fry"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.fry">[docs]</a><span class="k">def</span> <span class="nf">fry</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;One-qubit rotation about the y axis.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      theta (float): rotation angle</span>
+<span class="sd">    Returns:</span>
+<span class="sd">      array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">expm</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">theta</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">Y</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="frz"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.frz">[docs]</a><span class="k">def</span> <span class="nf">frz</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;One-qubit rotation about the z axis.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      theta (float): rotation angle</span>
+<span class="sd">    Returns:</span>
+<span class="sd">      array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">expm</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">theta</span><span class="o">/</span><span class="mi">2</span> <span class="o">*</span> <span class="n">Z</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="fr3"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.fr3">[docs]</a><span class="k">def</span> <span class="nf">fr3</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Arbitrary one-qubit rotation using three Euler angles.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      a,b,c (float): rotation angles</span>
+<span class="sd">    Returns:</span>
+<span class="sd">      array: unitary 2x2 rotation matrix rz(c) @ ry(b) @ rz(a)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">frz</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">@</span> <span class="p">(</span><span class="n">fry</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="o">@</span> <span class="n">frz</span><span class="p">(</span><span class="n">a</span><span class="p">))</span></div>
+
+
+<span class="c1">#========================================================</span>
+<span class="c1">#  define the gate set</span>
+<span class="c1">#========================================================</span>
+
+<div class="viewcode-block" id="Gate"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.Gate">[docs]</a><span class="k">class</span> <span class="nc">Gate</span><span class="p">(</span><span class="n">GateSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Implements the quantum gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">n_sys</span><span class="p">,</span> <span class="n">n_par</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">n_sys</span><span class="p">,</span> <span class="n">n_par</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+            <span class="c1"># for fixed gates given e.g. as NumPy arrays</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">func</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>  <span class="c1">#: callable: function that returns the gate matrix</span>
+
+<div class="viewcode-block" id="Gate.execute"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.Gate.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">,</span> <span class="n">reg</span><span class="p">,</span> <span class="n">sim</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Applies a single gate or measurement on the current system state.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          par (Sequence[float]): gate parameters</span>
+<span class="sd">          reg   (Sequence[int]): subsystems to which the gate is applied</span>
+<span class="sd">          sim (~openqml.plugin.PluginAPI): simulator instance keeping track of the system state and measurement results</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          vector[complex]: evolved system state vector</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">par</span><span class="p">)</span>  <span class="c1"># get the matrix</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_sys</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">U</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">expand_one</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">reg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_sys</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">U</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">expand_two</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">reg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;This plugin supports only one- and two-qubit gates.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">U</span> <span class="o">@</span> <span class="n">sim</span><span class="o">.</span><span class="n">_state</span></div></div>
+
+
+<div class="viewcode-block" id="Observable"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.Observable">[docs]</a><span class="k">class</span> <span class="nc">Observable</span><span class="p">(</span><span class="n">Gate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Implements single-qubit hermitian observables.</span>
+
+<span class="sd">    We assume that all the observables in the circuit are consequtive, and commute.</span>
+<span class="sd">    Since we are only interested in the expectation values, there is no need to project the state after the measurement.</span>
+<span class="sd">    See :ref:`measurements`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Observable.execute"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.Observable.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">,</span> <span class="n">reg</span><span class="p">,</span> <span class="n">sim</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimates the expectation value of the observable in the current system state.</span>
+
+<span class="sd">        The arguments and return value are the same as for :meth:`Gate.execute`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_sys</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;This plugin supports only one-qubit observables.&#39;</span><span class="p">)</span>
+
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">par</span><span class="p">)</span>  <span class="c1"># get the matrix</span>
+        <span class="n">n_eval</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">n_eval</span>
+        <span class="k">if</span> <span class="n">n_eval</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># exact expectation value</span>
+            <span class="n">ev</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">ev</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">reg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># estimate the ev</span>
+            <span class="k">if</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)</span>
+                <span class="n">ev</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">ev</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">reg</span><span class="p">)</span>
+                <span class="n">var</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">ev</span><span class="p">(</span><span class="n">A</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">reg</span><span class="p">)</span> <span class="o">-</span><span class="n">ev</span><span class="o">**</span><span class="mi">2</span>  <span class="c1"># variance</span>
+                <span class="n">ev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">ev</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">var</span> <span class="o">/</span> <span class="n">n_eval</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># sample Bernoulli distribution n_eval times / binomial distribution once</span>
+                <span class="n">a</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="n">spectral_decomposition_qubit</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+                <span class="n">p0</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">ev</span><span class="p">(</span><span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">reg</span><span class="p">)</span>  <span class="c1"># probability of measuring a[0]</span>
+                <span class="n">n0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">n_eval</span><span class="p">,</span> <span class="n">p0</span><span class="p">)</span>
+                <span class="n">ev</span> <span class="o">=</span> <span class="p">(</span><span class="n">n0</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="p">(</span><span class="n">n_eval</span><span class="o">-</span><span class="n">n0</span><span class="p">)</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">n_eval</span>
+
+        <span class="n">sim</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="n">reg</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">ev</span>  <span class="c1"># store the result</span>
+        <span class="k">return</span> <span class="n">sim</span><span class="o">.</span><span class="n">_state</span>  <span class="c1"># no change to state</span></div></div>
+
+
+<span class="c1"># gates</span>
+<span class="n">rx</span> <span class="o">=</span> <span class="n">Gate</span><span class="p">(</span><span class="s1">&#39;rx&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">frx</span><span class="p">)</span>
+<span class="n">ry</span> <span class="o">=</span> <span class="n">Gate</span><span class="p">(</span><span class="s1">&#39;ry&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fry</span><span class="p">)</span>
+<span class="n">rz</span> <span class="o">=</span> <span class="n">Gate</span><span class="p">(</span><span class="s1">&#39;rz&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">frz</span><span class="p">)</span>
+<span class="n">r3</span> <span class="o">=</span> <span class="n">Gate</span><span class="p">(</span><span class="s1">&#39;r3&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">fr3</span><span class="p">)</span>
+<span class="n">cnot</span> <span class="o">=</span> <span class="n">Gate</span><span class="p">(</span><span class="s1">&#39;CNOT&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">CNOT</span><span class="p">)</span>
+<span class="n">swap</span> <span class="o">=</span> <span class="n">Gate</span><span class="p">(</span><span class="s1">&#39;SWAP&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">SWAP</span><span class="p">)</span>
+
+<span class="c1"># observables</span>
+<span class="n">ev_z</span> <span class="o">=</span> <span class="n">Observable</span><span class="p">(</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+
+<span class="n">demo</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Command</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">0</span><span class="p">)]),</span>
+    <span class="n">Command</span><span class="p">(</span><span class="n">cnot</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+    <span class="n">Command</span><span class="p">(</span><span class="n">ry</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">1.6</span><span class="p">]),</span>
+    <span class="n">Command</span><span class="p">(</span><span class="n">ry</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">0</span><span class="p">)]),</span>
+    <span class="n">Command</span><span class="p">(</span><span class="n">cnot</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+    <span class="n">Command</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">1</span><span class="p">)]),</span>
+    <span class="n">Command</span><span class="p">(</span><span class="n">cnot</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="p">]</span>
+
+<span class="c1"># circuit templates</span>
+<span class="n">_circuit_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Circuit</span><span class="p">(</span><span class="n">demo</span><span class="p">,</span> <span class="s1">&#39;demo&#39;</span><span class="p">),</span>
+    <span class="n">Circuit</span><span class="p">(</span><span class="n">demo</span> <span class="o">+</span><span class="p">[</span><span class="n">Command</span><span class="p">(</span><span class="n">ev_z</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">])],</span> <span class="s1">&#39;demo_ev&#39;</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+    <span class="n">Circuit</span><span class="p">([</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">r3</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="mf">0.3</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.2</span><span class="p">]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">swap</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+    <span class="p">],</span> <span class="s1">&#39;rubbish&#39;</span><span class="p">),</span>
+    <span class="n">Circuit</span><span class="p">([</span>  <span class="c1"># data classifier circuit, ParRef(0) represents the data</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">0</span><span class="p">)]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">cnot</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">1</span><span class="p">)]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rz</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.7</span><span class="p">]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">cnot</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">1.8</span><span class="p">]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rz</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">2</span><span class="p">)]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">6</span><span class="p">)]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rz</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">7</span><span class="p">)]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">cnot</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">3</span><span class="p">)]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rz</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">4</span><span class="p">)]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">cnot</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">ParRef</span><span class="p">(</span><span class="mi">5</span><span class="p">)]),</span>
+        <span class="n">Command</span><span class="p">(</span><span class="n">ev_z</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="p">],</span> <span class="s1">&#39;opt_ev&#39;</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="PluginAPI"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.PluginAPI">[docs]</a><span class="k">class</span> <span class="nc">PluginAPI</span><span class="p">(</span><span class="n">openqml</span><span class="o">.</span><span class="n">plugin</span><span class="o">.</span><span class="n">PluginAPI</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Example implementation of an OpenQML plugin API class.</span>
+
+<span class="sd">    Provides a very simple simulation of a qubit-based quantum circuit architecture.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plugin_name</span> <span class="o">=</span> <span class="s1">&#39;Dummy OpenQML plugin&#39;</span>
+    <span class="n">plugin_api_version</span> <span class="o">=</span> <span class="s1">&#39;0.1.0&#39;</span>
+    <span class="n">plugin_version</span> <span class="o">=</span> <span class="s1">&#39;1.0.0&#39;</span>
+    <span class="n">author</span> <span class="o">=</span> <span class="s1">&#39;Xanadu Inc.&#39;</span>
+    <span class="n">_gates</span> <span class="o">=</span> <span class="p">{</span><span class="n">g</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="p">[</span><span class="n">rx</span><span class="p">,</span> <span class="n">ry</span><span class="p">,</span> <span class="n">rz</span><span class="p">,</span> <span class="n">r3</span><span class="p">,</span> <span class="n">cnot</span><span class="p">,</span> <span class="n">swap</span><span class="p">]}</span>
+    <span class="n">_observables</span> <span class="o">=</span> <span class="p">{</span><span class="n">g</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ev_z</span><span class="p">]}</span>
+    <span class="n">_circuits</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">_circuit_list</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+<div class="viewcode-block" id="PluginAPI.reset"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.PluginAPI.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1">#: int: number of qubits in the state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state</span>  <span class="o">=</span> <span class="kc">None</span>  <span class="c1">#: array: state vector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1">#: array: measurement results</span></div>
+
+<div class="viewcode-block" id="PluginAPI.expand_one"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.PluginAPI.expand_one">[docs]</a>    <span class="k">def</span> <span class="nf">expand_one</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">reg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Expand a one-qubit operator into a full system operator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          U (array): 2*2 matrix</span>
+<span class="sd">          reg (Sequence[int]): target subsystem</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          array: 2^n*2^n matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">U</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;2x2 matrix required.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One target subsystem required.&#39;</span><span class="p">)</span>
+        <span class="n">reg</span> <span class="o">=</span> <span class="n">reg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">before</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="n">reg</span>
+        <span class="n">after</span>  <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">-</span><span class="n">reg</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">before</span><span class="p">),</span> <span class="n">U</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">after</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">U</span></div>
+
+<div class="viewcode-block" id="PluginAPI.expand_two"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.PluginAPI.expand_two">[docs]</a>    <span class="k">def</span> <span class="nf">expand_two</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">reg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Expand a two-qubit operator into a full system operator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          U (array): 4x4 matrix</span>
+<span class="sd">          reg (Sequence[int]): two target subsystems (order matters!)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          array: 2^n*2^n matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">U</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;4x4 matrix required.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Two target subsystems required.&#39;</span><span class="p">)</span>
+        <span class="n">reg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">reg</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">reg</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="ow">or</span> <span class="n">reg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">reg</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Bad target subsystems.&#39;</span><span class="p">)</span>
+
+        <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span>
+        <span class="n">n_between</span> <span class="o">=</span> <span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span>  <span class="c1"># number of qubits between a and b</span>
+        <span class="c1"># dimensions of the untouched subsystems</span>
+        <span class="n">before</span>  <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="n">a</span>
+        <span class="n">after</span>   <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">-</span><span class="n">b</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">between</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="n">n_between</span>
+
+        <span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">between</span><span class="p">))</span>
+        <span class="c1"># how U should be reordered</span>
+        <span class="k">if</span> <span class="n">reg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">reg</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">between</span><span class="p">]</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">p</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span>
+        <span class="c1"># reshape U into another array which has one index per subsystem, permute dimensions, back into original-shape array</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="n">U</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">perm</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">temp</span><span class="p">,</span> <span class="n">temp</span><span class="p">])</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">before</span><span class="p">),</span> <span class="n">U</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">after</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">U</span></div>
+
+<div class="viewcode-block" id="PluginAPI.ev"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.PluginAPI.ev">[docs]</a>    <span class="k">def</span> <span class="nf">ev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">reg</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Expectation value of a one-qubit observable in the current state.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          A (array): 2*2 hermitian matrix corresponding to the observable</span>
+<span class="sd">          reg (Sequence[int]): target subsystem</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;2x2 matrix required.&#39;</span><span class="p">)</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expand_one</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">reg</span><span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vdot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">,</span> <span class="n">A</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">imag</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">tolerance</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Nonvanishing imaginary part </span><span class="si">{}</span><span class="s1"> in expectation value.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">temp</span><span class="o">.</span><span class="n">imag</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">temp</span><span class="o">.</span><span class="n">real</span></div>
+
+<div class="viewcode-block" id="PluginAPI.measure"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.PluginAPI.measure">[docs]</a>    <span class="k">def</span> <span class="nf">measure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">reg</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="p">[],</span> <span class="n">n_eval</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eval</span>  <span class="c1"># store the original</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_eval</span> <span class="o">=</span> <span class="n">n_eval</span>
+        <span class="n">A</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="p">[</span><span class="n">reg</span><span class="p">],</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_eval</span> <span class="o">=</span> <span class="n">temp</span>  <span class="c1"># restore it</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="n">reg</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="PluginAPI.execute_circuit"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.PluginAPI.execute_circuit">[docs]</a>    <span class="k">def</span> <span class="nf">execute_circuit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">circuit</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">[],</span> <span class="o">*</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">execute_circuit</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="n">reset</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">circuit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># init the state vector to |00..0&gt;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">n_sys</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">!=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">n_sys</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Trying to execute a </span><span class="si">{}</span><span class="s2">-qubit circuit &#39;</span><span class="si">{}</span><span class="s2">&#39; on a </span><span class="si">{}</span><span class="s2">-qubit state.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">circuit</span><span class="o">.</span><span class="n">n_sys</span><span class="p">,</span> <span class="n">circuit</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+
+        <span class="k">def</span> <span class="nf">parmap</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+            <span class="s2">&quot;Mapping function for gate parameters. Replaces ParRefs with the corresponding parameter values.&quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">ParRef</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">idx</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">p</span>
+
+        <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">circuit</span><span class="o">.</span><span class="n">seq</span><span class="p">:</span>
+            <span class="c1"># prepare the parameters</span>
+            <span class="n">par</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">parmap</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">par</span><span class="p">)</span>
+            <span class="c1"># apply the gate to the current state</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_state</span> <span class="o">=</span> <span class="n">cmd</span><span class="o">.</span><span class="n">gate</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">reg</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">circuit</span><span class="o">.</span><span class="n">out</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># return the measurement results for the requested modes</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result</span><span class="p">[</span><span class="n">circuit</span><span class="o">.</span><span class="n">out</span><span class="p">]</span></div></div>
+
+
+
+
+<div class="viewcode-block" id="init_plugin"><a class="viewcode-back" href="../../../plugins/dummy_plugin.html#openqml.plugins.dummy_plugin.init_plugin">[docs]</a><span class="k">def</span> <span class="nf">init_plugin</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Initialize the plugin.</span>
+
+<span class="sd">    Every plugin must define this function.</span>
+<span class="sd">    It should perform whatever initializations are necessary, and then return the API class.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      class: plugin API class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">PluginAPI</span></div>
+</pre></div>
+
+            </div>
+              
+          </div>
+          <div class="clearfix"></div>
+        </div>
+
+
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">OpenQML 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+<script type="text/javascript" src="../../../_static/js/nanoscroller.min.js"></script>
+<script type="text/javascript">
+    $(".nano").nanoScroller();
+</script>
+<script type="text/javascript">
+    if ($('.current').length) {
+        var target = $('.current')[0]
+        var rect = target.getBoundingClientRect();
+        if (rect.bottom > window.innerHeight) {
+            $('.text-logo').addClass('active');
+            $('.logo').removeClass('active');
+            $('.logo-small').addClass('active');
+            $(".nano").nanoScroller({ scrollTo: $('.current') });
+        } else {
+            // $('.text-logo').addClass('active');
+            // $('.logo').removeClass('active');
+            // $('.logo-small').addClass('active');
+            $(".nano").nanoScroller({ scrollTop: 93 });
+        }
+    }
+    if ($('#search-documentation').length) {} else {
+        $(".nano").on("update", function(event, values){
+            $('.text-logo').toggleClass('active', $('.sphinxsidebar').scrollTop() > 0);
+            var act = $('.text-logo').hasClass('active');
+            if(act){
+                $('.logo').removeClass('active');
+                $('.logo-small').addClass('active');
+            }
+        });
+    }
+    $(".nano").bind("scrolltop", function(e){
+        $('.logo-small').removeClass('active');
+        $('.logo').addClass('active');
+    });
+    $(document).ready(function () {
+        $(".css-transitions-only-after-page-load").each(function (index, element) {
+            setTimeout(function () { $(element).removeClass("css-transitions-only-after-page-load") }, 10);
+        });
+    });
+</script>
+  <div class="footer">
+    Copyright 2018, Xanadu Inc. Documentation created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

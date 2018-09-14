@@ -1,0 +1,30 @@
+{%- if show_source and has_source and sourcename %}
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>{{ _('This Page') }}</h2>
+  </div>
+  <div class="sidebar-toc">
+    <ul class="current">
+      <li class="toctree-l1">
+        <a href="{{ pathto('_sources/' + sourcename, true)|e }}" class="reference-external" rel="nofollow">
+          {{ _('Show Source') }}
+        </a>
+      </li>
+    {%- if show_on_github_url %}
+      <li class="toctree-l1">
+        <a href="{{ show_on_github_url }}" class="reference-external" rel="nofollow">
+          {{ _('Show on GitHub') }}
+        </a>
+      </li>
+    {%- endif %}
+<!--     {%- if edit_on_github_url %}
+      <li class="toctree-l1">
+        <a href="{{ edit_on_github_url }}" class="reference-external" rel="nofollow">
+          {{ _('Edit on GitHub') }}
+        </a>
+      </li>
+    {%- endif %} -->
+    </ul>
+  </div>
+</div>
+{%- endif %}
