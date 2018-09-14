@@ -143,10 +143,8 @@ class QNode:
     def __init__(self, func, device):
         self.func = func
         self.device = device
+        self.variable_ops = {}  #: dict[int->list[(Operation, int)]]: Mapping from free parameter index to the list of Operations (in this circuit) that depend on it. The second element of the tuple is the index of the parameter within the Operation.
 
-        # Mapping from free parameter index to the list of Operations (in this circuit) that depend on it.
-        # The second element of the tuple is the index of the parameter within the Operation.
-        self.variable_ops = {}  #: dict[int->list[(Operation, int)]]
 
     def construct(self, args, **kwargs):
         """Constructs the quantum circuit, and creates the variable mapping.
@@ -174,7 +172,7 @@ class QNode:
         if QNode._current_context is None:
             QNode._current_context = self
         else:
-            raise QuantumFunctionError('Operation can only be applied to a single QNode.')
+            raise QuantumFunctionError('Should not happen, QNode._current_context must not be modified outside this method.')
         # generate the program queue by executing the qfunc
         try:
             res = self.func(*variables, **kwargs)
@@ -323,7 +321,7 @@ class QNode:
         if self.output_dim == 1:
             return grad[:, 0]
 
-        return grad
+        return grad.T
 
     def _pd_finite_diff(self, params, idx, h=1e-7, order=1, y0=None, **kwargs):
         """Partial derivative of the node using the finite difference method.
@@ -414,10 +412,25 @@ class QNode:
 
 #def QNode_vjp(ans, self, params, *args, **kwargs):
 def QNode_vjp(ans, self, args, **kwargs):
-    """Returns the vector Jacobian product for a QNode, as a function
-    of the QNode evaluation at the specified parameter values.
+    """Returns the vector Jacobian product operator for a QNode, as a function
+    of the QNode evaluation for specific argnums at the specified parameter values.
     """
-    return lambda g: g * self.gradient(args, **kwargs)
+    def gradient_product(g):
+        """Vector Jacobian product operator"""
+        if len(g.shape) == 0:
+            if len(args) == 1 and isinstance(args[0], np.ndarray):
+                return [self.gradient(args, **kwargs)]
+
+            return g * self.gradient(args, **kwargs)
+
+        if len(args) == 1 and isinstance(args[0], np.ndarray):
+            # This feels hacky, but is required if the argument
+            # is a single np.ndarray
+            return [g] @ self.gradient(args, **kwargs)
+
+        return g @ self.gradient(args, **kwargs)
+
+    return gradient_product
 
 
 # define the vector-Jacobian product function for QNode.__call__()
