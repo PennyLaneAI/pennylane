@@ -158,7 +158,7 @@ class Device(abc.ABC):
         pass
 
     def execute_queued_with(self):
-        """Called during execute(). You can overwrite this function to return an objects, the individual apply() and expectation() calls are then executed in the context of that object. See the implementation of execute_queued() for mote details."""
+        """Called during execute(). You can overwrite this function to return an object, the individual apply() and expectation() calls are then executed in the context of that object. See the implementation of execute_queued() for mote details."""
         class MockClassForWithStatment(object): # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute_queued()."""
             def __enter__(self):
