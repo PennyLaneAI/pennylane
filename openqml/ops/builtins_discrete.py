@@ -16,22 +16,24 @@
 
 from openqml.operation import Operation
 
+
 # __all__ = [
-#     'CNOT',
-#     'CZ',
 #     'Hadamard',
 #     'PauliX',
 #     'PauliY',
 #     'PauliZ',
-#     'PhaseShift',
-#     'Rot',
+#     'CNOT',
+#     'CZ',
+#     'SWAP',
 #     'RX',
 #     'RY',
 #     'RZ',
-#     'SWAP',
+#     'PhaseShift',
+#     'Rot',
 #     'QubitStateVector',
 #     'QubitUnitary'
 # ]
+
 
 
 class Hadamard(Operation):

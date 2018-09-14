@@ -254,7 +254,8 @@ class DefaultQubit(Device):
             # init the state vector to |00..0>
             self._state = np.zeros(2**self.wires, dtype=complex)
             self._state[0] = 1
-            self._out = []
+
+        out = []
 
         # apply the operations
         for op in queue+observe:
@@ -295,9 +296,9 @@ class DefaultQubit(Device):
                         p0 = self.ev(P[0], op.wires)  # probability of measuring a[0]
                         n0 = np.random.binomial(self.shots, p0)
                         ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
-                self._out.append(ev)  # TODO for now only 1-wire ev:s
+                out.append(ev)  # TODO for now only 1-wire ev:s
 
-        return np.array(self._out, dtype=np.float64)  # return the result
+        return np.array(out, dtype=np.float64)  # return the result
 
     @classmethod
     def _get_operator_matrix(cls, A):
@@ -342,7 +343,6 @@ class DefaultQubit(Device):
     def reset(self):
         """Reset the device"""
         self._state  = None  #: array: state vector
-        self._out = None  #: array: measurement results
 
     def expand_one(self, U, wires):
         """Expand a one-qubit operator into a full system operator.

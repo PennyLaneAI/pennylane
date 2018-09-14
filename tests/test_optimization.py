@@ -27,7 +27,8 @@ from autograd.numpy.random import (randn,)
 from matplotlib.pyplot import figure
 
 from defaults import openqml as qm, BaseTest
-from openqml import Optimizer, QNode
+from openqml import QNode
+from openqml.optimizer import Optimizer, SCIPY_OPT_GRAD, SCIPY_OPT_NO_GRAD
 
 
 def circuit(*args):
@@ -71,30 +72,24 @@ class OptTest(BaseTest):
           float: mapped data
         """
         par = np.concatenate((np.array([0.5*np.pi * data_in]), weights))
-        return self.qnode(*par)
+        return self.qnode(par)
 
 
-    def cost(self, weights, data_sample=None):
+    def cost(self, weights, data):
         """Cost (error) function to be minimized.
 
         Implements a quantum classifier, trying to map input data to output data.
 
         Args:
           weights (array[float]): optimization parameters
-          data_sample (array[int], None): For stochastic gradient methods, indices of the data samples to use in the error calculation.
-            If None, all data samples are used.
+          data    (array[float]): data to use in the error calculation
         Returns:
           float: cost
         """
-        if data_sample is None:
-            data = self.data
-        else:
-            data = self.data[data_sample]
-
         cost = 0
         for d in data:
             temp = self.map_data(d[0], weights) -d[1]
-            cost = cost + temp ** 2
+            cost = cost +temp ** 2
         return cost
 
 
@@ -119,11 +114,19 @@ class OptTest(BaseTest):
             return 0
 
         # initial weights must be given as an array
-        self.assertRaises(TypeError, Optimizer, *(f,0), optimizer='SGD')
-        self.assertRaises(TypeError, Optimizer, *(f,[0]), optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, f,0,f, optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, f,[0],f, optimizer='SGD')
 
         # optimizer has to be a callable or a known name
-        self.assertRaises(ValueError, Optimizer, *(f,weights), optimizer='Unknown')
+        self.assertRaises(ValueError, Optimizer, f,weights,f, optimizer='unknown')
+
+        # some algorithms do not use a gradient function
+        for opt in SCIPY_OPT_NO_GRAD:
+            self.assertRaises(ValueError, Optimizer, f,weights,f, optimizer=opt)
+
+        # only L2 regularization is supported for now
+        temp = Optimizer(f,weights,f, regularizer='unknown')
+        self.assertRaises(ValueError, temp.train)
 
 
     def test_opt(self):
@@ -134,23 +137,27 @@ class OptTest(BaseTest):
         self.qnode = qnode
 
         x0 = np.array([-0.71690972, -0.55632194,  0.74297438, -1.15401698,  0.62766983,  2.55008079, -0.27567698]) #fix "random" values to make the test pass/fail deterministically
+        #grad = autograd.grad(self.cost, 0)  # gradient with respect to weights
 
         temp = 0.30288  # expected minimal cost
         tol = 0.001
 
-        o = Optimizer(self.cost, x0, n_data=self.data.shape[0], optimizer='SGD')
-        o.set_hp(batch_size=4)
-        c = o.train(100)
+        o = Optimizer(self.cost, x0, optimizer='SGD')
+        res = o.train(100, error_goal=0.32, data=self.data, batch_size=4)
         self.plot_result(o.weights)
-        self.assertAlmostLess(c, temp, delta=0.2)  # SGD requires more iterations to converge well
+        self.assertAlmostLess(res.fun, temp, delta=0.2)  # SGD requires more iterations to converge well
 
-        opts = ['BFGS', 'CG', 'L-BFGS-B', 'TNC', 'SLSQP']
-        opts_nograd = ['Nelder-Mead', 'Powell']
-
-        for opt in opts+opts_nograd:
+        for opt in SCIPY_OPT_GRAD:
+            print(80 * '-')
             o = Optimizer(self.cost, x0, optimizer=opt)
-            c = o.train()
-            self.assertAlmostEqual(c, temp, delta=tol)
+            res = o.train(data=self.data)
+            self.assertAlmostEqual(res.fun, temp, delta=tol)
+
+        for opt in SCIPY_OPT_NO_GRAD:
+            print(80 * '-')
+            o = Optimizer(self.cost, x0, optimizer=opt)
+            res = o.train(200, data=self.data)
+            self.assertAlmostEqual(res.fun, temp, delta=tol)
 
 
 if __name__ == '__main__':
