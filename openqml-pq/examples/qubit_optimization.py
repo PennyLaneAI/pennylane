@@ -19,7 +19,7 @@ dev1 = qm.device('projectq.'+args.backend, wires=2, **vars(args))
 
 @qm.qfunc(dev1)
 def circuit(x, y, z):
-    """Single quit rotation and CNOT
+    """Single qubit rotation and CNOT
 
     Args:
         x (float): x rotation angle
