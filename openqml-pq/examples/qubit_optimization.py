@@ -34,11 +34,11 @@ def circuit(x, y, z):
 
 circuit = qm.QNode(circuit, dev1)
 
-def cost(weights, batched):
+def cost(weights):
     """Cost (error) function to be minimized.
 
     Args:
-        weigts (float): weights #todo: batched?
+        weights (float): weights
     """
     return np.abs(circuit(*weights)-1)
 
