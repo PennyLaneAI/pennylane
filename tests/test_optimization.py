@@ -1,23 +1,56 @@
+# Copyright 2018 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Unit tests for the :mod:`openqml` :class:`Optimizer` class.
 """
 
 import unittest
-from matplotlib.pyplot import figure
+import logging as log
+log.getLogger()
+
 
 import autograd
 import autograd.numpy as np
 from autograd.numpy.random import (randn,)
 
-from defaults import openqml, BaseTest
-from openqml.plugin import (load_plugin,)
-from openqml.circuit import (QNode,)
-from openqml.optimize import (Optimizer,)
+from matplotlib.pyplot import figure
 
+from defaults import openqml as qm, BaseTest
+from openqml import QNode
+from openqml.optimizer import Optimizer, SCIPY_OPT_GRAD, SCIPY_OPT_NO_GRAD
+
+
+def circuit(*args):
+    qm.RX(args[0], 0)
+    qm.CNOT([0, 1])
+    qm.RX(args[1], 0)
+    qm.RZ(2.7, 1)
+    qm.CNOT([0, 1])
+    qm.RX(-1.8, 0)
+    qm.RZ(args[2], 1)
+    qm.RX(args[6], 1)
+    qm.RZ(args[7], 1)
+    qm.CNOT([0, 1])
+    qm.RX(args[3], 0)
+    qm.RZ(args[4], 1)
+    qm.CNOT([0, 1])
+    qm.RX(args[5], 0)
+    return qm.expectation.PauliZ(0)
 
 
 class OptTest(BaseTest):
-    """ABC for tests.
+    """Optimizer tests.
     """
     def setUp(self):
         # arbitrary classification data
@@ -39,7 +72,7 @@ class OptTest(BaseTest):
           float: mapped data
         """
         par = np.concatenate((np.array([0.5*np.pi * data_in]), weights))
-        return self.q.evaluate(par)[0]
+        return self.qnode(par)
 
 
     def cost(self, weights, data):
@@ -81,58 +114,54 @@ class OptTest(BaseTest):
             return 0
 
         # initial weights must be given as an array
-        self.assertRaises(TypeError, Optimizer, f,f,0, optimizer='SGD')
-        self.assertRaises(TypeError, Optimizer, f,f,[0], optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, f,0,f, optimizer='SGD')
+        self.assertRaises(TypeError, Optimizer, f,[0],f, optimizer='SGD')
 
         # optimizer has to be a callable or a known name
-        self.assertRaises(ValueError, Optimizer, f,f,weights, optimizer='unknown')
+        self.assertRaises(ValueError, Optimizer, f,weights,f, optimizer='unknown')
 
         # some algorithms do not use a gradient function
-        self.assertRaises(ValueError, Optimizer, f,f,weights, optimizer='Nelder-Mead')
-        self.assertRaises(ValueError, Optimizer, f,f,weights, optimizer='Powell')
+        for opt in SCIPY_OPT_NO_GRAD:
+            self.assertRaises(ValueError, Optimizer, f,weights,f, optimizer=opt)
 
         # only L2 regularization is supported for now
-        temp = Optimizer(f,f,weights, regularizer='unknown')
+        temp = Optimizer(f,weights,f, regularizer='unknown')
         self.assertRaises(ValueError, temp.train)
 
 
     def test_opt(self):
         "Test all supported optimization algorithms on a simple optimization task."
 
-        self.plugin = load_plugin('dummy_plugin')
-        self.circuit = self.plugin.get_circuit('opt_ev')
-        p = self.plugin('test node')
-        q = QNode(self.circuit, p)
-        self.q = q
-        #x0 = randn(q.circuit.n_par -1)  # one circuit param is used to encode the data
-        x0 = np.array([1.11, -0.897, -0.929, -1.54, -0.865,  0.727, 0.140])
-        grad = autograd.grad(self.cost, 0)  # gradient with respect to weights
+        self.dev = qm.device('default.qubit', wires=2)
+        qnode = QNode(circuit, self.dev)
+        self.qnode = qnode
+
+        x0 = np.array([-0.71690972, -0.55632194,  0.74297438, -1.15401698,  0.62766983,  2.55008079, -0.27567698]) #fix "random" values to make the test pass/fail deterministically
+        #grad = autograd.grad(self.cost, 0)  # gradient with respect to weights
 
         temp = 0.30288  # expected minimal cost
         tol = 0.001
 
-        o = Optimizer(self.cost, grad, x0, optimizer='SGD')
+        o = Optimizer(self.cost, x0, optimizer='SGD')
         res = o.train(100, error_goal=0.32, data=self.data, batch_size=4)
         self.plot_result(o.weights)
         self.assertAlmostLess(res.fun, temp, delta=0.2)  # SGD requires more iterations to converge well
 
-        opts = ['CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP']
-        opts_nograd = ['Nelder-Mead', 'Powell', 'COBYLA']
-        for opt in opts:
+        for opt in SCIPY_OPT_GRAD:
             print(80 * '-')
-            o = Optimizer(self.cost, grad, x0, optimizer=opt)
+            o = Optimizer(self.cost, x0, optimizer=opt)
             res = o.train(data=self.data)
             self.assertAlmostEqual(res.fun, temp, delta=tol)
 
-        for opt in opts_nograd:
+        for opt in SCIPY_OPT_NO_GRAD:
             print(80 * '-')
-            o = Optimizer(self.cost, None, x0, optimizer=opt)
+            o = Optimizer(self.cost, x0, optimizer=opt)
             res = o.train(200, data=self.data)
             self.assertAlmostEqual(res.fun, temp, delta=tol)
 
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', Optimizer class.')
+    print('Testing OpenQML version ' + qm.version() + ', Optimizer class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (OptTest,):
