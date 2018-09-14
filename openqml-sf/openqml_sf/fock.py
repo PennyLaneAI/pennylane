@@ -123,7 +123,7 @@ class StrawberryFieldsFock(Device):
         return expectation_value
 
     def supported(self, gate_name):
-        return gate_name in operator_map:
+        return gate_name in operator_map
 
     def reset(self):
         """Reset the device"""
