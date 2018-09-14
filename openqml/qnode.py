@@ -412,16 +412,25 @@ class QNode:
 
 #def QNode_vjp(ans, self, params, *args, **kwargs):
 def QNode_vjp(ans, self, args, **kwargs):
-    """Returns the vector Jacobian product for a QNode, as a function
-    of the QNode evaluation at the specified parameter values.
+    """Returns the vector Jacobian product operator for a QNode, as a function
+    of the QNode evaluation for specific argnums at the specified parameter values.
     """
-    def f(g):
+    def gradient_product(g):
+        """Vector Jacobian product operator"""
         if len(g.shape) == 0:
+            if len(args) == 1 and isinstance(args[0], np.ndarray):
+                return [self.gradient(args, **kwargs)]
+
             return g * self.gradient(args, **kwargs)
-        else:
-            return g @ self.gradient(args, **kwargs)
-    return f
-#    return lambda g:
+
+        if len(args) == 1 and isinstance(args[0], np.ndarray):
+            # This feels hacky, but is required if the argument
+            # is a single np.ndarray
+            return [g] @ self.gradient(args, **kwargs)
+
+        return g @ self.gradient(args, **kwargs)
+
+    return gradient_product
 
 
 # define the vector-Jacobian product function for QNode.__call__()
