@@ -92,7 +92,7 @@ class PluginTest(BaseTest):
                 try:
                     circuit()
                 except Exception as e:
-                    print(e)
+                    print(e)#todo: currently it is good that this just prints all the errors to get a quick overview, but we either want an assert here or not catch the exception in the first place
 
 
 if __name__ == '__main__':
