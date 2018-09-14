@@ -17,22 +17,22 @@
 from openqml.operation import Operation
 
 
-__all__ = [
-    'Hadamard',
-    'PauliX',
-    'PauliY',
-    'PauliZ',
-    'CNOT',
-    'CZ',
-    'SWAP',
-    'RX',
-    'RY',
-    'RZ',
-    'PhaseShift',
-    'Rot',
-    'QubitStateVector',
-    'QubitUnitary'
-]
+# __all__ = [
+#     'Hadamard',
+#     'PauliX',
+#     'PauliY',
+#     'PauliZ',
+#     'CNOT',
+#     'CZ',
+#     'SWAP',
+#     'RX',
+#     'RY',
+#     'RZ',
+#     'PhaseShift',
+#     'Rot',
+#     'QubitStateVector',
+#     'QubitUnitary'
+# ]
 
 
 
