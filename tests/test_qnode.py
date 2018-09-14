@@ -117,11 +117,11 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
 
         circuit3 = qm.QNode(circuit3, self.qubit_dev2)
-        array_res = circuit2(np.array([a, b, c]))
-        array_grad = circuit2.gradient([np.array([a, b, c])])
+        array_res = circuit3(np.array([a, b, c]))
+        array_grad = circuit3.gradient([np.array([a, b, c])])
 
-        list_res = circuit2([a, b, c])
-        list_grad = circuit2.gradient([[a, b, c]])
+        list_res = circuit3([a, b, c])
+        list_grad = circuit3.gradient([[a, b, c]])
 
         self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
         self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
