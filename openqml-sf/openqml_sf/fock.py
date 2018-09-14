@@ -123,8 +123,7 @@ class StrawberryFieldsFock(Device):
         return expectation_value
 
     def supported(self, gate_name):
-        if gate_name not in operator_map:
-            raise DeviceError("Operation {} not supported by device {}".format(gate_name, self.name))
+        return gate_name in operator_map:
 
     def reset(self):
         """Reset the device"""
