@@ -97,9 +97,10 @@ class StrawberryFieldsFock(Device):
         else:
             gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
-    def expectation(self, observable, wires, *par):
+    def post_execute_queued(self):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
+    def expectation(self, observable, wires, *par):
         # calculate expectation value
         if observable == 'Fock':
             expectation_value = self.state.mean_photon(wires)
