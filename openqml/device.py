@@ -140,7 +140,7 @@ class Device(abc.ABC):
         """
         with self.execute_queued_with():
             for operation in queue:
-                if self.supported(operation.name):
+                if not self.supported(operation.name):
                     raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.name))
 
                 par = operation.parameters()

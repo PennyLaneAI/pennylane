@@ -149,7 +149,7 @@ class ProjectQDevice(Device):
         self._deallocate()
 
     def supported(self, gate_name):
-        return gate_name not in operator_map
+        return gate_name in operator_map:
 
     def apply(self, gate_name, wires, *par):
         gate = operator_map[gate_name](*par)
