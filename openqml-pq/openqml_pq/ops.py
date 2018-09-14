@@ -13,6 +13,8 @@
 # limitations under the License.
 """Additional gates"""
 from openqml import Operation
+from openqml.operation import Expectation
+
 import projectq as pq
 
 # Extra Operations in OpenQML provided by this plugin
@@ -66,15 +68,14 @@ class SqrtSwap(Operation):
     n_params = 0
     n_wires = 2
 
-class AllZ(Operation):
-    r"""Z on all qubits.
+class AllZ(Expectation):
+    r"""Measure Z on all qubits.
 
     .. math::
         AllZ() = Z \otimes\dots\otimes Z
     """
     n_params = 0
     n_wires = 0 #todo: how to represent a gate that acts on all wires?
-
 
 
 # Wrapper classes for Operations that are missing a class in ProjectQ
