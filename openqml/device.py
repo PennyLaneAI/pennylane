@@ -146,10 +146,6 @@ class Device(abc.ABC):
                 par = operation.parameters()
                 self.apply(operation.name, operation.wires, *par)
 
-            for observable in observe:
-                if self.supported(observable.name):
-                    raise DeviceError("Observable {} not supported on device {}".format(operation.name, self.name))
-
             return np.array([self.expectation(observable.name, observable.wires, observable.params) for observable in observe], dtype=np.float64)
 
 

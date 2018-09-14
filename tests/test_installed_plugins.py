@@ -43,13 +43,18 @@ class PluginTest(BaseTest):
         print(plugin.name)
         obj = plugin.resolve()
         device = plugin.load()
+        wires = 3 #todo: calculate that form the size of the largest gate
 
         #fullargspec = inspect.getfullargspec(obj)
         #print(fullargspec)
         #print(fullargspec.args[1::])
 
         sig = inspect.signature(obj)
-        bind = sig.bind_partial(wires=3)
+
+        if 'cutoff_dim' in sig.parameters:
+            bind = sig.bind_partial(wires=wires, cutoff_dim=5)
+        else:
+            bind = sig.bind_partial(wires=wires)
         bind.apply_defaults()
         #print(bind)
 
@@ -77,6 +82,9 @@ class PluginTest(BaseTest):
 
                     gate_pars = np.abs(np.random.randn(gate_class.n_params))
                     observable_pars = np.abs(np.random.randn(observable_class.n_params)) #todo: some operations fails when parameters are negative (e.g. thermal state) but par_domain is not fine grained enough to capture this
+
+                    gate_wires = gate_class.n_wires if gate_class.n_wires != 0 else wires
+                    observable_wires = observable_class.n_wires if observable_class.n_wires != 0 else wires
 
                     gate_class(*gate_pars, list(range(gate_class.n_wires)))
                     return observable_class(*observable_pars, list(range(observable_class.n_wires)))
