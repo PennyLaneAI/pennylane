@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the device class and context manager"""
+"""This module contains the device class"""
 import numpy as np
 
 from openqml import Device, DeviceError
@@ -46,7 +46,7 @@ operator_map = {
     'QuadraticPhase': Pgate,
     'Rotation': Rgate,
     'TwoModeSqueezing': S2gate,
-    'Squeeze': Sgate
+    'Squeezing': Sgate
 }
 
 
@@ -71,61 +71,62 @@ class StrawberryFieldsGaussian(Device):
         self.wires = wires
         self.hbar = hbar
         self.eng = None
+        self.q = None
         self.state = None
         super().__init__(self.short_name, shots)
 
-    def execute(self, queue, observe):
-        """Apply the queued operations to the device, and measure the expectation."""
-        if self.eng:
-            self.eng.reset()
-            self.reset()
+    def pre_execute_queued(self):
+        self.reset()
+        self.eng, self.q = sf.Engine(self.wires, hbar=self.hbar)
 
-        self.eng, q = sf.Engine(self.wires, hbar=self.hbar)
+    def execute_queued_with(self):
+        return self.eng
 
-        with self.eng:
-            for operation in queue:
-                if operation.name not in operator_map:
-                    raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
+    def apply(self, gate_name, wires, *par):
+        gate = operator_map[gate_name](*par)
+        if isinstance(wires, int):
+            gate | self.q[wires] #pylint: disable=pointless-statement
+        else:
+            gate | [self.q[i] for i in wires] #pyling: disable=pointless-statement
 
-                p = operation.parameters()
-                op = operator_map[operation.name](*p)
-                if isinstance(operation.wires, int):
-                    op | q[operation.wires]
-                else:
-                    op | [q[i] for i in operation.wires]
-
+    def pre_execute_expectations(self):
         self.state = self.eng.run('gaussian')
 
+    def expectation(self, observable, wires, *par):
         # calculate expectation value
-        ev_list = [] # list of returned expectation values
-        for expectation in observe:
-            reg = expectation.wires
-            if expectation.name == 'Fock':
-                ex = self.state.mean_photon(reg)
-                var = 0
-            elif expectation.name == 'X':
-                ex, var = self.state.quad_expectation(reg, 0)
-            elif expectation.name == 'P':
-                ex, var = self.state.quad_expectation(reg, np.pi/2)
-            elif expectation.name == 'Homodyne':
-                ex, var = self.state.quad_expectation(reg, *expectation.params)
-            elif expectation.name == 'Displacement':
-                ex = self.state.displacement(modes=reg)
-            else:
-                raise DeviceError("Observable {} not supported by {}".format(expectation.name, self.name))
+        if observable == 'Fock':
+            ex = self.state.mean_photon(wires)
+            var = 0
+        elif observable == 'X':
+            ex, var = self.state.quad_expectation(wires, 0)
+        elif observable == 'P':
+            ex, var = self.state.quad_expectation(wires, np.pi/2)
+        elif observable == 'Homodyne':
+            # note: we are explicitly intervening in `par` here because the
+            # gaussian backend only works when par is numeric (not list[numeric])
+            ex, var = self.state.quad_expectation(wires, par[0][0])
+        else:
+            raise DeviceError("Observable {} not supported by {}".format(observable.name, self.name))
 
-            if self.shots != 0:
-                # estimate the expectation value
-                # use central limit theorem, sample normal distribution once, only ok
-                # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-                ex = np.random.normal(ex, np.sqrt(var / self.shots))
+        if self.shots != 0:
+            # estimate the expectation value
+            # use central limit theorem, sample normal distribution once, only ok
+            # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+            ex = np.random.normal(ex, np.sqrt(var / self.shots))
 
-            ev_list.append(ex)
+        return ex
 
-        return np.array(ev_list, dtype=np.float64)
+
+
+    def supported(self, gate_name):
+        return gate_name in operator_map
 
     def reset(self):
         """Reset the device"""
         if self.eng is not None:
+            self.eng.reset()
             self.eng = None
+        if self.state is not None:
             self.state = None
+        if self.q is not None:
+            self.q = None
