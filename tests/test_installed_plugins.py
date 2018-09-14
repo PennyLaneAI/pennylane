@@ -13,6 +13,8 @@ import inspect
 import openqml as qm
 import numpy as np
 
+import traceback #todo: remove once we no longer capture the exception further down
+
 # import autograd
 # import autograd.numpy as np
 # from autograd.numpy.random import (randn,)
@@ -93,6 +95,12 @@ class PluginTest(BaseTest):
                     circuit()
                 except Exception as e:
                     print(e)#todo: currently it is good that this just prints all the errors to get a quick overview, but we either want an assert here or not catch the exception in the first place
+                    try:
+                        raise e
+                    except:
+                        pass
+
+                    traceback.print_exc()
 
 
 if __name__ == '__main__':

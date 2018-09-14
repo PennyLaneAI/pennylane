@@ -97,7 +97,7 @@ class StrawberryFieldsFock(Device):
         else:
             gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
-    def post_execute_queued(self):
+    def pre_execute_expectations(self):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
     def expectation(self, observable, wires, *par):
