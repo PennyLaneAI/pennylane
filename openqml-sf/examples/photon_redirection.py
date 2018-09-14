@@ -25,7 +25,7 @@ def circuit(theta):
 
 circuit = qm.QNode(circuit, dev1)
 
-def cost(theta, batched):
+def cost(theta):
     """Cost (error) function to be minimized.
 
     Args:

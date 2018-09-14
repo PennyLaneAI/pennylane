@@ -19,11 +19,11 @@ def circuit(alpha, r):
     qm.TwoModeSqueezing(r, 0, wires=[0, 1])
     return qm.expectation.Fock(wires=1)
 
-def cost(weights, batched):
+def cost(weights):
     """Cost (error) function to be minimized.
 
     Args:
-        weigts (float): weights #todo: batched?
+        weigts (float): weights
     """
     return np.abs(circuit(*weights)-1)
 
