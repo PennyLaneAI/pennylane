@@ -333,6 +333,7 @@ class FockStateVector(Operation):
             or a multimode ket, with one array dimension per mode.
     """
     n_wires = 0
+    par_domain = 'A'
     grad_method = 'F'
 
 
@@ -344,6 +345,7 @@ class FockDensityMatrix(Operation):
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode.
     """
     n_wires = 0
+    par_domain = 'A'
     grad_method = 'F'
 
 
@@ -357,4 +359,5 @@ class GaussianState(Operation):
     """
     n_params = 2
     n_wires = 0
+    par_domain = 'A'
     grad_method = 'F'

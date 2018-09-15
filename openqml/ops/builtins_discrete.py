@@ -148,6 +148,7 @@ class QubitStateVector(Operation):
         state (array[complex]): a state vector of size 2**len(wires)
     """
     n_wires = 0
+    par_domain = 'A'
 
 
 #=============================================================================
@@ -162,3 +163,4 @@ class QubitUnitary(Operation):
         U (array[complex]): square unitary matrix
     """
     n_wires = 0
+    par_domain = 'A'
