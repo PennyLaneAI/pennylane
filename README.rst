@@ -15,7 +15,7 @@ OpenQML depends on the following Python packages: TODO FIXME
 
 * `Python <http://python.org/>`_ >=3.5
 * `NumPy <http://numpy.org/>`_  >=1.13.3
-* `SciPy <http://scipy.org/>`_  >=1.0.0
+* `SciPy <http://scipy.org/>`_  >=1.1.0
 * `NetworkX <http://networkx.github.io/>`_ >=2.0
 * `Tensorflow <https://www.tensorflow.org/>`_ >=1.3
 

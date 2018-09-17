@@ -15,7 +15,7 @@
 import logging as log
 log.getLogger()
 
-from functools import wraps
+from functools import wraps, lru_cache
 
 from .qnode import QNode
 
@@ -62,11 +62,12 @@ def qfunc(device):
                     qm.Yrotation(x**2, 1)
                     qm.expectation.Z(0)
 
-                return np.sin(device1._out)
+                return np.sin(device1.result)
 
     Args:
         device (openqml.Device): an OpenQML-compatible device.
     """
+    @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
 

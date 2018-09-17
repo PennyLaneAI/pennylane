@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the device class and context manager"""
+"""This module contains the device class"""
 import numpy as np
+
 from openqml import Device, DeviceError
-from openqml import Variable
 
 import strawberryfields as sf
 
@@ -35,7 +35,7 @@ from ._version import __version__
 
 operator_map = {
     'CoherentState': Coherent,
-    'DisplacedSqueezed': DisplacedSqueezed,
+    'DisplacedSqueezedState': DisplacedSqueezed,
     'SqueezedState': Squeezed,
     'ThermalState': Thermal,
     'GaussianState': Gaussian,
@@ -46,11 +46,7 @@ operator_map = {
     'QuadraticPhase': Pgate,
     'Rotation': Rgate,
     'TwoModeSqueezing': S2gate,
-    'Squeeze': Sgate,
-    # 'XDisplacement': Xgate,
-    # 'PDisplacement': Zgate,
-    # 'MeasureHomodyne': MeasureHomodyne,
-    # 'MeasureHeterodyne': MeasureHeterodyne
+    'Squeezing': Sgate
 }
 
 
@@ -62,57 +58,55 @@ class StrawberryFieldsGaussian(Device):
     hbar (float): the convention chosen in the canonical commutation
         relation [x, p] = i hbar. The default value is hbar=2.
     """
-    name = 'Strawberry Fields OpenQML plugin'
-    short_name = 'strawberryfields.fock'
+    name = 'Strawberry Fields Gaussian OpenQML plugin'
+    short_name = 'strawberryfields.gaussian'
     api_version = '0.1.0'
     version = __version__
     author = 'Josh Izaac'
     _gates = set(operator_map.keys())
-    _observables = {'Fock', 'X', 'P', 'Homodyne', 'Heterodyne'}
+    _observables = {'Fock', 'X', 'P', 'Homodyne'}
     _circuits = {}
 
     def __init__(self, wires, *, shots=0, hbar=2):
         self.wires = wires
         self.hbar = hbar
         self.eng = None
+        self.q = None
         self.state = None
         super().__init__(self.short_name, shots)
 
-    def execute(self):
-        """Apply the queued operations to the device, and measure the expectation."""
-        if self.eng:
-            self.eng.reset()
-            self.reset()
+    def pre_execute_queued(self):
+        self.reset()
+        self.eng, self.q = sf.Engine(self.wires, hbar=self.hbar)
 
-        self.eng, q = sf.Engine(self.wires, hbar=self.hbar)
+    def execute_queued_with(self):
+        return self.eng
 
-        with self.eng:
-            for operation in self._queue:
-                if operation.name not in operator_map:
-                    raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
+    def apply(self, gate_name, wires, *par):
+        gate = operator_map[gate_name](*par)
+        if isinstance(wires, int):
+            gate | self.q[wires] #pylint: disable=pointless-statement
+        else:
+            gate | [self.q[i] for i in wires] #pyling: disable=pointless-statement
 
-                p = [x.val if isinstance(x, Variable) else x for x in operation.params]
-                op = operator_map[operation.name](*p)
-                if isinstance(operation.wires, int):
-                    op | q[operation.wires]
-                else:
-                    op | [q[i] for i in operation.wires]
-
+    def pre_execute_expectations(self):
         self.state = self.eng.run('gaussian')
 
+    def expectation(self, observable, wires, *par):
         # calculate expectation value
-        reg = self._observe.wires
-        if self._observe.name == 'Fock':
-            ex = self.state.mean_photon(reg)
+        if observable == 'Fock':
+            ex = self.state.mean_photon(wires)
             var = 0
-        elif self._observe.name == 'X':
-            ex, var = self.state.quad_expectation(reg, 0)
-        elif self._observe.name == 'P':
-            ex, var = self.state.quad_expectation(reg, np.pi/2)
-        elif self._observe.name == 'Homodyne':
-            ex, var = self.state.quad_expectation(reg, *self._observe.params)
-        elif self._observe.name == 'Displacement':
-            ex = self.state.displacement(modes=reg)
+        elif observable == 'X':
+            ex, var = self.state.quad_expectation(wires, 0)
+        elif observable == 'P':
+            ex, var = self.state.quad_expectation(wires, np.pi/2)
+        elif observable == 'Homodyne':
+            # note: we are explicitly intervening in `par` here because the
+            # gaussian backend only works when par is numeric (not list[numeric])
+            ex, var = self.state.quad_expectation(wires, par[0][0])
+        else:
+            raise DeviceError("Observable {} not supported by {}".format(observable.name, self.name))
 
         if self.shots != 0:
             # estimate the expectation value
@@ -120,10 +114,19 @@ class StrawberryFieldsGaussian(Device):
             # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
             ex = np.random.normal(ex, np.sqrt(var / self.shots))
 
-        self._out = ex
+        return ex
+
+
+
+    def supported(self, gate_name):
+        return gate_name in operator_map
 
     def reset(self):
         """Reset the device"""
         if self.eng is not None:
+            self.eng.reset()
             self.eng = None
+        if self.state is not None:
             self.state = None
+        if self.q is not None:
+            self.q = None

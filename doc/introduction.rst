@@ -18,7 +18,6 @@ The core of OpenQML is designed around four main concepts:
 
 4. **Hybrid computation**: a computing model which seamlessly integrates both classical and quantum nodes
 
-
 :ref:`qfuncs`
 -------------
 
@@ -33,14 +32,16 @@ The core of OpenQML is designed around four main concepts:
 
 :html:`<br>`
 
-The primary motivation for building quantum computers is that they should be able to perform computations which would be inefficient to run on a classical computer. For machine learning, we usually consider parameterized functions :math:`f(x;\bm{\theta})`, where :math:`x` is the function's input and :math:`\bm{\theta}` is a collection of free parameters. A parameterized function :math:`f(x;\bm{\theta})` is called a quantum function (or **qfunc**) if it can be evaluated using a quantum circuit. 
+The primary motivation for building quantum computers is that they should be able to perform computations which are inefficient to run on classical computers. To this end, a parameterized function :math:`f(x;\bm{\theta})` is called a **quantum function** (or **qfunc**) if it can be evaluated using a quantum circuit. 
+
+.. note:: For a function :math:`f(x; \bm{\theta})`, :math:`x` is considered to be the function's input and :math:`\bm{\theta}` are parameters which determine the exact form of :math:`f`.
 
 :ref:`autograd_quantum`
 -----------------------
 
-In many modern machine learning applications, the ability to automatically compute analytic gradients has shown tremendous practical value. OpenQML extends this key machine learning to quantum functions.
+A core element of modern machine learning libraries is the automatic computation of analytic gradients. OpenQML extends this key feature to quantum functions.
 
-Since qfuncs may be intractable to compute on classical computers, we might expect that the gradients of qfuncs to be similarly complex. Fortunately, for a given qfunc :math:`f(x;\bm{\theta})`, we can often write the gradient :math:`\nabla_{\bm{\theta}}f(x;\bm{\theta})` as a linear combination of qfuncs, but with shifted parameters: 
+Evaluating qfuncs is inefficient on classical computers, so we might expect the gradients of qfuncs to be similarly intractable. Fortunately, we can often compute the gradient of a qfunc :math:`\nabla_{\bm{\theta}}f(x;\bm{\theta})` exactly using a linear combination of closely related qfuncs: 
 
 :html:`<br>`
 
@@ -53,13 +54,15 @@ Since qfuncs may be intractable to compute on classical computers, we might expe
 
 :html:`<br>`
 
-In other words, we can use the same quantum computation device to compute quantum functions and also **gradients of quantum functions**. This is accomplished with minor assistance of a classical coprocessor, which combines the terms in the linear combination. 
+We can thus **use the same quantum device** to compute both quantum functions and also gradients of quantum functions. This is accomplished with minor assistance of a classical coprocessor, which combines the terms. 
 
 
 :ref:`quantum_nodes`
 --------------------
 
-How do we interface classical and quantum computing devices to perform more complex calculations? Because of the inbuilt barriers between the quantum and the classical worlds, we need effective methods for inserting and extracting classical data from the quantum device. As well, we would like this interface to be compatible with essential components of machine learning like the backpropagation algorithm. 
+Quantum information is fragile -- especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations? 
+
+This leads to the notion of a **quantum node**: a basic computational unit -- programmed on a quantum circuit -- which evaluates a qfunc. Only classical data can enter/exit a quantum node. 
 
 :html:`<br>`
 
@@ -68,14 +71,16 @@ How do we interface classical and quantum computing devices to perform more comp
     :width: 70%
     :target: javascript:void(0);
 
-    A quantum node contains a quantum circuit. Classical information is input to a quantum node via the gate parameters and extracted via expectation values of measurements.
+    A quantum node encapsulates a quantum circuit. Quantum information cannot exist outside a quantum node.
 
 :html:`<br>`
 
-This leads us to the idea of a quantum node: a basic computational unit -- performed by a quantum circuit -- which evaluates a qfunc. Classical data is input to the quantum circuit through the gate parameters of the circuit; classical data is extracted by evaluating expectation values of measurement results. **Quantum information never enters or exits a quantum node**.
+To a classical device, a quantum node is a black box which can evaluate functions. A quantum device, however, resolves the finer details of the circuit.
 
 :ref:`hybrid_computation`
 --------------------------
+
+In many proposed hybrid algorithms, quantum circuits are used to evaluate quantum functions, and a classical co-processor is used primarily to post-process circuit outputs. But why should the division of labour be so regimented? 
 
 :html:`<br>`
 
@@ -88,4 +93,4 @@ This leads us to the idea of a quantum node: a basic computational unit -- perfo
 
 :html:`<br>`
 
-In most proposed hybrid algorithms, quantum circuits are used to evaluate quantum functions, and a classical co-processor is used primarily to post-process circuit outputs. But why should the division of labour be so regimented? In a **true hybrid** computational model, both the classical and the quantum devices are responsible for arbitrary parts of an overall computation, subject to the rules of quantum nodes. This allows quantum and classical devices to be used jointly, each forming an integral and inseparable part of the computation.
+In a **true hybrid** computational model, both the classical and the quantum devices are responsible for arbitrary parts of an overall computation, subject to the rules of quantum nodes. This allows quantum and classical devices to be used jointly, each forming an integral and inseparable part of a larger computation.
