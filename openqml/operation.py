@@ -80,30 +80,29 @@ class ExpectationFactory(type):
 class Operation:
     r"""A type of quantum operation supported by a device, and its properties.
 
-    * Each Operation subclass represents a type of quantum operation.
+    * Each Operation subclass represents a type of quantum operation, e.g. a unitary quantum gate.
     * Each instance of these subclasses represents an application of the
       operation with given parameter values to a given sequence of subsystems.
 
-    Operation is used to describe unitary quantum gates.
-
     Args:
-        *params (tuple[float, int, array, Variable]): operation parameters
-        wires (Sequence[int]): subsystems it acts on
+        args (tuple[float, int, array, Variable]): operation parameters
+
+    Keyword Args:
+        wires (Sequence[int]): subsystems it acts on. If not given, args[-1] is interpreted as wires.
 
     The gradient recipe (multiplier :math:`c_k`, parameter shift :math:`s_k`)
     works as follows:
 
     .. math::
-
-        \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}}
-        = c_k (Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots))
+       \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}}
+       = c_k (Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots))
 
     To find out in detail how the circuit gradients are computed, see :ref:`circuit_gradients`.
     """
     n_params = 1        #: int: number of parameters the operation takes
     n_wires  = 1        #: int: number of subsystems the operation acts on. The value 0 means any number of subsystems is OK.
-    par_domain  = 'R'   #: str: Domain of the gate parameters: 'N': natural numbers (incl. zero), 'R': float, 'A': array[complex].
-    grad_method = 'A'   #: str: gradient computation method; 'A': angular, 'F': finite differences, None: may not be differentiated.
+    par_domain  = 'R'   #: str: Domain of the gate parameters; 'N'=natural numbers (incl. zero), 'R'=float, 'A'=array[complex].
+    grad_method = 'A'   #: str: gradient computation method; 'A'=analytic, 'F'=finite differences, None=may not be differentiated.
     grad_recipe = None  #: list[tuple[float]]: Gradient recipe for the 'A' method. One tuple for each parameter, (multiplier c_k, parameter shift s_k). None means (0.5, \pi/2) (the most common case).
 
     def __init__(self, *args, **kwargs):
