@@ -26,24 +26,24 @@ dev1 = qm.device('default.qubit', wires=2)
 def circuit_X(weights):
     """Circuit measuring the X operator"""
     ansatz(weights)
-    qm.expectation.PauliX(1)
+    return qm.expectation.PauliX(1)
 
 
 @qm.qfunc(dev1)
 def circuit_Y(weights):
     """Circuit measuring the Y operator"""
     ansatz(weights)
-    qm.expectation.PauliY(1)
+    return qm.expectation.PauliY(1)
 
 
 @qm.qfunc(dev1)
 def circuit_Z(weights):
     """Circuit measuring the Z operator"""
     ansatz(weights)
-    qm.expectation.PauliZ(1)
+    return qm.expectation.PauliZ(1)
 
 
-def cost(weights, batch):  # Todo: remove batch
+def cost(weights):
     """Cost (error) function to be minimized."""
 
     expX = circuit_X(weights)
@@ -57,7 +57,7 @@ def cost(weights, batch):  # Todo: remove batch
 weights0 = np.random.randn(3)
 
 # train the device
-o = qm.Optimizer(cost, weights0)
+o = qm.Optimizer(cost, weights0, optimizer='Nelder-Mead')
 o.train(max_steps=100)
 
 print('Initial rotation angles:', weights0)
