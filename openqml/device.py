@@ -16,6 +16,7 @@
 import abc
 import logging
 
+import autograd.numpy as np
 
 logging.getLogger()
 
@@ -40,11 +41,14 @@ class DeviceError(Exception):
     pass
 
 
+class QuantumFunctionError(Exception):
+    """Exception raised when an illegal operation is defined in a quantum function."""
+    pass
+
+
 class Device(abc.ABC):
     """Abstract base class for devices."""
-    _current_context = None
     name = ''          #: str: official device plugin name
-    short_name = ''    #: str: name used to load device plugin
     api_version = ''   #: str: version of OpenQML for which the plugin was made
     version = ''       #: str: version of the device plugin itself
     author = ''        #: str: plugin author(s)
@@ -60,10 +64,6 @@ class Device(abc.ABC):
         # expectation values of observables. 0 means the exact ev is returned.
         self.shots = shots
 
-        self._out = None  # this attribute stores the expectation output
-        self._queue = []  # this list stores the operations to be queued to the device
-        self._observe = None # the measurement operation to be performed
-
     def __repr__(self):
         """String representation."""
         return self.__module__ +'.' +self.__class__.__name__ +'\nInstance: ' +self.name
@@ -72,20 +72,6 @@ class Device(abc.ABC):
         """Verbose string representation."""
         return self.__repr__() +'\nName: ' +self.name +'\nAPI version: ' +self.api_version\
             +'\nPlugin version: ' +self.version +'\nAuthor: ' +self.author +'\n'
-
-    def __enter__(self):
-        if Device._current_context is None:
-            Device._current_context = self
-            self.reset()
-        else:
-            raise DeviceError('Only one device can be active at a time.')
-        return self
-
-    def __exit__(self, exc_type, exc_value, tb):
-        if self._observe is None:
-            raise DeviceError('A qfunc must always conclude with a classical expectation value.')
-        Device._current_context = None
-        self.execute()
 
     @property
     def gates(self):
@@ -116,15 +102,6 @@ class Device(abc.ABC):
         """
         return self._circuits
 
-    @property
-    def result(self):
-        """Get the circuit result.
-
-        Returns:
-            float or int
-        """
-        return self._out
-
     @classmethod
     def capabilities(cls):
         """Get the other capabilities of the plugin.
@@ -136,9 +113,84 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    @abc.abstractmethod
-    def execute(self):
+    def execute(self, queue, observe):
         """Apply the queued operations to the device, and measure the expectation."""
+        self.pre_execute_queued()
+        self._out = self.execute_queued(queue, observe)
+        self.post_execute_queued()
+        return self._out
+
+    def execute_queued(self, queue, observe):
+        """Called during execute().
+
+        Instead of overwriting this, consider implementing a suitable subset of pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
+
+        Returns:
+          float: expectation value(s) #todo: This is now a numpy array
+        """
+        with self.execute_queued_with():
+            self.pre_execute_operations()
+            for operation in queue:
+                if not self.supported(operation.name):
+                    raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.name))
+
+                par = operation.parameters()
+                self.apply(operation.name, operation.wires, *par)
+
+            self.post_execute_operations()
+
+            self.pre_execute_expectations()
+            expectations = np.array([self.expectation(observable.name, observable.wires, observable.params) for observable in observe], dtype=np.float64)
+            self.post_execute_expectations()
+            return expectations
+
+
+    def pre_execute_queued(self):
+        """Called during execute() before the individual gates and observables are executed."""
+        pass
+
+    def post_execute_queued(self):
+        """Called during execute() after the individual gates and observables have been executed."""
+        pass
+
+    def pre_execute_operations(self):
+        """Called during execute() before the individual gates are executed."""
+        pass
+
+    def post_execute_operations(self):
+        """Called during execute() after the individual gates have been executed."""
+        pass
+
+
+    def pre_execute_expectations(self):
+        """Called during execute() before the individual observables are executed."""
+        pass
+
+    def post_execute_expectations(self):
+        """Called during execute() after the individual observables have been executed."""
+        pass
+
+    def execute_queued_with(self):
+        """Called during execute(). You can overwrite this function to return an object, the individual apply() and expectation() calls are then executed in the context of that object. See the implementation of execute_queued() for mote details."""
+        class MockClassForWithStatment(object): # pylint: disable=too-few-public-methods
+            """Mock class as a default for the with statement in execute_queued()."""
+            def __enter__(self):
+                pass
+            def __exit__(self, type, value, traceback):
+                pass
+
+        return MockClassForWithStatment()
+
+    def supported(self, gate_name):
+        """Return whether a gate with the give gate_name is supported by this plugin. """
+        raise NotImplementedError
+
+    def apply(self, gate_name, wires, *par):
+        """Apply the gate with name gate_name to wires with parameters *par."""
+        raise NotImplementedError
+
+    def expectation(self, observable, wires, *par):
+        """Return the expectation value of observable on wires with paramters *par."""
         raise NotImplementedError
 
     @abc.abstractmethod

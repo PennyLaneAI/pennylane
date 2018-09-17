@@ -83,7 +83,7 @@ Observables and measurements in OpenQML and Strawberry Fields
 -------------------------------------------------------------
 
 In Strawberry Fields we may perform state preparations, gates and measurements on the quantum register.
-SF is currently designed to model a single execution of a quantum circuit in the lab.
+SF is currently (0.7.3) designed to model a single execution of a quantum circuit in the lab.
 The probability distribution of the results of a measurement is determined by the (reduced) system state at the time of the measurement.
 Each measurement probabilistically collapses the system state, and thus the results of any following measurements may depend on the results of the preceding ones.
 After the program is finished, in addition to the measured results we may treat the final state as an output of the circuit.

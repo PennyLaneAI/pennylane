@@ -24,21 +24,21 @@ dev1 = qm.device('default.qubit', wires=2)
 def circuit_X():
     """Circuit measuring the X operator"""
     ansatz()
-    qm.expectation.PauliX(1)
+    return qm.expectation.PauliZ(1)
 
 
 @qm.qfunc(dev1)
 def circuit_Y():
     """Circuit measuring the Y operator"""
     ansatz()
-    qm.expectation.PauliY(1)
+    return qm.expectation.PauliY(1)
 
 
 @qm.qfunc(dev1)
 def circuit_Z():
     """Circuit measuring the Z operator"""
     ansatz()
-    qm.expectation.PauliZ(1)
+    return qm.expectation.PauliX(1)
 
 
 def cost(weights, batch):

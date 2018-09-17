@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the device class and context manager"""
+"""This module contains the device class"""
 import numpy as np
 from openqml import Device, DeviceError
-from openqml import Variable
 
 import strawberryfields as sf
 
@@ -37,7 +36,7 @@ operator_map = {
     'CatState:': Catstate,
     'CoherentState': Coherent,
     'FockDensityMatrix': DensityMatrix,
-    'DisplacedSqueezed': DisplacedSqueezed,
+    'DisplacedSqueezedState': DisplacedSqueezed,
     'FockState': Fock,
     'FockStateVector': Ket,
     'SqueezedState': Squeezed,
@@ -53,11 +52,7 @@ operator_map = {
     'Rotation': Rgate,
     'TwoModeSqueezing': S2gate,
     'Squeezing': Sgate,
-    'CubicPhase': Vgate,
-    # 'XDisplacement': Xgate,
-    # 'PDisplacement': Zgate,
-    # 'MeasureFock': MeasureFock,
-    # 'MeasureHomodyne': MeasureHomodyne
+    'CubicPhase': Vgate
 }
 
 
@@ -65,12 +60,12 @@ class StrawberryFieldsFock(Device):
     """StrawberryFields Fock device for OpenQML.
 
     wires (int): the number of modes to initialize the device in.
-    cutoff (int): the Fock space truncation. Must be specified before
+    cutoff_dim (int): the Fock space truncation. Must be specified before
         applying a qfunc.
     hbar (float): the convention chosen in the canonical commutation
         relation [x, p] = i hbar. The default value is hbar=2.
     """
-    name = 'Strawberry Fields OpenQML plugin'
+    name = 'Strawberry Fields Fock OpenQML plugin'
     short_name = 'strawberryfields.fock'
     api_version = '0.1.0'
     version = __version__
@@ -79,58 +74,63 @@ class StrawberryFieldsFock(Device):
     _observables = {'Fock', 'X', 'P', 'Homodyne'}
     _circuits = {}
 
-    def __init__(self, wires, *, shots=0, cutoff=None, hbar=2):
+    def __init__(self, wires, *, shots=0, cutoff_dim, hbar=2):
         self.wires = wires
-        self.cutoff = cutoff
+        self.cutoff = cutoff_dim
         self.hbar = hbar
         self.eng = None
+        self.q = None
         self.state = None
         super().__init__(self.short_name, shots)
 
-    def execute(self):
-        """Apply the queued operations to the device, and measure the expectation."""
-        if self.eng:
-            self.eng.reset()
-            self.reset()
+    def pre_execute_queued(self):
+        self.reset()
+        self.eng, self.q = sf.Engine(self.wires, hbar=self.hbar)
 
-        self.eng, q = sf.Engine(self.wires, hbar=self.hbar)
+    def execute_queued_with(self):
+        return self.eng
 
-        with self.eng:
-            for operation in self._queue:
-                if operation.name not in operator_map:
-                    raise DeviceError("{} not supported by device {}".format(operation.name, self.short_name))
+    def apply(self, gate_name, wires, *par):
+        gate = operator_map[gate_name](*par)
+        if isinstance(wires, int):
+            gate | self.q[wires] #pylint: disable=pointless-statement
+        else:
+            gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
-                p = [x.val if isinstance(x, Variable) else x for x in operation.params]
-                op = operator_map[operation.name](*p)
-                if isinstance(operation.wires, int):
-                    op | q[operation.wires]
-                else:
-                    op | [q[i] for i in operation.wires]
-
+    def pre_execute_expectations(self):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
+    def expectation(self, observable, wires, *par):
         # calculate expectation value
-        reg = self._observe.wires
-        if self._observe.name == 'Fock':
-            ex = self.state.mean_photon(reg)
-            var = 0
-        elif self._observe.name == 'X':
-            ex, var = self.state.quad_expectation(reg, 0)
-        elif self._observe.name == 'P':
-            ex, var = self.state.quad_expectation(reg, np.pi/2)
-        elif self._observe.name == 'Homodyne':
-            ex, var = self.state.quad_expectation(reg, *self.observe.params)
+        if observable == 'Fock':
+            expectation_value = self.state.mean_photon(wires)
+            variance = 0
+        elif observable == 'X':
+            expectation_value, variance = self.state.quad_expectation(wires, 0)
+        elif observable == 'P':
+            expectation_value, variance = self.state.quad_expectation(wires, np.pi/2)
+        elif observable == 'Homodyne':
+            expectation_value, variance = self.state.quad_expectation(wires, *par)
+        else:
+            raise DeviceError("Observable {} not supported by {}".format(observable.name, self.name))
 
         if self.shots != 0:
             # estimate the expectation value
             # use central limit theorem, sample normal distribution once, only ok
             # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            ex = np.random.normal(ex, np.sqrt(var / self.shots))
+            expectation_value = np.random.normal(expectation_value, np.sqrt(var / self.shots))
 
-        self._out = ex
+        return expectation_value
+
+    def supported(self, gate_name):
+        return gate_name in operator_map
 
     def reset(self):
         """Reset the device"""
         if self.eng is not None:
+            self.eng.reset()
             self.eng = None
+        if self.state is not None:
             self.state = None
+        if self.q is not None:
+            self.q = None

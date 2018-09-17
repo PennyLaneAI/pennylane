@@ -24,7 +24,9 @@ with open("openqml/_version.py") as f:
 requirements = [
     "numpy",
     "scipy",
-    "autograd"
+    "autograd",
+    "toml",
+    "appdirs"
 ]
 
 info = {
