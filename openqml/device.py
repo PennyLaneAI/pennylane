@@ -11,7 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the device class and context manager"""
+"""
+Devices
+=======
+
+**Module name:** :mod:`openqml.device`
+
+.. currentmodule:: openqml.device
+
+This module contains the device class.
+
+
+Classes
+-------
+
+.. autosummary::
+   Device
+
+----
+"""
 
 import abc
 import logging

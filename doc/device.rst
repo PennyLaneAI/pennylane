@@ -1,3 +1,3 @@
-.. automodule:: openqml.plugin
+.. automodule:: openqml.device
    :members:
    :private-members:
