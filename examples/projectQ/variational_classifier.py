@@ -64,7 +64,7 @@ def quantum_neural_net(weights, x):
     qm.expectation.PauliZ(0)
 
 
-def cost(weights, features, labels):  # Todo: remove batch
+def cost(weights, features, labels):
     """Cost (error) function to be minimized."""
 
     # Compute prediction for each input in data batch

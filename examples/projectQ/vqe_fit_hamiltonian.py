@@ -41,7 +41,7 @@ def circuit_Z():
     return qm.expectation.PauliX(1)
 
 
-def cost(weights, batch):
+def cost(weights):
     """Cost (error) function to be minimized."""
 
     expX = circuit_X()
@@ -56,7 +56,7 @@ weights0 = np.random.randn(3)
 
 # train the device
 o = qm.Optimizer(cost, weights0)
-o.train(max_steps=100)
+o.train()
 
 print('Initial hamiltonian coefficients:', weights0)
 print('Trained hamiltonian coefficients:', o.weights)
