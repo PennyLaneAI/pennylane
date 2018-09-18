@@ -25,6 +25,7 @@ def PNR(state, wires, params):
     Returns:
         tuple(float, float): Mean photon number and variance.
     """
+    # pylint: disable=unused-argument
     return state.mean_photon(wires), 0
 
 

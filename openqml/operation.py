@@ -16,8 +16,10 @@ import logging as log
 log.getLogger()
 
 from pkg_resources import iter_entry_points
-import openqml.qnode as oq
 
+import numpy as np
+
+from .qnode import _flatten, _unflatten, QNode, QuantumFunctionError
 from .variable import Variable
 
 
@@ -135,14 +137,16 @@ class Operation:
         Returns:
           list[float]: parameter values
         """
-        return [x.val if isinstance(x, Variable) else x for x in self.params]
+        temp = list(_flatten(self.params))
+        temp_val = [x.val if isinstance(x, Variable) else x for x in temp]
+        return _unflatten(temp_val, self.params)[0]
 
     def queue(self):
         """Append the operation to a QNode queue."""
-        if oq.QNode._current_context is None:
-            raise oq.QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
+        if QNode._current_context is None:
+            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
         else:
-            oq.QNode._current_context._queue.append(self)
+            QNode._current_context._queue.append(self)
 
 
 
@@ -157,7 +161,7 @@ class Expectation(Operation):
 
     def queue(self):
         """Append the expectation to a QNode queue."""
-        if oq.QNode._current_context is None:
-            raise oq.QuantumFunctionError("Quantum expectations can only be used inside a qfunc.")
+        if QNode._current_context is None:
+            raise QuantumFunctionError("Quantum expectations can only be used inside a qfunc.")
         else:
-            oq.QNode._current_context._observe.append(self)
+            QNode._current_context._observe.append(self)

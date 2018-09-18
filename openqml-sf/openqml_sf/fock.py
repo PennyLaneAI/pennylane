@@ -18,8 +18,8 @@ import numpy as np
 from strawberryfields.ops import (Catstate, Coherent, DensityMatrix, DisplacedSqueezed,
                                   Fock, Ket, Squeezed, Thermal, Gaussian)
 # import gates
-from strawberryfields.ops import (BSgate, CKgate, CXgate, CZgate, Dgate, Fouriergate,
-                                  Kgate, Pgate, Rgate, S2gate, Sgate, Vgate, Xgate, Zgate)
+from strawberryfields.ops import (BSgate, CKgate, CXgate, CZgate, Dgate,
+                                  Kgate, Pgate, Rgate, S2gate, Sgate, Vgate)
 
 
 from .expectations import PNR, Homodyne
@@ -41,7 +41,7 @@ class StrawberryFieldsFock(StrawberryFieldsSimulator):
     short_name = 'strawberryfields.fock'
 
     _operator_map = {
-        'CatState:': Catstate,
+        'CatState': Catstate,
         'CoherentState': Coherent,
         'FockDensityMatrix': DensityMatrix,
         'DisplacedSqueezedState': DisplacedSqueezed,

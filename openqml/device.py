@@ -53,8 +53,6 @@ class Device(abc.ABC):
     version = ''       #: str: version of the device plugin itself
     author = ''        #: str: plugin author(s)
     _capabilities = {} #: dict[str->*]: plugin capabilities
-    _gates = {}        #: dict[str->GateSpec]: specifications for supported gates
-    _observables = {}  #: dict[str->GateSpec]: specifications for supported observables
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
     def __init__(self, name, shots):
@@ -72,6 +70,23 @@ class Device(abc.ABC):
         """Verbose string representation."""
         return self.__repr__() +'\nName: ' +self.name +'\nAPI version: ' +self.api_version\
             +'\nPlugin version: ' +self.version +'\nAuthor: ' +self.author +'\n'
+
+    @abc.abstractproperty
+    def short_name(self):
+        """Returns the string used to load the device."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def _operator_map(self):
+        """A dictionary {str: val} that maps OpenQML operator names to
+        the corresponding operator in the device."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def _observable_map(self):
+        """A dictionary {str: val} that maps OpenQML observable names to
+        the corresponding observable in the device."""
+        raise NotImplementedError
 
     @property
     def gates(self):
@@ -147,7 +162,8 @@ class Device(abc.ABC):
                 if not self.supported(observable.name):
                     raise DeviceError("Observable {} not supported on device {}".format(observable.name, self.short_name))
 
-                expectations.append(self.expectation(observable.name, observable.wires, observable.params))
+                par = observable.parameters()
+                expectations.append(self.expectation(observable.name, observable.wires, par))
 
             self.post_execute_expectations()
             return np.array(expectations)
