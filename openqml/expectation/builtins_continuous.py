@@ -16,8 +16,6 @@
 from openqml.operation import Expectation
 
 
-__all__ = ['Heterodyne', 'Homodyne', 'Fock', 'P', 'X']
-
 
 class Fock(Expectation):   # FIXME nondescriptive name
     r"""Returns the photon-number expectation value in the phase space.
@@ -61,3 +59,9 @@ class Heterodyne(Expectation):
     r"""Returns the displacement expectation value in the phase space.
 
     """
+
+
+
+all_ops = [Heterodyne, Homodyne, Fock, P, X]
+
+__all__ = [cls.__name__ for cls in all_ops]

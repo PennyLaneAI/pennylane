@@ -11,28 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a beamsplitter Operation"""
+"""
+Built-in discrete-variable quantum Operations
+=============================================
 
+At the moment just qubit operations.
+
+
+"""
 
 from openqml.operation import Operation
-
-
-# __all__ = [
-#     'Hadamard',
-#     'PauliX',
-#     'PauliY',
-#     'PauliZ',
-#     'CNOT',
-#     'CZ',
-#     'SWAP',
-#     'RX',
-#     'RY',
-#     'RZ',
-#     'PhaseShift',
-#     'Rot',
-#     'QubitStateVector',
-#     'QubitUnitary'
-# ]
 
 
 
@@ -164,3 +152,25 @@ class QubitUnitary(Operation):
     """
     n_wires = 0
     par_domain = 'A'
+
+
+
+all_ops = [
+    Hadamard,
+    PauliX,
+    PauliY,
+    PauliZ,
+    CNOT,
+    CZ,
+    SWAP,
+    RX,
+    RY,
+    RZ,
+    PhaseShift,
+    Rot,
+    QubitStateVector,
+    QubitUnitary
+]
+
+
+__all__ = [cls.__name__ for cls in all_ops]
