@@ -20,12 +20,13 @@ import logging as log
 log.getLogger()
 
 import autograd
+from autograd import numpy as np
 
 from defaults import openqml as qm, BaseTest
 
-from openqml import numpy as np
 from openqml.qnode import _flatten
 from openqml.plugins.default import CNOT, frx, fry, frz, I, Y, Z
+from openqml.device import QuantumFunctionError
 
 
 def expZ(state):
@@ -35,28 +36,112 @@ def expZ(state):
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
 
-def rubbish_circuit(x):
-    qm.Rot(x, 0.3, -0.2, [0])
-    qm.SWAP([0, 1])
-    return qm.expectation.PauliZ(0)
-
 
 class BasicTest(BaseTest):
     """Qnode tests.
     """
     def setUp(self):
-        self.qubit_dev1 = qm.device('default.qubit', wires=1)
-        self.qubit_dev2 = qm.device('default.qubit', wires=2)
+        self.dev1 = qm.device('default.qubit', wires=1)
+        self.dev2 = qm.device('default.qubit', wires=2)
+
 
     def test_qnode_fail(self):
         "Tests that expected failures correctly raise exceptions."
         log.info('test_qnode_fail')
-        qnode = qm.QNode(rubbish_circuit, self.qubit_dev2)
-        params = np.random.randn(1)
+        par = 0.5
+
+        ## faulty quantum functions
+        # qfunc must return only Expectations
+        @qm.qfunc(self.dev2)
+        def qf(x):
+            qm.Rot(x, 0.3, -0.2, [0])
+            return qm.expectation.PauliZ(0), 0.3
+        with self.assertRaisesRegex(QuantumFunctionError, 'must return either'):
+            qf(par)
+
+        # all EVs must be returned
+        @qm.qfunc(self.dev2)
+        def qf(x):
+            qm.Rot(x, 0.3, -0.2, [0])
+            ex = qm.expectation.PauliZ(1)
+            return qm.expectation.PauliZ(0)
+        with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
+            qf(par)
+
+        # a wire cannot be measured more than once
+        log.info('test_multiple_expectation_same_wire')
+        @qm.qfunc(self.dev2)
+        def qf(x):
+            qm.Rot(x, 0.3, -0.2, [0])
+            qm.CNOT([0, 1])
+            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1), qm.expectation.PauliX(0)
+        with self.assertRaisesRegex(QuantumFunctionError, 'can only be measured once'):
+            qf(par)
+
+        # device must have enough wires for the qfunc
+        @qm.qfunc(self.dev2)
+        def qf(x):
+            qm.Rot(x, 0.3, -0.2, [0])
+            qm.CNOT([0, 2])
+            return qm.expectation.PauliZ(0)
+        with self.assertRaisesRegex(QuantumFunctionError, 'device only has'):
+            qf(par)
+
+        ## bad input parameters
+        def qf_ok(x):
+            qm.Rot(0.3, x, -0.2, [0])
+            return qm.expectation.PauliZ(0)
+
+        # if indices wrt. which the gradient is taken are specified they must be unique
+        q = qm.QNode(qf_ok, self.dev2)
+        with self.assertRaisesRegex(ValueError, 'indices must be unique'):
+            q.gradient(par, which=[0,0])
+
+        # gradient wrt. nonexistent parameters
+        q = qm.QNode(qf_ok, self.dev2)
+        with self.assertRaisesRegex(ValueError, 'Tried to compute the gradient wrt'):
+            q.gradient(par, which=[0,6])
+        with self.assertRaisesRegex(ValueError, 'Tried to compute the gradient wrt'):
+            q.gradient(par, which=[1,-1])
+
+        # unknown grad method
+        q = qm.QNode(qf_ok, self.dev1)
+        with self.assertRaisesRegex(ValueError, 'Unknown gradient method'):
+            q.gradient(par, method='unknown')
 
         # only order-1 and order-2 finite diff methods are available
-        with self.assertRaisesRegex(ValueError, "Order must be 1 or 2"):
-            qnode.gradient(params, method='F', order=3)
+        q = qm.QNode(qf_ok, self.dev1)
+        with self.assertRaisesRegex(ValueError, 'Order must be 1 or 2'):
+            q.gradient(par, method='F', order=3)
+
+        # only order-1 and order-2 analytic methods are available
+        q = qm.QNode(qf_ok, self.dev1)
+        with self.assertRaisesRegex(ValueError, 'Order must be 1 or 2'):
+            q.gradient(par, method='A', order=3)
+
+
+    def test_qnode_multiple_gate_parameters(self):
+        "Tests that gates with multiple free parameters yield correct gradients."
+        log.info('test_qnode_multiple_gate_parameters')
+        par = [0.5, 0.3, -0.7]
+
+        def qf(x, y, z):
+            qm.RX(0.4, [0])
+            qm.Rot(x, y, z, [0])
+            qm.RY(-0.2, [0])
+            return qm.expectation.PauliZ(0)
+
+        q = qm.QNode(qf, self.dev1)
+        value = q(*par)
+        grad_A = q.gradient(par, method='A')
+        grad_F = q.gradient(par, method='F')
+
+        # gradient has the correct length and every element is nonzero
+        self.assertEqual(len(grad_A), 3)
+        self.assertEqual(np.count_nonzero(grad_A), 3)
+        # the different methods agree
+        self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
+
 
     def test_qnode_fanout(self):
         "Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."
@@ -68,7 +153,7 @@ class BasicTest(BaseTest):
             qm.RX(reused_param, [0])
             return qm.expectation.PauliZ(0)
 
-        f = qm.QNode(circuit, self.qubit_dev1)
+        f = qm.QNode(circuit, self.dev1)
 
         for reused_param in thetas:
             for theta in thetas:
@@ -102,11 +187,11 @@ class BasicTest(BaseTest):
         def circuit3(array):
             return ansatz(*array)
 
-        circuit1 = qm.QNode(circuit1, self.qubit_dev2)
+        circuit1 = qm.QNode(circuit1, self.dev2)
         positional_res = circuit1(a, b, c)
         positional_grad = circuit1.gradient([a, b, c])
 
-        circuit2 = qm.QNode(circuit2, self.qubit_dev2)
+        circuit2 = qm.QNode(circuit2, self.dev2)
         array_res = circuit2(a, np.array([b, c]))
         array_grad = circuit2.gradient([a, np.array([b, c])])
 
@@ -116,7 +201,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
         self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
 
-        circuit3 = qm.QNode(circuit3, self.qubit_dev2)
+        circuit3 = qm.QNode(circuit3, self.dev2)
         array_res = circuit3(np.array([a, b, c]))
         array_grad = circuit3.gradient([np.array([a, b, c])])
 
@@ -147,20 +232,14 @@ class BasicTest(BaseTest):
         def circuit3(array):
             return ansatz(*array)
 
-        def circuit1(x, y, z):
-            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
-            qm.Rot(x, y, z, 0)
-            qm.CNOT([0, 1])
-            return qm.expectation.PauliZ(0)
-
-        circuit1 = qm.QNode(circuit1, self.qubit_dev2)
+        circuit1 = qm.QNode(circuit1, self.dev2)
         grad1 = autograd.grad(circuit1, argnum=[0, 1, 2])
 
         positional_grad = circuit1.gradient([a, b, c])
         positional_autograd = grad1(a, b, c)
         self.assertAllAlmostEqual(positional_grad, positional_autograd, delta=self.tol)
 
-        circuit2 = qm.QNode(circuit2, self.qubit_dev2)
+        circuit2 = qm.QNode(circuit2, self.dev2)
         grad2 = autograd.grad(circuit2, argnum=[0, 1])
 
         # NOTE: Mixing array and positional arguments doesn't seem to work with autograd!
@@ -169,27 +248,13 @@ class BasicTest(BaseTest):
         # array_autograd_flat = list(_flatten(array_autograd))
         # self.assertAllAlmostEqual(array_grad, array_autograd_flat, delta=self.tol)
 
-        circuit3 = qm.QNode(circuit3, self.qubit_dev2)
+        circuit3 = qm.QNode(circuit3, self.dev2)
         grad3 = autograd.grad(circuit3)
 
         array_grad = circuit3.gradient([np.array([a, b, c])])
         array_autograd = grad3(np.array([a, b, c]))
         self.assertAllAlmostEqual(array_grad, array_autograd, delta=self.tol)
 
-    def test_multiple_expectation_same_wire(self):
-        "Tests that qnodes raise error for multiple expectation values on the same wire."
-        log.info('test_multiple_expectation_same_wire')
-
-        @qm.qfunc(self.qubit_dev2)
-        def circuit(x, y, z):
-            qm.RX(x, [0])
-            qm.RZ(y, [0])
-            qm.RX(z, [0])
-            qm.CNOT([0, 1])
-            return qm.expectation.PauliY(1), qm.expectation.PauliZ(1)
-
-        with self.assertRaisesRegex(qm.QuantumFunctionError, "can only be measured once"):
-            circuit(0.5,0.54,0.3)
 
     @staticmethod
     def expected_jacobian(x, y, z):
@@ -210,7 +275,7 @@ class BasicTest(BaseTest):
 
         a, b, c = 0.5, 0.54, 0.3
 
-        @qm.qfunc(self.qubit_dev2)
+        @qm.qfunc(self.dev2)
         def circuit(x, y, z):
             qm.RX(x, [0])
             qm.RZ(y, [0])
@@ -241,7 +306,7 @@ class BasicTest(BaseTest):
             qm.CNOT([0, 1])
             return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
 
-        circuit = qm.QNode(circuit, self.qubit_dev2)
+        circuit = qm.QNode(circuit, self.dev2)
 
         # compare our manual Jacobian computation to theoretical result
         # Note: circuit.gradient actually returns a full jacobian in this case
@@ -269,7 +334,7 @@ class BasicTest(BaseTest):
            qm.CNOT([0, 1])
            return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
 
-        circuit = qm.QNode(circuit, self.qubit_dev2)
+        circuit = qm.QNode(circuit, self.dev2)
 
         res = circuit.gradient([np.array([a, b, c])])
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)

@@ -50,7 +50,7 @@ import numpy as np
 from scipy.linalg import expm, eigh
 
 import openqml as qm
-from openqml import Device, DeviceError, QNode, Expectation
+from openqml.device import Device, DeviceError
 
 
 # tolerance for numerical errors
@@ -422,4 +422,4 @@ def node(x, y, z):
     qm.CNOT([0, 1])
     return qm.expectation.Hermitian(X, 0)
 
-circuits = {'demo_ev': QNode(node, dev)}
+#circuits = {'demo_ev': QNode(node, dev)}
