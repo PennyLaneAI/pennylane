@@ -29,7 +29,7 @@ def cost(weights):
 
 # initialize alpha and r with random value
 init_weights = np.random.randn(2)
-o = qm.Optimizer(cost, init_weights, optimizer='SGD')
+o = qm.Optimizer(cost, init_weights, optimizer='Nelder-Mead')
 
 # train the circuit
 c = o.train(max_steps=100)
