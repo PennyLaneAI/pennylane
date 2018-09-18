@@ -25,6 +25,7 @@ A step of the gradient descent optimizer computes the new weights via the rule
 
 Momentum
 *********
+REF: Polyak 1964
 
 User-defined hyperparameters: :math:`\eta`, :math:`\gamma`.
 
@@ -39,6 +40,23 @@ The momentum is updates as follows:
 .. math:: 
 
     m^{(t)} = \gamma m^{(t-1)} + \eta \nabla C(w^{(t-1)}).
+
+
+
+<REF TO CODE>
+
+Nesterov Momentum
+*****************
+
+REF: Nesterov 1983?
+
+User-defined hyperparameters: :math:`\eta`, :math:`\gamma`.
+
+Nesterov Momentum works like the Momentum optimizer, but shifts the current input by the momentum term when computing the gradient of the cost,
+
+.. math:: 
+
+    m^{(t)} = \gamma m^{(t-1)} + \eta \nabla C(w^{(t-1)} - \gamma m^{(t-1)}).
 
 
 
@@ -59,14 +77,14 @@ where the gradient was replaced by a (scalar) partial derivative. The learning r
 
 .. math::
 
-    \eta_i^{(t)} = \frac{ \eta_{\mathrm{init}} }{ \sqrt{s^{(t)} + \epsilon},
+    \eta_i^{(t)} = \frac{ \eta_{\mathrm{init}} }{ \sqrt{s_i^{(t)} + \epsilon},
 
 .. math::
 
-    s^{(t)} = \sum_{k=1}^t \partial_{w_i} C(w^{(k)}).
+    s_i^{(t)} = \sum_{k=1}^t \partial_{w_i} C(w^{(k)}).
 
 
-The shift :math:`\epsilon` avoids division by zero and can be set around :math:`1e-8`. 
+The shift :math:`\epsilon` avoids division by zero and is set to :math:`1e-8` in openqml. 
 
 <REF TO CODE>
 
@@ -80,7 +98,7 @@ Extensions of Adagrad start the sum :math:`s` over past gradients in the denomin
 
 .. math:: 
 
-    s^{(t)} = \gamma s^{(t-1)} + (1-\gamma) (\partial_{w_i} C(w^{(k)}))^2.
+    s_i^{(t)} = \gamma s_i^{(t-1)} + (1-\gamma) (\partial_{w_i} C(w^{(k)}))^2.
 
 <REF TO CODE>
 
@@ -101,17 +119,20 @@ where the update rules for the three values are given by
 
 .. math:: 
 
-    m^{(t)} = \frac{\beta_1 m^{(t-1)} + (1-\beta_1)\nabla C(w^{(t-1)})}{1- \beta_1},
+    m^{(t)} = \frac{\beta_1 m^{(t-1)} + (1-\beta_1)\nabla C(w^{(t-1)})}{(1- \beta_1)},
 
 .. math:: 
 
-    v^{(t)} = \frac{\beta_2 v^{(t-1)} + (1-\beta_2) ( \nabla C(w^{(t-1)}))^{\odot 2} }{1- \beta_2},
+    v^{(t)} = \frac{\beta_2 v^{(t-1)} + (1-\beta_2) ( \nabla C(w^{(t-1)}))^{\odot 2} }{(1- \beta_2)},
     
 .. math:: 
 
-    \eta^{(t+1)} = \eta^{(t)} \frac{\sqrt{(1-\beta_2)}}{(1-\beta_1)}.
+    \eta^{(t)} = \eta^{(t-1)} \frac{\sqrt{(1-\beta_2)}}{(1-\beta_1)}.
 
-Above, :math:`( \nabla C(w^{(t-1)}))^{\odot 2}` denotes the element-wise square operation, which means that each element in the gradient is multiplied by itself. The hyperparameters :math:`\beta_1` and :math:`\beta_2` can also be step-dependent. Initially, the first and second moment are zero. 
+Above, :math:`( \nabla C(w^{(t-1)}))^{\odot 2}` denotes the element-wise square operation, which means that each element in the gradient is multiplied by itself. The hyperparameters :math:`\beta_1` and :math:`\beta_2` can also be step-dependent. Initially, the first and second moment are zero.
+
+The shift :math:`\epsilon` avoids division by zero and is set to :math:`1e-8` in openqml. 
+
 
 <REF TO CODE>
 
