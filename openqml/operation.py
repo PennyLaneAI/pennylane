@@ -239,6 +239,14 @@ class Expectation(Operation):
         else:
             oq.QNode._current_context._observe.append(self)
 
+
+    def check_domain(self, p):
+        # At least for now Expectations cannot depend on free parameters.
+        if isinstance(p, Variable):
+            raise TypeError('{}: Expectations cannot depend on free parameters.'.format(self.name))
+        return super().check_domain(p)
+
+
     def heisenberg_expand(self):
         """Expansion of the observable in the :math:`\vec{E} = (\I, x, p)` basis.
 

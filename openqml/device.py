@@ -75,9 +75,9 @@ class Device(abc.ABC):
     _observables = {}  #: dict[str->GateSpec]: specifications for supported observables
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, name, shots):
-        self.name = name # the name of the device
-
+    def __init__(self, name, wires, shots):
+        self.name = name    #: str: name of the device
+        self.wires = wires  #: int: number of subsystems
         # number of circuit evaluations used to estimate
         # expectation values of observables. 0 means the exact ev is returned.
         self.shots = shots
