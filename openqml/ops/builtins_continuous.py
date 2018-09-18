@@ -73,7 +73,7 @@ class Rotation(Operation):
         phi (float): the rotation angle.
     """
     def heisenberg_transform(self):
-        return _h_rot(self.par_values[0])
+        return _h_rot(self.parameters[0])
 
 
 class Displacement(Operation):
@@ -98,7 +98,7 @@ class Displacement(Operation):
     # TODO d\tilde{D}(r, phi)/dr does not depend on r!
     # The gradient formula can be simplified further, we can make do with smaller displacements.
     def heisenberg_transform(self):
-        p = self.par_values
+        p = self.parameters
         c = np.cos(p[1])
         s = np.sin(p[1])
         scale = 2  # \sqrt(2 \hbar)
@@ -121,7 +121,7 @@ class Squeezing(Operation):
     shift = 1.0
     grad_recipe = [(0.5/np.sinh(shift), shift), None]
     def heisenberg_transform(self):
-        p = self.par_values
+        p = self.parameters
         R = _h_rot(p[1] / 2)
         return R @ np.diag([1, np.exp(-p[0]), np.exp(p[0])]) @ R.T
 

@@ -52,7 +52,7 @@ class Homodyne(Expectation):
     """
     n_params = 1
     def heisenberg_expand(self):
-        phi = self.par_values[0]
+        phi = self.parameters[0]
         return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
 
 
