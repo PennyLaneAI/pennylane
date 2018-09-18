@@ -141,14 +141,19 @@ class Operation:
 
         if self.n_wires != 0 and len(wires) != self.n_wires:
             raise ValueError("{}: wrong number of wires. "
-                             "{} wires requested, {} expected.".format(self.name, len(wires), self.n_wires))
+                             "{} wires given, {} expected.".format(self.name, len(wires), self.n_wires))
+
+        if len(set(wires)) != len(wires):
+            raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
 
         self.wires = wires  #: Sequence[int]: subsystems the operation acts on
         self.queue()
 
+
     def __str__(self):
         """Print the operation name and some information."""
         return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
+
 
     def check_domain(self, p):
         """Check the validity of a parameter.
@@ -156,7 +161,7 @@ class Operation:
         Args:
           p (Number, array, Variable): parameter to check
         Raises:
-          TypeError: parameter is not an element of the domain
+          TypeError: parameter is not an element of the expected domain
         Returns:
           Number, array, Variable: p
         """
@@ -175,8 +180,10 @@ class Operation:
                 raise TypeError('Real scalar parameter expected, got {}.'.format(type(p)))
 
             if self.par_domain == 'N':
-                if p < 0 or not isinstance(p, numbers.Integral):
+                if not isinstance(p, numbers.Integral):
                     raise TypeError('Natural number parameter expected, got {}.'.format(type(p)))
+                if p < 0:
+                    raise TypeError('Natural number parameter expected, got {}.'.format(p))
         else:
             raise TypeError('Unknown parameter domain \'{}\'.'.format(self.par_domain))
         return p
@@ -185,12 +192,13 @@ class Operation:
     def parameters(self):
         """Current parameter values.
 
-        Fixed parameters are returned as is, free parameters represented by :class:`Variable` instances are replaced by their current numerical value.
+        Fixed parameters are returned as is, free parameters represented by :class:`~.variable.Variable` instances are replaced by their current numerical value.
 
         Returns:
           list[float]: parameter values
         """
         return [self.check_domain(x.val) if isinstance(x, Variable) else x for x in self.params]
+
 
     def queue(self):
         """Append the operation to a QNode queue."""
@@ -199,20 +207,89 @@ class Operation:
         else:
             oq.QNode._current_context._queue.append(self)
 
-    def heisenberg_transform(self):
-        """Heisenberg representation of the adjoint action of the gate.
+
+    def heisenberg_pd(self, idx):
+        """Partial derivative of the Heisenberg picture transform matrix.
+
+        Computed using grad_recipe.
+
+        Args:
+          idx (int): index of the parameter wrt. which the partial derivative is computed
+        Returns:
+          array[float]: partial derivative
+        """
+        # get the gradient recipe for this parameter
+        recipe = self.grad_recipe[idx]
+        multiplier = 0.5 if recipe is None else recipe[0]
+        shift = np.pi / 2 if recipe is None else recipe[1]
+
+        p = self.parameters
+        # evaluate the transform at the shifted parameter values
+        p[idx] += shift
+        U2 = self.heisenberg_transform(p)
+        p[idx] -= 2*shift
+        U1 = self.heisenberg_transform(p)
+        return (U2-U1) * multiplier  # partial derivative of the transformation
+
+
+    def heisenberg_tr(self, num_wires, inverse=False):
+        """Heisenberg picture representation of the adjoint action of the gate at current parameter values.
+
+        See :meth:`Operation.heisenberg_transform`.
+        The returned representation uses the full-circuit basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+
+        .. note:: Assumes that the inverse transformation is obtained by negating the first parameter.
+
+        Args:
+          num_wires (int): total number of wires in the quantum circuit
+          inverse  (bool): if True, return the inverse transformation instead
+
+        Returns:
+          array[float]: :math:`\tilde{U}`
+        """
+        p = self.parameters
+        if inverse:
+            p[0] = -p[0]  # negate first parameter
+        U = self.heisenberg_transform(p)
+
+        if num_wires == 0:
+            return U
+
+        # expand U into the I, x_0, p_0, x_1, p_1, ... basis
+        d = 1 + num_wires*2
+        W = np.eye(d)
+
+        def loc(w):
+            "Returns the slice denoting the location of (x_w, p_w) in the basis."
+            ind = 2*w+1
+            return slice(ind, ind+2)
+
+        for k1, w1 in enumerate(self.wires):
+            s1 = loc(k1)
+            d1 = loc(w1)
+            W[d1, 0] = U[s1, 0]  # first column (first row is always (1, 0, 0, ...))
+            for k2, w2 in enumerate(self.wires):
+                W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
+        return W
+
+
+    def heisenberg_transform(self, p):
+        """Heisenberg picture representation of the adjoint action of the gate.
 
         Given a unitary quantum gate :math:`U`, we may consider its adjoint action in the Heisenberg picture,
         :math:`\text{Ad}_{U^\dagger}`. If the gate is gaussian, its adjoint action conserves the order
         of any observables that are polynomials in :math:`\vec{E} = (\I, x, p)`. This also means it maps
         :math:`\text{span} \vec{E}` into itself:
 
-        .. math:: \text{Ad}_{U^\dagger} E_i = \sum_j \tilde{U}_{ij} E_j
+        .. math:: \text{Ad}_{U^\dagger} E_i = U^\dagger E_i U = \sum_j \tilde{U}_{ij} E_j
 
-        For multimode gates, we use the operator basis :math:`\vec{E} = (\I, x_1, p_1, x_2, p_2, \ldots)`.
+        For multimode gates, we use the operator basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
 
         For gaussian CV gates, this method returns the transformation matrix for the current parameter values
         of the Operation. The method is not defined for nongaussian (and non-CV) gates.
+
+        Args:
+          p (Sequence[float]): parameter values for the transformation
 
         Returns:
           array[float]: :math:`\tilde{U}`
@@ -253,7 +330,7 @@ class Expectation(Operation):
         For first-order observables returns a vector of expansion coefficients,
         :math:`A = \sum_i q_i E_i`.
 
-        For second-order observables returns a symmetric matrix,
+        For second-order observables returns a hermitian matrix,
         :math:`B = \sum_{ij} q_{ij} E_i E_j`
 
         See :meth:`Operation.heisenberg_transform`.
