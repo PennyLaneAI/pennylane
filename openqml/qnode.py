@@ -112,9 +112,8 @@ import autograd.extend as ae
 import autograd.builtins
 
 import openqml.operation
-
-from .device import QuantumFunctionError
-from .variable import Variable
+from .device    import QuantumFunctionError
+from .variable  import Variable
 
 
 
@@ -235,13 +234,22 @@ class QNode:
         if isinstance(res, openqml.operation.Expectation):
             self.output_type = float
             self.output_dim = 1
-            res = [res]
-        elif isinstance(res, tuple):
+            res = (res,)
+        elif isinstance(res, tuple) and all([isinstance(x, openqml.operation.Expectation) for x in res]):
             # for multiple expectation values, we only support tuples.
             self.output_dim = len(res)
             self.output_type = np.asarray
         else:
             raise QuantumFunctionError("A quantum function must return either a single expectation value or a tuple of expectation values.")
+
+        # check that all ev:s are returned
+        if set(res) != set(self._observe):
+            raise QuantumFunctionError('All measured expectation values must be returned.')
+
+        # check that no wires are measured more than once
+        m_wires = list(w for ex in res for w in ex.wires)
+        if len(m_wires) != len(set(m_wires)):
+            raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
         def check_op(op):
             # make sure only existing wires are referenced
@@ -252,15 +260,6 @@ class QNode:
         # check every gate/preparation and ev measurement
         for op in self._queue + list(res):
             check_op(op)
-
-        # check that all ev:s are returned
-        if set(res) != set(self._observe):
-            raise QuantumFunctionError('All measured expectation values must be returned.')
-
-        # check that no wires are measured more than once
-        m_wires = list(w for ex in res for w in ex.wires)
-        if len(m_wires) != len(set(m_wires)):
-            raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
         # TODO ensure that the gates precede every measurement
 
@@ -359,21 +358,30 @@ class QNode:
         Returns:
             array[float]: gradient vector/Jacobian matrix, shape == (n_out, len(which))
         """
-        flat_params = np.array(list(_flatten(params)))
-
-        if which is None:
-            which = range(len(flat_params))
-        elif len(which) != len(set(which)):  # set removes duplicates
-            raise ValueError('Parameter indices must be unique.')
+        # in QNode.construct we need to be able to (essentially) apply the unpacking operator to params
+        if isinstance(params, numbers.Number):
+            params = (params,)
 
         if not self.variable_ops:
             # construct the circuit
             self.construct(params, **kwargs)
 
+        flat_params = np.array(list(_flatten(params)))
+
+        if which is None:
+            which = range(len(flat_params))
+        else:
+            if min(which) < 0 or max(which) >= self.num_variables:
+                raise ValueError('Tried to compute the gradient wrt. free parameters {} (this node has {} free parameters).'.format(which, self.num_variables))
+            if len(which) != len(set(which)):  # set removes duplicates
+                raise ValueError('Parameter indices must be unique.')
+
         if method in ('A', 'F'):
             method = {k: method for k in which}
         elif method == 'B':
             method = self.grad_method
+        else:
+            raise ValueError('Unknown gradient method.')
 
         if 'F' in method.values():
             if order == 1:
