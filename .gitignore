@@ -5,12 +5,12 @@ build
 dist
 qit.egg-info
 .idea
-examples/*ipynp*
+*.ipynp
+*.ipynb_checkpoints/*
 *.egg-info*
 .coverage
 coverage_html_report/*
 notebooks/*
-examples/.ipynb_checkpoints/*
 *.aux
 *.bbl
 *.blg
