@@ -187,6 +187,7 @@ class QNode:
     def __init__(self, func, device):
         self.func = func
         self.device = device
+        self.num_wires = device.wires
         self.variable_ops = {}  #: dict[int->list[(int, int)]]: Mapping from free parameter index to the list of Operations (in this circuit) that depend on it. The first element of the tuple is the index of Operation in the program queue, the second the index of the parameter within the Operation.
 
 
@@ -245,11 +246,11 @@ class QNode:
         def check_op(op):
             # make sure only existing wires are referenced
             for w in op.wires:
-                if w < 0 or w >= self.device.wires:
-                    raise QuantumFunctionError('Operation {} applied to wire {}, device only has {}.'.format(op.name, w, self.device.wires))
+                if w < 0 or w >= self.num_wires:
+                    raise QuantumFunctionError('Operation {} applied to wire {}, device only has {}.'.format(op.name, w, self.num_wires))
 
         # check every gate/preparation and ev measurement
-        for op in self._queue + res:
+        for op in self._queue + list(res):
             check_op(op)
 
         # check that all ev:s are returned
@@ -302,7 +303,7 @@ class QNode:
         Variable.free_param_values = np.array(list(_flatten(args)))
 
         self.device.reset()
-        ret = self.device.execute(self._queue, self._observe)
+        ret = self.device.execute(self._queue, self.ex)
         return self.output_type(ret)
 
 
@@ -442,14 +443,14 @@ class QNode:
         The 2nd order method can handle also first order observables, but 1st order method may be more efficient unless it's really easy to experimentally measure arbitrary 2nd order observables.
 
         Args:
-          params (array[float]): point in parameter space at which to evaluate
-            the partial derivative.
-          idx (int): return the partial derivative with respect to this free parameter.
+          params (array[float]): point in free parameter space at which to evaluate the partial derivative
+          idx (int): return the partial derivative with respect to this free parameter
 
         Returns:
           float: partial derivative of the node.
         """
         n = self.num_variables
+        w = self.num_wires
         pd = 0.0
         # find the Commands in which the free parameter appears, use the product rule
         for op_idx, p_idx in self.variable_ops[idx]:
@@ -476,28 +477,34 @@ class QNode:
             shift = np.pi / 2 if recipe is None else recipe[1]
             shift /= orig.mult
 
+            # shifted parameter values
+            shift_p1 = np.r_[params, params[idx] +shift]
+            shift_p2 = np.r_[params, params[idx] -shift]
+
             if order == 1:
                 # evaluate the circuit in two points with shifted parameter values
-                shift_params = np.r_[params, params[idx] + shift]
-                y2 = np.asarray(self.evaluate(shift_params, **kwargs))
-                shift_params[-1] = params[idx] - shift
-                y1 = np.asarray(self.evaluate(shift_params, **kwargs))
+                y2 = np.asarray(self.evaluate(shift_p1, **kwargs))
+                y1 = np.asarray(self.evaluate(shift_p2, **kwargs))
                 pd += (y2-y1) * multiplier
+
             elif order == 2:
+                # evaluate transformed observables at the original parameter point
                 # first build the Z transformation matrix
-                Variable.free_param_values = np.r_[params, params[idx] + shift]
-                Z2 = op.heisenberg_transform()
-                Variable.free_param_values[-1] = params[idx] - shift
-                Z1 = op.heisenberg_transform()
-                unshifted_params = np.r_[params, params[idx]]
-                Variable.free_param_values[-1] = unshifted_params
-                Z0 = op.heisenberg_transform()
+                Variable.free_param_values = shift_p1
+                Z2 = op.heisenberg_tr(w)
+                Variable.free_param_values = shift_p2
+                Z1 = op.heisenberg_tr(w)
                 Z = (Z2-Z1) * multiplier  # derivative of the operation
-                Z = Z @ np.linalg.inv(Z0)  # FIXME maybe replace inv with h-transform evaluated at -par[0] ?
+
+                unshifted_params = np.r_[params, params[idx]]
+                Variable.free_param_values = unshifted_params
+                Z0 = op.heisenberg_tr(w, inverse=True)
+                Z = Z @ Z0
+
                 # conjugate with all the following operations
-                B = np.eye(3)
+                B = np.eye(1 +2*n)
                 for BB in self._queue[op_idx+1:]:
-                    temp = BB.heisenberg_transform()
+                    temp = BB.heisenberg_tr(w)
                     B = temp @ B
                 Z = B @ Z @ np.linalg.inv(B)  # conjugation
 

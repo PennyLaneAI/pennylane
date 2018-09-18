@@ -68,12 +68,11 @@ class StrawberryFieldsGaussian(Device):
     _circuits = {}
 
     def __init__(self, wires, *, shots=0, hbar=2):
-        self.wires = wires
+        super().__init__(self.short_name, wires, shots)
         self.hbar = hbar
         self.eng = None
         self.q = None
         self.state = None
-        super().__init__(self.short_name, shots)
 
     def pre_execute_queued(self):
         self.reset()
@@ -84,10 +83,7 @@ class StrawberryFieldsGaussian(Device):
 
     def apply(self, gate_name, wires, *par):
         gate = operator_map[gate_name](*par)
-        if isinstance(wires, int):
-            gate | self.q[wires] #pylint: disable=pointless-statement
-        else:
-            gate | [self.q[i] for i in wires] #pyling: disable=pointless-statement
+        gate | [self.q[i] for i in wires] #pyling: disable=pointless-statement
 
     def pre_execute_expectations(self):
         self.state = self.eng.run('gaussian')
@@ -115,8 +111,6 @@ class StrawberryFieldsGaussian(Device):
             ex = np.random.normal(ex, np.sqrt(var / self.shots))
 
         return ex
-
-
 
     def supported(self, gate_name):
         return gate_name in operator_map

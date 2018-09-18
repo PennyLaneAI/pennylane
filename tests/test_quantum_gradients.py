@@ -30,7 +30,7 @@ def expZ(state):
 
 hbar = 2
 mag_alphas = np.linspace(0, 1.5, 5)
-thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
+thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 sqz_vals = np.linspace(0., 1.5, 5)
 
 class QuadratureGradientTest(BaseTest):
@@ -90,19 +90,18 @@ class QuadratureGradientTest(BaseTest):
         log.info('test_displacement_gradient')
 
         @qm.qfunc(self.fock_dev1)
-        def circuit(a):
-            qm.Displacement(a, 0., [0])
+        def circuit(r, phi):
+            qm.Displacement(r, phi, [0])
             return qm.expectation.X(0)
 
         grad_fn = autograd.grad(circuit)
 
         for mag in mag_alphas:
             for theta in thetas:
-                alpha = mag * np.exp(1j * theta)
-
-                autograd_val = grad_fn(alpha)
+                #alpha = mag * np.exp(1j * theta)
+                autograd_val = grad_fn(mag, theta)
                 # qfunc evalutes to hbar * Re(alpha)
-                manualgrad_val = hbar
+                manualgrad_val = hbar * np.cos(theta)
 
                 self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
 

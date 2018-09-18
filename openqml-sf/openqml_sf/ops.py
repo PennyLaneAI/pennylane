@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the device class and context manager"""
-from openqml import Operation
+from openqml.operation import Operation
 
 
 class XDisplacement(Operation):
