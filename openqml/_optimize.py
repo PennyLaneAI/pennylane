@@ -43,6 +43,10 @@ class MomentumOptimizer(GradientDescentOptimizer):
             self.accumulation = self.momentum * self.accumulation + self.stepsize * grad
         return x - self.accumulation
 
+    def reset(self):
+        """Reset optimizer by erasing memory of past steps."""
+        self.accumulation = None
+
 
 class NesterovMomentumOptimizer(MomentumOptimizer):
     """Gradient-descent optimizer with Nesterov momentum."""
@@ -53,7 +57,10 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     def compute_grad(self, objective_fn, x, grad_fn=None):
         """Compute gradient of objective_fn at the shifted point (x - momentum*accumulation) """
 
-        shifted_x = x - self.momentum * self.accumulation
+        if self.accumulation is None:
+            shifted_x = x
+        else:
+            shifted_x = x - self.momentum * self.accumulation
 
         if grad_fn is not None:
             g = grad_fn(shifted_x)  # just call the supplied grad function
@@ -72,10 +79,14 @@ class AdagradOptimizer(GradientDescentOptimizer):
     def apply_grad(self, grad, x):
         """Update x to take a single optimization step."""
         if self.accumulation is None:
-            self.accumulation = grad
+            self.accumulation = grad * grad
         else:
-            self.accumulation += grad
+            self.accumulation += grad * grad
         return x - (self.stepsize / np.sqrt(self.accumulation + 1e-8)) * grad  # elementwise multiplication
+
+    def reset(self):
+        """Reset optimizer by erasing memory of past steps."""
+        self.accumulation = None
 
 
 class RMSPropOptimizer(AdagradOptimizer):
@@ -88,7 +99,7 @@ class RMSPropOptimizer(AdagradOptimizer):
     def apply_grad(self, grad, x):
         """Update x to take a single optimization step."""
         if self.accumulation is None:
-            self.accumulation = grad
+            self.accumulation = (1 - self.decay) * (grad * grad)
         else:
             self.accumulation = self.decay * self.accumulation + (1 - self.decay) * (grad * grad)  # elementwise multiplication
         return x - (self.stepsize / np.sqrt(self.accumulation + 1e-8)) * grad  # elementwise multiplication
@@ -101,6 +112,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         super().__init__(stepsize)
         self.beta1 = beta1
         self.beta2 = beta2
+        self.adapted_stepsize = stepsize
         self.firstmoment = None
         self.secondmoment = None
 
@@ -115,12 +127,16 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         # Update second moment
         if self.secondmoment is None:
-            self.secondmoment = grad
+            self.secondmoment = grad * grad
         else:
             self.secondmoment = (self.beta2 * self.secondmoment + (1 - self.beta2) * (grad * grad)) / (1 - self.beta2)
 
         # Update step size
-        self.stepsize = self.stepsize * np.sqrt(1 - self.beta2) / (1 - self.beta1)
+        self.adapted_stepsize = self.adapted_stepsize * np.sqrt(1 - self.beta2) / (1 - self.beta1)
+        return x - self.adapted_stepsize * self.firstmoment / (np.sqrt(self.secondmoment) + 1e-8)
 
-        return x - self.stepsize * self.firstmoment / (self.secondmoment + 1e-8)
-
+    def reset(self):
+        """Reset optimizer by erasing memory of past steps."""
+        self.firstmoment = None
+        self.secondmoment = None
+        self.adapted_stepsize = self.stepsize
