@@ -75,13 +75,12 @@ class StrawberryFieldsFock(Device):
     _circuits = {}
 
     def __init__(self, wires, *, shots=0, cutoff_dim, hbar=2):
-        self.wires = wires
+        super().__init__(self.short_name, wires, shots)
         self.cutoff = cutoff_dim
         self.hbar = hbar
         self.eng = None
         self.q = None
         self.state = None
-        super().__init__(self.short_name, shots)
 
     def pre_execute_queued(self):
         self.reset()
@@ -92,10 +91,7 @@ class StrawberryFieldsFock(Device):
 
     def apply(self, gate_name, wires, *par):
         gate = operator_map[gate_name](*par)
-        if isinstance(wires, int):
-            gate | self.q[wires] #pylint: disable=pointless-statement
-        else:
-            gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
+        gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
     def pre_execute_expectations(self):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
@@ -128,7 +124,7 @@ class StrawberryFieldsFock(Device):
     def reset(self):
         """Reset the device"""
         if self.eng is not None:
-            self.eng.reset()
+            self.eng.reset() # FIXME is this necessary? eng is discarded below.
             self.eng = None
         if self.state is not None:
             self.state = None

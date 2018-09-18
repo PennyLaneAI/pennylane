@@ -152,7 +152,7 @@ class Device(abc.ABC):
                 if not self.supported(operation.name):
                     raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.name))
 
-                par = operation.parameters()
+                par = operation.parameters
                 self.apply(operation.name, operation.wires, *par)
 
             self.post_execute_operations()
