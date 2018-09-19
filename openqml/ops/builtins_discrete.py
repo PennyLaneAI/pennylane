@@ -137,7 +137,7 @@ class QubitStateVector(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-
+    grad_method = None
 
 #=============================================================================
 # Arbitrary operations
@@ -152,7 +152,7 @@ class QubitUnitary(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-
+    grad_method = None
 
 
 all_ops = [

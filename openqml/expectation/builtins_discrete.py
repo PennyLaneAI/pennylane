@@ -42,7 +42,7 @@ class Hermitian(Expectation):
         A (array): square hermitian matrix.
     """
     n_params = 1
-
+    par_domain = 'A'
 
 
 all_ops = [PauliX, PauliY, PauliZ, Hermitian]
