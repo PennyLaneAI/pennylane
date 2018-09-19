@@ -7,6 +7,9 @@ of a user-defined Hamiltonian.
 
 import openqml as qm
 from openqml import numpy as np
+from openqml._optimize import GradientDescentOptimizer
+
+dev = qm.device('default.qubit', wires=2)
 
 
 def ansatz(weights):
@@ -15,32 +18,23 @@ def ansatz(weights):
     initial_state = np.array([1, 1, 0, 1])/np.sqrt(3)
     qm.QubitStateVector(initial_state, wires=[0, 1])
 
-    qm.Rot(weights[0], weights[1], weights[2], [0])
+    qm.RX(weights[0], [0])
+    qm.RY(weights[1], [1])
     qm.CNOT([0, 1])
 
 
-dev1 = qm.device('default.qubit', wires=2)
-
-
-@qm.qfunc(dev1)
+@qm.qfunc(dev)
 def circuit_X(weights):
     """Circuit measuring the X operator"""
     ansatz(weights)
     return qm.expectation.PauliX(1)
 
 
-@qm.qfunc(dev1)
+@qm.qfunc(dev)
 def circuit_Y(weights):
     """Circuit measuring the Y operator"""
     ansatz(weights)
     return qm.expectation.PauliY(1)
-
-
-@qm.qfunc(dev1)
-def circuit_Z(weights):
-    """Circuit measuring the Z operator"""
-    ansatz(weights)
-    return qm.expectation.PauliZ(1)
 
 
 def cost(weights):
@@ -48,17 +42,17 @@ def cost(weights):
 
     expX = circuit_X(weights)
     expY = circuit_Y(weights)
-    expZ = circuit_Z(weights)
 
-    return 0.1*expX + 0.5*expY - 0.3*expZ
+    return 0.1*expX + 0.5*expY
 
 
-# initialize weights with random values
-weights0 = np.random.randn(3)
+# initialize weights
+weights0 = np.array([0., 0.])
+print('Initial weights:', weights0)
 
-# train the device
-o = qm.Optimizer(cost, weights0, optimizer='Nelder-Mead')
-o.train(max_steps=100)
-
-print('Initial rotation angles:', weights0)
-print('Optimized rotation angles:', o.weights)
+o = GradientDescentOptimizer(0.5)
+weights = weights0
+for iteration in np.arange(1, 21):
+    weights = o.step(cost, weights)
+    print('Cost after step {}: {}'.format(iteration, cost(weights)))
+print('Optimized weights:', weights)
