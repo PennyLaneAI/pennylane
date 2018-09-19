@@ -150,8 +150,15 @@ class ProjectQDevice(Device):
 
     def apply(self, gate_name, wires, par):
         gate = self._operator_map[gate_name](*par)
-        if isinstance(wires, int):
-            gate | self.reg[wires] #pylint: disable=pointless-statement
+
+        if gate_name == 'QubitStateVector':
+            if list(wires) == list(range(self.wires)):
+                gate | self.reg #pylint: disable=pointless-statement
+            elif len(wires) == 1:
+                gate | self.reg[wires[0]]
+            else:
+                raise ValueError("In ProjectQ, state preparation must be applied to either "
+                                 "a single wire, or all wires in the register.")
         else:
             gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
