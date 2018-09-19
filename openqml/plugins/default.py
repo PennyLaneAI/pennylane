@@ -252,7 +252,7 @@ class DefaultQubit(Device):
             self._state = np.zeros(2**self.wires, dtype=complex)
             self._state[0] = 1
 
-    def apply(self, gate_name, wires, *par):
+    def apply(self, gate_name, wires, par):
         if gate_name == 'QubitStateVector':
             state = np.asarray(par[0], dtype=np.float64)
             if state.ndim == 1 and state.shape[0] == 2**self.wires:
@@ -272,7 +272,7 @@ class DefaultQubit(Device):
             raise ValueError('This plugin supports only one- and two-qubit gates.')
         self._state = U @ self._state
 
-    def expectation(self, observable, wires, *par):
+    def expectation(self, observable, wires, par):
         # calculate expectation value
         # measurement/expectation value <psi|A|psi>
         A = DefaultQubit._get_operator_matrix(observable, par)

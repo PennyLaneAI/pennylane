@@ -65,7 +65,7 @@ Note that the relative order of the measurements in general matters, different o
 If there are any unitaries between the measurements we may fold them into the latter measurement:
 :math:`B_j U A_i = U (U^\dagger B_j U) A_i = U B_j' A_i`.
 
-Things are greatly simplified if the measurement operators commute pairwise, :math:`[A_i, B_j] = 0`.
+Things are greatly simplified if the measurement operators commute pairwise, :math:`[A_i, B_j] = 0 \: \forall i,j`.
 In this case the joint p.d.f. does not depend on the order of the measurements. Furthermore,
 the expectation values can be obtained as
 
@@ -133,7 +133,7 @@ If one is needed, the option that makes the most sense for commuting measurement
 .. math:: \rho' = \sum_{ij\ldots} (A_i B_j \cdots) \rho (A_i B_j \cdots)^\dagger.
 
 
-In summary, both :mod:`openqml.plugins.strawberryfields` and :mod:`openqml.plugins.dummy_plugin` currently are only designed to return expectation values of measurements which are
+In summary, both :mod:`openqml_sf` and :mod:`openqml.plugins.default` currently are only designed to return expectation values of measurements which are
 
 #. projective,
 #. grouped next to each other, and

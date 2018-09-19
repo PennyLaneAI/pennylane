@@ -19,7 +19,7 @@ Devices
 
 .. currentmodule:: openqml.device
 
-This module contains the device class.
+This module contains the :class:`Device` class.
 
 
 Classes
@@ -27,6 +27,37 @@ Classes
 
 .. autosummary::
    Device
+
+Device methods
+--------------
+
+.. currentmodule:: openqml.device.Device
+
+.. autosummary::
+   gates
+   observables
+   templates
+   capabilities
+   execute
+   reset
+
+Internal Device methods
+-----------------------
+
+.. autosummary::
+   execute_queued
+   pre_execute_queued
+   post_execute_queued
+   pre_execute_operations
+   post_execute_operations
+   pre_execute_expectations
+   post_execute_expectations
+   execute_queued_with
+   supported
+   apply
+   expectation
+
+.. currentmodule:: openqml.device
 
 ----
 """
@@ -65,7 +96,14 @@ class QuantumFunctionError(Exception):
 
 
 class Device(abc.ABC):
-    """Abstract base class for devices."""
+    """Abstract base class for OpenQML devices.
+
+    Args:
+      name  (str): name of the device
+      wires (int): number of subsystems in the quantum state represented by the device
+      shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
+        For simulator devices, 0 means the exact EV is returned.
+    """
     name = ''          #: str: official device plugin name
     api_version = ''   #: str: version of OpenQML for which the plugin was made
     version = ''       #: str: version of the device plugin itself
@@ -78,9 +116,7 @@ class Device(abc.ABC):
     def __init__(self, name, wires, shots):
         self.name = name    #: str: name of the device
         self.wires = wires  #: int: number of subsystems
-        # number of circuit evaluations used to estimate
-        # expectation values of observables. 0 means the exact ev is returned.
-        self.shots = shots
+        self.shots = shots  #: int: number of circuit evaluations used to estimate expectation values, 0 means the exact ev is returned
 
     def __repr__(self):
         """String representation."""
@@ -132,19 +168,30 @@ class Device(abc.ABC):
         return cls._capabilities
 
     def execute(self, queue, observe):
-        """Apply the queued operations to the device, and measure the expectation."""
+        """Apply a queue of quantum operations to the device, and then measure the given expectation values.
+
+        Args:
+          queue (Iterable[~.operation.Operation]): quantum operations to apply
+          observe (Iterable[~.operation.Expectation]): expectation values to measure
+        Returns:
+          array[float]: expectation value(s)
+        """
         self.pre_execute_queued()
         self._out = self.execute_queued(queue, observe)
         self.post_execute_queued()
         return self._out
 
     def execute_queued(self, queue, observe):
-        """Called during execute().
+        """Executes the given quantum program.
 
+        Should not be called directly by the user, use :meth:`execute` instead.
         Instead of overwriting this, consider implementing a suitable subset of pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
 
+        Args:
+          queue (Iterable[~.operation.Operation]): quantum operations to apply
+          observe (Iterable[~.operation.Expectation]): expectation values to measure
         Returns:
-          float: expectation value(s) #todo: This is now a numpy array
+          array[float]: expectation value(s)
         """
         with self.execute_queued_with():
             self.pre_execute_operations()
@@ -153,43 +200,47 @@ class Device(abc.ABC):
                     raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.name))
 
                 par = operation.parameters
-                self.apply(operation.name, operation.wires, *par)
+                self.apply(operation.name, operation.wires, par)
 
             self.post_execute_operations()
 
             self.pre_execute_expectations()
-            expectations = np.array([self.expectation(observable.name, observable.wires, observable.params) for observable in observe], dtype=np.float64)
+            expectations = np.array([self.expectation(observable.name, observable.wires, observable.parameters) for observable in observe], dtype=np.float64)
             self.post_execute_expectations()
             return expectations
 
 
     def pre_execute_queued(self):
-        """Called during execute() before the individual gates and observables are executed."""
+        """Called during :meth:`execute` before the individual gates and observables are executed."""
         pass
 
     def post_execute_queued(self):
-        """Called during execute() after the individual gates and observables have been executed."""
+        """Called during :meth:`execute` after the individual gates and observables have been executed."""
         pass
 
     def pre_execute_operations(self):
-        """Called during execute() before the individual gates are executed."""
+        """Called during :meth:`execute` before the individual gates are executed."""
         pass
 
     def post_execute_operations(self):
-        """Called during execute() after the individual gates have been executed."""
+        """Called during :meth:`execute` after the individual gates have been executed."""
         pass
 
-
     def pre_execute_expectations(self):
-        """Called during execute() before the individual observables are executed."""
+        """Called during :meth:`execute` before the individual observables are executed."""
         pass
 
     def post_execute_expectations(self):
-        """Called during execute() after the individual observables have been executed."""
+        """Called during :meth:`execute` after the individual observables have been executed."""
         pass
 
     def execute_queued_with(self):
-        """Called during execute(). You can overwrite this function to return an object, the individual apply() and expectation() calls are then executed in the context of that object. See the implementation of execute_queued() for mote details."""
+        """Called during :meth:`execute`.
+
+        You can overwrite this function to return an object, the individual :meth:`apply` and :meth:`expectation`
+        calls are then executed in the context of that object.
+        See the implementation of :meth:`execute_queued` for more details.
+        """
         class MockClassForWithStatment(object): # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute_queued()."""
             def __enter__(self):
@@ -200,15 +251,35 @@ class Device(abc.ABC):
         return MockClassForWithStatment()
 
     def supported(self, gate_name):
-        """Return whether a gate with the give gate_name is supported by this plugin. """
+        """Checks if the given gate is supported by this device.
+
+        Args:
+          gate_name (str): name of the operation
+        Returns:
+          bool: True iff it is supported
+        """
         raise NotImplementedError
 
-    def apply(self, gate_name, wires, *par):
-        """Apply the gate with name gate_name to wires with parameters *par."""
+    def apply(self, gate_name, wires, par):
+        """Apply a quantum operation.
+
+        Args:
+          gate_name (str): name of the operation
+          wires (Sequence[int]): subsystems the operation is applied on
+          par (tuple): parameters for the operation
+        """
         raise NotImplementedError
 
-    def expectation(self, observable, wires, *par):
-        """Return the expectation value of observable on wires with paramters *par."""
+    def expectation(self, observable, wires, par):
+        """Expectation value of an observable.
+
+        Args:
+          observable (str): name of the observable
+          wires (Sequence[int]): subsystems the observable is measured on
+          par (tuple): parameters for the observable
+        Returns:
+          float: expectation value
+        """
         raise NotImplementedError
 
     @abc.abstractmethod

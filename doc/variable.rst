@@ -1,3 +1,3 @@
-.. automodule:: openqml.optimizer
+.. automodule:: openqml.variable
    :members:
    :private-members:
