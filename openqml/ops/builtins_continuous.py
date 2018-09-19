@@ -283,7 +283,7 @@ class FockState(Operation):
         n (int): Fock state to prepare
     """
     par_domain = 'N'
-    grad_method = 'F'
+    grad_method = None
 
 
 class ThermalState(Operation):
@@ -323,7 +323,7 @@ class FockStateVector(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-    grad_method = 'F'
+    grad_method = None
 
 
 class FockDensityMatrix(Operation):
@@ -335,7 +335,7 @@ class FockDensityMatrix(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-    grad_method = 'F'
+    grad_method = None
 
 
 class GaussianState(Operation):
@@ -349,7 +349,7 @@ class GaussianState(Operation):
     n_params = 2
     n_wires = 0
     par_domain = 'A'
-    grad_method = 'F'
+    grad_method = None
 
 
 

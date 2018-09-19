@@ -125,6 +125,10 @@ class Operation:
             self.check_domain(p)
         self.params = list(params)  #: list[float, int, array, Variable]: operation parameters, both fixed and free
 
+        # check the grad_method validity
+        if self.par_domain != 'R':
+            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters!'
+
         # check the grad_recipe validity
         if self.grad_method == 'A':
             if self.grad_recipe is None:
