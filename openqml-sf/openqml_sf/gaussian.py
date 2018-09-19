@@ -63,5 +63,5 @@ class StrawberryFieldsGaussian(StrawberryFieldsSimulator):
 
     _circuits = {}
 
-    def pre_execute_expectations(self):
+    def pre_expectations(self):
         self.state = self.eng.run('gaussian')

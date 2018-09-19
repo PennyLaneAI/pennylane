@@ -129,17 +129,11 @@ class Device(abc.ABC):
         return cls._capabilities
 
     def execute(self, queue, observe):
-        """Apply the queued operations to the device, and measure the expectation."""
-        self.pre_execute_queued()
-        self._out = self.execute_queued(queue, observe)
-        self.post_execute_queued()
-        return self._out
-
-    def execute_queued(self, queue, observe):
-        """Called during execute().
+        """Apply the queued operations to the device, and measure the expectation values.
 
         Instead of overwriting this, consider implementing a suitable subset of
-        pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
+        :meth:`~.pre_apply`, :meth:`~.post_apply`, :meth:`~.execution_context`,
+        :meth:`~.apply`, and :meth:`~.expectation`.
 
         Args:
             queue (Sequence): sequence of openqml.operation.Operation objects to apply
@@ -152,61 +146,58 @@ class Device(abc.ABC):
         """
         self.check_validity(queue, observe)
 
-        with self.execute_queued_with():
-            self.pre_execute_operations()
+        with self.execution_context():
+
+            self.pre_apply()
+
             for operation in queue:
                 par = operation.parameters()
                 self.apply(operation.name, operation.wires, par)
 
-            self.post_execute_operations()
+            self.post_apply()
 
-            self.pre_execute_expectations()
+            self.pre_expectations()
 
             expectations = []
             for observable in observe:
                 par = observable.parameters()
                 expectations.append(self.expectation(observable.name, observable.wires, par))
 
-            self.post_execute_expectations()
+            self.post_expectations()
+
             return np.array(expectations)
 
-    def pre_execute_queued(self):
-        """Called during execute() before the individual gates and observables are executed."""
+    def pre_apply(self):
+        """Called during :meth:`~.execute` before the individual gates are executed."""
         pass
 
-    def post_execute_queued(self):
-        """Called during execute() after the individual gates and observables have been executed."""
+    def post_apply(self):
+        """Called during :meth:`~.execute` after the individual gates have been executed."""
         pass
 
-    def pre_execute_operations(self):
-        """Called during execute() before the individual gates are executed."""
+    def pre_expectations(self):
+        """Called during :meth:`~.execute` before the individual observables are executed."""
         pass
 
-    def post_execute_operations(self):
-        """Called during execute() after the individual gates have been executed."""
+    def post_expectations(self):
+        """Called during :meth:`~.execute` after the individual observables have been executed."""
         pass
 
-    def pre_execute_expectations(self):
-        """Called during execute() before the individual observables are executed."""
-        pass
+    def execution_context(self):
+        """The device execution context used during calls to :meth:`~.execute`.
 
-    def post_execute_expectations(self):
-        """Called during execute() after the individual observables have been executed."""
-        pass
-
-    def execute_queued_with(self):
-        """Called during execute(). You can overwrite this function to return an object,
-        the individual apply() and expectation() calls are then executed in the context
-        of that object. See the implementation of execute_queued() for more details.
+        You can overwrite this function to return a suitable context manager;
+        all operations and method calls (including :meth:`~.apply` and :meth:`~.expectation`)
+        are then evaluated within the context of this context manager.
         """
-        class MockClassForWithStatment(object): # pylint: disable=too-few-public-methods
-            """Mock class as a default for the with statement in execute_queued()."""
+        class MockContext(object): # pylint: disable=too-few-public-methods
+            """Mock class as a default for the with statement in execute()."""
             def __enter__(self):
                 pass
             def __exit__(self, type, value, traceback):
                 pass
 
-        return MockClassForWithStatment()
+        return MockContext()
 
     def supported(self, name):
         """Return whether an operation or observable is supported by this device.
