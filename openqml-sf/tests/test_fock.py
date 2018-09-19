@@ -27,6 +27,13 @@ from openqml import numpy as np
 from defaults import openqml_sf as qmsf, BaseTest
 
 
+psi = np.array([ 0.08820314+0.14909648j,  0.32826940+0.32956027j,
+        0.26695166+0.19138087j,  0.32419593+0.08460371j,
+        0.02984712+0.30655538j,  0.03815006+0.18297214j,
+        0.17330397+0.2494433j ,  0.14293477+0.25095202j,
+        0.21021125+0.30082734j,  0.23443833+0.19584968j])
+
+
 class FockTests(BaseTest):
     """Test the Fock simulator."""
 
@@ -67,14 +74,14 @@ class FockTests(BaseTest):
                 wires = list(range(op.n_wires))
 
             @qm.qfunc(dev)
-            def circuit(*x):
-                op(*x, wires=wires)
+            def circuit(*args):
+                op(*args, wires=wires)
                 return qm.expectation.Fock(0)
 
             with self.assertRaisesRegex(qm.DeviceError,
                 "Gate {} not supported on device strawberryfields.fock".format(g)):
-                x = np.random.random([op.n_params])
-                circuit(*x)
+                args = np.random.random([op.n_params])
+                circuit(*args)
 
     def test_unsupported_observables(self):
         """Test error is raised with unsupported observables"""
@@ -93,13 +100,13 @@ class FockTests(BaseTest):
                 wires = list(range(op.n_wires))
 
             @qm.qfunc(dev)
-            def circuit(*x):
-                return op(*x, wires=wires)
+            def circuit(*args):
+                return op(*args, wires=wires)
 
             with self.assertRaisesRegex(qm.DeviceError,
                 "Observable {} not supported on device strawberryfields.fock".format(g)):
-                x = np.random.random([op.n_params])
-                circuit(*x)
+                args = np.random.random([op.n_params])
+                circuit(*args)
 
     def test_fock_circuit(self):
         """Test that the fock plugin provides correct result for simple circuit"""
@@ -149,18 +156,18 @@ class FockTests(BaseTest):
                 wires = list(range(op.n_wires))
 
             @qm.qfunc(dev)
-            def circuit(*x):
+            def circuit(*args):
                 qm.TwoModeSqueezing(0.1, 0, wires=[0, 1])
-                op(*x, wires=wires)
+                op(*args, wires=wires)
                 return qm.expectation.Fock(0), qm.expectation.Fock(1)
 
             # compare to reference SF engine
-            def SF_reference(*x):
+            def SF_reference(*args):
                 """SF reference circuit"""
                 eng, q = sf.Engine(2)
                 with eng:
                     sf.ops.S2gate(0.1) | q
-                    sfop(*x) | [q[i] for i in wires]
+                    sfop(*args) | [q[i] for i in wires]
 
                 state = eng.run('fock', cutoff_dim=cutoff_dim)
                 return state.mean_photon(0), state.mean_photon(1)
@@ -170,13 +177,9 @@ class FockTests(BaseTest):
                 V = np.array([[0.5, 0], [0, 2]])
                 self.assertAllEqual(circuit(V, r), SF_reference(V, r))
             elif g == 'FockDensityMatrix':
-                psi = np.random.random([10]) + np.random.random([10])*1j
-                psi /= np.linalg.norm(psi)
                 dm = np.outer(psi, psi.conj())
                 self.assertAllEqual(circuit(dm), SF_reference(dm))
             elif g == 'FockStateVector':
-                psi = np.random.random([10]) + np.random.random([10])*1j
-                psi /= np.linalg.norm(psi)
                 self.assertAllEqual(circuit(psi), SF_reference(psi))
             elif op.n_params == 1:
                 self.assertAllEqual(circuit(a), SF_reference(a))
@@ -200,13 +203,13 @@ class FockTests(BaseTest):
             wires = list(range(op.n_wires))
 
             @qm.qfunc(dev)
-            def circuit(*x):
+            def circuit(*args):
                 qm.Displacement(0.1, 0, wires=0)
                 qm.TwoModeSqueezing(0.1, 0, wires=[0, 1])
-                return op(*x, wires=wires)
+                return op(*args, wires=wires)
 
             # compare to reference SF engine
-            def SF_reference(*x):
+            def SF_reference(*args):
                 """SF reference circuit"""
                 eng, q = sf.Engine(2)
                 with eng:
@@ -214,7 +217,7 @@ class FockTests(BaseTest):
                     sf.ops.S2gate(0.1) | q
 
                 state = eng.run('fock', cutoff_dim=cutoff_dim)
-                return sfop(state, wires, x)[0]
+                return sfop(state, wires, args)[0]
 
             if op.n_params == 0:
                 self.assertAllEqual(circuit(), SF_reference())
