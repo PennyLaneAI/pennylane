@@ -70,6 +70,8 @@ class StrawberryFieldsFock(StrawberryFieldsSimulator):
         'Homodyne': Homodyne()
     }
 
+    _circuits = {}
+
     def __init__(self, wires, *, shots=0, cutoff_dim, hbar=2):
         self.cutoff = cutoff_dim
         super().__init__(wires, shots=shots, hbar=hbar)
