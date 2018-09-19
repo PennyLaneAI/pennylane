@@ -159,6 +159,10 @@ class ProjectQDevice(Device):
             else:
                 raise ValueError("In ProjectQ, state preparation must be applied to either "
                                  "a single wire, or all wires in the register.")
+        elif gate_name == 'Rot':
+            Rz(par[0]) | tuple([self.reg[i] for i in wires])
+            Ry(par[1]) | tuple([self.reg[i] for i in wires])
+            Rz(par[2]) | tuple([self.reg[i] for i in wires])
         else:
             gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
