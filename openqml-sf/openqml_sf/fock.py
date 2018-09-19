@@ -11,8 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the device class"""
+"""
+Strawberry Fields Fock plugin
+=============================
+
+**Module name:** :mod:`openqml_sf.fock`
+
+.. currentmodule:: openqml_sf.fock
+
+The SF Fock plugin implements all the :class:`~openqml.device.Device` methods
+and provides a Fock space simulation of a continuous variable quantum circuit architecture.
+
+Classes
+-------
+
+.. autosummary::
+   StrawberryFieldsFock
+
+----
+"""
+
 import numpy as np
+
 from openqml import Device, DeviceError
 
 import strawberryfields as sf
@@ -59,11 +79,12 @@ operator_map = {
 class StrawberryFieldsFock(Device):
     """StrawberryFields Fock device for OpenQML.
 
-    wires (int): the number of modes to initialize the device in.
-    cutoff_dim (int): the Fock space truncation. Must be specified before
-        applying a qfunc.
-    hbar (float): the convention chosen in the canonical commutation
-        relation [x, p] = i hbar. The default value is hbar=2.
+    Args:
+      wires (int): the number of modes to initialize the device in.
+      shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
+        For simulator devices, 0 means the exact EV is returned.
+      cutoff_dim (int): Fock space truncation dimension
+      hbar (float): the convention chosen in the canonical commutation relation :math:`[x, p] = i \hbar`
     """
     name = 'Strawberry Fields Fock OpenQML plugin'
     short_name = 'strawberryfields.fock'
@@ -89,14 +110,14 @@ class StrawberryFieldsFock(Device):
     def execute_queued_with(self):
         return self.eng
 
-    def apply(self, gate_name, wires, *par):
+    def apply(self, gate_name, wires, par):
         gate = operator_map[gate_name](*par)
         gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
     def pre_execute_expectations(self):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
 
-    def expectation(self, observable, wires, *par):
+    def expectation(self, observable, wires, par):
         # calculate expectation value
         if observable == 'Fock':
             expectation_value = self.state.mean_photon(wires)

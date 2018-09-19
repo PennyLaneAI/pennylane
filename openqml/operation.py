@@ -94,8 +94,8 @@ class Operation:
     works as follows:
 
     .. math::
-       \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}}
-       = c_k (Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots))
+       \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}
+       = c_k \left(Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots)\right)
 
     To find out in detail how the circuit gradients are computed, see :ref:`circuit_gradients`.
     """
@@ -233,12 +233,17 @@ class Operation:
 
 
     def heisenberg_tr(self, num_wires, inverse=False):
-        """Heisenberg picture representation of the adjoint action of the gate at current parameter values.
+        r"""Heisenberg picture representation of the adjoint action of the gate at current parameter values.
 
-        See :meth:`Operation.heisenberg_transform`.
-        The returned representation uses the full-circuit basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+        Given a unitary quantum gate :math:`U`, we may consider its adjoint action in the Heisenberg picture,
+        :math:`\text{Ad}_{U^\dagger}`. If the gate is gaussian, its adjoint action conserves the order
+        of any observables that are polynomials in :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+        This also means it maps :math:`\text{span} \: \vec{E}` into itself:
 
-        .. note:: Assumes that the inverse transformation is obtained by negating the first parameter.
+        .. math:: \text{Ad}_{U^\dagger} E_i = U^\dagger E_i U = \sum_j \tilde{U}_{ij} E_j
+
+        For gaussian CV gates, this method returns the transformation matrix for the current parameter values
+        of the Operation. The method is not defined for nongaussian (and non-CV) gates.
 
         Args:
           num_wires (int): total number of wires in the quantum circuit
@@ -247,6 +252,10 @@ class Operation:
         Returns:
           array[float]: :math:`\tilde{U}`
         """
+        # not defined?
+        if self.heisenberg_transform is None:
+            return None
+
         p = self.parameters
         if inverse:
             p[0] = -p[0]  # negate first parameter
@@ -274,19 +283,15 @@ class Operation:
 
 
     def heisenberg_transform(self, p):
-        """Heisenberg picture representation of the adjoint action of the gate.
+        r"""Heisenberg picture representation of the adjoint action of the gate.
 
-        Given a unitary quantum gate :math:`U`, we may consider its adjoint action in the Heisenberg picture,
-        :math:`\text{Ad}_{U^\dagger}`. If the gate is gaussian, its adjoint action conserves the order
-        of any observables that are polynomials in :math:`\vec{E} = (\I, x, p)`. This also means it maps
-        :math:`\text{span} \vec{E}` into itself:
+        For gaussian CV gates, this method returns the transformation matrix for the given parameter values.
+        The method is not defined for nongaussian (and non-CV) gates.
 
-        .. math:: \text{Ad}_{U^\dagger} E_i = U^\dagger E_i U = \sum_j \tilde{U}_{ij} E_j
+        For single-mode gates we use the basis :math:`\vec{E} = (\I, x, p)`.
+        For multimode gates, we use the basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
 
-        For multimode gates, we use the operator basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
-
-        For gaussian CV gates, this method returns the transformation matrix for the current parameter values
-        of the Operation. The method is not defined for nongaussian (and non-CV) gates.
+        .. note:: Assumes that the inverse transformation is obtained by negating the first parameter.
 
         Args:
           p (Sequence[float]): parameter values for the transformation
@@ -325,7 +330,7 @@ class Expectation(Operation):
 
 
     def heisenberg_expand(self):
-        """Expansion of the observable in the :math:`\vec{E} = (\I, x, p)` basis.
+        r"""Expansion of the observable in the :math:`\vec{E} = (\I, x, p)` basis.
 
         For first-order observables returns a vector of expansion coefficients,
         :math:`A = \sum_i q_i E_i`.

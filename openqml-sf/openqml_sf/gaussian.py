@@ -11,7 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the device class"""
+"""
+Strawberry Fields gaussian plugin
+=================================
+
+**Module name:** :mod:`openqml_sf.gaussian`
+
+.. currentmodule:: openqml_sf.gaussian
+
+The SF gaussian plugin implements all the :class:`~openqml.device.Device` methods
+and provides a gaussian simulation of a continuous variable quantum circuit architecture.
+
+Classes
+-------
+
+.. autosummary::
+   StrawberryFieldsGaussian
+
+----
+"""
+
 import numpy as np
 
 from openqml import Device, DeviceError
@@ -54,9 +73,11 @@ operator_map = {
 class StrawberryFieldsGaussian(Device):
     """StrawberryFields Gaussian device for OpenQML.
 
-    wires (int): the number of modes to initialize the device in.
-    hbar (float): the convention chosen in the canonical commutation
-        relation [x, p] = i hbar. The default value is hbar=2.
+    Args:
+      wires (int): the number of modes to initialize the device in.
+      shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
+        For simulator devices, 0 means the exact EV is returned.
+      hbar (float): the convention chosen in the canonical commutation relation :math:`[x, p] = i \hbar`
     """
     name = 'Strawberry Fields Gaussian OpenQML plugin'
     short_name = 'strawberryfields.gaussian'
@@ -81,14 +102,14 @@ class StrawberryFieldsGaussian(Device):
     def execute_queued_with(self):
         return self.eng
 
-    def apply(self, gate_name, wires, *par):
+    def apply(self, gate_name, wires, par):
         gate = operator_map[gate_name](*par)
         gate | [self.q[i] for i in wires] #pyling: disable=pointless-statement
 
     def pre_execute_expectations(self):
         self.state = self.eng.run('gaussian')
 
-    def expectation(self, observable, wires, *par):
+    def expectation(self, observable, wires, par):
         # calculate expectation value
         if observable == 'Fock':
             ex = self.state.mean_photon(wires)
@@ -98,9 +119,7 @@ class StrawberryFieldsGaussian(Device):
         elif observable == 'P':
             ex, var = self.state.quad_expectation(wires, np.pi/2)
         elif observable == 'Homodyne':
-            # note: we are explicitly intervening in `par` here because the
-            # gaussian backend only works when par is numeric (not list[numeric])
-            ex, var = self.state.quad_expectation(wires, par[0][0])
+            ex, var = self.state.quad_expectation(wires, par[0])
         else:
             raise DeviceError("Observable {} not supported by {}".format(observable.name, self.name))
 
