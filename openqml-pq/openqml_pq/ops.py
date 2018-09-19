@@ -132,7 +132,8 @@ class Rot(pq.ops.BasicGate):
     ProjectQ does not currently have an arbitrary single qubit rotation gate.
     """
     def __new__(*par):
-        raise NotImplementedError("ProjectQ does not currently have an arbitrary single qubit rotation gate.") #todo: update depending on https://github.com/ProjectQ-Framework/ProjectQ/issues/268
+        pass
+        # raise NotImplementedError("ProjectQ does not currently have an arbitrary single qubit rotation gate.") #todo: update depending on https://github.com/ProjectQ-Framework/ProjectQ/issues/268
 
 class QubitUnitary(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     """Class for the QubitUnitary gate.
