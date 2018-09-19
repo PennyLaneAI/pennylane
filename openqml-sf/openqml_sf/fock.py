@@ -76,5 +76,5 @@ class StrawberryFieldsFock(StrawberryFieldsSimulator):
         self.cutoff = cutoff_dim
         super().__init__(wires, shots=shots, hbar=hbar)
 
-    def pre_execute_expectations(self):
+    def pre_expectations(self):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)

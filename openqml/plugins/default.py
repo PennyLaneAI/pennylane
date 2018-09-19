@@ -248,7 +248,7 @@ class DefaultQubit(Device):
         self._state = None
         super().__init__(self.short_name, shots)
 
-    def pre_execute_queued(self):
+    def pre_apply(self):
         self.reset()
 
     def apply(self, gate_name, wires, params):
