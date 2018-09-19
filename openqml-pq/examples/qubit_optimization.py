@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--backend", default='simulator', choices=['simulator', 'ibm'], help="backend to use")
 parser.add_argument("--user", help="IBM Quantum Experience user name")
 parser.add_argument("--password", help="IBM Quantum Experience password")
-parser.add_argument("--optimizer", default="SGD", choices=qm.optimizer.OPTIMIZER_NAMES, help="optimizer to use")
+parser.add_argument("--optimizer", default="BFGS", choices=qm.optimizer.OPTIMIZER_NAMES, help="optimizer to use")
 args = parser.parse_args()
 
 dev1 = qm.device('projectq.'+args.backend, wires=2, **vars(args))
@@ -32,7 +32,6 @@ def circuit(x, y, z):
     qm.CNOT(wires=[0, 1])
     return qm.expectation.PauliZ(wires=1)
 
-circuit = qm.QNode(circuit, dev1)
 
 def cost(weights):
     """Cost (error) function to be minimized.
@@ -54,5 +53,5 @@ c = o.train(max_steps=100)
 print('Initial [x,y,z] rotation angles:', init_weights)
 print('Optimized [x,y,z] rotation angles:', o.weights)
 print('Circuit output at rotation angles:', circuit(*o.weights))
-print('Circuit gradient at rotation angles:', qm.grad(circuit, o.weights)[0])
-print('Cost gradient at optimized parameters:', qm.grad(cost, [o.weights, None]))
+print('Circuit gradient at rotation angles:', qm.grad(circuit, o.weights))
+print('Cost gradient at optimized parameters:', qm.grad(cost, [o.weights]))
