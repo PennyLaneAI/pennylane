@@ -165,15 +165,6 @@ class GaussianTests(BaseTest):
                 r = np.array([0, 0])
                 V = np.array([[0.5, 0], [0, 2]])
                 self.assertAllEqual(circuit(V, r), SF_reference(V, r))
-            elif g == 'GaussianDensityMatrix':
-                psi = np.random.random([10]) + np.random.random([10])*1j
-                psi /= np.linalg.norm(psi)
-                dm = np.outer(psi, psi.conj())
-                self.assertAllEqual(circuit(dm), SF_reference(dm))
-            elif g == 'GaussianStateVector':
-                psi = np.random.random([10]) + np.random.random([10])*1j
-                psi /= np.linalg.norm(psi)
-                self.assertAllEqual(circuit(psi), SF_reference(psi))
             elif op.n_params == 1:
                 self.assertAllEqual(circuit(a), SF_reference(a))
             elif op.n_params == 2:
