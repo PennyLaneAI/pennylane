@@ -10,6 +10,8 @@ from openqml._optimize import GradientDescentOptimizer
 
 dev = qm.device('strawberryfields.fock', wires=2, cutoff_dim=10)
 
+class Beamsplitter(qm.Beamsplitter):
+    grad_method = 'F'
 
 @qm.qfunc(dev)
 def circuit(weights):
