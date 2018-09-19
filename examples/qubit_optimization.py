@@ -17,14 +17,14 @@ def circuit(x, y, z):
     return qm.expectation.PauliZ(1)
 
 
-def cost(weights, batched):
+def cost(weights):
     """Cost (error) function to be minimized."""
     return np.abs(circuit(*weights)-1/np.sqrt(2))
 
 
 # initialize x with random value
 weights0 = np.random.randn(3)
-o = qm.Optimizer(cost, weights0, optimizer='SGD')
+o = qm.Optimizer(cost, weights0, optimizer='BFGS')
 
 # train the circuit
 c = o.train(max_steps=100)
