@@ -141,15 +141,20 @@ class Device(abc.ABC):
         Instead of overwriting this, consider implementing a suitable subset of
         pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
 
+        Args:
+            queue (Sequence): sequence of openqml.operation.Operation objects to apply
+                to the device.
+            observe (Sequence): sequence of openqml.operation.Expectation objects
+                to calculate and return from the device.
+
         Returns:
-          float: expectation value(s) #todo: This is now a numpy array
+            float: expectation value(s)
         """
+        self.check_validity(queue, observe)
+
         with self.execute_queued_with():
             self.pre_execute_operations()
             for operation in queue:
-                if not self.supported(operation.name):
-                    raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
-
                 par = operation.parameters()
                 self.apply(operation.name, operation.wires, par)
 
@@ -159,9 +164,6 @@ class Device(abc.ABC):
 
             expectations = []
             for observable in observe:
-                if not self.supported(observable.name):
-                    raise DeviceError("Observable {} not supported on device {}".format(observable.name, self.short_name))
-
                 par = observable.parameters()
                 expectations.append(self.expectation(observable.name, observable.wires, par))
 
@@ -214,14 +216,44 @@ class Device(abc.ABC):
         """
         return name in self.gates.union(self.observables)
 
+    def check_validity(self, queue, observe):
+        """Used to check whether the queued operations and observables are
+        supported by the device.
+
+        Args:
+            queue (Sequence): sequence of openqml.operation.Operation objects to apply
+                to the device.
+            observe (Sequence): sequence of openqml.operation.Expectation objects
+                to calculate and return from the device.
+        """
+        for operation in queue:
+            if not self.supported(operation.name):
+                raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
+
+        for observable in observe:
+            if not self.supported(observable.name):
+                raise DeviceError("Observable {} not supported on device {}".format(observable.name, self.short_name))
+
     @abc.abstractmethod
     def apply(self, gate_name, wires, params):
-        """Apply the gate with name gate_name to wires with parameters *par."""
+        """Apply the gate with name gate_name to wires with parameters params.
+
+        Args:
+            gate_name (str): name of the OpenQML operation.
+            wires (sequence): sequence of integers indicating the subsystems the gate is applied to.
+            params (sequence): sequence of gate parameters.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
     def expectation(self, observable, wires, params):
-        """Return the expectation value of observable on wires with paramters *par."""
+        """Return the expectation value of observable on wires with paramters params.
+
+        Args:
+            observable (str): name of the OpenQML observable.
+            wires (sequence): sequence of integers indicating the subsystems the gate is applied to.
+            params (sequence): sequence of gate parameters.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
