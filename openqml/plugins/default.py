@@ -88,6 +88,9 @@ I = np.eye(2)
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
+# Hadamard
+H = np.array([[1, 1], [1, -1]])/np.sqrt(2)
+# Two qubit gates
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
@@ -225,6 +228,7 @@ class DefaultQubit(Device):
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
+        'Hadamard': H,
         'CNOT': CNOT,
         'SWAP': SWAP,
         'RX': frx,
