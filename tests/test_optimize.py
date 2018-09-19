@@ -148,7 +148,7 @@ class BasicTest(BaseTest):
 
         for gradf, f in zip(self.grad_uni_fns, self.univariate_funcs):
             for x_start in x_vals:
-                self.adag_opt.reset()  # TODO: Is it better to recreate the optimizer?
+                self.adag_opt.reset()
 
                 x_onestep = self.adag_opt.step(f, x_start)
                 past_grads = gradf(x_start)*gradf(x_start)
@@ -185,7 +185,7 @@ class BasicTest(BaseTest):
 
         for gradf, f in zip(self.grad_uni_fns, self.univariate_funcs):
             for x_start in x_vals:
-                self.rms_opt.reset()  # TODO: Is it better to recreate the optimizer?
+                self.rms_opt.reset()
 
                 x_onestep = self.rms_opt.step(f, x_start)
                 past_grads = (1 - gamma) * gradf(x_start)*gradf(x_start)
