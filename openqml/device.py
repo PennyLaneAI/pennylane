@@ -80,7 +80,7 @@ class Device(abc.ABC):
         Returns:
           dict[str->GateSpec]:
         """
-        return self._gates
+        return set(self._operator_map.keys())
 
     @property
     def observables(self):
@@ -89,7 +89,7 @@ class Device(abc.ABC):
         Returns:
           dict[str->GateSpec]:
         """
-        return self._observables
+        return set(self._observable_map.keys())
 
     @property
     def templates(self):
@@ -123,27 +123,37 @@ class Device(abc.ABC):
     def execute_queued(self, queue, observe):
         """Called during execute().
 
-        Instead of overwriting this, consider implementing a suitable subset of pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
+        Instead of overwriting this, consider implementing a suitable subset of
+        pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
+
+        Args:
+            queue (Sequence): sequence of openqml.operation.Operation objects to apply
+                to the device.
+            observe (Sequence): sequence of openqml.operation.Expectation objects
+                to calculate and return from the device.
 
         Returns:
-          float: expectation value(s) #todo: This is now a numpy array
+            float: expectation value(s)
         """
+        self.check_validity(queue, observe)
+
         with self.execute_queued_with():
             self.pre_execute_operations()
             for operation in queue:
-                if not self.supported(operation.name):
-                    raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.name))
-
                 par = operation.parameters()
-                self.apply(operation.name, operation.wires, *par)
+                self.apply(operation.name, operation.wires, par)
 
             self.post_execute_operations()
 
             self.pre_execute_expectations()
-            expectations = np.array([self.expectation(observable.name, observable.wires, observable.params) for observable in observe], dtype=np.float64)
-            self.post_execute_expectations()
-            return expectations
 
+            expectations = []
+            for observable in observe:
+                par = observable.parameters()
+                expectations.append(self.expectation(observable.name, observable.wires, par))
+
+            self.post_execute_expectations()
+            return np.array(expectations)
 
     def pre_execute_queued(self):
         """Called during execute() before the individual gates and observables are executed."""
@@ -161,7 +171,6 @@ class Device(abc.ABC):
         """Called during execute() after the individual gates have been executed."""
         pass
 
-
     def pre_execute_expectations(self):
         """Called during execute() before the individual observables are executed."""
         pass
@@ -171,7 +180,10 @@ class Device(abc.ABC):
         pass
 
     def execute_queued_with(self):
-        """Called during execute(). You can overwrite this function to return an object, the individual apply() and expectation() calls are then executed in the context of that object. See the implementation of execute_queued() for mote details."""
+        """Called during execute(). You can overwrite this function to return an object,
+        the individual apply() and expectation() calls are then executed in the context
+        of that object. See the implementation of execute_queued() for more details.
+        """
         class MockClassForWithStatment(object): # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute_queued()."""
             def __enter__(self):
@@ -181,16 +193,52 @@ class Device(abc.ABC):
 
         return MockClassForWithStatment()
 
-    def supported(self, gate_name):
-        """Return whether a gate with the give gate_name is supported by this plugin. """
+    def supported(self, name):
+        """Return whether an operation or observable is supported by this device.
+
+        Args:
+            name (str): name of the operation or observable.
+        """
+        return name in self.gates.union(self.observables)
+
+    def check_validity(self, queue, observe):
+        """Used to check whether the queued operations and observables are
+        supported by the device.
+
+        Args:
+            queue (Sequence): sequence of openqml.operation.Operation objects to apply
+                to the device.
+            observe (Sequence): sequence of openqml.operation.Expectation objects
+                to calculate and return from the device.
+        """
+        for operation in queue:
+            if not self.supported(operation.name):
+                raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
+
+        for observable in observe:
+            if not self.supported(observable.name):
+                raise DeviceError("Observable {} not supported on device {}".format(observable.name, self.short_name))
+
+    @abc.abstractmethod
+    def apply(self, gate_name, wires, params):
+        """Apply the gate with name gate_name to wires with parameters params.
+
+        Args:
+            gate_name (str): name of the OpenQML operation.
+            wires (sequence): sequence of integers indicating the subsystems the gate is applied to.
+            params (sequence): sequence of gate parameters.
+        """
         raise NotImplementedError
 
-    def apply(self, gate_name, wires, *par):
-        """Apply the gate with name gate_name to wires with parameters *par."""
-        raise NotImplementedError
+    @abc.abstractmethod
+    def expectation(self, observable, wires, params):
+        """Return the expectation value of observable on wires with paramters params.
 
-    def expectation(self, observable, wires, *par):
-        """Return the expectation value of observable on wires with paramters *par."""
+        Args:
+            observable (str): name of the OpenQML observable.
+            wires (sequence): sequence of integers indicating the subsystems the gate is applied to.
+            params (sequence): sequence of gate parameters.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
