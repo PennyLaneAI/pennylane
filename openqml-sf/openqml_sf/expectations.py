@@ -29,16 +29,30 @@ def PNR(state, wires, params):
 
 
 def Homodyne(phi=None):
-    """Decorator that returns the qm.Homodyne observable function for Strawberry Fields.
+    """Function factory that returns the qm.Homodyne observable function for Strawberry Fields.
+
+    ``Homodyne(phi)`` returns a function
+
+    .. code-block:: python
+
+        homodyne_expectation(state, wires, phi)
+
+    that is used to determine the Homodyne expectation value of a wire within a SF state,
+    measured along a particular phase space angle ``phi``.
+
+    Note that:
+
+    * If ``phi`` is not None, the returned function will be hardcoded to return the
+      homodyne expectation value at angle ``phi`` in the phase space.
+    * If ``phi`` the value of ``phi`` must be set when calling the returned function.
 
     Args:
         phi (float): the default phase space axis to perform the Homodyne measurement.
-            If not provided, the returned function axis can be set by the observable
-            parameters.
 
     Returns:
-        function: A function that accepts a SF state, measured wires, and parameters,
-            and returns the quadrature expectation value and variance.
+        function: A function that accepts a SF state, the wire to measure,
+            and phase space angle phi, and returns the quadrature expectation
+            value and variance.
     """
     if phi is not None:
         return lambda state, wires, params: state.quad_expectation(wires, phi)
