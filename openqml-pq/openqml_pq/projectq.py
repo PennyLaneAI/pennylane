@@ -145,7 +145,7 @@ class ProjectQDevice(Device):
     def __str__(self):
         return super().__str__() +'Backend: ' +self.backend +'\n'
 
-    def post_execute_queued(self):
+    def post_expectations(self):
         self._deallocate()
 
     def apply(self, gate_name, wires, par):

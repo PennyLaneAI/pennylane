@@ -37,6 +37,9 @@ class StrawberryFieldsSimulator(Device):
     version = __version__
     author = 'Josh Izaac'
 
+    short_name = 'strawberryfields'
+    _operator_map = None
+
     def __init__(self, wires, *, shots=0, hbar=2):
         self.wires = wires
         self.hbar = hbar
@@ -45,13 +48,10 @@ class StrawberryFieldsSimulator(Device):
         self.state = None
         super().__init__(self.short_name, shots)
 
-    def pre_execute_queued(self):
+    def execution_context(self):
         """Initialize the engine"""
         self.reset()
         self.eng, self.q = sf.Engine(self.wires, hbar=self.hbar)
-
-    def execute_queued_with(self):
-        """The execution context manager"""
         return self.eng
 
     def apply(self, gate_name, wires, params):
@@ -63,13 +63,13 @@ class StrawberryFieldsSimulator(Device):
             params (Sequence): sequence of gate parameters.
         """
         gate = self._operator_map[gate_name](*params)
-        if isinstance(wires, int):
+        if isinstance(wires, int): #pragma: no cover
             gate | self.q[wires] #pylint: disable=pointless-statement
         else:
-            gate | [self.q[i] for i in wires] #pyling: disable=pointless-statement
+            gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
     @abc.abstractmethod
-    def pre_execute_expectations(self):
+    def pre_expectations(self):
         """Run the engine"""
         raise NotImplementedError
 

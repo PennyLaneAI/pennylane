@@ -1,0 +1,31 @@
+[MASTER]
+# A comma-separated list of package or module names from where C extensions may
+# be loaded. Extensions are loading into the active Python interpreter and may
+# run arbitrary code
+extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir
+
+[TYPECHECK]
+
+# List of module names for which member attributes should not be checked
+# (useful for modules/projects where namespaces are manipulated during runtime
+# and thus existing member attributes cannot be deduced by static analysis. It
+# supports qualified module names, as well as Unix pattern matching.
+ignored-modules=numpy,scipy,autograd,toml,appdir
+
+# List of classes names for which member attributes should not be checked
+# (useful for classes with attributes dynamically set). This supports can work
+# with qualified names.
+ignored-classes=numpy,scipy,autograd,toml,appdir
+
+[MESSAGES CONTROL]
+
+# Enable the message, report, category or checker with the given id(s). You can
+# either give multiple identifier separated by comma (,) or put this option
+# multiple time.
+#enable=
+
+# Disable the message, report, category or checker with the given id(s). You
+# can either give multiple identifier separated by comma (,) or put this option
+# multiple time (only on the command line, not in the configuration file where
+# it should appear only once).
+disable=line-too-long,invalid-name,too-many-lines,redefined-builtin,too-many-locals,duplicate-code
