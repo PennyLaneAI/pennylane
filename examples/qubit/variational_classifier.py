@@ -39,8 +39,6 @@ def accuracy(labels, predictions):
         float: accuracy
     """
 
-    print(predictions)
-
     loss = 0
     for l, p in zip(labels, predictions):
         if isclose(l, p, abs_tol=1e-5):
