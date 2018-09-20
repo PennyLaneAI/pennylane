@@ -1,0 +1,30 @@
+# .coveragerc to control coverage.py
+[run]
+source = openqml_sf
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code:
+    def __repr__
+    def __eq__
+    if self\.debug
+
+    # print statements
+    def __str__
+    def __format__
+    def _print_list
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    pass
+    if __name__ == .__main__.:
+    raise NotImplementedError
+
+ignore_errors = True
+
+[html]
+directory = coverage_html_report

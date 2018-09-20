@@ -1122,8 +1122,10 @@ does not increase the order of such polynomials.
 Assume first that we are measuring the eigenvalue of an observable that is a linear combination of the hermitian operators $\vec{E} = (\I, x, p)$.
 Conjugating any of these operators with a gaussian gate~$U$ yields another linear combination of the operators:
 \be
-\Ad_{U^\dagger} E_i = \sum_j \Admap{U}_{ij} E_j.
+\Ad_{U^\dagger} E_i = \sum_j \Admap{U}_{ij} E_j,
 \ee
+where $\Admap{U}$ is real, and its first row
+is always $(1,0,0)$ due to the fact that unitary conjugation maps identity to itself.
 
 Assume we have a propagator $U=B U_{\vt} A$, and the initial state of the system is~$\rho$,
 and the observable $Q = \vec{q}^T \vec{E}$.
@@ -1155,7 +1157,10 @@ of circuits with correspondingly shifted parameters:
 \end{align}
 Note that here $A$~does not have to be gaussian for the formula to work.
 
-For second-order observables $Q = \sum_{ij} q_{ij} E_i E_j$ we obtain
+For second-order observables $Q = \sum_{ij} q_{ij} E_i E_j$,
+to guarantee hermiticity the first row and column of~$q$
+can be chosen real, and the remaining submatrix must be hermitian.
+We obtain
 \begin{align*}
 \Ad_{U^\dagger} (E_i E_j)
 &= (\Ad_{U^\dagger} E_i) (\Ad_{U^\dagger} E_j)
@@ -1192,17 +1197,29 @@ and thus
 \notag
 &= \sum_{ijx} c_x q_{ij} \tr(\Ad_{A} \rho \ ((\Ad_{(B U_{\vt+\vR_x})^\dagger} E_i)(\Ad_{(BU_{\vt})^\dagger} E_j) +(\Ad_{(BU_{\vt})^\dagger} E_i)(\Ad_{(BU_{\vt+\vR_x})^\dagger} E_j)))\\
 \notag
-&= \sum_{ijx} c_x q_{ij} \tr(\Ad_{B U_{\vt} A} \rho \ ((\Ad_{(B U_{\vR_x} B^\dagger)^\dagger} E_i) E_j +E_i (\Ad_{(B U_{\vR_x} B^\dagger)^\dagger} E_j)))\\
+&= \sum_{ijx} c_x q_{ij} \tr(\Ad_{B U_{\vt} A} \rho \ ((\Ad_{(B U_{\vt+\vR_x} U_{\vt}^\dagger B^\dagger)^\dagger} E_i) E_j +E_i (\Ad_{(B U_{\vt+\vR_x} U_{\vt}^\dagger B^\dagger)^\dagger} E_j)))\\
 \notag
 &= \sum_{ijx} c_x q_{ij} \tr(\Ad_{B U_{\vt} A} \rho \ ((\Ad_{Z_x^\dagger} E_i) E_j +E_i (\Ad_{Z_x^\dagger} E_j)))\\
 \notag
 &= \sum_{ijx} c_x q_{ij} \expect{(\Ad_{Z_x^\dagger} E_i) E_j +E_i (\Ad_{Z_x^\dagger} E_j)}_{B U_{\vt} A}\\
-&= \sum_{ijkx} c_x q_{ij} \expect{(\Admap{Z_x}_{ik} E_k) E_j +E_i (\Admap{Z_x}_{jk} E_k)}_{B U_{\vt} A},
+\notag
+&= \sum_{ijk} q_{ij} \expect{(\Admap{Z}_{ik} E_k) E_j +E_i (\Admap{Z}_{jk} E_k)}_{B U_{\vt} A}\\
+\notag
+&= \sum_{ijk} q_{ij} (\Admap{Z}_{ik} \expect{E_k E_j}_{B U_{\vt} A} +\Admap{Z}_{jk} \expect{E_i E_k}_{B U_{\vt} A})\\
+&= \sum_{ij} (\Admap{Z}^T q +q \Admap{Z})_{ij} \expect{E_i E_j}_{B U_{\vt} A}
+= \sum_{ij} q'_{ij} \expect{E_i E_j}_{B U_{\vt} A}
+= \expect{Q'}_{B U_{\vt} A}.
 \end{align}
 \end{widetext}
-where $Z_x = B U_{\vR_x} B^\dagger$.
+Here
+\begin{align}
+Z_x &= B  U_{\vt+\vR_x} U_{\vt}^\dagger B^\dagger,\\
+\Admap{Z} &= \Admap{B_2} \Admap{B_1} \left(\pd{}{\theta} \Admap{U}_{\vt}\right) \Admap{U}_{\vt}^{-1} \Admap{B_1}^{-1} \Admap{B_2}^{-1}\\
+&= \sum_x c_x \Admap{B_2} \Admap{B_1} \Admap{U}_{\vt+\vR_x} \Admap{U}_{\vt}^{-1} \Admap{B_1}^{-1} \Admap{B_2}^{-1}, \quad \text{and}\\
+q' &= \Admap{Z}^T q +q \Admap{Z}.
+\end{align}
 This formula is not as easy to use as Eq.~\eqref{eq:d_ev1_cv}
-since we have to transform the observables using $\Admap{Z_x}$
+since we have to transform the observables using $\Admap{Z}$
 instead of just evaluating the circuit a few times with shifter parameter values.
 Again, $A$~does not have to be gaussian.
 
