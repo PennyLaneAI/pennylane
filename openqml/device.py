@@ -34,6 +34,7 @@ Device methods
 .. currentmodule:: openqml.device.Device
 
 .. autosummary::
+   short_name
    gates
    observables
    templates
@@ -45,15 +46,15 @@ Internal Device methods
 -----------------------
 
 .. autosummary::
-   execute_queued
-   pre_execute_queued
-   post_execute_queued
-   pre_execute_operations
-   post_execute_operations
-   pre_execute_expectations
-   post_execute_expectations
-   execute_queued_with
+   _operator_map
+   _observable_map
+   pre_apply
+   post_apply
+   pre_expectations
+   post_expectations
+   execution_context
    supported
+   check_validity
    apply
    expectation
 
@@ -109,8 +110,6 @@ class Device(abc.ABC):
     version = ''       #: str: version of the device plugin itself
     author = ''        #: str: plugin author(s)
     _capabilities = {} #: dict[str->*]: plugin capabilities
-    _gates = {}        #: dict[str->GateSpec]: specifications for supported gates
-    _observables = {}  #: dict[str->GateSpec]: specifications for supported observables
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
     def __init__(self, name, wires, shots):
@@ -127,6 +126,23 @@ class Device(abc.ABC):
         return self.__repr__() +'\nName: ' +self.name +'\nAPI version: ' +self.api_version\
             +'\nPlugin version: ' +self.version +'\nAuthor: ' +self.author +'\n'
 
+    @abc.abstractproperty
+    def short_name(self):
+        """Returns the string used to load the device."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def _operator_map(self):
+        """A dictionary {str: val} that maps OpenQML operator names to
+        the corresponding operator in the device."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def _observable_map(self):
+        """A dictionary {str: val} that maps OpenQML observable names to
+        the corresponding observable in the device."""
+        raise NotImplementedError
+
     @property
     def gates(self):
         """Get the supported gate set.
@@ -134,7 +150,7 @@ class Device(abc.ABC):
         Returns:
           dict[str->GateSpec]:
         """
-        return self._gates
+        return set(self._operator_map.keys())
 
     @property
     def observables(self):
@@ -143,7 +159,7 @@ class Device(abc.ABC):
         Returns:
           dict[str->GateSpec]:
         """
-        return self._observables
+        return set(self._observable_map.keys())
 
     @property
     def templates(self):
@@ -170,96 +186,88 @@ class Device(abc.ABC):
     def execute(self, queue, observe):
         """Apply a queue of quantum operations to the device, and then measure the given expectation values.
 
-        Args:
-          queue (Iterable[~.operation.Operation]): quantum operations to apply
-          observe (Iterable[~.operation.Expectation]): expectation values to measure
-        Returns:
-          array[float]: expectation value(s)
-        """
-        self.pre_execute_queued()
-        self._out = self.execute_queued(queue, observe)
-        self.post_execute_queued()
-        return self._out
-
-    def execute_queued(self, queue, observe):
-        """Executes the given quantum program.
-
-        Should not be called directly by the user, use :meth:`execute` instead.
-        Instead of overwriting this, consider implementing a suitable subset of pre_execute_queued(), post_execute_queued, execute_queued_with(), apply(), and expectation().
+        Instead of overwriting this, consider implementing a suitable subset of
+        :meth:`pre_apply`, :meth:`post_apply`, :meth:`execution_context`,
+        :meth:`apply`, and :meth:`expectation`.
 
         Args:
-          queue (Iterable[~.operation.Operation]): quantum operations to apply
-          observe (Iterable[~.operation.Expectation]): expectation values to measure
+          queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device
+          observe (Iterable[~.operation.Expectation]): expectation values to measure and return
         Returns:
           array[float]: expectation value(s)
+
         """
-        with self.execute_queued_with():
-            self.pre_execute_operations()
+        self.check_validity(queue, observe)
+        with self.execution_context():
+            self.pre_apply()
             for operation in queue:
-                if not self.supported(operation.name):
-                    raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.name))
+                self.apply(operation.name, operation.wires, operation.parameters)
+            self.post_apply()
 
-                par = operation.parameters
-                self.apply(operation.name, operation.wires, par)
+            self.pre_expectations()
+            expectations = [self.expectation(observable.name, observable.wires, observable.parameters) for observable in observe]
+            self.post_expectations()
 
-            self.post_execute_operations()
+            return np.array(expectations)
 
-            self.pre_execute_expectations()
-            expectations = np.array([self.expectation(observable.name, observable.wires, observable.parameters) for observable in observe], dtype=np.float64)
-            self.post_execute_expectations()
-            return expectations
-
-
-    def pre_execute_queued(self):
-        """Called during :meth:`execute` before the individual gates and observables are executed."""
-        pass
-
-    def post_execute_queued(self):
-        """Called during :meth:`execute` after the individual gates and observables have been executed."""
-        pass
-
-    def pre_execute_operations(self):
+    def pre_apply(self):
         """Called during :meth:`execute` before the individual gates are executed."""
         pass
 
-    def post_execute_operations(self):
+    def post_apply(self):
         """Called during :meth:`execute` after the individual gates have been executed."""
         pass
 
-    def pre_execute_expectations(self):
+    def pre_expectations(self):
         """Called during :meth:`execute` before the individual observables are executed."""
         pass
 
-    def post_execute_expectations(self):
+    def post_expectations(self):
         """Called during :meth:`execute` after the individual observables have been executed."""
         pass
 
-    def execute_queued_with(self):
-        """Called during :meth:`execute`.
+    def execution_context(self):
+        """The device execution context used during calls to :meth:`execute`.
 
-        You can overwrite this function to return an object, the individual :meth:`apply` and :meth:`expectation`
-        calls are then executed in the context of that object.
-        See the implementation of :meth:`execute_queued` for more details.
+        You can overwrite this function to return a suitable context manager;
+        all operations and method calls (including :meth:`apply` and :meth:`expectation`)
+        are then evaluated within the context of this context manager.
         """
-        class MockClassForWithStatment(object): # pylint: disable=too-few-public-methods
-            """Mock class as a default for the with statement in execute_queued()."""
+        class MockContext(object): # pylint: disable=too-few-public-methods
+            """Mock class as a default for the with statement in execute()."""
             def __enter__(self):
                 pass
             def __exit__(self, type, value, traceback):
                 pass
 
-        return MockClassForWithStatment()
+        return MockContext()
 
-    def supported(self, gate_name):
-        """Checks if the given gate is supported by this device.
+    def supported(self, name):
+        """Checks if an operation or observable is supported by this device.
 
         Args:
-          gate_name (str): name of the operation
+          name (str): name of the operation or observable
         Returns:
           bool: True iff it is supported
         """
-        raise NotImplementedError
+        return name in self.gates.union(self.observables)
 
+    def check_validity(self, queue, observe):
+        """Check whether the operations and observables are supported by the device.
+
+        Args:
+          queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device
+          observe (Iterable[~.operation.Expectation]): expectation values to measure and return
+        """
+        for operation in queue:
+            if not self.supported(operation.name):
+                raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
+
+        for observable in observe:
+            if not self.supported(observable.name):
+                raise DeviceError("Observable {} not supported on device {}".format(observable.name, self.short_name))
+
+    @abc.abstractmethod
     def apply(self, gate_name, wires, par):
         """Apply a quantum operation.
 
@@ -270,6 +278,7 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def expectation(self, observable, wires, par):
         """Expectation value of an observable.
 

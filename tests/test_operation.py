@@ -94,54 +94,59 @@ class BasicTest(BaseTest):
             n = cls.n_params
             w = cls.n_wires
             ww = list(range(w))
-            pars = [0] * n
+            # valid pars
+            if cls.par_domain == 'A':
+                pars = [np.eye(2)] * n
+            elif cls.par_domain == 'N':
+                pars = [0] * n
+            else:
+                pars = [0.0] * n
+
+            # valid call
+            cls(*pars, wires=ww)
 
             # too many parameters
-            with self.assertRaises(ValueError):
+            with self.assertRaisesRegex(ValueError, 'wrong number of parameters'):
                 cls(*(n+1)*[0], wires=ww)
 
             # too few parameters
             if n > 0:
-                with self.assertRaises(ValueError):
+                with self.assertRaisesRegex(ValueError, 'wrong number of parameters'):
                     cls(*(n-1)*[0], wires=ww)
 
             if w > 0:
                 # too many or too few wires
-                with self.assertRaises(ValueError):
+                with self.assertRaisesRegex(ValueError, 'wrong number of wires'):
                     cls(*pars, wires=list(range(w+1)))
-                with self.assertRaises(ValueError):
+                with self.assertRaisesRegex(ValueError, 'wrong number of wires'):
                     cls(*pars, wires=list(range(w-1)))
                 # repeated wires
                 if w > 1:
-                    with self.assertRaises(ValueError):
+                    with self.assertRaisesRegex(ValueError, 'wires must be unique'):
                         cls(*pars, wires=w*[0])
 
             if n == 0:
                 return
 
-            # right/wrong parameter types
+            # wrong parameter types
             if cls.par_domain == 'A':
                 # params must be arrays
-                temp = np.eye(2)
-                cls(*n*[temp], wires=ww)
-                with self.assertRaises(TypeError):
+                with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
                     cls(*n*[0.0], wires=ww)
             elif cls.par_domain == 'N':
                 # params must be natural numbers
-                cls(*n*[1], wires=ww)
-                with self.assertRaises(TypeError):
+                with self.assertRaisesRegex(TypeError, 'Natural number'):
                     cls(*n*[0.7], wires=ww)
-                with self.assertRaises(TypeError):
+                with self.assertRaisesRegex(TypeError, 'Natural number'):
                     cls(*n*[-1], wires=ww)
             else:
                 # params must be real numbers
-                cls(*n*[1.0], wires=ww)
-                with self.assertRaises(TypeError):
+                with self.assertRaisesRegex(TypeError, 'Real scalar parameter expected'):
                     cls(*n*[1j], wires=ww)
 
             if issubclass(cls, oo.Expectation):
                 # Expectations may not depend on free parameters
-                with self.assertRaises(TypeError):
+                with self.assertRaisesRegex(TypeError, 'Expectations cannot depend'):
                     cls(*n*[ov.Variable(0)], wires=ww)
 
 

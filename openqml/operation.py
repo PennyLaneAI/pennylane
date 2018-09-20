@@ -35,10 +35,10 @@ import logging as log
 log.getLogger()
 
 from pkg_resources import iter_entry_points
-import openqml.qnode as oq
 
 import autograd.numpy as np
 
+from .qnode import _flatten, _unflatten, QNode, QuantumFunctionError
 from .variable import Variable
 
 
@@ -159,38 +159,47 @@ class Operation:
         return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
 
 
-    def check_domain(self, p):
+    def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
 
         Args:
           p (Number, array, Variable): parameter to check
+          flattened (bool): True means p is an element of a flattened parameter sequence (affects the handling of 'A' parameters)
         Raises:
           TypeError: parameter is not an element of the expected domain
         Returns:
           Number, array, Variable: p
         """
-        if isinstance(p, Variable):
+        try:
+            if isinstance(p, Variable):
+                if self.par_domain == 'A':
+                    # NOTE: for now Variables can only represent real scalars.
+                    raise TypeError('Free parameters must represent scalars, I need an array.')
+                return p
+
+            # p is not a Variable
             if self.par_domain == 'A':
-                # NOTE: for now Variables can only represent real scalars.
-                raise TypeError('Array parameters must be fixed.')
+                if flattened:
+                    if isinstance(p, np.ndarray):
+                        raise TypeError('Flattened array parameter expected, got {}.'.format(type(p)))
+                else:
+                    if not isinstance(p, np.ndarray):
+                        raise TypeError('Array parameter expected, got {}.'.format(type(p)))
+            elif self.par_domain in ('R', 'N'):
+                if not isinstance(p, numbers.Real):
+                    raise TypeError('Real scalar parameter expected, got {}.'.format(type(p)))
+
+                if self.par_domain == 'N':
+                    if not isinstance(p, numbers.Integral):
+                        raise TypeError('Natural number parameter expected, got {}.'.format(type(p)))
+                    if p < 0:
+                        raise TypeError('Natural number parameter expected, got {}.'.format(p))
+            else:
+                raise TypeError('Unknown parameter domain \'{}\'.'.format(self.par_domain))
             return p
-
-        # p is not a Variable
-        if self.par_domain == 'A':
-            if not isinstance(p, np.ndarray):
-                raise TypeError('Array parameter expected, got {}.'.format(type(p)))
-        elif self.par_domain in ('R', 'N'):
-            if not isinstance(p, numbers.Real):
-                raise TypeError('Real scalar parameter expected, got {}.'.format(type(p)))
-
-            if self.par_domain == 'N':
-                if not isinstance(p, numbers.Integral):
-                    raise TypeError('Natural number parameter expected, got {}.'.format(type(p)))
-                if p < 0:
-                    raise TypeError('Natural number parameter expected, got {}.'.format(p))
-        else:
-            raise TypeError('Unknown parameter domain \'{}\'.'.format(self.par_domain))
-        return p
+        except TypeError as exc:
+            # add the name of the operation to the error message
+            raise TypeError(self.name + ': ' +str(exc)) from None
 
     @property
     def parameters(self):
@@ -201,15 +210,17 @@ class Operation:
         Returns:
           list[float]: parameter values
         """
-        return [self.check_domain(x.val) if isinstance(x, Variable) else x for x in self.params]
+        temp = list(_flatten(self.params))
+        temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
+        return _unflatten(temp_val, self.params)[0]
 
 
     def queue(self):
         """Append the operation to a QNode queue."""
-        if oq.QNode._current_context is None:
-            raise oq.QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
+        if QNode._current_context is None:
+            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
         else:
-            oq.QNode._current_context._queue.append(self)
+            QNode._current_context._queue.append(self)
 
 
     def heisenberg_pd(self, idx):
@@ -320,17 +331,17 @@ class Expectation(Operation):
 
     def queue(self):
         """Append the expectation to a QNode queue."""
-        if oq.QNode._current_context is None:
-            raise oq.QuantumFunctionError("Quantum expectations can only be used inside a qfunc.")
+        if QNode._current_context is None:
+            raise QuantumFunctionError("Quantum expectations can only be used inside a qfunc.")
         else:
-            oq.QNode._current_context._observe.append(self)
+            QNode._current_context._observe.append(self)
 
 
-    def check_domain(self, p):
+    def check_domain(self, p, flattened=False):
         # At least for now Expectations cannot depend on free parameters.
         if isinstance(p, Variable):
             raise TypeError('{}: Expectations cannot depend on free parameters.'.format(self.name))
-        return super().check_domain(p)
+        return super().check_domain(p, flattened)
 
 
     def heisenberg_expand(self):

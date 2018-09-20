@@ -14,4 +14,3 @@
 """Top level OpenQML module"""
 from .fock import StrawberryFieldsFock
 from .gaussian import StrawberryFieldsGaussian
-from .ops import XDisplacement, ZDisplacement

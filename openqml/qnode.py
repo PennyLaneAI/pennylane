@@ -149,7 +149,7 @@ def _unflatten(flat, model):
     """
     if isinstance(model, np.ndarray):
         idx = model.size
-        res = flat[:idx].reshape(model.shape)
+        res = np.array(flat)[:idx].reshape(model.shape)
         return res, flat[idx:]
     elif isinstance(model, collections.Iterable):
         res = []
@@ -157,7 +157,7 @@ def _unflatten(flat, model):
             val, flat = _unflatten(flat, x)
             res.append(val)
         return res, flat
-    elif isinstance(model, numbers.Number):
+    elif isinstance(model, (numbers.Number, Variable)):
         return flat[0], flat[1:]
     else:
         raise TypeError('Unsupported type in the model: {}'.format(type(model)))

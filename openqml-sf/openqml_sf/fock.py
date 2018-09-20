@@ -33,50 +33,18 @@ Classes
 
 import numpy as np
 
-from openqml import Device, DeviceError
-
-import strawberryfields as sf
-
 #import state preparations
 from strawberryfields.ops import (Catstate, Coherent, DensityMatrix, DisplacedSqueezed,
                                   Fock, Ket, Squeezed, Thermal, Gaussian)
-# import decompositions
-from strawberryfields.ops import (GaussianTransform, Interferometer)
 # import gates
-from strawberryfields.ops import (BSgate, CKgate, CXgate, CZgate, Dgate, Fouriergate,
-                                  Kgate, Pgate, Rgate, S2gate, Sgate, Vgate, Xgate, Zgate)
-# import measurements
-from strawberryfields.ops import (MeasureFock, MeasureHeterodyne, MeasureHomodyne)
+from strawberryfields.ops import (BSgate, CKgate, CXgate, CZgate, Dgate,
+                                  Kgate, Pgate, Rgate, S2gate, Sgate, Vgate)
+
+from .expectations import PNR, Homodyne
+from .simulator import StrawberryFieldsSimulator
 
 
-from ._version import __version__
-
-
-operator_map = {
-    'CatState:': Catstate,
-    'CoherentState': Coherent,
-    'FockDensityMatrix': DensityMatrix,
-    'DisplacedSqueezedState': DisplacedSqueezed,
-    'FockState': Fock,
-    'FockStateVector': Ket,
-    'SqueezedState': Squeezed,
-    'ThermalState': Thermal,
-    'GaussianState': Gaussian,
-    'Beamsplitter': BSgate,
-    'CrossKerr': CKgate,
-    'ControlledAddition': CXgate,
-    'ControlledPhase': CZgate,
-    'Displacement': Dgate,
-    'Kerr': Kgate,
-    'QuadraticPhase': Pgate,
-    'Rotation': Rgate,
-    'TwoModeSqueezing': S2gate,
-    'Squeezing': Sgate,
-    'CubicPhase': Vgate
-}
-
-
-class StrawberryFieldsFock(Device):
+class StrawberryFieldsFock(StrawberryFieldsSimulator):
     """StrawberryFields Fock device for OpenQML.
 
     Args:
@@ -88,66 +56,42 @@ class StrawberryFieldsFock(Device):
     """
     name = 'Strawberry Fields Fock OpenQML plugin'
     short_name = 'strawberryfields.fock'
-    api_version = '0.1.0'
-    version = __version__
-    author = 'Josh Izaac'
-    _gates = set(operator_map.keys())
-    _observables = {'Fock', 'X', 'P', 'Homodyne'}
+
+    _operator_map = {
+        'CatState': Catstate,
+        'CoherentState': Coherent,
+        'FockDensityMatrix': DensityMatrix,
+        'DisplacedSqueezedState': DisplacedSqueezed,
+        'FockState': Fock,
+        'FockStateVector': Ket,
+        'SqueezedState': Squeezed,
+        'ThermalState': Thermal,
+        'GaussianState': Gaussian,
+        'Beamsplitter': BSgate,
+        'CrossKerr': CKgate,
+        'ControlledAddition': CXgate,
+        'ControlledPhase': CZgate,
+        'Displacement': Dgate,
+        'Kerr': Kgate,
+        'QuadraticPhase': Pgate,
+        'Rotation': Rgate,
+        'TwoModeSqueezing': S2gate,
+        'Squeezing': Sgate,
+        'CubicPhase': Vgate
+    }
+
+    _observable_map = {
+        'Fock': PNR,
+        'X': Homodyne(0),
+        'P': Homodyne(np.pi/2),
+        'Homodyne': Homodyne()
+    }
+
     _circuits = {}
 
     def __init__(self, wires, *, shots=0, cutoff_dim, hbar=2):
-        super().__init__(self.short_name, wires, shots)
+        super().__init__(wires, shots=shots, hbar=hbar)
         self.cutoff = cutoff_dim
-        self.hbar = hbar
-        self.eng = None
-        self.q = None
-        self.state = None
 
-    def pre_execute_queued(self):
-        self.reset()
-        self.eng, self.q = sf.Engine(self.wires, hbar=self.hbar)
-
-    def execute_queued_with(self):
-        return self.eng
-
-    def apply(self, gate_name, wires, par):
-        gate = operator_map[gate_name](*par)
-        gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
-
-    def pre_execute_expectations(self):
+    def pre_expectations(self):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)
-
-    def expectation(self, observable, wires, par):
-        # calculate expectation value
-        if observable == 'Fock':
-            expectation_value = self.state.mean_photon(wires)
-            variance = 0
-        elif observable == 'X':
-            expectation_value, variance = self.state.quad_expectation(wires, 0)
-        elif observable == 'P':
-            expectation_value, variance = self.state.quad_expectation(wires, np.pi/2)
-        elif observable == 'Homodyne':
-            expectation_value, variance = self.state.quad_expectation(wires, *par)
-        else:
-            raise DeviceError("Observable {} not supported by {}".format(observable.name, self.name))
-
-        if self.shots != 0:
-            # estimate the expectation value
-            # use central limit theorem, sample normal distribution once, only ok
-            # if shots is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            expectation_value = np.random.normal(expectation_value, np.sqrt(var / self.shots))
-
-        return expectation_value
-
-    def supported(self, gate_name):
-        return gate_name in operator_map
-
-    def reset(self):
-        """Reset the device"""
-        if self.eng is not None:
-            self.eng.reset() # FIXME is this necessary? eng is discarded below.
-            self.eng = None
-        if self.state is not None:
-            self.state = None
-        if self.q is not None:
-            self.q = None
