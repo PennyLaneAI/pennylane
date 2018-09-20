@@ -10,9 +10,9 @@ import openqml as qm
 from openqml import numpy as np
 from openqml._optimize import GradientDescentOptimizer, AdagradOptimizer
 
-dev1 = qm.device('default.qubit', wires=1)
+dev = qm.device('default.qubit', wires=1)
 
-@qm.qfunc(dev1)
+@qm.qfunc(dev)
 def circuit(weights):
     """QNode"""
     qm.RX(weights[0], [0])
