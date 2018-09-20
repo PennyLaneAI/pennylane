@@ -1,13 +1,15 @@
 """Quantum Neural Network.
 
-In this demo we implement a simplified version of
-the "circuit-centric classifier" of Ref XXX.
+In this demo we implement a variational classifier.
+Examples can be found in [Ref CCC, Ref Farhi, ...]
 """
 
 import openqml as qm
 from openqml import numpy as onp
 import numpy as np
 from openqml._optimize import GradientDescentOptimizer
+import autograd
+from math import isclose
 
 
 def square_loss(labels, predictions):
@@ -27,9 +29,31 @@ def square_loss(labels, predictions):
     return loss
 
 
+def accuracy(labels, predictions):
+    """ Share of equal labels and predictions
+
+    Args:
+        labels (array[float]): 1-d array of labels
+        predictions (array[float]): 1-d array of predictions
+    Returns:
+        float: accuracy
+    """
+
+    print(predictions)
+
+    loss = 0
+    for l, p in zip(labels, predictions):
+        if isclose(l, p, abs_tol=1e-5):
+            loss += 1
+    loss = loss/len(labels)
+
+    return loss
+
+
 def regularizer(weights):
     """Regularizer penalty on weights"""
-    return onp.abs(weights.flatten()*2)
+    w_flat = weights.reshape(2*4*4)
+    return onp.abs(onp.inner(w_flat, w_flat))
 
 
 def layer(W):
@@ -47,23 +71,22 @@ def layer(W):
     qm.CNOT([3, 0])
 
 
-def make_random_layer(num_modes):
-    """ Randomly initialised layer."""
-    W = onp.random.randn(num_modes, num_modes)
-    return W
+def statepreparation(x):
+    """ Encodes data input x into quantum state."""
+
+    # We cheat and initialise the quantum state to
+    # encode the input in its amplitudes #TODO explain feat map
+    qm.QubitStateVector(onp.kron(x, x), wires=[0, 1, 2, 3])
 
 
 dev = qm.device('default.qubit', wires=4)
 
 
 @qm.qfunc(dev)
-def quantum_neural_net(weights, x):
+def quantum_neural_net(weights, x=None):
     """The quantum neural net variational circuit."""
 
-    # We cheat and initialise the quantum state to
-    # encode the input in its amplitudes
-
-    qm.QubitStateVector(x, wires=[0, 1, 2, 3])
+    statepreparation(x)
 
     for W in weights:
         layer(W)
@@ -74,34 +97,56 @@ def quantum_neural_net(weights, x):
 def cost(weights, features, labels):
     """Cost (error) function to be minimized."""
 
-    # Compute prediction for each input in data batch
-    predictions = onp.zeros((len(features), ))
-    for idx, x in enumerate(features):
-        x = x / onp.sqrt(np.sum(x ** 2))
-        predictions[idx] = quantum_neural_net(weights, x)
+    predictions = [quantum_neural_net(weights, x=x) for x in features]
 
-    return square_loss(labels, predictions) + regularizer(weights)
+    return square_loss(labels, predictions)
 
 
-# load Iris data
+# load Iris data and normalise feature vectors
 data = np.loadtxt("iris.txt")
+X = data[:, :-1]
+normalization = np.sqrt(np.sum(X ** 2, -1))
+X = (X.T / normalization).T  # normalize each feature vector
+Y = data[:, -1]
+Y = Y*2 - np.ones(len(Y)) # shift label from {0, 1} to {-1, 1}
 
-# initialize weights
+# split into training and validation set
+num_data = len(X)
+num_train = int(0.75*num_data)
+index = np.random.permutation(range(num_data))
+X_train = X[index[: num_train]]
+Y_train = Y[index[: num_train]]
+X_val = X[index[num_train: ]]
+Y_val = Y[index[num_train: ]]
+
+# initialize weight layers
 num_qubits = 4
 num_layers = 2
-weights0 = [make_random_layer(num_qubits) for _ in range(num_layers)]
+weights0 = [np.random.randn(num_qubits, num_qubits)] * num_layers
+
+# create optimizer
 o = GradientDescentOptimizer(0.1)
 
-# train the circuit: HOW TO FEED IN DATA?
+# train the variational classifier
 batch_size = 3
+weights = np.array(weights0)
 
-weights = weights0
-for steps in range(11):
-    batch_index = np.random.randint(0, len(data), (batch_size, ))
-    batch = data[batch_index]
-    X = batch[:, 1:]
-    y = batch[:, 0]
-    
-    weights = o.step(lambda w: cost(w, X, y), weights)
-    print(cost(weights, X, y))
+for iteration in range(15):
+
+    # Update the weights by one optimizer step
+    batch_index = np.random.randint(0, num_train, (batch_size, ))
+    X_train_batch = X_train[batch_index]
+    Y_train_batch = Y_train[batch_index]
+    weights = o.step(lambda w: cost(w, X_train_batch, Y_train_batch), weights)
+
+    # Compute predictions on train and validation set
+    predictions_train = [np.sign(quantum_neural_net(weights, x=x)) for x in X_train]
+    predictions_val = [np.sign(quantum_neural_net(weights, x=x)) for x in X_val]
+
+    # Compute accuracy on train and validation set
+    acc_train = accuracy(Y_train, predictions_train)
+    acc_val = accuracy(Y_val, predictions_val)
+
+    print("Iter: {:5d} | Cost: {:0.7f} | Acc train: {:0.7f} | Acc validation: {:0.7f} "
+          "".format(iteration, cost(weights, X, Y), acc_train, acc_val))
 
