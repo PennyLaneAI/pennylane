@@ -15,14 +15,11 @@
 import numpy as np
 
 #import state preparations
-from strawberryfields.ops import (Catstate, Coherent, DensityMatrix, DisplacedSqueezed,
-                                  Fock, Ket, Squeezed, Thermal, Gaussian)
+from strawberryfields.ops import (Coherent, DisplacedSqueezed,
+                                  Squeezed, Thermal, Gaussian)
 # import gates
-from strawberryfields.ops import (BSgate, CKgate, CXgate, CZgate, Dgate, Fouriergate,
-                                  Kgate, Pgate, Rgate, S2gate, Sgate, Vgate, Xgate, Zgate)
-# import measurements
-from strawberryfields.ops import (MeasureFock, MeasureHeterodyne, MeasureHomodyne)
-
+from strawberryfields.ops import (BSgate, CXgate, CZgate, Dgate,
+                                  Pgate, Rgate, S2gate, Sgate)
 
 from .expectations import PNR, Homodyne
 from .simulator import StrawberryFieldsSimulator
@@ -66,5 +63,5 @@ class StrawberryFieldsGaussian(StrawberryFieldsSimulator):
 
     _circuits = {}
 
-    def pre_execute_expectations(self):
+    def pre_expectations(self):
         self.state = self.eng.run('gaussian')
