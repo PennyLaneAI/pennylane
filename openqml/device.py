@@ -93,7 +93,7 @@ class Device(abc.ABC):
         """Get the supported gate set.
 
         Returns:
-          dict[str->GateSpec]:
+            set[str]: the set of OpenQML operator names the device supports.
         """
         return set(self._operator_map.keys())
 
@@ -102,7 +102,7 @@ class Device(abc.ABC):
         """Get the supported observables.
 
         Returns:
-          dict[str->GateSpec]:
+            set[str]: the set of OpenQML observable names the device supports.
         """
         return set(self._observable_map.keys())
 
