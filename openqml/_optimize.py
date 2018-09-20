@@ -15,13 +15,10 @@ class GradientDescentOptimizer(object):
 
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
 
-        if len(x_shape) > 1:  # flatten weights if multidimensional
-            x = x.flatten()
+        if len(x_shape) > 1:  # reshape gradient after grad() flattened it
+            g = g.reshape(x_shape)
 
         x_out = self.apply_grad(g, x)
-
-        if len(x_shape) > 1:  # reshape weights again
-            x_out = x_out.reshape(x_shape)
 
         return x_out
 
