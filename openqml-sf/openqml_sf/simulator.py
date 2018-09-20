@@ -25,12 +25,11 @@ from ._version import __version__
 class StrawberryFieldsSimulator(Device):
     """Abstract StrawberryFields simulator device for OpenQML.
 
-    wires (int): the number of modes to initialize the device in.
-    shots (int): the number of simulation runs used to calculate
-        the expectaton value and variance. If 0, the exact expectation
-        and variance is returned.
-    hbar (float): the convention chosen in the canonical commutation
-        relation [x, p] = i hbar. The default value is hbar=2.
+    Args:
+      wires (int): the number of modes to initialize the device in.
+      shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
+        For simulator devices, 0 means the exact EV is returned.
+      hbar (float): the convention chosen in the canonical commutation relation :math:`[x, p] = i \hbar`
     """
     name = 'Strawberry Fields Simulator OpenQML plugin'
     api_version = '0.1.0'
@@ -41,12 +40,11 @@ class StrawberryFieldsSimulator(Device):
     _operator_map = None
 
     def __init__(self, wires, *, shots=0, hbar=2):
-        self.wires = wires
+        super().__init__(self.short_name, wires, shots)
         self.hbar = hbar
         self.eng = None
         self.q = None
         self.state = None
-        super().__init__(self.short_name, shots)
 
     def execution_context(self):
         """Initialize the engine"""
@@ -55,18 +53,15 @@ class StrawberryFieldsSimulator(Device):
         return self.eng
 
     def apply(self, gate_name, wires, params):
-        """Application of gates.
+        """Apply a quantum operation.
 
         Args:
-            gate_name (str): name of the operation.
-            wires (Sequence): sequence of modes the operation acts on.
-            params (Sequence): sequence of gate parameters.
+          gate_name (str): name of the operation
+          wires (Sequence[int]): subsystems the operation is applied on
+          par (tuple): parameters for the operation
         """
         gate = self._operator_map[gate_name](*params)
-        if isinstance(wires, int): #pragma: no cover
-            gate | self.q[wires] #pylint: disable=pointless-statement
-        else:
-            gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
+        gate | [self.q[i] for i in wires] #pylint: disable=pointless-statement
 
     @abc.abstractmethod
     def pre_expectations(self):
@@ -74,15 +69,14 @@ class StrawberryFieldsSimulator(Device):
         raise NotImplementedError
 
     def expectation(self, observable, wires, params):
-        """Return the expectation values
+        """Expectation value of an observable.
 
         Args:
-            observable (str): name of the observable.
-            wires (Sequence): sequence of modes the operation acts on.
-            params (Sequence): sequence of observable parameters.
-
+          observable (str): name of the observable
+          wires (Sequence[int]): subsystems the observable is measured on
+          params (tuple): parameters for the observable
         Returns:
-            float: expectation value.
+          float: expectation value
         """
         ex, var = self._observable_map[observable](self.state, wires, params)
 

@@ -11,7 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the Gaussian simulator device"""
+"""
+Strawberry Fields gaussian plugin
+=================================
+
+**Module name:** :mod:`openqml_sf.gaussian`
+
+.. currentmodule:: openqml_sf.gaussian
+
+The SF gaussian plugin implements all the :class:`~openqml.device.Device` methods
+and provides a gaussian simulation of a continuous variable quantum circuit architecture.
+
+Classes
+-------
+
+.. autosummary::
+   StrawberryFieldsGaussian
+
+----
+"""
+
 import numpy as np
 
 #import state preparations
@@ -27,13 +46,6 @@ from .simulator import StrawberryFieldsSimulator
 
 class StrawberryFieldsGaussian(StrawberryFieldsSimulator):
     """StrawberryFields Gaussian device for OpenQML.
-
-    wires (int): the number of modes to initialize the device in.
-    shots (int): the number of simulation runs used to calculate
-        the expectaton value and variance. If 0, the exact expectation
-        and variance is returned.
-    hbar (float): the convention chosen in the canonical commutation
-        relation [x, p] = i hbar. The default value is hbar=2.
     """
     name = 'Strawberry Fields Gaussian OpenQML plugin'
     short_name = 'strawberryfields.gaussian'

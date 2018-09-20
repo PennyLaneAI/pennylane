@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a beamsplitter Operation
-
+"""
+Built-in continuous-variable quantum Operations
+===============================================
 
 .. todo::
 
@@ -20,31 +21,27 @@
    Possible solution: disallow such operations to depend on free parameters, this way they won't be differentiated.
 """
 import numpy as np
+import scipy as sp
+
 from openqml.operation import Operation
 
 
-__all__ = [
-    'Beamsplitter',
-    'ControlledAddition',
-    'ControlledPhase',
-    'Displacement',
-    'Kerr',
-    'CrossKerr',
-    'QuadraticPhase',
-    'Rotation',
-    'Squeezing',
-    'TwoModeSqueezing',
-    'CubicPhase',
-    'CatState',
-    'CoherentState',
-    'FockDensityMatrix',
-    'DisplacedSqueezedState',
-    'FockState',
-    'FockStateVector',
-    'SqueezedState',
-    'ThermalState',
-    'GaussianState'
-]
+
+def _rotation(phi, bare=False):
+    """Utility function, returns the Heisenberg transformation of a phase rotation gate.
+
+    Args:
+      phi (float): rotation angle
+      bare (bool): if True, return a simple 2d rotation matrix
+    Returns:
+      array[float]: transformation matrix
+    """
+    c = np.cos(phi)
+    s = np.sin(phi)
+    temp = np.array([[c, -s], [s, c]])
+    if bare:
+        return temp
+    return sp.linalg.block_diag(1, temp)
 
 
 class Rotation(Operation):
@@ -57,6 +54,8 @@ class Rotation(Operation):
     Args:
         phi (float): the rotation angle.
     """
+    def heisenberg_transform(self, p):
+        return _rotation(p[0])
 
 
 class Displacement(Operation):
@@ -80,6 +79,11 @@ class Displacement(Operation):
     grad_recipe = [(0.5/shift, shift), None]
     # TODO d\tilde{D}(r, phi)/dr does not depend on r!
     # The gradient formula can be simplified further, we can make do with smaller displacements.
+    def heisenberg_transform(self, p):
+        c = np.cos(p[1])
+        s = np.sin(p[1])
+        scale = 2  # \sqrt(2 \hbar)
+        return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
 
 class Squeezing(Operation):
@@ -97,6 +101,9 @@ class Squeezing(Operation):
     n_params = 2
     shift = 1.0
     grad_recipe = [(0.5/np.sinh(shift), shift), None]
+    def heisenberg_transform(self, p):
+        R = _rotation(p[1] / 2)
+        return R @ np.diag([1, np.exp(-p[0]), np.exp(p[0])]) @ R.T
 
 
 class TwoModeSqueezing(Operation):
@@ -183,6 +190,15 @@ class Beamsplitter(Operation):
     n_params = 2
     n_wires = 2
     # For the beamsplitter, both parameters are rotation-like
+    def heisenberg_transform(self, p):
+        R = _rotation(p[1], bare=True)
+        c = np.cos(p[0])
+        s = np.sin(p[0])
+        U = c * np.eye(5)
+        U[0,0] = 1
+        U[1:3, 3:5] = s * R
+        U[3:5, 1:3] = -s * R.T
+        return U
 
 
 class ControlledAddition(Operation):
@@ -267,7 +283,7 @@ class FockState(Operation):
         n (int): Fock state to prepare
     """
     par_domain = 'N'
-    grad_method = 'F'
+    grad_method = None
 
 
 class ThermalState(Operation):
@@ -306,7 +322,8 @@ class FockStateVector(Operation):
             or a multimode ket, with one array dimension per mode.
     """
     n_wires = 0
-    grad_method = 'F'
+    par_domain = 'A'
+    grad_method = None
 
 
 class FockDensityMatrix(Operation):
@@ -317,7 +334,8 @@ class FockDensityMatrix(Operation):
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode.
     """
     n_wires = 0
-    grad_method = 'F'
+    par_domain = 'A'
+    grad_method = None
 
 
 class GaussianState(Operation):
@@ -330,4 +348,33 @@ class GaussianState(Operation):
     """
     n_params = 2
     n_wires = 0
-    grad_method = 'F'
+    par_domain = 'A'
+    grad_method = None
+
+
+
+all_ops = [
+    Beamsplitter,
+    ControlledAddition,
+    ControlledPhase,
+    Displacement,
+    Kerr,
+    CrossKerr,
+    QuadraticPhase,
+    Rotation,
+    Squeezing,
+    TwoModeSqueezing,
+    CubicPhase,
+    CatState,
+    CoherentState,
+    FockDensityMatrix,
+    DisplacedSqueezedState,
+    FockState,
+    FockStateVector,
+    SqueezedState,
+    ThermalState,
+    GaussianState
+]
+
+
+__all__ = [cls.__name__ for cls in all_ops]
