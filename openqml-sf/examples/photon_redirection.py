@@ -35,7 +35,7 @@ def cost(theta):
 
 # initialize theta with random value
 theta0 = np.random.randn(1)
-o = qm.Optimizer(cost, theta0, optimizer='SGD')
+o = qm.Optimizer(cost, theta0, optimizer='BFGS')
 
 # train the circuit
 c = o.train(max_steps=100)

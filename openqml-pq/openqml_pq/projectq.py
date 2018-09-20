@@ -61,7 +61,7 @@ from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, QubitUnitary)
 from ._version import __version__
 
 
-operator_map = { #todo: make this a class property
+projectq_operator_map = {
     'PauliX': XGate,
     'PauliY': YGate,
     'PauliZ': ZGate,
@@ -145,14 +145,11 @@ class ProjectQDevice(Device):
     def __str__(self):
         return super().__str__() +'Backend: ' +self.backend +'\n'
 
-    def post_execute_queued(self):
+    def post_expectations(self):
         self._deallocate()
 
-    def supported(self, gate_name):
-        return gate_name in operator_map
-
-    def apply(self, gate_name, wires, *par):
-        gate = operator_map[gate_name](*par)
+    def apply(self, gate_name, wires, par):
+        gate = self._operator_map[gate_name](*par)
         if isinstance(wires, int):
             gate | self.reg[wires] #pylint: disable=pointless-statement
         else:
@@ -208,8 +205,8 @@ class ProjectQSimulator(ProjectQDevice):
     """
 
     short_name = 'projectq.simulator'
-    _gates = set(operator_map.keys())
-    _observables = set([ key for (key,val) in operator_map.items() if val in [XGate, YGate, ZGate, AllZGate] ])
+    _operator_map = projectq_operator_map
+    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [XGate, YGate, ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = ['gate_fusion', 'rnd_seed']
 
@@ -228,7 +225,7 @@ class ProjectQSimulator(ProjectQDevice):
         super().reset()
 
 
-    def expectation(self, observable, wires, *par):
+    def expectation(self, observable, wires, par):
         self.eng.flush(deallocate_qubits=False)
 
         if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
@@ -251,8 +248,8 @@ class ProjectQClassicalSimulator(ProjectQDevice):
     """
 
     short_name = 'projectq.classicalsimulator'
-    _gates = set([ key for (key,val) in operator_map.items() if val in [XGate, CNOT] ])
-    _observables = set([ key for (key,val) in operator_map.items() if val in [ZGate, AllZGate] ])
+    _operator_map = {key:val for key, val in projectq_operator_map.items() if val in [XGate, CNOT]}
+    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = []
 
@@ -287,8 +284,8 @@ class ProjectQIBMBackend(ProjectQDevice):
     """
 
     short_name = 'projectq.ibmbackend'
-    _gates = set([ key for (key,val) in operator_map.items() if val in [HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, Rx, Ry, Rz, R, CNOT, CZ] ])
-    _observables = set([ key for (key,val) in operator_map.items() if val in [ZGate, AllZGate] ])
+    _operator_map = {key:val for key, val in projectq_operator_map.items() if val in [HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, Rx, Ry, Rz, R, CNOT, CZ]}
+    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = ['use_hardware', 'num_runs', 'verbose', 'user', 'password', 'device', 'retrieve_execution']
 
@@ -314,7 +311,7 @@ class ProjectQIBMBackend(ProjectQDevice):
         self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
         super().reset()
 
-    def expectation(self, observable, wires, *par):
+    def expectation(self, observable, wires, par):
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
 

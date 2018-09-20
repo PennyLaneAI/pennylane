@@ -88,6 +88,9 @@ I = np.eye(2)
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
+# Hadamard
+H = np.array([[1, 1], [1, -1]])/np.sqrt(2)
+# Two qubit gates
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
@@ -198,28 +201,6 @@ def hermitian(*args):
 
 
 #========================================================
-#  operator map
-#========================================================
-
-
-operator_map = {
-    'QubitStateVector': ket,
-    'QubitUnitary': unitary,
-    'Hermitian': hermitian,
-    'Identity': I,
-    'PauliX': X,
-    'PauliY': Y,
-    'PauliZ': Z,
-    'CNOT': CNOT,
-    'SWAP': SWAP,
-    'RX': frx,
-    'RY': fry,
-    'RZ': frz,
-    'Rot': fr3
-}
-
-
-#========================================================
 #  device
 #========================================================
 
@@ -237,8 +218,31 @@ class DefaultQubit(Device):
     api_version = '0.1.0'
     version = '0.1.0'
     author = 'Xanadu Inc.'
-    _gates = set(operator_map.keys())
-    _observables = {}
+
+    _operator_map = {
+        'QubitStateVector': ket,
+        'QubitUnitary': unitary,
+        'Hermitian': hermitian,
+        'Identity': I,
+        'PauliX': X,
+        'PauliY': Y,
+        'PauliZ': Z,
+        'Hadamard': H,
+        'CNOT': CNOT,
+        'SWAP': SWAP,
+        'RX': frx,
+        'RY': fry,
+        'RZ': frz,
+        'Rot': fr3
+    }
+
+    _observable_map = {
+        'PauliX': X,
+        'PauliY': Y,
+        'PauliZ': Z,
+        'Hermitian': hermitian
+    }
+
     _circuits = {}
 
     def __init__(self, wires, *, shots=0):
@@ -246,22 +250,19 @@ class DefaultQubit(Device):
         self.eng = None
         self._state = None
 
-    def pre_execute_queued(self):
-        if self._state is None:
-            # init the state vector to |00..0>
-            self._state = np.zeros(2**self.wires, dtype=complex)
-            self._state[0] = 1
+    def pre_apply(self):
+        self.reset()
 
-    def apply(self, gate_name, wires, par):
+    def apply(self, gate_name, wires, params):
         if gate_name == 'QubitStateVector':
-            state = np.asarray(par[0], dtype=np.float64)
+            state = np.asarray(params[0], dtype=np.float64)
             if state.ndim == 1 and state.shape[0] == 2**self.wires:
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             return
 
-        A = DefaultQubit._get_operator_matrix(gate_name, par)
+        A = self._get_operator_matrix(gate_name, params)
 
         # apply unitary operations
         if len(wires) == 1:
@@ -270,13 +271,13 @@ class DefaultQubit(Device):
             U = self.expand_two(A, wires)
         else:
             raise ValueError('This plugin supports only one- and two-qubit gates.')
+
         self._state = U @ self._state
 
-    def expectation(self, observable, wires, par):
-        # calculate expectation value
-        # measurement/expectation value <psi|A|psi>
-        A = DefaultQubit._get_operator_matrix(observable, par)
 
+    def expectation(self, observable, wires, params):
+        # measurement/expectation value <psi|A|psi>
+        A = self._get_operator_matrix(observable, params)
         if self.shots == 0:
             # exact expectation value
             ev = self.ev(A, wires)
@@ -293,31 +294,23 @@ class DefaultQubit(Device):
                 p0 = self.ev(P[0], wires)  # probability of measuring a[0]
                 n0 = np.random.binomial(self.shots, p0)
                 ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
+
         return ev
 
 
-    def supported(self, gate_name):
-        return gate_name in operator_map
-
-
-    @classmethod
-    def _get_operator_matrix(cls, gate_name, par):
+    def _get_operator_matrix(self, op_name, params):
         """Get the operator matrix for a given operation.
 
         Args:
-          gate_name    (str): name of the operation/observable
-          par (tuple[float]): parameter values
-
+          op_name    (str): name of the operation/observable
+          params (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        if gate_name not in operator_map:
-            raise DeviceError("{} not supported by device {}".format(gate_name, cls.short_name))
-
-        A = operator_map[gate_name]
+        A = self._operator_map[op_name]
         if not callable(A):
             return A
-        return A(*par)
+        return A(*params)
 
     def ev(self, A, wires):
         r"""Expectation value of a one-qubit observable in the current state.
@@ -341,7 +334,9 @@ class DefaultQubit(Device):
 
     def reset(self):
         """Reset the device"""
-        self._state  = None  #: array: state vector
+        # init the state vector to |00..0>
+        self._state = np.zeros(2**self.wires, dtype=complex)
+        self._state[0] = 1
 
     def expand_one(self, U, wires):
         """Expand a one-qubit operator into a full system operator.
@@ -385,8 +380,8 @@ class DefaultQubit(Device):
         b = np.max(wires)
         n_between = b-a-1  # number of qubits between a and b
         # dimensions of the untouched subsystems
-        before  = 2**a
-        after   = 2**(self.wires-b-1)
+        before = 2**a
+        after = 2**(self.wires-b-1)
         between = 2**n_between
 
         U = np.kron(U, np.eye(between))
