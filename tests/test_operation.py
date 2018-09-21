@@ -35,8 +35,8 @@ class BasicTest(BaseTest):
     def setUp(self):
         # set up a fake QNode, we need it for the queuing at the end of each successful Operation.__init__ call
         self.q = oq.QNode(None, dev)
-        self.q._queue   = []
-        self.q._observe = []
+        self.q.queue = []
+        self.q.ev    = []
 
         if oq.QNode._current_context is None:
             oq.QNode._current_context = self.q
@@ -143,11 +143,6 @@ class BasicTest(BaseTest):
                 # params must be real numbers
                 with self.assertRaisesRegex(TypeError, 'Real scalar parameter expected'):
                     cls(*n*[1j], wires=ww)
-
-            if issubclass(cls, oo.Expectation):
-                # Expectations may not depend on free parameters
-                with self.assertRaisesRegex(TypeError, 'Expectations cannot depend'):
-                    cls(*n*[ov.Variable(0)], wires=ww)
 
 
         for cls in openqml.ops.builtins_discrete.all_ops:

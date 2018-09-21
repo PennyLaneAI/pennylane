@@ -50,29 +50,50 @@ class BasicTest(BaseTest):
         log.info('test_qnode_fail')
         par = 0.5
 
+        #---------------------------------------------------------
         ## faulty quantum functions
+
         # qfunc must return only Expectations
         @qm.qfunc(self.dev2)
         def qf(x):
-            qm.Rot(x, 0.3, -0.2, [0])
+            qm.RX(x, [0])
             return qm.expectation.PauliZ(0), 0.3
         with self.assertRaisesRegex(QuantumFunctionError, 'must return either'):
             qf(par)
 
-        # all EVs must be returned
+        # all EVs must be returned...
         @qm.qfunc(self.dev2)
         def qf(x):
-            qm.Rot(x, 0.3, -0.2, [0])
+            qm.RX(x, [0])
             ex = qm.expectation.PauliZ(1)
             return qm.expectation.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
+            qf(par)
+
+        # ...in the correct order
+        @qm.qfunc(self.dev2)
+        def qf(x):
+            qm.RX(x, [0])
+            ex = qm.expectation.PauliZ(1)
+            return qm.expectation.PauliZ(0), ex
+        with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
+            qf(par)
+
+        # gates must precede EVs
+        @qm.qfunc(self.dev2)
+        def qf(x):
+            qm.RX(x, [0])
+            ev = qm.expectation.PauliZ(1)
+            qm.RY(0.5, [0])
+            return ev
+        with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
             qf(par)
 
         # a wire cannot be measured more than once
         log.info('test_multiple_expectation_same_wire')
         @qm.qfunc(self.dev2)
         def qf(x):
-            qm.Rot(x, 0.3, -0.2, [0])
+            qm.RX(x, [0])
             qm.CNOT([0, 1])
             return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1), qm.expectation.PauliX(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'can only be measured once'):
@@ -81,12 +102,25 @@ class BasicTest(BaseTest):
         # device must have enough wires for the qfunc
         @qm.qfunc(self.dev2)
         def qf(x):
-            qm.Rot(x, 0.3, -0.2, [0])
+            qm.RX(x, [0])
             qm.CNOT([0, 2])
             return qm.expectation.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'device only has'):
             qf(par)
 
+        #---------------------------------------------------------
+        ## gradient issues
+
+        # undifferentiable operation
+        def qf(x):
+            qm.BasisState(x, [0,1])
+            qm.RX(x, [0])
+            return qm.expectation.PauliZ(0)
+        q = qm.QNode(qf, self.dev2)
+        with self.assertRaisesRegex(ValueError, 'Cannot differentiate wrt'):
+            q.gradient(par)
+
+        #---------------------------------------------------------
         ## bad input parameters
         def qf_ok(x):
             qm.Rot(0.3, x, -0.2, [0])
@@ -139,6 +173,24 @@ class BasicTest(BaseTest):
         # gradient has the correct length and every element is nonzero
         self.assertEqual(len(grad_A), 3)
         self.assertEqual(np.count_nonzero(grad_A), 3)
+        # the different methods agree
+        self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
+
+
+    def test_qnode_repeated_gate_parameters(self):
+        "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
+        log.info('test_qnode_repeated_gate_parameters')
+        par = [0.8, 1.3]
+
+        def qf(x, y):
+            qm.RX(np.pi/4, [0])
+            qm.Rot(y, x, 2*x, [0])
+            return qm.expectation.PauliX(0)
+
+        q = qm.QNode(qf, self.dev1)
+        grad_A = q.gradient(par, method='A')
+        grad_F = q.gradient(par, method='F')
+
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
 

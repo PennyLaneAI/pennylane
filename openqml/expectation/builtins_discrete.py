@@ -43,6 +43,7 @@ class Hermitian(Expectation):
     """
     n_params = 1
     par_domain = 'A'
+    grad_method = None
 
 
 all_ops = [PauliX, PauliY, PauliZ, Hermitian]
