@@ -323,7 +323,7 @@ class FockStateVector(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-    grad_method = None
+    grad_method = 'F'
 
 
 class FockDensityMatrix(Operation):
@@ -335,7 +335,7 @@ class FockDensityMatrix(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-    grad_method = None
+    grad_method = 'F'
 
 
 class GaussianState(Operation):
@@ -349,8 +349,7 @@ class GaussianState(Operation):
     n_params = 2
     n_wires = 0
     par_domain = 'A'
-    grad_method = None
-
+    grad_method = 'F'
 
 
 all_ops = [

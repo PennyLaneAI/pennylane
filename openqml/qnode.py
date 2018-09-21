@@ -305,7 +305,7 @@ class QNode:
 
         # map each free variable to the operations which depend on it
         for k, op in enumerate(self.ops):
-            for idx, p in enumerate(op.params):
+            for idx, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
