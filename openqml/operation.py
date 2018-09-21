@@ -126,8 +126,10 @@ class Operation:
         self.params = list(params)  #: list[float, int, array, Variable]: operation parameters, both fixed and free
 
         # check the grad_method validity
-        if self.par_domain != 'R':
+        if self.par_domain == 'N':
             assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters!'
+        elif self.par_domain == 'A':
+            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method!'
 
         # check the grad_recipe validity
         if self.grad_method == 'A':

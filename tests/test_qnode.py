@@ -120,6 +120,14 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(ValueError, 'Cannot differentiate wrt'):
             q.gradient(par)
 
+        # operation that does not support the 'A' method
+        def qf(x):
+            qm.RX(x, [0])
+            return qm.expectation.Hermitian(np.diag([x, 0]), 0)
+        q = qm.QNode(qf, self.dev2)
+        with self.assertRaisesRegex(ValueError, 'analytic gradient method cannot be used with'):
+            q.gradient(par, method='A')
+
         #---------------------------------------------------------
         ## bad input parameters
         def qf_ok(x):
@@ -193,6 +201,24 @@ class BasicTest(BaseTest):
 
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
+
+
+    def test_qnode_parameters_inside_array(self):
+        "Tests that free parameters inside an array passed to an Operation yield correct gradients."
+        log.info('test_qnode_parameters_inside_array')
+        par = [0.8, 1.3]
+
+        def qf(x, y):
+            qm.RX(x, [0])
+            qm.RY(x, [0])
+            return qm.expectation.Hermitian(np.diag([y, 1]), 0)
+
+        q = qm.QNode(qf, self.dev1)
+        grad = q.gradient(par)  # par[0] can use the 'A' method
+        grad_F = q.gradient(par, method='F')
+
+        # the different methods agree
+        self.assertAllAlmostEqual(grad, grad_F, delta=self.tol)
 
 
     def test_qnode_fanout(self):
