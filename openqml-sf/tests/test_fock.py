@@ -34,6 +34,13 @@ psi = np.array([ 0.08820314+0.14909648j,  0.32826940+0.32956027j,
         0.21021125+0.30082734j,  0.23443833+0.19584968j])
 
 
+def prep_par(par, op):
+    "Convert par into a list of parameters that op expects."
+    if op.par_domain == 'A':
+        return [np.diag([x, 1]) for x in par]
+    return par
+
+
 class FockTests(BaseTest):
     """Test the Fock simulator."""
 
@@ -75,6 +82,7 @@ class FockTests(BaseTest):
 
             @qm.qfunc(dev)
             def circuit(*args):
+                args = prep_par(args, op)
                 op(*args, wires=wires)
                 return qm.expectation.Fock(0)
 
@@ -101,6 +109,7 @@ class FockTests(BaseTest):
 
             @qm.qfunc(dev)
             def circuit(*args):
+                args = prep_par(args, op)
                 return op(*args, wires=wires)
 
             with self.assertRaisesRegex(qm.DeviceError,
@@ -181,6 +190,8 @@ class FockTests(BaseTest):
                 self.assertAllEqual(circuit(dm), SF_reference(dm))
             elif g == 'FockStateVector':
                 self.assertAllEqual(circuit(psi), SF_reference(psi))
+            elif g == 'FockState':
+                self.assertAllEqual(circuit(1), SF_reference(1))
             elif op.n_params == 1:
                 self.assertAllEqual(circuit(a), SF_reference(a))
             elif op.n_params == 2:

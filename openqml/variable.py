@@ -58,7 +58,7 @@ class Variable:
     def __init__(self, idx, name=None):
         self.idx = idx    #: int: parameter index
         self.name = name  #: str: parameter name  FIXME unused?
-        self.mult = 1.0   #: float: parameter scalar multiplier
+        self.mult = 1     #: int, float: parameter scalar multiplier
 
     def __str__(self):
         temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
