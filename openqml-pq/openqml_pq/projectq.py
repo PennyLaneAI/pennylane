@@ -24,9 +24,9 @@ It enables OpenQML to optimize quantum circuits simulable with ProjectQ.
 
 ProjecQ supports several different backends. Of those, the following are useful in the current context:
 
-- projectq.backends.Simulator([gate_fusion, ...])	Simulator is a compiler engine which simulates a quantum computer using C++-based kernels.
-- projectq.backends.ClassicalSimulator()	        A simple introspective simulator that only permits classical operations.
-- projectq.backends.IBMBackend([use_hardware, ...])	The IBM Backend class, which stores the circuit, transforms it to JSON QASM, and sends the circuit through the IBM API.
+- projectq.backends.Simulator([gate_fusion, ...])      Simulator is a compiler engine which simulates a quantum computer using C++-based kernels.
+- projectq.backends.ClassicalSimulator()               A simple introspective simulator that only permits classical operations.
+- projectq.backends.IBMBackend([use_hardware, ...])    The IBM Backend class, which stores the circuit, transforms it to JSON QASM, and sends the circuit through the IBM API.
 
 See PluginAPI._capabilities['backend'] for a list of backend options.
 
@@ -111,9 +111,8 @@ class ProjectQDevice(Device):
     author = 'Christian Gogolin'
     _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
 
-    def __init__(self, wires, **kwargs):
-        kwargs.setdefault('shots', 0)
-        super().__init__(self.short_name, kwargs['shots'])
+    def __init__(self, wires, *, shots=0, **kwargs):
+        super().__init__(self.short_name, wires, shots)
 
         # translate some aguments
         for k,v in {'log':'verbose'}.items():
@@ -128,7 +127,6 @@ class ProjectQDevice(Device):
                 self.n_eval = 0
                 del(kwargs['num_runs'])
 
-        self.wires = wires
         self.backend = kwargs['backend']
         del(kwargs['backend'])
         self.kwargs = kwargs
@@ -150,10 +148,7 @@ class ProjectQDevice(Device):
 
     def apply(self, gate_name, wires, par):
         gate = self._operator_map[gate_name](*par)
-        if isinstance(wires, int):
-            gate | self.reg[wires] #pylint: disable=pointless-statement
-        else:
-            gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
+        gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
     # def expectation(self, observable, wires, *par):
     #     raise NotImplementedError("expectation() is not yet implemented for this backend")
