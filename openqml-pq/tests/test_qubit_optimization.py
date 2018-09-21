@@ -6,11 +6,11 @@ We then optimize the circuit such the resulting expectation value is 1.
 """
 import unittest
 from unittest_data_provider import data_provider
-import os, sys
-sys.path.append(os.getcwd())
+
 from defaults import BaseTest
 import openqml as qm
 from openqml import numpy as np
+
 
 class QubitOptimizationTests(BaseTest):
     """Test a simple one qubit rotation gate optimization."""
@@ -26,12 +26,12 @@ class QubitOptimizationTests(BaseTest):
     @data_provider(all_optimizers)
     def test_qubit_optimization(self, optimizer):
         """ """
-        if optimizer in ["dogleg", "trust-ncg", "trust-exact", "trust-krylov"]:
-            return #these optimizers need a Hessian, so we don't test against them
+        if optimizer == 'SGD':
+            # SGD requires a dataset
+            return
 
         @qm.qfunc(self.dev1)
         def circuit(x, y, z):
-            """QNode"""
             qm.RZ(z, [0])
             qm.RY(y, [0])
             qm.RX(x, [0])
@@ -39,9 +39,9 @@ class QubitOptimizationTests(BaseTest):
             return qm.expectation.PauliZ(1)
 
 
-        def cost(x, batched):
+        def cost(x):
             """Cost (error) function to be minimized."""
-            return np.abs(circuit(x)-1)
+            return np.abs(circuit(*x)-1)
 
         # initialize x with "random" value
         x0 = np.array([0.2,-0.1,0.5])
