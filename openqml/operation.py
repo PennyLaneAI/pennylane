@@ -220,7 +220,7 @@ class Operation:
         if QNode._current_context is None:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
         else:
-            QNode._current_context._queue.append(self)
+            QNode._current_context._append_op(self)
 
 
     def heisenberg_pd(self, idx):
@@ -326,23 +326,8 @@ class Expectation(Operation):
     :class:`Expectation` is used to describe Hermitian quantum observables.
     """
     n_params = 0
-    grad_method = None
+    grad_method = 'F'  # fallback that should work with any differentiable operation
     grad_recipe = None
-
-    def queue(self):
-        """Append the expectation to a QNode queue."""
-        if QNode._current_context is None:
-            raise QuantumFunctionError("Quantum expectations can only be used inside a qfunc.")
-        else:
-            QNode._current_context._observe.append(self)
-
-
-    def check_domain(self, p, flattened=False):
-        # At least for now Expectations cannot depend on free parameters.
-        if isinstance(p, Variable):
-            raise TypeError('{}: Expectations cannot depend on free parameters.'.format(self.name))
-        return super().check_domain(p, flattened)
-
 
     def heisenberg_expand(self):
         r"""Expansion of the observable in the :math:`\vec{E} = (\I, x, p)` basis.

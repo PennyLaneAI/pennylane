@@ -86,11 +86,17 @@ QNode methods
 .. currentmodule:: openqml.qnode.QNode
 
 .. autosummary::
-   construct
    __call__
    evaluate
-   best_method
    gradient
+
+QNode internal methods
+----------------------
+
+.. autosummary::
+   construct
+   best_method
+   _append_op
    _pd_finite_diff
    _pd_analytic
 
@@ -172,6 +178,22 @@ def unflatten(flat, model):
     return res
 
 
+def _inv_dict(d):
+    """Reverse a dictionary mapping.
+
+    Returns multimap where the keys are the former values, and values are sets of the former keys.
+
+    Args:
+      d (dict[a->b]): mapping to reverse
+    Returns:
+      dict[b->set[a]]: reversed mapping
+    """
+    ret = {}
+    for k, v in d.items():
+        ret.setdefault(v, set()).add(k)
+    return ret
+
+
 class QNode:
     """Quantum node in the hybrid computational graph.
 
@@ -189,12 +211,26 @@ class QNode:
         self.num_wires = device.wires
         self.variable_ops = {}  #: dict[int->list[(int, int)]]: Mapping from free parameter index to the list of Operations (in this circuit) that depend on it. The first element of the tuple is the index of Operation in the program queue, the second the index of the parameter within the Operation.
 
+    def _append_op(self, op):
+        """Appends a quantum operation into the circuit queue.
+
+        Args:
+          op (Operation): quantum operation to be added to the circuit
+        """
+        # EVs go to their own, temporary queue
+        if isinstance(op, openqml.operation.Expectation):
+            self.ev.append(op)
+        else:
+            if self.ev:
+                raise QuantumFunctionError('State preparations and gates must precede expectation values.')
+            self.queue.append(op)
+
 
     def construct(self, args, **kwargs):
         """Constructs a representation of the quantum circuit.
 
         The user should never have to call this method.
-        Called automatically the first time :meth:`QNode.__call__`, :meth:`QNode.evaluate` or :meth:`QNode.gradient` is called.
+        Called automatically the first time :meth:`QNode.evaluate` or :meth:`QNode.gradient` is called.
         Executes the quantum function, stores the resulting sequence of :class:`~.operation.Operation` instances, and creates the variable mapping.
 
         Args:
@@ -205,8 +241,8 @@ class QNode:
         .. note:: kwargs are assumed to not be variables by default; should we change this?
         """
         self.variable_ops = {}
-        self._queue   = []
-        self._observe = []
+        self.queue = []
+        self.ev    = []  # temporary queue for EVs
 
         # flatten the args, replace each with a Variable instance with a unique index
         temp = [Variable(idx) for idx, val in enumerate(_flatten(args))]
@@ -240,14 +276,16 @@ class QNode:
             self.output_dim = len(res)
             self.output_type = np.asarray
         else:
-            raise QuantumFunctionError("A quantum function must return either a single expectation value or a tuple of expectation values.")
+            raise QuantumFunctionError('A quantum function must return either a single expectation value or a tuple of expectation values.')
 
-        # check that all ev:s are returned
-        if set(res) != set(self._observe):
-            raise QuantumFunctionError('All measured expectation values must be returned.')
+        # check that all ev:s are returned, in the correct order
+        if res != tuple(self.ev):
+            raise QuantumFunctionError('All measured expectation values must be returned in the order they are measured.')
+
+        self.ev = res  #: tuple[Expectation]: returned expectation values
 
         # check that no wires are measured more than once
-        m_wires = list(w for ex in res for w in ex.wires)
+        m_wires = list(w for ex in self.ev for w in ex.wires)
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
@@ -257,24 +295,21 @@ class QNode:
                 if w < 0 or w >= self.num_wires:
                     raise QuantumFunctionError('Operation {} applied to wire {}, device only has {}.'.format(op.name, w, self.num_wires))
 
-        # check every gate/preparation and ev measurement
-        for op in self._queue + list(res):
-            check_op(op)
+        self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
 
-        # TODO ensure that the gates precede every measurement
+        # check every gate/preparation and ev measurement
+        for op in self.ops:
+            check_op(op)
 
         #----------------------------------------------------------
 
-        self.ex = res  #: tuple[Expectation]: returned expectation values
-
         # map each free variable to the operations which depend on it
-        for k, op in enumerate(self._queue):
+        for k, op in enumerate(self.ops):
             for idx, p in enumerate(op.params):
                 if isinstance(p, Variable):
                     self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
-        # map from free parameter index to the gradient method to be used with that parameter
-        self.grad_method = {k: self.best_method(v) for k, v in self.variable_ops.items()}
+        self.grad_method = {k: self.best_method(k) for k in self.variable_ops}  #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
 
 
     def __call__(self, *args, **kwargs):
@@ -302,22 +337,29 @@ class QNode:
         Variable.free_param_values = np.array(list(_flatten(args)))
 
         self.device.reset()
-        ret = self.device.execute(self._queue, self.ex)
+        ret = self.device.execute(self.queue, self.ev)
         return self.output_type(ret)
 
 
-    def best_method(self, ops):
-        """Determine the correct gradient computation method for each free parameter.
+    def best_method(self, idx):
+        """Determine the correct gradient computation method for a free parameter.
 
         Args:
-          ops (list[(int, int)]): Operations that depend on this free parameter
+          idx (int): free parameter index
         Returns:
           str: gradient method to be used
         """
         # use the analytic method iff every gate that depends on the parameter supports it
+        # if even one gate does not support differentiation we cannot differentiate wrt this parameter
+        # otherwise use finite diff
         # TODO FIXME not enough in CV case if nongaussian gates follow them.
-        if all(self._queue[k].grad_method == 'A' for k, _ in ops):
+
+        ops = self.variable_ops[idx]  # indices of operations that depend on the free parameter idx
+        temp = [self.ops[k].grad_method for k, _ in ops]
+        if all(k == 'A' for k in temp):
             return 'A'
+        elif None in temp:
+            return None
         return 'F'
 
 
@@ -333,8 +375,8 @@ class QNode:
           where n = len(which).
         * Analytic method (``'A'``). Works for all one-parameter gates where the generator
           only has two unique eigenvalues. Additionally can be used in CV systems for gaussian
-          circuits containing only first-order observables.The circuit is evaluated twice for each incidence
-          of each parameter in the circuit.
+          circuits containing first- and second-order observables.
+          The circuit is evaluated twice for each incidence of each parameter in the circuit.
         * Best known method for each parameter (``'B'``): uses the analytic method if
           possible, otherwise finite differences.
 
@@ -344,7 +386,7 @@ class QNode:
            'F' method requires exact expectation values, i.e. `shots=0`.
 
         Args:
-            params (nested): point in parameter space at which to evaluate the gradient
+            params (nested Sequence[Number], Number): point in parameter space at which to evaluate the gradient
             which  (Sequence[int], None): return the gradient with respect to these parameters.
                 None means all.
             method (str): gradient computation method, see above
@@ -376,7 +418,21 @@ class QNode:
             if len(which) != len(set(which)):  # set removes duplicates
                 raise ValueError('Parameter indices must be unique.')
 
+        # check if the method can be used on the requested parameters
+        mmap = _inv_dict(self.grad_method)
+        def check_method(m):
+            "Intersection of which with free params whose best grad method is m."
+            return mmap.get(m, set()).intersection(which)
+
+        bad = check_method(None)
+        if bad:
+            raise ValueError('Cannot differentiate wrt parameter(s) {}.'.format(bad))
+
         if method in ('A', 'F'):
+            if method =='A':
+                bad = check_method('F')
+                if bad:
+                    raise ValueError('The analytic gradient method cannot be used with the parameter(s) {}.'.format(bad))
             method = {k: method for k in which}
         elif method == 'B':
             method = self.grad_method
@@ -403,6 +459,8 @@ class QNode:
                 grad[i, :] = self._pd_analytic(flat_params, k, order, **kwargs)
             elif par_method == 'F':
                 grad[i, :] = self._pd_finite_diff(flat_params, k, h, order, y0, **kwargs)
+            elif par_method is None:
+                raise ValueError('Cannot differentiate wrt parameter {}.'.format(k))
             else:
                 raise ValueError('Unknown gradient method.')
 
@@ -461,8 +519,8 @@ class QNode:
         w = self.num_wires
         pd = 0.0
         # find the Commands in which the free parameter appears, use the product rule
-        for op_idx, p_idx in self.variable_ops[idx]:
-            op = self._queue[op_idx]
+        for o_idx, p_idx in self.variable_ops[idx]:
+            op = self.ops[o_idx]
             if op.grad_method != 'A':
                 raise ValueError('Attempted to use the analytic method on a gate that does not support it.')
 
@@ -511,7 +569,7 @@ class QNode:
 
                 # conjugate with all the following operations
                 B = np.eye(1 +2*n)
-                for BB in self._queue[op_idx+1:]:
+                for BB in self.queue[o_idx+1:]:  # FIXME or self.ops?
                     temp = BB.heisenberg_tr(w)
                     B = temp @ B
                 Z = B @ Z @ np.linalg.inv(B)  # conjugation
@@ -526,7 +584,7 @@ class QNode:
                     return self.evaluate_obs(temp, unshifted_params, **kwargs)  # TODO needs to be implemented
 
                 # measure transformed observables
-                temp = np.asarray(list(map(tr_obs, self.ex)))
+                temp = np.asarray(list(map(tr_obs, self.ev)))
                 pd += temp
             else:
                 raise ValueError('Order must be 1 or 2.')
