@@ -27,6 +27,13 @@ from openqml import numpy as np
 from defaults import openqml_sf as qmsf, BaseTest
 
 
+def prep_par(par, op):
+    "Convert par into a list of parameters that op expects."
+    if op.par_domain == 'A':
+        return [np.diag([x, 1]) for x in par]
+    return par
+
+
 class GaussianTests(BaseTest):
     """Test the Gaussian simulator."""
 
@@ -65,6 +72,7 @@ class GaussianTests(BaseTest):
 
             @qm.qfunc(dev)
             def circuit(*x):
+                x = prep_par(x, op)
                 op(*x, wires=wires)
                 return qm.expectation.Fock(0)
 
@@ -91,6 +99,7 @@ class GaussianTests(BaseTest):
 
             @qm.qfunc(dev)
             def circuit(*x):
+                x = prep_par(x, op)
                 return op(*x, wires=wires)
 
             with self.assertRaisesRegex(qm.DeviceError,
