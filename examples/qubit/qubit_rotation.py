@@ -35,7 +35,7 @@ weights = weights0
 for iteration in np.arange(1, 101):
     weights = o.step(objective, weights)
     if iteration % 5 == 0:
-        print('Cost after step {}: {}'.format(iteration, objective(weights)))
+        print('Cost after step {:5d}: {:0.7f}'.format(iteration, objective(weights)))
 print('Optimized rotation angles:', weights)
 
 # Adagrad
@@ -45,5 +45,5 @@ weights = weights0
 for iteration in np.arange(1, 101):
     weights = o.step(objective, weights)
     if iteration%5==0:
-        print('Cost after step {}: {}'.format(iteration, objective(weights)))
+        print('Cost after step {:5d}: {:0.7f}'.format(iteration, objective(weights)))
 print('Optimized rotation angles:', weights)

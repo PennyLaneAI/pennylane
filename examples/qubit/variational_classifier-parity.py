@@ -10,11 +10,9 @@ import openqml as qm
 from openqml import numpy as onp
 import numpy as np
 from openqml._optimize import GradientDescentOptimizer
+
 from math import isclose
 
-###########################
-# Loss and regularizer
-###########################
 
 def square_loss(labels, predictions):
     """ Square loss function
@@ -58,16 +56,11 @@ def regularizer(weights):
     return onp.abs(onp.inner(w_flat, w_flat))
 
 
-############################
-# Quantum function
-###########################
-
 dev = qm.device('default.qubit', wires=4)
 
 
 def layer(W):
-    """ Single layer of the quantum neural net
-    with CNOT range 1."""
+    """ Single layer of the quantum neural net."""
 
     qm.Rot(W[0, 0], W[0, 1], W[0, 2], [0])
     qm.Rot(W[1, 0], W[1, 1], W[1, 2], [1])
@@ -80,7 +73,7 @@ def layer(W):
     qm.CNOT([3, 0])
 
 
-def statepreparation_basisenc(x):
+def statepreparation(x):
     """ Encodes data input x into quantum state."""
 
     for i in range(len(x)):
@@ -92,16 +85,12 @@ def statepreparation_basisenc(x):
 def quantum_neural_net(weights, x=None):
     """The quantum neural net variational circuit."""
 
-    statepreparation_basisenc(x)
+    statepreparation(x)
 
     for W in weights:
         layer(W)
 
     return qm.expectation.PauliZ(0)
-
-###########################
-# Cost
-###########################
 
 
 def cost(weights, features, labels):
@@ -111,12 +100,9 @@ def cost(weights, features, labels):
 
     return square_loss(labels, predictions)
 
-###########################
-# Execution
-###########################
 
 # load Iris data and normalise feature vectors
-data = np.loadtxt("/home/maria/Desktop/XanaduAI/openqml/examples/qubit/parity.txt")
+data = np.loadtxt("parity.txt")
 X = data[:, :-1]
 Y = data[:, -1]
 Y = Y*2 - np.ones(len(Y)) # shift label from {0, 1} to {-1, 1}
@@ -137,11 +123,10 @@ weights0 = [np.random.randn(num_qubits, num_qubits)] * num_layers
 
 # create optimizer
 o = GradientDescentOptimizer(0.1)
+batch_size = 3
 
 # train the variational classifier
-batch_size = 3
 weights = np.array(weights0)
-
 for iteration in range(15):
 
     # Update the weights by one optimizer step

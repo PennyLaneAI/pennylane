@@ -27,7 +27,7 @@ X = np.arange(-3.1, 3.1, 0.1)
 Y = np.arange(-3.1, 3.1, 0.1)
 length = len(X)
 xx, yy = np.meshgrid(X, Y)
-Z = np.array([[func(x, y) for x in X] for y in Y]).reshape(length, length)
+Z = np.array([[-func(x, y) for x in X] for y in Y]).reshape(length, length)
 
 # Plot the surface.
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
@@ -46,7 +46,7 @@ surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 # ax.plot(path_x, path_y, path_z, c='brown', marker='.', label="adagrad lr=0.5")
 
 # Customize the z axis.
-ax.set_zlim(-0.1, 1.0)
+ax.set_zlim(-1.0, 0.0)
 ax.set_xlabel("w1")
 ax.set_ylabel("w2")
 
