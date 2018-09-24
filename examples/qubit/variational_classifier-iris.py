@@ -7,8 +7,7 @@ Examples can be found in [Ref CCC, Ref Farhi, ...]
 import openqml as qm
 from openqml import numpy as onp
 import numpy as np
-from openqml._optimize import GradientDescentOptimizer
-import autograd
+from openqml._optimize import AdagradOptimizer
 from math import isclose
 
 
@@ -70,10 +69,11 @@ def layer(W):
 
 
 def statepreparation(x):
-    """ Encodes data input x into quantum state."""
+    """ Encodes data input x into a quantum state, using a feature map
+    that first projects x -> x \otimes x. This gives the variational classifier
+    more power."""
 
-    # We cheat and initialise the quantum state to
-    # encode the input in its amplitudes #TODO explain feat map
+    # We cheat and hard-set the initial quantum state to x \otimes x
     qm.QubitStateVector(onp.kron(x, x), wires=[0, 1, 2, 3])
 
 
@@ -123,13 +123,13 @@ num_layers = 2
 weights0 = [np.random.randn(num_qubits, num_qubits)] * num_layers
 
 # create optimizer
-o = GradientDescentOptimizer(0.1)
+o = AdagradOptimizer(0.1)
 
 # train the variational classifier
-batch_size = 3
+batch_size = 5
 weights = np.array(weights0)
 
-for iteration in range(15):
+for iteration in range(10):
 
     # Update the weights by one optimizer step
     batch_index = np.random.randint(0, num_train, (batch_size, ))

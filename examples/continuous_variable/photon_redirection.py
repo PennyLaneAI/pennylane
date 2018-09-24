@@ -26,26 +26,19 @@ def objective(weights):
     return circuit(weights)
 
 
-weights0 = np.array([1.4, 0.])
+weights0 = np.array([0.1, 0.0])
 
 o = GradientDescentOptimizer(0.1)
 weights = o.step(objective, weights0)
 
-print("A step of the optimizer does not have any effect on the weights: ", weights0, "->", weights, "....")
-print("...since the gradient at the initial point is near zero:", qm.grad(objective, [weights0]))
 
-
-print("But changing the weights DOES have an influence on the objective:", objective(weights),
-      "->", objective(weights - np.array([0.1, 0.])))
-print("What's wrong???")
-
-#
-# weights = weights0
-# for iteration in range(101):
-#     weights = o.step(objective, weights)
-#     if iteration % 5 == 0:
-#         print('Cost after step {}: {}'.format(iteration, objective(weights)))
-#         print('Grad after step {}: {}'.format(iteration, qm.grad(objective, [weights])))
+weights = weights0
+for iteration in range(101):
+    weights = o.step(objective, weights)
+    if iteration % 5 == 0:
+        print('Cost after step {:3d}: {:0.7f}'
+              ''.format(iteration, objective(weights)))
+        print('Grad after step {}: {}'.format(iteration, qm.grad(objective, [weights])))
 
 
 
