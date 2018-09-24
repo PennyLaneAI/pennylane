@@ -11,7 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the Fock simulator device"""
+"""
+Strawberry Fields Fock plugin
+=============================
+
+**Module name:** :mod:`openqml_sf.fock`
+
+.. currentmodule:: openqml_sf.fock
+
+The SF Fock plugin implements all the :class:`~openqml.device.Device` methods
+and provides a Fock space simulation of a continuous variable quantum circuit architecture.
+
+Classes
+-------
+
+.. autosummary::
+   StrawberryFieldsFock
+
+----
+"""
+
 import numpy as np
 
 #import state preparations
@@ -21,7 +40,6 @@ from strawberryfields.ops import (Catstate, Coherent, DensityMatrix, DisplacedSq
 from strawberryfields.ops import (BSgate, CKgate, CXgate, CZgate, Dgate,
                                   Kgate, Pgate, Rgate, S2gate, Sgate, Vgate)
 
-
 from .expectations import PNR, Homodyne
 from .simulator import StrawberryFieldsSimulator
 
@@ -29,13 +47,12 @@ from .simulator import StrawberryFieldsSimulator
 class StrawberryFieldsFock(StrawberryFieldsSimulator):
     """StrawberryFields Fock device for OpenQML.
 
-    wires (int): the number of modes to initialize the device in.
-    shots (int): the number of simulation runs used to calculate
-        the expectaton value and variance. If 0, the exact expectation
-        and variance is returned.
-    cutoff_dim (int): the Fock space truncation.
-    hbar (float): the convention chosen in the canonical commutation
-        relation [x, p] = i hbar. The default value is hbar=2.
+    Args:
+      wires (int): the number of modes to initialize the device in.
+      shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
+        For simulator devices, 0 means the exact EV is returned.
+      cutoff_dim (int): Fock space truncation dimension
+      hbar (float): the convention chosen in the canonical commutation relation :math:`[x, p] = i \hbar`
     """
     name = 'Strawberry Fields Fock OpenQML plugin'
     short_name = 'strawberryfields.fock'
@@ -73,8 +90,8 @@ class StrawberryFieldsFock(StrawberryFieldsSimulator):
     _circuits = {}
 
     def __init__(self, wires, *, shots=0, cutoff_dim, hbar=2):
-        self.cutoff = cutoff_dim
         super().__init__(wires, shots=shots, hbar=hbar)
+        self.cutoff = cutoff_dim
 
     def pre_expectations(self):
         self.state = self.eng.run('fock', cutoff_dim=self.cutoff)

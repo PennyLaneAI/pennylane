@@ -22,7 +22,7 @@ import numpy as np
 import numpy.random as nr
 
 from defaults import openqml, BaseTest
-from openqml import Variable
+from openqml.variable import Variable
 
 class BasicTest(BaseTest):
     """Utility class tests."""

@@ -11,7 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""OpenQML parameterised variable class"""
+"""
+Quantum circuit parameters
+==========================
+
+**Module name:** :mod:`openqml.variable`
+
+.. currentmodule:: openqml.variable
+
+
+Classes
+-------
+
+.. autosummary::
+   Variable
+
+----
+"""
+
 import copy
 import collections
 
@@ -25,22 +42,23 @@ def _get_nested(seq, t):
     return seq[t[0]]
 
 class Variable:
-    """Stores the parameter reference.
+    """Free parameter reference.
 
-    Represents a free device parameter (with a non-fixed value).
-    Each time the device is executed, it is given a vector of
+    Represents a free quantum circuit parameter (with a non-fixed value),
+    times an optional scalar multiplier.
+    Each time the circuit is executed, it is given a vector of
     parameter values. Variable is essentially an index into that vector.
 
     Args:
-      idx (int): parameter index >= 0
-      val (int or complex or float): initial value of the variable (optional)
+      idx  (int): parameter index >= 0
+      name (str): name of the variable (optional)
     """
-    free_param_values = None #: array[float]: current free parameter values, TEST, a bit hackish
+    free_param_values = None  #: array[float]: current free parameter values, set in :meth:`QNode.evaluate`
 
-    def __init__(self, idx, name=None, val=None):
-        self.idx = idx  #: int: parameter index
-        self.name = name
-        self.mult = 1.0  #: float: parameter scalar multiplier
+    def __init__(self, idx, name=None):
+        self.idx = idx    #: int: parameter index
+        self.name = name  #: str: parameter name  FIXME unused?
+        self.mult = 1.0   #: float: parameter scalar multiplier
 
     def __str__(self):
         temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
@@ -62,15 +80,9 @@ class Variable:
 
     @property
     def val(self):
-        """Mapping function for gate parameters.
-        Replaces Variables with their actual values.
-
-        Args:
-            par (Sequence[float, int, ParRef]): parameter values to map, each either
-                a fixed immediate value or a reference to a free parameter
-            values (Sequence[float, int]): values for the free parameters
+        """Current numerical value of the Variable.
 
         Returns:
-            float: mapped parameter
+            float: current value of the Variable
         """
         return self.free_param_values[self.idx] * self.mult
