@@ -72,7 +72,7 @@ class OptTest(BaseTest):
           float: mapped data
         """
         par = np.concatenate((np.array([0.5*np.pi * data_in]), weights))
-        return self.qnode(par)
+        return self.qnode(*par)
 
 
     def cost(self, weights, data):
@@ -133,8 +133,7 @@ class OptTest(BaseTest):
         "Test all supported optimization algorithms on a simple optimization task."
 
         self.dev = qm.device('default.qubit', wires=2)
-        qnode = QNode(circuit, self.dev)
-        self.qnode = qnode
+        self.qnode = QNode(circuit, self.dev)
 
         x0 = np.array([-0.71690972, -0.55632194,  0.74297438, -1.15401698,  0.62766983,  2.55008079, -0.27567698]) #fix "random" values to make the test pass/fail deterministically
         #grad = autograd.grad(self.cost, 0)  # gradient with respect to weights

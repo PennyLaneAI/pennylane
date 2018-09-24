@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""
+"""
 Default qubit plugin
 ====================
 
@@ -50,7 +50,7 @@ import numpy as np
 from scipy.linalg import expm, eigh
 
 import openqml as qm
-from openqml import Device, DeviceError, QNode, Expectation, __version__
+from openqml.device import Device, DeviceError
 
 
 # tolerance for numerical errors
@@ -208,11 +208,10 @@ def hermitian(*args):
 class DefaultQubit(Device):
     """Default qubit device for OpenQML.
 
-    wires (int): the number of modes to initialize the device in.
-    cutoff (int): the Fock space truncation. Must be specified before
-        applying a qfunc.
-    hbar (float): the convention chosen in the canonical commutation
-        relation [x, p] = i hbar. The default value is hbar=2.
+    Args:
+      wires (int): the number of modes to initialize the device in
+      shots (int): How many times should the circuit be evaluated (or sampled) to estimate
+        the expectation values? 0 yields the exact result.
     """
     name = 'Default OpenQML plugin'
     short_name = 'default.qubit'
@@ -247,10 +246,9 @@ class DefaultQubit(Device):
     _circuits = {}
 
     def __init__(self, wires, *, shots=0):
-        self.wires = wires
+        super().__init__(self.short_name, wires, shots)
         self.eng = None
         self._state = None
-        super().__init__(self.short_name, shots)
 
     def pre_apply(self):
         self.reset()
@@ -262,24 +260,24 @@ class DefaultQubit(Device):
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
+            return
+
+        A = self._get_operator_matrix(gate_name, params)
+
+        # apply unitary operations
+        if len(wires) == 1:
+            U = self.expand_one(A, wires)
+        elif len(wires) == 2:
+            U = self.expand_two(A, wires)
         else:
-            A = self._get_operator_matrix(gate_name, params)
+            raise ValueError('This plugin supports only one- and two-qubit gates.')
 
-            # apply unitary operations
-            if len(wires) == 1:
-                U = self.expand_one(A, wires)
-            elif len(wires) == 2:
-                U = self.expand_two(A, wires)
-            else:
-                raise ValueError('This plugin supports only one- and two-qubit gates.')
+        self._state = U @ self._state
 
-            self._state = U @ self._state
 
     def expectation(self, observable, wires, params):
         # measurement/expectation value <psi|A|psi>
-
         A = self._get_operator_matrix(observable, params)
-
         if self.shots == 0:
             # exact expectation value
             ev = self.ev(A, wires)
@@ -299,21 +297,20 @@ class DefaultQubit(Device):
 
         return ev
 
+
     def _get_operator_matrix(self, op_name, params):
         """Get the operator matrix for a given operation.
 
         Args:
-            op_name (str): operation name.
-            params (Sequence): sequence of parameters.
-
+          op_name    (str): name of the operation/observable
+          params (tuple[float]): parameter values
         Returns:
-            array: matrix representation.
+          array: matrix representation.
         """
-        if not callable(self._operator_map[op_name]):
-            return self._operator_map[op_name]
-
-        # current parameter values
-        return self._operator_map[op_name](*params)
+        A = self._operator_map[op_name]
+        if not callable(A):
+            return A
+        return A(*params)
 
     def ev(self, A, wires):
         r"""Expectation value of a one-qubit observable in the current state.
@@ -418,6 +415,6 @@ def node(x, y, z):
     qm.CNOT([1, 0])
     qm.RX(z, [0])
     qm.CNOT([0, 1])
-    return qm.expectation.Hermitian(np.array([[0, 1], [1, 0]]), 0)
+    return qm.expectation.Hermitian(X, 0)
 
-circuits = {'demo_ev': QNode(node, dev)}
+#circuits = {'demo_ev': QNode(node, dev)}

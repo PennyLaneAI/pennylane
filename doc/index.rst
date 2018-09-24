@@ -67,7 +67,9 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :hidden:
 
    optimize
-   circuit
+   qnode
+   operation
+   variable
 
 
 .. toctree::
@@ -75,7 +77,7 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :caption: Plugins
    :hidden:
 
-   plugins
+   device
    plugins/included_plugins
 
 

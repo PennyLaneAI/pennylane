@@ -16,8 +16,6 @@
 from openqml.operation import Expectation
 
 
-__all__ = ['PauliX', 'PauliY', 'PauliZ', 'Hermitian']
-
 
 class PauliX(Expectation):
     r"""Returns the Pauli-X expectation value.
@@ -44,3 +42,9 @@ class Hermitian(Expectation):
         A (array): square hermitian matrix.
     """
     n_params = 1
+    par_domain = 'A'
+
+
+all_ops = [PauliX, PauliY, PauliZ, Hermitian]
+
+__all__ = [cls.__name__ for cls in all_ops]

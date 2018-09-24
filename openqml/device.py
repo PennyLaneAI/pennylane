@@ -11,7 +11,57 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the device class and context manager"""
+"""
+Devices
+=======
+
+**Module name:** :mod:`openqml.device`
+
+.. currentmodule:: openqml.device
+
+This module contains the :class:`Device` class.
+
+
+Classes
+-------
+
+.. autosummary::
+   Device
+
+Device methods
+--------------
+
+.. currentmodule:: openqml.device.Device
+
+.. autosummary::
+   short_name
+   gates
+   observables
+   templates
+   capabilities
+   execute
+   reset
+
+Internal Device methods
+-----------------------
+
+.. autosummary::
+   _operator_map
+   _observable_map
+   pre_apply
+   post_apply
+   pre_expectations
+   post_expectations
+   execution_context
+   supported
+   check_validity
+   apply
+   expectation
+
+.. currentmodule:: openqml.device
+
+----
+"""
 
 import abc
 import logging
@@ -47,7 +97,14 @@ class QuantumFunctionError(Exception):
 
 
 class Device(abc.ABC):
-    """Abstract base class for devices."""
+    """Abstract base class for OpenQML devices.
+
+    Args:
+      name  (str): name of the device
+      wires (int): number of subsystems in the quantum state represented by the device
+      shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
+        For simulator devices, 0 means the exact EV is returned.
+    """
     name = ''          #: str: official device plugin name
     api_version = ''   #: str: version of OpenQML for which the plugin was made
     version = ''       #: str: version of the device plugin itself
@@ -55,12 +112,10 @@ class Device(abc.ABC):
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, name, shots):
-        self.name = name # the name of the device
-
-        # number of circuit evaluations used to estimate
-        # expectation values of observables. 0 means the exact ev is returned.
-        self.shots = shots
+    def __init__(self, name, wires, shots):
+        self.name = name    #: str: name of the device
+        self.wires = wires  #: int: number of subsystems
+        self.shots = shots  #: int: number of circuit evaluations used to estimate expectation values, 0 means the exact ev is returned
 
     def __repr__(self):
         """String representation."""
@@ -93,7 +148,7 @@ class Device(abc.ABC):
         """Get the supported gate set.
 
         Returns:
-          dict[str->GateSpec]:
+            set[str]: the set of OpenQML operator names the device supports.
         """
         return set(self._operator_map.keys())
 
@@ -102,7 +157,7 @@ class Device(abc.ABC):
         """Get the supported observables.
 
         Returns:
-          dict[str->GateSpec]:
+            set[str]: the set of OpenQML observable names the device supports.
         """
         return set(self._observable_map.keys())
 
@@ -129,65 +184,53 @@ class Device(abc.ABC):
         return cls._capabilities
 
     def execute(self, queue, observe):
-        """Apply the queued operations to the device, and measure the expectation values.
+        """Apply a queue of quantum operations to the device, and then measure the given expectation values.
 
         Instead of overwriting this, consider implementing a suitable subset of
-        :meth:`~.pre_apply`, :meth:`~.post_apply`, :meth:`~.execution_context`,
-        :meth:`~.apply`, and :meth:`~.expectation`.
+        :meth:`pre_apply`, :meth:`post_apply`, :meth:`execution_context`,
+        :meth:`apply`, and :meth:`expectation`.
 
         Args:
-            queue (Sequence): sequence of openqml.operation.Operation objects to apply
-                to the device.
-            observe (Sequence): sequence of openqml.operation.Expectation objects
-                to calculate and return from the device.
-
+          queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device
+          observe (Iterable[~.operation.Expectation]): expectation values to measure and return
         Returns:
-            float: expectation value(s)
+          array[float]: expectation value(s)
+
         """
         self.check_validity(queue, observe)
-
         with self.execution_context():
-
             self.pre_apply()
-
             for operation in queue:
-                par = operation.parameters()
-                self.apply(operation.name, operation.wires, par)
-
+                self.apply(operation.name, operation.wires, operation.parameters)
             self.post_apply()
 
             self.pre_expectations()
-
-            expectations = []
-            for observable in observe:
-                par = observable.parameters()
-                expectations.append(self.expectation(observable.name, observable.wires, par))
-
+            expectations = [self.expectation(observable.name, observable.wires, observable.parameters) for observable in observe]
             self.post_expectations()
 
             return np.array(expectations)
 
     def pre_apply(self):
-        """Called during :meth:`~.execute` before the individual gates are executed."""
+        """Called during :meth:`execute` before the individual gates are executed."""
         pass
 
     def post_apply(self):
-        """Called during :meth:`~.execute` after the individual gates have been executed."""
+        """Called during :meth:`execute` after the individual gates have been executed."""
         pass
 
     def pre_expectations(self):
-        """Called during :meth:`~.execute` before the individual observables are executed."""
+        """Called during :meth:`execute` before the individual observables are executed."""
         pass
 
     def post_expectations(self):
-        """Called during :meth:`~.execute` after the individual observables have been executed."""
+        """Called during :meth:`execute` after the individual observables have been executed."""
         pass
 
     def execution_context(self):
-        """The device execution context used during calls to :meth:`~.execute`.
+        """The device execution context used during calls to :meth:`execute`.
 
         You can overwrite this function to return a suitable context manager;
-        all operations and method calls (including :meth:`~.apply` and :meth:`~.expectation`)
+        all operations and method calls (including :meth:`apply` and :meth:`expectation`)
         are then evaluated within the context of this context manager.
         """
         class MockContext(object): # pylint: disable=too-few-public-methods
@@ -200,22 +243,21 @@ class Device(abc.ABC):
         return MockContext()
 
     def supported(self, name):
-        """Return whether an operation or observable is supported by this device.
+        """Checks if an operation or observable is supported by this device.
 
         Args:
-            name (str): name of the operation or observable.
+          name (str): name of the operation or observable
+        Returns:
+          bool: True iff it is supported
         """
         return name in self.gates.union(self.observables)
 
     def check_validity(self, queue, observe):
-        """Used to check whether the queued operations and observables are
-        supported by the device.
+        """Check whether the operations and observables are supported by the device.
 
         Args:
-            queue (Sequence): sequence of openqml.operation.Operation objects to apply
-                to the device.
-            observe (Sequence): sequence of openqml.operation.Expectation objects
-                to calculate and return from the device.
+          queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device
+          observe (Iterable[~.operation.Expectation]): expectation values to measure and return
         """
         for operation in queue:
             if not self.supported(operation.name):
@@ -226,24 +268,26 @@ class Device(abc.ABC):
                 raise DeviceError("Observable {} not supported on device {}".format(observable.name, self.short_name))
 
     @abc.abstractmethod
-    def apply(self, gate_name, wires, params):
-        """Apply the gate with name gate_name to wires with parameters params.
+    def apply(self, gate_name, wires, par):
+        """Apply a quantum operation.
 
         Args:
-            gate_name (str): name of the OpenQML operation.
-            wires (sequence): sequence of integers indicating the subsystems the gate is applied to.
-            params (sequence): sequence of gate parameters.
+          gate_name (str): name of the operation
+          wires (Sequence[int]): subsystems the operation is applied on
+          par (tuple): parameters for the operation
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def expectation(self, observable, wires, params):
-        """Return the expectation value of observable on wires with paramters params.
+    def expectation(self, observable, wires, par):
+        """Expectation value of an observable.
 
         Args:
-            observable (str): name of the OpenQML observable.
-            wires (sequence): sequence of integers indicating the subsystems the gate is applied to.
-            params (sequence): sequence of gate parameters.
+          observable (str): name of the observable
+          wires (Sequence[int]): subsystems the observable is measured on
+          par (tuple): parameters for the observable
+        Returns:
+          float: expectation value
         """
         raise NotImplementedError
 
