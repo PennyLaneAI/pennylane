@@ -362,7 +362,7 @@ class QNode:
         if isinstance(params, numbers.Number):
             params = (params,)
 
-        if not self.variable_ops:
+        if not self.variable_ops:# or kwargs: # TODO:remove hotfix
             # construct the circuit
             self.construct(params, **kwargs)
 
