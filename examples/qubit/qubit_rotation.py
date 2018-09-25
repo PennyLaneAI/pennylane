@@ -27,6 +27,7 @@ def objective(weights):
 
 weights0 = np.array([0.001, 0.001])
 print('Initial rotation angles:', weights0)
+print('Initial cost: {: 0.7f}'.format(objective(weights0)))
 
 # Gradient descent
 print('\nGradient descent Optimizer')
@@ -35,15 +36,15 @@ weights = weights0
 for iteration in np.arange(1, 101):
     weights = o.step(objective, weights)
     if iteration % 5 == 0:
-        print('Cost after step {:5d}: {:0.7f}'.format(iteration, objective(weights)))
+        print('Cost after step {:5d}: {: 0.7f}'.format(iteration, objective(weights)))
 print('Optimized rotation angles:', weights)
 
 # Adagrad
 print('\nAdagrad Optimizer')
 o = AdagradOptimizer(0.5)
 weights = weights0
-for iteration in np.arange(1, 101):
+for iteration in range(100):
     weights = o.step(objective, weights)
     if iteration%5==0:
-        print('Cost after step {:5d}: {:0.7f}'.format(iteration, objective(weights)))
+        print('Cost after step {:5d}: {: 0.7f}'.format(iteration+1, objective(weights)))
 print('Optimized rotation angles:', weights)

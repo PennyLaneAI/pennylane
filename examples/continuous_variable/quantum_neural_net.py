@@ -92,7 +92,6 @@ o = NesterovMomentumOptimizer(0.1)
 # train
 weights = weights0
 for iteration in range(15):
-    print(weights)
     weights = o.step(lambda w: cost(w, X, Y), weights)
     print("Iter: {:5d} | Cost: {:0.7f}".format(iteration, cost(weights, X, Y)))
 
