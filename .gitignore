@@ -6,7 +6,7 @@ dist
 qit.egg-info
 .idea
 *.ipynp
-*.ipynb_checkpoints/*
+*.ipynb_checkpoints
 *.egg-info*
 .coverage
 coverage_html_report/*

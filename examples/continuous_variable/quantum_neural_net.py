@@ -15,13 +15,13 @@ dev = qm.device('strawberryfields.fock', wires=1, cutoff_dim=10)
 def layer(w):
     """ Single layer of the continuous-variable quantum neural net."""
 
-    # Matrix multiplication of input layer
-    qm.Rotation(w[0], [0])
-    qm.Squeezing(w[1], w[2], [0])
-    qm.Rotation(w[3], [0])
-
     # Bias
-    qm.Displacement(w[4], w[5], [0])
+    qm.Displacement(w[0], w[1], [0])
+
+    # Matrix multiplication of input layer
+    qm.Rotation(w[2], [0])
+    qm.Squeezing(w[3], w[4], [0])
+    qm.Rotation(w[5], [0])
 
     # Element-wise nonlinear transformation
     qm.Kerr(w[6], [0])
@@ -31,11 +31,11 @@ def layer(w):
 def quantum_neural_net(weights, x=None):
     """The quantum neural net variational circuit."""
 
-    # Encode 2-d input into quantum state
+    # Encode input into quantum state
     qm.Displacement(x[0], 0., [0])
 
     # execute "layers"
-    for i in range(6):
+    for i in range(len(6)):  # TODO: back to multidim arrays
         layer(weights[i*7: i*7+7])
 
     return qm.expectation.X(0)

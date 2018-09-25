@@ -131,8 +131,8 @@ Y_val = Y[index[num_train: ]]
 
 # initialize weight layers
 num_qubits = 4
-num_layers = 2
-weights0 = [np.random.randn(num_qubits, num_qubits)] * num_layers
+num_layers = 4
+weights0 = 0.01*np.array([np.random.randn(num_qubits, num_qubits)] * num_layers)
 
 # create optimizer
 o = AdagradOptimizer(0.1)
@@ -141,7 +141,7 @@ o = AdagradOptimizer(0.1)
 batch_size = 5
 weights = np.array(weights0)
 
-for iteration in range(1):
+for iteration in range(50):
 
     # Update the weights by one optimizer step
     batch_index = np.random.randint(0, num_train, (batch_size, ))
