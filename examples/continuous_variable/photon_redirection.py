@@ -1,6 +1,6 @@
-"""Qmode optimization example.
+"""Photon redirection example.
 
-In this demo, we optimize a beam splitter
+In this demo we optimize a beam splitter
 to redirect a photon from the first to the second mode.
 """
 
@@ -10,8 +10,6 @@ from openqml._optimize import GradientDescentOptimizer
 
 dev = qm.device('strawberryfields.fock', wires=2, cutoff_dim=10)
 
-class Beamsplitter(qm.Beamsplitter):
-    grad_method = 'F'
 
 @qm.qfunc(dev)
 def circuit(weights):
@@ -38,7 +36,6 @@ for iteration in range(101):
     if iteration % 5 == 0:
         print('Cost after step {:3d}: {:0.7f}'
               ''.format(iteration, objective(weights)))
-        print('Grad after step {}: {}'.format(iteration, qm.grad(objective, [weights])))
 
 
 
