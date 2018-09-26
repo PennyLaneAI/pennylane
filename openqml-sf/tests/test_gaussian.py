@@ -124,14 +124,16 @@ class GaussianTests(BaseTest):
         """Test that the gaussian plugin provides correct result for high shot number"""
         log.info('test_gaussian_circuit')
 
-        dev = qm.device('strawberryfields.gaussian', wires=1, shots=100)
+        shots = 10**2
+        dev = qm.device('strawberryfields.gaussian', wires=1, shots=shots)
 
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
             return qm.expectation.Fock(0)
 
-        self.assertAlmostEqual(circuit(1), 1, delta=self.tol)
+        expected_var = np.sqrt(1/shots)
+        self.assertAlmostEqual(circuit(1), 1, delta=expected_var)
 
     def test_supported_gaussian_gates(self):
         """Test that all supported gates work correctly"""
@@ -168,7 +170,7 @@ class GaussianTests(BaseTest):
                     sfop(*x) | [q[i] for i in wires]
 
                 state = eng.run('gaussian')
-                return state.mean_photon(0), state.mean_photon(1)
+                return state.mean_photon(0)[0], state.mean_photon(1)[0]
 
             if g == 'GaussianState':
                 r = np.array([0, 0])
@@ -220,7 +222,7 @@ class GaussianTests(BaseTest):
 if __name__ == '__main__':
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (PluginTest,):
+    for t in (GaussianTests,):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the expectation operations"""
+from collections import Sequence
 
 
 def PNR(state, wires, params):
@@ -26,7 +27,10 @@ def PNR(state, wires, params):
         tuple(float, float): Mean photon number and variance.
     """
     # pylint: disable=unused-argument
-    return state.mean_photon(wires), 0
+    if isinstance(wires, Sequence):
+        return state.mean_photon(wires[0])
+
+    return state.mean_photon(wires)
 
 
 def Homodyne(phi=None):
