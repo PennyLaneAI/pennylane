@@ -40,7 +40,7 @@ from strawberryfields.ops import (Catstate, Coherent, DensityMatrix, DisplacedSq
 from strawberryfields.ops import (BSgate, CKgate, CXgate, CZgate, Dgate,
                                   Kgate, Pgate, Rgate, S2gate, Sgate, Vgate)
 
-from .expectations import PNR, Homodyne
+from .expectations import *
 from .simulator import StrawberryFieldsSimulator
 
 
@@ -84,7 +84,8 @@ class StrawberryFieldsFock(StrawberryFieldsSimulator):
         'Fock': PNR,
         'X': Homodyne(0),
         'P': Homodyne(np.pi/2),
-        'Homodyne': Homodyne()
+        'Homodyne': Homodyne(),
+        'CVPoly': Order2Poly,
     }
 
     _circuits = {}

@@ -52,11 +52,21 @@ class BasicTest(BaseTest):
         "Heisenberg picture adjoint actions of CV Operations."
 
         def h_test(cls):
+            "Test a gaussian CV operation."
             print(cls.__name__)
             par = list(nr.randn(cls.n_params))  # fixed parameter values
             ww = list(range(cls.n_wires))
             op = cls(*par, wires=ww)
 
+            if issubclass(cls, oo.Expectation):
+                Q = op.heisenberg_obs(2)
+                # ev_order equals the number of dimensions of the H-rep array
+                self.assertEqual(Q.ndim, cls.ev_order)
+                return
+
+            # not an Expectation
+            # all gaussian ops use the 'A' method
+            self.assertEqual(cls.grad_method, 'A')
             U = op.heisenberg_tr(2)
             I = np.eye(*U.shape)
             # first row is always (1,0,0...)
@@ -79,9 +89,8 @@ class BasicTest(BaseTest):
                 G = (Up-U) / h
                 self.assertAllAlmostEqual(D, G, delta=self.tol)
 
-
-        for cls in openqml.ops.builtins_continuous.all_ops:
-            if cls.heisenberg_transform is not None:
+        for cls in openqml.ops.builtins_continuous.all_ops + openqml.expectation.builtins_continuous.all_ops:
+            if cls._heisenberg_rep is not None:  # only test gaussian operations
                 h_test(cls)
 
 
