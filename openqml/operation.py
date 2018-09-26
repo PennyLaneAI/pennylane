@@ -90,6 +90,17 @@ class Operation:
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on. If not given, args[-1] is interpreted as wires.
 
+    In general, an operation is differentiable (at least using the finite difference method 'F') iff
+
+    * it has parameters, i.e. `n_params > 0`, and
+    * its `par_domain` is not 'N'.
+
+    For an operation to be differentiable using the analytic method 'A', additionally
+
+    * its `par_domain` must be 'R'.
+
+    This is not sufficient though, the 'A' method does not work on nongaussian CV gates for example.
+
     The gradient recipe (multiplier :math:`c_k`, parameter shift :math:`s_k`)
     works as follows:
 
@@ -225,6 +236,85 @@ class Operation:
             QNode._current_context._append_op(self)
 
 
+
+class Expectation(Operation):
+    """A type of expectation value measurement supported by a device, and its properties.
+
+    :class:`Expectation` is used to describe Hermitian quantum observables.
+    """
+    n_params = 0
+    grad_method = 'F'  # fallback that should work with any differentiable operation
+    grad_recipe = None
+
+
+
+class CV:
+    """A mixin base class denoting a continuous-variable operation."""
+    #grad_method = 'F'
+
+    def heisenberg_expand(self, U, num_wires):
+        """Expand the given local Heisenberg-picture matrix into a full-system one."""
+        if num_wires == 0:
+            return U
+
+        # expand U into the I, x_0, p_0, x_1, p_1, ... basis
+        dim = 1 + num_wires*2
+        def loc(w):
+            "Returns the slice denoting the location of (x_w, p_w) in the basis."
+            ind = 2*w+1
+            return slice(ind, ind+2)
+
+        if U.ndim == 1:
+            W = np.zeros(dim)
+            W[0] = U[0]
+            for k, w in enumerate(self.wires):
+                W[loc(w)] = U[loc(k)]
+        elif U.ndim == 2:
+            W = np.eye(dim)
+            for k1, w1 in enumerate(self.wires):
+                s1 = loc(k1)
+                d1 = loc(w1)
+                W[d1, 0] = U[s1, 0]  # first column (first row is always (1, 0, 0, ...))
+                for k2, w2 in enumerate(self.wires):
+                    W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
+        else:
+            raise ValueError('Only order-1 and order-2 arrays supported.')
+        return W
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        r"""Heisenberg picture representation of the operation.
+
+        * For gaussian CV gates, this method returns the matrix of the adjoint action of the gate
+          for the given parameter values. The method is not defined for nongaussian gates.
+          The existence of this method is equivalent to `grad_method`=='A'.
+
+        * For first-order observables returns a vector of expansion coefficients q,
+          :math:`A = \sum_i q_i E_i`.
+          For second-order observables returns a hermitian matrix q,
+          :math:`B = \sum_{ij} q_{ij} E_i E_j`
+
+        For single-mode Operations we use the basis :math:`\vec{E} = (\I, x, p)`.
+        For multi-mode Operations we use the basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+
+        .. note:: For gates, assumes that the inverse transformation is obtained by negating the first parameter.
+
+        Args:
+          p (Sequence[float]): parameter values for the transformation
+
+        Returns:
+          array[float]: :math:`\tilde{U}` or :math:`q`
+        """
+        pass
+
+    _heisenberg_rep = None  # disable the method, we just want the docstring here
+
+
+
+
+class CVOperation(CV, Operation):
+    """Base class for continuous-variable quantum operations."""
+
     def heisenberg_pd(self, idx):
         """Partial derivative of the Heisenberg picture transform matrix.
 
@@ -243,9 +333,9 @@ class Operation:
         p = self.parameters
         # evaluate the transform at the shifted parameter values
         p[idx] += shift
-        U2 = self.heisenberg_transform(p)
+        U2 = self._heisenberg_rep(p)
         p[idx] -= 2*shift
-        U1 = self.heisenberg_transform(p)
+        U1 = self._heisenberg_rep(p)
         return (U2-U1) * multiplier  # partial derivative of the transformation
 
 
@@ -270,83 +360,40 @@ class Operation:
           array[float]: :math:`\tilde{U}`
         """
         # not defined?
-        if self.heisenberg_transform is None:
+        if self._heisenberg_rep is None:
             return None
 
         p = self.parameters
         if inverse:
             p[0] = -p[0]  # negate first parameter
-        U = self.heisenberg_transform(p)
+        U = self._heisenberg_rep(p)
 
-        if num_wires == 0:
-            return U
-
-        # expand U into the I, x_0, p_0, x_1, p_1, ... basis
-        d = 1 + num_wires*2
-        W = np.eye(d)
-
-        def loc(w):
-            "Returns the slice denoting the location of (x_w, p_w) in the basis."
-            ind = 2*w+1
-            return slice(ind, ind+2)
-
-        for k1, w1 in enumerate(self.wires):
-            s1 = loc(k1)
-            d1 = loc(w1)
-            W[d1, 0] = U[s1, 0]  # first column (first row is always (1, 0, 0, ...))
-            for k2, w2 in enumerate(self.wires):
-                W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
-        return W
-
-
-    def heisenberg_transform(self, p):
-        r"""Heisenberg picture representation of the adjoint action of the gate.
-
-        For gaussian CV gates, this method returns the transformation matrix for the given parameter values.
-        The method is not defined for nongaussian (and non-CV) gates.
-
-        For single-mode gates we use the basis :math:`\vec{E} = (\I, x, p)`.
-        For multimode gates, we use the basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
-
-        .. note:: Assumes that the inverse transformation is obtained by negating the first parameter.
-
-        Args:
-          p (Sequence[float]): parameter values for the transformation
-
-        Returns:
-          array[float]: :math:`\tilde{U}`
-        """
-        pass
-
-    heisenberg_transform = None  # disable the method, we just want the docstring here
+        return self.heisenberg_expand(U, num_wires)
 
 
 
-class Expectation(Operation):
-    """A type of expectation value measurement supported by a device, and its properties.
+class CVExpectation(CV, Expectation):
+    """Base class for continuous-variable quantum observables.
 
-    :class:`Expectation` is used to describe Hermitian quantum observables.
+    :meth:`_heisenberg_rep` is defined iff `ev_order` is not None, and it returns an array of the corresponding ndim.
     """
-    n_params = 0
-    grad_method = 'F'  # fallback that should work with any differentiable operation
-    grad_recipe = None
+    ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
-    def heisenberg_expand(self):
-        r"""Expansion of the observable in the :math:`\vec{E} = (\I, x, p)` basis.
+    def heisenberg_obs(self, num_wires):
+        p = self.parameters
+        U = self._heisenberg_rep(p)
+        return self.heisenberg_expand(U, num_wires)
 
-        For first-order observables returns a vector of expansion coefficients,
-        :math:`A = \sum_i q_i E_i`.
 
-        For second-order observables returns a hermitian matrix,
-        :math:`B = \sum_{ij} q_{ij} E_i E_j`
 
-        See :meth:`Operation.heisenberg_transform`.
+class CVPoly(Expectation):
+    """CV observable that is an order-2 polynomial in :math:\{x_i, p_i\}_i`.
 
-        The method is not defined for non-CV observables.
-
-        Returns:
-          array[float]: :math:`q`
-        """
+    Only used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV observables.
+    """
+    n_wires  = 0
+    n_params = 1
+    par_domain = 'A'
+    def queue(self):
+        # disabled
         pass
-
-    heisenberg_expand = None  # disable the method, we just want the docstring here

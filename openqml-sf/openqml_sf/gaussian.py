@@ -40,7 +40,7 @@ from strawberryfields.ops import (Coherent, DisplacedSqueezed,
 from strawberryfields.ops import (BSgate, CXgate, CZgate, Dgate,
                                   Pgate, Rgate, S2gate, Sgate)
 
-from .expectations import PNR, Homodyne
+from .expectations import *
 from .simulator import StrawberryFieldsSimulator
 
 
@@ -70,7 +70,8 @@ class StrawberryFieldsGaussian(StrawberryFieldsSimulator):
         'Fock': PNR,
         'X': Homodyne(0),
         'P': Homodyne(np.pi/2),
-        'Homodyne': Homodyne()
+        'Homodyne': Homodyne(),
+        'CVPoly': Order2Poly,
     }
 
     _circuits = {}

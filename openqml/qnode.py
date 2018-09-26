@@ -209,6 +209,7 @@ class QNode:
         self.func = func
         self.device = device
         self.num_wires = device.wires
+        self.ops = []
         self.variable_ops = {}  #: dict[int->list[(int, int)]]: Mapping from free parameter index to the list of Operations (in this circuit) that depend on it. The first element of the tuple is the index of Operation in the program queue, the second the index of the parameter within the Operation.
 
     def _append_op(self, op):
@@ -240,7 +241,6 @@ class QNode:
 
         .. note:: kwargs are assumed to not be variables by default; should we change this?
         """
-        self.variable_ops = {}
         self.queue = []
         self.ev    = []  # temporary queue for EVs
 
@@ -271,12 +271,12 @@ class QNode:
             self.output_type = float
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, tuple) and all([isinstance(x, openqml.operation.Expectation) for x in res]):
+        elif isinstance(res, tuple) and len(res) > 0 and all(isinstance(x, openqml.operation.Expectation) for x in res):
             # for multiple expectation values, we only support tuples.
             self.output_dim = len(res)
             self.output_type = np.asarray
         else:
-            raise QuantumFunctionError('A quantum function must return either a single expectation value or a tuple of expectation values.')
+            raise QuantumFunctionError('A quantum function must return either a single expectation value or a nonempty tuple of expectation values.')
 
         # check that all ev:s are returned, in the correct order
         if res != tuple(self.ev):
@@ -289,27 +289,106 @@ class QNode:
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
+        self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
+
         def check_op(op):
             # make sure only existing wires are referenced
             for w in op.wires:
                 if w < 0 or w >= self.num_wires:
                     raise QuantumFunctionError('Operation {} applied to wire {}, device only has {}.'.format(op.name, w, self.num_wires))
 
-        self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
-
         # check every gate/preparation and ev measurement
         for op in self.ops:
             check_op(op)
 
+        # classify the circuit contents
+        temp = [isinstance(op, openqml.operation.CV) for op in self.ops]
+        if all(temp):
+            self.type = 'CV'
+        elif not True in temp:
+            self.type = 'discrete'
+        else:
+            raise QuantumFunctionError('Continuous and discrete operations are not allowed in the same quantum circuit.')
+
         #----------------------------------------------------------
 
         # map each free variable to the operations which depend on it
+        self.variable_ops = {}
         for k, op in enumerate(self.ops):
             for idx, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
-        self.grad_method = {k: self.best_method(k) for k in self.variable_ops}  #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
+        self.grad_method_for_par = {k: self.best_method(k) for k in self.variable_ops}  #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
+
+
+    def op_successors(self, o_idx, only='G'):
+        """Successors of the given Operation in the quantum circuit.
+
+        Args:
+          o_idx  (int): index of the operation in the operation queue
+          only   (str): 'G'= only return non-Expectations, 'E'= only return Expectations, otherwise return all successors
+
+        Returns:
+          Iterable[Operation]: successors in a topological order
+        """
+        succ = self.ops[o_idx+1:]
+        # TODO at some point we may wish to upgrade to a DAG description of the circuit instead of a simple queue, in which case
+        # succ = nx.dag.topological_sort(self.DAG.subgraph(nx.dag.descendants(self.DAG, op)).copy())
+        # or maybe just succ = nx.dfs_preorder_nodes(self.DAG, op) if it is in a topological order??? the docs aren't clear.
+        if only == 'E':
+            return filter(lambda x: isinstance(x, openqml.operation.Expectation), succ)
+        elif only == 'G':
+            return filter(lambda x: not isinstance(x, openqml.operation.Expectation), succ)
+        return succ
+
+
+    def best_method(self, idx):
+        """Determine the correct gradient computation method for a free parameter.
+
+        Use the analytic method iff every gate that depends on the parameter supports it.
+        If even one gate does not support differentiation we cannot differentiate wrt this parameter at all.
+        Otherwise use the finite differences method.
+
+        Args:
+          idx (int): free parameter index
+        Returns:
+          str: gradient method to be used
+        """
+        def best_for_op(o_idx):
+            "Returns the best gradient method for the CV operation op."
+            op = self.ops[o_idx]
+            # for discrete operations, other ops do not affect the choice
+            if not isinstance(op, openqml.operation.CV):
+                return op.grad_method
+
+            # for CV ops it is more complicated
+            if op.grad_method == 'A':
+                # op is gaussian and has the heisenberg_* methods
+                # check that all successor ops are also gaussian
+                # TODO when we upgrade to a DAG: a nongaussian successor is OK if it isn't succeeded by any observables?
+                successors = self.op_successors(o_idx, 'G')
+                if all(x.grad_method == 'A' for x in successors):
+                    # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
+                    ev_successors = self.op_successors(o_idx, 'E')
+                    for x in ev_successors:
+                        if x.ev_order is None:
+                            return 'F'
+                        if x.ev_order == 2:
+                            op.grad_method = 'A2'  # bit of a hack
+                    return 'A'
+                else:
+                    return 'F'
+            else:
+                return op.grad_method  # 'F' or None
+
+        ops = self.variable_ops[idx]  # indices of operations that depend on the free parameter idx
+        temp = [best_for_op(k) for k, _ in ops]
+        if all(k == 'A' for k in temp):
+            return 'A'
+        elif None in temp:
+            return None
+        return 'F'
 
 
     def __call__(self, *args, **kwargs):
@@ -324,12 +403,12 @@ class QNode:
         """Evaluates the quantum function on the specified device.
 
         Args:
-          args (tuple): input parameters to the quantum function
+          args (tuple): input parameters to the circuit function
 
         Returns:
           float, array[float]: output expectation value(s)
         """
-        if not self.variable_ops:
+        if not self.ops:
             # construct the circuit
             self.construct(args, **kwargs)
 
@@ -341,26 +420,24 @@ class QNode:
         return self.output_type(ret)
 
 
-    def best_method(self, idx):
-        """Determine the correct gradient computation method for a free parameter.
+    def evaluate_obs(self, obs, args, **kwargs):
+        """Evaluate the expectation values of the given observables.
+
+        Assumes :meth:`construct` has already been called.
 
         Args:
-          idx (int): free parameter index
-        Returns:
-          str: gradient method to be used
-        """
-        # use the analytic method iff every gate that depends on the parameter supports it
-        # if even one gate does not support differentiation we cannot differentiate wrt this parameter
-        # otherwise use finite diff
-        # TODO FIXME not enough in CV case if nongaussian gates follow them.
+          obs  (Iterable[Expectation]): observables to measure
+          args (array[float]): circuit input parameters
 
-        ops = self.variable_ops[idx]  # indices of operations that depend on the free parameter idx
-        temp = [self.ops[k].grad_method for k, _ in ops]
-        if all(k == 'A' for k in temp):
-            return 'A'
-        elif None in temp:
-            return None
-        return 'F'
+        Returns:
+          array[float]: expectation values
+        """
+        # temporarily store the free parameter values in the Variable class
+        Variable.free_param_values = args
+
+        self.device.reset()
+        ret = self.device.execute(self.queue, obs)
+        return ret
 
 
     def gradient(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
@@ -404,7 +481,7 @@ class QNode:
         if isinstance(params, numbers.Number):
             params = (params,)
 
-        if not self.variable_ops:
+        if not self.ops:
             # construct the circuit
             self.construct(params, **kwargs)
 
@@ -419,7 +496,7 @@ class QNode:
                 raise ValueError('Parameter indices must be unique.')
 
         # check if the method can be used on the requested parameters
-        mmap = _inv_dict(self.grad_method)
+        mmap = _inv_dict(self.grad_method_for_par)
         def check_method(m):
             "Intersection of which with free params whose best grad method is m."
             return mmap.get(m, set()).intersection(which)
@@ -435,7 +512,7 @@ class QNode:
                     raise ValueError('The analytic gradient method cannot be used with the parameter(s) {}.'.format(bad))
             method = {k: method for k in which}
         elif method == 'B':
-            method = self.grad_method
+            method = self.grad_method_for_par
         else:
             raise ValueError('Unknown gradient method.')
 
@@ -456,7 +533,7 @@ class QNode:
 
             par_method = method[k]
             if par_method == 'A':
-                grad[i, :] = self._pd_analytic(flat_params, k, order, **kwargs)
+                grad[i, :] = self._pd_analytic(flat_params, k, **kwargs)
             elif par_method == 'F':
                 grad[i, :] = self._pd_finite_diff(flat_params, k, h, order, y0, **kwargs)
             elif par_method is None:
@@ -501,7 +578,7 @@ class QNode:
             raise ValueError('Order must be 1 or 2.')
 
 
-    def _pd_analytic(self, params, idx, order=1, **kwargs):
+    def _pd_analytic(self, params, idx, force_order2=False, **kwargs):
         """Partial derivative of the node using the analytic method.
 
         .. todo:: Detect non-gaussian gates in CV circuits and raise an exception if they are differentiated or succeed a differentiated gate (since in these cases the formula is invalid).
@@ -521,8 +598,8 @@ class QNode:
         # find the Commands in which the free parameter appears, use the product rule
         for o_idx, p_idx in self.variable_ops[idx]:
             op = self.ops[o_idx]
-            if op.grad_method != 'A':
-                raise ValueError('Attempted to use the analytic method on a gate that does not support it.')
+            if op.grad_method[0] != 'A':
+                raise ValueError('{} does not support the analytic method.'.format(op.name))
 
             # we temporarily edit the Operation such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operations depending on the original.
@@ -547,13 +624,14 @@ class QNode:
             shift_p1 = np.r_[params, params[idx] +shift]
             shift_p2 = np.r_[params, params[idx] -shift]
 
-            if order == 1:
+            if not force_order2 and op.grad_method != 'A2':
+                # basic analytic method, for discrete gates and gaussian CV gates succeeded by order-1 observables
                 # evaluate the circuit in two points with shifted parameter values
                 y2 = np.asarray(self.evaluate(shift_p1, **kwargs))
                 y1 = np.asarray(self.evaluate(shift_p2, **kwargs))
                 pd += (y2-y1) * multiplier
-
-            elif order == 2:
+            else:
+                # order-2 method, for gaussian CV gates succeeded by order-2 observables
                 # evaluate transformed observables at the original parameter point
                 # first build the Z transformation matrix
                 Variable.free_param_values = shift_p1
@@ -567,27 +645,35 @@ class QNode:
                 Z0 = op.heisenberg_tr(w, inverse=True)
                 Z = Z @ Z0
 
-                # conjugate with all the following operations
-                B = np.eye(1 +2*n)
-                for BB in self.queue[o_idx+1:]:  # FIXME or self.ops?
+                # conjugate Z with all the following operations
+                B = np.eye(1 +2*w)
+                B_inv = B.copy()
+                for BB in self.op_successors(o_idx, 'G'):
                     temp = BB.heisenberg_tr(w)
                     B = temp @ B
-                Z = B @ Z @ np.linalg.inv(B)  # conjugation
+                    temp = BB.heisenberg_tr(w, inverse=True)
+                    B_inv = B_inv @ temp
+                Z = B @ Z @ B_inv  # conjugation
+
+                ev_successors = self.op_successors(o_idx, 'E')
 
                 def tr_obs(ex):
-                    "Transform the observable, compute its expectation value."
-                    q = ex.heisenberg_expand()
-                    temp = q @ Z
+                    "Transform the observable"
+                    # TODO test: if ex is not a successor of op, multiplying by Z should do nothing.
+                    if ex not in ev_successors:
+                        return ex
+                    q = ex.heisenberg_obs(w)
+                    qp = q @ Z
                     if q.ndim == 2:
                         # 2nd order observable
-                        temp = temp +temp.T.conj()
-                    return self.evaluate_obs(temp, unshifted_params, **kwargs)  # TODO needs to be implemented
+                        qp = qp +qp.T.conj()
+                    return openqml.operation.CVPoly(qp, wires=[])
 
+                # transform the observables
+                obs = list(map(tr_obs, self.ev))
                 # measure transformed observables
-                temp = np.asarray(list(map(tr_obs, self.ev)))
+                temp = self.evaluate_obs(obs, unshifted_params, **kwargs)
                 pd += temp
-            else:
-                raise ValueError('Order must be 1 or 2.')
 
             # restore the original parameter
             op.params[p_idx] = orig

@@ -13,35 +13,43 @@
 # limitations under the License.
 """This module contains operations for the default phase space observables"""
 
-from openqml.operation import Expectation
+import numpy as np
+
+from openqml.operation import CVExpectation
 
 
 
-class Fock(Expectation):   # FIXME nondescriptive name
+class Fock(CVExpectation):   # FIXME nondescriptive name
     r"""Returns the photon-number expectation value in the phase space.
 
     The photon number operator is :math:`n = a^\dagger a = \frac{1}{2\hbar}(x^2 +p^2) -\I/2`.
     """
-    def heisenberg_expand(self):
+    ev_order = 2
+    @staticmethod
+    def _heisenberg_rep(p):
         return np.diag([-0.5, 0.25, 0.25])
 
 
-class X(Expectation):
+class X(CVExpectation):
     r"""Returns the position expectation value in the phase space.
     """
-    def heisenberg_expand(self):
+    ev_order = 1
+    @staticmethod
+    def _heisenberg_rep(p):
         return np.array([0, 1, 0])
 
 
-class P(Expectation):
+class P(CVExpectation):
     r"""Returns the momentum expectation value in the phase space.
 
     """
-    def heisenberg_expand(self):
+    ev_order = 1
+    @staticmethod
+    def _heisenberg_rep(p):
         return np.array([0, 0, 1])
 
 
-class Homodyne(Expectation):
+class Homodyne(CVExpectation):
     r"""Returns the homodyne expectation value in the phase space.
 
     Args:
@@ -49,13 +57,15 @@ class Homodyne(Expectation):
             the homodyne measurement.
     """
     n_params = 1
-    def heisenberg_expand(self):
-        phi = self.parameters[0]
+    ev_order = 1
+    @staticmethod
+    def _heisenberg_rep(p):
+        phi = p[0]
         return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
 
 
 
-class Heterodyne(Expectation):
+class Heterodyne(CVExpectation):
     r"""Returns the displacement expectation value in the phase space.
 
     """
