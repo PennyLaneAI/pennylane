@@ -204,7 +204,7 @@ class ProjectQSimulator(ProjectQDevice):
 
     short_name = 'projectq.simulator'
     _operator_map = projectq_operator_map
-    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [XGate, YGate, ZGate, AllZGate]}
+    _observable_map = {key:val for key, val in _operator_map.items() if val in [XGate, YGate, ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = ['gate_fusion', 'rnd_seed']
 
@@ -247,7 +247,7 @@ class ProjectQClassicalSimulator(ProjectQDevice):
 
     short_name = 'projectq.classicalsimulator'
     _operator_map = {key:val for key, val in projectq_operator_map.items() if val in [XGate, CNOT]}
-    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [ZGate, AllZGate]}
+    _observable_map = {key:val for key, val in _operator_map.items() if val in [ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = []
 
@@ -283,7 +283,7 @@ class ProjectQIBMBackend(ProjectQDevice):
 
     short_name = 'projectq.ibmbackend'
     _operator_map = {key:val for key, val in projectq_operator_map.items() if val in [HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, Rx, Ry, Rz, R, CNOT, CZ]}
-    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [ZGate, AllZGate]}
+    _observable_map = {key:val for key, val in _operator_map.items() if val in [ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = ['use_hardware', 'num_runs', 'verbose', 'user', 'password', 'device', 'retrieve_execution']
 
