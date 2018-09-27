@@ -6,7 +6,7 @@
 Introduction
 ============
 
-The main principle underlying OpenQML is to make the interface between the quantum and classical worlds seamless. Wherever possible, the quantum and classical components of a hybrid machine learning model should coexist on the same conceptual level, as computational **devices** which we program to evaluate mathematical functions. 
+The main principle underlying OpenQML is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. OpenQML employs a model where both classical and quantum computers are used in the same basic way: as computational **devices** which we program to evaluate mathematical functions. 
 
 The core of OpenQML is designed around four main concepts:
 
@@ -14,7 +14,7 @@ The core of OpenQML is designed around four main concepts:
 
 2. **Quantum gradients**: the gradients of quantum functions, these are themselves built from quantum functions
 
-3. **Quantum nodes**: an abstract representation of quantum circuits which input/output classical information
+3. **Quantum nodes**: an abstract representation of quantum circuits which input and output classical information
 
 4. **Hybrid computation**: a computing model which seamlessly integrates both classical and quantum nodes
 
@@ -62,7 +62,7 @@ We can thus **use the same quantum device** to compute both quantum functions an
 
 Quantum information is fragile -- especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations? 
 
-This leads to the notion of a **quantum node**: a basic computational unit -- programmed on a quantum circuit -- which evaluates a qfunc. Only classical data can enter/exit a quantum node. 
+This leads to the notion of a **quantum node**: a basic computational unit -- programmed on a quantum circuit -- which evaluates a qfunc. Only classical data can enter or exit a quantum node. 
 
 :html:`<br>`
 
