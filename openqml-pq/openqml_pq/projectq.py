@@ -112,7 +112,7 @@ class ProjectQDevice(Device):
     _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
 
     def __init__(self, wires, *, shots=0, **kwargs):
-        super().__init__(self.short_name, wires, shots)
+        super().__init__(self.short_name, wires=wires, shots=shots)
 
         # translate some aguments
         for k,v in {'log':'verbose'}.items():
