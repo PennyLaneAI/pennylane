@@ -113,7 +113,7 @@ class ProjectQDevice(Device):
 
     def __init__(self, wires, **kwargs):
         kwargs.setdefault('shots', 0)
-        super().__init__(self.short_name, kwargs['shots'])
+        super().__init__(self.short_name, wires=wires, shots=kwargs['shots'])
 
         # translate some aguments
         for k,v in {'log':'verbose'}.items():
