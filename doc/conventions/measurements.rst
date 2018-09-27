@@ -1,30 +1,24 @@
-.. _conventions:
+Measurements in QM
+==================
 
-========================
-Conventions and formulas
-========================
+Let us have a quick recap of how measurements work in quantum mechanics.
+A general (full) measurement is defined by a set of measurement operators :math:`\{A_i\}`,
+with the property
 
-.. sectionauthor:: AUTHORS
+.. math:: \sum_k A_k^\dagger A_k = \I.
 
+If the state before the measurement is :math:`\rho`, the probability of obtaining result :math:`k` is
 
-In this section, we provide formal definitions of conecpts used in openqml.
+.. math:: p_{A_k} = \tr(A_k^\dagger A_k \rho).
 
-.. raw:: html
-   
-   <style>
-      div.topic.contents > ul {
-         max-height: 500px;
-      }
-   </style>
+The aforementioned property of the measurement operators guarantees that the probabilities sum up to one for
+any state :math:`\rho`.
+If the measurement yields the result :math:`k`, the (conditional) state after the measurement is
 
+.. math:: \rho_{A_k}' = \frac{A_k \rho A_k^\dagger}{p_{A_k}}.
 
-.. rst-class:: contents local topic
-
-.. toctree:: 
-   :maxdepth: 2
-
-   conventions/measurements
-   conventions/optimizers
+If we ignore the outcome but wish to obtain the state after the measurement process,
+we may take the convex combination of these conditional states multiplied by their respective probabilities:
 
 .. math:: \rho_{A}' = \sum_k p_{A_k} \rho_{A_k}' = \sum_k A_k \rho A_k^\dagger.
 
@@ -67,7 +61,7 @@ Note that the relative order of the measurements in general matters, different o
 If there are any unitaries between the measurements we may fold them into the latter measurement:
 :math:`B_j U A_i = U (U^\dagger B_j U) A_i = U B_j' A_i`.
 
-Things are greatly simplified if the measurement operators commute pairwise, :math:`[A_i, B_j] = 0 \: \forall i,j`.
+Things are greatly simplified if the measurement operators commute pairwise, :math:`[A_i, B_j] = 0`.
 In this case the joint p.d.f. does not depend on the order of the measurements. Furthermore,
 the expectation values can be obtained as
 
@@ -135,7 +129,7 @@ If one is needed, the option that makes the most sense for commuting measurement
 .. math:: \rho' = \sum_{ij\ldots} (A_i B_j \cdots) \rho (A_i B_j \cdots)^\dagger.
 
 
-In summary, both :mod:`openqml_sf` and :mod:`openqml.plugins.default` currently are only designed to return expectation values of measurements which are
+In summary, both :mod:`openqml.plugins.strawberryfields` and :mod:`openqml.plugins.dummy_plugin` currently are only designed to return expectation values of measurements which are
 
 #. projective,
 #. grouped next to each other, and
