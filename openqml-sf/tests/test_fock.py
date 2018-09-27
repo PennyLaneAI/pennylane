@@ -84,7 +84,7 @@ class FockTests(BaseTest):
             def circuit(*args):
                 args = prep_par(args, op)
                 op(*args, wires=wires)
-                return qm.expectation.Fock(0)
+                return qm.expectation.PhotonNumber(0)
 
             with self.assertRaisesRegex(qm.DeviceError,
                 "Gate {} not supported on device strawberryfields.fock".format(g)):
@@ -126,7 +126,7 @@ class FockTests(BaseTest):
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.Fock(0)
+            return qm.expectation.PhotonNumber(0)
 
         self.assertAlmostEqual(circuit(1), 1, delta=self.tol)
 
@@ -140,7 +140,7 @@ class FockTests(BaseTest):
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.Fock(0)
+            return qm.expectation.PhotonNumber(0)
 
         expected_var = np.sqrt(1/shots)
         self.assertAlmostEqual(circuit(1), 1, delta=expected_var)
@@ -170,7 +170,7 @@ class FockTests(BaseTest):
             def circuit(*args):
                 qm.TwoModeSqueezing(0.1, 0, wires=[0, 1])
                 op(*args, wires=wires)
-                return qm.expectation.Fock(0), qm.expectation.Fock(1)
+                return qm.expectation.PhotonNumber(0), qm.expectation.PhotonNumber(1)
 
             # compare to reference SF engine
             def SF_reference(*args):
@@ -208,6 +208,7 @@ class FockTests(BaseTest):
         log.info('test_supported_fock_observables')
         cutoff_dim = 10
         a = 0.312
+        a_array = np.eye(5)
 
         dev = qm.device('strawberryfields.fock', wires=2, cutoff_dim=cutoff_dim)
 
@@ -239,7 +240,8 @@ class FockTests(BaseTest):
             if op.n_params == 0:
                 self.assertAllEqual(circuit(), SF_reference())
             elif op.n_params == 1:
-                self.assertAllEqual(circuit(a), SF_reference(a))
+                p = a_array if op.par_domain == 'A' else a
+                self.assertAllEqual(circuit(p), SF_reference(p))
 
 
 if __name__ == '__main__':

@@ -74,7 +74,7 @@ class GaussianTests(BaseTest):
             def circuit(*x):
                 x = prep_par(x, op)
                 op(*x, wires=wires)
-                return qm.expectation.Fock(0)
+                return qm.expectation.PhotonNumber(0)
 
             with self.assertRaisesRegex(qm.DeviceError,
                 "Gate {} not supported on device strawberryfields.gaussian".format(g)):
@@ -116,7 +116,7 @@ class GaussianTests(BaseTest):
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.Fock(0)
+            return qm.expectation.PhotonNumber(0)
 
         self.assertAlmostEqual(circuit(1), 1, delta=self.tol)
 
@@ -130,7 +130,7 @@ class GaussianTests(BaseTest):
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.Fock(0)
+            return qm.expectation.PhotonNumber(0)
 
         expected_var = np.sqrt(1/shots)
         self.assertAlmostEqual(circuit(1), 1, delta=expected_var)
@@ -159,7 +159,7 @@ class GaussianTests(BaseTest):
             def circuit(*x):
                 qm.TwoModeSqueezing(0.1, 0, wires=[0, 1])
                 op(*x, wires=wires)
-                return qm.expectation.Fock(0), qm.expectation.Fock(1)
+                return qm.expectation.PhotonNumber(0), qm.expectation.PhotonNumber(1)
 
             # compare to reference SF engine
             def SF_reference(*x):
@@ -185,6 +185,7 @@ class GaussianTests(BaseTest):
         """Test that all supported observables work correctly"""
         log.info('test_supported_gaussian_observables')
         a = 0.312
+        a_array = np.eye(5)
 
         dev = qm.device('strawberryfields.gaussian', wires=2)
 
@@ -216,7 +217,8 @@ class GaussianTests(BaseTest):
             if op.n_params == 0:
                 self.assertAllEqual(circuit(), SF_reference())
             elif op.n_params == 1:
-                self.assertAllEqual(circuit(a), SF_reference(a))
+                p = a_array if op.par_domain == 'A' else a
+                self.assertAllEqual(circuit(p), SF_reference(p))
 
 
 if __name__ == '__main__':

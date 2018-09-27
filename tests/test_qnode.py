@@ -189,6 +189,7 @@ class BasicTest(BaseTest):
         def check_methods(qf, d):
             q = qm.QNode(qf, self.dev2)
             q.construct(par)  # NOTE: the default plugin is a discrete (qubit) simulator, it cannot execute CV gates, but the QNode can be constructed
+            #print(q.grad_method_for_par)
             self.assertTrue(q.grad_method_for_par == d)
 
         def qf(x, y):
@@ -216,6 +217,13 @@ class BasicTest(BaseTest):
             qm.Kerr(0.3, [1])  # nongaussian succeeding both x and y due to the beamsplitter
             return qm.expectation.X(0), qm.expectation.X(1)
         check_methods(qf, {0:'F', 1:'F'})
+
+        def qf(x, y):
+            qm.Kerr(y, [1])
+            qm.Displacement(x, 0, [0])
+            qm.Beamsplitter(0.2, 1.7, [0, 1])
+            return qm.expectation.X(0), qm.expectation.X(1)
+        check_methods(qf, {0:'A', 1:'F'})
 
 
     def test_qnode_multiple_gate_parameters(self):

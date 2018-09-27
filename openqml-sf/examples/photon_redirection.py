@@ -1,51 +1,58 @@
 """Photon redirection example.
 
-In this demo we optimize an optical quantum circuit to redirect a photon from mode 1 to mode 2.
+In this demo we optimize an optical quantum circuit to redirect a photon from mode 0 to mode 1.
 """
 import openqml as qm
 from openqml import numpy as np
 
-dev1 = qm.device('strawberryfields.fock', wires=2, cutoff_dim=5)
+dev = qm.device('strawberryfields.fock', wires=2, cutoff_dim=5)
+#dev = qm.device('strawberryfields.gaussian', wires=2)
 
-class Beamsplitter(qm.Beamsplitter):
-    grad_method = 'F'
 
-# @qm.qfunc(dev1)
 def circuit(theta):
-    """Beamsplitter with single photon incident on mode 1
+    """Here we define the quantum circuit.
+
+    Beamsplitter with a single photon incident on mode 0, measure the photon number in mode 1.
 
     Args:
         theta (float): beamsplitter angle
     """
     qm.FockState(1, wires=0)
-    # BUG: circuit gradient only working if BS set to `method='F'`
-    # otherwise the circuit gradient is always 0 irrespective of theta
-    Beamsplitter(theta, 0, wires=[0, 1])
-    return qm.expectation.Fock(wires=1)
+    qm.Beamsplitter(theta, 0, wires=[0, 1])
+    return qm.expectation.PhotonNumber(wires=1)
 
-circuit = qm.QNode(circuit, dev1)
+q = qm.QNode(circuit, dev)
+
+# initialize theta with random value
+theta0 = np.array([np.pi * 0.2]) # np.random.randn(1)
+
+print('Initial beamsplitter angle: {} * pi'.format(theta0/np.pi))
+print('initial val: ', q(*theta0))
+print(q.grad_method_for_par)
+
+grad_F = q.gradient(theta0, method='F')
+print('initial grad_F: ', grad_F)
+grad_A = q.gradient(theta0)
+print('initial grad_A: ', grad_A)
+
+import sys
+sys.exit() # TODO remove when the gradients are fixed so that they agree
 
 def cost(theta):
     """Cost (error) function to be minimized.
 
     Args:
-        theta (float): beamsplitter angle
+        theta (array[float]): optimization parameters
     """
-    return np.abs(circuit(*theta)-1)
+    return (q(theta[0]) -1) ** 2
 
-# initialize theta with random value
-theta0 = np.random.randn(1)
+# create the optimizer
 o = qm.Optimizer(cost, theta0, optimizer='BFGS')
-
 # train the circuit
 c = o.train(max_steps=100)
 
-# import autograd
-# grad = autograd.grad(cost, 0)
-# print(grad([1.], None), circuit.gradient([1.], method='A'), circuit.gradient([1.], method='F'))
-
 # print the results
-print('Initial beamsplitter angle:', theta0)
-print('Optimized beamsplitter angle:', o.weights)
-print('Circuit output at optimized angle:', circuit(*o.weights))
-print('Circuit gradient at optimized angle:', qm.grad(circuit, o.weights))
+print('Initial beamsplitter angle: {} * pi'.format(theta0/np.pi))
+print('Optimized beamsplitter angle: {} * pi'.format(o.weights/np.pi))
+print('Circuit output at optimized angle:', q(o.weights))
+print('Circuit gradient at optimized angle:', qm.grad(q, o.weights))

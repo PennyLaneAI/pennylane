@@ -26,6 +26,9 @@ Classes
 .. autosummary::
    Operation
    Expectation
+   CV
+   CVOperation
+   CVExpectation
 
 ----
 """
@@ -78,7 +81,7 @@ class ExpectationFactory(type):
 
 
 class Operation:
-    r"""A type of quantum operation supported by a device, and its properties.
+    r"""Base class for quantum operation supported by a device.
 
     * Each Operation subclass represents a type of quantum operation, e.g. a unitary quantum gate.
     * Each instance of these subclasses represents an application of the
@@ -89,6 +92,7 @@ class Operation:
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on. If not given, args[-1] is interpreted as wires.
+        do_queue (bool): should the operation be immediately pushed into a :class:`QNode` circuit queue?
 
     In general, an operation is differentiable (at least using the finite difference method 'F') iff
 
@@ -116,13 +120,12 @@ class Operation:
     grad_method = 'A'   #: str: gradient computation method; 'A'=analytic, 'F'=finite differences, None=may not be differentiated.
     grad_recipe = None  #: list[tuple[float]]: Gradient recipe for the 'A' method. One tuple for each parameter, (multiplier c_k, parameter shift s_k). None means (0.5, \pi/2) (the most common case).
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, wires=None, do_queue=True):
         self.name  = self.__class__.__name__   #: str: name of the operation
 
         # extract the arguments
-        if 'wires' in kwargs:
+        if wires is not None:
             params = args
-            wires = kwargs['wires']
         else:
             params = args[:-1]
             wires = args[-1]
@@ -164,7 +167,8 @@ class Operation:
             raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
 
         self.wires = wires  #: Sequence[int]: subsystems the operation acts on
-        self.queue()
+        if do_queue:
+            self.queue()
 
 
     def __str__(self):
@@ -238,7 +242,7 @@ class Operation:
 
 
 class Expectation(Operation):
-    """A type of expectation value measurement supported by a device, and its properties.
+    """Base class for expectation value measurements supported by a device.
 
     :class:`Expectation` is used to describe Hermitian quantum observables.
     """
@@ -253,8 +257,22 @@ class CV:
     #grad_method = 'F'
 
     def heisenberg_expand(self, U, num_wires):
-        """Expand the given local Heisenberg-picture matrix into a full-system one."""
+        """Expand the given local Heisenberg-picture array into a full-system one.
+
+        Args:
+          U (array[float]): array to expand (expected to be of the dimension 1+2*self.n_wires)
+          num_wires  (int): total number of wires in the quantum circuit. If zero, return U as is.
+        Returns:
+          array[float]: expanded array, dimension 1+2*num_wires
+        """
         if num_wires == 0:
+            return U
+
+        if len(self.wires) == 0:
+            # no expansion necessary (U is a full-system matrix, Qnode._pd_analytic uses this)
+            temp = len(U)
+            if temp != 1+2*num_wires:
+                raise ValueError('{}: Heisenberg matrix is the wrong size {}.'.format(self.name, temp))
             return U
 
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis
@@ -270,11 +288,16 @@ class CV:
             for k, w in enumerate(self.wires):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
-            W = np.eye(dim)
+            if isinstance(self, Expectation):
+                W = np.zeros((dim, dim))
+            else:
+                W = np.eye(dim)
+            W[0, 0] = U[0, 0]
             for k1, w1 in enumerate(self.wires):
                 s1 = loc(k1)
                 d1 = loc(w1)
-                W[d1, 0] = U[s1, 0]  # first column (first row is always (1, 0, 0, ...))
+                W[d1, 0] = U[s1, 0]  # first column
+                W[0, d1] = U[0, s1]  # first row (for gates, the first row is always (1, 0, 0, ...), but not for observables!)
                 for k2, w2 in enumerate(self.wires):
                     W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
         else:
@@ -289,10 +312,8 @@ class CV:
           for the given parameter values. The method is not defined for nongaussian gates.
           The existence of this method is equivalent to `grad_method`=='A'.
 
-        * For first-order observables returns a vector of expansion coefficients q,
-          :math:`A = \sum_i q_i E_i`.
-          For second-order observables returns a hermitian matrix q,
-          :math:`B = \sum_{ij} q_{ij} E_i E_j`
+        * For obsevables, returns a real vector (first-order observables) or symmetric matrix (second-order observables)
+          of expansion coefficients of the observable.
 
         For single-mode Operations we use the basis :math:`\vec{E} = (\I, x, p)`.
         For multi-mode Operations we use the basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
@@ -361,7 +382,7 @@ class CVOperation(CV, Operation):
         """
         # not defined?
         if self._heisenberg_rep is None:
-            return None
+            raise RuntimeError('{} is not a gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
 
         p = self.parameters
         if inverse:
@@ -373,27 +394,24 @@ class CVOperation(CV, Operation):
 
 
 class CVExpectation(CV, Expectation):
-    """Base class for continuous-variable quantum observables.
+    """Base class for continuous-variable expectation value measurements.
 
     :meth:`_heisenberg_rep` is defined iff `ev_order` is not None, and it returns an array of the corresponding ndim.
     """
     ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
     def heisenberg_obs(self, num_wires):
+        r"""Representation of the observable in the position/momentum operator basis.
+
+        Returns the expansion :math:`q` of the observable, :math:`Q`, in the basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+        For first-order observables returns a real vector such that :math:`Q = \sum_i q_i E_i`.
+        For second-order observables returns a real symmetric matrix such that :math:`Q = \sum_{ij} q_{ij} E_i E_j`.
+
+        Args:
+          num_wires (int): total number of wires in the quantum circuit
+        Returns:
+          array[float]: :math:`q`
+        """
         p = self.parameters
         U = self._heisenberg_rep(p)
         return self.heisenberg_expand(U, num_wires)
-
-
-
-class CVPoly(Expectation):
-    """CV observable that is an order-2 polynomial in :math:\{x_i, p_i\}_i`.
-
-    Only used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV observables.
-    """
-    n_wires  = 0
-    n_params = 1
-    par_domain = 'A'
-    def queue(self):
-        # disabled
-        pass
