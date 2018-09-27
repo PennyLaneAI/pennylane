@@ -49,6 +49,8 @@ class Variable:
     Each time the circuit is executed, it is given a vector of
     parameter values. Variable is essentially an index into that vector.
 
+    .. note:: Variables currently do not implement any arithmetic operations other than scalar multiplication.
+
     Args:
       idx  (int): parameter index >= 0
       name (str): name of the variable (optional)

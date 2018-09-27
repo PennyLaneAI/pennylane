@@ -30,12 +30,14 @@ The quantum circuit is described using a quantum function (qfunc), which must be
 
     def my_quantum_function(x, y):
         qm.Zrotation(x, 0)
-        qm.CNOT(0,1)
-        qm.Yrotation(y**2, 1)
+        qm.CNOT([0,1])
+        qm.Yrotation(-2*y, 1)
         return qm.expectation.Z(0)
 
 The body of the qfunc must consist of only :class:`~operation.Operation` constructor calls, and must return
 a tuple of :class:`~operation.Expectation` instances (or just a single instance).
+Allowed arithmetic operations on the arguments `x, y` (called the *free parameters* of the quantum circuit)
+are limited to what the :class:`~variable.Variable` class supports, currently only scalar multiplication.
 
 .. note:: The Operation instances must be constructed in the qfunc, in the correct order, because Operation.__init__ does the queueing!
 
@@ -49,7 +51,7 @@ For example,
 
     device = qm.device('strawberryfields.fock', cutoff=5)
     qnode1 = QNode(my_quantum_function, device)
-    result = qnode1(np.pi/4)
+    result = qnode1(np.pi/4, 0.7)
 
 .. note::
 
@@ -62,8 +64,8 @@ For example,
             @qfunc(device)
             def my_quantum_function(x, y):
                 qm.Zrotation(x, 0)
-                qm.CNOT(0,1)
-                qm.Yrotation(y**2, 1)
+                qm.CNOT([0,1])
+                qm.Yrotation(-2*y, 1)
                 return qm.expectation.Z(0)
 
             result = my_quantum_function(np.pi/4)
@@ -78,6 +80,7 @@ Functions
    _flatten
    _unflatten
    unflatten
+   _inv_dict
 
 
 QNode methods
@@ -88,6 +91,7 @@ QNode methods
 .. autosummary::
    __call__
    evaluate
+   evaluate_obs
    gradient
 
 QNode internal methods
@@ -95,8 +99,9 @@ QNode internal methods
 
 .. autosummary::
    construct
-   best_method
+   _best_method
    _append_op
+   _op_successors
    _pd_finite_diff
    _pd_analytic
 
@@ -319,10 +324,10 @@ class QNode:
                 if isinstance(p, Variable):
                     self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
-        self.grad_method_for_par = {k: self.best_method(k) for k in self.variable_ops}  #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
+        self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}  #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
 
 
-    def op_successors(self, o_idx, only='G'):
+    def _op_successors(self, o_idx, only='G'):
         """Successors of the given Operation in the quantum circuit.
 
         Args:
@@ -343,12 +348,23 @@ class QNode:
         return succ
 
 
-    def best_method(self, idx):
+    def _best_method(self, idx):
         """Determine the correct gradient computation method for a free parameter.
 
         Use the analytic method iff every gate that depends on the parameter supports it.
-        If even one gate does not support differentiation we cannot differentiate wrt this parameter at all.
+        If even one gate does not support differentiation we cannot differentiate wrt. this parameter at all.
         Otherwise use the finite differences method.
+
+        .. todo::
+           For CV circuits, when the circuit DAG is implemented, determining which gradient method to use for should work like this.
+           To check whether we can use the 'A' or 'A2' method, we need first to check for the presence of nongaussian ops and
+           order-2 observables.
+           Starting from the expectation values (all leaf nodes under current limitations on observables, see :ref:`measurements`),
+           walk through the DAG against the edges (upstream) in arbitrary order.
+           If the starting leaf is an order-2 EV, mark every gaussian operation you hit with op.grad_method='A2' (instance variable, does not mess up the class variable!).
+           If you hit a nongaussian gate (grad_method != 'A'), from that gate upstream mark every
+           gaussian operation with op.grad_method='F'.
+           Then run the standard discrete-case algorithm for determining the best gradient method for every free parameter.
 
         Args:
           idx (int): free parameter index
@@ -356,7 +372,7 @@ class QNode:
           str: gradient method to be used
         """
         def best_for_op(o_idx):
-            "Returns the best gradient method for the CV operation op."
+            "Returns the best gradient method for the operation op."
             op = self.ops[o_idx]
             # for discrete operations, other ops do not affect the choice
             if not isinstance(op, openqml.operation.CV):
@@ -367,10 +383,10 @@ class QNode:
                 # op is gaussian and has the heisenberg_* methods
                 # check that all successor ops are also gaussian
                 # TODO when we upgrade to a DAG: a nongaussian successor is OK if it isn't succeeded by any observables?
-                successors = self.op_successors(o_idx, 'G')
+                successors = self._op_successors(o_idx, 'G')
                 if all(x.grad_method == 'A' for x in successors):
                     # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-                    ev_successors = self.op_successors(o_idx, 'E')
+                    ev_successors = self._op_successors(o_idx, 'E')
                     for x in ev_successors:
                         if x.ev_order is None:
                             return 'F'
@@ -581,8 +597,6 @@ class QNode:
     def _pd_analytic(self, params, idx, force_order2=False, **kwargs):
         """Partial derivative of the node using the analytic method.
 
-        .. todo:: Detect non-gaussian gates in CV circuits and raise an exception if they are differentiated or succeed a differentiated gate (since in these cases the formula is invalid).
-
         The 2nd order method can handle also first order observables, but 1st order method may be more efficient unless it's really easy to experimentally measure arbitrary 2nd order observables.
 
         Args:
@@ -648,14 +662,14 @@ class QNode:
                 # conjugate Z with all the following operations
                 B = np.eye(1 +2*w)
                 B_inv = B.copy()
-                for BB in self.op_successors(o_idx, 'G'):
+                for BB in self._op_successors(o_idx, 'G'):
                     temp = BB.heisenberg_tr(w)
                     B = temp @ B
                     temp = BB.heisenberg_tr(w, inverse=True)
                     B_inv = B_inv @ temp
                 Z = B @ Z @ B_inv  # conjugation
 
-                ev_successors = self.op_successors(o_idx, 'E')
+                ev_successors = self._op_successors(o_idx, 'E')
 
                 def tr_obs(ex):
                     "Transform the observable"
@@ -667,7 +681,7 @@ class QNode:
                     if q.ndim == 2:
                         # 2nd order observable
                         qp = qp +qp.T.conj()
-                    return openqml.operation.CVPoly(qp, wires=[])
+                    return openqml.expectation.Poly(qp, wires=[], do_queue=False)
 
                 # transform the observables
                 obs = list(map(tr_obs, self.ev))

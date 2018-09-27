@@ -54,12 +54,16 @@ class BasicTest(BaseTest):
         def h_test(cls):
             "Test a gaussian CV operation."
             print(cls.__name__)
-            par = list(nr.randn(cls.n_params))  # fixed parameter values
+            # fixed parameter values
+            if cls.par_domain == 'A':
+                par = [nr.randn(2,2)] * cls.n_params
+            else:
+                par = list(nr.randn(cls.n_params))
             ww = list(range(cls.n_wires))
             op = cls(*par, wires=ww)
 
             if issubclass(cls, oo.Expectation):
-                Q = op.heisenberg_obs(2)
+                Q = op.heisenberg_obs(0)
                 # ev_order equals the number of dimensions of the H-rep array
                 self.assertEqual(Q.ndim, cls.ev_order)
                 return

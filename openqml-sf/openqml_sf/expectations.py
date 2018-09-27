@@ -76,12 +76,12 @@ def Order2Poly(state, wires, params):
     Returns:
         float, float: expectation value, variance
     """
+    # TODO: allow wires to be given, in which case Q only applies to them
     # Q is in the (I, x1,p1, x2,p2, ...) ordering
     Q = params[0]
     if Q.ndim == 1:
-        # TODO if poly_quad_expectation allowed the matrix A to be None, we wouldn't have to expand order-1 obs represented by vectors into a full matrix
-        n = len(Q)
-        Q = np.c_[Q, np.zeros((n, n-1))]
+        d = np.r_[Q[1::2], Q[2::2]]
+        return state.poly_quad_expectation(None, d, Q[0])
 
     # convert to the (I, x1,x2,..., p1,p2...) ordering
     M = np.vstack((Q[0:1,:], Q[1::2,:], Q[2::2,:]))

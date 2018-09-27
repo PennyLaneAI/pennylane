@@ -67,11 +67,11 @@ class StrawberryFieldsGaussian(StrawberryFieldsSimulator):
     }
 
     _observable_map = {
-        'Fock': PNR,
+        'PhotonNumber': PNR,
         'X': Homodyne(0),
         'P': Homodyne(np.pi/2),
         'Homodyne': Homodyne(),
-        'CVPoly': Order2Poly,
+        'Poly': Order2Poly,
     }
 
     _circuits = {}
