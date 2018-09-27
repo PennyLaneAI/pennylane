@@ -151,20 +151,7 @@ class ProjectQDevice(Device):
     def apply(self, gate_name, wires, par):
         gate = self._operator_map[gate_name](*par)
 
-        if gate_name == 'QubitStateVector':
-            if list(wires) == list(range(self.wires)):
-                gate | self.reg #pylint: disable=pointless-statement
-            elif len(wires) == 1:
-                gate | self.reg[wires[0]]
-            else:
-                raise ValueError("In ProjectQ, state preparation must be applied to either "
-                                 "a single wire, or all wires in the register.")
-        elif gate_name == 'Rot':
-            Rz(par[0]) | tuple([self.reg[i] for i in wires])
-            Ry(par[1]) | tuple([self.reg[i] for i in wires])
-            Rz(par[2]) | tuple([self.reg[i] for i in wires])
-        else:
-            gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
+        gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
     # def expectation(self, observable, wires, *par):
     #     raise NotImplementedError("expectation() is not yet implemented for this backend")

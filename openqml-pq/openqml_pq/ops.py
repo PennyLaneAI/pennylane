@@ -129,16 +129,21 @@ class AllZGate(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
 class Rot(pq.ops.BasicGate):
     """Class for the arbitrary single qubit rotation gate.
 
-    ProjectQ does not currently have an arbitrary single qubit rotation gate.
+    ProjectQ does not currently have an arbitrary single qubit rotation gate, so we provide a class that return a suitable combination of rotation gates assembled into a single gate from the constructor of this class. 
     """
     def __new__(*par):
-        pass
-        # raise NotImplementedError("ProjectQ does not currently have an arbitrary single qubit rotation gate.") #todo: update depending on https://github.com/ProjectQ-Framework/ProjectQ/issues/268
+        gate3 = pq.ops.Rz(par[0])
+        gate2 = pq.ops.Ry(par[1])
+        gate1 = pq.ops.Rz(par[2])
+        rot_gate = pq.ops.BasicGate()
+        rot_gate.matrix = numpy.dot(gate3.matrix, gate2.matrix, gate1.matrix)
+        return rot_gate
 
 class QubitUnitary(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     """Class for the QubitUnitary gate.
 
-    ProjectQ does not currently have an arbitrary QubitUnitary gate.
+    ProjectQ does not currently have a real arbitrary QubitUnitary gate, but it allows to directly set the matrix of single qubit gates and can then still decompose them into the elementary gates set, so we do this here.
     """
     def __new__(*par):
-        raise NotImplementedError("ProjectQ does not currently have an arbitrary single qubit unitary gate.") #todo: update depending on https://github.com/ProjectQ-Framework/ProjectQ/issues/268
+        my_gate = pq.ops.BasicGate()
+        my_gate.matrix = numpy.matrix(par)
