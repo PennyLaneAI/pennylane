@@ -144,7 +144,7 @@ class Rot(BasicProjectQGate):
         gate3 = pq.ops.Rz(par[1])
         gate2 = pq.ops.Ry(par[2])
         gate1 = pq.ops.Rz(par[3])
-        rot_gate = BasicProjectQGate('Rot')
+        rot_gate = BasicProjectQGate(par[0].__name__)
         rot_gate.matrix = np.dot(gate3.matrix, gate2.matrix, gate1.matrix)
         return rot_gate
 
@@ -154,6 +154,6 @@ class QubitUnitary(BasicProjectQGate): # pylint: disable=too-few-public-methods
     ProjectQ does not currently have a real arbitrary QubitUnitary gate, but it allows to directly set the matrix of single qubit gates and can then still decompose them into the elementary gates set, so we do this here.
     """
     def __new__(*par):
-        unitary_gate = BasicProjectQGate('QubitUnitary')
+        unitary_gate = BasicProjectQGate(par[0].__name__)
         unitary_gate.matrix = np.matrix(par[1])
         return unitary_gate
