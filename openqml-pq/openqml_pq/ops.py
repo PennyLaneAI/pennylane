@@ -16,6 +16,7 @@ from openqml import Operation
 from openqml.operation import Expectation
 
 import projectq as pq
+import numpy as np
 
 # Extra Operations in OpenQML provided by this plugin
 
@@ -80,7 +81,15 @@ class AllZ(Expectation):
 
 # Wrapper classes for Operations that are missing a class in ProjectQ
 
-class CNOT(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+class BasicProjectQGate(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+    def __init__(self, name="unnamed"):
+        super().__init__()
+        self.name = name
+
+    def __str__(self):
+        return self.name
+
+class CNOT(BasicProjectQGate): # pylint: disable=too-few-public-methods
     """Class for the CNOT gate.
 
     Contrary to other gates, ProjectQ does not have a class for the CNOT gate,
@@ -93,7 +102,7 @@ class CNOT(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
         return pq.ops.C(pq.ops.NOT)
 
 
-class CZ(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+class CZ(BasicProjectQGate): # pylint: disable=too-few-public-methods
     """Class for the CNOT gate.
 
     Contrary to other gates, ProjectQ does not have a class for the CZ gate,
@@ -104,7 +113,7 @@ class CZ(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     def __new__(*par): # pylint: disable=no-method-argument
         return pq.ops.C(pq.ops.ZGate())
 
-class Toffoli(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+class Toffoli(BasicProjectQGate): # pylint: disable=too-few-public-methods
     """Class for the Toffoli gate.
 
     Contrary to other gates, ProjectQ does not have a class for the Toffoli gate,
@@ -115,7 +124,7 @@ class Toffoli(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     def __new__(*par): # pylint: disable=no-method-argument
         return pq.ops.C(pq.ops.ZGate(), 2)
 
-class AllZGate(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+class AllZGate(BasicProjectQGate): # pylint: disable=too-few-public-methods
     """Class for the AllZ gate.
 
     Contrary to other gates, ProjectQ does not have a class for the AllZ gate,
@@ -126,18 +135,25 @@ class AllZGate(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
     def __new__(*par): # pylint: disable=no-method-argument
         return pq.ops.Tensor(pq.ops.ZGate())
 
-class Rot(pq.ops.BasicGate):
+class Rot(BasicProjectQGate):
     """Class for the arbitrary single qubit rotation gate.
 
-    ProjectQ does not currently have an arbitrary single qubit rotation gate.
+    ProjectQ does not currently have an arbitrary single qubit rotation gate, so we provide a class that return a suitable combination of rotation gates assembled into a single gate from the constructor of this class.
     """
     def __new__(*par):
-        raise NotImplementedError("ProjectQ does not currently have an arbitrary single qubit rotation gate.") #todo: update depending on https://github.com/ProjectQ-Framework/ProjectQ/issues/268
+        gate3 = pq.ops.Rz(par[1])
+        gate2 = pq.ops.Ry(par[2])
+        gate1 = pq.ops.Rz(par[3])
+        rot_gate = BasicProjectQGate(par[0].__name__)
+        rot_gate.matrix = np.dot(gate3.matrix, gate2.matrix, gate1.matrix)
+        return rot_gate
 
-class QubitUnitary(pq.ops.BasicGate): # pylint: disable=too-few-public-methods
+class QubitUnitary(BasicProjectQGate): # pylint: disable=too-few-public-methods
     """Class for the QubitUnitary gate.
 
-    ProjectQ does not currently have an arbitrary QubitUnitary gate.
+    ProjectQ does not currently have a real arbitrary QubitUnitary gate, but it allows to directly set the matrix of single qubit gates and can then still decompose them into the elementary gates set, so we do this here.
     """
     def __new__(*par):
-        raise NotImplementedError("ProjectQ does not currently have an arbitrary single qubit unitary gate.") #todo: update depending on https://github.com/ProjectQ-Framework/ProjectQ/issues/268
+        unitary_gate = BasicProjectQGate(par[0].__name__)
+        unitary_gate.matrix = np.matrix(par[1])
+        return unitary_gate

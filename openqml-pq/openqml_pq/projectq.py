@@ -150,10 +150,8 @@ class ProjectQDevice(Device):
 
     def apply(self, gate_name, wires, par):
         gate = self._operator_map[gate_name](*par)
-        if isinstance(wires, int):
-            gate | self.reg[wires] #pylint: disable=pointless-statement
-        else:
-            gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
+
+        gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
     # def expectation(self, observable, wires, *par):
     #     raise NotImplementedError("expectation() is not yet implemented for this backend")
