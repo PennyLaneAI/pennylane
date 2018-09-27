@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Additional gates"""
-from openqml import Operation
+from openqml.operation import Operation
 from openqml.operation import Expectation
 
 import projectq as pq
