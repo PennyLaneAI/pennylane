@@ -16,6 +16,7 @@ from collections import Sequence
 
 import numpy as np
 
+import openqml.expectation
 
 
 def PNR(state, wires, params):
@@ -70,15 +71,19 @@ def Order2Poly(state, wires, params):
 
     Args:
         state (strawberryfields.backends.states.BaseState): the quantum state
-        wires (Sequence[int]): not used (the observable is always defined in terms of all the wires)
+        wires (Sequence[int]): measured modes
         params (Sequence[array]): parameters
 
     Returns:
         float, float: expectation value, variance
     """
-    # TODO: allow wires to be given, in which case Q only applies to them
     # Q is in the (I, x1,p1, x2,p2, ...) ordering
     Q = params[0]
+
+    # HACK, we need access to the Poly instance in order to expand the matrix!
+    op = openqml.expectation.Poly(Q, wires=wires, do_queue=False)
+    Q = op.heisenberg_obs(state.num_modes)
+
     if Q.ndim == 1:
         d = np.r_[Q[1::2], Q[2::2]]
         return state.poly_quad_expectation(None, d, Q[0])

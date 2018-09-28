@@ -160,7 +160,6 @@ class FockTests(BaseTest):
             self.assertTrue(dev.supported(g))
 
             op = getattr(qm.ops, g)
-
             if op.n_wires == 0:
                 wires = [0]
             else:
@@ -208,7 +207,7 @@ class FockTests(BaseTest):
         log.info('test_supported_fock_observables')
         cutoff_dim = 10
         a = 0.312
-        a_array = np.eye(5)
+        a_array = np.eye(3)
 
         dev = qm.device('strawberryfields.fock', wires=2, cutoff_dim=cutoff_dim)
 
@@ -218,7 +217,10 @@ class FockTests(BaseTest):
             self.assertTrue(dev.supported(g))
 
             op = getattr(qm.expectation, g)
-            wires = list(range(op.n_wires))
+            if op.n_wires == 0:
+                wires = [0]
+            else:
+                wires = list(range(op.n_wires))
 
             @qm.qfunc(dev)
             def circuit(*args):
