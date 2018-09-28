@@ -136,7 +136,110 @@ Finally, we can rewrite this in terms of quantum functions:
 Gaussian gate example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+For quantum devices with continuous-valued operators, such as photonic quantum computers, it is convenient to employ the `Heisenberg picture <https://en.wikipedia.org/wiki/Heisenberg_picture>`_, i.e., to track how the gates :math:`U_i(\theta_i)` transform the final measurement operator :math:`\hat{B}`. 
 
+As an example, we consider the `squeeze gate <https://strawberryfields.readthedocs.io/en/latest/conventions/gates.html#squeezing>`_ :math:`S(z)`. In the Heisenberg picture, the squeeze gate causes the quadrature operators :math:`\hat{x}` and :math:`\hat{p}` to become rescaled:
+
+.. math:: 
+   :nowrap:
+   
+   \begin{align}
+       \mathcal{M}^S_z(\hat{x}) = & S^\dagger(z)\hat{x}S(z) \\
+                                   = & e^{-r}\hat{x}
+   \end{align}
+   
+and
+
+.. math:: 
+   :nowrap:
+   
+   \begin{align}
+       \mathcal{M}^S_z(\hat{p}) = & S^\dagger(z)\hat{p}S(z) \\
+                                   = & e^{r}\hat{p}.
+   \end{align}
+   
+Expressing this in matrix notation, we have
+
+.. math::
+   :nowrap:
+  
+   \begin{align}
+       \begin{bmatrix}
+           \hat{x} \\
+           \hat{p}
+       \end{bmatrix}
+       \rightarrow
+       \begin{bmatrix}
+          e^{-r} & 0 \\
+          0      & e^r
+       \end{bmatrix}
+       \begin{bmatrix}
+           \hat{x} \\
+           \hat{p}
+       \end{bmatrix}.  
+   \end{align}
+
+The gradient of this transformation can easily be found:
+
+.. math::
+   :nowrap:
+   
+   \begin{align}
+       \nabla_r
+       \begin{bmatrix}
+           e^{-r} & 0 \\
+           0 & e^r
+       \end{bmatrix}
+       =
+       \begin{bmatrix}
+           -e^{-r} & 0 \\
+           0 & e^r
+       \end{bmatrix}.
+   \end{align}
+
+We notice that this can be rewritten this as a linear combination of squeeze operations:
+
+.. math::
+   :nowrap:
+   
+   \begin{align}
+       \begin{bmatrix}
+           -e^{-r} & 0 \\
+           0 & e^r
+       \end{bmatrix}
+       =
+       \frac{1}{2\sinh(s)}
+       \left(
+       \begin{bmatrix}
+           e^{-(r+s)} & 0 \\
+           0 & e^{r+s}
+       \end{bmatrix}
+       -
+       \begin{bmatrix}
+           e^{-(r-s)} & 0 \\
+           0 & e^{r-s}
+       \end{bmatrix}  
+       \right),     
+   \end{align}
+   
+where :math:`s` is an arbitrary nonzero shift [#]_.
+
+As before, assume that an input :math:`y` has already been embedded into a quantum state :math:`|y\rangle = U_0(y)|0\rangle` before we apply the squeeze gate. If we measure the :math:`\hat{x}` operator, we will have the following qfunc:
+
+.. math::
+   f(y;r) = \langle y | \mathcal{M}^R_r (\hat{x}) | y \rangle.
+   
+Finally, its gradient can be expressed as
+
+.. math::
+   :nowrap:
+   
+   \begin{align}
+       \nabla_r f(y;r) = &  \frac{1}{2\sinh(s)} \left[
+                            \langle y | \mathcal{M}^R_{r+s} (\hat{x}) | y \rangle 
+                           -\langle y | \mathcal{M}^R_{r-s} (\hat{x}) | y \rangle \right] \\
+                       = & \frac{1}{2\sinh(s)}\left[f(y; r+s) - f(y; r-s)\right].
+   \end{align}
 
 
 .. _Theano: https://github.com/Theano/Theano
@@ -150,4 +253,6 @@ Gaussian gate example
 .. [#] This should be contrasted with software which can perform automatic differentiation on classical simulations of quantum circuits, such as `Strawberry Fields <https://strawberryfields.readthedocs.io/en/latest/>`_. 
 
 .. [#] In situations where no formula for automatic quantum gradients is known, OpenQML falls back to approximate gradient estimation using numerical methods.
+
+.. [#] In physical experiments, it is beneficial to choose :math:`s` so that the additional squeezing is small. However, there is a tradeoff, because we also want to make sure :math:`\frac{1}{2\sinh(s)}` does not blow up numerically.
 
