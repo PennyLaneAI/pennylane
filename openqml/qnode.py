@@ -680,8 +680,8 @@ class QNode:
                     qp = q @ Z
                     if q.ndim == 2:
                         # 2nd order observable
-                        qp = qp +qp.T.conj()
-                    return openqml.expectation.Poly(qp, wires=[], do_queue=False)
+                        qp = qp +qp.T
+                    return openqml.expectation.Poly(qp, wires=range(w), do_queue=False)
 
                 # transform the observables
                 obs = list(map(tr_obs, self.ev))

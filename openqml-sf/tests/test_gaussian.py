@@ -149,7 +149,6 @@ class GaussianTests(BaseTest):
             self.assertTrue(dev.supported(g))
 
             op = getattr(qm.ops, g)
-
             if op.n_wires == 0:
                 wires = [0]
             else:
@@ -185,7 +184,7 @@ class GaussianTests(BaseTest):
         """Test that all supported observables work correctly"""
         log.info('test_supported_gaussian_observables')
         a = 0.312
-        a_array = np.eye(5)
+        a_array = np.eye(3)
 
         dev = qm.device('strawberryfields.gaussian', wires=2)
 
@@ -195,7 +194,10 @@ class GaussianTests(BaseTest):
             self.assertTrue(dev.supported(g))
 
             op = getattr(qm.expectation, g)
-            wires = list(range(op.n_wires))
+            if op.n_wires == 0:
+                wires = [0]
+            else:
+                wires = list(range(op.n_wires))
 
             @qm.qfunc(dev)
             def circuit(*x):

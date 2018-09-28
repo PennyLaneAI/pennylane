@@ -238,6 +238,7 @@ class Operation:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
         else:
             QNode._current_context._append_op(self)
+        return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
 
 
 
@@ -265,14 +266,13 @@ class CV:
         Returns:
           array[float]: expanded array, dimension 1+2*num_wires
         """
-        if num_wires == 0:
-            return U
+        U_dim = len(U)
+        nw = len(self.wires)
+        if U_dim != 1+2*nw:
+            raise ValueError('{}: Heisenberg matrix is the wrong size {}.'.format(self.name, U_dim))
 
-        if len(self.wires) == 0:
-            # no expansion necessary (U is a full-system matrix, Qnode._pd_analytic uses this)
-            temp = len(U)
-            if temp != 1+2*num_wires:
-                raise ValueError('{}: Heisenberg matrix is the wrong size {}.'.format(self.name, temp))
+        if num_wires == 0 or list(self.wires) == list(range(num_wires)):
+            # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis

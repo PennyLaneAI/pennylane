@@ -32,22 +32,6 @@ dev = openqml.device('default.qubit', wires=2)
 
 class BasicTest(BaseTest):
     """Utility class tests."""
-    def setUp(self):
-        # set up a fake QNode, we need it for the queuing at the end of each successful Operation.__init__ call
-        self.q = oq.QNode(None, dev)
-        self.q.queue = []
-        self.q.ev    = []
-
-        if oq.QNode._current_context is None:
-            oq.QNode._current_context = self.q
-        else:
-            raise RuntimeError('Something is wrong.')
-
-
-    def tearDown(self):
-        oq.QNode._current_context = None
-
-
     def test_heisenberg(self):
         "Heisenberg picture adjoint actions of CV Operations."
 
@@ -56,11 +40,11 @@ class BasicTest(BaseTest):
             print(cls.__name__)
             # fixed parameter values
             if cls.par_domain == 'A':
-                par = [nr.randn(2,2)] * cls.n_params
+                par = [nr.randn(1,1)] * cls.n_params
             else:
                 par = list(nr.randn(cls.n_params))
             ww = list(range(cls.n_wires))
-            op = cls(*par, wires=ww)
+            op = cls(*par, wires=ww, do_queue=False)
 
             if issubclass(cls, oo.Expectation):
                 Q = op.heisenberg_obs(0)
@@ -116,27 +100,27 @@ class BasicTest(BaseTest):
                 pars = [0.0] * n
 
             # valid call
-            cls(*pars, wires=ww)
+            cls(*pars, wires=ww, do_queue=False)
 
             # too many parameters
             with self.assertRaisesRegex(ValueError, 'wrong number of parameters'):
-                cls(*(n+1)*[0], wires=ww)
+                cls(*(n+1)*[0], wires=ww, do_queue=False)
 
             # too few parameters
             if n > 0:
                 with self.assertRaisesRegex(ValueError, 'wrong number of parameters'):
-                    cls(*(n-1)*[0], wires=ww)
+                    cls(*(n-1)*[0], wires=ww, do_queue=False)
 
             if w > 0:
                 # too many or too few wires
                 with self.assertRaisesRegex(ValueError, 'wrong number of wires'):
-                    cls(*pars, wires=list(range(w+1)))
+                    cls(*pars, wires=list(range(w+1)), do_queue=False)
                 with self.assertRaisesRegex(ValueError, 'wrong number of wires'):
-                    cls(*pars, wires=list(range(w-1)))
+                    cls(*pars, wires=list(range(w-1)), do_queue=False)
                 # repeated wires
                 if w > 1:
                     with self.assertRaisesRegex(ValueError, 'wires must be unique'):
-                        cls(*pars, wires=w*[0])
+                        cls(*pars, wires=w*[0], do_queue=False)
 
             if n == 0:
                 return
@@ -145,17 +129,17 @@ class BasicTest(BaseTest):
             if cls.par_domain == 'A':
                 # params must be arrays
                 with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
-                    cls(*n*[0.0], wires=ww)
+                    cls(*n*[0.0], wires=ww, do_queue=False)
             elif cls.par_domain == 'N':
                 # params must be natural numbers
                 with self.assertRaisesRegex(TypeError, 'Natural number'):
-                    cls(*n*[0.7], wires=ww)
+                    cls(*n*[0.7], wires=ww, do_queue=False)
                 with self.assertRaisesRegex(TypeError, 'Natural number'):
-                    cls(*n*[-1], wires=ww)
+                    cls(*n*[-1], wires=ww, do_queue=False)
             else:
                 # params must be real numbers
                 with self.assertRaisesRegex(TypeError, 'Real scalar parameter expected'):
-                    cls(*n*[1j], wires=ww)
+                    cls(*n*[1j], wires=ww, do_queue=False)
 
 
         for cls in openqml.ops.builtins_discrete.all_ops:
