@@ -11,9 +11,9 @@ Automatic differentiation
 
 Derivatives and gradients are ubiquitous throughout science and engineering. In recent years, automatic differentiation has become a key feature in many numerical software libraries, in particular for machine learning (e.g., Theano_, Autograd_, Tensorflow_, or Pytorch_). 
 
-Generally speaking, automatic differentiation is the ability for a software library to compute the derivatives of arbitrary numerical code. If you write an algorithm to compute some function :math:`g(x)` (which may include mathematical expressions, but also control flow statements like :code:`if`, :code:`for`, etc.), then automatic differentiation provides an algorithm for :math:`\frac{d}{dx}g(x)` with the same degree of complexity as the original function.
+Generally speaking, automatic differentiation is the ability for a software library to compute the derivatives of arbitrary numerical code. If you write an algorithm to compute some function :math:`g(x)` (which may include mathematical expressions, but also control flow statements like :code:`if`, :code:`for`, etc.), then automatic differentiation provides an algorithm for :math:`\nabla g(x)` with the same degree of complexity as the original function.
 
-*Automatic* differentiation should be distinguished from other forms of differentiation. *Manual differentiation*, where an expression is differentiated by hand (often on paper), is extremely time-consuming and error-prone. In *numerical differentiation*, such as the finite-difference method familiar from high-school calculus, the derivative of a function is approximated by numerically evaluating the function at two infinitesimaly separated points. However, this method can sometimes be imprecise due to the constraints of classical floating-point arithmetic.
+*Automatic* differentiation should be distinguished from other forms of differentiation. *Manual differentiation*, where an expression is differentiated by hand -- often on paper -- is extremely time-consuming and error-prone. In *numerical differentiation*, such as the finite-difference method familiar from high-school calculus, the derivative of a function is approximated by numerically evaluating the function at two infinitesimaly separated points. However, this method can sometimes be imprecise due to the constraints of classical floating-point arithmetic.
 
 Computing gradients of quantum functions
 ----------------------------------------
@@ -73,40 +73,70 @@ where the multiplier :math:`c` and the shift :math:`\gamma` are determined compl
 Multiple parameterized gates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To complete the story, we now go back to the case where there are many gates in the circuit. Since the equations governing quantum mechanics are linear, we can pass the gradient through all the unitaries which don't use the parameter :math:`\theta_i`:
-
-.. math:: \nabla_{\theta_i}U(x;\bm{\theta}) = U_N(\theta_{N}) U_{N-1}(\theta_{N-1}) \cdots \left[ \nabla_{\theta_i} U_i(\theta_i) \right] \cdots U_1(\theta_1) U_0(x).
-
-We can absorb any gates applied before gate :math:`i` (with indices lower than :math:`i`) into the initial state: :math:`|\psi_{i-1}\rangle = U_{i-1}(\theta_{i-1}) \cdots U_{1}(\theta_{1})U_{0}(x)|0\rangle`. 
+To complete the story, we now go back to the case where there are many gates in the circuit. We can absorb any gates applied before gate :math:`i` into the initial state: :math:`|\psi_{i-1}\rangle = U_{i-1}(\theta_{i-1}) \cdots U_{1}(\theta_{1})U_{0}(x)|0\rangle`. 
 Similarly, any gates applied after gate :math:`i` are combined with the observable :math:`\hat{B}`:
 :math:`\hat{B}_{i+1} = U_{N}^\dagger(\theta_{N}) \cdots U_{i+1}^\dagger(\theta_{i+1}) \hat{B} U_{i+1}(\theta_{i+1}) \cdots U_{N}(\theta_{N})`. 
 
 With this simplification, the qfunc becomes
 
-.. math:: f(x; \bm{\theta}) = \langle \psi_{i-1} | U_i(\theta_i) \hat{B}_{i+1} U_i^\dagger(\theta_i) | \psi_{i-1} \rangle = \langle \psi_{i-1} | \mathcal{M}_{\theta_i} (\hat{B}_{i+1}) | \psi_{i-1} \rangle,
+.. math:: f(x; \bm{\theta}) = \langle \psi_{i-1} | U_i^\dagger(\theta_i) \hat{B}_{i+1} U_i(\theta_i) | \psi_{i-1} \rangle = \langle \psi_{i-1} | \mathcal{M}_{\theta_i} (\hat{B}_{i+1}) | \psi_{i-1} \rangle,
 
 and its gradient is
 
 .. math:: \nabla_{\theta_i}f(x; \bm{\theta}) = \langle \psi_{i-1} | \nabla_{\theta_i}\mathcal{M}_{\theta_i} (\hat{B}_{i+1}) | \psi_{i-1} \rangle.
 
-We can see that the gradient has the exact same form as the single-gate case, except we modify the state :math:`|x\rangle \rightarrow |\psi_{i-1}\rangle` and the measurement operator :math:`\hat{B}\rightarrow\hat{B}_{i+1}`. In terms of the circuit, this means we can leave all other gates as they are, and only modify gate :math:`U(\theta_i)` when we want to differentiate with respect to the parameter :math:`\theta_i`.
+This gradient has the exact same form as the single-gate case, except we modify the state :math:`|x\rangle \rightarrow |\psi_{i-1}\rangle` and the measurement operator :math:`\hat{B}\rightarrow\hat{B}_{i+1}`. In terms of the circuit, this means we can leave all other gates as they are, and only modify gate :math:`U(\theta_i)` when we want to differentiate with respect to the parameter :math:`\theta_i`.
 
-.. todo:: discuss fanout?
+.. note:: Sometimes we may want to use the same classical parameter with multiple gates in the circuit. Due to the `product rule <https://en.wikipedia.org/wiki/Product_rule>`_, the total gradient will then involve contributions from each gate that uses that parameter. OpenQML handles this automatically.
 
-Pauli observable example
+Pauli gate example
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: fill this in
+Consider a quantum computer with parameterized gates of the form 
 
-Acting on a single one-parameter gate, the gradient formula is straightforward:
+.. math:: U_i(\theta_i)=\exp\left(-i\tfrac{\theta_i}{2}\hat{P}_i\right),
 
-.. math:: \nabla_{\gamma} U(\gamma) = \nabla_\gamma\exp{(i\gamma H)} = H\exp{(i\gamma H)} = HU(\gamma).
+where :math:`\hat{P}_i=\hat{P}_i^\dagger` is a Pauli operator. 
 
+The gradient of this unitary is
 
-Gaussian observable example
+.. math:: \nabla_{\theta_i}U_i(\theta_i) = -\tfrac{i}{2}\hat{P}_i U_i(\theta_i) = -\tfrac{i}{2}U_i(\theta_i)\hat{P}_i .
+
+Substituting this into the qfunc :math:`f(x; \bm{\theta})`, we get
+
+.. math:: 
+   :nowrap:
+   
+   \begin{align}
+       \nabla_{\theta_i}f(x; \bm{\theta}) = & 
+       \frac{i}{2}\langle \psi_{i-1} | U_i^\dagger(\theta_i) \left( P_i \hat{B}_{i+1} - \hat{B}_{i+1} P_i \right) U_i(\theta_i)| \psi_{i-1} \rangle \\
+       = & \frac{i}{2}\langle \psi_{i-1} | U_i^\dagger(\theta_i) \left[P_i, \hat{B}_{i+1}\right]U_i(\theta_i) | \psi_{i-1} \rangle,
+   \end{align}
+
+where :math:`[X,Y]=XY-YX` is the commutator.
+
+We now make use of the following mathematical identity for commutators involving Pauli operators :cite:`mitarai2018quantum`:
+
+.. math:: \left[ \hat{P}_i, \hat{B} \right] = -i\left(U_i^\dagger\left(\tfrac{\pi}{2}\right)\hat{B}U_i\left(\tfrac{\pi}{2}\right) - U_i^\dagger\left(-\tfrac{\pi}{2}\right)\hat{B}U_i\left(-\tfrac{\pi}{2}\right) \right).
+
+Substituting this into the previous equation, we obtain the gradient expression
+
+.. math:: 
+   :nowrap:
+   
+   \begin{align}
+       \nabla_{\theta_i}f(x; \bm{\theta}) = & \hphantom{-} \tfrac{1}{2} \langle \psi_{i-1} | U_i^\dagger\left(\theta_i + \tfrac{\pi}{2} \right) \hat{B}_{i+1} U_i\left(\theta_i + \tfrac{\pi}{2} \right) | \psi_{i-1} \rangle \\
+       & - \tfrac{1}{2} \langle \psi_{i-1} | U_i^\dagger\left(\theta_i - \tfrac{\pi}{2} \right) \hat{B}_{i+1} U_i\left(\theta_i - \tfrac{\pi}{2} \right) | \psi_{i-1} \rangle.
+   \end{align}
+
+Finally, we can rewrite this in terms of quantum functions: 
+
+.. math:: \nabla_{\bm{\theta}}f(x; \bm{\theta}) = \tfrac{1}{2}\left[ f(x; \bm{\theta} + \tfrac{\pi}{2}) - f(x; \bm{\theta} - \tfrac{\pi}{2}) \right].
+
+Gaussian gate example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: fill this in
+
 
 
 .. _Theano: https://github.com/Theano/Theano
