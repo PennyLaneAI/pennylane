@@ -5,7 +5,7 @@ import autograd.numpy as np
 class GradientDescentOptimizer(object):
     """Base class for gradient-descent-based optimizers."""
 
-    def __init__(self, stepsize):
+    def __init__(self, stepsize=0.01):
         self.stepsize = stepsize
 
     def step(self, objective_fn, x, grad_fn=None):
@@ -38,7 +38,7 @@ class GradientDescentOptimizer(object):
 class MomentumOptimizer(GradientDescentOptimizer):
     """Gradient-descent optimizer with momentum."""
 
-    def __init__(self, stepsize, momentum=0.9):
+    def __init__(self, stepsize=0.01, momentum=0.9):
         super().__init__(stepsize)
         self.momentum = momentum
         self.accumulation = None
@@ -59,7 +59,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
 class NesterovMomentumOptimizer(MomentumOptimizer):
     """Gradient-descent optimizer with Nesterov momentum."""
 
-    def __init__(self, stepsize, momentum=0.9):
+    def __init__(self, stepsize=0.01, momentum=0.9):
         super().__init__(stepsize, momentum)
 
     def compute_grad(self, objective_fn, x, grad_fn=None):
@@ -80,7 +80,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 class AdagradOptimizer(GradientDescentOptimizer):
     """Gradient-descent optimizer with past-gradient-dependent learning rate in each dimension."""
 
-    def __init__(self, stepsize):
+    def __init__(self, stepsize=0.01):
         super().__init__(stepsize)
         self.accumulation = None
 
@@ -100,7 +100,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
 class RMSPropOptimizer(AdagradOptimizer):
     """Adagrad optimizer with decay of learning rate adaptation."""
 
-    def __init__(self, stepsize, decay):
+    def __init__(self, stepsize=0.01, decay=0.9):
         super().__init__(stepsize)
         self.decay = decay
 
@@ -116,35 +116,39 @@ class RMSPropOptimizer(AdagradOptimizer):
 class AdamOptimizer(GradientDescentOptimizer):
     """Gradient-descent optimizer with adaptive learning rate, first and second moment."""
 
-    def __init__(self, stepsize, beta1, beta2):
+    def __init__(self, stepsize=0.01, beta1=0.9, beta2=0.99):
         super().__init__(stepsize)
         self.beta1 = beta1
         self.beta2 = beta2
-        self.adapted_stepsize = stepsize
+        self.stepsize = stepsize
         self.firstmoment = None
         self.secondmoment = None
+        self.t = 0
 
     def apply_grad(self, grad, x):
         """Update x to take a single optimization step."""
+
+        self.t += 1
 
         # Update first moment
         if self.firstmoment is None:
             self.firstmoment = grad
         else:
-            self.firstmoment = (self.beta1 * self.firstmoment + (1 - self.beta1) * grad ) / (1 - self.beta1)
+            self.firstmoment = self.beta1 * self.firstmoment + (1 - self.beta1) * grad
 
         # Update second moment
         if self.secondmoment is None:
             self.secondmoment = grad * grad
         else:
-            self.secondmoment = (self.beta2 * self.secondmoment + (1 - self.beta2) * (grad * grad)) / (1 - self.beta2)
+            self.secondmoment = self.beta2 * self.secondmoment + (1 - self.beta2) * (grad * grad)
 
-        # Update step size
-        self.adapted_stepsize = self.adapted_stepsize * np.sqrt(1 - self.beta2) / (1 - self.beta1)
-        return x - self.adapted_stepsize * self.firstmoment / (np.sqrt(self.secondmoment) + 1e-8)
+        # Update step size (instead of correcting for bias)
+        adapted_stepsize = self.stepsize * np.sqrt(1 - self.beta2**self.t) / (1 - self.beta1**self.t)
+
+        return x - adapted_stepsize * self.firstmoment / (np.sqrt(self.secondmoment) + 1e-8)
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
         self.firstmoment = None
         self.secondmoment = None
-        self.adapted_stepsize = self.stepsize
+        self.t = 0

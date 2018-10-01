@@ -234,9 +234,9 @@ class BasicTest(BaseTest):
                 self.assertAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
 
                 x_twosteps = self.adam_opt.step(f, x_onestep)
-                adapted_stepsize = adapted_stepsize * np.sqrt(1 - delta) / (1 - gamma)
-                firstmoment = (gamma * gradf(x_start) + (1 - gamma) * gradf(x_onestep)) / (1 - gamma)
-                secondmoment = (delta * gradf(x_start) * gradf(x_start) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep)) / (1 - delta)
+                adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
+                firstmoment = (gamma * gradf(x_start) + (1 - gamma) * gradf(x_onestep))
+                secondmoment = (delta * gradf(x_start) * gradf(x_start) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
                 x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
                 self.assertAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
 
@@ -253,9 +253,9 @@ class BasicTest(BaseTest):
                 self.assertAllAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
 
                 x_twosteps = self.adam_opt.step(f, x_onestep)
-                adapted_stepsize = adapted_stepsize * np.sqrt(1 - delta) / (1 - gamma)
-                firstmoment = (gamma * gradf(x_vec) + (1 - gamma) * gradf(x_onestep)) / (1 - gamma)
-                secondmoment = (delta * gradf(x_vec) * gradf(x_vec) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep)) / (1 - delta)
+                adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
+                firstmoment = (gamma * gradf(x_vec) + (1 - gamma) * gradf(x_onestep))
+                secondmoment = (delta * gradf(x_vec) * gradf(x_vec) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
                 x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
                 self.assertAllAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
 
