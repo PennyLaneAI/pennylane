@@ -6,8 +6,6 @@
 Hybrid computation
 ==================
 
-TODO
-
 :html:`<br>`
 
 .. figure:: ./_static/hybrid_graph.svg
@@ -20,9 +18,11 @@ TODO
 :html:`<br>`
 
 
-.. todo:: Sell the idea that we can differentiate end-to-end through a hybrid computation
+.. todo:: Discuss compatability of Qnode abstraction with ML techniques: we would also like this interface to be compatible with essential components of machine learning like the backpropagation algorithm. 
 
 Backpropagation through hybrid computations
 -------------------------------------------
 
-- how does a gradient computation work in a hybrid quantum-classical computation?
+.. todo:: Sell the idea that we can differentiate end-to-end through a hybrid computation
+
+.. todo:: how does a gradient computation work in a hybrid quantum-classical computation?
