@@ -11,8 +11,9 @@
 \usepackage{qcircuit}
 \usepackage{multirow}
 \theoremstyle{plain}
-\newtheorem{theorem}{Theorem}%[section]
+\usepackage{tikz}
 
+\newtheorem{theorem}{Theorem}%[section]
 
 \DeclareMathOperator{\re}{Re}
 \DeclareMathOperator{\im}{Im}
@@ -25,20 +26,16 @@
 \DeclareMathOperator{\spec}{spec}  % eigenvalue spectrum
 \DeclareMathOperator{\lcm}{lcm}    % least common multiple
 \DeclareMathOperator{\Span}{Span}  % linear span of vectors
-
 \newcommand{\isom}{\cong} % isomorphic to
 \newcommand{\conj}[1]{\overline{#1}} % complex conjugate
 \newcommand{\mnorm}[1]{\ensuremath{\left\| #1 \right\|}} % matrix norm
-
 \newcommand{\de}[2]{\frac{d #1}{d #2}}   % derivative
 \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}  % partial derivative
 \newcommand{\hc}{\text{h.c.}}  % hermitian conjugate
-
 \newcommand{\be}{\begin{equation}}
 \newcommand{\ee}{\end{equation}}
 \newcommand{\bpm}{\begin{pmatrix}}
 \newcommand{\epm}{\end{pmatrix}}
-
 \newcommand{\naturals}{\ensuremath{\mathbb N}}
 \newcommand{\Z}{\ensuremath{\mathbb Z}}  % integer numbers
 \newcommand{\Q}{\ensuremath{\mathbb Q}}  % rational numbers
@@ -46,7 +43,6 @@
 \newcommand{\C}{\ensuremath{\mathbb C}}  % complex numbers
 \newcommand{\K}{\ensuremath{\mathbb K}}  % any field
 \newcommand{\I}{\mathbbm{1}} % vector space identity op
-
 \newcommand{\SL}{\text{SL}} % special linear group
 \newcommand{\GL}{\text{GL}} % general linear group
 \newcommand{\OO}{\text{O}}  % orthogonal group
@@ -54,11 +50,8 @@
 \newcommand{\U}{\text{U}}   % unitary group
 \newcommand{\SU}{\text{SU}} % special unitary group
 \newcommand{\Sp}{\text{Sp}} % symplectic group
-
 \newcommand{\cell}[2][c]{\begin{tabular}[#1]{@{}l@{}}#2\end{tabular}}
-
 \newcommand{\CNOT}{\text{CNOT}}
-
 \newcommand{\comm}[2]{\ensuremath{\left[#1, #2\right]}}             % commutator
 \newcommand{\acomm}[2]{\ensuremath{\left\{#1, #2\right\}}}          % anticommutator
 \newcommand{\ket}[1]{\ensuremath{\left| #1 \right \rangle}}
@@ -71,11 +64,7 @@
 \newcommand{\liealg}[1]{\ensuremath{\mathfrak{#1}}}                 % Lie algebra
 \newcommand{\expect}[1]{\ensuremath{\left\langle #1 \right\rangle}} % expectation value
 \newcommand{\tracep}[1]{\ensuremath{\trace\left( #1 \right)}}
-
 \newcommand{\Admap}[1]{\tilde{#1}} % mapping observables by adjoint action
-
-
-
 \renewcommand{\a}{\hat{a}}
 \newcommand{\adag}{\hat{a}^{\dagger}}
 \newcommand{\x}{\hat{x}}
@@ -90,7 +79,6 @@
 \renewcommand{\L}{\mathcal{L}}
 \newcommand{\G}{\mathcal{G}}
 \newcommand{\cR}{\mathcal{R}}
-
 \newcommand{\sidenote}[1]{\marginpar{\footnotesize{\textcolor{red}{-#1}}}}
 
 \newcommand{\nathan}[1]{\textcolor{blue}{Nathan: #1}}
@@ -98,8 +86,7 @@
 \newcommand{\ville}[1]{\textcolor{purple}{Ville: #1}}
 \newcommand{\cg}[1]{\textcolor{cyan!80!black}{Christian G.: #1}}
 
-%quantum and classical node stypes
-\usepackage{tikz}
+%quantum and classical node styles for tikz
 \usetikzlibrary{calc}
 \usetikzlibrary{shapes.multipart}
 \definecolor{quantum1}{HTML}{8EDBCE}
@@ -119,38 +106,45 @@
 
 \begin{document}
 
-\title{OpenQML - Technical manuscript}
+\title{Training/optimizing quantum circuits with PennyLane}
 \author{Maria Schuld}
 \author{Nathan Killoran}
-\email{nathan@xanadu.ai}
+\author{Josh Izaac}
 \author{Ville Bergholm}
+\author{Christian Gogolin}
+\email{Author order to be discussed }
 \affiliation{Xanadu Inc., 372 Richmond St W, Toronto, M5V 1X6, Canada}
-
-
 \date{\today}
 
 \begin{abstract}
-Compilation of formulas and conventions for the OpenQML framework.
+ABSTRACT
 \end{abstract}
 
 \maketitle
 
 
-\section{Model structure}
+\section{Introduction}
 
-We consider an abstract \textbf{model} $f(x, \theta)$
-that maps a set of \textbf{model inputs} $x$ (which may be empty) and a set of \textbf{model parameters} $\theta$ to a \textbf{model output} $y$. \\
+Recent progress in the development and commercialization of quantum technologies has had a profound impact on the landscape of quantum algorithms. One important design paradigm for algorithms running on near-term quantum devices is the idea of hybrid architectures that integrate quantum and classical processing to harvest the best of both worlds.
+Most prominently, \textit{variational circuits} are shallow, parameter-dependent quantum circuits that can be optimized with regards to a given objective by a classical optimization strategy. Variational circuits have found numerous applications in quantum chemistry [Romero,...], quantum optimization [Farhi,...] and, more recently, in quantum machine learning [REFs]. \\
 
-Each set of model parameters $\theta$ is associated with a scalar \textbf{cost} $C(\theta, \mathcal{D})$ of the model, which also depends on a (possibly empty) dataset $\mathcal{D}$.\\
+Hybrid quantum algorithms and variational circuits have opened up new research avenues for application of near term quantum technologies. However, and unusual for the field of quantum computing, a lot of research for these mostly heuristic algorithms necessarily focuses on numerical experiments rather than rigorous mathematical analysis. Luckily, there are various publicly accessible platforms to simulate quantum algorithms or even run them on real quantum devices through a cloud service. However, even though some frameworks are designed with variational circuit optimization in mind [SF, QMLT], there is at this stage no unified framework for the optimization of hybrid algorithms that run on quantum simulators or devices. \\
 
-The models we are interested in are hybrid, since they are combinations of quantum and classical computations. Such a model can be depicted as a directed graph of \textbf{nodes} which we call a \textbf{hybrid model graph}. There are two types of nodes: \textbf{Classical nodes} map node inputs $x_c$ and node parameters $\theta_c$ to outputs $y_c$ via a computation executed by a classical computer. \textbf{Quantum nodes} map node inputs $x_q$ and node parameters $\theta_q$ to the estimate of an expectation $y_q$.\\
+PennyLane is an open source framework that facilitates the optimization of hybrid quantum-classical algorithms. It can in principle be used in combination with any quantum computing platform. PennyLane is coded with quantum machine learning applications in mind, which tend to be more complex than pure optimization tasks since they may require data inputs to be fed into the quantum circuit, and can involve high-dimensional optimization landscapes. \maria{Advertise features.}
 
-Each node defines a map from \textbf{node inputs} to \textbf{node outputs}, where the node inputs are the node outputs from the parent nodes. Root nodes (those without parents) take a subset of the model inputs $x$ as node inputs, and the collection of leaf nodes (those without children) return the model output as their node outputs.
+\section{Hybrid optimization}
+
+The goal of optimization is to find minima or maxima of an objective function that quantifies the quality of a solution for a certain task. (Here we follow the convention that the objective is a \textit{cost} that has to be minimized.) In hybrid quantum-classical optimization tasks, the scalar output of the cost function is a result of both classical and quantum processing. We call these submodules \textit{classical} and \textit{quantum nodes}. A node can take inputs from one or more previous nodes or ``external inputs'', and produces an output of some sorts. The cost can therefore be expressed by a Directed Acyclic Graph (DAG) of quantum and classical nodes feeding into each other (see Figure XXX). Both classical and quantum nodes can depend on tunable parameters that we call \textit{variables}. The variables are optimized to minimize the cost.\\    
+
+While classical nodes can simply be understood as functions that map an input to an output, quantum nodes consist of quantum circuits that either run on a real quantum device, or are simulated by a classical computer. In both cases we assume that the input of the quantum node are adaptable gate parameters, while its output is the estimate of an expectation value which is obtained by running the circuit for $R$ times and measuring a set of non-commuting observables. For example, these could be the Pauli-z observable of each qubit in a register, or the photon number of a quantum mode.\\
+
+Hybrid optimization can be used as a scheme to optimize  variational quantum circuits in applications such as Quantum Approximate Optimization [REF] or Variational Quantum Eigensolvers [REF]. However it can also be used in more complex tasks such as training a hybrid quantum-classical machine learning model in a supervised fashion. In the following we will introduce the make-up of quantum and classical nodes in more detail.
+
 
 \subsection{Quantum nodes}
-A quantum node always consists of a \textbf{variational circuit} $U(\gamma)$, where $U$ is a \textbf{quantum circuit} with a set of tunable \textit{circuit parameters} $\gamma$. The circuit acts on an \textbf{initial state} $|\psi_0 \rangle$ which is usually the vacuum state $\ket{0}$.\\
+As mentioned above, a quantum node is a module in the cost function DAG which consists of a quantum circuit $U(\gamma)$ wich depends on a set of tunable gate parameters $\gamma$. The circuit acts on an initial state $|\psi_0 \rangle$ which is usually the vacuum or ground state $\ket{0}$.\\
 
-The circuit parameters $\gamma$ can be of three different types: \textbf{trainable parameters} that are associated with the trainable model parameters  $\theta_q$, \textbf{fixed parameters} which are always set to a specific value during training, or \textbf{placeholders} for inputs $x_q$ from preceding classical nodes (if there are any). After applying the variational circuit, we get a final quantum state $\ket{\psi (x_q, \theta_q) }$ from which we draw sample observations with regards to an observable $O$ (i.e., a compuational basis measurement returns samples of bit strings, and a photon number resolution measurement returns strings of integers). The samples are used to estimate the expectation value
+The circuit parameters $\gamma$ can be of three different types: a) they can be trainable parameters or variables $\theta$, b) they can be fixed values throughout the application, or c) they can be used to take inputs $x$ from preceding nodes. After applying the variational circuit, we get a final quantum state $\ket{\psi (x, \theta) }$ from which we draw sample observations with regards to an observable $O$ (i.e., a compuational basis measurement returns samples of bit strings, and a photon number resolution measurement returns strings of integers). The samples are used to estimate the expectation value
 \[\gamma \mapsto \bra{\psi_0} U(\gamma)^{\dagger}  \hat{O} U(\gamma) \ket{\psi_0}.\]
 The estimation is the output $y_q$ of the quantum node. It is associated with an error
 \[ \epsilon = \frac{\langle O \rangle}{\sqrt{R}}, \]
@@ -230,14 +224,14 @@ where $\varphi$ is at least of third order in the quadrature operators.
 
 \subsection{Classical nodes}
 
-A classical node can be any differentiable function $y_c = h(x_c, \theta_c)$ that maps inputs $x_c$ and model parameters $\theta_c$ to real \maria{any need for complex outputs?} output vectors or scalars $y_c$.\\
+A classical node can be any differentiable function $y = h(x, \theta)$ that maps inputs $x$ and variables $\theta$ to real \maria{any need for complex outputs?} output vectors or scalars $y$.\\
 
 We depict classical nodes by the following symbol:\\
 \begin{figure}[h]
 \centering
 \begin{tikzpicture}
-\node[classical node] (c) at (0,0) {$h(x_c, \theta_c) $};
-\draw[->] (c) -- (2.5,0)  node[out label] {$y_{c}$};
+\node[classical node] (c) at (0,0) {$h(x, \theta) $};
+\draw[->] (c) -- (2.5,0)  node[out label] {$y$};
 \end{tikzpicture}
 \end{figure}
 
@@ -689,8 +683,8 @@ If we consider $2$-mode gates, we have to use the $6$-dimensional quadrature-mon
 
 What happens if $W, V \neq \mathbbm{1}$ ? $W$, the circuit applied before the gate $\G$ that we derive for, can be arbitrary, since the derivation of the coefficients $c_{ij}$ in Equation (\ref{Eq:omega_gaussian}) does not change if the $\hat{O}_j$ are linear combinations of other monomials. However $V$, the circuit applied after $\G$ has to be Gaussian for the above trick to work. If $V$ is non-Gaussian, it mixes higher-order monomials $j>2$ for which the rules in Table \ref{Tbl:cv_gate_derivatives} are not valid since we did not consider higher order coefficients $c_{ij}$ when computing $\partial_{\mu}A$. If the variational circuit is parametrised in all gates, we can only use this trick to compute derivatives for the parameters up to the first non-Gaussian gate in the circuit. \\
 
-
-\begin{table*}
+\begin{widetext}
+\begin{table*}[t]
 \begin{tabular}{lll}
 Gate $\G$ & linear representation & derivative of representation\\   \hline \hline
 \cell{Phase rotation\\ $R(\phi)$}
@@ -739,6 +733,7 @@ $\partial_{\phi} A(\theta, \phi) =  \frac{1}{2} A_B(\theta, \phi+ \frac{\pi}{2})
 \caption{We use the gate definitions laid out in the StrawberryFields documentation [REF] with $\hbar=2$. All parameters are real-valued.}
 \label{Tbl:cv_gate_derivatives}
 \end{table*}
+\end{widetext}
 
 \subsubsection{Higher order observables}
 
@@ -777,21 +772,11 @@ Thus, the derivative of the second-order operator decomposes naturally as we wou
 
 
 
-
-
-
-
-
 %\bibliographystyle{unsrt}
 \bibliography{openqml_formalism}
 
-\appendix
-
-
-
-
 \clearpage
-\textsc{•}\appendix
+\appendix
 \section{Gradient computation (Ville)}
 
 In this section we explore issues related to computing gradients of variational quantum circuits.
