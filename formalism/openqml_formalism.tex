@@ -11,8 +11,9 @@
 \usepackage{qcircuit}
 \usepackage{multirow}
 \theoremstyle{plain}
-\newtheorem{theorem}{Theorem}%[section]
+\usepackage{tikz}
 
+\newtheorem{theorem}{Theorem}%[section]
 
 \DeclareMathOperator{\re}{Re}
 \DeclareMathOperator{\im}{Im}
@@ -25,20 +26,16 @@
 \DeclareMathOperator{\spec}{spec}  % eigenvalue spectrum
 \DeclareMathOperator{\lcm}{lcm}    % least common multiple
 \DeclareMathOperator{\Span}{Span}  % linear span of vectors
-
 \newcommand{\isom}{\cong} % isomorphic to
 \newcommand{\conj}[1]{\overline{#1}} % complex conjugate
 \newcommand{\mnorm}[1]{\ensuremath{\left\| #1 \right\|}} % matrix norm
-
 \newcommand{\de}[2]{\frac{d #1}{d #2}}   % derivative
 \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}  % partial derivative
 \newcommand{\hc}{\text{h.c.}}  % hermitian conjugate
-
 \newcommand{\be}{\begin{equation}}
 \newcommand{\ee}{\end{equation}}
 \newcommand{\bpm}{\begin{pmatrix}}
 \newcommand{\epm}{\end{pmatrix}}
-
 \newcommand{\naturals}{\ensuremath{\mathbb N}}
 \newcommand{\Z}{\ensuremath{\mathbb Z}}  % integer numbers
 \newcommand{\Q}{\ensuremath{\mathbb Q}}  % rational numbers
@@ -46,7 +43,6 @@
 \newcommand{\C}{\ensuremath{\mathbb C}}  % complex numbers
 \newcommand{\K}{\ensuremath{\mathbb K}}  % any field
 \newcommand{\I}{\mathbbm{1}} % vector space identity op
-
 \newcommand{\SL}{\text{SL}} % special linear group
 \newcommand{\GL}{\text{GL}} % general linear group
 \newcommand{\OO}{\text{O}}  % orthogonal group
@@ -54,11 +50,8 @@
 \newcommand{\U}{\text{U}}   % unitary group
 \newcommand{\SU}{\text{SU}} % special unitary group
 \newcommand{\Sp}{\text{Sp}} % symplectic group
-
 \newcommand{\cell}[2][c]{\begin{tabular}[#1]{@{}l@{}}#2\end{tabular}}
-
 \newcommand{\CNOT}{\text{CNOT}}
-
 \newcommand{\comm}[2]{\ensuremath{\left[#1, #2\right]}}             % commutator
 \newcommand{\acomm}[2]{\ensuremath{\left\{#1, #2\right\}}}          % anticommutator
 \newcommand{\ket}[1]{\ensuremath{\left| #1 \right \rangle}}
@@ -71,11 +64,7 @@
 \newcommand{\liealg}[1]{\ensuremath{\mathfrak{#1}}}                 % Lie algebra
 \newcommand{\expect}[1]{\ensuremath{\left\langle #1 \right\rangle}} % expectation value
 \newcommand{\tracep}[1]{\ensuremath{\trace\left( #1 \right)}}
-
 \newcommand{\Admap}[1]{\tilde{#1}} % mapping observables by adjoint action
-
-
-
 \renewcommand{\a}{\hat{a}}
 \newcommand{\adag}{\hat{a}^{\dagger}}
 \newcommand{\x}{\hat{x}}
@@ -90,7 +79,6 @@
 \renewcommand{\L}{\mathcal{L}}
 \newcommand{\G}{\mathcal{G}}
 \newcommand{\cR}{\mathcal{R}}
-
 \newcommand{\sidenote}[1]{\marginpar{\footnotesize{\textcolor{red}{-#1}}}}
 
 \newcommand{\nathan}[1]{\textcolor{blue}{Nathan: #1}}
@@ -98,8 +86,7 @@
 \newcommand{\ville}[1]{\textcolor{purple}{Ville: #1}}
 \newcommand{\cg}[1]{\textcolor{cyan!80!black}{Christian G.: #1}}
 
-%quantum and classical node stypes
-\usepackage{tikz}
+%quantum and classical node styles for tikz
 \usetikzlibrary{calc}
 \usetikzlibrary{shapes.multipart}
 \definecolor{quantum1}{HTML}{8EDBCE}
@@ -119,64 +106,225 @@
 
 \begin{document}
 
-\title{OpenQML - Technical manuscript}
+\title{Training/optimizing quantum circuits with PennyLane}
 \author{Maria Schuld}
 \author{Nathan Killoran}
-\email{nathan@xanadu.ai}
+\author{Josh Izaac}
 \author{Ville Bergholm}
+\author{Christian Gogolin}
+\email{Author order to be discussed }
 \affiliation{Xanadu Inc., 372 Richmond St W, Toronto, M5V 1X6, Canada}
-
-
 \date{\today}
 
 \begin{abstract}
-Compilation of formulas and conventions for the OpenQML framework.
+ABSTRACT
 \end{abstract}
 
 \maketitle
+%\tableofcontents
 
 
-\section{Model structure}
+\section{Introduction}
 
-We consider an abstract \textbf{model} $f(x, \theta)$
-that maps a set of \textbf{model inputs} $x$ (which may be empty) and a set of \textbf{model parameters} $\theta$ to a \textbf{model output} $y$. \\
+Recent progress in the development and commercialization of quantum technologies has had a profound impact on the landscape of quantum algorithms. Near-term quantum devices require routines that are of shallow depth and robust against errors. The design paradigm of \textit{hybrid algorithms} that integrate quantum and classical processing has therefore become increasingly important. Possibly the most well-known class of hybrid algorithms is that of \textit{variational circuits}, which are parameter-dependent quantum circuits that can be optimized by a classical computer with regards to a given objective. \\
 
-Each set of model parameters $\theta$ is associated with a scalar \textbf{cost} $C(\theta, \mathcal{D})$ of the model, which also depends on a (possibly empty) dataset $\mathcal{D}$.\\
+Hybrid optimization with variational circuits opened up a number of new research avenues for near-term quantum computing with applications in quantum chemistry [Romero,...], quantum optimization [Farhi,...] and, more recently, in quantum machine learning [REFs]. Unusual for the field of quantum computing, a lot of research for these mostly heuristic algorithms necessarily focuses on numerical experiments rather than rigorous mathematical analysis. Luckily, there are various publicly accessible platforms to simulate quantum algorithms or even run them on real quantum devices through a cloud service [REFs]. However, even though some frameworks are designed with variational circuits in mind [SF, QMLT], there is at this stage no unified tool for the hybrid optimization of quantum circuits across quantum platforms, treating simulators and devices on the same footing. \\
 
-The models we are interested in are hybrid, since they are combinations of quantum and classical computations. Such a model can be depicted as a directed graph of \textbf{nodes} which we call a \textbf{hybrid model graph}. There are two types of nodes: \textbf{Classical nodes} map node inputs $x_c$ and node parameters $\theta_c$ to outputs $y_c$ via a computation executed by a classical computer. \textbf{Quantum nodes} map node inputs $x_q$ and node parameters $\theta_q$ to the estimate of an expectation $y_q$.\\
+PennyLane is an open source framework that facilitates the optimization of hybrid quantum-classical algorithms. It can in principle be used in combination with any quantum computing platform, and has a python-based user interface. PennyLane is coded with quantum machine learning applications in mind, which tend to be more complex than pure optimization tasks since they may require data inputs to be fed into the quantum circuit, and can involve high-dimensional optimization landscapes. \maria{Advertise features.}
 
-Each node defines a map from \textbf{node inputs} to \textbf{node outputs}, where the node inputs are the node outputs from the parent nodes. Root nodes (those without parents) take a subset of the model inputs $x$ as node inputs, and the collection of leaf nodes (those without children) return the model output as their node outputs.
+PennyLane can be used as a scheme to optimize  variational quantum circuits in applications such as Quantum Approximate Optimization [REF] or Variational Quantum Eigensolvers [REF]. However it can also be used in more complex tasks such as training a hybrid quantum-classical machine learning model in a supervised fashion, or training a generative adverserial network where the discriminator is a classical neural net while the generator is a quantum model. \\
 
-\subsection{Quantum nodes}
-A quantum node always consists of a \textbf{variational circuit} $U(\gamma)$, where $U$ is a \textbf{quantum circuit} with a set of tunable \textit{circuit parameters} $\gamma$. The circuit acts on an \textbf{initial state} $|\psi_0 \rangle$ which is usually the vacuum state $\ket{0}$.\\
+In the following we will first introduce the conceptual background of PennyLane including quantum and classical nodes, the cost graph, as well as how to compute gradients. We then present the code base and features. Finally, we work through three examples.
 
-The circuit parameters $\gamma$ can be of three different types: \textbf{trainable parameters} that are associated with the trainable model parameters  $\theta_q$, \textbf{fixed parameters} which are always set to a specific value during training, or \textbf{placeholders} for inputs $x_q$ from preceding classical nodes (if there are any). After applying the variational circuit, we get a final quantum state $\ket{\psi (x_q, \theta_q) }$ from which we draw sample observations with regards to an observable $O$ (i.e., a compuational basis measurement returns samples of bit strings, and a photon number resolution measurement returns strings of integers). The samples are used to estimate the expectation value
-\[\gamma \mapsto \bra{\psi_0} U(\gamma)^{\dagger}  \hat{O} U(\gamma) \ket{\psi_0}.\]
-The estimation is the output $y_q$ of the quantum node. It is associated with an error
-\[ \epsilon = \frac{\langle O \rangle}{\sqrt{R}}, \]
-that depends on the variance of the operator $\langle O \rangle$, as well as the number of samples $R$ that we draw. $R$ is a hyperparameter of the quantum node. We draw quantum nodes as:\\
+\section{Conceptual background}
+
+The goal of optimization is to find minima or maxima of an objective function that quantifies the quality of a solution for a certain task. We follow the convention that the objective is a \textit{cost} that has to be minimized. In hybrid quantum-classical optimization tasks, the scalar output of the cost function is a result of both classical and quantum processing. We call these processing submodules \textit{classical} and \textit{quantum nodes}. Both classical and quantum nodes can depend on tunable parameters $\theta$ that we call \textit{variables}, and which are adjusted during optimization to minimize the cost. The nodes form a Directed Acyclic Graph (DAG) that graphically represents to cost and facilitates the discussion of how to compute gradients of hybrid models.
+
+\subsection{Classical and quantum nodes}
+
+A classical node can be any differentiable function $y = h(x, \theta)$ that maps inputs $x$ and variables $\theta$ to real-valued output tensors (i.e., scalars, vectors, matrices,...) denoted by $y$. We depict classical nodes by the following symbol:\\
 \begin{figure}[h]
 \centering
 \begin{tikzpicture}
-\node[quantum node] (c) at (0,0) {$U(x_c, \theta_c) $ \nodepart{two} $O $};
-\draw[->] (c) -- (3.5,0)  node[out label] {$y_{q}$} node[samples label] {$R$};
+\node[input node] (o) at (-0.5, 0) {x};
+\node[classical node] (c) at (0,0) {$h(x, \theta) $};
+\draw[->] (c) -- (2.5,0)  node[out label] {$y$};
+\draw[->] (o) -- (c);
+\end{tikzpicture}
+\end{figure}
+\maria{No inputs...}
+
+Quantum nodes consist of variational quantum circuits $U(\gamma)$ that either run on a real quantum device, or are simulated by a classical computer. The variational circuit consists of a series of quantum gates\footnote{A circuit can be composed of \textit{layers} which repeat a structured sequence of quantum gates.} 
+\[U(\gamma) = \G_{L}(\gamma_{L}) \cdots \G_1(\gamma_1). \]
+Each gate is parametrised by a set of gate parameters
+$\gamma_j$, $j=1,...,L$. (An empty set means that the gate is constant, such as a CNOT gate.) A subset of the gate parameters $\gamma$ is used to encode the input $x$ to the quantum node, while the others represent trainable variables $\theta$; in other words, $U(\gamma) = U(x, \theta)$. \\
+
+The circuit acts on an initial state $|\psi_0 \rangle$ which is usually the vacuum or ground state $\ket{0}$. After applying the variational circuit, we get a final quantum state $\ket{\psi (x, \theta) }$. The output of a quantum node is the estimate of an expectation value 
+\[\gamma \mapsto \bra{\psi_0} U(x, \theta)^{\dagger}  \hat{O} U(x, \theta) \ket{\psi_0},\]
+which is obtained by running the circuit for $R$ times and measuring a set of non-commuting observables $\{O_j\}_{j=1}^J$. For example, these could be the Pauli-z observables of each qubit in a register, or the photon number of a subset of quantum modes. \\
+
+The output $y$ of the quantum node is the expectation estimate. It is associated with an error
+\[ \epsilon = \frac{\langle O \rangle}{\sqrt{R}}, \]
+that depends on the variance of the operator $\langle O \rangle$, as well as the number of samples $R$ that we draw. In the following we depict quantum nodes as:\\
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\node[input node] (o) at (-0.5, 0) {x};
+\node[quantum node] (c) at (0,0) {$U(x, \theta) $ \nodepart{two} $O $};
+\draw[->] (c) -- (3.5,0)  node[out label] {$y$} node[samples label] {$R$};
+\draw[->] (o) -- (c);
 \end{tikzpicture}
 \end{figure}
 
+\subsection{The hybrid graph}
 
-The variational circuit can be composed of \textbf{layers}
-\[ U (\gamma) = \L_{N_L} \cdots \L_{1}\]
-which repeat a fixed architecture, which possibly depends on hyperparameters. If there is no layer structure, we set $N_L=1$. A layer $\L_l$, $l=1,...,N_L$, consists of a series of \textbf{gates}
-\[\L_l = \G^l_{N_G}(\gamma^l_{N_G}) \cdots \G^l_1(\gamma^l_1). \]
-Each gate is parametrised by a set of circuit parameters
-$\gamma^i_j$, $i = 1,...,N_L$, $j=1,...,N_G$. The set can be empty if the gate is constant.\\
+\begin{figure}[t]
+\begin{tikzpicture}
+\node[classical node, anchor=center] (c1) at (0,0) {\phantom{.}};
+\node[quantum node, anchor=center] (q1) at (1,0) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[quantum node, anchor=center] (q2) at (1,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, anchor=center] (c2) at (2,0) {\phantom{.} };
+\node[anchor=center] (mid1up) at (2.5,0.325) {};
+\node[anchor=center] (mid1down) at (2.5,-0.325) {};
+\node[quantum node, anchor=center] (q3) at (3.5,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, anchor=center] (c3) at (3,-0.75) {\phantom{.} };
+\node[classical node, anchor=center] (c4) at (4,-0.75) {\phantom{.} };
+\node[anchor=center] (mid2up) at (4.5,0.325) {};
+\node[anchor=center] (mid2down) at (4.5,-0.325) {};
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+\node[anchor=center] (mid3up) at (5.5,0.325) {};
+\node[anchor=center] (mid3down) at (5.5,-0.325) {};
+\node[output node, anchor=center] (o2) at (6,0) {$C(\Theta)$ };
+\draw[->] (c1) -- (q1);
+\draw[->] (q1) -- (c2);
+\draw[->, gray] (q2) -- (q3);
+\draw[->] (c2) -| (mid1down)|- (c3);
+\draw[->] (c2) -| (mid1up) |- (q3);
+\draw[->] (c3) -- (c4);
+\draw[->] (c4) -| (mid2up) |- (c5);
+\draw[->] (q3) -| (mid2down) |- (c5);
+\draw[->] (c5) -- (o2);
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+\end{tikzpicture}
+\caption{Illustration of the cost function as a Directed Acyclic Graph of quantum and classical nodes.}
+\label{Fig:dag}
+\end{figure}
 
-We propose to use the following \textbf{elementary gate sets} from which the gates $\mathcal{G}$ are taken.
+The inputs to a classical or quantum node are either externally given (such as data samples fed into a model) or they are the output from one or more previous nodes. The cost can therefore be expressed by a Directed Acyclic Graph (DAG) of quantum and classical nodes feeding into each other (see Figure XXX). 
 
-\subsubsection{Qubit architectures}
+\subsection{Backpropagating throught the graph}
 
-For qubit architectures we define three parametrized gates,
-the elementary rotations around the $x$, $y$ and~$z$ axes:
+PennyLane focuses on gradient-based algorithms such as gradient descent and its variations. In gradient descent, to minimize the cost in every step the parameters are updated according to the following simple loop:\\
+
+\begin{algorithmic}[1]
+\Procedure{Gradient Descent step}{}
+\For {$\mu \in \Theta $}
+\State $\mu^{(t+1)} = \mu^{(t)} - \eta^{(t)} \partial_{\mu} C(\Theta)$
+\EndFor
+\EndProcedure
+\end{algorithmic}
+
+The learning rate $\eta^{(t)}$ can be adapted in each step, either depending on the gradient or on the step number. A step of gradient descent requires us to comput the gradient $\partial_{\mu} C(\Theta)$ of the cost with respect to a variable $\mu$. Assume that $\mu$ is in the variable subset $\theta \subset \Theta$ which only the node $n^*$ depends on. Let $y \circ n^{(p)}_1 \circ ... \circ (n^*)^{(p)}$ be the path of (quantum or classical nodes) that emerges from following the cost in the opposite direction of the directed edges until we reach node $n^*$. Since there may be $N_p > 1$ of those paths, we use a superscript $p$ to denote the path index. All branches that do not lead back to $\theta$ are independent of $\mu$ and can be thought of as constants. We can formally derive a `backpropagation' mechanism for this model.\\
+
+The chain rule prescribes that the gradient with respect to the model parameter $\mu \in \theta$ is given by
+\[ \partial_{\mu} C(\Theta) = \sum_{p=1}^{N_p} \frac{\partial y}{\partial n_1^{(p)}} \frac{ \partial n^{(p)}_1}{\partial n^{(p)}_{2}}  \cdots \frac{\partial n^*}{\partial \mu}. \]
+
+
+This means that we need to be able to compute two types of gradients for each node: The derivative with respect to the input from a previous node, as well as the derivative for each node parameter. Note that while $\partial_{\mu \in \Theta} C(\Theta)$ is a scalar gradient, the gradients in between may be multi-dimensional tensors.
+
+\begin{figure}[t]
+\begin{tikzpicture}
+\node[] at (-0.75,1.5) {Path p=1};
+\node[classical node, fill=lightgray, anchor=center] (c1) at (0,0) {\phantom{.}};
+\node[quantum node, anchor=center] (q1) at (1,0) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[quantum node, fill=lightgray, anchor=center] (q2) at (1,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, anchor=center] (c2) at (2,0) {\phantom{.} };
+\node[anchor=center] (mid1up) at (2.5,0.325) {};
+\node[anchor=center] (mid1down) at (2.5,-0.325) {};
+\node[quantum node, anchor=center] (q3) at (3.5,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, fill=lightgray, anchor=center] (c3) at (3,-0.75) {\phantom{.} };
+\node[classical node, fill=lightgray, anchor=center] (c4) at (4,-0.75) {\phantom{.} };
+\node[anchor=center] (mid2up) at (4.5,0.325) {};
+\node[anchor=center] (mid2down) at (4.5,-0.325) {};
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+\node[anchor=center] (mid3up) at (5.5,0.325) {};
+\node[anchor=center] (mid3down) at (5.5,-0.325) {};
+\node[output node, anchor=center] (o2) at (6,0) {$C(\Theta)$ };
+\draw[->, gray] (c1) -- (q1);
+\draw[->] (q1) -- (c2);
+\draw[->, gray] (q2) -- (q3);
+\draw[->, gray] (c2) -| (mid1down)|- (c3);
+\draw[->] (c2) -| (mid1up) |- (q3);
+\draw[->] (c3) -- (c4);
+\draw[->, gray] (c4) -| (mid2up) |- (c5);
+\draw[->] (q3) -| (mid2down) |- (c5);
+\draw[->] (c5) -- (o2);
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+
+\end{tikzpicture}\\
+\begin{tikzpicture}
+\node[] at (-0.75,1.5) {Path p=2};
+\node[classical node, fill=lightgray, anchor=center] (c1) at (0,0) {\phantom{.}};
+\node[quantum node, anchor=center] (q1) at (1,0) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[quantum node, fill=lightgray, anchor=center] (q2) at (1,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, anchor=center] (c2) at (2,0) {\phantom{.} };
+\node[anchor=center] (mid1up) at (2.5,0.325) {};
+\node[anchor=center] (mid1down) at (2.5,-0.325) {};
+\node[quantum node, fill=lightgray, anchor=center] (q3) at (3.5,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
+\node[classical node, anchor=center] (c3) at (3,-0.75) {\phantom{.} };
+\node[classical node, anchor=center] (c4) at (4,-0.75) {\phantom{.} };
+\node[anchor=center] (mid2up) at (4.5,0.325) {};
+\node[anchor=center] (mid2down) at (4.5,-0.325) {};
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+\node[anchor=center] (mid3up) at (5.5,0.325) {};
+\node[anchor=center] (mid3down) at (5.5,-0.325) {};
+\node[output node, anchor=center] (o2) at (6,0) {$C(\Theta)$ };
+\draw[->, gray] (c1) -- (q1);
+\draw[->] (q1) -- (c2);
+\draw[->, gray] (q2) -- (q3);
+\draw[->] (c2) -| (mid1down)|- (c3);
+\draw[->, gray] (c2) -| (mid1up) |- (q3);
+\draw[->] (c3) -- (c4);
+\draw[->] (c4) -| (mid2up) |- (c5);
+\draw[->] (q3) -| (mid2down) |- (c5);
+\draw[->] (c5) -- (o2);
+\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
+
+\end{tikzpicture}
+\caption{Illustration of the two paths that lead from the second output $y_2$ back to the first quantum node, with respect to whose parameter we want to differentiate $y_2$.}
+\label{}
+\end{figure}
+
+\subsection{Computing the gradients}
+
+There are two different methods to compute gradients\footnote{Note that when we speak of gradients here, we actually refer to estimates of gradients that result from estimates of expectation values. Only in simulations of the quantum circuits can these estimates be exact deterministic values, or $R \rightarrow \infty$ (in PennyLane achieved by setting $R$ to zero). In the items above, ``analytical computation'' therefore means that if the results of the quantum nodes were exact expectation values (i.e. values derived from analytical computation or estimated by an amount of measurements that goes to infinity), the gradients would be exact. Numerically computed gradients are approximations of the true gradients, even if the quantum nodes were giving exact expectations.} of the cost with respect to a variable, numerical computation of the gradients as well as analytical computation of the gradients.
+
+
+\subsubsection{Numerical gradients}
+
+Numerical methods require only `black-box' evaluations of the model, which means that we only need query the cost for different variables. The value of the cost function $C(\Theta) = C(\mu)$ is estimated at two positions close to the current circuit parameter $\mu \in \Theta$ which we want to update. The approximation of the gradient is given by
+\[ \partial_{\mu} C(\mu) \approx \frac{C(\mu ) - C(\mu + \Delta \mu)}{\Delta \mu} \]
+for the \textit{forward finite-differences} method, and by
+\[ \partial_{\mu} C(\mu) \approx \frac{C(\mu - \frac{1}{2}\Delta \mu ) - C(\mu + \frac{1}{2} \Delta \mu)}{\Delta \mu} \]
+for the \textit{centered finite-differences} method. The parameter shift $\Delta \mu$ has to be as small as possible for good approximations, but still large enough to make the finite difference larger than the error in estimating $C(\mu)$ with quantum devices, which makes numerical gradients useless for some applications.
+
+\subsubsection{Analytic gradients}
+Analytic gradients for classical nodes can be computed by leveraging the well-known rules of differentiation, most notably the chain rule. However, for quantum nodes -- which are possibly computed on quantum hardware -- this is not obvious. Quantum nodes map a set of parameters  $\theta \subset \Theta$ to an estimate of an expectation value $E = \bra{\psi_0} U(\theta)^{\dagger} O U(\theta) \ket{\psi_0}$ for an operator $O$ with regards to a state $U(\theta) \ket{\psi_0}$ prepared by the variational circuit $U$. For convenience we neglected inputs $x$ to the variational circuit, since taking derivatives with respect to node inputs work equivalent to model parameters.
+
+
+
+Refer to appendix.
+
+\section{Codebase}
+
+\subsection{Quantum functions}
+
+\subsection{Optimizers}
+
+\subsection{Backends}
+\subsubsection{Plugins}
+\subsubsection{Default backends}
+ Two default backends, one for qubit architectures and one for continuous-variable architectures are included as defaults in the core of PennyLane. The qubit default backend contains the three  elementary rotations around the $x$, $y$ and~$z$ axes:
 \begin{eqnarray*}
         R_x(\alpha) &=& \e^{-i\alpha \sigma_x/2} =
         \begin{pmatrix}
@@ -192,303 +340,107 @@ the elementary rotations around the $x$, $y$ and~$z$ axes:
         \begin{pmatrix}
           \e^{-i \frac{\gamma}{2}} & 0\\
           0 & \e^{i \frac{\gamma}{2}}
-        \end{pmatrix}\\
+        \end{pmatrix}.\\
 \end{eqnarray*}
-Any $\SO(3)$ rotation can be expressed using three Euler angles, that is, three rotations around two orthogonal axes. A standard axis choice is~$zyz$. Due to the isomorphism $\SU(2)/\Z_2 \isom \SO(3)$ we obtain a similar decomposition
-for arbitrary single-qubit gates $S$:
-\begin{align}
-\label{eq:app:euler}
-\notag
-S &= R_z(\gamma) R_y(\beta) R_z(\alpha)\\
-&=
-\bpm
-e^{-i(\alpha+\gamma)/2} \cos(\beta/2) & -e^{i(\alpha-\gamma)/2} \sin(\beta/2)\\
-e^{-i(\alpha-\gamma)/2} \sin(\beta/2) &  e^{i(\alpha+\gamma)/2} \cos(\beta/2)
-\epm.
-\end{align}
+In addition, there are standard fixed gates such as ... . It is well known \cite{barenco1995} that these gates form a universal gate set that can in principle construct any quantum algorithm. MEASUREMENTS.
+\maria{Check convention in code.}\\
 
-Together with the $\CNOT$ gate this gate set is universal, i.e. any $\SU(2^n)$
-gate can be expanded into a finite sequence of $\SU(2)$ and $\CNOT$ gates~\cite{barenco1995}.
+As a continuous-variable default gate set, PennyLane offers some standard Gaussian gates such as rotation, displacement, squeezing and a beam splitter, together with homodyne measurement.\\
+%\begin{eqnarray}
+%  	R(\phi) & =& \exp\left(i \phi \adag \a \right), \\
+%  	D(\alpha) & =& \exp(r (e^{i\phi} \adag -e^{-i\phi} \a)), \\
+%  	S(r) & =& \exp \left(\frac{r}{2} \left(e^{-i\phi} \a^2 -e^{i\phi}  (\adag)^2 \right) \right), \\
+%  	BS(\theta) & =& \exp\left(\eta (e^{i \phi} \adag_1 \a_2 -e^{-i \phi}\a_1 \adag_2) \right).
+%  \label{Eq:gaussiangates}
+%\end{eqnarray}
 
-\subsubsection{CV architectures}
 
-Most gates in CV quantum computing are naturally parametrised. We consider a universal gate set consisting of a universal Gaussian gate set and a nonlinear gate. The following gates are universal for Gaussian transformations,
-\begin{eqnarray}
-  	R(\phi) & =& \exp\left(i \phi \adag \a \right), \\
-  	D(\alpha) & =& \exp(r (e^{i\phi} \adag -e^{-i\phi} \a)), \\
-  	S(r) & =& \exp \left(\frac{r}{2} \left(e^{-i\phi} \a^2 -e^{i\phi}  (\adag)^2 \right) \right), \\
-  	BS(\theta) & =& \exp\left(\eta (e^{i \phi} \adag_1 \a_2 -e^{-i \phi}\a_1 \adag_2) \right).
-  \label{Eq:gaussiangates}
-\end{eqnarray}
-As the nonlinear gate we consider a general transformation
-\begin{equation}
-	\mathcal{N}(\phi) = \exp(i \phi \; \varphi(\a, \adag))
-	\label{Eq:nonlineargate}
-\end{equation}
-where $\varphi$ is at least of third order in the quadrature operators.
-\cg{A pedantic comment: Not every non-linear gate always promotes linear optics to universality \cite{Oszmaniec2017}.}
 
-\subsection{Classical nodes}
-
-A classical node can be any differentiable function $y_c = h(x_c, \theta_c)$ that maps inputs $x_c$ and model parameters $\theta_c$ to real \maria{any need for complex outputs?} output vectors or scalars $y_c$.\\
-
-We depict classical nodes by the following symbol:\\
-\begin{figure}[h]
-\centering
-\begin{tikzpicture}
-\node[classical node] (c) at (0,0) {$h(x_c, \theta_c) $};
-\draw[->] (c) -- (2.5,0)  node[out label] {$y_{c}$};
-\end{tikzpicture}
-\end{figure}
-
+\section{Examples}
 
 \begin{figure*}[t]
 \begin{flushleft}
 \begin{tikzpicture}
-\node[align=left, anchor=west] at (-1,1) {(a)};
-\node[input node] (i1) at (-0.5,0) {$\emptyset$};
-\node[input node] (iK) at (-0.5,-1.5) {$\emptyset$};
+\node[align=left, anchor=west] at (-1,1) {(a) Variational Quantum Eigensolver};
 \node[quantum node] (q1) at (0,0) {$U(\theta_1) $ \nodepart{two} $\sigma_x$};
 \node[]  at (1,-0.75) {$\vdots $};
 \node[quantum node] (qK) at (0,-1.5) {$U(\theta_i)$ \nodepart{two} $\sigma_x \otimes \sigma_y$};
 \node[]  at (1,-2.25) {$\vdots $};
 \node[classical node] (c) at (4.25,-1) {$\sum_{i=1}^K a_i y_{q_i} $};
-\node[output node] (o) at (7,-1) {$y$};
-\draw[->] (i1) -- (q1);
-\draw[->] (iK) -- (qK) ;
-\draw[] (q1.east) -- (3.7,0)  node[out label] {$y_{q_1}$} node[samples label] {$R$};
+\node[output node] (o) at (7,-1) {$C$};
+\draw[] (q1.east) -- (3.7,0)  node[out label] {$y_{1}$} node[samples label] {$R$};
 \draw[->] (3.7,0) -- (3.7,-1)-- (c);
-\draw[] (qK.east) -- (3.7,-1.5) node[out label] {$y_{q_i}$} node[samples label] {$R$};
+\draw[] (qK.east) -- (3.7,-1.5) node[out label] {$y_{i}$} node[samples label] {$R$};
 \draw[->] (3.7,-1.5) -- (3.7,-1)-- (c);
 \draw[->] (c) -- (o);
 %\draw[red] (q1) -| (mid) |- (c.west);
 \end{tikzpicture}
  ~~~~~~~~~~~~~~~ \begin{tikzpicture}
-\node[align=left, anchor=west] at (-1,0) {(b) Training:};
-\node[input node] (i) at (-0.5,-0.75) {$\emptyset$};
+\node[align=left, anchor=west] at (-1,0.5) {(b) Generative quantum model};
+\node[align=left, anchor=west] at (-0.5,0) {Training:};
 \node[quantum node] (q) at (0,-0.75) {$ U(\theta) $ \nodepart{two} $\Lambda_{\mathcal{D}}$};
 \node[output node] (o) at (2.75,-0.75) {$y$};
-\draw[->] (i) -- (q);
 \draw[->] (q) -- (o) node[samples label] {$R$};
-\node[align=left, anchor=west] at (-0.5,-2) {Data generation:};
-\node[input node] (i) at (-0.5,-2.75) {$\emptyset$};
-\node[quantum node] (q) at (0,-2.75) {$ U(\theta) $ \nodepart{two} $\sigma_z \otimes \hdots \otimes\sigma_z$};
-\node[output node] (o) at (4.25,-2.75) {$y$};
-\draw[->] (i) -- (q);
+\node[align=left, anchor=west] at (-0.5,-1.5) {Data generation:};
+\node[quantum node] (q) at (0,-2.25) {$ U(\theta) $ \nodepart{two} $\sigma_z \otimes \hdots \otimes\sigma_z$};
+\node[output node] (o) at (4.25,-2.25) {$y$};
 \draw[->] (q) -- (o) node[samples label] {$1$};
+\node  at (4.25,-3) {};
+
 \end{tikzpicture}\\ \bigbreak
 
 \begin{tikzpicture}
 \node[align=left, anchor=west] at (-1,1) {(c)};
 \node[input node] (i) at (-0.5,0) {$\bx$};
-\node[classical node] (c1) at (0,0) {$h_1(\bx, \theta_{c_1}) $};
+\node[classical node] (c1) at (0,0) {$h_1(\bx, \theta_{1}) $};
 \node[] (dots) at (3,0) {$\hdots $};
-\node[classical node] (cK) at (4.5,0) {$h_K(\mathbf{y}_{c_{K-1}}, \theta_{c_K}) $};
-\node[quantum node] (q) at (8.5,0) {$ U(\mathbf{y}_c, \theta_q) $ \nodepart{two} $\sigma_z$};
-\node[output node] (o) at (11.75,0) {$y$};
+\node[classical node] (cK) at (4.5,0) {$h_K(\mathbf{y}_{{K-1}}, \theta_{K}) $};
+\node[quantum node] (q) at (8.5,0) {$ U(\mathbf{y}_K, \theta_{K+1}) $ \nodepart{two} $\sigma_z$};
+\node[output node] (o) at (12.5,0) {$y$};
+\draw[-] (q) -- (o) node[samples label] {$R$};
 \draw[->] (i) -- (c1);
-\draw[->] (c1) -- (dots) node[out label] {$\mathbf{y}_{c_1}$};
-\draw[->] (dots) -- (cK) node[out label] {$\mathbf{y}_{c_{K-1}}$};
-\draw[->] (cK) -- (q) node[out label] {$\mathbf{y}_{c_K}$};
-\draw[->] (q) -- (o);
-\end{tikzpicture}\\ \bigbreak
-
+\draw[->] (c1) -- (dots) node[out label] {$\mathbf{y}_{1}$};
+\draw[->] (dots) -- (cK) node[out label] {$\mathbf{y}_{{K-1}}$};
+\draw[->] (cK) -- (q) node[out label] {$\mathbf{y}_{K}$};
+\end{tikzpicture}
 
 \end{flushleft}
 \caption{Examples of model graphs. Turqois nodes depict quantum nodes, and orange nodes depict classical nodes. (a) Model graph of a variational quantum eigensolver, in which expectation values of local Pauli operators are combined by a classical layer to an expectation value of a global Hamiltonian. (b)  A model, here a generative model) can even have different architectures for training and data generation. While the model is trained maximising the expectation of a quantum operator $\Lambda_{\mathcal{D}}$ that projects onto a `training set subspace' of Hilbert space, it can be used to sample data by performing a single computational basis measurement (i.e., $R=1$). (c) Model graph of a classical neural network with a final quantum layer that computes the scalar output.}
 \label{Fig:example_modelgraphs}
 \end{figure*}
 
+\maria{Code examples!}
 
-From the building blocks of classical and quantum nodes, more complicated hybrid structures evolve. Examples of hybrid model graphs are given in Figure \ref{Fig:example_modelgraphs}. Figure \ref{Fig:example_modelgraphs} (a) shows a variational quantum eigensolver, where the model input is an empty set, and the output of the model is the weighed sum of expectation values. Figure \ref{Fig:example_modelgraphs} (b) shows a generative quantum model. Finally, Figure \ref{Fig:example_modelgraphs} (c) shows a classical neural network with one final quantum layer, whose output is the expectation value of a $\sigma_z$ operator applied to a predefined qubit.
+Figure \ref{Fig:example_modelgraphs} shows three examples: a variational quantum eigensolver, a generative quantum model and an supervised hybrid model. \\
 
-\section{Optimization}
+\subsection{Variational quantum eigensolver}
 
-
-\subsection{Cost function}
-We consider three different tasks for OpenQML: optimization, unsupervised learning and supervised learning. The tasks depend on whether and what type of data is used for training (see Table \ref{Tbl:tasks}).\\
-
-\begin{table}[t]
-\begin{tabular}{lll}
-\hline \hline
-Task & Inputs & Targets\\
-\hline
-Optimisation & No & No \\
-Unsupervised & Yes & No\\
-Supervised & Yes & Yes\\\hline \hline
-\end{tabular}
-\caption{Definition of the three tasks depending on whether and which type of data is used to train the circuit.}
-\label{Tbl:tasks}
-\end{table}
-
-
-The cost function has a different structure for different tasks of training. We will revisit the examples in Figure \ref{Fig:example_modelgraphs} and present some potential cost function for these models. \\
-
-%\begin{figure}[t]
-%\includegraphics[scale=0.08]{tasks.pdf}
-%\caption{Three tasks for OpenQML and the ob}
-%\label{Fig:tasks}
-%\end{figure}
-
-\paragraph{Expectation maximisation cost for a variational eigensolver}
-
-The cost function of a variational eigensolver is the direct model output $y$ shown in Figure \ref{Fig:example_modelgraphs} (a). $y$ is a weighed sum of local expectation values, which classically computes the expectation value of a global observable which is decomposed into a sum of local observables. Hence, the cost function reads
-\[ C(\theta) = \sum_i a_i \bra{0}U(\theta)^{\dagger} O_i U(\theta)\ket{0}, \]
+The cost function of the variational eigensolver shown in Figure \ref{Fig:example_modelgraphs} is a weighed sum of local expectation values. This computes the expectation value of a global observable which is decomposed into a sum of local observables. Hence, the cost function reads
+\[ C(\theta_1,...) = \sum_i a_i \bra{0}U(\theta)^{\dagger} O_i U(\theta)\ket{0}, \]
 where the $O_i$ are Pauli operators acting on a few qubits only.
 
 
-\paragraph{Cost for a generative model}
+\subsection{Cost for a generative model}
 Assume we are given some unlabelled data $\mathcal{D}$ that can be associated with the basis states of a quantum state. Our goal is to prepare a quantum state $\ket{\psi}$ using the variational circuit, so that the likelihood of measuring a basis state $\ket{x^m}$ that represents an input $x^m \in \mathcal{D}$ is large. If we denote the projection onto the basis states that denote the data set as $\Lambda_{\mathcal{D}}$ as in Figure \ref{Fig:example_modelgraphs} (b), the goal is to maximise the expectation of this operator. The loss is hence given by
 \[ C(\theta, \mathcal{D}) = \bra{0}U(\theta)^{\dagger} \Lambda_{\mathcal{D}} U(\theta)\ket{0}.\]
 \maria{This is not maximum likelihood. Would that be better?}
 
-\paragraph{Square loss cost for supervised learning}
+\subsection{Square loss cost for supervised learning}
 Subfigure (c) in Figure \ref{Fig:example_modelgraphs} is an example of a supervised model. We are given a labelled dataset $\mathcal{D}$. The output $y^m$ of the model for an input $\bx^m$ is defined as the expectation of a specified $\sigma_z$ operator. The square loss compares this expectation with the target value $t^m$ for all training data $m=1,...,M$,
 \[ C(\theta, \mathcal{D}) = \sum_{m} |\bra{0}U(\theta, \bx^m)^{\dagger} \sigma_z U(\theta, \bx^m)\ket{0}-t^m|^2. \]
 
 There are of course many other loss functions one could think of, each taking the output of the current model and possibly some data and scoring its parameters with a scalar value.
 
-\subsection{Optimization methods}
-
-There are three methods to optimize models built from classical and quantum nodes:
-\begin{enumerate}
-\item Gradient-free optimization (i.e., Nelder-Mead, genetic algorithms, particle swarm optimization...)
-\item Gradient-based optimization with numerical computation of gradients
-\item Gradient-based optimization with analytical computation of the gradients
-\end{enumerate}
-Note that when we speak of gradients here, we actually refer to estimates of gradients that result from estimates of expectation values. Only in simulations of the quantum circuits can these estimates be exact deterministic values. In the items above, ``analytical computation'' therefore means that if the results of the quantum nodes were exact expectation values (i.e. values derived from analytical computation or estimated by an amount of measurements that goes to infinity), the gradients would be exact. Numerically computed gradients are approximations of the true gradients, even if the quantum nodes were giving exact expectations.
-
-\subsubsection{Gradient-free optimization}
-Gradient-free optimization is straight-forward from an algorithmic perspective, since we only need function evaluations that the quantum and classical devices can provide together.
-
-\subsubsection{Gradient-based numeric optimization}
-
-Also numerical methods require only black-box evaluations of the model. The value of the cost function $C(\theta)$ is estimated at two positions close to the current circuit parameter $\mu \in \theta$ which we want to update. The approximation of the gradient is given by
-\[ \partial_{\mu} C(\mu) \approx \frac{C(\mu ) - C(\mu + \Delta \mu)}{\Delta \mu} \]
-for the \textbf{forward finite-differences} method, and by
-\[ \partial_{\mu} C(\mu) \approx \frac{C(\mu - \frac{1}{2}\Delta \mu ) - C(\mu + \frac{1}{2} \Delta \mu)}{\Delta \mu} \]
-for the \textbf{centered finite-differences} method. The parameter shift $\Delta \mu$ has to be as small as possible for good approximations, but still large enough to make the finite difference larger than the error in estimating $C(\mu)$ with quantum devices, which makes numerical gradients useless for some applications.
-
-\subsubsection{Gradient-based analytic optimization}
-
-The third method, gradient-based optimization with analytical gradients, takes some more theoretical foundations, which we develop in the following section. The most common algorithm is (stochastic) gradient descent. In gradient descent, to minimize the cost in every \textbf{step} the parameters are updated according to the following simple loop:\\
-
-\begin{algorithmic}[1]
-\Procedure{Gradient Descent step}{}
-\For {$\mu \in \theta $}
-\State $\mu^{(t+1)} = \mu^{(t)} - \eta^{(t)} \partial_{\mu} C(\theta[, \mathcal{D}]) + S$
-\EndFor
-\EndProcedure
-\end{algorithmic}
-
-Here $\mathcal{D}$ is the dataset associated with the cost function for learning problems. If $C$ depends on a dataset $\mathcal{D}$, stochastic gradient descent refers to a gradient descent algorithm where in each step $\mathcal{D}$ is a random subsample of the full training data set. $S$ is an extra term for variations of gradient descent that take momentum (i.e., former gradients) into account. \\
-
-The learning rate $\eta^{(t)}$ can be adapted in each step, either
-depending on the gradient or on the step number. $S$ is a potential
-additional term that can add a momentum to the update. The gradient
-$\partial_{\mu} C(\theta[, \mathcal{D}])$ has to be evaluated by
-automatic differentiation of the cost function, which is computed
-hybridly by the quantum device or simulator and a classical
-computer. We therefore need to define a hybrid automatic
-differentiation scheme.
 
 
+%\bibliographystyle{unsrt}
+\bibliography{openqml_formalism}
+
+\clearpage
+\appendix
 
 
-\section{Computing analytical gradients of quantum nodes}
-
-The central feature of OpenQML is that it can compute automatic gradients of expectation values. In this section we therefore explore issues related to computing analytic gradients of models $f(x, \theta)$ consisting of quantum and classical nodes with regards to a specific model parameter $\mu \in \theta$.
-
-
-\subsection{Backpropagating throught the graph}
-
-Assume the model $f$ is described by a hybrid model graph $\mathcal{M}$. We want to take the derivative of an element $y_s$ of $f$'s output $y$ with respect to a model parameter $\mu$. Assume that $\mu$ is in the subset $\theta^*$ of the parameters $\theta$, and the subset parametrizes the node $n^*$. For now we assume that the subsets are disjoint, so that there is no parameter tie between nodes. Let $y_s \circ n^{(p)}_1 \circ ... \circ (n^*)^{(p)}$ be the chain of (quantum or classical nodes) that emerges from following the output $y_s$ in the opposite direction of the directed edges until we reach node $n^*$. Since there may be $N_p > 1$ of those paths, we used a superscript to denote the path index. All branches that do not lead back to $\theta_t$ are independent of $\mu$ and can be thought of as constants. We can formally derive a `backpropagation' mechanism for this model.\\
-
-The chain rule prescribes that the gradient with respect to the model parameter $\mu \in \theta_t$ is given by
-\[ \partial_{\mu \in \theta_t} y_s = \sum_{p=1}^{N_p} \frac{\partial y}{\partial n_1^{(p)}} \frac{ \partial n^{(p)}_1}{\partial n^{(p)}_{2}}  \cdots \frac{\partial n^*}{\partial \mu}. \]
-\begin{figure}[t]
-\begin{tikzpicture}
-\node[] at (-0.75,1.5) {Path p=1};
-\node[input node] (i) at (-0.75,0) {$\emptyset$};
-\node[classical node, fill=lightgray, anchor=center] (c1) at (0,0) {\phantom{.}};
-\node[quantum node, anchor=center] (q1) at (1,0) {\phantom{.} \nodepart{two} \phantom{.}};
-\node[quantum node, fill=lightgray, anchor=center] (q2) at (1,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
-\node[classical node, anchor=center] (c2) at (2,0) {\phantom{.} };
-\node[anchor=center] (mid1up) at (2.5,0.325) {};
-\node[anchor=center] (mid1down) at (2.5,-0.325) {};
-\node[quantum node, anchor=center] (q3) at (3.5,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
-\node[classical node, fill=lightgray, anchor=center] (c3) at (3,-0.75) {\phantom{.} };
-\node[classical node, fill=lightgray, anchor=center] (c4) at (4,-0.75) {\phantom{.} };
-\node[anchor=center] (mid2up) at (4.5,0.325) {};
-\node[anchor=center] (mid2down) at (4.5,-0.325) {};
-\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
-\node[anchor=center] (mid3up) at (5.5,0.325) {};
-\node[anchor=center] (mid3down) at (5.5,-0.325) {};
-\node[output node, anchor=center] (o1) at (6,0.75) {$\textcolor{gray}{y_1}$ };
-\node[output node, anchor=center] (o2) at (6,0) {$y_2$ };
-\node[output node, anchor=center] (o3) at (6,-0.75) {$\textcolor{gray}{y_3}$ };
-\draw[->, gray] (i) -- (c1);
-\draw[->, gray] (c1) -- (q1);
-\draw[->] (q1) -- (c2);
-\draw[->, gray] (q2) -- (q3);
-\draw[->, gray] (c2) -| (mid1down)|- (c3);
-\draw[->] (c2) -| (mid1up) |- (q3);
-\draw[->] (c3) -- (c4);
-\draw[->, gray] (c4) -| (mid2up) |- (c5);
-\draw[->] (q3) -| (mid2down) |- (c5);
-\draw[->, gray] (c5)++(0,4pt) -| (mid3up) |- (o1);
-\draw[->] (c5) -- (o2);
-\draw[->, gray] (c5)++(0,-4pt) -| (mid3down) |- (o3);
-\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
-
-\end{tikzpicture}\\
-\begin{tikzpicture}
-\node[] at (-0.75,1.5) {Path p=2};
-\node[input node] (i) at (-0.75,0) {$\emptyset$};
-\node[classical node, fill=lightgray, anchor=center] (c1) at (0,0) {\phantom{.}};
-\node[quantum node, anchor=center] (q1) at (1,0) {\phantom{.} \nodepart{two} \phantom{.}};
-\node[quantum node, fill=lightgray, anchor=center] (q2) at (1,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
-\node[classical node, anchor=center] (c2) at (2,0) {\phantom{.} };
-\node[anchor=center] (mid1up) at (2.5,0.325) {};
-\node[anchor=center] (mid1down) at (2.5,-0.325) {};
-\node[quantum node, fill=lightgray, anchor=center] (q3) at (3.5,0.75) {\phantom{.} \nodepart{two} \phantom{.}};
-\node[classical node, anchor=center] (c3) at (3,-0.75) {\phantom{.} };
-\node[classical node, anchor=center] (c4) at (4,-0.75) {\phantom{.} };
-\node[anchor=center] (mid2up) at (4.5,0.325) {};
-\node[anchor=center] (mid2down) at (4.5,-0.325) {};
-\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
-\node[anchor=center] (mid3up) at (5.5,0.325) {};
-\node[anchor=center] (mid3down) at (5.5,-0.325) {};
-\node[output node, anchor=center] (o1) at (6,0.75) {$\textcolor{gray}{y_1}$ };
-\node[output node, anchor=center] (o2) at (6,0) {$y_2$ };
-\node[output node, anchor=center] (o3) at (6,-0.75) {$\textcolor{gray}{y_3}$ };
-\draw[->, gray] (i) -- (c1);
-\draw[->, gray] (c1) -- (q1);
-\draw[->] (q1) -- (c2);
-\draw[->, gray] (q2) -- (q3);
-\draw[->] (c2) -| (mid1down)|- (c3);
-\draw[->, gray] (c2) -| (mid1up) |- (q3);
-\draw[->] (c3) -- (c4);
-\draw[->] (c4) -| (mid2up) |- (c5);
-\draw[->] (q3) -| (mid2down) |- (c5);
-\draw[->, gray] (c5)++(0,4pt) -| (mid3up) |- (o1);
-\draw[->] (c5) -- (o2);
-\draw[->, gray] (c5)++(0,-4pt) -| (mid3down) |- (o3);
-\node[classical node, anchor=center] (c5) at (5,0) {\phantom{.} };
-
-\end{tikzpicture}
-\caption{Illustration of the two paths that lead from the second output $y_2$ back to the first quantum node, with respect to whose parameter we want to differentiate $y_2$.}
-\label{}
-\end{figure}
-
-This means that we need to be able to compute two types of gradients for each node: The derivative with respect to the input from a previous node, as well as the derivative for each node parameter. Note that while $\partial_{\mu \in \theta_t} y_s$ is a scalar gradient, the gradients in between may be multi-dimensional tensors.\\
-
-The gradients for classical nodes are straight forward, and can be computed by known methods such as (classical) automatic differentiation. However, for quantum nodes -- which are possibly computed on quantum hardware -- this is not obvious. Quantum nodes map a set of parameters  $\theta_q \subset \theta$ to an estimate of an expectation value $E = \bra{0} U(\theta_q)^{\dagger} O U(\theta_q) \ket{0} \}$ for an operator $O$ with regards to a state $U(\theta_q) \ket{0}$ prepared by the variational circuit $U$. For convenience we will drop the subscript $q$ in this section. We will also neglect inputs $x$ to the variational circuit, and note that taking derivatives with respect to node inputs work equivalent to model parameters.\\
-
-Taking gradients of quantum nodes works different for qubit-based and continuous-variable quantum computation. We will first consider the qubit case, and extend the result of \cite{mitarai}, who showed that for quantum gates generated by Pauli operators, the derivative of an expectation value is the same as the sum of two expectation values that result from inserting a simple additional gate into the circuit. We show that this can be applied for any gate whose generator is a projector, and present a trick to compute the derivative of expectations for general gates. We then tend to the case of continuous-variable quantum computing and show that a similar strategy to the Pauli-generated gates can be used for Gaussian circuits, which consist of gates whose generators are at most of linear order in the quadrature operators. 
-
-
-\subsection{Gradients for qubit-based architectures}
+\section{Gradients for qubit-based architectures}
 
 Assume we want to take the derivative of the expectation values
 \[ y = \bra{0}W^{\dagger} \G^{\dagger}  V^{\dagger} \hat{O} V \G W \ket{0}\]
@@ -543,7 +495,7 @@ Subtracting the terms cancels the first two expectation values in $E_1$ and $E_2
 
 We will now propose a way to estimate $E_1$ and $E_2$ on a qubit-based quantum computer.\\
 
-\subsubsection{Gates generated by projectors}
+\subsection{Gates generated by projectors}
 Consider the gate $\G(\mu) = \e^{i \mu G}$, where $G$ is hermitian as well as unitary, and therefore a projector, $G^2 = \mathbbm{1}$. A prominent example are Pauli operators, and it is known that any single qubit quantum gate can be decomposed into such gates. The gradient of a projector-generated gate is given by
 \[ \partial_{\mu} \G = i G \e^{i \mu G}.    \]
 Then Eq. (\ref{Eq:der_of_exp}) becomes
@@ -599,7 +551,7 @@ which, as (linear combinations of) Pauli gates and projectors, can be handled wi
 \end{equation*}
 are derivable with the angle-based framework. Finally, it also applies to controlled applications of projector-generated gates. \maria{Show this!} Note that if a generator is itself not a projector, but can be decomposed into a (weighed) sum of projectors, this trick can be applied to each term in the sum and the results summed up on a classical device.
 
-\subsubsection{General qubit-based gates}
+\subsection{General qubit-based gates}
 
 \begin{figure}[t]
 $$
@@ -633,7 +585,7 @@ We can now use our knowledge of $p_0, p_1$ from the measurement together with $E
 Overall, on top of the ``normal operation mode'' of the device, this routine requires that we can apply the gate as well the unitaries from the derivative decomposition controlled by an ancilla. We need to estimate $K$ expectation values altogether. Furthermore, the decomposition of the derivative gate into (single-subsystem)  unitaries that can be implemented by the device has to be worked out once. We will show below that for interesting cases in qubit and CV architectures, the $A_k$ are represented by a single qubit gate.
 
 
-\subsection{Gradients for continuous-variable architectures}
+\section{Gradients for continuous-variable architectures}
 
 We now turn to continuous-variable architectures. As before, the task is to compute 
 \[\partial_{\mu}y = \partial_{\mu} \bra{0}W^{\dagger} \G^{\dagger} V^{\dagger} \hat{O}V \G W \ket{0} = \partial_{\mu} \bra{\psi} \G^{\dagger} \hat{Q} \G \ket{\psi},  \]
@@ -649,7 +601,7 @@ $\Omega$ can be expressed as a linear transformation
 \end{equation}
 on the quadrature monomials $\hat{O}_i$. In principle, $K$ can go to infinity.
  
-\subsubsection{Observables in the linear subspace}
+\subsection{Observables in the linear subspace}
 Suppose the gate $\Omega = \Omega_G$ is Gaussian, then $K=2$, and the transformation only mixes the observables $j=0,1,2$ that are at most linear in the quadratures: 
 \begin{equation}
  \Omega[\hat{O}_j] = \sum_{i=0}^2 c_{ij} \hat{O}_i.
@@ -689,8 +641,8 @@ If we consider $2$-mode gates, we have to use the $6$-dimensional quadrature-mon
 
 What happens if $W, V \neq \mathbbm{1}$ ? $W$, the circuit applied before the gate $\G$ that we derive for, can be arbitrary, since the derivation of the coefficients $c_{ij}$ in Equation (\ref{Eq:omega_gaussian}) does not change if the $\hat{O}_j$ are linear combinations of other monomials. However $V$, the circuit applied after $\G$ has to be Gaussian for the above trick to work. If $V$ is non-Gaussian, it mixes higher-order monomials $j>2$ for which the rules in Table \ref{Tbl:cv_gate_derivatives} are not valid since we did not consider higher order coefficients $c_{ij}$ when computing $\partial_{\mu}A$. If the variational circuit is parametrised in all gates, we can only use this trick to compute derivatives for the parameters up to the first non-Gaussian gate in the circuit. \\
 
-
-\begin{table*}
+\begin{widetext}
+\begin{table*}[t]
 \begin{tabular}{lll}
 Gate $\G$ & linear representation & derivative of representation\\   \hline \hline
 \cell{Phase rotation\\ $R(\phi)$}
@@ -739,8 +691,9 @@ $\partial_{\phi} A(\theta, \phi) =  \frac{1}{2} A_B(\theta, \phi+ \frac{\pi}{2})
 \caption{We use the gate definitions laid out in the StrawberryFields documentation [REF] with $\hbar=2$. All parameters are real-valued.}
 \label{Tbl:cv_gate_derivatives}
 \end{table*}
+\end{widetext}
 
-\subsubsection{Higher order observables}
+\subsection{Higher order observables}
 
 For observables that are higher powers of the quadratures, i.e. $j > 2$, we can use the fact that $\Omega$ is a unitary conjugation, so that we must have
 \begin{align}
@@ -775,23 +728,6 @@ Thus, the derivative of the second-order operator decomposes naturally as we wou
 
 
 
-
-
-
-
-
-
-
-%\bibliographystyle{unsrt}
-\bibliography{openqml_formalism}
-
-\appendix
-
-
-
-
-\clearpage
-\textsc{•}\appendix
 \section{Gradient computation (Ville)}
 
 In this section we explore issues related to computing gradients of variational quantum circuits.
