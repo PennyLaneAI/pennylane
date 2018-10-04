@@ -42,6 +42,9 @@ class PluginTest(BaseTest):
 
     @data_provider(all_plugins)
     def test_plugin_device(self, plugin):
+        class IgnoreOperationException(Exception):
+            pass
+
         print(plugin.name)
         obj = plugin.resolve()
         device = plugin.load()
@@ -69,21 +72,29 @@ class PluginTest(BaseTest):
         # run all single gate circuits
         for gate in dev.gates:
             for observable in dev.observables:
-                print(plugin.name+": "+gate+", "+observable)
-
-                #observable_fullargspec = inspect.getfullargspec(observable_class.__init__)
-                #observable_num_par_args = observable_class.n_params#len(observable_fullargspec.args)-2
-                #gate_fullargspec = inspect.getfullargspec(gate_class.__init__)
-                #gate_num_par_args = len(gate_fullargspec.args)-2
-                #gate_n_wires = gate_class.n_wires
+                print("Testing "+plugin.name+": "+gate+" and "+observable)
 
                 @qm.qfunc(dev)
                 def circuit():
-                    observable_class = getattr(qm.expectation, observable)
                     gate_class = getattr(qm, gate)
+                    observable_class = getattr(qm.expectation, observable)
 
-                    gate_pars = np.abs(np.random.randn(gate_class.n_params))
-                    observable_pars = np.abs(np.random.randn(observable_class.n_params)) #todo: some operations fails when parameters are negative (e.g. thermal state) but par_domain is not fine grained enough to capture this
+                    #todo: some operations/expectations fail when parameters are negative (e.g. thermal state) but par_domain is not fine grained enough to capture this
+                    if gate_class.par_domain == 'N':
+                        gate_pars = np.random.randint(0, 5, gate_class.n_params)
+                    elif gate_class.par_domain == 'R':
+                        gate_pars = np.abs(np.random.randn(gate_class.n_params))
+                    elif gate_class.par_domain == 'A':
+                        #gate_pars = np.random.randn(1, 2**gate_class.n_wires, 2**gate_class.n_wires)
+                        raise IgnoreOperationException('Skipping because of the operation '+gate)#todo: For these gates it is impossible to guess the size and all constrains on the matrix
+
+                    if observable_class.par_domain == 'N':
+                        observable_pars = np.random.randint(0, 5, observable_class.n_params)
+                    if observable_class.par_domain == 'R':
+                        observable_pars = np.abs(np.random.randn(observable_class.n_params))
+                    elif observable_class.par_domain == 'A':
+                        #observable_pars = np.random.randn(1, 2**gate_class.n_wires, 2**gate_class.n_wires)
+                        raise IgnoreOperationException('Skipping because of the observable '+observable)#todo: For these expectations it is impossible to guess the size and all constrains on the matrix
 
                     gate_wires = gate_class.n_wires if gate_class.n_wires != 0 else wires
                     observable_wires = observable_class.n_wires if observable_class.n_wires != 0 else wires
@@ -93,6 +104,8 @@ class PluginTest(BaseTest):
 
                 try:
                     circuit()
+                except IgnoreOperationException as e:
+                    print(e)
                 except Exception as e:
                     print(e)#todo: currently it is good that this just prints all the errors to get a quick overview, but we either want an assert here or not catch the exception in the first place
                     try:
