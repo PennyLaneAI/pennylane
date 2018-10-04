@@ -9,19 +9,31 @@ Quantum nodes
 Classical and quantum information
 =================================
 
-It is important to distinguish between classical and quantum forms of information. For our purposes, we will consider the value of a number stored within a classical computer (say, a floating point representation of a real or complex number) as **classical information**. Many common functions -- like addition, subtraction, multiplication, :math:`\sin,\cos,\exp,` etc. -- can all be evaluated efficiently on a classical computer, e.g., using the NumPy library in Python. These functions map floating point numbers to floating point numbers. In other words, they are functions which process classical information. 
+It is important to distinguish between classical and quantum forms of information. For our purposes, we will consider the value of a number stored within a conventional digital computer (say, a floating point binary representation of a real or complex number) as **classical information**. Many common functions -- like addition, subtraction, multiplication, :math:`\sin,\cos,\exp,` etc. -- can all be evaluated efficiently on a classical computer, e.g., using the NumPy library in Python. These functions map floating point numbers to floating point numbers. In other words, they are functions which process classical information. 
 
 On the other hand, **quantum information** will refer to the state of a complex-valued vector in a quantum Hilbert space. Gates in a quantum computer transform quantum states to quantum states, i.e., they process quantum information. 
 
-.. note:: A quantum state vector can be simulated using a classical information representation, but this can not be done efficiently. 
+:html:`<br>`
 
-There are two common ways to interface between the classical and quantum domains: 
+.. figure:: ./_static/classical_quantum_info.svg
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
 
-1. **Gate parameters**: The gates used in a quantum circuit often have classical parameters associated with them. This classical information determines how a quantum state is transformed -- e.g., what angle we should rotate the quantum state by. Thus, gate arguments provide us a way to imprint classical data onto quantum states, converting classical information to quantum information.
+    Classical information refers to the state of binary numbers stored on a conventional digital computer. Quantum information refers to the state of a complex-valued vector in a quantum Hilbert space.
 
-2. **Measurement of a quantum circuit**: Measurements convert quantum information (the state of a quantum system) into classical information (the measurement value). Measurement often have a distribution of outcomes, with the pattern becoming clear only after a sufficient number of measurements are taken. To simplify things, we will work with expectation values (i.e., averages) of measurement outcomes as our primary mechanism for obtaining classical information from quantum. This is also important for reproducability in the evaluation of quantum functions.
+:html:`<br>`
 
-**Need a figure which shows the difference between classical and quantum information?**
+.. note:: Quantum information can be simulated on a classical computer, but this cannot be done efficiently. 
+
+Interfacing the classical and quantum worlds
+============================================
+
+There are many schemes for inputting classical information into quantum systems, but these can often get quite complex. To connect between the classical and quantum worlds, OpenQML uses two straightforward methods: 
+
+1. **Gate parameters**: The gates used in a quantum circuit often have classical parameters associated with them. This classical information determines how a quantum state is transformed -- e.g., what angle we should rotate the quantum state by. Thus, gate arguments provide us a way to imprint classical data onto quantum states, converting classical information to quantum information [#]_.
+
+2. **Measurement of a quantum circuit**: Measurements convert quantum information (the state of a quantum system) into classical information (the measurement value). Measurements often have a distribution of outcomes, with the pattern becoming clear only after a sufficient number of measurements are taken. To simplify things, we will work with expectation values (i.e., averages) of measurement outcomes as our primary mechanism for obtaining classical information from quantum devices [#]_. 
 
 The quantum node abstraction
 ============================
@@ -44,10 +56,8 @@ A quantum node is a computational encapsulation of a quantum function :math:`f(x
 
 So long as we provide some mechanism for evaluating quantum nodes (i.e., a quantum computing device or simulator), a classical computing device can treat it as it would any other callable function which manipulates classical data. We can thus connect quantum nodes with classical transformations to build complex multistage hybrid quantum-classical computations.
 
+.. rubric:: Footnotes
 
-add: data is input through the gate parameters of the circuit, and extracted by evaluating expectation values.
+.. [#] This strategy can be though of as a *quantum embedding* or *quantum feature map* of classical information in a quantum Hilbert space :cite:`schuld2018quantum`.
 
-Classical information is input to a quantum node via the gate parameters and extracted via expectation values of measurements.
-
-**Discuss compatability of Qnode abstraction with ML techniques**: We would also like this interface to be compatible with essential components of machine learning like the backpropagation algorithm. 
-
+.. [#] This averaging is also important to ensure that quantum functions are suitably well-defined, since single-shot measurements of the same circuit may not give the same value.
