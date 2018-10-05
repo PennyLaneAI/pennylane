@@ -78,6 +78,7 @@ class PluginTest(BaseTest):
                 def circuit():
                     gate_class = getattr(qm, gate)
                     observable_class = getattr(qm.expectation, observable)
+                    print(observable_class)
 
                     #todo: some operations/expectations fail when parameters are negative (e.g. thermal state) but par_domain is not fine grained enough to capture this
                     if gate_class.par_domain == 'N':
