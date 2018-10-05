@@ -160,26 +160,8 @@ class ProjectQDevice(Device):
 
         Drawback: This is probably rather resource intensive.
         """
-        if self.eng is not None and self.backend == 'Simulator' or self.backend == 'IBMBackend':
+        if self.eng is not None and self.backend == 'Simulator'::
             pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
-
-    def _deallocate2(self):
-        """Another proposal for how to deallocate all qubits to make ProjectQ happy
-
-        Unsuitable because: Produces a segmentation fault.
-        """
-        if self.eng is not None and self.backend == 'Simulator' or self.backend == 'IBMBackend':
-             for qubit in self.reg:
-                 self.eng.deallocate_qubit(qubit)
-
-    def _deallocate3(self):
-        """Another proposal for how to deallocate all qubits to make ProjectQ happy
-
-        Unsuitable because: Throws an error if the probability for the given collapse is 0.
-        """
-        if self.eng is not None and self.backend == 'Simulator' or self.backend == 'IBMBackend':
-            self.eng.flush()
-            self.eng.backend.collapse_wavefunction(self.reg, [0 for i in range(len(self.reg))])
 
     def filter_kwargs_for_backend(self, kwargs):
         return { key:value for key,value in kwargs.items() if key in self._backend_kwargs }
