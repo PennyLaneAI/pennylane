@@ -160,7 +160,7 @@ class ProjectQDevice(Device):
 
         Drawback: This is probably rather resource intensive.
         """
-        if self.eng is not None and self.backend == 'Simulator'::
+        if self.eng is not None and self.backend == 'Simulator':
             pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
 
     def filter_kwargs_for_backend(self, kwargs):
