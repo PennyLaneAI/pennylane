@@ -69,7 +69,7 @@ class SqrtSwap(Operation):
     n_params = 0
     n_wires = 2
 
-class AllZ(Expectation):
+class AllPauliZ(Expectation):
     r"""Measure Z on all qubits.
 
     .. math::

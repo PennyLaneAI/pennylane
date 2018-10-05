@@ -57,7 +57,7 @@ import projectq as pq
 from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R, Ph, StatePreparation, HGate, SGate, TGate, SqrtXGate, SqrtSwapGate
 )
 from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, QubitUnitary)
-
+from .ops import (S, T, SqrtX, SqrtSwap, AllPauliZ)
 from ._version import __version__
 
 
@@ -74,13 +74,13 @@ projectq_operator_map = {
     'PhaseShift': R,
     'QubitStateVector': StatePreparation,
     'Hadamard': HGate,
-    #gates not native to OpenQML
+    #operations of ProjectQ that are not native to OpenQML (provided in ops.py and exposed via _extra_operations)
     'S': SGate,
     'T': TGate,
     'SqrtX': SqrtXGate,
     'SqrtSwap': SqrtSwapGate,
-    'AllPauliZ': AllZGate,
-    #gates not implemented in ProjectQ
+#    'AllPauliZ': AllZGate, #todo: reactivate and implement when observables returning multiple expectation values are supported
+    #operations not implemented in ProjectQ (provided in ops.py)
     'Rot': Rot,
     'QubitUnitary': QubitUnitary,
 }
@@ -110,6 +110,7 @@ class ProjectQDevice(Device):
     plugin_version = __version__
     author = 'Christian Gogolin'
     _capabilities = {'backend': list(["Simulator", "ClassicalSimulator", "IBMBackend"])}
+    _extra_operations = {'S': S, 'T': T, 'SqrtX': SqrtX, 'SqrtSwap': SqrtSwap, 'AllPauliZ': AllPauliZ}
 
     def __init__(self, wires, **kwargs):
         kwargs.setdefault('shots', 0)
