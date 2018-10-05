@@ -79,7 +79,7 @@ projectq_operator_map = {
     'T': TGate,
     'SqrtX': SqrtXGate,
     'SqrtSwap': SqrtSwapGate,
-    'AllZ': AllZGate,
+    'AllPauliZ': AllZGate,
     #gates not implemented in ProjectQ
     'Rot': Rot,
     'QubitUnitary': QubitUnitary,
@@ -222,18 +222,18 @@ class ProjectQSimulator(ProjectQDevice):
         self.eng = pq.MainEngine(backend)
         super().reset()
 
-
-    def expectation(self, observable, wires, par):
+    def pre_expectations(self):
         self.eng.flush(deallocate_qubits=False)
-
+        
+    def expectation(self, observable, wires, par):
         if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
             ev = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), self.reg)
             variance = 1 - ev**2
-        elif observable == 'AllPauliZ':
-            ev = [ self.eng.backend.get_expectation_value(pq.ops.QubitOperator("Z"+'0'), [qubit]) for qubit in self.reg]
-            variance = [1 - e**2 for e in ev]
+        # elif observable == 'AllPauliZ':
+        #     ev = [ self.eng.backend.get_expectation_value(pq.ops.QubitOperator("Z"+'0'), [qubit]) for qubit in self.reg]
+        #     variance = [1 - e**2 for e in ev]
         else:
-            raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
+            raise DeviceError("Observable {} not supported by {}".format(observable, self.name))
 
         return ev
 
@@ -309,10 +309,11 @@ class ProjectQIBMBackend(ProjectQDevice):
         self.eng = pq.MainEngine(backend, engine_list=pq.setups.ibm.get_engine_list())
         super().reset()
 
-    def expectation(self, observable, wires, par):
+    def pre_expectations(self):
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
-
+        
+    def expectation(self, observable, wires, par):
         if observable == 'PauliZ':
             probabilities = self.eng.backend.get_probabilities([self.reg[wires]])
             #print("IBM probabilities="+str(probabilities))
@@ -321,12 +322,12 @@ class ProjectQIBMBackend(ProjectQDevice):
             else:
                 ev = -(2*probabilities['0']-1)
             variance = 1 - ev**2
-        elif observable == 'AllPauliZ':
-            probabilities = self.eng.backend.get_probabilities(self.reg)
-            #print("IBM all probabilities="+str(probabilities))
-            ev = [ ((2*sum(p for (state,p) in probabilities.items() if state[i] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[i] == '0')-1)) for i in range(len(self.reg)) ]
-            variance = [1 - e**2 for e in ev]
+        # elif observable == 'AllPauliZ':
+        #     probabilities = self.eng.backend.get_probabilities(self.reg)
+        #     #print("IBM all probabilities="+str(probabilities))
+        #     ev = [ ((2*sum(p for (state,p) in probabilities.items() if state[i] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[i] == '0')-1)) for i in range(len(self.reg)) ]
+        #     variance = [1 - e**2 for e in ev]
         else:
-            raise DeviceError("Observable {} not supported by {}".format(self._observe.name, self.name))
+            raise DeviceError("Observable {} not supported by {}".format(observable, self.name))
 
         return ev
