@@ -35,10 +35,10 @@ def qfunc(device):
             qm.Zrotation(x, 0)
             qm.CNOT(0,1)
             qm.Yrotation(x**2, 1)
-            qm.expectation.Z(0)
+            return qm.expectation.PauliZ(0)
 
     To become a valid QNode, the user-defined function must consist of
-    only OpenQML operators and expectation values, one per line, and must
+    only OpenQML operators and expectation values, one per wire, and must
     end with the measurement of an expectation value.
 
     Once defined, the QNode can then be used to construct the loss function,

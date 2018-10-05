@@ -21,7 +21,8 @@ from autograd import grad as _grad
 
 
 from .configuration import Configuration
-from .device import Device, DeviceError, QuantumFunctionError
+from .device import Device, DeviceError
+from .qnode import QuantumFunctionError
 import openqml.operation
 from .ops import *
 import openqml.expectation

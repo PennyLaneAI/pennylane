@@ -65,8 +65,13 @@ Internal Device methods
 
 import abc
 import logging
+import sys
+import inspect
 
 import autograd.numpy as np
+
+from openqml.operation import Operation
+from openqml.operation import Expectation
 
 logging.getLogger()
 
@@ -91,11 +96,6 @@ class DeviceError(Exception):
     pass
 
 
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
-    pass
-
-
 class Device(abc.ABC):
     """Abstract base class for OpenQML devices.
 
@@ -111,11 +111,22 @@ class Device(abc.ABC):
     author = ''        #: str: plugin author(s)
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
+    _extra_operations = {} #: dict[str->Operation]: extra OpenQML Operations provided by this plugin
 
     def __init__(self, name, wires, shots):
         self.name = name    #: str: name of the device
         self.wires = wires  #: int: number of subsystems
         self.shots = shots  #: int: number of circuit evaluations used to estimate expectation values, 0 means the exact ev is returned
+
+        #Add plugin operations of this device to the global openqml context
+        module_openqml = sys.modules['.'.join(__name__.split('.')[:-1])]
+        module_openqml_expectation = sys.modules['.'.join(__name__.split('.')[:-1])+".expectation"]
+        for key, val in self._extra_operations.items():
+            if not hasattr(module_openqml, key) and inspect.isclass(val) and issubclass(val, Operation) and not issubclass(val, Expectation):
+                setattr(module_openqml, key, val)
+        for key, val in self._extra_operations.items():
+            if not hasattr(module_openqml_expectation, key) and inspect.isclass(val) and issubclass(val, Expectation):
+                setattr(module_openqml_expectation, key, val)
 
     def __repr__(self):
         """String representation."""

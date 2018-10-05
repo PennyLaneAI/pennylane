@@ -112,9 +112,12 @@ import autograd.extend as ae
 import autograd.builtins
 
 import openqml.operation
-from .device    import QuantumFunctionError
 from .variable  import Variable
 
+
+class QuantumFunctionError(Exception):
+    """Exception raised when an illegal operation is defined in a quantum function."""
+    pass
 
 
 def _flatten(x):
