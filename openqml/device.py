@@ -118,15 +118,28 @@ class Device(abc.ABC):
         self.wires = wires  #: int: number of subsystems
         self.shots = shots  #: int: number of circuit evaluations used to estimate expectation values, 0 means the exact ev is returned
 
-        #Add plugin operations of this device to the global openqml context
+    def __enter__(self):
+        #Add plugin operations of this device to the appropriate openqml contexts
         module_openqml = sys.modules['.'.join(__name__.split('.')[:-1])]
         module_openqml_expectation = sys.modules['.'.join(__name__.split('.')[:-1])+".expectation"]
+        self._added_openqml_attributes = []
+        self._added_openqml_expectation_attributes = []
         for key, val in self._extra_operations.items():
             if not hasattr(module_openqml, key) and inspect.isclass(val) and issubclass(val, Operation) and not issubclass(val, Expectation):
                 setattr(module_openqml, key, val)
+                self._added_openqml_attributes.append(key)
         for key, val in self._extra_operations.items():
             if not hasattr(module_openqml_expectation, key) and inspect.isclass(val) and issubclass(val, Expectation):
                 setattr(module_openqml_expectation, key, val)
+                self._added_openqml_expectation_attributes.append(key)
+
+    def __exit__(self, type, value, traceback):
+        module_openqml = sys.modules['.'.join(__name__.split('.')[:-1])]
+        module_openqml_expectation = sys.modules['.'.join(__name__.split('.')[:-1])+".expectation"]
+        for attr in self._added_openqml_attributes:
+            delattr(module_openqml, attr)
+        for attr in self._added_openqml_expectation_attributes:
+            delattr(module_openqml_expectation, attr)
 
     def __repr__(self):
         """String representation."""

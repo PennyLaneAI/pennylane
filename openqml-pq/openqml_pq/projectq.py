@@ -135,7 +135,7 @@ class ProjectQDevice(Device):
         self.kwargs = kwargs
         self.eng = None
         self.reg = None
-        #self.reset() #the actual initialization is done in reset(), but we don't need to call this manually as Device does it for us during __enter__()
+        #self.reset() #the actual initialization is done in reset(), but we don't need to call this manually as Device does it for us during __enter__() #todo: in the current master, the device context is gone, so maybe we have to run this manually now?
 
     def reset(self):
         self.reg = self.eng.allocate_qureg(self.wires)
