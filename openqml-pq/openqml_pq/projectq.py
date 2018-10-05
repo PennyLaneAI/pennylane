@@ -153,12 +153,6 @@ class ProjectQDevice(Device):
 
         gate | tuple([self.reg[i] for i in wires]) #pylint: disable=pointless-statement
 
-    # def expectation(self, observable, wires, *par):
-    #     raise NotImplementedError("expectation() is not yet implemented for this backend")
-
-    # def __del__(self):
-    #     self._deallocate()
-
     def _deallocate(self):
         """Deallocate all qubits to make ProjectQ happy
 
@@ -224,10 +218,15 @@ class ProjectQSimulator(ProjectQDevice):
 
     def pre_expectations(self):
         self.eng.flush(deallocate_qubits=False)
-        
+
     def expectation(self, observable, wires, par):
         if observable == 'PauliX' or observable == 'PauliY' or observable == 'PauliZ':
-            ev = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), self.reg)
+            if isinstance(wires, int):
+                wire = wires
+            else:
+                wire = wires[0]
+
+            ev = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), [self.reg[wire]])
             variance = 1 - ev**2
         # elif observable == 'AllPauliZ':
         #     ev = [ self.eng.backend.get_expectation_value(pq.ops.QubitOperator("Z"+'0'), [qubit]) for qubit in self.reg]
@@ -312,19 +311,19 @@ class ProjectQIBMBackend(ProjectQDevice):
     def pre_expectations(self):
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
-        
+
     def expectation(self, observable, wires, par):
+        probabilities = self.eng.backend.get_probabilities(self.reg)
+
         if observable == 'PauliZ':
-            probabilities = self.eng.backend.get_probabilities([self.reg[wires]])
-            #print("IBM probabilities="+str(probabilities))
-            if '1' in probabilities:
-                ev = 2*probabilities['1']-1
+            if isinstance(wires, int):
+                wire = wires
             else:
-                ev = -(2*probabilities['0']-1)
+                wire = wires[0]
+
+            ev = ((2*sum(p for (state,p) in probabilities.items() if state[wire] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[wire] == '0')-1))
             variance = 1 - ev**2
         # elif observable == 'AllPauliZ':
-        #     probabilities = self.eng.backend.get_probabilities(self.reg)
-        #     #print("IBM all probabilities="+str(probabilities))
         #     ev = [ ((2*sum(p for (state,p) in probabilities.items() if state[i] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[i] == '0')-1)) for i in range(len(self.reg)) ]
         #     variance = [1 - e**2 for e in ev]
         else:
