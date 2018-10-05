@@ -48,7 +48,7 @@ class PluginTest(BaseTest):
         print(plugin.name)
         obj = plugin.resolve()
         device = plugin.load()
-        wires = 3 #todo: calculate that form the size of the largest gate
+        wires = 3 #This should be as large as the largest gate/observable, but we cannot know that before instantiating the device. We thus check later that all gates/observables fit.
 
         #fullargspec = inspect.getfullargspec(obj)
         #print(fullargspec)
@@ -61,10 +61,10 @@ class PluginTest(BaseTest):
         else:
             bind = sig.bind_partial(wires=wires)
         bind.apply_defaults()
-        #print(bind)
 
         try:
             dev = device(*bind.args, **bind.kwargs)
+
         except (ValueError, TypeError) as e:
             print("The device "+plugin.name+" could not be instantiated with only the standard parameters because ("+str(e)+"). Skipping automatic test.")
             return
@@ -78,30 +78,32 @@ class PluginTest(BaseTest):
                 def circuit():
                     gate_class = getattr(qm, gate)
                     observable_class = getattr(qm.expectation, observable)
-                    print(observable_class)
 
-                    #todo: some operations/expectations fail when parameters are negative (e.g. thermal state) but par_domain is not fine grained enough to capture this
+                    if gate_class.n_wires > wires:
+                        raise IgnoreOperationException('Skipping because the operation '+gate+" acts on more than the default number of wires "+str(wires)+". Maybe you want to increase that?")
+                    if observable_class.n_wires > wires:
+                        raise IgnoreOperationException('Skipping because the observable '+observable+" acts on more than the default number of wires "+str(wires)+". Maybe you want to increase that?")
+
                     if gate_class.par_domain == 'N':
                         gate_pars = np.random.randint(0, 5, gate_class.n_params)
                     elif gate_class.par_domain == 'R':
-                        gate_pars = np.abs(np.random.randn(gate_class.n_params))
+                        gate_pars = np.abs(np.random.randn(gate_class.n_params)) #todo: some operations/expectations fail when parameters are negative (e.g. thermal state) but par_domain is not fine grained enough to capture this
                     elif gate_class.par_domain == 'A':
-                        #gate_pars = np.random.randn(1, 2**gate_class.n_wires, 2**gate_class.n_wires)
                         raise IgnoreOperationException('Skipping because of the operation '+gate)#todo: For these gates it is impossible to guess the size and all constrains on the matrix
 
                     if observable_class.par_domain == 'N':
                         observable_pars = np.random.randint(0, 5, observable_class.n_params)
                     if observable_class.par_domain == 'R':
-                        observable_pars = np.abs(np.random.randn(observable_class.n_params))
+                        observable_pars = np.abs(np.random.randn(observable_class.n_params)) #todo: some operations/expectations fail when parameters are negative (e.g. thermal state) but par_domain is not fine grained enough to capture this
                     elif observable_class.par_domain == 'A':
-                        #observable_pars = np.random.randn(1, 2**gate_class.n_wires, 2**gate_class.n_wires)
                         raise IgnoreOperationException('Skipping because of the observable '+observable)#todo: For these expectations it is impossible to guess the size and all constrains on the matrix
 
-                    gate_wires = gate_class.n_wires if gate_class.n_wires != 0 else wires
-                    observable_wires = observable_class.n_wires if observable_class.n_wires != 0 else wires
+                    # apply to the first wires
+                    gate_wires = list(range(gate_class.n_wires)) if gate_class.n_wires > 1 else 0
+                    observable_wires = list(range(observable_class.n_wires)) if observable_class.n_wires > 1 else 0
 
-                    gate_class(*gate_pars, list(range(gate_class.n_wires)))
-                    return observable_class(*observable_pars, list(range(observable_class.n_wires)))
+                    gate_class(*gate_pars, gate_wires)
+                    return observable_class(*observable_pars, observable_wires)
 
                 try:
                     circuit()
