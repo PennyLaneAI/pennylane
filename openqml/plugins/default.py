@@ -222,7 +222,6 @@ class DefaultQubit(Device):
     _operator_map = {
         'QubitStateVector': ket,
         'QubitUnitary': unitary,
-#        'Identity': I, #todo: Identity is not supported by core OpenQML and not provided by this plugin. As it seems useless we should remove it?
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,

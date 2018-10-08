@@ -119,27 +119,49 @@ class Device(abc.ABC):
         self.shots = shots  #: int: number of circuit evaluations used to estimate expectation values, 0 means the exact ev is returned
 
     def __enter__(self):
-        #Add plugin operations of this device to the appropriate openqml contexts
-        module_openqml = sys.modules['.'.join(__name__.split('.')[:-1])]
-        module_openqml_expectation = sys.modules['.'.join(__name__.split('.')[:-1])+".expectation"]
+        """Executed when entering the device context in the qfunc wrapper.
+
+        Adds plugin operations provided by this device via self._extra_operations
+        to the appropriate openqml namespaces. Native OpenQML operations are not
+        overwritten by this and lists of all added operation properties are
+        recorded, so that they can be removed again during __exit__().
+        """
+        #get the modules corresponding to the openqml and the openqml.expectation name space
+        module_openqml = self._get_module_openqml()
+        module_openqml_expectation = self._get_module_openqml_expectation()
+        #initialize lists of extra operations
         self._added_openqml_attributes = []
         self._added_openqml_expectation_attributes = []
         for key, val in self._extra_operations.items():
             if not hasattr(module_openqml, key) and inspect.isclass(val) and issubclass(val, Operation) and not issubclass(val, Expectation):
-                setattr(module_openqml, key, val)
-                self._added_openqml_attributes.append(key)
+                setattr(module_openqml, key, val) #add the attribute if openqml does not already have an attribute with that name and val is an Operation class but not an Expectation class.
+                self._added_openqml_attributes.append(key) #record that this operation property was added openqml
+
         for key, val in self._extra_operations.items():
             if not hasattr(module_openqml_expectation, key) and inspect.isclass(val) and issubclass(val, Expectation):
-                setattr(module_openqml_expectation, key, val)
-                self._added_openqml_expectation_attributes.append(key)
+                setattr(module_openqml_expectation, key, val) #add the attribute if openqml does not already have an attribute with that name and val is Expectation class.
+                self._added_openqml_expectation_attributes.append(key) #record that this operation property was added to openqml.expectation
 
     def __exit__(self, type, value, traceback):
-        module_openqml = sys.modules['.'.join(__name__.split('.')[:-1])]
-        module_openqml_expectation = sys.modules['.'.join(__name__.split('.')[:-1])+".expectation"]
+        """Executed when exiting the device context in the qfunc wrapper.
+
+        Removes all extra operations provided by this device from the
+        respective openqml namespaces, so that the cannot shadow operations
+        of other plugins/devices.
+        """
+        #get the modules corresponding to the openqml and the openqml.expectation name space
+        module_openqml = self._get_module_openqml()
+        module_openqml_expectation = self._get_module_openqml_expectation()
         for attr in self._added_openqml_attributes:
             delattr(module_openqml, attr)
         for attr in self._added_openqml_expectation_attributes:
             delattr(module_openqml_expectation, attr)
+
+    def _get_module_openqml(self):
+        return sys.modules['.'.join(__name__.split('.')[:-1])]
+
+    def _get_module_openqml_expectation(self):
+        return sys.modules['.'.join(__name__.split('.')[:-1])+".expectation"]
 
     def __repr__(self):
         """String representation."""

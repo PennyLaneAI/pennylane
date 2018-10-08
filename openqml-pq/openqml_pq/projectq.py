@@ -56,8 +56,7 @@ import projectq as pq
 # import operations
 from projectq.ops import (HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, SqrtSwapGate, Rx, Ry, Rz, R, Ph, StatePreparation, HGate, SGate, TGate, SqrtXGate, SqrtSwapGate
 )
-from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, QubitUnitary)
-from .ops import (S, T, SqrtX, SqrtSwap, AllPauliZ)
+from .ops import (CNOT, CZ, Toffoli, AllZGate, Rot, QubitUnitary, S, T, SqrtX, SqrtSwap, AllPauliZ)
 from ._version import __version__
 
 
@@ -135,7 +134,7 @@ class ProjectQDevice(Device):
         self.kwargs = kwargs
         self.eng = None
         self.reg = None
-        #self.reset() #the actual initialization is done in reset(), but we don't need to call this manually as Device does it for us during __enter__() #todo: in the current master, the device context is gone, so maybe we have to run this manually now?
+        self.reset()
 
     def reset(self):
         self.reg = self.eng.allocate_qureg(self.wires)
