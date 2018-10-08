@@ -45,7 +45,7 @@ class PluginTest(BaseTest):
         class IgnoreOperationException(Exception):
             pass
 
-        print(plugin.name)
+        print("Testing "+plugin.name+" plugin:")
         obj = plugin.resolve()
         device = plugin.load()
         wires = 3 #This should be as large as the largest gate/observable, but we cannot know that before instantiating the device. We thus check later that all gates/observables fit.

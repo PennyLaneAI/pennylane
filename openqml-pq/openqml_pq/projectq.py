@@ -160,7 +160,7 @@ class ProjectQDevice(Device):
 
         Drawback: This is probably rather resource intensive.
         """
-        if self.eng is not None and self.backend == 'Simulator':
+        if self.eng is not None and self.reg is not None and self.backend == 'Simulator':
             pq.ops.All(pq.ops.Measure) | self.reg #avoid an unfriendly error message: https://github.com/ProjectQ-Framework/ProjectQ/issues/2
 
     def filter_kwargs_for_backend(self, kwargs):
@@ -180,7 +180,7 @@ class ProjectQSimulator(ProjectQDevice):
 
     short_name = 'projectq.simulator'
     _operator_map = projectq_operator_map
-    _observable_map = {key:val for key, val in _operator_map.items() if val in [XGate, YGate, ZGate, AllZGate]}
+    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [XGate, YGate, ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = ['gate_fusion', 'rnd_seed']
 
@@ -199,6 +199,7 @@ class ProjectQSimulator(ProjectQDevice):
         super().reset()
 
     def pre_expectations(self):
+        super().pre_expectations()
         self.eng.flush(deallocate_qubits=False)
 
     def expectation(self, observable, wires, par):
@@ -209,7 +210,7 @@ class ProjectQSimulator(ProjectQDevice):
                 wire = wires[0]
 
             ev = self.eng.backend.get_expectation_value(pq.ops.QubitOperator(str(observable)[-1]+'0'), [self.reg[wire]])
-            variance = 1 - ev**2
+            #variance = 1 - ev**2
         # elif observable == 'AllPauliZ':
         #     ev = [ self.eng.backend.get_expectation_value(pq.ops.QubitOperator("Z"+'0'), [qubit]) for qubit in self.reg]
         #     variance = [1 - e**2 for e in ev]
@@ -228,7 +229,7 @@ class ProjectQClassicalSimulator(ProjectQDevice):
 
     short_name = 'projectq.classicalsimulator'
     _operator_map = {key:val for key, val in projectq_operator_map.items() if val in [XGate, CNOT]}
-    _observable_map = {key:val for key, val in _operator_map.items() if val in [ZGate, AllZGate]}
+    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = []
 
@@ -245,6 +246,31 @@ class ProjectQClassicalSimulator(ProjectQDevice):
         backend = pq.backends.ClassicalSimulator(**self.filter_kwargs_for_backend(self.kwargs))
         self.eng = pq.MainEngine(backend)
         super().reset()
+
+    def pre_expectations(self):
+        super().pre_expectations()
+        pq.ops.All(pq.ops.Measure) | self.reg
+        self.eng.flush()
+
+    def expectation(self, observable, wires, par):
+        if observable == 'PauliZ':
+            if isinstance(wires, int):
+                wire = wires
+            else:
+                wire = wires[0]
+
+            #print("read_register"+str(self.eng.backend.read_register(self.reg)))
+            #ev = 2*self.eng.backend.read_bit(self.reg[wire]) - 1
+            ev = int(self.reg[wire])
+            #variance = 1 - ev**2
+        # elif observable == 'AllPauliZ':
+        #     ev = [ 2*self.eng.backend.read_bit(wire) - 1 for wire in self.reg]
+        #     variance = [1 - e**2 for e in ev]
+        else:
+            raise DeviceError("Observable {} not supported by {}".format(observable, self.name))
+
+        return ev
+
 
 class ProjectQIBMBackend(ProjectQDevice):
     """ProjectQ IBMBackend device for OpenQML.
@@ -264,7 +290,7 @@ class ProjectQIBMBackend(ProjectQDevice):
 
     short_name = 'projectq.ibmbackend'
     _operator_map = {key:val for key, val in projectq_operator_map.items() if val in [HGate, XGate, YGate, ZGate, SGate, TGate, SqrtXGate, SwapGate, Rx, Ry, Rz, R, CNOT, CZ]}
-    _observable_map = {key:val for key, val in _operator_map.items() if val in [ZGate, AllZGate]}
+    _observable_map = {key:val for key, val in projectq_operator_map.items() if val in [ZGate, AllZGate]}
     _circuits = {}
     _backend_kwargs = ['use_hardware', 'num_runs', 'verbose', 'user', 'password', 'device', 'retrieve_execution']
 
@@ -291,6 +317,7 @@ class ProjectQIBMBackend(ProjectQDevice):
         super().reset()
 
     def pre_expectations(self):
+        super().pre_expectations()
         pq.ops.All(pq.ops.Measure) | self.reg
         self.eng.flush()
 
@@ -304,7 +331,7 @@ class ProjectQIBMBackend(ProjectQDevice):
                 wire = wires[0]
 
             ev = ((2*sum(p for (state,p) in probabilities.items() if state[wire] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[wire] == '0')-1))
-            variance = 1 - ev**2
+            #variance = 1 - ev**2
         # elif observable == 'AllPauliZ':
         #     ev = [ ((2*sum(p for (state,p) in probabilities.items() if state[i] == '1')-1)-(2*sum(p for (state,p) in probabilities.items() if state[i] == '0')-1)) for i in range(len(self.reg)) ]
         #     variance = [1 - e**2 for e in ev]
