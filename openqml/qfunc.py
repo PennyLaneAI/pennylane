@@ -75,7 +75,6 @@ def qfunc(device):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            with device:
-                return qnode(*args, **kwargs)
+            return qnode(*args, **kwargs)
         return wrapper
     return qfunc_decorator

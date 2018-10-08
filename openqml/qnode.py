@@ -225,7 +225,8 @@ class QNode:
             raise QuantumFunctionError('Should not happen, QNode._current_context must not be modified outside this method.')
         # generate the program queue by executing the qfunc
         try:
-            res = self.func(*variables, **kwargs)
+            with self.device:
+                res = self.func(*variables, **kwargs)
         finally:
             # remove the context
             QNode._current_context = None

@@ -119,7 +119,7 @@ class Device(abc.ABC):
         self.shots = shots  #: int: number of circuit evaluations used to estimate expectation values, 0 means the exact ev is returned
 
     def __enter__(self):
-        """Executed when entering the device context in the qfunc wrapper.
+        """Executed when entering the device context in QNode.
 
         Adds plugin operations provided by this device via self._extra_operations
         to the appropriate openqml namespaces. Native OpenQML operations are not
@@ -143,7 +143,7 @@ class Device(abc.ABC):
                 self._added_openqml_expectation_attributes.append(key) #record that this operation property was added to openqml.expectation
 
     def __exit__(self, type, value, traceback):
-        """Executed when exiting the device context in the qfunc wrapper.
+        """Executed when exiting the device context in QNode.
 
         Removes all extra operations provided by this device from the
         respective openqml namespaces, so that the cannot shadow operations
