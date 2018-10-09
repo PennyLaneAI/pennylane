@@ -50,9 +50,6 @@ class BasicTests(BaseTest):
 
         for G in reversed(gates):
             print(G.__name__)
-            if G.__name__ == "Beamsplitter": 
-                print("skipping")
-                continue
             for O in obs:
                 print(' ', O.__name__)
                 def circuit(x):
@@ -60,7 +57,7 @@ class BasicTests(BaseTest):
                     args[0] = x
                     qm.Displacement(0.5, 0, wires=0)
                     G(*args, wires=range(G.n_wires))
-                    #qm.Beamsplitter(1.3, -2.3, wires=[0, 1])
+                    qm.Beamsplitter(1.3, -2.3, wires=[0, 1])
                     qm.Displacement(-0.5, 0, wires=0)
                     qm.Squeezing(0.5, -1.5, wires=0)
                     qm.Rotation(-1.1, wires=0)
