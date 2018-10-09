@@ -49,6 +49,8 @@ class Variable:
     Each time the circuit is executed, it is given a vector of
     parameter values. Variable is essentially an index into that vector.
 
+    .. note:: Variables currently do not implement any arithmetic operations other than scalar multiplication.
+
     Args:
       idx  (int): parameter index >= 0
       name (str): name of the variable (optional)
@@ -58,7 +60,7 @@ class Variable:
     def __init__(self, idx, name=None):
         self.idx = idx    #: int: parameter index
         self.name = name  #: str: parameter name  FIXME unused?
-        self.mult = 1.0   #: float: parameter scalar multiplier
+        self.mult = 1     #: int, float: parameter scalar multiplier
 
     def __str__(self):
         temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''

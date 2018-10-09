@@ -5,10 +5,17 @@ Default parameters, commandline arguments and common routines for the unit tests
 import argparse
 import unittest
 import os
+import sys
 #import numpy as np
 
 import openqml as qm
 from openqml import numpy as np
+
+# Make sure openqml_pq is always imported from the same source distribution where the tests reside, not e.g. from site-packages.
+# See https://docs.python-guide.org/en/latest/writing/structure/#test-suite
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import openqml_pq
 
 
 

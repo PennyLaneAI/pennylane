@@ -27,6 +27,13 @@ from openqml import numpy as np
 from defaults import openqml_sf as qmsf, BaseTest
 
 
+def prep_par(par, op):
+    "Convert par into a list of parameters that op expects."
+    if op.par_domain == 'A':
+        return [np.diag([x, 1]) for x in par]
+    return par
+
+
 class GaussianTests(BaseTest):
     """Test the Gaussian simulator."""
 
@@ -65,8 +72,9 @@ class GaussianTests(BaseTest):
 
             @qm.qfunc(dev)
             def circuit(*x):
+                x = prep_par(x, op)
                 op(*x, wires=wires)
-                return qm.expectation.Fock(0)
+                return qm.expectation.PhotonNumber(0)
 
             with self.assertRaisesRegex(qm.DeviceError,
                 "Gate {} not supported on device strawberryfields.gaussian".format(g)):
@@ -91,6 +99,7 @@ class GaussianTests(BaseTest):
 
             @qm.qfunc(dev)
             def circuit(*x):
+                x = prep_par(x, op)
                 return op(*x, wires=wires)
 
             with self.assertRaisesRegex(qm.DeviceError,
@@ -107,7 +116,7 @@ class GaussianTests(BaseTest):
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.Fock(0)
+            return qm.expectation.PhotonNumber(0)
 
         self.assertAlmostEqual(circuit(1), 1, delta=self.tol)
 
@@ -115,14 +124,16 @@ class GaussianTests(BaseTest):
         """Test that the gaussian plugin provides correct result for high shot number"""
         log.info('test_gaussian_circuit')
 
-        dev = qm.device('strawberryfields.gaussian', wires=1, shots=100)
+        shots = 10**2
+        dev = qm.device('strawberryfields.gaussian', wires=1, shots=shots)
 
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.Fock(0)
+            return qm.expectation.PhotonNumber(0)
 
-        self.assertAlmostEqual(circuit(1), 1, delta=self.tol)
+        expected_var = np.sqrt(1/shots)
+        self.assertAlmostEqual(circuit(1), 1, delta=expected_var)
 
     def test_supported_gaussian_gates(self):
         """Test that all supported gates work correctly"""
@@ -138,7 +149,6 @@ class GaussianTests(BaseTest):
             self.assertTrue(dev.supported(g))
 
             op = getattr(qm.ops, g)
-
             if op.n_wires == 0:
                 wires = [0]
             else:
@@ -148,7 +158,7 @@ class GaussianTests(BaseTest):
             def circuit(*x):
                 qm.TwoModeSqueezing(0.1, 0, wires=[0, 1])
                 op(*x, wires=wires)
-                return qm.expectation.Fock(0), qm.expectation.Fock(1)
+                return qm.expectation.PhotonNumber(0), qm.expectation.PhotonNumber(1)
 
             # compare to reference SF engine
             def SF_reference(*x):
@@ -159,7 +169,7 @@ class GaussianTests(BaseTest):
                     sfop(*x) | [q[i] for i in wires]
 
                 state = eng.run('gaussian')
-                return state.mean_photon(0), state.mean_photon(1)
+                return state.mean_photon(0)[0], state.mean_photon(1)[0]
 
             if g == 'GaussianState':
                 r = np.array([0, 0])
@@ -174,6 +184,7 @@ class GaussianTests(BaseTest):
         """Test that all supported observables work correctly"""
         log.info('test_supported_gaussian_observables')
         a = 0.312
+        a_array = np.eye(3)
 
         dev = qm.device('strawberryfields.gaussian', wires=2)
 
@@ -183,7 +194,10 @@ class GaussianTests(BaseTest):
             self.assertTrue(dev.supported(g))
 
             op = getattr(qm.expectation, g)
-            wires = list(range(op.n_wires))
+            if op.n_wires == 0:
+                wires = [0]
+            else:
+                wires = list(range(op.n_wires))
 
             @qm.qfunc(dev)
             def circuit(*x):
@@ -205,13 +219,14 @@ class GaussianTests(BaseTest):
             if op.n_params == 0:
                 self.assertAllEqual(circuit(), SF_reference())
             elif op.n_params == 1:
-                self.assertAllEqual(circuit(a), SF_reference(a))
+                p = a_array if op.par_domain == 'A' else a
+                self.assertAllEqual(circuit(p), SF_reference(p))
 
 
 if __name__ == '__main__':
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (PluginTest,):
+    for t in (GaussianTests,):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 

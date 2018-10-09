@@ -34,6 +34,13 @@ psi = np.array([ 0.08820314+0.14909648j,  0.32826940+0.32956027j,
         0.21021125+0.30082734j,  0.23443833+0.19584968j])
 
 
+def prep_par(par, op):
+    "Convert par into a list of parameters that op expects."
+    if op.par_domain == 'A':
+        return [np.diag([x, 1]) for x in par]
+    return par
+
+
 class FockTests(BaseTest):
     """Test the Fock simulator."""
 
@@ -75,8 +82,9 @@ class FockTests(BaseTest):
 
             @qm.qfunc(dev)
             def circuit(*args):
+                args = prep_par(args, op)
                 op(*args, wires=wires)
-                return qm.expectation.Fock(0)
+                return qm.expectation.PhotonNumber(0)
 
             with self.assertRaisesRegex(qm.DeviceError,
                 "Gate {} not supported on device strawberryfields.fock".format(g)):
@@ -101,6 +109,7 @@ class FockTests(BaseTest):
 
             @qm.qfunc(dev)
             def circuit(*args):
+                args = prep_par(args, op)
                 return op(*args, wires=wires)
 
             with self.assertRaisesRegex(qm.DeviceError,
@@ -117,7 +126,7 @@ class FockTests(BaseTest):
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.Fock(0)
+            return qm.expectation.PhotonNumber(0)
 
         self.assertAlmostEqual(circuit(1), 1, delta=self.tol)
 
@@ -125,14 +134,16 @@ class FockTests(BaseTest):
         """Test that the fock plugin provides correct result for high shot number"""
         log.info('test_fock_circuit')
 
-        dev = qm.device('strawberryfields.fock', wires=1, cutoff_dim=10, shots=100)
+        shots = 10**2
+        dev = qm.device('strawberryfields.fock', wires=1, cutoff_dim=10, shots=10**4)
 
         @qm.qfunc(dev)
         def circuit(x):
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.Fock(0)
+            return qm.expectation.PhotonNumber(0)
 
-        self.assertAlmostEqual(circuit(1), 1, delta=self.tol)
+        expected_var = np.sqrt(1/shots)
+        self.assertAlmostEqual(circuit(1), 1, delta=expected_var)
 
     def test_supported_fock_gates(self):
         """Test that all supported gates work correctly"""
@@ -149,7 +160,6 @@ class FockTests(BaseTest):
             self.assertTrue(dev.supported(g))
 
             op = getattr(qm.ops, g)
-
             if op.n_wires == 0:
                 wires = [0]
             else:
@@ -159,7 +169,7 @@ class FockTests(BaseTest):
             def circuit(*args):
                 qm.TwoModeSqueezing(0.1, 0, wires=[0, 1])
                 op(*args, wires=wires)
-                return qm.expectation.Fock(0), qm.expectation.Fock(1)
+                return qm.expectation.PhotonNumber(0), qm.expectation.PhotonNumber(1)
 
             # compare to reference SF engine
             def SF_reference(*args):
@@ -170,17 +180,23 @@ class FockTests(BaseTest):
                     sfop(*args) | [q[i] for i in wires]
 
                 state = eng.run('fock', cutoff_dim=cutoff_dim)
-                return state.mean_photon(0), state.mean_photon(1)
+                return state.mean_photon(0)[0], state.mean_photon(1)[0]
 
             if g == 'GaussianState':
+                pass
                 r = np.array([0, 0])
                 V = np.array([[0.5, 0], [0, 2]])
                 self.assertAllEqual(circuit(V, r), SF_reference(V, r))
             elif g == 'FockDensityMatrix':
+                pass
                 dm = np.outer(psi, psi.conj())
                 self.assertAllEqual(circuit(dm), SF_reference(dm))
             elif g == 'FockStateVector':
+                pass
                 self.assertAllEqual(circuit(psi), SF_reference(psi))
+            elif g == 'FockState':
+                pass
+                # self.assertAllEqual(circuit(1), SF_reference(1))
             elif op.n_params == 1:
                 self.assertAllEqual(circuit(a), SF_reference(a))
             elif op.n_params == 2:
@@ -191,6 +207,7 @@ class FockTests(BaseTest):
         log.info('test_supported_fock_observables')
         cutoff_dim = 10
         a = 0.312
+        a_array = np.eye(3)
 
         dev = qm.device('strawberryfields.fock', wires=2, cutoff_dim=cutoff_dim)
 
@@ -200,7 +217,10 @@ class FockTests(BaseTest):
             self.assertTrue(dev.supported(g))
 
             op = getattr(qm.expectation, g)
-            wires = list(range(op.n_wires))
+            if op.n_wires == 0:
+                wires = [0]
+            else:
+                wires = list(range(op.n_wires))
 
             @qm.qfunc(dev)
             def circuit(*args):
@@ -222,13 +242,14 @@ class FockTests(BaseTest):
             if op.n_params == 0:
                 self.assertAllEqual(circuit(), SF_reference())
             elif op.n_params == 1:
-                self.assertAllEqual(circuit(a), SF_reference(a))
+                p = a_array if op.par_domain == 'A' else a
+                self.assertAllEqual(circuit(p), SF_reference(p))
 
 
 if __name__ == '__main__':
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (PluginTest,):
+    for t in (FockTests,):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 

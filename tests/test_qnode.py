@@ -26,7 +26,7 @@ from defaults import openqml as qm, BaseTest
 
 from openqml.qnode import _flatten
 from openqml.plugins.default import CNOT, frx, fry, frz, I, Y, Z
-from openqml.device import QuantumFunctionError
+from openqml.device import QuantumFunctionError, DeviceError
 
 
 def expZ(state):
@@ -50,29 +50,50 @@ class BasicTest(BaseTest):
         log.info('test_qnode_fail')
         par = 0.5
 
+        #---------------------------------------------------------
         ## faulty quantum functions
+
         # qfunc must return only Expectations
         @qm.qfunc(self.dev2)
         def qf(x):
-            qm.Rot(x, 0.3, -0.2, [0])
+            qm.RX(x, [0])
             return qm.expectation.PauliZ(0), 0.3
         with self.assertRaisesRegex(QuantumFunctionError, 'must return either'):
             qf(par)
 
-        # all EVs must be returned
+        # all EVs must be returned...
         @qm.qfunc(self.dev2)
         def qf(x):
-            qm.Rot(x, 0.3, -0.2, [0])
+            qm.RX(x, [0])
             ex = qm.expectation.PauliZ(1)
             return qm.expectation.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
+            qf(par)
+
+        # ...in the correct order
+        @qm.qfunc(self.dev2)
+        def qf(x):
+            qm.RX(x, [0])
+            ex = qm.expectation.PauliZ(1)
+            return qm.expectation.PauliZ(0), ex
+        with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
+            qf(par)
+
+        # gates must precede EVs
+        @qm.qfunc(self.dev2)
+        def qf(x):
+            qm.RX(x, [0])
+            ev = qm.expectation.PauliZ(1)
+            qm.RY(0.5, [0])
+            return ev
+        with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
             qf(par)
 
         # a wire cannot be measured more than once
         log.info('test_multiple_expectation_same_wire')
         @qm.qfunc(self.dev2)
         def qf(x):
-            qm.Rot(x, 0.3, -0.2, [0])
+            qm.RX(x, [0])
             qm.CNOT([0, 1])
             return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1), qm.expectation.PauliX(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'can only be measured once'):
@@ -81,12 +102,57 @@ class BasicTest(BaseTest):
         # device must have enough wires for the qfunc
         @qm.qfunc(self.dev2)
         def qf(x):
-            qm.Rot(x, 0.3, -0.2, [0])
+            qm.RX(x, [0])
             qm.CNOT([0, 2])
             return qm.expectation.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'device only has'):
             qf(par)
 
+        # CV and discrete ops must not be mixed
+        @qm.qfunc(self.dev1)
+        def qf(x):
+            qm.RX(x, [0])
+            qm.Displacement(0.5, 0, [0])
+            return qm.expectation.PauliZ(0)
+        with self.assertRaisesRegex(QuantumFunctionError, 'Continuous and discrete'):
+            qf(par)
+
+        # default plugin cannot execute CV operations, neither gates...
+        @qm.qfunc(self.dev1)
+        def qf(x):
+            qm.Displacement(0.5, 0, [0])
+            return qm.expectation.X(0)
+        with self.assertRaisesRegex(DeviceError, 'Gate [a-zA-Z]+ not supported on device'):
+            qf(par)
+
+        # ...nor observables
+        @qm.qfunc(self.dev1)
+        def qf(x):
+            return qm.expectation.X(0)
+        with self.assertRaisesRegex(DeviceError, 'Observable [a-zA-Z]+ not supported on device'):
+            qf(par)
+
+        #---------------------------------------------------------
+        ## gradient issues
+
+        # undifferentiable operation
+        def qf(x):
+            qm.BasisState(x, [0,1])
+            qm.RX(x, [0])
+            return qm.expectation.PauliZ(0)
+        q = qm.QNode(qf, self.dev2)
+        with self.assertRaisesRegex(ValueError, 'Cannot differentiate wrt'):
+            q.gradient(par)
+
+        # operation that does not support the 'A' method
+        def qf(x):
+            qm.RX(x, [0])
+            return qm.expectation.Hermitian(np.diag([x, 0]), 0)
+        q = qm.QNode(qf, self.dev2)
+        with self.assertRaisesRegex(ValueError, 'analytic gradient method cannot be used with'):
+            q.gradient(par, method='A')
+
+        #---------------------------------------------------------
         ## bad input parameters
         def qf_ok(x):
             qm.Rot(0.3, x, -0.2, [0])
@@ -114,10 +180,50 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(ValueError, 'Order must be 1 or 2'):
             q.gradient(par, method='F', order=3)
 
-        # only order-1 and order-2 analytic methods are available
-        q = qm.QNode(qf_ok, self.dev1)
-        with self.assertRaisesRegex(ValueError, 'Order must be 1 or 2'):
-            q.gradient(par, method='A', order=3)
+
+    def test_qnode_cv_gradient_methods(self):
+        "Tests the gradient computation methods on CV circuits."
+        # we can only use the 'A' method on parameters which only affect gaussian operations that are not succeeded by nongaussian operations
+
+        par = [0.4, -2.3]
+        def check_methods(qf, d):
+            q = qm.QNode(qf, self.dev2)
+            q.construct(par)  # NOTE: the default plugin is a discrete (qubit) simulator, it cannot execute CV gates, but the QNode can be constructed
+            #print(q.grad_method_for_par)
+            self.assertTrue(q.grad_method_for_par == d)
+
+        def qf(x, y):
+            qm.Displacement(x, 0, [0])
+            qm.CubicPhase(0.2, [0])
+            qm.Squeezing(0.3, y, [1])
+            qm.Rotation(1.3, [1])
+            #qm.Kerr(0.4, [0])  # nongaussian succeeding x but not y   TODO when QNode uses a DAG to describe the circuit, uncomment this line
+            return qm.expectation.X(0), qm.expectation.X(1)
+        check_methods(qf, {0:'F', 1:'A'})
+
+        def qf(x, y):
+            qm.Displacement(x, 0, [0])
+            qm.CubicPhase(0.2, [0])  # nongaussian succeeding x
+            qm.Squeezing(0.3, x, [1])  # x affects gates on both wires, y unused
+            qm.Rotation(1.3, [1])
+            return qm.expectation.X(0), qm.expectation.X(1)
+        check_methods(qf, {0:'F'})
+
+        def qf(x, y):
+            qm.Displacement(x, 0, [0])
+            qm.Displacement(1.2, y, [0])
+            qm.Beamsplitter(0.2, 1.7, [0, 1])
+            qm.Rotation(1.9, [0])
+            qm.Kerr(0.3, [1])  # nongaussian succeeding both x and y due to the beamsplitter
+            return qm.expectation.X(0), qm.expectation.X(1)
+        check_methods(qf, {0:'F', 1:'F'})
+
+        def qf(x, y):
+            qm.Kerr(y, [1])
+            qm.Displacement(x, 0, [0])
+            qm.Beamsplitter(0.2, 1.7, [0, 1])
+            return qm.expectation.X(0), qm.expectation.X(1)
+        check_methods(qf, {0:'A', 1:'F'})
 
 
     def test_qnode_multiple_gate_parameters(self):
@@ -136,11 +242,51 @@ class BasicTest(BaseTest):
         grad_A = q.gradient(par, method='A')
         grad_F = q.gradient(par, method='F')
 
+        # analytic method works for every parameter
+        self.assertTrue(q.grad_method_for_par == {0:'A', 1:'A', 2:'A'})
         # gradient has the correct length and every element is nonzero
         self.assertEqual(len(grad_A), 3)
         self.assertEqual(np.count_nonzero(grad_A), 3)
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
+
+
+    def test_qnode_repeated_gate_parameters(self):
+        "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
+        log.info('test_qnode_repeated_gate_parameters')
+        par = [0.8, 1.3]
+
+        def qf(x, y):
+            qm.RX(np.pi/4, [0])
+            qm.Rot(y, x, 2*x, [0])
+            return qm.expectation.PauliX(0)
+
+        q = qm.QNode(qf, self.dev1)
+        grad_A = q.gradient(par, method='A')
+        grad_F = q.gradient(par, method='F')
+
+        # the different methods agree
+        self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
+
+
+    def test_qnode_parameters_inside_array(self):
+        "Tests that free parameters inside an array passed to an Operation yield correct gradients."
+        log.info('test_qnode_parameters_inside_array')
+        par = [0.8, 1.3]
+
+        def qf(x, y):
+            qm.RX(x, [0])
+            qm.RY(x, [0])
+            return qm.expectation.Hermitian(np.diag([y, 1]), 0)
+
+        q = qm.QNode(qf, self.dev1)
+        grad = q.gradient(par)
+        grad_F = q.gradient(par, method='F')
+
+        # par[0] can use the 'A' method, par[1] cannot
+        self.assertTrue(q.grad_method_for_par == {0:'A', 1:'F'})
+        # the different methods agree
+        self.assertAllAlmostEqual(grad, grad_F, delta=self.tol)
 
 
     def test_qnode_fanout(self):

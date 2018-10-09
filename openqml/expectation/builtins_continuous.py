@@ -13,35 +13,44 @@
 # limitations under the License.
 """This module contains operations for the default phase space observables"""
 
-from openqml.operation import Expectation
+import numpy as np
+
+from openqml.operation import CVExpectation
 
 
 
-class Fock(Expectation):   # FIXME nondescriptive name
-    r"""Returns the photon-number expectation value in the phase space.
+class PhotonNumber(CVExpectation):
+    r"""Returns the photon number expectation value.
 
     The photon number operator is :math:`n = a^\dagger a = \frac{1}{2\hbar}(x^2 +p^2) -\I/2`.
     """
-    def heisenberg_expand(self):
-        return np.diag([-0.5, 0.25, 0.25])
+    ev_order = 2
+    @staticmethod
+    def _heisenberg_rep(p):
+        hbar = 2
+        return np.diag([-0.5, 0.5/hbar, 0.5/hbar])
 
 
-class X(Expectation):
+class X(CVExpectation):
     r"""Returns the position expectation value in the phase space.
     """
-    def heisenberg_expand(self):
+    ev_order = 1
+    @staticmethod
+    def _heisenberg_rep(p):
         return np.array([0, 1, 0])
 
 
-class P(Expectation):
+class P(CVExpectation):
     r"""Returns the momentum expectation value in the phase space.
 
     """
-    def heisenberg_expand(self):
+    ev_order = 1
+    @staticmethod
+    def _heisenberg_rep(p):
         return np.array([0, 0, 1])
 
 
-class Homodyne(Expectation):
+class Homodyne(CVExpectation):
     r"""Returns the homodyne expectation value in the phase space.
 
     Args:
@@ -49,19 +58,42 @@ class Homodyne(Expectation):
             the homodyne measurement.
     """
     n_params = 1
-    def heisenberg_expand(self):
-        phi = self.parameters[0]
+    ev_order = 1
+    @staticmethod
+    def _heisenberg_rep(p):
+        phi = p[0]
         return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
 
 
-
-class Heterodyne(Expectation):
+class Heterodyne(CVExpectation):
     r"""Returns the displacement expectation value in the phase space.
 
     """
 
 
+class Poly(CVExpectation):
+    r"""Second order polynomial observable.
 
-all_ops = [Heterodyne, Homodyne, Fock, P, X]
+    Represents an arbitrary observable Q that is a second order polynomial in the basis
+    :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+
+    For first-order observables the representation is a real vector q such that :math:`Q = \sum_i q_i E_i`.
+    For second-order observables the representation is a real symmetric matrix q such that :math:`Q = \sum_{ij} q_{ij} E_i E_j`.
+
+    Used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV observables.
+
+    Args:
+      q (array[float]): expansion coefficients
+    """
+    n_wires  = 0
+    n_params = 1
+    par_domain = 'A'
+    ev_order = 2
+    @staticmethod
+    def _heisenberg_rep(p):
+        return p[0]
+
+
+all_ops = [Heterodyne, Homodyne, PhotonNumber, P, X, Poly]
 
 __all__ = [cls.__name__ for cls in all_ops]
