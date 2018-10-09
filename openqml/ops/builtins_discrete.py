@@ -128,6 +128,16 @@ class Rot(Operation):
 # State preparation
 #=============================================================================
 
+class BasisState(Operation):
+    r"""Prepares a single computational basis state.
+
+    Args:
+        n (int): prepares the state :math:`\ket{n}`
+    """
+    n_wires = 0
+    par_domain = 'N'
+    grad_method = None
+
 
 class QubitStateVector(Operation):
     r"""Prepare subsystems using the given ket vector in the Fock basis.
@@ -137,7 +147,7 @@ class QubitStateVector(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-    grad_method = None
+    grad_method = 'F'
 
 #=============================================================================
 # Arbitrary operations
@@ -152,7 +162,7 @@ class QubitUnitary(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-    grad_method = None
+    grad_method = 'F'
 
 
 all_ops = [
@@ -168,6 +178,7 @@ all_ops = [
     RZ,
     PhaseShift,
     Rot,
+    BasisState,
     QubitStateVector,
     QubitUnitary
 ]

@@ -23,7 +23,7 @@ Built-in continuous-variable quantum Operations
 import numpy as np
 import scipy as sp
 
-from openqml.operation import Operation
+from openqml.operation import CVOperation
 
 
 
@@ -44,7 +44,7 @@ def _rotation(phi, bare=False):
     return sp.linalg.block_diag(1, temp)
 
 
-class Rotation(Operation):
+class Rotation(CVOperation):
     r"""Continuous-variable phase space rotation.
 
     .. math::
@@ -54,11 +54,12 @@ class Rotation(Operation):
     Args:
         phi (float): the rotation angle.
     """
-    def heisenberg_transform(self, p):
+    @staticmethod
+    def _heisenberg_rep(p):
         return _rotation(p[0])
 
 
-class Displacement(Operation):
+class Displacement(CVOperation):
     r"""Continuous-variable phase space displacement.
 
     .. math::
@@ -79,14 +80,15 @@ class Displacement(Operation):
     grad_recipe = [(0.5/shift, shift), None]
     # TODO d\tilde{D}(r, phi)/dr does not depend on r!
     # The gradient formula can be simplified further, we can make do with smaller displacements.
-    def heisenberg_transform(self, p):
+    @staticmethod
+    def _heisenberg_rep(p):
         c = np.cos(p[1])
         s = np.sin(p[1])
         scale = 2  # \sqrt(2 \hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
 
-class Squeezing(Operation):
+class Squeezing(CVOperation):
     r"""Continuous-variable phase space squeezing.
 
     .. math::
@@ -101,12 +103,13 @@ class Squeezing(Operation):
     n_params = 2
     shift = 1.0
     grad_recipe = [(0.5/np.sinh(shift), shift), None]
-    def heisenberg_transform(self, p):
+    @staticmethod
+    def _heisenberg_rep(p):
         R = _rotation(p[1] / 2)
         return R @ np.diag([1, np.exp(-p[0]), np.exp(p[0])]) @ R.T
 
 
-class TwoModeSqueezing(Operation):
+class TwoModeSqueezing(CVOperation):
     r"""Continuous-variable phase space two-mode squeezing.
 
     .. math::
@@ -124,7 +127,7 @@ class TwoModeSqueezing(Operation):
     grad_method = 'F'
 
 
-class QuadraticPhase(Operation):
+class QuadraticPhase(CVOperation):
     r"""Continuous-variable quadratic phase shift.
 
     .. math::
@@ -136,7 +139,7 @@ class QuadraticPhase(Operation):
     grad_method = 'F'
 
 
-class CubicPhase(Operation):
+class CubicPhase(CVOperation):
     r"""Continuous-variable cubic phase shift.
 
     .. math::
@@ -148,7 +151,7 @@ class CubicPhase(Operation):
     grad_method = 'F'
 
 
-class Kerr(Operation):
+class Kerr(CVOperation):
     r"""Continuous-variable Kerr interaction.
 
     .. math::
@@ -160,7 +163,7 @@ class Kerr(Operation):
     grad_method = 'F'
 
 
-class CrossKerr(Operation):
+class CrossKerr(CVOperation):
     r"""Continuous-variable Cross-Kerr interaction.
 
     .. math::
@@ -173,7 +176,7 @@ class CrossKerr(Operation):
     grad_method = 'F'
 
 
-class Beamsplitter(Operation):
+class Beamsplitter(CVOperation):
     r"""Continuous-variable beamsplitter interaction.
 
     .. math::
@@ -190,7 +193,8 @@ class Beamsplitter(Operation):
     n_params = 2
     n_wires = 2
     # For the beamsplitter, both parameters are rotation-like
-    def heisenberg_transform(self, p):
+    @staticmethod
+    def _heisenberg_rep(p):
         R = _rotation(p[1], bare=True)
         c = np.cos(p[0])
         s = np.sin(p[0])
@@ -201,7 +205,7 @@ class Beamsplitter(Operation):
         return U
 
 
-class ControlledAddition(Operation):
+class ControlledAddition(CVOperation):
     r"""Continuous-variable controlled addition Operation.
 
     .. math::
@@ -215,7 +219,7 @@ class ControlledAddition(Operation):
     grad_method = 'F'
 
 
-class ControlledPhase(Operation):
+class ControlledPhase(CVOperation):
     r"""Continuous-variable controlled phase Operation.
 
     .. math::
@@ -234,7 +238,7 @@ class ControlledPhase(Operation):
 #=============================================================================
 
 
-class CoherentState(Operation):
+class CoherentState(CVOperation):
     r"""Prepares a coherent state.
 
     Args:
@@ -245,7 +249,7 @@ class CoherentState(Operation):
     grad_method = 'F'
 
 
-class SqueezedState(Operation):
+class SqueezedState(CVOperation):
     r"""Prepares a squeezed vacuum state.
 
     Args:
@@ -256,7 +260,7 @@ class SqueezedState(Operation):
     grad_method = 'F'
 
 
-class DisplacedSqueezedState(Operation):
+class DisplacedSqueezedState(CVOperation):
     r"""Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
@@ -276,7 +280,7 @@ class DisplacedSqueezedState(Operation):
     grad_method = 'F'
 
 
-class FockState(Operation):
+class FockState(CVOperation):
     r"""Prepares a single Fock state.
 
     Args:
@@ -286,7 +290,7 @@ class FockState(Operation):
     grad_method = None
 
 
-class ThermalState(Operation):
+class ThermalState(CVOperation):
     r"""Prepares a thermal state.
 
     Args:
@@ -295,7 +299,7 @@ class ThermalState(Operation):
     grad_method = 'F'
 
 
-class CatState(Operation):
+class CatState(CVOperation):
     r"""Prepares a cat state.
 
     A cat state is the coherent superposition of two coherent states,
@@ -314,7 +318,7 @@ class CatState(Operation):
     grad_method = 'F'
 
 
-class FockStateVector(Operation):
+class FockStateVector(CVOperation):
     r"""Prepare subsystems using the given ket vector in the Fock basis.
 
     Args:
@@ -323,10 +327,10 @@ class FockStateVector(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-    grad_method = None
+    grad_method = 'F'
 
 
-class FockDensityMatrix(Operation):
+class FockDensityMatrix(CVOperation):
     r"""Prepare subsystems using the given density matrix in the Fock basis.
 
     Args:
@@ -335,10 +339,10 @@ class FockDensityMatrix(Operation):
     """
     n_wires = 0
     par_domain = 'A'
-    grad_method = None
+    grad_method = 'F'
 
 
-class GaussianState(Operation):
+class GaussianState(CVOperation):
     r"""Prepare subsystems in a given Gaussian state.
 
     Args:
@@ -349,8 +353,7 @@ class GaussianState(Operation):
     n_params = 2
     n_wires = 0
     par_domain = 'A'
-    grad_method = None
-
+    grad_method = 'F'
 
 
 all_ops = [
