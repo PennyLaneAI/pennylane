@@ -139,7 +139,7 @@ class FockTests(BaseTest):
         log.info('test_fock_circuit')
 
         shots = 10**2
-        dev = qm.device('strawberryfields.fock', wires=1, cutoff_dim=10, shots=10**4)
+        dev = qm.device('strawberryfields.fock', wires=1, cutoff_dim=10, shots=shots)
 
         @qm.qfunc(dev)
         def circuit(x):
