@@ -37,7 +37,7 @@ class BasicTest(BaseTest):
 
         def h_test(cls):
             "Test a gaussian CV operation."
-            print(cls.__name__)
+            log.debug('\tTesting: cls.__name__')
             # fixed parameter values
             if cls.par_domain == 'A':
                 par = [nr.randn(1,1)] * cls.n_params
@@ -87,7 +87,7 @@ class BasicTest(BaseTest):
 
         def op_test(cls):
             "Test the Operation subclass."
-            print(cls.__name__)
+            log.debug('\tTesting: cls.__name__')
             n = cls.n_params
             w = cls.n_wires
             ww = list(range(w))

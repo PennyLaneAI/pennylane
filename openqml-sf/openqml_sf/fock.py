@@ -45,14 +45,14 @@ from .simulator import StrawberryFieldsSimulator
 
 
 class StrawberryFieldsFock(StrawberryFieldsSimulator):
-    """StrawberryFields Fock device for OpenQML.
+    r"""StrawberryFields Fock device for OpenQML.
 
     Args:
-      wires (int): the number of modes to initialize the device in.
-      shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
-        For simulator devices, 0 means the exact EV is returned.
-      cutoff_dim (int): Fock space truncation dimension
-      hbar (float): the convention chosen in the canonical commutation relation :math:`[x, p] = i \hbar`
+        wires (int): the number of modes to initialize the device in.
+        shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
+            For simulator devices, 0 means the exact EV is returned.
+        cutoff_dim (int): Fock space truncation dimension
+        hbar (float): the convention chosen in the canonical commutation relation :math:`[x, p] = i \hbar`
     """
     name = 'Strawberry Fields Fock OpenQML plugin'
     short_name = 'strawberryfields.fock'
@@ -85,7 +85,7 @@ class StrawberryFieldsFock(StrawberryFieldsSimulator):
         'X': Homodyne(0),
         'P': Homodyne(np.pi/2),
         'Homodyne': Homodyne(),
-        'Poly': Order2Poly,
+        'PolyXP': Order2Poly,
     }
 
     _circuits = {}

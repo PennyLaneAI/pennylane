@@ -67,21 +67,21 @@ def Homodyne(phi=None):
 
 
 def Order2Poly(state, wires, params):
-    """Computes the EV of an observable that is a second-order polynomial in :math:\{x_i, p_i\}_i`.
+    r"""Computes the EV of an observable that is a second-order polynomial in :math:\{x_i, p_i\}_i`.
 
     Args:
         state (strawberryfields.backends.states.BaseState): the quantum state
         wires (Sequence[int]): measured modes
-        params (Sequence[array]): parameters
+        params (Sequence[array]): Q is a matrix or vector of coefficients
+            using the (I, x1,p1, x2,p2, ...) ordering
 
     Returns:
         float, float: expectation value, variance
     """
-    # Q is in the (I, x1,p1, x2,p2, ...) ordering
     Q = params[0]
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
-    op = openqml.expectation.Poly(Q, wires=wires, do_queue=False)
+    op = openqml.expectation.PolyXP(Q, wires=wires, do_queue=False)
     Q = op.heisenberg_obs(state.num_modes)
 
     if Q.ndim == 1:

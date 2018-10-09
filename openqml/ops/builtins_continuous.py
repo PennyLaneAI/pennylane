@@ -76,10 +76,8 @@ class Displacement(CVOperation):
         phi (float): phase angle :math:`\phi`
     """
     n_params = 2
-    shift = 1.0
+    shift = 0.1
     grad_recipe = [(0.5/shift, shift), None]
-    # TODO d\tilde{D}(r, phi)/dr does not depend on r!
-    # The gradient formula can be simplified further, we can make do with smaller displacements.
     @staticmethod
     def _heisenberg_rep(p):
         c = np.cos(p[1])
@@ -101,7 +99,7 @@ class Squeezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
     """
     n_params = 2
-    shift = 1.0
+    shift = 0.1
     grad_recipe = [(0.5/np.sinh(shift), shift), None]
     @staticmethod
     def _heisenberg_rep(p):
@@ -329,7 +327,6 @@ class FockStateVector(CVOperation):
     par_domain = 'A'
     grad_method = 'F'
 
-
 class FockDensityMatrix(CVOperation):
     r"""Prepare subsystems using the given density matrix in the Fock basis.
 
@@ -340,7 +337,6 @@ class FockDensityMatrix(CVOperation):
     n_wires = 0
     par_domain = 'A'
     grad_method = 'F'
-
 
 class GaussianState(CVOperation):
     r"""Prepare subsystems in a given Gaussian state.

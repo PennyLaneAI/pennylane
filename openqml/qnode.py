@@ -355,22 +355,20 @@ class QNode:
         If even one gate does not support differentiation we cannot differentiate wrt. this parameter at all.
         Otherwise use the finite differences method.
 
-        .. todo::
-           For CV circuits, when the circuit DAG is implemented, determining which gradient method to use for should work like this.
-           To check whether we can use the 'A' or 'A2' method, we need first to check for the presence of nongaussian ops and
-           order-2 observables.
-           Starting from the expectation values (all leaf nodes under current limitations on observables, see :ref:`measurements`),
-           walk through the DAG against the edges (upstream) in arbitrary order.
-           If the starting leaf is an order-2 EV, mark every gaussian operation you hit with op.grad_method='A2' (instance variable, does not mess up the class variable!).
-           If you hit a nongaussian gate (grad_method != 'A'), from that gate upstream mark every
-           gaussian operation with op.grad_method='F'.
-           Then run the standard discrete-case algorithm for determining the best gradient method for every free parameter.
-
         Args:
           idx (int): free parameter index
         Returns:
           str: gradient method to be used
         """
+        # TODO: For CV circuits, when the circuit DAG is implemented, determining which gradient method to use for should work like this...
+        # To check whether we can use the 'A' or 'A2' method, we need first to check for the presence of nongaussian ops and
+        # order-2 observables.
+        # Starting from the expectation values (all leaf nodes under current limitations on observables, see :ref:`measurements`),
+        # walk through the DAG against the edges (upstream) in arbitrary order.
+        # If the starting leaf is an order-2 EV, mark every gaussian operation you hit with op.grad_method='A2' (instance variable, does not mess up the class variable!).
+        # If you hit a nongaussian gate (grad_method != 'A'), from that gate upstream mark every
+        # gaussian operation with op.grad_method='F'.
+        # Then run the standard discrete-case algorithm for determining the best gradient method for every free parameter.
         def best_for_op(o_idx):
             "Returns the best gradient method for the operation op."
             op = self.ops[o_idx]
@@ -419,7 +417,7 @@ class QNode:
         """Evaluates the quantum function on the specified device.
 
         Args:
-          args (tuple): input parameters to the circuit function
+          args (tuple): input parameters to the quantum function
 
         Returns:
           float, array[float]: output expectation value(s)
@@ -514,7 +512,7 @@ class QNode:
         # check if the method can be used on the requested parameters
         mmap = _inv_dict(self.grad_method_for_par)
         def check_method(m):
-            "Intersection of which with free params whose best grad method is m."
+            """Intersection of ``which`` with free params whose best grad method is m."""
             return mmap.get(m, set()).intersection(which)
 
         bad = check_method(None)
@@ -672,7 +670,7 @@ class QNode:
                 ev_successors = self._op_successors(o_idx, 'E')
 
                 def tr_obs(ex):
-                    "Transform the observable"
+                    """Transform the observable"""
                     # TODO test: if ex is not a successor of op, multiplying by Z should do nothing.
                     if ex not in ev_successors:
                         return ex
@@ -681,7 +679,7 @@ class QNode:
                     if q.ndim == 2:
                         # 2nd order observable
                         qp = qp +qp.T
-                    return openqml.expectation.Poly(qp, wires=range(w), do_queue=False)
+                    return openqml.expectation.PolyXP(qp, wires=range(w), do_queue=False)
 
                 # transform the observables
                 obs = list(map(tr_obs, self.ev))

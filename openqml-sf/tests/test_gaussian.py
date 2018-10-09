@@ -74,7 +74,11 @@ class GaussianTests(BaseTest):
             def circuit(*x):
                 x = prep_par(x, op)
                 op(*x, wires=wires)
-                return qm.expectation.PhotonNumber(0)
+
+                if issubclass(op, qm.operation.CV):
+                    return qm.expectation.X(0)
+                else:
+                    return qm.expectation.PauliZ(0)
 
             with self.assertRaisesRegex(qm.DeviceError,
                 "Gate {} not supported on device strawberryfields.gaussian".format(g)):

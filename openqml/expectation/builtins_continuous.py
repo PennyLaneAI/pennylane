@@ -71,7 +71,7 @@ class Heterodyne(CVExpectation):
     """
 
 
-class Poly(CVExpectation):
+class PolyXP(CVExpectation):
     r"""Second order polynomial observable.
 
     Represents an arbitrary observable Q that is a second order polynomial in the basis
@@ -94,6 +94,6 @@ class Poly(CVExpectation):
         return p[0]
 
 
-all_ops = [Heterodyne, Homodyne, PhotonNumber, P, X, Poly]
+all_ops = [Heterodyne, Homodyne, PhotonNumber, P, X, PolyXP]
 
 __all__ = [cls.__name__ for cls in all_ops]
