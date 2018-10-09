@@ -198,8 +198,8 @@ class Beamsplitter(CVOperation):
         s = np.sin(p[0])
         U = c * np.eye(5)
         U[0,0] = 1
-        U[1:3, 3:5] = s * R
-        U[3:5, 1:3] = -s * R.T
+        U[1:3, 3:5] = -s * R.T
+        U[3:5, 1:3] = s * R
         return U
 
 
