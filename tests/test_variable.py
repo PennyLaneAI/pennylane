@@ -36,9 +36,9 @@ class BasicTest(BaseTest):
 
         # test __str__()
         p = Variable(0)
-        log.info(1.2 * p * 0.4)
-        log.info(-p)
-        log.info(p)
+        self.assertEqual(str(p), "Variable 0: name = None, ")
+        self.assertEqual(str(-p), "Variable 0: name = None,  * -1")
+        self.assertEqual(str(1.2*p*0.4), "Variable 0: name = None,  * 0.48")
 
         def check(par, res):
             "Apply the parameter mapping, compare with the expected result."

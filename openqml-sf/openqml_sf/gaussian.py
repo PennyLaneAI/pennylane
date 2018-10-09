@@ -71,7 +71,7 @@ class StrawberryFieldsGaussian(StrawberryFieldsSimulator):
         'X': Homodyne(0),
         'P': Homodyne(np.pi/2),
         'Homodyne': Homodyne(),
-        'Poly': Order2Poly,
+        'PolyXP': Order2Poly,
     }
 
     _circuits = {}

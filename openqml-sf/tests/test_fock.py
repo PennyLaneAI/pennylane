@@ -84,7 +84,11 @@ class FockTests(BaseTest):
             def circuit(*args):
                 args = prep_par(args, op)
                 op(*args, wires=wires)
-                return qm.expectation.PhotonNumber(0)
+
+                if issubclass(op, qm.operation.CV):
+                    return qm.expectation.PhotonNumber(0)
+                else:
+                    return qm.expectation.PauliZ(0)
 
             with self.assertRaisesRegex(qm.DeviceError,
                 "Gate {} not supported on device strawberryfields.fock".format(g)):
@@ -183,20 +187,16 @@ class FockTests(BaseTest):
                 return state.mean_photon(0)[0], state.mean_photon(1)[0]
 
             if g == 'GaussianState':
-                pass
                 r = np.array([0, 0])
                 V = np.array([[0.5, 0], [0, 2]])
                 self.assertAllEqual(circuit(V, r), SF_reference(V, r))
             elif g == 'FockDensityMatrix':
-                pass
                 dm = np.outer(psi, psi.conj())
                 self.assertAllEqual(circuit(dm), SF_reference(dm))
             elif g == 'FockStateVector':
-                pass
                 self.assertAllEqual(circuit(psi), SF_reference(psi))
             elif g == 'FockState':
-                pass
-                # self.assertAllEqual(circuit(1), SF_reference(1))
+                self.assertAllEqual(circuit(1), SF_reference(1))
             elif op.n_params == 1:
                 self.assertAllEqual(circuit(a), SF_reference(a))
             elif op.n_params == 2:

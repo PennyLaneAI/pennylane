@@ -31,7 +31,7 @@ def expZ(state):
 hbar = 2
 mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
-sqz_vals = np.linspace(0., 1.5, 5)
+sqz_vals = np.linspace(0., 1., 5)
 
 class QuadratureGradientTest(BaseTest):
     """Tests of the automatic gradient method for circuits acting on quadratures.

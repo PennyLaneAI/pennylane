@@ -92,7 +92,7 @@ class Operation:
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on. If not given, args[-1] is interpreted as wires.
-        do_queue (bool): should the operation be immediately pushed into a :class:`QNode` circuit queue?
+        do_queue (bool): Indicates whether the operation should be immediately pushed into a :class:`QNode` circuit queue.
 
     In general, an operation is differentiable (at least using the finite difference method 'F') iff
 
@@ -103,7 +103,7 @@ class Operation:
 
     * its `par_domain` must be 'R'.
 
-    This is not sufficient though, the 'A' method does not work on nongaussian CV gates for example.
+    This is not sufficient though, the 'A' method does not work on non-Gaussian CV gates for example.
 
     The gradient recipe (multiplier :math:`c_k`, parameter shift :math:`s_k`)
     works as follows:
@@ -246,6 +246,13 @@ class Expectation(Operation):
     """Base class for expectation value measurements supported by a device.
 
     :class:`Expectation` is used to describe Hermitian quantum observables.
+
+    Args:
+        args (tuple[float, int, array, Variable]): Expectation parameters
+
+    Keyword Args:
+        wires (Sequence[int]): subsystems it acts on. Currently, only one subsystem is supported.
+        do_queue (bool): Indicates whether the operation should be immediately pushed into a :class:`QNode` circuit queue.
     """
     n_params = 0
     grad_method = 'F'  # fallback that should work with any differentiable operation
@@ -308,11 +315,11 @@ class CV:
     def _heisenberg_rep(p):
         r"""Heisenberg picture representation of the operation.
 
-        * For gaussian CV gates, this method returns the matrix of the adjoint action of the gate
-          for the given parameter values. The method is not defined for nongaussian gates.
+        * For Gaussian CV gates, this method returns the matrix of the linear transformation carried out by the gate
+          for the given parameter values. The method is not defined for non-Gaussian gates.
           The existence of this method is equivalent to `grad_method`=='A'.
 
-        * For obsevables, returns a real vector (first-order observables) or symmetric matrix (second-order observables)
+        * For observables, returns a real vector (first-order observables) or symmetric matrix (second-order observables)
           of expansion coefficients of the observable.
 
         For single-mode Operations we use the basis :math:`\vec{E} = (\I, x, p)`.
@@ -326,6 +333,7 @@ class CV:
         Returns:
           array[float]: :math:`\tilde{U}` or :math:`q`
         """
+        # TODO: check the note in the docstring.
         pass
 
     _heisenberg_rep = None  # disable the method, we just want the docstring here
@@ -361,17 +369,17 @@ class CVOperation(CV, Operation):
 
 
     def heisenberg_tr(self, num_wires, inverse=False):
-        r"""Heisenberg picture representation of the adjoint action of the gate at current parameter values.
+        r"""Heisenberg picture representation of the linear transformation carried out by the gate at current parameter values.
 
-        Given a unitary quantum gate :math:`U`, we may consider its adjoint action in the Heisenberg picture,
-        :math:`\text{Ad}_{U^\dagger}`. If the gate is gaussian, its adjoint action conserves the order
+        Given a unitary quantum gate :math:`U`, we may consider its linear transformation in the Heisenberg picture,
+        :math:`U^\dagger(\cdot) U`. If the gate is Gaussian, this linear transformation preserves the polynomial order
         of any observables that are polynomials in :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
         This also means it maps :math:`\text{span} \: \vec{E}` into itself:
 
-        .. math:: \text{Ad}_{U^\dagger} E_i = U^\dagger E_i U = \sum_j \tilde{U}_{ij} E_j
+        .. math:: U^\dagger E_i U = \sum_j \tilde{U}_{ij} E_j
 
-        For gaussian CV gates, this method returns the transformation matrix for the current parameter values
-        of the Operation. The method is not defined for nongaussian (and non-CV) gates.
+        For Gaussian CV gates, this method returns the transformation matrix for the current parameter values
+        of the Operation. The method is not defined for non-Gaussian (and non-CV) gates.
 
         Args:
           num_wires (int): total number of wires in the quantum circuit
@@ -382,7 +390,7 @@ class CVOperation(CV, Operation):
         """
         # not defined?
         if self._heisenberg_rep is None:
-            raise RuntimeError('{} is not a gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
+            raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
 
         p = self.parameters
         if inverse:
