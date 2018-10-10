@@ -20,15 +20,33 @@ from .gradient_descent import GradientDescentOptimizer
 
 
 class MomentumOptimizer(GradientDescentOptimizer):
-    """Gradient-descent optimizer with momentum."""
+    r"""Gradient-descent optimizer with momentum.
 
+    The momentum optimizer adds a "momentum" term to gradient descent
+    which considers the past gradients:
+
+    .. math:: x^{(t+1)} = x^{(t)} - a^{(t+1)}.
+
+    The accumulator term :math:`a` is updated as follows:
+
+    .. math:: a^{(t+1)} = m a^{(t)} + \eta \nabla f(x^{(t)}).
+
+    with user defined parameters:
+
+    * :math:`\eta`: the step size
+    * :math:`m`: the momentum.
+
+    Args:
+        stepsize (float): user-defined hyperparameter :math:`\eta`.
+        momentum (float): user-defined hyperparameter :math:`m`.
+    """
     def __init__(self, stepsize=0.01, momentum=0.9):
         super().__init__(stepsize)
         self.momentum = momentum
         self.accumulation = None
 
     def apply_grad(self, grad, x):
-        """Update x to take a single optimization step."""
+        # docstring is inherited from GradientDescentOptimizer
         if self.accumulation is None:
             self.accumulation = self.stepsize * grad
         else:

@@ -18,14 +18,35 @@ import autograd.numpy as np
 
 
 class GradientDescentOptimizer(object):
-    """Base class for gradient-descent-based optimizers."""
+    r"""Base class for gradient-descent-based optimizers.
 
+    A step of the gradient descent optimizer computes the new weights via the rule
+
+    .. math::
+
+        x^{(t+1)} = x^{(t)} - \eta \nabla f(x^{(t)}).
+
+    where :math:`\eta` is a user-defined hyperparameter corresponding to step size.
+
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta`.
+    """
     def __init__(self, stepsize=0.01):
         self.stepsize = stepsize
 
     def step(self, objective_fn, x, grad_fn=None):
-        """Update x with one step of the optimizer."""
+        """Update x with one step of the optimizer.
 
+        Args:
+            objective_fn (function): the objective function for optimization.
+            x (array): NumPy array containing the weights.
+            grad_fn (function): Optional gradient function of the
+                objective function with respect to the weights ``x``.
+                If ``None``, the gradient function is computed automatically.
+
+        Returns:
+            array: the new weights :math:`x^{(t+1)}`.
+        """
         x_shape = x.shape
 
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
@@ -38,7 +59,18 @@ class GradientDescentOptimizer(object):
         return x_out
 
     def compute_grad(self, objective_fn, x, grad_fn=None):
-        """Compute gradient of objective_fn at the point x"""
+        r"""Compute gradient of the objective_fn at the point x.
+
+        Args:
+            objective_fn (function): the objective function for optimization.
+            x (array): NumPy array containing the weights.
+            grad_fn (function): Optional gradient function of the
+                objective function with respect to the weights ``x``.
+                If ``None``, the gradient function is computed automatically.
+
+        Returns:
+            array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`.
+        """
         if grad_fn is not None:
             g = grad_fn(x)  # just call the supplied grad function
         else:
@@ -46,5 +78,14 @@ class GradientDescentOptimizer(object):
         return g
 
     def apply_grad(self, grad, x):
-        """Update x to take a single optimization step"""
+        r"""Update the weights x to take a single optimization step.
+
+        Args:
+            grad (array): The gradient of the objective
+                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`.
+            x (array): the current value of the weights :math:`x^{(t)}`.
+
+        Returns:
+            array: the new weights :math:`x^{(t+1)}`.
+        """
         return x - self.stepsize * grad

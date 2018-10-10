@@ -8,7 +8,7 @@ Hybrid computation
 
 :html:`<br>`
 
-.. figure:: ./_static/hybrid_graph.svg
+.. figure:: ../_static/hybrid_graph.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);

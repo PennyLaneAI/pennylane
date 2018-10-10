@@ -23,7 +23,7 @@ The core of OpenQML is designed around four main concepts:
 
 :html:`<br>`
 
-.. figure:: ./_static/quantum_function.svg
+.. figure:: ../_static/quantum_function.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);
@@ -45,7 +45,7 @@ Evaluating qfuncs is inefficient on classical computers, so we might expect the 
 
 :html:`<br>`
 
-.. figure:: ./_static/quantum_gradient.svg
+.. figure:: ../_static/quantum_gradient.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);
@@ -66,7 +66,7 @@ This leads to the notion of a **quantum node**: a basic computational unit -- pr
 
 :html:`<br>`
 
-.. figure:: ./_static/quantum_node.svg
+.. figure:: ../_static/quantum_node.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);
@@ -84,7 +84,7 @@ In many proposed hybrid algorithms, quantum circuits are used to evaluate quantu
 
 :html:`<br>`
 
-.. figure:: ./_static/hybrid_graph.svg
+.. figure:: ../_static/hybrid_graph.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);

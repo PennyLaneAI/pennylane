@@ -24,7 +24,7 @@ How is this accomplished? It turns out that the gradient of a quantum function :
 
 :html:`<br>`
 
-.. figure:: ./_static/quantum_gradient.svg
+.. figure:: ../_static/quantum_gradient.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);
