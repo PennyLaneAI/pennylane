@@ -25,9 +25,9 @@ from .device import Device, DeviceError, QuantumFunctionError
 import openqml.operation
 from .ops import *
 import openqml.expectation
+from .optimize import *
 from .qfunc import qfunc
 from .qnode import QNode
-from .optimizer import Optimizer
 from ._version import __version__
 
 
