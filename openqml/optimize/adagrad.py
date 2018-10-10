@@ -20,22 +20,45 @@ from .gradient_descent import GradientDescentOptimizer
 
 
 class AdagradOptimizer(GradientDescentOptimizer):
-    """Gradient-descent optimizer with past-gradient-dependent
-    learning rate in each dimension."""
+    r"""Gradient-descent optimizer with past-gradient-dependent
+    learning rate in each dimension.
 
+    Adagrad adjusts the learning rate for each parameter :math:`x_i`
+    in :math:`x` based on past gradients. We therefore have to consider
+    each parameter update individually,
+
+    .. math::
+        x^{(t+1)}_i = x^{(t)}_i - \eta_i^{(t+1)} \partial_{w_i} f(x^{(t)}),
+
+    where the gradient was replaced by a (scalar) partial derivative.
+
+    The learning rate in step :math:`t` is given by
+
+    .. math::
+        \eta_i^{(t+1)} = \frac{ \eta_{\mathrm{init}} }{ \sqrt{a_i^{(t+1)} + \epsilon } },
+        ~~~ a_i^{(t+1)} = \sum_{k=1}^t (\partial_{x_i} f(x^{(k)}))^2.
+
+    The shift :math:`\epsilon` avoids division by zero and is set to
+    :math:`10^{-8}` by default.
+
+    :math:`\eta`: is the step size, a user defined parameter.
+
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta`.
+    """
     def __init__(self, stepsize=0.01):
         super().__init__(stepsize)
         self.accumulation = None
 
     def apply_grad(self, grad, x):
-        """Update x to take a single optimization step."""
+        # docstring is inherited from GradientDescentOptimizer
         if self.accumulation is None:
             self.accumulation = grad * grad
         else:
             self.accumulation += grad * grad
 
         # elementwise multiplication
-        return x - (self.stepsize / np.sqrt(self.accumulation + 1e-8)) * grad 
+        return x - (self.stepsize / np.sqrt(self.accumulation + 1e-8)) * grad
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

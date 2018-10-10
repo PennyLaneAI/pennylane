@@ -31,7 +31,7 @@ scanning the following three directories in order of preference:
 
 1. The current directory
 2. The path stored in the environment variable ``OPENQML_CONF``
-2. The default user configuration directory:
+3. The default user configuration directory:
 
    * On Linux: ``~/.config/openqml``
    * On Windows: ``~C:\Users\USERNAME\AppData\Local\Xanadu\openqml``
@@ -54,39 +54,48 @@ and has the following format:
 .. code-block:: toml
 
     [main]
+    # Global OpenQML options.
+    # Affects every loaded plugin if applicable.
     shots = 0
 
     [strawberryfields.global]
+    # Options for the Strawberry Fields plugin
     hbar = 1
     shots = 100
 
-        [strawberryfields.fock]
-        cutoff_dim = 10
-        hbar = 0.5
+      [strawberryfields.fock]
+      # Options for the Strawberry Fields Fock plugin
+      cutoff_dim = 10
+      hbar = 0.5
 
-        [strawberryfields.gaussian]
+      [strawberryfields.gaussian]
+      # Indentation doesn't matter in TOML files,
+      # but helps provide clarity.
 
     [projectq.global]
+    # Options for the Project Q plugin
 
-        [projectq.simulator]
-        gate_fusion = True
+      [projectq.simulator]
+      gate_fusion = true
 
-        [projectq.ibmbackend]
-        user = johnsmith
-        password = secret123
-        use_hardware = true
-        device = 'ibmqx4'
-        num_runs = 1024
+      [projectq.ibmbackend]
+      user = "johnsmith"
+      password = "secret123"
+      use_hardware = true
+      device = "ibmqx4"
+      num_runs = 1024
 
 Main OpenQML options, that are passed to all loaded devices, are provided under the ``[main]``
 section. Alternatively, options can be specified on a per-plugin basis, by setting the options under
-``[plugin.global]``. For example, in the above configuration file, the Strawberry Fields
+``[plugin.global]``.
+
+For example, in the above configuration file, the Strawberry Fields
 devices will be loaded with a default of ``shots = 100``, rather than ``shots = 0``. Finally,
 you can also specify settings on a device-by-device basis, by placing the options under the
 ``[plugin.device]`` settings.
 
-Methods
--------
+Summary of methods
+------------------
 
 .. currentmodule:: openqml.configuration.Configuration
 

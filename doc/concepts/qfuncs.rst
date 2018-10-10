@@ -20,7 +20,7 @@ The circuit formulation of a qfunc contains three ingredients:
 
 :html:`<br>`
 
-.. figure:: ./_static/quantum_function.svg
+.. figure:: ../_static/quantum_function.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);
@@ -41,7 +41,7 @@ Quantum information is turned back into classical information by evaluating the 
 
 :html:`<br>`
 
-.. figure:: ./_static/circuit_embedding.svg
+.. figure:: ../_static/circuit_embedding.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);

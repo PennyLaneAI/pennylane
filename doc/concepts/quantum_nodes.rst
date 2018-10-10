@@ -15,7 +15,7 @@ On the other hand, **quantum information** will refer to the state of a complex-
 
 :html:`<br>`
 
-.. figure:: ./_static/classical_quantum_info.svg
+.. figure:: ../_static/classical_quantum_info.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);
@@ -45,7 +45,7 @@ A quantum node is a computational encapsulation of a quantum function :math:`f(x
 
 :html:`<br>`
 
-.. figure:: ./_static/quantum_node.svg
+.. figure:: ../_static/quantum_node.svg
     :align: center
     :width: 70%
     :target: javascript:void(0);

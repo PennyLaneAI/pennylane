@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 Optimization methods
 ====================
 
@@ -19,17 +19,30 @@ Optimization methods
 
 .. currentmodule:: openqml.optimize
 
-.. todo:: Add more details here and in the optimizers docstrings.
-    Also, might we want to add more fine-grained section?
-    i.e., talk about 'base' optimizer classes, like GradientDescent,
-    followed by all inheriting classes?
+In openqml, a nuclear optimizer is a procedure that executes one weight
+update step along (some function of) the negative gradient of the cost.
+This update depends in general on:
 
-Available optimizers include:
+* The function :math:`f(x)`, from which we calculate a gradient :math:`\nabla f(x)`.
+  If :math:`x` is a vector, the gradient is also a vector whose entries are
+  the partial derivatives of :math:`f` with respect to the elements of :math:`x`.
+* The current weights :math:`x`.
+* The (initial) step size :math:`\eta`.
+
+The different optimizers can also depend on additional hyperparameters.
+
+In the following, recursive definitions assume that :math:`x^{(0)}` is some
+initial value in the optimization landscape, and all other step-dependent
+values are initialized to zero at :math:`t=0`.
+
+Available optimizers
+--------------------
 
 .. autosummary::
    AdagradOptimizer
    AdamOptimizer
    GradientDescentOptimizer
+   MomentumOptimizer
    NesterovMomentumOptimizer
    RMSPropOptimizer
 

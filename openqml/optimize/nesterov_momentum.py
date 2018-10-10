@@ -20,14 +20,40 @@ from .momentum import MomentumOptimizer
 
 
 class NesterovMomentumOptimizer(MomentumOptimizer):
-    """Gradient-descent optimizer with Nesterov momentum."""
+    r"""Gradient-descent optimizer with Nesterov momentum.
+
+    Nesterov Momentum works like the :class:`Momentum optimizer <.openqml.optimize.MomentumOptimizer>`,
+    but shifts the current input by the momentum term when computing the gradient of the cost:
+
+    .. math:: a^{(t+1)} = m a^{(t)} + \eta \nabla f(x^{(t)} - m a^{(t)}).
+
+    The user defined parameters are:
+
+    * :math:`\eta`: the step size
+    * :math:`m`: the momentum.
+
+    Args:
+        stepsize (float): user-defined hyperparameter :math:`\eta`.
+        momentum (float): user-defined hyperparameter :math:`m`.
+    """
 
     def __init__(self, stepsize=0.01, momentum=0.9):
         super().__init__(stepsize, momentum)
 
     def compute_grad(self, objective_fn, x, grad_fn=None):
-        """Compute gradient of objective_fn at the shifted point (x - momentum*accumulation) """
+        r"""Compute gradient of the objective_fn at at
+        the shifted point :math:`(x - m\times\text{accumulation})`.
 
+        Args:
+            objective_fn (function): the objective function for optimization.
+            x (array): NumPy array containing the weights.
+            grad_fn (function): Optional gradient function of the
+                objective function with respect to the weights ``x``.
+                If ``None``, the gradient function is computed automatically.
+
+        Returns:
+            array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`.
+        """
         if self.accumulation is None:
             shifted_x = x
         else:
