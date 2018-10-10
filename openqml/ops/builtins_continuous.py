@@ -178,7 +178,7 @@ class Beamsplitter(CVOperation):
     r"""Continuous-variable beamsplitter interaction.
 
     .. math::
-        B(\theta,\phi) = \exp\left(\theta (e^{i \phi} a^\dagger b -e^{-i \phi}a b^\dagger) \right)
+        B(\theta,\phi) = \exp\left(\theta (e^{i \phi} a b^\dagger -e^{-i \phi}a^\dagger b) \right)
 
     Args:
         theta (float): Transmittivity angle :math:`\theta`. The transmission amplitude

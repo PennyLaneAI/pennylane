@@ -1300,31 +1300,31 @@ We also obtain
 
 
 
-\subsubsection{Beamsplitter: $B(\theta, \phi) = e^{\theta (e^{i\phi} a_1^\dagger a_2 -e^{-i\phi} a_1 a_2^\dagger)}$}
+\subsubsection{Beamsplitter: $B(\theta, \phi) = e^{\theta (e^{i\phi} a_1 a_2^\dagger -e^{-i\phi} a_1^\dagger a_2)}$}
 
 Conjugation by two-mode gaussian gates maps
 $\Span\{\I, x_1, p_1, x_2, p_2\}$ to itself.
 
 Since
-$B(\theta, \phi) = R_1(\phi) B(\theta, 0) R_1^\dagger(\phi)$,
+$B(\theta, \phi) = R_1^\dagger(\phi) B(\theta, 0) R_1(\phi)$,
 we have
 \begin{align*}
 \Admap{B}(\theta, \phi) &=
-\Admap{R_1}(\phi)
+\Admap{R_1}^\dagger(\phi)
 \begin{pmatrix}
   1 & 0 & 0 & 0 & 0\\
-  0 & \block(4,4){\hat{R}(-\theta)\otimes \I_2}\\
+  0 & \block(4,4){\hat{R}(\theta)\otimes \I_2}\\
   0 & & & &\\
   0 & & & &\\
   0 & & & &
 \end{pmatrix}
-\Admap{R_1}^\dagger(\phi)\\
+\Admap{R_1}(\phi)\\
 &=
 \begin{pmatrix}
   1 & 0 & 0 & 0 & 0\\
-  0 & \block(2,2){\cos(\theta)\I_2} & \block(2,2){\sin(\theta)\hat{R}(\phi)}\\
+  0 & \block(2,2){\cos(\theta)\I_2} & \block(2,2){-\sin(\theta)\hat{R}^\dagger(\phi)}\\
   0\\
-  0 & \block(2,2){-\sin(\theta)\hat{R}^\dagger(\phi)} & \block(2,2){\cos(\theta)\I_2}\\
+  0 & \block(2,2){\sin(\theta)\hat{R}(\phi)} & \block(2,2){\cos(\theta)\I_2}\\
   0
 \end{pmatrix},
 \end{align*}
@@ -1343,20 +1343,20 @@ Now we obtain
 \begin{align*}
 \pd{}{\theta} \Admap{B}(\theta, \phi)
 &=
-\Admap{R_1}(\phi)
+\Admap{R_1}(-\phi)
 \begin{pmatrix}
   0 & 0 & 0 & 0 & 0\\
   0 & \block(4,4){
     \begin{pmatrix}
-      -\sin(\theta) & \cos(\theta) \\
-      -\cos(\theta) & -\sin(\theta)
+      -\sin(\theta) & -\cos(\theta) \\
+      \cos(\theta) & -\sin(\theta)
     \end{pmatrix} \otimes \I_2
   }\\
   0 & & & &\\
   0 & & & &\\
   0 & & & &
 \end{pmatrix}
-\Admap{R_1}(-\phi)\\
+\Admap{R_1}(\phi)\\
 &=
 \frac{1}{2}(\Admap{B}(\theta+\pi/2, \phi)
 -\Admap{B}(\theta-\pi/2, \phi)),
@@ -1367,9 +1367,9 @@ and
 &=
 \begin{pmatrix}
   0 & 0 & 0 & 0 & 0\\
-  0 & \block(2,2){0} & \block(2,2){\sin(\theta)\partial_\phi\hat{R}(\phi)}\\
+  0 & \block(2,2){0} & \block(2,2){-\sin(\theta)\partial_\phi\hat{R}^\dagger(\phi)}\\
   0\\
-  0 & \block(2,2){-\sin(\theta)\partial_\phi\hat{R}^\dagger(\phi)} & \block(2,2){0}\\
+  0 & \block(2,2){\sin(\theta)\partial_\phi\hat{R}(\phi)} & \block(2,2){0}\\
   0
 \end{pmatrix}\\
 &=
