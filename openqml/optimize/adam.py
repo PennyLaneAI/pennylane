@@ -13,7 +13,6 @@
 # limitations under the License.
 """Adam optimizer"""
 
-import autograd
 import autograd.numpy as np
 
 from .gradient_descent import GradientDescentOptimizer
@@ -85,7 +84,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         return x_new
 
     def reset(self):
-        # docstring is inherited from GradientDescentOptimizer
+        """Reset optimizer by erasing memory of past steps."""
         self.firstmoment = None
         self.secondmoment = None
         self.t = 0

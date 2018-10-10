@@ -14,7 +14,6 @@
 """Gradient descent optimizer"""
 
 import autograd
-import autograd.numpy as np
 
 
 class GradientDescentOptimizer(object):
@@ -58,7 +57,8 @@ class GradientDescentOptimizer(object):
 
         return x_out
 
-    def compute_grad(self, objective_fn, x, grad_fn=None):
+    @staticmethod
+    def compute_grad(objective_fn, x, grad_fn=None):
         r"""Compute gradient of the objective_fn at the point x.
 
         Args:
@@ -74,7 +74,8 @@ class GradientDescentOptimizer(object):
         if grad_fn is not None:
             g = grad_fn(x)  # just call the supplied grad function
         else:
-            g = autograd.grad(objective_fn)(x)  # default is autograd
+            # default is autograd
+            g = autograd.grad(objective_fn)(x) # pylint: disable=no-value-for-parameter
         return g
 
     def apply_grad(self, grad, x):

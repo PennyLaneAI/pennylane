@@ -13,7 +13,6 @@
 # limitations under the License.
 """Root mean square propagation optimizer"""
 
-import autograd
 import autograd.numpy as np
 
 from .adagrad import AdagradOptimizer

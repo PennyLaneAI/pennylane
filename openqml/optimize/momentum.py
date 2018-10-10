@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Momentum optimizer"""
-
-import autograd
-import autograd.numpy as np
-
 from .gradient_descent import GradientDescentOptimizer
 
 
