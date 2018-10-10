@@ -66,11 +66,11 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :caption: API
    :hidden:
 
-   code
+   API/init
    API/configuration
    API/optimize
    API/qnode
-   API/qfunc.rst
+   API/qfunc
    API/operation
    API/variable
 

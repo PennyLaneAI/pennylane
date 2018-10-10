@@ -14,7 +14,6 @@
 """Nesterov momentum optimizer"""
 
 import autograd
-import autograd.numpy as np
 
 from .momentum import MomentumOptimizer
 
@@ -36,10 +35,6 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         stepsize (float): user-defined hyperparameter :math:`\eta`.
         momentum (float): user-defined hyperparameter :math:`m`.
     """
-
-    def __init__(self, stepsize=0.01, momentum=0.9):
-        super().__init__(stepsize, momentum)
-
     def compute_grad(self, objective_fn, x, grad_fn=None):
         r"""Compute gradient of the objective_fn at at
         the shifted point :math:`(x - m\times\text{accumulation})`.
@@ -62,5 +57,6 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         if grad_fn is not None:
             g = grad_fn(shifted_x)  # just call the supplied grad function
         else:
-            g = autograd.grad(objective_fn)(shifted_x)  # default is autograd
+            # default is autograd
+            g = autograd.grad(objective_fn)(shifted_x) # pylint: disable=no-value-for-parameter
         return g

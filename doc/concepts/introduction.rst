@@ -18,8 +18,8 @@ The core of OpenQML is designed around four main concepts:
 
 4. **Hybrid computation**: a computing model which seamlessly integrates both classical and quantum nodes
 
-:ref:`qfuncs`
--------------
+Quantum functions
+-----------------
 
 :html:`<br>`
 
@@ -36,8 +36,10 @@ The primary motivation for building quantum computers is that they should be abl
 
 .. note:: For a function :math:`f(x; \bm{\theta})`, :math:`x` is considered to be the function's input and :math:`\bm{\theta}` are parameters which determine the exact form of :math:`f`.
 
-:ref:`autograd_quantum`
------------------------
+.. seealso:: See the main :ref:`qfuncs` page for more details.
+
+Quantum gradients
+-----------------
 
 A core element of modern machine learning libraries is the automatic computation of analytic gradients. OpenQML extends this key feature to quantum functions.
 
@@ -56,9 +58,10 @@ Evaluating qfuncs is inefficient on classical computers, so we might expect the 
 
 We can thus **use the same quantum device** to compute both quantum functions and also gradients of quantum functions. This is accomplished with minor assistance of a classical coprocessor, which combines the terms. 
 
+.. seealso:: See the main :ref:`autograd_quantum` page for more details.
 
-:ref:`quantum_nodes`
---------------------
+Quantum nodes
+-------------
 
 Quantum information is fragile -- especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations? 
 
@@ -77,8 +80,10 @@ This leads to the notion of a **quantum node**: a basic computational unit -- pr
 
 To a classical device, a quantum node is a black box which can evaluate functions. A quantum device, however, resolves the finer details of the circuit.
 
-:ref:`hybrid_computation`
---------------------------
+.. seealso:: See the main :ref:`quantum_nodes` page for more details.
+
+Hybrid computation
+------------------
 
 In many proposed hybrid algorithms, quantum circuits are used to evaluate quantum functions, and a classical co-processor is used primarily to post-process circuit outputs. But why should the division of labour be so regimented? 
 
@@ -94,3 +99,5 @@ In many proposed hybrid algorithms, quantum circuits are used to evaluate quantu
 :html:`<br>`
 
 In a **true hybrid** computational model, both the classical and the quantum devices are responsible for arbitrary parts of an overall computation, subject to the rules of quantum nodes. This allows quantum and classical devices to be used jointly, each forming an integral and inseparable part of a larger computation.
+
+.. seealso:: See the main :ref:`hybrid_computation` page for more details.

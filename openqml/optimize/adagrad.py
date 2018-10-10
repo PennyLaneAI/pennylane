@@ -13,7 +13,6 @@
 # limitations under the License.
 """Adagrad optimizer"""
 
-import autograd
 import autograd.numpy as np
 
 from .gradient_descent import GradientDescentOptimizer
