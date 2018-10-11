@@ -30,11 +30,11 @@ class MomentumOptimizer(GradientDescentOptimizer):
     with user defined parameters:
 
     * :math:`\eta`: the step size
-    * :math:`m`: the momentum.
+    * :math:`m`: the momentum
 
     Args:
-        stepsize (float): user-defined hyperparameter :math:`\eta`.
-        momentum (float): user-defined hyperparameter :math:`m`.
+        stepsize (float): user-defined hyperparameter :math:`\eta`
+        momentum (float): user-defined hyperparameter :math:`m`
     """
     def __init__(self, stepsize=0.01, momentum=0.9):
         super().__init__(stepsize)
