@@ -113,7 +113,7 @@ class BasicTest(BaseTest):
         using user-provided gradients."""
         log.info('test_gradient_descent_optimizer_usergrad')
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
+        for gradf, f, name in zip(self.grad_uni_fns[::-1], self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
                 for x_start in x_vals:
                     x_new = self.sgd_opt.step(f, x_start, grad_fn=gradf)
@@ -205,7 +205,7 @@ class BasicTest(BaseTest):
         using user-provided gradients."""
         log.info('test_nesterovmomentum_optimizer_usergrad')
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
+        for gradf, f, name in zip(self.grad_uni_fns[::-1], self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
                 for x_start in x_vals:
                     self.nesmom_opt.reset()
