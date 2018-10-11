@@ -36,8 +36,8 @@ class RMSPropOptimizer(AdagradOptimizer):
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
-            used in the Adagrad optmization.
-        gamma (float): the learning rate decay.
+            used in the Adagrad optmization
+        gamma (float): the learning rate decay
     """
     def __init__(self, stepsize=0.01, decay=0.9):
         super().__init__(stepsize)
