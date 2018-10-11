@@ -14,20 +14,41 @@
 """Nesterov momentum optimizer"""
 
 import autograd
-import autograd.numpy as np
 
 from .momentum import MomentumOptimizer
 
 
 class NesterovMomentumOptimizer(MomentumOptimizer):
-    """Gradient-descent optimizer with Nesterov momentum."""
+    r"""Gradient-descent optimizer with Nesterov momentum.
 
-    def __init__(self, stepsize=0.01, momentum=0.9):
-        super().__init__(stepsize, momentum)
+    Nesterov Momentum works like the :class:`Momentum optimizer <.openqml.optimize.MomentumOptimizer>`,
+    but shifts the current input by the momentum term when computing the gradient of the cost:
 
+    .. math:: a^{(t+1)} = m a^{(t)} + \eta \nabla f(x^{(t)} - m a^{(t)}).
+
+    The user defined parameters are:
+
+    * :math:`\eta`: the step size
+    * :math:`m`: the momentum
+
+    Args:
+        stepsize (float): user-defined hyperparameter :math:`\eta`
+        momentum (float): user-defined hyperparameter :math:`m`
+    """
     def compute_grad(self, objective_fn, x, grad_fn=None):
-        """Compute gradient of objective_fn at the shifted point (x - momentum*accumulation) """
+        r"""Compute gradient of the objective_fn at at
+        the shifted point :math:`(x - m\times\text{accumulation})`.
 
+        Args:
+            objective_fn (function): the objective function for optimization
+            x (array): NumPy array containing the weights
+            grad_fn (function): Optional gradient function of the
+                objective function with respect to the weights ``x``.
+                If ``None``, the gradient function is computed automatically.
+
+        Returns:
+            array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`
+        """
         if self.accumulation is None:
             shifted_x = x
         else:
@@ -36,5 +57,6 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         if grad_fn is not None:
             g = grad_fn(shifted_x)  # just call the supplied grad function
         else:
-            g = autograd.grad(objective_fn)(shifted_x)  # default is autograd
+            # default is autograd
+            g = autograd.grad(objective_fn)(shifted_x) # pylint: disable=no-value-for-parameter
         return g

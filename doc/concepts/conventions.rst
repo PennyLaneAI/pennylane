@@ -24,7 +24,6 @@ In this section, we provide formal definitions of conecpts used in openqml.
    :maxdepth: 2
 
    conventions/measurements
-   conventions/optimizers
 
 .. math:: \rho_{A}' = \sum_k p_{A_k} \rho_{A_k}' = \sum_k A_k \rho A_k^\dagger.
 
