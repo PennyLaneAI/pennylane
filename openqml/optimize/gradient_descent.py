@@ -14,7 +14,6 @@
 """Gradient descent optimizer"""
 
 import autograd
-import autograd.numpy as np
 
 
 class GradientDescentOptimizer(object):
@@ -26,12 +25,7 @@ class GradientDescentOptimizer(object):
     def step(self, objective_fn, x, grad_fn=None):
         """Update x with one step of the optimizer."""
 
-        x_shape = x.shape
-
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
-
-        if len(x_shape) > 1:  # reshape gradient after grad() flattened it
-            g = g.reshape(x_shape)
 
         x_out = self.apply_grad(g, x)
 
