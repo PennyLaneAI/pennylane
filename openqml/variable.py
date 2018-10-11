@@ -35,12 +35,6 @@ import collections
 import numpy as np
 
 
-def _get_nested(seq, t):
-    """Multidimensional sequence indexing"""
-    if len(t) > 1:
-        return get_nested(seq[t[0]], t[1:])
-    return seq[t[0]]
-
 class Variable:
     """Free parameter reference.
 
