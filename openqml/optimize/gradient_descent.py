@@ -46,12 +46,8 @@ class GradientDescentOptimizer(object):
         Returns:
             array: the new weights :math:`x^{(t+1)}`
         """
-        x_shape = x.shape
 
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
-
-        if len(x_shape) > 1:  # reshape gradient after grad() flattened it
-            g = g.reshape(x_shape)
 
         x_out = self.apply_grad(g, x)
 
