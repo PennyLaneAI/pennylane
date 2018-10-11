@@ -18,6 +18,8 @@ Default qubit plugin
 
 **Module name:** :mod:`openqml.plugins.default`
 
+**Short name:** ``"default.qubit"``
+
 .. currentmodule:: openqml.plugins.default
 
 The default plugin is meant to be used as a template for writing OpenQML device plugins for new backends.
