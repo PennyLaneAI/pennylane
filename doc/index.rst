@@ -52,12 +52,12 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :caption: Key concepts
    :hidden:
 
-   introduction
-   qfuncs
-   autograd_quantum
-   quantum_nodes
-   hybrid_computation
-   conventions
+   concepts/introduction
+   concepts/qfuncs
+   concepts/autograd_quantum
+   concepts/quantum_nodes
+   concepts/hybrid_computation
+   concepts/conventions
    references
 
 
@@ -66,19 +66,29 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :caption: API
    :hidden:
 
-   optimize
-   qnode
-   operation
-   variable
-
+   API/init
+   API/configuration
+   API/optimize
+   API/qnode
+   API/qfunc
+   API/operation
+   API/variable
 
 .. toctree::
    :maxdepth: 1
-   :caption: Plugins
+   :caption: Supported operations
    :hidden:
 
-   device
-   plugins/included_plugins
+   API/ops
+   API/expectation
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Plugin API
+   :hidden:
+
+   plugins/device
+   plugins/default
 
 
 Indices and tables
