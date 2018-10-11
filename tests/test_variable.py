@@ -25,7 +25,7 @@ from defaults import openqml, BaseTest
 from openqml.variable import Variable
 
 class BasicTest(BaseTest):
-    """Utility class tests."""
+    """Variable class tests."""
     def test_variable(self):
         "Variable reference tests."
         n = 10
@@ -59,7 +59,7 @@ class BasicTest(BaseTest):
         check(par_fixed, par_fixed)
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', utility classes.')
+    print('Testing OpenQML version ' + openqml.version() + ', Variable class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,):
