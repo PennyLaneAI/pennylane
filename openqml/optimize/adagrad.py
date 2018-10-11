@@ -43,7 +43,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
     :math:`\eta`: is the step size, a user defined parameter.
 
     Args:
-        stepsize (float): the user-defined hyperparameter :math:`\eta`.
+        stepsize (float): the user-defined hyperparameter :math:`\eta`
     """
     def __init__(self, stepsize=0.01):
         super().__init__(stepsize)
