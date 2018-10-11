@@ -29,25 +29,25 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     The user defined parameters are:
 
     * :math:`\eta`: the step size
-    * :math:`m`: the momentum.
+    * :math:`m`: the momentum
 
     Args:
-        stepsize (float): user-defined hyperparameter :math:`\eta`.
-        momentum (float): user-defined hyperparameter :math:`m`.
+        stepsize (float): user-defined hyperparameter :math:`\eta`
+        momentum (float): user-defined hyperparameter :math:`m`
     """
     def compute_grad(self, objective_fn, x, grad_fn=None):
         r"""Compute gradient of the objective_fn at at
         the shifted point :math:`(x - m\times\text{accumulation})`.
 
         Args:
-            objective_fn (function): the objective function for optimization.
-            x (array): NumPy array containing the weights.
+            objective_fn (function): the objective function for optimization
+            x (array): NumPy array containing the weights
             grad_fn (function): Optional gradient function of the
                 objective function with respect to the weights ``x``.
                 If ``None``, the gradient function is computed automatically.
 
         Returns:
-            array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`.
+            array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`
         """
         if self.accumulation is None:
             shifted_x = x
