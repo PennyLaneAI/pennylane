@@ -22,12 +22,12 @@ log.getLogger()
 from defaults import openqml as qm, BaseTest
 
 from openqml import numpy as np
-from openqml._optimize import (GradientDescentOptimizer,
-                               MomentumOptimizer,
-                               NesterovMomentumOptimizer,
-                               AdagradOptimizer,
-                               RMSPropOptimizer,
-                               AdamOptimizer)
+from openqml.optimize import (GradientDescentOptimizer,
+                              MomentumOptimizer,
+                              NesterovMomentumOptimizer,
+                              AdagradOptimizer,
+                              RMSPropOptimizer,
+                              AdamOptimizer)
 
 x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
