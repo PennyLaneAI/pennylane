@@ -47,9 +47,9 @@ class AdamOptimizer(GradientDescentOptimizer):
     .. todo:: add the arxiv paper to the reference list.
 
     Args:
-        stepsize (float): the user-defined hyperparameter :math:`\eta`.
-        beta1 (float): hyperparameter governing the update of the first and second moment.
-        beta2 (float): hyperparameter governing the update of the first and second moment.
+        stepsize (float): the user-defined hyperparameter :math:`\eta`
+        beta1 (float): hyperparameter governing the update of the first and second moment
+        beta2 (float): hyperparameter governing the update of the first and second moment
     """
     def __init__(self, stepsize=0.01, beta1=0.9, beta2=0.99):
         super().__init__(stepsize)
