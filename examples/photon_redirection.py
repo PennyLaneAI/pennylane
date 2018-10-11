@@ -6,9 +6,10 @@ to redirect a photon from the first to the second mode.
 
 import openqml as qm
 from openqml import numpy as np
-from openqml._optimize import GradientDescentOptimizer
+from openqml.optimize import GradientDescentOptimizer
 
-dev = qm.device('strawberryfields.fock', wires=2, cutoff_dim=10)
+#TODO: default CV
+dev = qm.device('default.cv', wires=2, cutoff_dim=10)
 
 
 @qm.qfunc(dev)
@@ -17,7 +18,7 @@ def circuit(weights):
     qm.FockState(1, [0])
     qm.Beamsplitter(weights[0], weights[1], [0, 1])
 
-    return qm.expectation.Fock(1)
+    return qm.expectation.PhotonNumber(1)
 
 
 def objective(weights):
