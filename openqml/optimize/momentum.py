@@ -25,7 +25,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
 
     The accumulator term :math:`a` is updated as follows:
 
-    .. math:: a^{(t+1)} = m a^{(t)} + \eta \nabla f(x^{(t)}).
+    .. math:: a^{(t+1)} = m a^{(t)} + \eta \nabla f(x^{(t)}),
 
     with user defined parameters:
 
