@@ -5,6 +5,16 @@
 
 Hybrid computation
 ==================
+:html:`<br>`
+
+.. figure:: ./_static/simple_hybrid_graph.svg
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+    An 'true hybrid' quantum-classical computational graph.
+
+:html:`<br>`
 
 :html:`<br>`
 
