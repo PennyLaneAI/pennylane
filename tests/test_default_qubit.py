@@ -198,7 +198,7 @@ class TestDefaultQubitDevice(BaseTest):
         self.assertEqual(set(qm.ops.builtins_discrete.__all__), set(self.dev._operator_map))
 
     def test_observable_map(self):
-        """Test that default qubit device supports all OpenQML expectations."""
+        """Test that default qubit device supports all OpenQML discrete expectations."""
         log.info("test_observable_map")
 
         self.assertEqual(set(qm.expectation.builtins_discrete.__all__), set(self.dev._observable_map))
@@ -263,7 +263,7 @@ class TestDefaultQubitDevice(BaseTest):
         with self.assertRaisesRegex(ValueError, "4x4 matrix required"):
             dev.expand_two(U, [0])
 
-        # test exception raised if not two subsystems provided
+        # test exception raised if two subsystems are not provided
         with self.assertRaisesRegex(ValueError, "Two target subsystems required"):
             dev.expand_two(U2, [0])
 
