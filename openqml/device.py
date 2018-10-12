@@ -28,8 +28,8 @@ Classes
 .. autosummary::
    Device
 
-Device methods
---------------
+Device attributes and methods
+-----------------------------
 
 .. currentmodule:: openqml.device.Device
 
@@ -42,8 +42,8 @@ Device methods
    execute
    reset
 
-Internal Device methods
------------------------
+Internal Device attributes and methods
+--------------------------------------
 
 .. autosummary::
    _operator_map

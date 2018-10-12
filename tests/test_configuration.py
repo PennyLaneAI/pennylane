@@ -154,7 +154,7 @@ class BasicTest(BaseTest):
 
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', configuration class.')
+    print('Testing OpenQML version ' + openqml.version() + ', Configuration class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,):
