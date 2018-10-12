@@ -314,7 +314,7 @@ class BasicTest(BaseTest):
 
     def test_array_parameters_evaluate(self):
         "Test that array parameters gives same result as positional arguments."
-        log.info('test_array_parameters')
+        log.info('test_array_parameters_evaluate')
 
         a, b, c = 0.5, 0.54, 0.3
 
