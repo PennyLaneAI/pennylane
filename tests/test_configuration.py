@@ -14,22 +14,22 @@
 """
 Unit tests for the :mod:`openqml` configuration classe :class:`Configuration`.
 """
+# pylint: disable=protected-access
 import unittest
 import os
 import logging as log
-log.getLogger()
-
-import numpy as np
-import numpy.random as nr
 
 import toml
 
 from defaults import openqml, BaseTest
 from openqml import Configuration
 
+log.getLogger()
+
 
 filename = 'default_config.toml'
 expected_config = toml.load(filename)
+
 
 class BasicTest(BaseTest):
     """Configuration class tests."""
@@ -76,7 +76,7 @@ class BasicTest(BaseTest):
         log.info("test_not_found_warning")
 
         with self.assertLogs(level='WARNING') as l:
-            config = Configuration()
+            Configuration()
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
             self.assertIn('No OpenQML configuration file found.', l.output[0])
