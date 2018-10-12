@@ -244,8 +244,8 @@ class BasicTest(BaseTest):
 
         # analytic method works for every parameter
         self.assertTrue(q.grad_method_for_par == {0:'A', 1:'A', 2:'A'})
-        # gradient has the correct length and every element is nonzero
-        self.assertEqual(len(grad_A), 3)
+        # gradient has the correct shape and every element is nonzero
+        self.assertEqual(grad_A.shape, (1,3))
         self.assertEqual(np.count_nonzero(grad_A), 3)
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
@@ -311,6 +311,45 @@ class BasicTest(BaseTest):
                 final_state = (Rx @ Rz @ Rx @ zero_state)
                 y_true = expZ(final_state)
                 self.assertAlmostEqual(y_eval, y_true, delta=self.tol)
+
+
+    def test_qnode_array_parameters(self):
+        """Test that QNode can take arrays as input arguments, and that they interact properly with autograd."""
+        log.info('test_qnode_array_parameters')
+
+        @qm.qfunc(self.dev1)
+        def circuit_n1s(dummy1, array, dummy2):
+            qm.RY(0.5 * array[0,1], 0)
+            qm.RY(-0.5 * array[1,1], 0)
+            return qm.expectation.PauliX(0)  # returns a scalar
+
+        @qm.qfunc(self.dev1)
+        def circuit_n1v(dummy1, array, dummy2):
+            qm.RY(0.5 * array[0,1], 0)
+            qm.RY(-0.5 * array[1,1], 0)
+            return qm.expectation.PauliX(0),  # note the comma, returns a 1-vector
+
+        @qm.qfunc(self.dev2)
+        def circuit_nn(dummy1, array, dummy2):
+            qm.RY(0.5 * array[0,1], 0)
+            qm.RY(-0.5 * array[1,1], 0)
+            qm.RY(array[1,0], 1)
+            return qm.expectation.PauliX(0), qm.expectation.PauliX(1)  # returns a 2-vector
+
+        args = (0.46, np.array([[2., 3., 0.3], [7., 4., 2.1]]), -0.13)
+        grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
+        cost_target = 1.03257
+        for circuit in [circuit_n1s, circuit_n1v, circuit_nn]:
+            def cost(x, array, y):
+                c = circuit(0.111, array, 4.5)
+                if not np.isscalar(c):
+                    c = c[0]  # get a scalar
+                return c +0.5*array[0,0] +x -0.4*y
+
+            cost_grad = autograd.grad(cost, argnum=[0, 1, 2])
+            self.assertAllAlmostEqual(cost(*args), cost_target, delta=self.tol)
+            self.assertAllAlmostEqual(cost_grad(*args), grad_target, delta=self.tol)
+
 
     def test_array_parameters_evaluate(self):
         "Test that array parameters gives same result as positional arguments."
@@ -488,6 +527,8 @@ class BasicTest(BaseTest):
         jac = autograd.jacobian(circuit, 0)
         res = jac(np.array([a, b, c]))
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
+
+
 
 
 if __name__ == '__main__':
