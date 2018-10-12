@@ -45,41 +45,6 @@ from .qnode import _flatten, _unflatten, QNode, QuantumFunctionError
 from .variable import Variable
 
 
-# get a list of installed operations
-plugin_operations  = {entry.name: entry.load() for entry in iter_entry_points('openqml.ops')}
-plugin_expectation = {entry.name: entry.load() for entry in iter_entry_points('openqml.expectation')}
-
-
-class OperationFactory(type):
-    """Metaclass that allows derived classes to dynamically instantiate
-    new operations as loaded from plugins.
-
-    .. note:: Currently unused.
-    """
-    def __getattr__(cls, name):
-        """Get the attribute call via name"""
-        if name not in plugin_operations:
-            raise DeviceError("Operation {} not installed. Please install "
-                              "the plugin that provides it.".format(name))
-
-        return plugin_operations[name]
-
-
-class ExpectationFactory(type):
-    """Metaclass that allows derived classes to dynamically instantiate
-    new expectations as loaded from plugins.
-
-    .. note:: Currently unused.
-    """
-    def __getattr__(cls, name):
-        """Get the attribute call via name"""
-        if name not in plugin_expectation:
-            raise DeviceError("Expectation {} not installed. Please install "
-                              "the plugin that provides it.".format(name))
-
-        return plugin_expectation[name]
-
-
 class Operation:
     r"""Base class for quantum operation supported by a device.
 

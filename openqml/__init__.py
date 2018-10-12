@@ -79,13 +79,14 @@ def device(name, *args, **kwargs):
             options.update(config[name.split('.')[0]+'.global'])
             options.update(config[name])
 
+        kwargs.pop("config", None)
         options.update(kwargs)
 
         # load plugin device
         p = plugin_devices[name].load()(*args, **options)
 
         if p.api_version != __version__:
-            log.warning('Plugin API version {} does not match OpenQML version {}.'.format(p.plugin_api_version, temp))
+            log.warning('Plugin API version {} does not match OpenQML version {}.'.format(p.api_version, __version__))
 
         return p
     else:
