@@ -25,7 +25,7 @@ from autograd import numpy as np
 from defaults import openqml as qm, BaseTest
 
 from openqml.qnode import _flatten
-from openqml.plugins.default import CNOT, frx, fry, frz, I, Y, Z
+from openqml.plugins.default_qubit import CNOT, frx, fry, frz, I, Y, Z
 from openqml.device import QuantumFunctionError, DeviceError
 
 
