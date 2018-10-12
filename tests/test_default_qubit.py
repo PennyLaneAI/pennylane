@@ -352,7 +352,7 @@ class TestDefaultQubitDevice(BaseTest):
                 elif op.n_wires == 2:
                     expected_out = O @ self.dev._state
 
-            self.dev.apply(gate_name, wires=w, params=p)
+            self.dev.apply(gate_name, wires=w, par=p)
 
             # verify the device is now in the expected state
             self.assertAllAlmostEqual(self.dev._state, expected_out, delta=self.tol)
@@ -363,13 +363,13 @@ class TestDefaultQubitDevice(BaseTest):
 
         with self.assertRaisesRegex(ValueError, r'State vector must be of length 2\*\*wires.'):
             p = [np.array([1, 0, 1, 1, 1])/np.sqrt(3)]
-            self.dev.apply('QubitStateVector', wires=[0, 1], params=[p])
+            self.dev.apply('QubitStateVector', wires=[0, 1], par=[p])
 
         with self.assertRaisesRegex(ValueError, "basis state must be a positive integer"):
-            self.dev.apply('BasisState', wires=[0, 1], params=[2.5])
+            self.dev.apply('BasisState', wires=[0, 1], par=[2.5])
 
         with self.assertRaisesRegex(ValueError, "This plugin supports only one- and two-qubit gates."):
-            self.dev.apply('QubitUnitary', wires=[0, 1, 2], params=[U2])
+            self.dev.apply('QubitUnitary', wires=[0, 1, 2], par=[U2])
 
     def test_ev(self):
         """Test that expectation values are calculated correctly"""
