@@ -72,7 +72,7 @@ class BaseTest(unittest.TestCase):
             # check each element of the tuple separately (needed for when the tuple elements are themselves batches)
             if np.all([np.all(first[idx] == second[idx]) for idx, _ in enumerate(first)]):
                 return
-            if np.all([np.all(np.abs(first[idx] - second[idx])) <= delta for idx, _ in enumerate(first)]):
+            if np.all([np.all(np.abs(first[idx] - second[idx]) <= delta) for idx, _ in enumerate(first)]):
                 return
         else:
             if np.all(first == second):
