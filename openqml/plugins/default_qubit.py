@@ -16,14 +16,17 @@
 Default qubit plugin
 ====================
 
-**Module name:** :mod:`openqml.plugins.default`
+**Module name:** :mod:`openqml.plugins.default_qubit`
 
 **Short name:** ``"default.qubit"``
 
-.. currentmodule:: openqml.plugins.default
+.. currentmodule:: openqml.plugins.default_qubit
 
-The default plugin is meant to be used as a template for writing OpenQML device plugins for new backends.
-It implements all the :class:`~openqml.device.Device` methods and provides a very simple pure state
+The default plugin is meant to be used as a template for writing OpenQML device
+plugins for new backends.
+
+It implements all the :class:`~openqml.device.Device` methods as well as all built-in
+discrete-variable gates and observables, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 
 Functions

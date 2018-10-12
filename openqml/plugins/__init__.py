@@ -12,4 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Top level OpenQML module"""
-from .default import DefaultQubit
+from .default_qubit import DefaultQubit
+from .default_gaussian import DefaultGaussian

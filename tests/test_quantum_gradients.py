@@ -23,7 +23,7 @@ import autograd
 import autograd.numpy as np
 
 from defaults import openqml as qm, BaseTest
-from openqml.plugins.default import frx as Rx, fry as Ry, frz as Rz
+from openqml.plugins.default_qubit import frx as Rx, fry as Ry, frz as Rz
 
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
@@ -40,7 +40,7 @@ class QuadratureGradientTest(BaseTest):
         self.fock_dev1 = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=25)
         self.fock_dev1s = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=60) # squeezing tests are highly sensitive to low cutoffs
         self.fock_dev2 = qm.device('strawberryfields.fock', wires=2, hbar=hbar, cutoff_dim=10)
-        self.gaussian_dev = qm.device('strawberryfields.gaussian', wires=2)
+        self.gaussian_dev = qm.device('default.gaussian', wires=2)
         #TODO: check all tests for both gaussian and fock backends?
 
     def test_rotation_gradient(self):
