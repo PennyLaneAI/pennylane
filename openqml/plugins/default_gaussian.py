@@ -13,49 +13,69 @@
 # limitations under the License.
 
 """
-Default qubit plugin
-====================
+Default Gaussian plugin
+=======================
 
-**Module name:** :mod:`openqml.plugins.default`
+**Module name:** :mod:`openqml.plugins.default_gaussian`
 
-**Short name:** ``"default.qubit"``
+**Short name:** ``"default.gaussian"``
 
-.. currentmodule:: openqml.plugins.default
+.. currentmodule:: openqml.plugins.default_gaussian
 
-The default plugin is meant to be used as a template for writing OpenQML device plugins for new backends.
-It implements all the :class:`~openqml.device.Device` methods and provides a very simple pure state
-simulation of a qubit-based quantum circuit architecture.
+The default plugin is meant to be used as a template for writing CV OpenQML
+device plugins for new backends.
 
-Functions
----------
+It implements all the :class:`~openqml.device.Device` methods as well as all built-in
+continuous-variable Gaussian gates and observables, and provides
+a very simple simulation of a Gaussian-based quantum circuit architecture.
+
+Auxillary functions
+-------------------
 
 .. autosummary::
-   spectral_decomposition_qubit
-   frx
-   fry
-   frz
-   fr3
-   ket
-   unitary
-   hermitian
+   rotation_matrix
+   changebasis
+
+Gates and operations
+--------------------
+
+.. autosummary::
+    rotation
+    squeezing
+    quadratic_phase
+    beamsplitter
+    two_mode_squeezing
+    controlled_addition
+    controlled_phase
+
+State preparation
+-----------------
+
+.. autosummary::
+    squeezed_cov
+    vacuum_state
+    coherent_state
+    squeezed_state
+    displaced_squeezed_state
+    thermal_state
 
 Classes
 -------
 
 .. autosummary::
-   DefaultQubit
+   DefaultGaussian
 
 ----
 """
+# pylint: disable=attribute-defined-outside-init
 import logging as log
-log.getLogger()
 
 import numpy as np
-from scipy.linalg import block_diag
 
 import openqml as qm
-from openqml.device import Device, DeviceError
+from openqml.device import Device
 
+log.getLogger()
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -100,13 +120,28 @@ def changebasis(n):
 #========================================================
 
 def rotation(phi):
-    """Rotation in the phase space"""
+    """Rotation in the phase space.
+
+    Args:
+        phi (float): rotation parameter.
+
+    Returns:
+        array: symplectic transformation matrix.
+    """
     return np.array([[np.cos(phi), -np.sin(phi)],
                      [np.sin(phi), np.cos(phi)]])
 
 
 def squeezing(r, phi):
-    """squeezing in the phase space"""
+    """squeezing in the phase space
+
+    Args:
+        r (float): squeezing magnitude.
+        phi (float): rotation parameter.
+
+    Returns:
+        array: symplectic transformation matrix.
+    """
     cp = np.cos(phi)
     sp = np.sin(phi)
     ch = np.cosh(r)
@@ -116,13 +151,28 @@ def squeezing(r, phi):
 
 
 def quadratic_phase(s):
-    """Quadratic phase shift."""
+    """Quadratic phase shift.
+
+    Args:
+        s (float): parameter.
+
+    Returns:
+        array: symplectic transformation matrix.
+    """
     return np.array([[1, 0],
                      [s, 1]])
 
 
 def beamsplitter(theta, phi):
-    """two-mode beamsplitter"""
+    r"""Beamsplitter.
+
+    Args:
+        theta (float): transmittivity angle (:math:`t=\cos\theta`).
+        phi (float): phase angle (:math:`r=e^{i\phi}\sin\theta`).
+
+    Returns:
+        array: symplectic transformation matrix.
+    """
     cp = np.cos(phi)
     sp = np.sin(phi)
     ct = np.cos(theta)
@@ -137,7 +187,15 @@ def beamsplitter(theta, phi):
 
 
 def two_mode_squeezing(r, phi):
-    """two-mode squeezing"""
+    """two-mode squeezing
+
+    Args:
+        r (float): squeezing magnitude.
+        phi (float): rotation parameter.
+
+    Returns:
+        array: symplectic transformation matrix.
+    """
     cp = np.cos(phi)
     sp = np.sin(phi)
     ch = np.cosh(r)
@@ -152,7 +210,14 @@ def two_mode_squeezing(r, phi):
 
 
 def controlled_addition(s):
-    """The CX gate"""
+    """The CX gate.
+
+    Args:
+        s (float): parameter.
+
+    Returns:
+        array: symplectic transformation matrix.
+    """
     S = np.array([[1, 0, 0, 0],
                   [s, 1, 0, 0],
                   [0, 0, 1, -s],
@@ -162,7 +227,14 @@ def controlled_addition(s):
 
 
 def controlled_phase(s):
-    """The CZ gate"""
+    """The CZ gate.
+
+    Args:
+        s (float): parameter.
+
+    Returns:
+        array: symplectic transformation matrix.
+    """
     S = np.array([[1, 0, 0, 0],
                   [0, 1, 0, 0],
                   [0, s, 1, 0],
@@ -229,11 +301,13 @@ def coherent_state(a, hbar=2.):
 
 def squeezed_state(r, phi, hbar=2.):
     r""" Returns the squeezed state
+
     Args:
         r (float): the squeezing magnitude
         phi (float): the squeezing phase :math:`\phi`
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
+
     Returns:
         array: the squeezed state
     """
@@ -330,21 +404,21 @@ class DefaultGaussian(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, gate_name, wires, params):
+    def apply(self, gate_name, wires, par):
         if gate_name == 'Displacement':
             # modify the means
-            alpha = params[0]*np.exp(1j*params[1])
+            alpha = par[0]*np.exp(1j*par[1])
             self._state[0][wires[0]] += alpha.real*np.sqrt(2*self._hbar)
             self._state[0][wires[0]+self.wires] += alpha.imag*np.sqrt(2*self._hbar)
             return
 
         if 'State' in gate_name:
             # set the new device state
-            self._state = self._operator_map[gate_name](*params, hbar=self._hbar)
+            self._state = self._operator_map[gate_name](*par, hbar=self._hbar)
             return
 
         # get the symplectic matrix
-        S = self._operator_map[gate_name](*params)
+        S = self._operator_map[gate_name](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:
@@ -389,19 +463,30 @@ class DefaultGaussian(Device):
 
         self._state = [means, cov]
 
-    def expectation(self, observable, wires, params):
+    def expectation(self, observable, wires, par):
         if self.shots == 0:
             # exact expectation value
-            ev, var = self.ev(observable, wires, params)
+            ev, var = self.ev(observable, wires, par)
         else:
             # estimate the ev
             # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            ev, var = self.ev(observable, wires, params)
+            ev, var = self.ev(observable, wires, par)
             ev = np.random.normal(ev, np.sqrt(var / self.shots))
 
         return ev
 
     def ev(self, observable, wires, params):
+        """Returns the expectation value and variance for a particular observable.
+
+        Args:
+            observable (str): name of the observable.
+            wires (int or Sequence[int]): wires to be measured.
+            params (Sequence): list of observable parameters.
+
+        Returns:
+            tuple: expected value and variance.
+        """
+        # pylint: disable=too-many-return-statements
         mu, cov = self.reduced_state(wires)
 
         # measurement/expectation value
@@ -435,14 +520,14 @@ class DefaultGaussian(Device):
                 return d.T @ mu + Q[0], d.T @ cov @ d
 
             # convert to the (I, x1,x2,..., p1,p2...) ordering
-            M = np.vstack((Q[0:1,:], Q[1::2,:], Q[2::2,:]))
-            M = np.hstack((M[:,0:1], M[:,1::2], M[:,2::2]))
+            M = np.vstack((Q[0:1, :], Q[1::2, :], Q[2::2, :]))
+            M = np.hstack((M[:, 0:1], M[:, 1::2], M[:, 2::2]))
             d1 = M[1:, 0]
             d2 = M[0, 1:]
 
-            A = M[1:,1:]
-            d = d1+d2
-            k = M[0,0]
+            A = M[1:, 1:]
+            d = d1 + d2
+            k = M[0, 0]
 
             d2 = 2*A @ mu + d
             k2 = mu.T @ A @ mu + mu.T @ d + k
@@ -454,6 +539,8 @@ class DefaultGaussian(Device):
             var -= np.sum([np.linalg.det(self._hbar*A[:, m][n]) for m in modes for n in modes])
 
             return ex, var
+
+        return None
 
     def reset(self):
         """Reset the device"""
