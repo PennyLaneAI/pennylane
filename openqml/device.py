@@ -161,17 +161,6 @@ class Device(abc.ABC):
         """
         return set(self._observable_map.keys())
 
-    @property
-    def templates(self):
-        """Get the predefined circuit templates.
-
-        .. todo:: rename to circuits?
-
-        Returns:
-          dict[str->Circuit]: circuit templates
-        """
-        return self._circuits
-
     @classmethod
     def capabilities(cls):
         """Get the other capabilities of the plugin.

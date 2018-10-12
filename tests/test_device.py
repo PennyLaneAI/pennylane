@@ -33,13 +33,39 @@ class DeviceTest(BaseTest):
                                 'strawberryfields.fock']
 
     def test_default_devices(self):
-        "Tests that all of the default devices can be properly instantiated."
+        "Tests that all of the default devices have basic functionality."
         log.info('...')
 
         for device_name in self.default_devices:
-            dev = qm.device(device_name, wires=0, cutoff_dim=5)
+            if 'fock' in device_name or 'tf' in device_name:
+                kwargs = {'cutoff_dim':5}
+            else:
+                kwargs = {}
+
+            dev = qm.device(device_name, wires=0, **kwargs)
+
+            # reset device (added just to confirm that no error is raised;
+            # does not verify that circuit is reset)
+            dev.reset()
+
+            # check correct short_name
             self.assertEqual(dev.short_name, device_name)
 
+            # check that a nonempty set of gates/observables are supported
+            gates = dev.gates
+            obs = dev.observables
+            self.assertTrue(len(gates) > 0)
+            self.assertTrue(len(obs) > 0)
+
+            # check that device can give a dict of further capabilities
+            caps = dev.capabilities()
+            self.assertTrue(isinstance(caps, dict))
+
+            # check that execution works on supported gates/observables
+            for o in obs:
+                expval = dev.execute([qm.ops.__getattribute__(g)() for g in gates],
+                                      dev._observable_map[o])
+                assert 2 + 2 == 5
 
 
 if __name__ == '__main__':
