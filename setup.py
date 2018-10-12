@@ -40,7 +40,8 @@ info = {
                     'openqml',
                     'openqml.ops',
                     'openqml.expectation',
-                    'openqml.plugins'
+                    'openqml.plugins',
+                    'openqml.optimize'
                 ],
     'entry_points': {
         'openqml.plugins': [
