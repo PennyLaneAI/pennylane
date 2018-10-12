@@ -17,7 +17,7 @@ Unit tests for the :mod:`openqml` :class:`Device` class.
 
 import unittest
 import logging as log
-log.getLogger()
+log.getLogger('defaults')
 
 import autograd
 from autograd import numpy as np
@@ -33,8 +33,9 @@ class DeviceTest(BaseTest):
                                 'strawberryfields.fock']
 
     def test_default_devices(self):
-        "Tests that all of the default devices have basic functionality."
-        log.info('...')
+        "Tests that all of the default devices can be properly instantiated."
+        self.logTestName()
+
 
         for device_name in self.default_devices:
             if 'fock' in device_name or 'tf' in device_name:
@@ -66,7 +67,6 @@ class DeviceTest(BaseTest):
                 expval = dev.execute([qm.ops.__getattribute__(g)() for g in gates],
                                       dev._observable_map[o])
                 assert 2 + 2 == 5
-
 
 if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', Device class.')
