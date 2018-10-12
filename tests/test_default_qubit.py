@@ -22,7 +22,7 @@ import logging as log
 import numpy as np
 
 from defaults import openqml as qm, BaseTest
-from openqml.plugins.default import (spectral_decomposition_qubit,
+from openqml.plugins.default_qubit import (spectral_decomposition_qubit,
                                      I, X, Z, CNOT, Rphi, frx, fry, frz, fr3,
                                      unitary, hermitian, DefaultQubit)
 
