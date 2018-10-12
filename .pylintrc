@@ -10,7 +10,7 @@ extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy
+ignored-modules=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,openqml.ops,openqml.expectation
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set). This supports can work
