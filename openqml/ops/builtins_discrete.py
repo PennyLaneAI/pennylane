@@ -28,24 +28,28 @@ class Hadamard(Operation):
     r"""The Hadamard operator.
     """
     n_params = 0
+    n_wires = 1
 
 
 class PauliX(Operation):
     r"""The Pauli X operator.
     """
     n_params = 0
+    n_wires = 1
 
 
 class PauliY(Operation):
     r"""The Pauli Y operator.
     """
     n_params = 0
+    n_wires = 1
 
 
 class PauliZ(Operation):
     r"""The Pauli Z operator.
     """
     n_params = 0
+    n_wires = 1
 
 
 class CNOT(Operation):
@@ -81,6 +85,8 @@ class RX(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
     """
+    n_params = 1
+    n_wires = 1
 
 
 class RY(Operation):
@@ -91,6 +97,8 @@ class RY(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
     """
+    n_params = 1
+    n_wires = 1
 
 
 class RZ(Operation):
@@ -101,6 +109,8 @@ class RZ(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
     """
+    n_params = 1
+    n_wires = 1
 
 
 class PhaseShift(Operation):
@@ -109,6 +119,8 @@ class PhaseShift(Operation):
     Args:
         phi (float): phase shift :math:`\phi`
     """
+    n_params = 1
+    n_wires = 1
 
 
 class Rot(Operation):
@@ -122,6 +134,7 @@ class Rot(Operation):
         rho (float): rotation angle :math:`\rho`
     """
     n_params = 3
+    n_wires = 1
 
 
 #=============================================================================
