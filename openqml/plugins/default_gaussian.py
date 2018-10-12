@@ -131,10 +131,9 @@ def beamsplitter(theta, phi):
     S = np.array([[ct, -cp*st, 0, -st*sp],
                   [cp*st, ct, -st*sp, 0],
                   [0, st*sp, ct, -cp*st],
-                  [st*sp, 0, sp*st, ct]])
+                  [st*sp, 0, cp*st, ct]])
 
-    # return matrix in x1, p1, x2, p2 ordering
-    return S[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
+    return S
 
 
 def two_mode_squeezing(r, phi):
@@ -149,8 +148,7 @@ def two_mode_squeezing(r, phi):
                   [0, sp*sh, ch, -cp*sh],
                   [sp*sh, 0, -cp*sh, ch]])
 
-    # return matrix in x1, p1, x2, p2 ordering
-    return S[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
+    return S
 
 
 def controlled_addition(s):
@@ -160,8 +158,7 @@ def controlled_addition(s):
                   [0, 0, 1, -s],
                   [0, 0, 0, 1]])
 
-    # return matrix in x1, p1, x2, p2 ordering
-    return S#[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
+    return S
 
 
 def controlled_phase(s):
@@ -171,8 +168,7 @@ def controlled_phase(s):
                   [0, s, 1, 0],
                   [s, 0, 0, 1]])
 
-    # return matrix in x1, p1, x2, p2 ordering
-    return S[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
+    return S
 
 
 #========================================================
@@ -367,37 +363,23 @@ class DefaultGaussian(Device):
             # X
             rows = w.reshape(-1, 1)
             cols = w.reshape(1, -1)
-            print(rows, cols)
             S2[rows, cols] = S[:2, :2].copy()
-            print(1, S2[rows, cols])
 
             # P
             ind = w+self.wires
             rows = ind.reshape(-1, 1)
             cols = ind.reshape(1, -1)
             S2[rows, cols] = S[2:, 2:].copy()
-            print(rows, cols)
-            print(2, S2[rows, cols])
 
             # mode XP
-            ind = np.array([w[0], w[1]+self.wires])
-            rows = ind.reshape(-1, 1)
-            cols = ind.reshape(1, -1)
+            rows = w.reshape(-1, 1)
+            cols = (w+self.wires).reshape(1, -1)
             S2[rows, cols] = S[:2, 2:].copy()
-            print(rows, cols)
-            print(3, S2[rows, cols])
 
-            # mode 2/1
-            ind = np.array([w[0]+self.wires, w[1]])
-            rows = ind.reshape(-1, 1)
-            cols = ind.reshape(1, -1)
+            # mode PX
+            rows = (w+self.wires).reshape(-1, 1)
+            cols = w.reshape(1, -1)
             S2[rows, cols] = S[2:, :2].copy()
-            print(rows, cols)
-            print(4, S2[rows, cols])
-
-        if gate_name == "ControlledAddition":
-            print(S)
-            print(S2)
 
         # apply symplectic matrix to the means vector
         means = S2 @ self._state[0]
@@ -441,6 +423,7 @@ class DefaultGaussian(Device):
             return muphi[0], covphi[0, 0]
 
         if observable == 'PolyXP':
+            mu, cov = self._state
             Q = params[0]
 
             # HACK, we need access to the Poly instance in order to expand the matrix!
