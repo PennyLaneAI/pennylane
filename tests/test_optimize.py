@@ -47,7 +47,7 @@ class BasicTest(BaseTest):
         self.rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
         self.adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
 
-        self.fnames = ['sine', 'exponential', 'square']
+        self.fnames = ['test_function_1', 'test_function_2', 'test_function_3']
         self.univariate_funcs = [np.sin,
                                  lambda x: np.exp(x / 10.),
                                  lambda x: x ** 2]
@@ -61,13 +61,15 @@ class BasicTest(BaseTest):
                                  lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
                                                      np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
                                  lambda x: np.array([2 * x_ for x_ in x])]
-        self.mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]),
-                                lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[1, 0]),
+        self.mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
+                                lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
                                 lambda x: np.sum(x_[0] ** 2 for x_ in x)]
-        self.grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]]),
-                                     lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[1, 0])],
-                                                         [np.exp(x[0, 0] / 3) * (1 - np.tanh(x[1, 0]) ** 2)]]),
-                                     lambda x: np.array([[2 * x_[0]] for x_ in x])]
+        self.grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
+                                                         [-np.sin(x[1, 0]), 1.              ]]),
+                                     lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
+                                                          np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2)],
+                                                         [0., 0.]]),
+                                     lambda x: np.array([[2 * x_[0], 0.] for x_ in x])]
 
     def test_gradient_descent_optimizer_univar(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
@@ -101,12 +103,14 @@ class BasicTest(BaseTest):
 
         for gradf, f, name in zip(self.grad_mvar_mdim_funcs, self.mvar_mdim_funcs, self.fnames):
             with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    x_vec = x_vals[jdx:jdx+2]
-                    x_vec_multidim = np.expand_dims(x_vec, axis=1)
+                for jdx in range(len(x_vals[:-3])):
+                    x_vec = x_vals[jdx:jdx+4]
+                    x_vec_multidim = np.reshape(x_vec, (2, 2))
                     x_new = self.sgd_opt.step(f, x_vec_multidim)
                     x_correct = x_vec_multidim - gradf(x_vec_multidim) * stepsize
-                    self.assertAllAlmostEqual(x_new, x_correct, delta=self.tol)
+                    x_new_flat = x_new.flatten()
+                    x_correct_flat = x_correct.flatten()
+                    self.assertAllAlmostEqual(x_new_flat, x_correct_flat, delta=self.tol)
 
     def test_gradient_descent_optimizer_usergrad(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly

@@ -47,7 +47,12 @@ class GradientDescentOptimizer(object):
             array: the new weights :math:`x^{(t+1)}`
         """
 
+        xshape = x.shape
+
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
+
+        if g.shape != xshape:
+            g = g.reshape(xshape)
 
         x_out = self.apply_grad(g, x)
 
