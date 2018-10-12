@@ -17,7 +17,7 @@ Unit tests for the :mod:`openqml` :class:`Device` class.
 
 import unittest
 import logging as log
-log.getLogger()
+log.getLogger('defaults')
 
 import autograd
 from autograd import numpy as np
@@ -34,12 +34,11 @@ class DeviceTest(BaseTest):
 
     def test_default_devices(self):
         "Tests that all of the default devices can be properly instantiated."
-        log.info('...')
+        self.logTestName()
 
         for device_name in self.default_devices:
             dev = qm.device(device_name, wires=0, cutoff_dim=5)
             self.assertEqual(dev.short_name, device_name)
-
 
 
 if __name__ == '__main__':

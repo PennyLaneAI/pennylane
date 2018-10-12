@@ -17,7 +17,7 @@ Unit tests for the computing gradients of quantum functions.
 
 import unittest
 import logging as log
-log.getLogger()
+log.getLogger('defaults')
 
 import autograd
 import autograd.numpy as np
@@ -45,7 +45,7 @@ class QuadratureGradientTest(BaseTest):
 
     def test_rotation_gradient(self):
         "Tests that the automatic gradient of a phase space rotation is correct."
-        log.info('test_rotation_gradient')
+        self.logTestName()
 
         alpha = 0.5
 
@@ -66,7 +66,7 @@ class QuadratureGradientTest(BaseTest):
 
     def test_beamsplitter_gradient(self):
         "Tests that the automatic gradient of a beamsplitter is correct."
-        log.info('test_beamsplitter_gradient')
+        self.logTestName()
 
         alpha = 0.5
 
@@ -87,7 +87,7 @@ class QuadratureGradientTest(BaseTest):
 
     def test_displacement_gradient(self):
         "Tests that the automatic gradient of a phase space displacement is correct."
-        log.info('test_displacement_gradient')
+        self.logTestName()
 
         @qm.qfunc(self.fock_dev1)
         def circuit(r, phi):
@@ -107,7 +107,7 @@ class QuadratureGradientTest(BaseTest):
 
     def test_squeeze_gradient(self):
         "Tests that the automatic gradient of a phase space squeezing is correct."
-        log.info('test_squeeze_gradient')
+        self.logTestName()
 
         alpha = 0.5
 
@@ -124,10 +124,10 @@ class QuadratureGradientTest(BaseTest):
             # qfunc evaluates to -exp(-r) * hbar * Re(alpha)
             manualgrad_val = -np.exp(-r) * hbar * alpha
             self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
-            
+
     def test_cv_gradients_gaussian_circuit(self):
         """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
-        log.info('test_cv_gradients_gaussian_circuit')
+        self.logTestName()
 
         class PolyN(qm.expectation.PolyXP):
             "Mimics PhotonNumber using the arbitrary 2nd order observable interface. Results should be identical."
@@ -142,9 +142,9 @@ class QuadratureGradientTest(BaseTest):
         par = [0.4]
 
         for G in reversed(gates):
-            print(G.__name__)
+            log.debug('Testing gate %s...', G.__name__[0])
             for O in obs:
-                print(' ', O.__name__)
+                log.debug('Testing observable %s...', O.__name__[0])
                 def circuit(x):
                     args = [0.3] * G.n_params
                     args[0] = x
@@ -158,17 +158,16 @@ class QuadratureGradientTest(BaseTest):
 
                 q = qm.QNode(circuit, self.gaussian_dev)
                 val = q.evaluate(par)
-                print('  value:', val)
+                # log.info('  value:', val)
                 grad_F  = q.jacobian(par, method='F')
                 grad_A2 = q.jacobian(par, method='A', force_order2=True)
-                print('  grad_F: ', grad_F)
-                print('  grad_A2: ', grad_A2)
+                # log.info('  grad_F: ', grad_F)
+                # log.info('  grad_A2: ', grad_A2)
                 if O.ev_order == 1:
                     grad_A = q.jacobian(par, method='A')
-                    print('  grad_A: ', grad_A)
+                    # log.info('  grad_A: ', grad_A)
                     # the different methods agree
                     self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
-                print()
 
                 # analytic method works for every parameter
                 self.assertTrue(q.grad_method_for_par == {0:'A'})
@@ -178,7 +177,7 @@ class QuadratureGradientTest(BaseTest):
 
     def test_cv_gradients_multiple_gate_parameters(self):
         "Tests that gates with multiple free parameters yield correct gradients."
-        log.info('test_cv_gradients_multiple_gate_parameters')
+        self.logTestName()
         par = [0.4, -0.3, -0.7]
 
         def qf(x, y, z):
@@ -201,7 +200,7 @@ class QuadratureGradientTest(BaseTest):
 
     def test_cv_gradients_repeated_gate_parameters(self):
         "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
-        log.info('test_cv_gradients_repeated_gate_parameters')
+        self.logTestName()
         par = [0.2, 0.3]
 
         def qf(x, y):
@@ -223,7 +222,7 @@ class QuadratureGradientTest(BaseTest):
 
     def test_cv_gradients_parameters_inside_array(self):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
-        log.info('test_cv_gradients_parameters_inside_array')
+        self.logTestName()
         par = [0.4, 1.3]
 
         def qf(x, y):
@@ -249,7 +248,7 @@ class QuadratureGradientTest(BaseTest):
 
     def test_cv_gradient_fanout(self):
         "Tests that qnodes can compute the correct gradient when the same parameter is used in multiple gates."
-        log.info('test_cv_gradient_fanout')
+        self.logTestName()
         par = [0.5, 1.3]
 
         def circuit(x, y):
@@ -279,7 +278,7 @@ class QubitGradientTest(BaseTest):
 
     def test_RX_gradient(self):
         "Tests that the automatic gradient of a Pauli X-rotation is correct."
-        log.info('test_RX_gradient')
+        self.logTestName()
 
         @qm.qfunc(self.qubit_dev1)
         def circuit(x):
@@ -295,7 +294,7 @@ class QubitGradientTest(BaseTest):
 
     def test_RY_gradient(self):
         "Tests that the automatic gradient of a Pauli Y-rotation is correct."
-        log.info('test_RY_gradient')
+        self.logTestName()
 
         @qm.qfunc(self.qubit_dev1)
         def circuit(x):
@@ -311,7 +310,7 @@ class QubitGradientTest(BaseTest):
 
     def test_RZ_gradient(self):
         "Tests that the automatic gradient of a Pauli Z-rotation is correct."
-        log.info('test_RZ_gradient')
+        self.logTestName()
 
         @qm.qfunc(self.qubit_dev1)
         def circuit(x):
@@ -327,7 +326,7 @@ class QubitGradientTest(BaseTest):
 
     def test_Rot(self):
         "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
-        log.info('test_Rot')
+        self.logTestName()
 
         #@qm.qfunc(self.qubit_dev1)
         def circuit(x,y,z):
@@ -348,7 +347,7 @@ class QubitGradientTest(BaseTest):
 
     def test_qfunc_gradients(self):
         "Tests that the various ways of computing the gradient of a qfunc all agree."
-        log.info('test_qfunc_gradients')
+        self.logTestName()
 
         def circuit(x, y, z):
             qm.RX(x, [0])
@@ -379,7 +378,7 @@ class QubitGradientTest(BaseTest):
 
     def test_hybrid_gradients(self):
         "Tests that the various ways of computing the gradient of a hybrid computation all agree."
-        log.info('test_hybrid_gradients')
+        self.logTestName()
 
         # input data is the first parameter
         def classifier_circuit(in_data, x):
@@ -430,7 +429,7 @@ class QubitGradientTest(BaseTest):
 
     def test_qnode_gradient_fanout(self):
         "Tests that the correct gradient is computed for qnodes which use the same parameter in multiple gates."
-        log.info('test_qnode_gradient_fanout')
+        self.logTestName()
 
         extra_param = 0.31
         def circuit(reused_param, other_param):

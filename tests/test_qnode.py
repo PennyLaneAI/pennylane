@@ -17,7 +17,7 @@ Unit tests for the :mod:`openqml` :class:`QNode` class.
 
 import unittest
 import logging as log
-log.getLogger()
+log.getLogger('defaults')
 
 import autograd
 from autograd import numpy as np
@@ -36,7 +36,6 @@ def expZ(state):
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
 
-
 class BasicTest(BaseTest):
     """Qnode tests.
     """
@@ -44,10 +43,9 @@ class BasicTest(BaseTest):
         self.dev1 = qm.device('default.qubit', wires=1)
         self.dev2 = qm.device('default.qubit', wires=2)
 
-
     def test_qnode_fail(self):
         "Tests that expected failures correctly raise exceptions."
-        log.info('test_qnode_fail')
+        self.logTestName()
         par = 0.5
 
         #---------------------------------------------------------
@@ -89,8 +87,7 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
             qf(par)
 
-        # a wire cannot be measured more than once
-        log.info('test_multiple_expectation_same_wire')
+        # a wire cannot be measured more than once=
         @qm.qfunc(self.dev2)
         def qf(x):
             qm.RX(x, [0])
@@ -180,10 +177,10 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(ValueError, 'Order must be 1 or 2'):
             q.jacobian(par, method='F', order=3)
 
-
     def test_qnode_cv_gradient_methods(self):
         "Tests the gradient computation methods on CV circuits."
         # we can only use the 'A' method on parameters which only affect gaussian operations that are not succeeded by nongaussian operations
+        self.logTestName()
 
         par = [0.4, -2.3]
         def check_methods(qf, d):
@@ -225,10 +222,9 @@ class BasicTest(BaseTest):
             return qm.expectation.X(0), qm.expectation.X(1)
         check_methods(qf, {0:'A', 1:'F'})
 
-
     def test_qnode_multiple_gate_parameters(self):
         "Tests that gates with multiple free parameters yield correct gradients."
-        log.info('test_qnode_multiple_gate_parameters')
+        self.logTestName()
         par = [0.5, 0.3, -0.7]
 
         def qf(x, y, z):
@@ -250,10 +246,9 @@ class BasicTest(BaseTest):
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
 
-
     def test_qnode_repeated_gate_parameters(self):
         "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
-        log.info('test_qnode_repeated_gate_parameters')
+        self.logTestName()
         par = [0.8, 1.3]
 
         def qf(x, y):
@@ -268,10 +263,9 @@ class BasicTest(BaseTest):
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
 
-
     def test_qnode_parameters_inside_array(self):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
-        log.info('test_qnode_parameters_inside_array')
+        self.logTestName()
         par = [0.8, 1.3]
 
         def qf(x, y):
@@ -291,7 +285,7 @@ class BasicTest(BaseTest):
 
     def test_qnode_fanout(self):
         "Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."
-        log.info('test_qnode_fanout')
+        self.logTestName()
 
         def circuit(reused_param, other_param):
             qm.RX(reused_param, [0])
@@ -315,7 +309,7 @@ class BasicTest(BaseTest):
 
     def test_qnode_array_parameters(self):
         """Test that QNode can take arrays as input arguments, and that they interact properly with autograd."""
-        log.info('test_qnode_array_parameters')
+        self.logTestName()
 
         @qm.qfunc(self.dev1)
         def circuit_n1s(dummy1, array, dummy2):
@@ -350,10 +344,9 @@ class BasicTest(BaseTest):
             self.assertAllAlmostEqual(cost(*args), cost_target, delta=self.tol)
             self.assertAllAlmostEqual(cost_grad(*args), grad_target, delta=self.tol)
 
-
     def test_array_parameters_evaluate(self):
         "Test that array parameters gives same result as positional arguments."
-        log.info('test_array_parameters_evaluate')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -398,7 +391,7 @@ class BasicTest(BaseTest):
 
     def test_array_parameters_autograd(self):
         "Test that array parameters autograd gives same result as positional arguments."
-        log.info('test_array_parameters_autograd')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -440,7 +433,6 @@ class BasicTest(BaseTest):
         array_autograd = grad3(np.array([a, b, c]))
         self.assertAllAlmostEqual(array_grad, array_autograd, delta=self.tol)
 
-
     @staticmethod
     def expected_jacobian(x, y, z):
         dw0dx = 2/3*np.sin(x)*np.sin(y)
@@ -456,7 +448,7 @@ class BasicTest(BaseTest):
 
     def test_multiple_expectation_different_wires(self):
         "Tests that qnodes return multiple expectation values."
-        log.info('test_multiple_expectation_different_wires')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -481,7 +473,7 @@ class BasicTest(BaseTest):
 
     def test_multiple_expectation_jacobian_positional(self):
         "Tests that qnodes using positional arguments return multiple expectation values."
-        log.info('test_multiple_expectation_jacobian_positional')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -509,7 +501,7 @@ class BasicTest(BaseTest):
 
     def test_multiple_expectation_jacobian_array(self):
         "Tests that qnodes using an array argument return multiple expectation values."
-        log.info('test_multiple_expectation_jacobian_array')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -527,8 +519,6 @@ class BasicTest(BaseTest):
         jac = autograd.jacobian(circuit, 0)
         res = jac(np.array([a, b, c]))
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
-
-
 
 
 if __name__ == '__main__':

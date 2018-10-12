@@ -17,7 +17,7 @@ Unit tests for the :mod:`openqml` :class:`QNode` class.
 
 import unittest
 import logging as log
-log.getLogger()
+log.getLogger('defaults')
 
 from defaults import openqml as qm, BaseTest
 
@@ -72,7 +72,7 @@ class BasicTest(BaseTest):
     def test_gradient_descent_optimizer_univar(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for uni-variate functions."""
-        log.info('test_gradient_descent_optimizer_univar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -84,7 +84,7 @@ class BasicTest(BaseTest):
     def test_gradient_descent_optimizer_multivar(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for multi-variate functions."""
-        log.info('test_gradient_descent_optimizer_multivar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -97,7 +97,7 @@ class BasicTest(BaseTest):
     def test_gradient_descent_optimizer_multivar_multidim(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for multi-variate functions and with higher dimensional inputs."""
-        log.info('test_gradient_descent_optimizer_multivar_multidim')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_mvar_mdim_funcs, self.mvar_mdim_funcs, self.fnames):
             with self.subTest(i=name):
@@ -111,7 +111,7 @@ class BasicTest(BaseTest):
     def test_gradient_descent_optimizer_usergrad(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         using user-provided gradients."""
-        log.info('test_gradient_descent_optimizer_usergrad')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_uni_fns[::-1], self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -123,7 +123,7 @@ class BasicTest(BaseTest):
     def test_momentum_optimizer_univar(self):
         """Tests that momentum optimizer takes one and two steps correctly
         for uni-variate functions."""
-        log.info('test_momentum_optimizer_univar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -142,7 +142,7 @@ class BasicTest(BaseTest):
     def test_momentum_optimizer_multivar(self):
         """Tests that momentum optimizer takes one and two steps correctly
         for multi-variate functions."""
-        log.info('test_momentum_optimizer_multivar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -162,7 +162,7 @@ class BasicTest(BaseTest):
     def test_nesterovmomentum_optimizer_univar(self):
         """Tests that nesterov momentum optimizer takes one and two steps correctly
         for uni-variate functions."""
-        log.info('test_nesterovmomentum_optimizer_univar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -182,7 +182,7 @@ class BasicTest(BaseTest):
     def test_nesterovmomentum_optimizer_multivar(self):
         """Tests that nesterov momentum optimizer takes one and two steps correctly
         for multi-variate functions."""
-        log.info('test_nesterovmomentum_optimizer_multivar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -203,7 +203,7 @@ class BasicTest(BaseTest):
     def test_nesterovmomentum_optimizer_usergrad(self):
         """Tests that nesterov momentum optimizer takes gradient-descent steps correctly
         using user-provided gradients."""
-        log.info('test_nesterovmomentum_optimizer_usergrad')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_uni_fns[::-1], self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -223,7 +223,7 @@ class BasicTest(BaseTest):
     def test_adagrad_optimizer_univar(self):
         """Tests that adagrad optimizer takes one and two steps correctly
         for uni-variate functions."""
-        log.info('test_adagrad_optimizer_univar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -245,7 +245,7 @@ class BasicTest(BaseTest):
     def test_adagrad_optimizer_multivar(self):
         """Tests that adagrad optimizer takes one and two steps correctly
         for multi-variate functions."""
-        log.info('test_adagrad_optimizer_multivar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -268,7 +268,7 @@ class BasicTest(BaseTest):
     def test_rmsprop_optimizer_univar(self):
         """Tests that rmsprop optimizer takes one and two steps correctly
         for uni-variate functions."""
-        log.info('test_rmsprop_optimizer_univar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -291,7 +291,7 @@ class BasicTest(BaseTest):
     def test_rmsprop_optimizer_multivar(self):
         """Tests that rmsprop optimizer takes one and two steps correctly
         for multi-variate functions."""
-        log.info('test_rmsprop_optimizer_multivar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -315,7 +315,7 @@ class BasicTest(BaseTest):
     def test_adam_optimizer_univar(self):
         """Tests that adam optimizer takes one and two steps correctly
         for uni-variate functions."""
-        log.info('test_adam_optimizer_univar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
@@ -339,7 +339,7 @@ class BasicTest(BaseTest):
     def test_adam_optimizer_multivar(self):
         """Tests that adam optimizer takes one and two steps correctly
         for multi-variate functions."""
-        log.info('test_adam_optimizer_multivar')
+        self.logTestName()
 
         for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
             with self.subTest(i=name):

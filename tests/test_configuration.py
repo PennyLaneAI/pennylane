@@ -24,7 +24,7 @@ import toml
 from defaults import openqml, BaseTest
 from openqml import Configuration
 
-log.getLogger()
+log.getLogger('defaults')
 
 
 filename = 'default_config.toml'
@@ -37,7 +37,7 @@ class BasicTest(BaseTest):
     def test_loading_current_directory(self):
         """Test that the default configuration file can be loaded
         from the current directory."""
-        log.info("test_loading_current_directory")
+        self.logTestName()
 
         os.curdir = "."
         os.environ["OPENQML_CONF"] = ""
@@ -49,7 +49,7 @@ class BasicTest(BaseTest):
     def test_loading_environment_variable(self):
         """Test that the default configuration file can be loaded
         from an environment variable."""
-        log.info("test_loading_environment_variable")
+        self.logTestName()
 
         os.curdir = "None"
         os.environ["OPENQML_CONF"] = os.getcwd()
@@ -62,7 +62,7 @@ class BasicTest(BaseTest):
     def test_loading_absolute_path(self):
         """Test that the default configuration file can be loaded
         from an absolute path."""
-        log.info("test_loading_absolute_path")
+        self.logTestName()
 
         os.curdir = "None"
         os.environ["OPENQML_CONF"] = ""
@@ -73,7 +73,7 @@ class BasicTest(BaseTest):
 
     def test_not_found_warning(self):
         """Test that a warning is raised if no configuration file found."""
-        log.info("test_not_found_warning")
+        self.logTestName()
 
         with self.assertLogs(level='WARNING') as l:
             Configuration()
@@ -83,7 +83,7 @@ class BasicTest(BaseTest):
 
     def test_save(self):
         """Test saving a configuration file."""
-        log.info("test_save")
+        self.logTestName()
 
         config = Configuration(name=filename)
 
@@ -97,7 +97,7 @@ class BasicTest(BaseTest):
 
     def test_get_item(self):
         """Test getting items."""
-        log.info("test_get_item")
+        self.logTestName()
 
         config = Configuration(name=filename)
 
@@ -115,7 +115,7 @@ class BasicTest(BaseTest):
 
     def test_set_item(self):
         """Test setting items."""
-        log.info("test_set_item")
+        self.logTestName()
 
         config = Configuration(name=filename)
 
@@ -142,7 +142,7 @@ class BasicTest(BaseTest):
 
     def test_bool(self):
         """Test boolean value of the Configuration object."""
-        log.info("test_bool")
+        self.logTestName()
 
         # test false if no config is loaded
         config = Configuration()
