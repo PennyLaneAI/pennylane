@@ -16,7 +16,7 @@ Unit tests for :mod:`openqml.operation`.
 """
 import unittest
 import logging as log
-log.getLogger()
+log.getLogger('defaults')
 
 import numpy as np
 import numpy.random as nr
@@ -34,6 +34,7 @@ class BasicTest(BaseTest):
     """Utility class tests."""
     def test_heisenberg(self):
         "Heisenberg picture adjoint actions of CV Operations."
+        self.logTestName()
 
         def h_test(cls):
             "Test a gaussian CV operation."
@@ -84,6 +85,7 @@ class BasicTest(BaseTest):
 
     def test_ops(self):
         "Operation initialization."
+        self.logTestName()
 
         def op_test(cls):
             "Test the Operation subclass."
@@ -153,8 +155,6 @@ class BasicTest(BaseTest):
 
         for cls in openqml.expectation.builtins_continuous.all_ops:
             op_test(cls)
-
-
 
 
 if __name__ == '__main__':

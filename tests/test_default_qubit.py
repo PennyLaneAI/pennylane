@@ -26,7 +26,7 @@ from openqml.plugins.default import (spectral_decomposition_qubit,
                                      I, X, Z, CNOT, Rphi, frx, fry, frz, fr3,
                                      unitary, hermitian, DefaultQubit)
 
-log.getLogger()
+log.getLogger('defaults')
 
 
 U = np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
@@ -55,7 +55,7 @@ class TestAuxillaryFunctions(BaseTest):
 
     def test_spectral_decomposition_qubit(self):
         """Test that the correct spectral decomposition is returned."""
-        log.info("test_spectral_decomposition_qubit")
+        self.logTestName()
 
         a, P = spectral_decomposition_qubit(H)
 
@@ -64,7 +64,7 @@ class TestAuxillaryFunctions(BaseTest):
 
     def test_phase_shift(self):
         """Test phase shift is correct"""
-        log.info("test_phase_shift")
+        self.logTestName()
 
         # test identity for theta=0
         self.assertAllAlmostEqual(Rphi(0), np.identity(2), delta=self.tol)
@@ -76,7 +76,7 @@ class TestAuxillaryFunctions(BaseTest):
 
     def test_x_rotation(self):
         """Test x rotation is correct"""
-        log.info("test_x_rotation")
+        self.logTestName()
 
         # test identity for theta=0
         self.assertAllAlmostEqual(frx(0), np.identity(2), delta=self.tol)
@@ -91,7 +91,7 @@ class TestAuxillaryFunctions(BaseTest):
 
     def test_y_rotation(self):
         """Test y rotation is correct"""
-        log.info("test_y_rotation")
+        self.logTestName()
 
         # test identity for theta=0
         self.assertAllAlmostEqual(fry(0), np.identity(2), delta=self.tol)
@@ -106,7 +106,7 @@ class TestAuxillaryFunctions(BaseTest):
 
     def test_z_rotation(self):
         """Test z rotation is correct"""
-        log.info("test_z_rotation")
+        self.logTestName()
 
         # test identity for theta=0
         self.assertAllAlmostEqual(frz(0), np.identity(2), delta=self.tol)
@@ -120,7 +120,7 @@ class TestAuxillaryFunctions(BaseTest):
 
     def test_arbitrary_rotation(self):
         """Test arbitrary single qubit rotation is correct"""
-        log.info("test_arbitrary_rotation")
+        self.logTestName()
 
         # test identity for theta=0
         self.assertAllAlmostEqual(fr3(0, 0, 0), np.identity(2), delta=self.tol)
@@ -142,7 +142,7 @@ class TestStateFunctions(BaseTest):
 
     def test_unitary(self):
         """Test that the unitary function produces the correct output."""
-        log.info("test_unitary")
+        self.logTestName()
 
         out = unitary(U)
 
@@ -164,7 +164,7 @@ class TestStateFunctions(BaseTest):
 
     def test_hermitian(self):
         """Test that the Hermitian function produces the correct output."""
-        log.info("test_hermitian")
+        self.logTestName()
 
         out = hermitian(H)
 
@@ -193,19 +193,19 @@ class TestDefaultQubitDevice(BaseTest):
 
     def test_operator_map(self):
         """Test that default qubit device supports all OpenQML discrete gates."""
-        log.info("test_operator_map")
+        self.logTestName()
 
         self.assertEqual(set(qm.ops.builtins_discrete.__all__), set(self.dev._operator_map))
 
     def test_observable_map(self):
         """Test that default qubit device supports all OpenQML discrete expectations."""
-        log.info("test_observable_map")
+        self.logTestName()
 
         self.assertEqual(set(qm.expectation.builtins_discrete.__all__), set(self.dev._observable_map))
 
     def test_expand_one(self):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
-        log.info('test_expand_one')
+        self.logTestName()
 
         dev = DefaultQubit(wires=3)
 
@@ -234,7 +234,7 @@ class TestDefaultQubitDevice(BaseTest):
 
     def test_expand_two(self):
         """Test that a 2 qubit gate correctly expands to 3 qubits."""
-        log.info('test_expand_two')
+        self.logTestName()
 
         dev = DefaultQubit(wires=4)
 
@@ -273,7 +273,7 @@ class TestDefaultQubitDevice(BaseTest):
 
     def test_get_operator_matrix(self):
         """Test the the correct matrix is returned given an operation name"""
-        log.info("test_get_operator_matrix")
+        self.logTestName()
 
         for name, fn in {**self.dev._operator_map, **self.dev._observable_map}.items():
             try:
@@ -304,12 +304,12 @@ class TestDefaultQubitDevice(BaseTest):
 
     def test_apply(self):
         """Test the application of gates to a state"""
-        log.info("test_apply")
+        self.logTestName()
         self.dev.reset()
 
         # loop through all supported operators
         for gate_name, fn in self.dev._operator_map.items():
-            log.info("\tTesting %s gate...", gate_name)
+            log.debug("\tTesting %s gate...", gate_name)
 
             # start in the state |00>
             self.dev._state = np.array([1, 0, 0, 0])
@@ -359,7 +359,7 @@ class TestDefaultQubitDevice(BaseTest):
 
     def test_apply_errors(self):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
-        log.info("test_apply_errors")
+        self.logTestName()
 
         with self.assertRaisesRegex(ValueError, r'State vector must be of length 2\*\*wires.'):
             p = [np.array([1, 0, 1, 1, 1])/np.sqrt(3)]
@@ -373,12 +373,12 @@ class TestDefaultQubitDevice(BaseTest):
 
     def test_ev(self):
         """Test that expectation values are calculated correctly"""
-        log.info("test_ev")
+        self.logTestName()
         self.dev.reset()
 
         # loop through all supported observables
         for name, fn in self.dev._observable_map.items():
-            log.info("\tTesting %s observable...", name)
+            log.debug("\tTesting %s observable...", name)
 
             # start in the state |00>
             self.dev._state = np.array([1, 0, 1, 1])/np.sqrt(3)
@@ -430,7 +430,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
     def test_load_default_qubit_device(self):
         """Test that the default plugin loads correctly"""
-        log.info('test_load_default_qubit_device')
+        self.logTestName()
 
         dev = qm.device('default.qubit', wires=2)
         self.assertEqual(dev.wires, 2)
@@ -439,14 +439,14 @@ class TestDefaultQubitIntegration(BaseTest):
 
     def test_args(self):
         """Test that the plugin requires correct arguments"""
-        log.info('test_args')
+        self.logTestName()
 
         with self.assertRaisesRegex(TypeError, "missing 1 required positional argument: 'wires'"):
             qm.device('default.qubit')
 
     def test_unsupported_gates(self):
         """Test error is raised with unsupported gates"""
-        log.info('test_unsupported_gates')
+        self.logTestName()
         dev = qm.device('default.qubit', wires=2)
 
         gates = set(dev._operator_map.keys())
@@ -477,7 +477,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
     def test_unsupported_observables(self):
         """Test error is raised with unsupported observables"""
-        log.info('test_unsupported_observables')
+        self.logTestName()
         dev = qm.device('default.qubit', wires=2)
 
         obs = set(dev._observable_map.keys())
@@ -503,7 +503,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
     def test_qubit_circuit(self):
         """Test that the default qubit plugin provides correct result for simple circuit"""
-        log.info('test_qubit_circuit')
+        self.logTestName()
         dev = qm.device('default.qubit', wires=1)
 
         p = 0.543
@@ -520,7 +520,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
     def test_nonzero_shots(self):
         """Test that the default qubit plugin provides correct result for high shot number"""
-        log.info('test_nonzero_shots')
+        self.logTestName()
 
         shots = 10**4
         dev = qm.device('default.qubit', wires=1, shots=shots)
@@ -541,14 +541,14 @@ class TestDefaultQubitIntegration(BaseTest):
 
     def test_supported_gates(self):
         """Test that all supported gates work correctly"""
-        log.info('test_supported_gates')
+        self.logTestName()
         a = 0.312
         b = 0.123
 
         dev = qm.device('default.qubit', wires=2)
 
         for g, qop in dev._operator_map.items():
-            log.info('\tTesting gate %s...', g)
+            log.debug('\tTesting gate %s...', g)
             self.assertTrue(dev.supported(g))
             dev.reset()
 
@@ -604,13 +604,13 @@ class TestDefaultQubitIntegration(BaseTest):
 
     def test_supported_observables(self):
         """Test that all supported observables work correctly"""
-        log.info('test_supported_observables')
+        self.logTestName()
         a = 0.312
 
         dev = qm.device('default.qubit', wires=2)
 
         for g, qop in dev._observable_map.items():
-            log.info('\tTesting observable %s...', g)
+            log.debug('\tTesting observable %s...', g)
             self.assertTrue(dev.supported(g))
             dev.reset()
 

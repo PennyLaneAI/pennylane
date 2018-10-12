@@ -14,12 +14,10 @@
 """
 Default parameters, commandline arguments and common routines for the unit tests.
 """
-
-import argparse
 import unittest
 import os
 import sys
-import logging as log
+import logging
 
 import numpy as np
 
@@ -29,40 +27,30 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import openqml
 
-
 # defaults
-TOLERANCE = 1e-5
+TOLERANCE = os.environ.get("TOL", 1e-5)
 
 
-def get_commandline_args():
-    """Parse the commandline arguments for the unit tests.
-    If none are given (e.g. when the test is run as a module instead of a script), the defaults are used.
+# set up logging
+if "LOGGING" in os.environ:
+    logLevel = os.environ["LOGGING"]
+    print('Logging:', logLevel)
+    numeric_level = getattr(logging, logLevel.upper(), 10)
+else:
+    numeric_level = 100
 
-    Returns:
-      argparse.Namespace: parsed arguments in a namespace container
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--tolerance', type=float, default=TOLERANCE, help='Numerical tolerance for equality tests.')
-    parser.add_argument('--log', action='store_true', default=False, help='Turn verbose logging on.')
-
-    # HACK: We only parse known args to enable unittest test discovery without parsing errors.
-    args, _ = parser.parse_known_args()
-
-    # set up logging for tests
-    log.basicConfig(format='%(levelname)s: %(message)s', level=log.INFO if args.log else log.WARN)
-    return args
-
-
-# parse any possible commandline arguments
-args = get_commandline_args()
+logging.getLogger().setLevel(numeric_level)
+logging.captureWarnings(True)
 
 
 class BaseTest(unittest.TestCase):
     """ABC for tests.
     Encapsulates the user-given commandline parameters for the test run as class attributes.
     """
-    args = args
-    tol = args.tolerance
+    tol = TOLERANCE
+
+    def logTestName(self):
+        logging.info('{}'.format(self.id()))
 
     def assertAllAlmostEqual(self, first, second, delta, msg=None):
         """
