@@ -71,19 +71,6 @@ import autograd.numpy as np
 logging.getLogger()
 
 
-class MethodFactory(type):
-    """Metaclass that allows derived classes to dynamically instantiate
-    new objects based on undefined methods. The dynamic methods pass their arguments
-    directly to __init__ of the inheriting class."""
-    def __getattr__(cls, name):
-        """Get the attribute call via name"""
-        def new_object(*args, **kwargs):
-            """Return a new object of the same class, passing the attribute name
-            as the first parameter, along with any additional parameters."""
-            return cls(name, *args, **kwargs)
-        return new_object
-
-
 class DeviceError(Exception):
     """Exception raised by a :class:`Device` when it encounters an illegal
     operation in the quantum circuit.

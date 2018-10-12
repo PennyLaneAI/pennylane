@@ -22,6 +22,7 @@ import logging as log
 import toml
 
 from defaults import openqml, BaseTest
+import openqml as qm
 from openqml import Configuration
 
 log.getLogger('defaults')
@@ -153,11 +154,25 @@ class BasicTest(BaseTest):
         self.assertTrue(config)
 
 
+class OpenQMLInitTests(BaseTest):
+    """Tests to ensure that the code in OpenQML/__init__.py
+    correctly knows how to load and use configuration data"""
+
+    def test_device_load(self):
+        """Test loading a device with a configuration."""
+        self.logTestName()
+
+        config = Configuration(name=filename)
+        dev = qm.device('strawberryfields.fock', wires=2, config=config)
+
+        self.assertTrue(dev.hbar, 1)
+        self.assertTrue(dev.cutoff, 10)
+
 if __name__ == '__main__':
     print('Testing OpenQML version ' + openqml.version() + ', Configuration class.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (BasicTest,):
+    for t in (BasicTest, OpenQMLInitTests):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
