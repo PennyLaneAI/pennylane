@@ -159,12 +159,12 @@ class QuadratureGradientTest(BaseTest):
                 q = qm.QNode(circuit, self.gaussian_dev)
                 val = q.evaluate(par)
                 print('  value:', val)
-                grad_F  = q.gradient(par, method='F')
-                grad_A2 = q.gradient(par, method='A', force_order2=True)
+                grad_F  = q.jacobian(par, method='F')
+                grad_A2 = q.jacobian(par, method='A', force_order2=True)
                 print('  grad_F: ', grad_F)
                 print('  grad_A2: ', grad_A2)
                 if O.ev_order == 1:
-                    grad_A = q.gradient(par, method='A')
+                    grad_A = q.jacobian(par, method='A')
                     print('  grad_A: ', grad_A)
                     # the different methods agree
                     self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
@@ -188,9 +188,9 @@ class QuadratureGradientTest(BaseTest):
             return qm.expectation.X(0)
 
         q = qm.QNode(qf, self.gaussian_dev)
-        grad_F = q.gradient(par, method='F')
-        grad_A = q.gradient(par, method='A')
-        grad_A2 = q.gradient(par, method='A', force_order2=True)
+        grad_F = q.jacobian(par, method='F')
+        grad_A = q.jacobian(par, method='A')
+        grad_A2 = q.jacobian(par, method='A', force_order2=True)
 
         # analytic method works for every parameter
         self.assertTrue(q.grad_method_for_par == {0:'A', 1:'A', 2:'A'})
@@ -210,9 +210,9 @@ class QuadratureGradientTest(BaseTest):
             return qm.expectation.X(0)
 
         q = qm.QNode(qf, self.gaussian_dev)
-        grad_F = q.gradient(par, method='F')
-        grad_A = q.gradient(par, method='A')
-        grad_A2 = q.gradient(par, method='A', force_order2=True)
+        grad_F = q.jacobian(par, method='F')
+        grad_A = q.jacobian(par, method='A')
+        grad_A2 = q.jacobian(par, method='A', force_order2=True)
 
         # analytic method works for every parameter
         self.assertTrue(q.grad_method_for_par == {0:'A', 1:'A'})
@@ -236,10 +236,10 @@ class QuadratureGradientTest(BaseTest):
             return qm.expectation.PolyXP(M, [0, 1])
 
         q = qm.QNode(qf, self.gaussian_dev)
-        grad = q.gradient(par)
-        grad_F = q.gradient(par, method='F')
-        grad_A = q.gradient(par, method='B')
-        grad_A2 = q.gradient(par, method='B', force_order2=True)
+        grad = q.jacobian(par)
+        grad_F = q.jacobian(par, method='F')
+        grad_A = q.jacobian(par, method='B')
+        grad_A2 = q.jacobian(par, method='B', force_order2=True)
 
         # par[0] can use the 'A' method, par[1] cannot
         self.assertTrue(q.grad_method_for_par == {0:'A', 1:'F'})
@@ -259,9 +259,9 @@ class QuadratureGradientTest(BaseTest):
             return qm.expectation.X(0)
 
         q = qm.QNode(circuit, self.gaussian_dev)
-        grad_F = q.gradient(par, method='F')
-        grad_A = q.gradient(par, method='A')
-        grad_A2 = q.gradient(par, method='A', force_order2=True)
+        grad_F = q.jacobian(par, method='F')
+        grad_A = q.jacobian(par, method='A')
+        grad_A2 = q.jacobian(par, method='A', force_order2=True)
 
         # analytic method works for every parameter
         self.assertTrue(q.grad_method_for_par == {0:'A', 1:'A'})
@@ -364,9 +364,9 @@ class QubitGradientTest(BaseTest):
         params = np.array([0.1, -1.6, np.pi / 5])
 
         # manual gradients
-        grad_fd1 = qnode.gradient(params, method='F', order=1)
-        grad_fd2 = qnode.gradient(params, method='F', order=2)
-        grad_angle = qnode.gradient(params, method='A')
+        grad_fd1 = qnode.jacobian(params, method='F', order=1)
+        grad_fd2 = qnode.jacobian(params, method='F', order=2)
+        grad_angle = qnode.jacobian(params, method='A')
 
         # automatic gradient
         grad_fn = autograd.grad(qnode.evaluate)
@@ -413,7 +413,7 @@ class QubitGradientTest(BaseTest):
             for d_in, d_out in zip(in_data, out_data):
                 args = np.array([d_in, p])
                 diff = (classifier(args) - d_out)
-                ret = ret + 2 * diff * classifier.gradient(args, which=[1], method=grad_method)
+                ret = ret + 2 * diff * classifier.jacobian(args, which=[1], method=grad_method)
             return ret
 
         y0 = error(param)
