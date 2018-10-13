@@ -17,7 +17,7 @@ Unit tests for the :mod:`openqml` :class:`QNode` class.
 
 import unittest
 import logging as log
-log.getLogger()
+log.getLogger('defaults')
 
 import autograd
 from autograd import numpy as np
@@ -36,7 +36,6 @@ def expZ(state):
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
 
-
 class BasicTest(BaseTest):
     """Qnode tests.
     """
@@ -44,10 +43,9 @@ class BasicTest(BaseTest):
         self.dev1 = qm.device('default.qubit', wires=1)
         self.dev2 = qm.device('default.qubit', wires=2)
 
-
     def test_qnode_fail(self):
         "Tests that expected failures correctly raise exceptions."
-        log.info('test_qnode_fail')
+        self.logTestName()
         par = 0.5
 
         #---------------------------------------------------------
@@ -89,8 +87,7 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
             qf(par)
 
-        # a wire cannot be measured more than once
-        log.info('test_multiple_expectation_same_wire')
+        # a wire cannot be measured more than once=
         @qm.qfunc(self.dev2)
         def qf(x):
             qm.RX(x, [0])
@@ -142,7 +139,7 @@ class BasicTest(BaseTest):
             return qm.expectation.PauliZ(0)
         q = qm.QNode(qf, self.dev2)
         with self.assertRaisesRegex(ValueError, 'Cannot differentiate wrt'):
-            q.gradient(par)
+            q.jacobian(par)
 
         # operation that does not support the 'A' method
         def qf(x):
@@ -150,7 +147,7 @@ class BasicTest(BaseTest):
             return qm.expectation.Hermitian(np.diag([x, 0]), 0)
         q = qm.QNode(qf, self.dev2)
         with self.assertRaisesRegex(ValueError, 'analytic gradient method cannot be used with'):
-            q.gradient(par, method='A')
+            q.jacobian(par, method='A')
 
         #---------------------------------------------------------
         ## bad input parameters
@@ -161,29 +158,29 @@ class BasicTest(BaseTest):
         # if indices wrt. which the gradient is taken are specified they must be unique
         q = qm.QNode(qf_ok, self.dev2)
         with self.assertRaisesRegex(ValueError, 'indices must be unique'):
-            q.gradient(par, which=[0,0])
+            q.jacobian(par, which=[0,0])
 
         # gradient wrt. nonexistent parameters
         q = qm.QNode(qf_ok, self.dev2)
         with self.assertRaisesRegex(ValueError, 'Tried to compute the gradient wrt'):
-            q.gradient(par, which=[0,6])
+            q.jacobian(par, which=[0,6])
         with self.assertRaisesRegex(ValueError, 'Tried to compute the gradient wrt'):
-            q.gradient(par, which=[1,-1])
+            q.jacobian(par, which=[1,-1])
 
         # unknown grad method
         q = qm.QNode(qf_ok, self.dev1)
         with self.assertRaisesRegex(ValueError, 'Unknown gradient method'):
-            q.gradient(par, method='unknown')
+            q.jacobian(par, method='unknown')
 
         # only order-1 and order-2 finite diff methods are available
         q = qm.QNode(qf_ok, self.dev1)
         with self.assertRaisesRegex(ValueError, 'Order must be 1 or 2'):
-            q.gradient(par, method='F', order=3)
-
+            q.jacobian(par, method='F', order=3)
 
     def test_qnode_cv_gradient_methods(self):
         "Tests the gradient computation methods on CV circuits."
         # we can only use the 'A' method on parameters which only affect gaussian operations that are not succeeded by nongaussian operations
+        self.logTestName()
 
         par = [0.4, -2.3]
         def check_methods(qf, d):
@@ -225,10 +222,9 @@ class BasicTest(BaseTest):
             return qm.expectation.X(0), qm.expectation.X(1)
         check_methods(qf, {0:'A', 1:'F'})
 
-
     def test_qnode_multiple_gate_parameters(self):
         "Tests that gates with multiple free parameters yield correct gradients."
-        log.info('test_qnode_multiple_gate_parameters')
+        self.logTestName()
         par = [0.5, 0.3, -0.7]
 
         def qf(x, y, z):
@@ -239,21 +235,20 @@ class BasicTest(BaseTest):
 
         q = qm.QNode(qf, self.dev1)
         value = q(*par)
-        grad_A = q.gradient(par, method='A')
-        grad_F = q.gradient(par, method='F')
+        grad_A = q.jacobian(par, method='A')
+        grad_F = q.jacobian(par, method='F')
 
         # analytic method works for every parameter
         self.assertTrue(q.grad_method_for_par == {0:'A', 1:'A', 2:'A'})
-        # gradient has the correct length and every element is nonzero
-        self.assertEqual(len(grad_A), 3)
+        # gradient has the correct shape and every element is nonzero
+        self.assertEqual(grad_A.shape, (1,3))
         self.assertEqual(np.count_nonzero(grad_A), 3)
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
 
-
     def test_qnode_repeated_gate_parameters(self):
         "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
-        log.info('test_qnode_repeated_gate_parameters')
+        self.logTestName()
         par = [0.8, 1.3]
 
         def qf(x, y):
@@ -262,16 +257,15 @@ class BasicTest(BaseTest):
             return qm.expectation.PauliX(0)
 
         q = qm.QNode(qf, self.dev1)
-        grad_A = q.gradient(par, method='A')
-        grad_F = q.gradient(par, method='F')
+        grad_A = q.jacobian(par, method='A')
+        grad_F = q.jacobian(par, method='F')
 
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
 
-
     def test_qnode_parameters_inside_array(self):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
-        log.info('test_qnode_parameters_inside_array')
+        self.logTestName()
         par = [0.8, 1.3]
 
         def qf(x, y):
@@ -280,8 +274,8 @@ class BasicTest(BaseTest):
             return qm.expectation.Hermitian(np.diag([y, 1]), 0)
 
         q = qm.QNode(qf, self.dev1)
-        grad = q.gradient(par)
-        grad_F = q.gradient(par, method='F')
+        grad = q.jacobian(par)
+        grad_F = q.jacobian(par, method='F')
 
         # par[0] can use the 'A' method, par[1] cannot
         self.assertTrue(q.grad_method_for_par == {0:'A', 1:'F'})
@@ -291,7 +285,7 @@ class BasicTest(BaseTest):
 
     def test_qnode_fanout(self):
         "Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."
-        log.info('test_qnode_fanout')
+        self.logTestName()
 
         def circuit(reused_param, other_param):
             qm.RX(reused_param, [0])
@@ -312,9 +306,47 @@ class BasicTest(BaseTest):
                 y_true = expZ(final_state)
                 self.assertAlmostEqual(y_eval, y_true, delta=self.tol)
 
+
+    def test_qnode_array_parameters(self):
+        """Test that QNode can take arrays as input arguments, and that they interact properly with autograd."""
+        self.logTestName()
+
+        @qm.qfunc(self.dev1)
+        def circuit_n1s(dummy1, array, dummy2):
+            qm.RY(0.5 * array[0,1], 0)
+            qm.RY(-0.5 * array[1,1], 0)
+            return qm.expectation.PauliX(0)  # returns a scalar
+
+        @qm.qfunc(self.dev1)
+        def circuit_n1v(dummy1, array, dummy2):
+            qm.RY(0.5 * array[0,1], 0)
+            qm.RY(-0.5 * array[1,1], 0)
+            return qm.expectation.PauliX(0),  # note the comma, returns a 1-vector
+
+        @qm.qfunc(self.dev2)
+        def circuit_nn(dummy1, array, dummy2):
+            qm.RY(0.5 * array[0,1], 0)
+            qm.RY(-0.5 * array[1,1], 0)
+            qm.RY(array[1,0], 1)
+            return qm.expectation.PauliX(0), qm.expectation.PauliX(1)  # returns a 2-vector
+
+        args = (0.46, np.array([[2., 3., 0.3], [7., 4., 2.1]]), -0.13)
+        grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
+        cost_target = 1.03257
+        for circuit in [circuit_n1s, circuit_n1v, circuit_nn]:
+            def cost(x, array, y):
+                c = circuit(0.111, array, 4.5)
+                if not np.isscalar(c):
+                    c = c[0]  # get a scalar
+                return c +0.5*array[0,0] +x -0.4*y
+
+            cost_grad = autograd.grad(cost, argnum=[0, 1, 2])
+            self.assertAllAlmostEqual(cost(*args), cost_target, delta=self.tol)
+            self.assertAllAlmostEqual(cost_grad(*args), grad_target, delta=self.tol)
+
     def test_array_parameters_evaluate(self):
         "Test that array parameters gives same result as positional arguments."
-        log.info('test_array_parameters')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -335,31 +367,31 @@ class BasicTest(BaseTest):
 
         circuit1 = qm.QNode(circuit1, self.dev2)
         positional_res = circuit1(a, b, c)
-        positional_grad = circuit1.gradient([a, b, c])
+        positional_grad = circuit1.jacobian([a, b, c])
 
         circuit2 = qm.QNode(circuit2, self.dev2)
         array_res = circuit2(a, np.array([b, c]))
-        array_grad = circuit2.gradient([a, np.array([b, c])])
+        array_grad = circuit2.jacobian([a, np.array([b, c])])
 
         list_res = circuit2(a, [b, c])
-        list_grad = circuit2.gradient([a, [b, c]])
+        list_grad = circuit2.jacobian([a, [b, c]])
 
         self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
         self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
 
         circuit3 = qm.QNode(circuit3, self.dev2)
         array_res = circuit3(np.array([a, b, c]))
-        array_grad = circuit3.gradient([np.array([a, b, c])])
+        array_grad = circuit3.jacobian([np.array([a, b, c])])
 
         list_res = circuit3([a, b, c])
-        list_grad = circuit3.gradient([[a, b, c]])
+        list_grad = circuit3.jacobian([[a, b, c]])
 
         self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
         self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
 
     def test_array_parameters_autograd(self):
         "Test that array parameters autograd gives same result as positional arguments."
-        log.info('test_array_parameters_autograd')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -381,7 +413,7 @@ class BasicTest(BaseTest):
         circuit1 = qm.QNode(circuit1, self.dev2)
         grad1 = autograd.grad(circuit1, argnum=[0, 1, 2])
 
-        positional_grad = circuit1.gradient([a, b, c])
+        positional_grad = circuit1.jacobian([a, b, c])
         positional_autograd = grad1(a, b, c)
         self.assertAllAlmostEqual(positional_grad, positional_autograd, delta=self.tol)
 
@@ -389,7 +421,7 @@ class BasicTest(BaseTest):
         grad2 = autograd.grad(circuit2, argnum=[0, 1])
 
         # NOTE: Mixing array and positional arguments doesn't seem to work with autograd!
-        # array_grad = circuit2.gradient([a, np.array([b, c])])
+        # array_grad = circuit2.jacobian([a, np.array([b, c])])
         # array_autograd = grad2(a, np.array([b, c]))
         # array_autograd_flat = list(_flatten(array_autograd))
         # self.assertAllAlmostEqual(array_grad, array_autograd_flat, delta=self.tol)
@@ -397,10 +429,9 @@ class BasicTest(BaseTest):
         circuit3 = qm.QNode(circuit3, self.dev2)
         grad3 = autograd.grad(circuit3)
 
-        array_grad = circuit3.gradient([np.array([a, b, c])])
+        array_grad = circuit3.jacobian([np.array([a, b, c])])
         array_autograd = grad3(np.array([a, b, c]))
         self.assertAllAlmostEqual(array_grad, array_autograd, delta=self.tol)
-
 
     @staticmethod
     def expected_jacobian(x, y, z):
@@ -417,7 +448,7 @@ class BasicTest(BaseTest):
 
     def test_multiple_expectation_different_wires(self):
         "Tests that qnodes return multiple expectation values."
-        log.info('test_multiple_expectation_different_wires')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -442,7 +473,7 @@ class BasicTest(BaseTest):
 
     def test_multiple_expectation_jacobian_positional(self):
         "Tests that qnodes using positional arguments return multiple expectation values."
-        log.info('test_multiple_expectation_jacobian_positional')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -455,8 +486,8 @@ class BasicTest(BaseTest):
         circuit = qm.QNode(circuit, self.dev2)
 
         # compare our manual Jacobian computation to theoretical result
-        # Note: circuit.gradient actually returns a full jacobian in this case
-        res = circuit.gradient(np.array([a, b, c]))
+        # Note: circuit.jacobian actually returns a full jacobian in this case
+        res = circuit.jacobian(np.array([a, b, c]))
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
 
         # compare our manual Jacobian computation to autograd
@@ -470,7 +501,7 @@ class BasicTest(BaseTest):
 
     def test_multiple_expectation_jacobian_array(self):
         "Tests that qnodes using an array argument return multiple expectation values."
-        log.info('test_multiple_expectation_jacobian_array')
+        self.logTestName()
 
         a, b, c = 0.5, 0.54, 0.3
 
@@ -482,7 +513,7 @@ class BasicTest(BaseTest):
 
         circuit = qm.QNode(circuit, self.dev2)
 
-        res = circuit.gradient([np.array([a, b, c])])
+        res = circuit.jacobian([np.array([a, b, c])])
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
 
         jac = autograd.jacobian(circuit, 0)

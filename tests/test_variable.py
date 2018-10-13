@@ -16,7 +16,7 @@ Unit tests for the :mod:`openqml` utility classes :class:`ParRef`, :class:`Comma
 """
 import unittest
 import logging as log
-log.getLogger()
+log.getLogger('defaults')
 
 import numpy as np
 import numpy.random as nr
@@ -25,9 +25,11 @@ from defaults import openqml, BaseTest
 from openqml.variable import Variable
 
 class BasicTest(BaseTest):
-    """Utility class tests."""
+    """Variable class tests."""
     def test_variable(self):
         "Variable reference tests."
+        self.logTestName()
+
         n = 10
         m = nr.randn(n)  # parameter multipliers
         par_fixed = nr.randn(n)  # fixed parameter values
@@ -59,7 +61,7 @@ class BasicTest(BaseTest):
         check(par_fixed, par_fixed)
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', utility classes.')
+    print('Testing OpenQML version ' + openqml.version() + ', Variable class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,):
