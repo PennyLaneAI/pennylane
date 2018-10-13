@@ -1,4 +1,4 @@
-"""Simple qubit optimization example.
+"""Qubit optimization example.
 
 This "hello world" example for PennyLane optimizes two rotation angles
 to flip a qubit from state |0> to state |1>.
@@ -9,6 +9,7 @@ from openqml import numpy as np
 from openqml.optimize import GradientDescentOptimizer
 
 dev = qm.device('default.qubit', wires=1)
+
 
 @qm.qfunc(dev)
 def circuit(variables):
@@ -27,12 +28,11 @@ vars_init = np.array([0.001, 0.001])
 print('Initial rotation angles:', vars_init)
 print('Initial cost: {: 0.7f}'.format(objective(vars_init)))
 
-# Gradient descent
 print('\nGradient descent Optimizer')
 o = GradientDescentOptimizer(0.5)
 variables = vars_init
-for it in np.arange(1, 101):
+for it in range(100):
     variables = o.step(objective, variables)
     if it % 5 == 0:
-        print('Cost after step {:5d}: {: 0.7f}'.format(it, objective(variables)))
-print('Optimized rotation angles:', variables)
+        print('Cost after step {:5d}: {: 0.7f}'.format(it+1, objective(variables)))
+        print('Optimized rotation angles:', variables)
