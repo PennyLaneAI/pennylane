@@ -260,7 +260,7 @@ class QNode:
         if QNode._current_context is None:
             QNode._current_context = self
         else:
-            raise QuantumFunctionError('Should not happen, QNode._current_context must not be modified outside this method.')
+            raise QuantumFunctionError('QNode._current_context must not be modified outside this method.')
         # generate the program queue by executing the qfunc
         try:
             res = self.func(*variables, **kwargs)
