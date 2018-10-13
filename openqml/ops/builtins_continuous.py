@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Built-in continuous quantum operations
-======================================
+Continuous quantum operations
+=============================
 
 .. todo::
 
@@ -60,16 +60,28 @@ class Rotation(CVOperation):
         R(\phi) = \exp\left(i \phi \ad \a\right)=\exp\left(i \frac{\phi}{2}
         \left(\frac{\x^2+  \p^2}{\hbar}-\I\right)\right)
 
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{dr}D(r,\phi) = D\left(\frac{1}{2s}, \phi\right) - D(s, \phi)`
+    * Heisenberg representation:
+
+      .. math:: \begin{bmatrix} 1 & 0 & 0 \\ 2r\cos\phi & 1 & 0 \\ 2r\sin\phi & 0 & 1\end{bmatrix}
+
     Args:
         phi (float): the rotation angle.
     """
+    n_wires = 1
+    n_params = 1
     @staticmethod
     def _heisenberg_rep(p):
         return _rotation(p[0])
 
 
 class Displacement(CVOperation):
-    r"""Continuous-variable phase space displacement.
+    r"""Displacement(r, phi, wires=None)
+    Continuous-variable phase space displacement.
 
     .. math::
        D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
@@ -77,16 +89,25 @@ class Displacement(CVOperation):
 
     where :math:`\alpha = r e^{i\phi}` has magnitude :math:`r\geq 0` and phase :math:`\phi`.
 
-    The gate is parameterized so that a user can specify a single complex number :math:`\alpha=a`
-    or use the polar form :math:`\alpha = r e^{i\phi}` and still get the same result.
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 2
+    * Gradient recipe: :math:`\frac{d}{dr}D(r,\phi) = D\left(\frac{1}{2s}, \phi\right) - D(s, \phi)`
+    * Heisenberg representation:
+
+      .. math:: \begin{bmatrix} 1 & 0 & 0 \\ 2r\cos\phi & 1 & 0 \\ 2r\sin\phi & 0 & 1\end{bmatrix}
 
     Args:
-        a (complex): displacement parameter :math:`\alpha`
+        r (float): displacement magnitude :math:`r=|\alpha|`
         phi (float): phase angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on.
     """
+    n_wires = 1
     n_params = 2
     shift = 0.1
     grad_recipe = [(0.5/shift, shift), None]
+
     @staticmethod
     def _heisenberg_rep(p):
         c = np.cos(p[1])
