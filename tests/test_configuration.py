@@ -14,22 +14,23 @@
 """
 Unit tests for the :mod:`openqml` configuration classe :class:`Configuration`.
 """
+# pylint: disable=protected-access
 import unittest
 import os
 import logging as log
-log.getLogger()
-
-import numpy as np
-import numpy.random as nr
 
 import toml
 
 from defaults import openqml, BaseTest
+import openqml as qm
 from openqml import Configuration
+
+log.getLogger('defaults')
 
 
 filename = 'default_config.toml'
 expected_config = toml.load(filename)
+
 
 class BasicTest(BaseTest):
     """Configuration class tests."""
@@ -37,7 +38,7 @@ class BasicTest(BaseTest):
     def test_loading_current_directory(self):
         """Test that the default configuration file can be loaded
         from the current directory."""
-        log.info("test_loading_current_directory")
+        self.logTestName()
 
         os.curdir = "."
         os.environ["OPENQML_CONF"] = ""
@@ -49,7 +50,7 @@ class BasicTest(BaseTest):
     def test_loading_environment_variable(self):
         """Test that the default configuration file can be loaded
         from an environment variable."""
-        log.info("test_loading_environment_variable")
+        self.logTestName()
 
         os.curdir = "None"
         os.environ["OPENQML_CONF"] = os.getcwd()
@@ -62,7 +63,7 @@ class BasicTest(BaseTest):
     def test_loading_absolute_path(self):
         """Test that the default configuration file can be loaded
         from an absolute path."""
-        log.info("test_loading_absolute_path")
+        self.logTestName()
 
         os.curdir = "None"
         os.environ["OPENQML_CONF"] = ""
@@ -73,17 +74,17 @@ class BasicTest(BaseTest):
 
     def test_not_found_warning(self):
         """Test that a warning is raised if no configuration file found."""
-        log.info("test_not_found_warning")
+        self.logTestName()
 
         with self.assertLogs(level='WARNING') as l:
-            config = Configuration()
+            Configuration()
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
             self.assertIn('No OpenQML configuration file found.', l.output[0])
 
     def test_save(self):
         """Test saving a configuration file."""
-        log.info("test_save")
+        self.logTestName()
 
         config = Configuration(name=filename)
 
@@ -97,7 +98,7 @@ class BasicTest(BaseTest):
 
     def test_get_item(self):
         """Test getting items."""
-        log.info("test_get_item")
+        self.logTestName()
 
         config = Configuration(name=filename)
 
@@ -115,7 +116,7 @@ class BasicTest(BaseTest):
 
     def test_set_item(self):
         """Test setting items."""
-        log.info("test_set_item")
+        self.logTestName()
 
         config = Configuration(name=filename)
 
@@ -142,7 +143,7 @@ class BasicTest(BaseTest):
 
     def test_bool(self):
         """Test boolean value of the Configuration object."""
-        log.info("test_bool")
+        self.logTestName()
 
         # test false if no config is loaded
         config = Configuration()
@@ -153,11 +154,25 @@ class BasicTest(BaseTest):
         self.assertTrue(config)
 
 
+class OpenQMLInitTests(BaseTest):
+    """Tests to ensure that the code in OpenQML/__init__.py
+    correctly knows how to load and use configuration data"""
+
+    def test_device_load(self):
+        """Test loading a device with a configuration."""
+        self.logTestName()
+
+        config = Configuration(name=filename)
+        dev = qm.device('strawberryfields.fock', wires=2, config=config)
+
+        self.assertTrue(dev.hbar, 1)
+        self.assertTrue(dev.cutoff, 10)
+
 if __name__ == '__main__':
     print('Testing OpenQML version ' + openqml.version() + ', Configuration class.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (BasicTest,):
+    for t in (BasicTest, OpenQMLInitTests):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
