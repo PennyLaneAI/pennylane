@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml` configuration classe :class:`Configuration`.
+Unit tests for the :mod:`openqml.plugin.DefaultQubit` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
@@ -566,7 +566,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
             # compare to reference result
             def reference(*x):
-                """SF reference circuit"""
+                """reference circuit"""
                 if callable(qop):
                     # if the default.qubit is an operation accepting parameters,
                     # initialise it using the parameters generated above.
@@ -628,7 +628,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
             # compare to reference result
             def reference(*x):
-                """SF reference circuit"""
+                """reference circuit"""
                 if callable(qop):
                     # if the default.qubit is an operation accepting parameters,
                     # initialise it using the parameters generated above.

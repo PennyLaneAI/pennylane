@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# pylint: disable=inconsistent-return-statements
 """
 Default Gaussian plugin
 =======================
@@ -34,7 +34,6 @@ Auxillary functions
 
 .. autosummary::
    rotation_matrix
-   changebasis
 
 Gates and operations
 --------------------
@@ -95,24 +94,6 @@ def rotation_matrix(phi):
     """
     return np.array([[np.cos(phi), -np.sin(phi)],
                      [np.sin(phi), np.cos(phi)]])
-
-
-def changebasis(n):
-    r"""Change of basis matrix between the two Gaussian representation orderings.
-
-    This is the matrix necessary to transform covariances matrices written
-    in the (x_1,...,x_n,p_1,...,p_n) to the (x_1,p_1,...,x_n,p_n) ordering
-
-    Args:
-        n (int): number of modes
-    Returns:
-        array: :math:`2n\times 2n` matrix
-    """
-    m = np.zeros((2*n, 2*n))
-    for i in range(n):
-        m[2*i, i] = 1
-        m[2*i+1, i+n] = 1
-    return m
 
 
 #========================================================
@@ -283,17 +264,19 @@ def vacuum_state(wires, hbar=2.):
     return state
 
 
-def coherent_state(a, hbar=2.):
+def coherent_state(a, phi=0, hbar=2.):
     r""" Returns the coherent state.
 
     Args:
         a (complex) : the displacement
+        phi (float): the phase
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
     Returns:
         array: the coherent state
     """
-    means = np.array([a.real, a.imag]) * np.sqrt(2*hbar)
+    alpha = a*np.exp(1j*phi)
+    means = np.array([alpha.real, alpha.imag]) * np.sqrt(2*hbar)
     cov = np.identity(2) * hbar/2
     state = [means, cov]
     return state
@@ -382,7 +365,7 @@ class DefaultGaussian(Device):
         'DisplacedSqueezedState': displaced_squeezed_state,
         'SqueezedState': squeezed_state,
         'ThermalState': thermal_state,
-        'GaussianState': lambda p: p
+        'GaussianState': lambda *p, hbar=2: p
     }
 
     _observable_map = {
@@ -398,7 +381,7 @@ class DefaultGaussian(Device):
     def __init__(self, wires, *, shots=0, hbar=2):
         super().__init__(self.short_name, wires, shots)
         self.eng = None
-        self._hbar = hbar
+        self.hbar = hbar
         self.reset()
 
     def pre_apply(self):
@@ -408,13 +391,30 @@ class DefaultGaussian(Device):
         if gate_name == 'Displacement':
             # modify the means
             alpha = par[0]*np.exp(1j*par[1])
-            self._state[0][wires[0]] += alpha.real*np.sqrt(2*self._hbar)
-            self._state[0][wires[0]+self.wires] += alpha.imag*np.sqrt(2*self._hbar)
+            self._state[0][wires[0]] += alpha.real*np.sqrt(2*self.hbar)
+            self._state[0][wires[0]+self.wires] += alpha.imag*np.sqrt(2*self.hbar)
+            return
+
+        if gate_name == 'GaussianState':
+            if wires != list(range(self.wires)):
+                raise ValueError("GaussianState means vector or covariance matrix is "
+                                 "the incorrect size for the number of subsystems.")
+            self._state = self._operator_map[gate_name](*par, hbar=self.hbar)
             return
 
         if 'State' in gate_name:
             # set the new device state
-            self._state = self._operator_map[gate_name](*par, hbar=self._hbar)
+            w = wires[0]
+            mu, cov = self._operator_map[gate_name](*par, hbar=self.hbar)
+
+            # insert the new state into the means vector
+            self._state[0][[w, w+self.wires]] = mu
+
+            # insert the new state into the covariance matrix
+            ind = np.concatenate([np.array([w]), np.array([w])+self.wires])
+            rows = ind.reshape(-1, 1)
+            cols = ind.reshape(1, -1)
+            self._state[1][rows, cols] = cov
             return
 
         # get the symplectic matrix
@@ -434,26 +434,10 @@ class DefaultGaussian(Device):
             S2 = np.identity(2*self.wires)
             w = np.array(wires)
 
-            # X
-            rows = w.reshape(-1, 1)
-            cols = w.reshape(1, -1)
-            S2[rows, cols] = S[:2, :2].copy()
-
-            # P
-            ind = w+self.wires
-            rows = ind.reshape(-1, 1)
-            cols = ind.reshape(1, -1)
-            S2[rows, cols] = S[2:, 2:].copy()
-
-            # mode XP
-            rows = w.reshape(-1, 1)
-            cols = (w+self.wires).reshape(1, -1)
-            S2[rows, cols] = S[:2, 2:].copy()
-
-            # mode PX
-            rows = (w+self.wires).reshape(-1, 1)
-            cols = w.reshape(1, -1)
-            S2[rows, cols] = S[2:, :2].copy()
+            S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:2, :2].copy() #X
+            S2[(w+self.wires).reshape(-1, 1), (w+self.wires).reshape(1, -1)] = S[2:, 2:].copy() #P
+            S2[w.reshape(-1, 1), (w+self.wires).reshape(1, -1)] = S[:2, 2:].copy() #XP
+            S2[(w+self.wires).reshape(-1, 1), w.reshape(1, -1)] = S[2:, :2].copy() #PX
 
         # apply symplectic matrix to the means vector
         means = S2 @ self._state[0]
@@ -491,8 +475,8 @@ class DefaultGaussian(Device):
 
         # measurement/expectation value
         if observable == 'PhotonNumber':
-            ex = (np.trace(cov) + mu.T @ mu)/(2*self._hbar) - 1/2
-            var = (np.trace(cov @ cov) + 2*mu.T @ cov @ mu)/(2*self._hbar**2) - 1/4
+            ex = (np.trace(cov) + mu.T @ mu)/(2*self.hbar) - 1/2
+            var = (np.trace(cov @ cov) + 2*mu.T @ cov @ mu)/(2*self.hbar**2) - 1/4
             return ex, var
 
         if observable == 'X':
@@ -536,16 +520,14 @@ class DefaultGaussian(Device):
             var = 2*np.trace(A @ cov @ A @ cov) + d2.T @ cov @ d2
 
             modes = np.arange(2*self.wires).reshape(2, -1).T
-            var -= np.sum([np.linalg.det(self._hbar*A[:, m][n]) for m in modes for n in modes])
+            var -= np.sum([np.linalg.det(self.hbar*A[:, m][n]) for m in modes for n in modes])
 
             return ex, var
-
-        return None
 
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
-        self._state = vacuum_state(self.wires, self._hbar)
+        self._state = vacuum_state(self.wires, self.hbar)
 
     def reduced_state(self, wires):
         r""" Returns the vector of means and the covariance matrix of the specified wires.
@@ -565,7 +547,7 @@ class DefaultGaussian(Device):
         if isinstance(wires, int):
             wires = [wires]
 
-        if len(wires) > self.wires:
+        if np.any(np.array(wires) > self.wires):
             raise ValueError("The number of specified wires cannot "
                              "be larger than the number of subsystems.")
 
