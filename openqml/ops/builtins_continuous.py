@@ -15,8 +15,10 @@
 CV quantum operations
 =====================
 
+.. currentmodule:: openqml.ops.builtins_continuous
+
 This section contains the available built-in continuous-variable
-quantum operations supported by OpenQML and their conventions.
+quantum operations supported by OpenQML, as well as their conventions.
 
 .. todo::
 
@@ -26,6 +28,42 @@ quantum operations supported by OpenQML and their conventions.
 
    Possible solution: disallow such operations to depend on free parameters,
    this way they won't be differentiated.
+
+
+Gates
+-----
+
+.. autosummary::
+    Beamsplitter
+    ControlledAddition
+    ControlledPhase
+    Displacement
+    Kerr
+    CrossKerr
+    QuadraticPhase
+    Rotation
+    Squeezing
+    TwoModeSqueezing
+    CubicPhase
+
+
+State preparation
+-----------------
+
+.. autosummary::
+    CatState
+    CoherentState
+    FockDensityMatrix
+    DisplacedSqueezedState
+    FockState
+    FockStateVector
+    SqueezedState
+    ThermalState
+    GaussianState
+
+
+Details
+-------
 """
 import numpy as np
 import scipy as sp
@@ -292,7 +330,6 @@ class Beamsplitter(CVOperation):
     * Number of wires: 1
     * Number of parameters: 2
     * Gradient recipe: :math:`\frac{d}{dr}B(r,\phi) = \frac{1}{2} \left[B(\theta+\pi/2, \phi) - B(\theta-\pi/2, \phi)\right]`
-      where :math:`s=0.1` by default.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
