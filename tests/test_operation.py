@@ -78,6 +78,19 @@ class BasicTest(BaseTest):
                 G = (Up-U) / h
                 self.assertAllAlmostEqual(D, G, delta=self.tol)
 
+            # make sure that `heisenberg_expand` method receives enough wires to actually expand
+            # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
+            # so only check multimode ops
+            if len(op.wires) > 1:
+                with self.assertRaisesRegex(ValueError, 'Number of wires is too small to fit Heisenberg matrix'):
+                    op.heisenberg_expand(U, len(op.wires) - 1)
+
+            # validate size of input for `heisenberg_expand` method
+            with self.assertRaisesRegex(ValueError, 'Heisenberg matrix is the wrong size'):
+                U = U[1:,1:]
+                op.heisenberg_expand(U, len(op.wires))
+
+
         for cls in openqml.ops.builtins_continuous.all_ops + openqml.expectation.builtins_continuous.all_ops:
             if cls._heisenberg_rep is not None:  # only test gaussian operations
                 h_test(cls)
@@ -138,10 +151,20 @@ class BasicTest(BaseTest):
                     cls(*n*[0.7], wires=ww, do_queue=False)
                 with self.assertRaisesRegex(TypeError, 'Natural number'):
                     cls(*n*[-1], wires=ww, do_queue=False)
-            else:
+            elif cls.par_domain == 'R':
                 # params must be real numbers
                 with self.assertRaisesRegex(TypeError, 'Real scalar parameter expected'):
                     cls(*n*[1j], wires=ww, do_queue=False)
+
+            # if par_domain ever gets overridden to an unsupported value, should raise exception
+            tmp = cls.par_domain
+            with self.assertRaisesRegex(TypeError, 'Unknown parameter domain'):
+                cls.par_domain = 'junk'
+                cls(*n*[0.0], wires=ww, do_queue=False)
+                cls.par_domain = 7
+                cls(*n*[0.0], wires=ww, do_queue=False)
+
+            cls.par_domain = tmp
 
 
         for cls in openqml.ops.builtins_discrete.all_ops:
