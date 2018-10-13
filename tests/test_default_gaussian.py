@@ -24,7 +24,6 @@ from scipy.linalg import block_diag
 
 from defaults import openqml as qm, BaseTest
 
-from openqml.plugins.default_gaussian import rotation_matrix
 from openqml.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
                                               beamsplitter, two_mode_squeezing,
                                               controlled_addition, controlled_phase)
@@ -59,22 +58,6 @@ def prep_par(par, op):
     if op.par_domain == 'A':
         return [np.diag([x, 1]) for x in par]
     return par
-
-
-class TestAuxillaryFunctions(BaseTest):
-    """Test auxillary functions."""
-
-    def test_rotation_matrix(self):
-        """Test that the correct rotation matrix is returned."""
-        self.logTestName()
-
-        # test identity for theta=0
-        self.assertAllAlmostEqual(rotation_matrix(0), np.identity(2), delta=self.tol)
-
-        # test Fourier rotation
-        phi = np.pi/2
-        expected = np.array([[0, -1], [1, 0]])
-        self.assertAllAlmostEqual(rotation_matrix(phi), expected, delta=self.tol)
 
 
 class TestGates(BaseTest):

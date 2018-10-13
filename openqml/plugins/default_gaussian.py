@@ -29,12 +29,6 @@ It implements all the :class:`~openqml.device.Device` methods as well as all bui
 continuous-variable Gaussian gates and observables, and provides
 a very simple simulation of a Gaussian-based quantum circuit architecture.
 
-Auxillary functions
--------------------
-
-.. autosummary::
-   rotation_matrix
-
 Gates and operations
 --------------------
 
@@ -78,22 +72,6 @@ log.getLogger()
 
 # tolerance for numerical errors
 tolerance = 1e-10
-
-
-#========================================================
-#  auxillary functions
-#========================================================
-
-def rotation_matrix(phi):
-    r"""Rotation matrix.
-
-    Args:
-        phi (float): rotation angle
-    Returns:
-        array: :math:`2\times 2` rotation matrix
-    """
-    return np.array([[np.cos(phi), -np.sin(phi)],
-                     [np.sin(phi), np.cos(phi)]])
 
 
 #========================================================
@@ -486,7 +464,7 @@ class DefaultGaussian(Device):
             return mu[1], cov[1, 1]
 
         if observable == 'Homodyne':
-            rot = rotation_matrix(params[0])
+            rot = rotation(params[0])
             muphi = rot.T @ mu
             covphi = rot.T @ cov @ rot
             return muphi[0], covphi[0, 0]
