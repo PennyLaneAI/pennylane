@@ -92,7 +92,7 @@ QNode methods
    __call__
    evaluate
    evaluate_obs
-   gradient
+   jacobian
 
 QNode internal methods
 ----------------------
@@ -454,12 +454,12 @@ class QNode:
         return ret
 
 
-    def gradient(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
-        """Compute the gradient (or Jacobian) of the node.
+    def jacobian(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
+        """Compute the Jacobian of the node.
 
-        Returns the gradient of the parametrized quantum circuit encapsulated in the QNode.
+        Returns the Jacobian of the parametrized quantum circuit encapsulated in the QNode.
 
-        The gradient can be computed using several methods:
+        The Jacobian can be computed using several methods:
 
         * Finite differences (``'F'``). The first order method evaluates the circuit at
           n+1 points of the parameter space, the second order method at 2n points,
@@ -478,9 +478,9 @@ class QNode:
 
         Args:
             params (nested Sequence[Number], Number): point in parameter space at which to evaluate the gradient
-            which  (Sequence[int], None): return the gradient with respect to these parameters.
+            which  (Sequence[int], None): return the Jacobian with respect to these parameters.
                 None means all.
-            method (str): gradient computation method, see above
+            method (str): Jacobian computation method, see above
 
         Keyword Args:
             h (float): finite difference method step size
@@ -706,7 +706,7 @@ def QNode_vjp(ans, self, args, **kwargs):
           nested Sequence[float]: vector-Jacobian product, arranged into the nested structure of the QNode input arguments
         """
         # Jacobian matrix of the circuit
-        jac = self.gradient(args, **kwargs)
+        jac = self.jacobian(args, **kwargs)
         if len(g.shape) == 0:
             temp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
         else:

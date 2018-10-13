@@ -31,11 +31,11 @@ Functions
 
 .. autosummary::
    spectral_decomposition_qubit
+   Rphi
    frx
    fry
    frz
    fr3
-   ket
    unitary
    hermitian
 
@@ -47,13 +47,14 @@ Classes
 
 ----
 """
+import logging as log
 
 import numpy as np
 from scipy.linalg import expm, eigh
 
-import openqml as qm
-from openqml.device import Device, DeviceError
+from openqml.device import Device
 
+log.getLogger()
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -77,7 +78,7 @@ def spectral_decomposition_qubit(A):
     P = []
     for k in range(2):
         temp = v[:, k]
-        P.append(np.outer(temp.conj(), temp))
+        P.append(np.outer(temp, temp.conj()))
     return d, P
 
 
@@ -95,11 +96,22 @@ H = np.array([[1, 1], [1, -1]])/np.sqrt(2)
 # Two qubit gates
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
 
 #========================================================
 #  parametrized gates
 #========================================================
+
+def Rphi(phi):
+    r"""One-qubit phase shift.
+
+    Args:
+        phi (float): phase shift angle
+    Returns:
+        array: unitary 2x2 phase shift matrix.
+    """
+    return np.array([[1, 0], [0, np.exp(1j*phi)]])
 
 
 def frx(theta):
@@ -150,19 +162,6 @@ def fr3(a, b, c):
 #  Arbitrary states and operators
 #========================================================
 
-def ket(*args):
-    r"""Input validation for an arbitary state vector.
-
-    Args:
-        args (array): NumPy array.
-
-    Returns:
-        array: normalised array.
-    """
-    state = np.asarray(args)
-    return state/np.linalg.norm(state)
-
-
 def unitary(*args):
     r"""Input validation for an arbitary unitary operation.
 
@@ -177,7 +176,7 @@ def unitary(*args):
     if U.shape[0] != U.shape[1]:
         raise ValueError("Operator must be a square matrix.")
 
-    if not np.allclose(U @ U.conj().T, np.identity(U.shape[0]), atol=tolerance):
+    if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):
         raise ValueError("Operator must be unitary.")
 
     return U
@@ -197,7 +196,7 @@ def hermitian(*args):
     if A.shape[0] != A.shape[1]:
         raise ValueError("Observable must be a square matrix.")
 
-    if not np.allclose(A, A.conj().T, atol=tolerance):
+    if not np.allclose(A, A.conj().T):
         raise ValueError("Observable must be Hermitian.")
     return A
 
@@ -221,17 +220,23 @@ class DefaultQubit(Device):
     version = '0.1.0'
     author = 'Xanadu Inc.'
 
+    # Note: BasisState and QubitStateVector don't
+    # map to any particular function, as they modify
+    # the internal device state directly.
+    # These two operators would be better suited for
+    # methods, but are not in scope for class attributes.
     _operator_map = {
-        'QubitStateVector': ket,
+        'BasisState': None,
+        'QubitStateVector': None,
         'QubitUnitary': unitary,
-        'Hermitian': hermitian,
-        'Identity': I,
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
         'Hadamard': H,
         'CNOT': CNOT,
         'SWAP': SWAP,
+        'CZ': CZ,
+        'PhaseShift': Rphi,
         'RX': frx,
         'RY': fry,
         'RZ': frz,
@@ -245,8 +250,6 @@ class DefaultQubit(Device):
         'Hermitian': hermitian
     }
 
-    _circuits = {}
-
     def __init__(self, wires, *, shots=0):
         super().__init__(self.short_name, wires, shots)
         self.eng = None
@@ -255,16 +258,22 @@ class DefaultQubit(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, gate_name, wires, params):
+    def apply(self, gate_name, wires, par):
         if gate_name == 'QubitStateVector':
-            state = np.asarray(params[0], dtype=np.float64)
+            state = np.asarray(par[0], dtype=np.float64)
             if state.ndim == 1 and state.shape[0] == 2**self.wires:
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             return
+        elif gate_name == 'BasisState':
+            if int(par[0])-par[0] != 0. or par[0] >= 2**self.wires or par[0] < 0:
+                raise ValueError('Computational basis state must be a positive integer.')
+            self._state = np.zeros_like(self._state)
+            self._state[int(par[0])] = 1.
+            return
 
-        A = self._get_operator_matrix(gate_name, params)
+        A = self._get_operator_matrix(gate_name, par)
 
         # apply unitary operations
         if len(wires) == 1:
@@ -276,43 +285,35 @@ class DefaultQubit(Device):
 
         self._state = U @ self._state
 
-
-    def expectation(self, observable, wires, params):
+    def expectation(self, observable, wires, par):
         # measurement/expectation value <psi|A|psi>
-        A = self._get_operator_matrix(observable, params)
+        A = self._get_operator_matrix(observable, par)
         if self.shots == 0:
             # exact expectation value
             ev = self.ev(A, wires)
         else:
             # estimate the ev
-            if 0:
-                # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-                ev = self.ev(A, wires)
-                var = self.ev(A**2, wires) - ev**2  # variance
-                ev = np.random.normal(ev, np.sqrt(var / self.shots))
-            else:
-                # sample Bernoulli distribution n_eval times / binomial distribution once
-                a, P = spectral_decomposition_qubit(A)
-                p0 = self.ev(P[0], wires)  # probability of measuring a[0]
-                n0 = np.random.binomial(self.shots, p0)
-                ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
+            # sample Bernoulli distribution n_eval times / binomial distribution once
+            a, P = spectral_decomposition_qubit(A)
+            p0 = self.ev(P[0], wires)  # probability of measuring a[0]
+            n0 = np.random.binomial(self.shots, p0)
+            ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
 
         return ev
 
-
-    def _get_operator_matrix(self, op_name, params):
+    def _get_operator_matrix(self, op_name, par):
         """Get the operator matrix for a given operation.
 
         Args:
           op_name    (str): name of the operation/observable
-          params (tuple[float]): parameter values
+          par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        A = self._operator_map[op_name]
+        A = {**self._operator_map, **self._observable_map}[op_name]
         if not callable(A):
             return A
-        return A(*params)
+        return A(*par)
 
     def ev(self, A, wires):
         r"""Expectation value of a one-qubit observable in the current state.
@@ -331,7 +332,7 @@ class DefaultQubit(Device):
         expectation = np.vdot(self._state, A @ self._state)
 
         if np.abs(expectation.imag) > tolerance:
-            log.warning('Nonvanishing imaginary part {} in expectation value.'.format(expectation.imag))
+            log.warning('Nonvanishing imaginary part % in expectation value.', expectation.imag)
         return expectation.real
 
     def reset(self):
@@ -356,7 +357,7 @@ class DefaultQubit(Device):
             raise ValueError('One target subsystem required.')
         wires = wires[0]
         before = 2**wires
-        after  = 2**(self.wires-wires-1)
+        after = 2**(self.wires-wires-1)
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
         return U
 
@@ -400,23 +401,3 @@ class DefaultQubit(Device):
         U = U.reshape(dim * 2).transpose(perm).reshape([temp, temp])
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
         return U
-
-
-#====================
-# Default circuits
-#====================
-
-
-dev = DefaultQubit(wires=2)
-
-def node(x, y, z):
-    qm.RX(x, [0])
-    qm.CNOT([0, 1])
-    qm.RY(-1.6, [0])
-    qm.RY(y, [1])
-    qm.CNOT([1, 0])
-    qm.RX(z, [0])
-    qm.CNOT([0, 1])
-    return qm.expectation.Hermitian(X, 0)
-
-#circuits = {'demo_ev': QNode(node, dev)}
