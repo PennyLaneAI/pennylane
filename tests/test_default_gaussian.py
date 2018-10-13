@@ -77,14 +77,14 @@ class TestGates(BaseTest):
         self.assertAllAlmostEqual(out, expected, delta=self.tol)
 
     def test_squeezing(self):
-        """Test the squeezing Symplectic transform."""
+        """Test the squeezing symplectic transform."""
         self.logTestName()
 
         r = 0.543
         phi = 0.123
         S = squeezing(r, phi)
 
-        # apply to a vacuum state covariance matrix
+        # apply to an identity covariance matrix
         out = S @ S.T
         expected = rotation(phi/2) @ np.diag(np.exp([-2*r, 2*r])) @ rotation(phi/2).T
         self.assertAllAlmostEqual(out, expected, delta=self.tol)
@@ -215,7 +215,7 @@ class TestStates(BaseTest):
         self.assertAllAlmostEqual(cov, S @ S.T, delta=self.tol)
 
     def test_displaced_squeezed_state(self):
-        """Test the squeezed state is correct."""
+        """Test the displaced squeezed state is correct."""
         self.logTestName()
         a = 0.541+0.109j
         r = 0.432
