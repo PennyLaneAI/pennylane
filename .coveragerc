@@ -22,6 +22,11 @@ exclude_lines =
     if 0:
     pass
     if __name__ == .__main__.:
+    
+    # Ignore things that would have trivial tests
+    raise NotImplementedError
+    def version
+    
 
 ignore_errors = True
 

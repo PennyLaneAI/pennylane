@@ -92,7 +92,7 @@ QNode methods
    __call__
    evaluate
    evaluate_obs
-   gradient
+   jacobian
 
 QNode internal methods
 ----------------------
@@ -454,12 +454,12 @@ class QNode:
         return ret
 
 
-    def gradient(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
-        """Compute the gradient (or Jacobian) of the node.
+    def jacobian(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
+        """Compute the Jacobian of the node.
 
-        Returns the gradient of the parametrized quantum circuit encapsulated in the QNode.
+        Returns the Jacobian of the parametrized quantum circuit encapsulated in the QNode.
 
-        The gradient can be computed using several methods:
+        The Jacobian can be computed using several methods:
 
         * Finite differences (``'F'``). The first order method evaluates the circuit at
           n+1 points of the parameter space, the second order method at 2n points,
@@ -478,9 +478,9 @@ class QNode:
 
         Args:
             params (nested Sequence[Number], Number): point in parameter space at which to evaluate the gradient
-            which  (Sequence[int], None): return the gradient with respect to these parameters.
+            which  (Sequence[int], None): return the Jacobian with respect to these parameters.
                 None means all.
-            method (str): gradient computation method, see above
+            method (str): Jacobian computation method, see above
 
         Keyword Args:
             h (float): finite difference method step size
@@ -489,7 +489,7 @@ class QNode:
                 the expectation values. For simulator backends, 0 yields the exact result.
 
         Returns:
-            array[float]: gradient vector/Jacobian matrix, shape == (n_out, len(which))
+            array[float]: Jacobian matrix, shape == (n_out, len(which))
         """
         # in QNode.construct we need to be able to (essentially) apply the unpacking operator to params
         if isinstance(params, numbers.Number):
@@ -538,7 +538,7 @@ class QNode:
                 y0 = None
 
         # compute the partial derivative w.r.t. each parameter using the proper method
-        grad = np.zeros((len(which), self.output_dim), dtype=float)
+        grad = np.zeros((self.output_dim, len(which)), dtype=float)
 
         for i, k in enumerate(which):
             if k not in self.variable_ops:
@@ -547,18 +547,15 @@ class QNode:
 
             par_method = method[k]
             if par_method == 'A':
-                grad[i, :] = self._pd_analytic(flat_params, k, **kwargs)
+                grad[:, i] = self._pd_analytic(flat_params, k, **kwargs)
             elif par_method == 'F':
-                grad[i, :] = self._pd_finite_diff(flat_params, k, h, order, y0, **kwargs)
+                grad[:, i] = self._pd_finite_diff(flat_params, k, h, order, y0, **kwargs)
             elif par_method is None:
                 raise ValueError('Cannot differentiate wrt parameter {}.'.format(k))
             else:
                 raise ValueError('Unknown gradient method.')
 
-        if self.output_dim == 1:
-            return grad[:, 0]
-
-        return grad.T
+        return grad
 
     def _pd_finite_diff(self, params, idx, h=1e-7, order=1, y0=None, **kwargs):
         """Partial derivative of the node using the finite difference method.
@@ -701,19 +698,23 @@ def QNode_vjp(ans, self, args, **kwargs):
     of the QNode evaluation for specific argnums at the specified parameter values.
     """
     def gradient_product(g):
-        """Vector Jacobian product operator"""
+        """Vector Jacobian product operator.
+
+        Args:
+          g (array): scalar or vector multiplying the Jacobian from the left (output side)
+        Returns:
+          nested Sequence[float]: vector-Jacobian product, arranged into the nested structure of the QNode input arguments
+        """
+        # Jacobian matrix of the circuit
+        jac = self.jacobian(args, **kwargs)
         if len(g.shape) == 0:
-            if len(args) == 1 and isinstance(args[0], np.ndarray):
-                return [self.gradient(args, **kwargs)]
+            temp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
+        else:
+            temp = g @ jac
 
-            return g * self.gradient(args, **kwargs)
-
-        if len(args) == 1 and isinstance(args[0], np.ndarray):
-            # This feels hacky, but is required if the argument
-            # is a single np.ndarray
-            return [g] @ self.gradient(args, **kwargs)
-
-        return g @ self.gradient(args, **kwargs)
+        # restore the nested structure of the input args
+        temp = unflatten(temp.flat, args)
+        return temp
 
     return gradient_product
 
