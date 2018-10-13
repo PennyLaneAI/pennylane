@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Built-in discrete-variable quantum Operations
-=============================================
+Built-in discrete quantum operations
+====================================
 
 At the moment just qubit operations.
 

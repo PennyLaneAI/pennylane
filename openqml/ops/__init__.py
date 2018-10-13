@@ -15,7 +15,33 @@
 Core operations
 ===============
 
-TODO
+OpenQML supports a collection of built-in quantum operations,
+including both discrete-variable (DV) gates as used in the qubit model,
+and continuous-variable gates as used in the qumode model of quantum
+computation.
+
+Here, we summaries the built-in operations supported by OpenQML, as well
+as the conventions chosen for their implementation.
+
+.. note::
+
+    If writing a plugin device for OpenQML, make sure that your plugin
+    supports the required OpenQML built-in operations defined here,
+    by including them in your device ``_operation_map``.
+
+    If the operator convention differs between the built-in OpenQML operator
+    and the corresponding operation in the targeted framework, ensure that the
+    conversion between the two conventions takes places automatically
+    by the plugin device.
+
+
+.. rst-class:: contents local topic
+
+.. toctree::
+   :maxdepth: 2
+
+   ops/discrete
+   ops/continuous
 """
 
 from .builtins_continuous import *
