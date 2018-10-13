@@ -99,6 +99,7 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(QuantumFunctionError, 'QNode._current_context must not be modified outside this method.'):
             qnode.construct([0.0])
         QNode._current_context = None
+
         #---------------------------------------------------------
         ## faulty quantum functions
 
@@ -199,6 +200,20 @@ class BasicTest(BaseTest):
         q = qm.QNode(qf, self.dev2)
         with self.assertRaisesRegex(ValueError, 'analytic gradient method cannot be used with'):
             q.jacobian(par, method='A')
+
+        # bogus gradient method set
+        def qf(x):
+            qm.RX(x, [0])
+            return qm.expectation.PauliZ(0)
+        q = qm.QNode(qf, self.dev2)
+        q.evaluate([0.0])
+        keys = q.grad_method_for_par.keys()
+        if len(keys) > 0:
+            k0 = [k for k in keys][0]
+
+        q.grad_method_for_par[k0] = 'J'
+        with self.assertRaisesRegex(ValueError, 'Unknown gradient method'):
+            q.jacobian(par)
 
         #---------------------------------------------------------
         ## bad input parameters
