@@ -24,7 +24,7 @@ from autograd import numpy as np
 
 from defaults import openqml as qm, BaseTest
 
-from openqml.qnode import _flatten, unflatten
+from openqml.qnode import _flatten, unflatten, QNode
 from openqml.plugins.default import CNOT, frx, fry, frz, I, Y, Z
 from openqml.device import QuantumFunctionError, DeviceError
 
@@ -88,6 +88,17 @@ class BasicTest(BaseTest):
         self.logTestName()
         par = 0.5
 
+        #---------------------------------------------------------
+        ## QNode internal issues
+
+        # current context should not be set before `construct` is called
+        def qf(x):
+            return qm.expectation.PauliZ(0)
+        qnode = QNode(qf, self.dev1)
+        QNode._current_context = qnode
+        with self.assertRaisesRegex(QuantumFunctionError, 'QNode._current_context must not be modified outside this method.'):
+            qnode.construct([0.0])
+        QNode._current_context = None
         #---------------------------------------------------------
         ## faulty quantum functions
 
