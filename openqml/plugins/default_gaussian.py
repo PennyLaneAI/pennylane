@@ -34,6 +34,7 @@ Gates and operations
 
 .. autosummary::
     rotation
+    displacement
     squeezing
     quadratic_phase
     beamsplitter
@@ -51,6 +52,8 @@ State preparation
     squeezed_state
     displaced_squeezed_state
     thermal_state
+    gaussian_state
+    set_state
 
 Classes
 -------
@@ -91,8 +94,27 @@ def rotation(phi):
                      [np.sin(phi), np.cos(phi)]])
 
 
+def displacement(state, wire, alpha, hbar=2):
+    """Displacement in the phase space
+
+    Args:
+        state (tuple): contains means vector
+            and covariance matrix.
+        wire (int): wire that the displacement acts on.
+        alpha (float): complex displacement.
+
+    Returns:
+        tuple: contains the vector of means
+            and covariance matrix.
+    """
+    mu = state[0]
+    mu[wire] += alpha.real*np.sqrt(2*hbar)
+    mu[wire+len(mu)//2] += alpha.imag*np.sqrt(2*hbar)
+    return mu, state[1]
+
+
 def squeezing(r, phi):
-    """squeezing in the phase space
+    """Squeezing in the phase space
 
     Args:
         r (float): squeezing magnitude.
@@ -311,6 +333,161 @@ def thermal_state(nbar, hbar=2.):
     return state
 
 
+def gaussian_state(mu, cov, hbar=2.):
+    r""" Returns the Gaussian state.
+
+    This is simply a bare wrapper function,
+    since the means vector and covariance matrix
+    can be passed via the parameters unchanged.
+
+    Note that both the means vector and covariance
+    matrix should be in (x1, ..., xN, p1, ..., pN)
+    ordering.
+
+    Args:
+        mu (array): vector means. Must be length-2N,
+            where N is the number of modes.
+        cov (array): covariance matrix. Must be dimension 2Nx2N,
+            where N is the number of modes.
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`.
+
+    Returns:
+        array: the thermal state
+    """
+    return mu, cov
+
+
+def set_state(state, wire, mu, cov):
+    r"""Inserts a single mode Gaussian into the
+    state representation of the complete system.
+
+    Args:
+        state (tuple): contains means vector
+            and covariance matrix of existing state.
+        wire (int): wire corresponding to the new Gaussian state.
+        mu (array): vector of means to insert.
+        cov (array): covariance matrix to insert.
+
+    Returns:
+        tuple: contains the vector of means and covariance matrix.
+    """
+    mu0 = state[0]
+    cov0 = state[1]
+    N = len(mu0)//2
+
+    # insert the new state into the means vector
+    mu0[[wire, wire+N]] = mu
+
+    # insert the new state into the covariance matrix
+    ind = np.concatenate([np.array([wire]), np.array([wire])+N])
+    rows = ind.reshape(-1, 1)
+    cols = ind.reshape(1, -1)
+    cov0[rows, cols] = cov
+
+    return mu0, cov0
+
+
+#========================================================
+#  expectations
+#========================================================
+
+
+def photon_number(mu, cov, wires, params, hbar=2.):
+    r"""Calculates the mean photon number for a given one-mode state.
+
+    Args:
+        mu (array): length-2 vector of means.
+        cov (array): 2x2 covariance matrix.
+        wires (Sequence[int]): wires to calculate the expectation for.
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`.
+
+    Returns:
+        tuple: contains the photon number expectation and variance.
+    """
+    ex = (np.trace(cov) + mu.T @ mu)/(2*hbar) - 1/2
+    var = (np.trace(cov @ cov) + 2*mu.T @ cov @ mu)/(2*hbar**2) - 1/4
+    return ex, var
+
+
+def homodyne(phi=None):
+    """Function factory that returns the Homodyne expectation of a one mode state.
+
+    Args:
+        phi (float): the default phase space axis to perform the Homodyne measurement.
+
+    Returns:
+        function: A function that accepts a single mode means vector, covariance matrix,
+            and phase space angle phi, and returns the quadrature expectation
+            value and variance.
+    """
+    if phi is not None:
+        def _homodyne(mu, cov, wires, params, hbar=2.):
+            """Arbitrary angle homodyne expectation."""
+            rot = rotation(phi)
+            muphi = rot.T @ mu
+            covphi = rot.T @ cov @ rot
+            return muphi[0], covphi[0, 0]
+        return _homodyne
+
+    def _homodyne(mu, cov, wires, params, hbar=2.):
+        """Arbitrary angle homodyne expectation."""
+        rot = rotation(params[0])
+        muphi = rot.T @ mu
+        covphi = rot.T @ cov @ rot
+        return muphi[0], covphi[0, 0]
+    return _homodyne
+
+
+def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
+    r"""Calculates the expectation and variance for an arbitrary
+    polynomial of quadrature operators.
+
+    Args:
+        mu (array): length-2 vector of means.
+        cov (array): 2x2 covariance matrix.
+        wires (Sequence[int]): wires to calculate the expectation for.
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`.
+
+    Returns:
+        tuple: contains the photon number expectation and variance.
+    """
+    Q = params[0]
+    N = len(mu)//2
+
+    # HACK, we need access to the Poly instance in order to expand the matrix!
+    op = qm.expectation.PolyXP(Q, wires=wires, do_queue=False)
+    Q = op.heisenberg_obs(N)
+
+    if Q.ndim == 1:
+        d = np.r_[Q[1::2], Q[2::2]]
+        return d.T @ mu + Q[0], d.T @ cov @ d
+
+    # convert to the (I, x1,x2,..., p1,p2...) ordering
+    M = np.vstack((Q[0:1, :], Q[1::2, :], Q[2::2, :]))
+    M = np.hstack((M[:, 0:1], M[:, 1::2], M[:, 2::2]))
+    d1 = M[1:, 0]
+    d2 = M[0, 1:]
+
+    A = M[1:, 1:]
+    d = d1 + d2
+    k = M[0, 0]
+
+    d2 = 2*A @ mu + d
+    k2 = mu.T @ A @ mu + mu.T @ d + k
+
+    ex = np.trace(A @ cov) + k2
+    var = 2*np.trace(A @ cov @ A @ cov) + d2.T @ cov @ d2
+
+    modes = np.arange(2*N).reshape(2, -1).T
+    groenewald_correction = np.sum([np.linalg.det(hbar*A[:, m][n]) for m in modes for n in modes])
+    var -= groenewald_correction
+
+    return ex, var
+
+
 #========================================================
 #  device
 #========================================================
@@ -334,7 +511,7 @@ class DefaultGaussian(Device):
         'Beamsplitter': beamsplitter,
         'ControlledAddition': controlled_addition,
         'ControlledPhase': controlled_phase,
-        'Displacement': None,
+        'Displacement': displacement,
         'QuadraticPhase': quadratic_phase,
         'Rotation': rotation,
         'Squeezing': squeezing,
@@ -343,15 +520,15 @@ class DefaultGaussian(Device):
         'DisplacedSqueezedState': displaced_squeezed_state,
         'SqueezedState': squeezed_state,
         'ThermalState': thermal_state,
-        'GaussianState': lambda *p, hbar=2: p
+        'GaussianState': gaussian_state
     }
 
     _observable_map = {
-        'PhotonNumber': None,
-        'X': None,
-        'P': None,
-        'Homodyne': None,
-        'PolyXP': None
+        'PhotonNumber': photon_number,
+        'X': homodyne(0),
+        'P': homodyne(np.pi/2),
+        'Homodyne': homodyne(None),
+        'PolyXP': poly_quad_expectations
     }
 
     _circuits = {}
@@ -367,140 +544,93 @@ class DefaultGaussian(Device):
 
     def apply(self, gate_name, wires, par):
         if gate_name == 'Displacement':
-            # modify the means
-            alpha = par[0]*np.exp(1j*par[1])
-            self._state[0][wires[0]] += alpha.real*np.sqrt(2*self.hbar)
-            self._state[0][wires[0]+self.wires] += alpha.imag*np.sqrt(2*self.hbar)
-            return
+            self._state = displacement(self._state, wires[0], par[0]*np.exp(1j*par[1]))
+            return # we are done here
 
         if gate_name == 'GaussianState':
             if wires != list(range(self.wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
             self._state = self._operator_map[gate_name](*par, hbar=self.hbar)
-            return
+            return # we are done here
 
         if 'State' in gate_name:
             # set the new device state
-            w = wires[0]
             mu, cov = self._operator_map[gate_name](*par, hbar=self.hbar)
-
-            # insert the new state into the means vector
-            self._state[0][[w, w+self.wires]] = mu
-
-            # insert the new state into the covariance matrix
-            ind = np.concatenate([np.array([w]), np.array([w])+self.wires])
-            rows = ind.reshape(-1, 1)
-            cols = ind.reshape(1, -1)
-            self._state[1][rows, cols] = cov
-            return
+            # state preparations only act on at most 1 subsystem
+            self._state = set_state(self._state, wires[0], mu, cov)
+            return # we are done here
 
         # get the symplectic matrix
         S = self._operator_map[gate_name](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:
-            w = wires[0]
-            S2 = np.identity(2*self.wires)
-
-            ind = np.concatenate([np.array([w]), np.array([w])+self.wires])
-            rows = ind.reshape(-1, 1)
-            cols = ind.reshape(1, -1)
-            S2[rows, cols] = S.copy()
-
+            S = self.expand_one(S, wires[0])
         elif len(wires) == 2:
-            S2 = np.identity(2*self.wires)
-            w = np.array(wires)
-
-            S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:2, :2].copy() #X
-            S2[(w+self.wires).reshape(-1, 1), (w+self.wires).reshape(1, -1)] = S[2:, 2:].copy() #P
-            S2[w.reshape(-1, 1), (w+self.wires).reshape(1, -1)] = S[:2, 2:].copy() #XP
-            S2[(w+self.wires).reshape(-1, 1), w.reshape(1, -1)] = S[2:, :2].copy() #PX
+            S = self.expand_two(S, wires)
 
         # apply symplectic matrix to the means vector
-        means = S2 @ self._state[0]
-
+        means = S @ self._state[0]
         # apply symplectic matrix to the covariance matrix
-        cov = S2 @ self._state[1] @ S2.T
+        cov = S @ self._state[1] @ S.T
 
         self._state = [means, cov]
 
-    def expectation(self, observable, wires, par):
-        if self.shots == 0:
-            # exact expectation value
-            ev, var = self.ev(observable, wires, par)
-        else:
-            # estimate the ev
-            # use central limit theorem, sample normal distribution once, only ok if n_eval is large (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            ev, var = self.ev(observable, wires, par)
-            ev = np.random.normal(ev, np.sqrt(var / self.shots))
-
-        return ev
-
-    def ev(self, observable, wires, params):
-        """Returns the expectation value and variance for a particular observable.
+    def expand_one(self, S, wire):
+        """Expands a one-mode Symplectic matrix S to act on the entire subsystem.
 
         Args:
-            observable (str): name of the observable.
-            wires (int or Sequence[int]): wires to be measured.
-            params (Sequence): list of observable parameters.
+            S (array): 2x2 Symplectic matrix.
+            wire (int): the wire S acts on.
 
         Returns:
-            tuple: expected value and variance.
+            array: the resulting 2Nx2N Symplectic matrix.
         """
-        # pylint: disable=too-many-return-statements
+        S2 = np.identity(2*self.wires)
+
+        ind = np.concatenate([np.array([wire]), np.array([wire])+self.wires])
+        rows = ind.reshape(-1, 1)
+        cols = ind.reshape(1, -1)
+        S2[rows, cols] = S.copy()
+
+        return S2
+
+    def expand_two(self, S, wires):
+        """Expands a two-mode Symplectic matrix S to act on the entire subsystem.
+
+        Args:
+            S (array): 4x4 Symplectic matrix.
+            wires (Sequence[int]): the list of two wires S acts on.
+
+        Returns:
+            array: the resulting 2Nx2N Symplectic matrix.
+        """
+        S2 = np.identity(2*self.wires)
+        w = np.array(wires)
+
+        S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:2, :2].copy() #X
+        S2[(w+self.wires).reshape(-1, 1), (w+self.wires).reshape(1, -1)] = S[2:, 2:].copy() #P
+        S2[w.reshape(-1, 1), (w+self.wires).reshape(1, -1)] = S[:2, 2:].copy() #XP
+        S2[(w+self.wires).reshape(-1, 1), w.reshape(1, -1)] = S[2:, :2].copy() #PX
+
+        return S2
+
+    def expectation(self, observable, wires, par):
         mu, cov = self.reduced_state(wires)
-
-        # measurement/expectation value
-        if observable == 'PhotonNumber':
-            ex = (np.trace(cov) + mu.T @ mu)/(2*self.hbar) - 1/2
-            var = (np.trace(cov @ cov) + 2*mu.T @ cov @ mu)/(2*self.hbar**2) - 1/4
-            return ex, var
-
-        if observable == 'X':
-            return mu[0], cov[0, 0]
-
-        if observable == 'P':
-            return mu[1], cov[1, 1]
-
-        if observable == 'Homodyne':
-            rot = rotation(params[0])
-            muphi = rot.T @ mu
-            covphi = rot.T @ cov @ rot
-            return muphi[0], covphi[0, 0]
 
         if observable == 'PolyXP':
             mu, cov = self._state
-            Q = params[0]
 
-            # HACK, we need access to the Poly instance in order to expand the matrix!
-            op = qm.expectation.PolyXP(Q, wires=wires, do_queue=False)
-            Q = op.heisenberg_obs(self.wires)
+        ev, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
 
-            if Q.ndim == 1:
-                d = np.r_[Q[1::2], Q[2::2]]
-                return d.T @ mu + Q[0], d.T @ cov @ d
+        if self.shots != 0:
+            # estimate the ev
+            # use central limit theorem, sample normal distribution once, only ok if n_eval is large
+            # (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
+            ev = np.random.normal(ev, np.sqrt(var / self.shots))
 
-            # convert to the (I, x1,x2,..., p1,p2...) ordering
-            M = np.vstack((Q[0:1, :], Q[1::2, :], Q[2::2, :]))
-            M = np.hstack((M[:, 0:1], M[:, 1::2], M[:, 2::2]))
-            d1 = M[1:, 0]
-            d2 = M[0, 1:]
-
-            A = M[1:, 1:]
-            d = d1 + d2
-            k = M[0, 0]
-
-            d2 = 2*A @ mu + d
-            k2 = mu.T @ A @ mu + mu.T @ d + k
-
-            ex = np.trace(A @ cov) + k2
-            var = 2*np.trace(A @ cov @ A @ cov) + d2.T @ cov @ d2
-
-            modes = np.arange(2*self.wires).reshape(2, -1).T
-            var -= np.sum([np.linalg.det(self.hbar*A[:, m][n]) for m in modes for n in modes])
-
-            return ex, var
+        return ev
 
     def reset(self):
         """Reset the device"""
@@ -526,7 +656,7 @@ class DefaultGaussian(Device):
             wires = [wires]
 
         if np.any(np.array(wires) > self.wires):
-            raise ValueError("The number of specified wires cannot "
+            raise ValueError("The specified wires cannot "
                              "be larger than the number of subsystems.")
 
         ind = np.concatenate([np.array(wires), np.array(wires)+self.wires])

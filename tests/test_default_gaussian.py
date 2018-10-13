@@ -134,8 +134,19 @@ class TestGates(BaseTest):
         B = beamsplitter(np.pi/4, 0)
         Sz = block_diag(squeezing(r, phi), squeezing(-r, phi))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
         expected = B.conj().T @ Sz @ B
-
         self.assertAllAlmostEqual(S, expected, delta=self.tol)
+
+        # test that S |a1, a2> = |ta1+ra2, ta2+ra1>
+        a1 = 0.23+0.12j
+        a2 = 0.23+0.12j
+        out = S @ np.array([a1.real, a2.real, a1.imag, a2.imag])*np.sqrt(2*hbar)
+
+        T = np.cosh(r)
+        R = np.exp(1j*phi)*np.sinh(r)
+        a1out = T*a1 + R*np.conj(a2)
+        a2out = T*a2 + R*np.conj(a1)
+        expected = np.array([a1out.real, a2out.real, a1out.imag, a2out.imag])*np.sqrt(2*hbar)
+        self.assertAllAlmostEqual(out, expected, delta=self.tol)
 
     def test_controlled_addition(self):
         """Test the CX symplectic transform."""
@@ -273,7 +284,7 @@ class TestDefaultGaussianDevice(BaseTest):
             log.debug("\tTesting %s gate...", gate_name)
             self.dev.reset()
 
-            # start in the displaced squeezed state |00>
+            # start in the displaced squeezed state
             a = 0.542+0.123j
             r = 0.652
             phi = -0.124
@@ -298,9 +309,11 @@ class TestDefaultGaussianDevice(BaseTest):
 
                 if gate_name == 'Displacement':
                     alpha = p[0]*np.exp(1j*p[1])
-                    expected_out = self.dev._state
-                    expected_out[0][w[0]] += alpha.real*np.sqrt(2*hbar)
-                    expected_out[0][w[0]+2] += alpha.imag*np.sqrt(2*hbar)
+                    state = self.dev._state
+                    mu = state[0].copy()
+                    mu[w[0]] += alpha.real*np.sqrt(2*hbar)
+                    mu[w[0]+2] += alpha.imag*np.sqrt(2*hbar)
+                    expected_out = mu, state[1]
                 elif 'State' in gate_name:
                     mu, cov = fn(*p, hbar=hbar)
                     expected_out = self.dev._state
@@ -317,6 +330,7 @@ class TestDefaultGaussianDevice(BaseTest):
 
                     # calculate the expected output
                     if op.n_wires == 1:
+                        # reorder from symmetric ordering to xp-ordering
                         S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
 
                     expected_out = S @ self.dev._state[0], S @ self.dev._state[1] @ S.T
@@ -335,7 +349,7 @@ class TestDefaultGaussianDevice(BaseTest):
             p = [thermal_state(0.5)]
             self.dev.apply('GaussianState', wires=[0], par=[p])
 
-    def test_ev(self):
+    def test_expectation(self):
         """Test that expectation values are calculated correctly"""
         self.logTestName()
 
@@ -346,21 +360,21 @@ class TestDefaultGaussianDevice(BaseTest):
         alpha = 0.324-0.59j
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
-        mean, var = dev.ev('PhotonNumber', [0], [])
+        mean = dev.expectation('PhotonNumber', [0], [])
         self.assertAlmostEqual(mean, np.abs(alpha)**2+nbar, delta=self.tol)
-        self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
+        # self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
 
         # test correct mean and variance for Homodyne P measurement
         alpha = 0.324-0.59j
         dev.apply('CoherentState', wires=[0], par=[alpha])
-        mean, var = dev.ev('P', [0], [])
+        mean = dev.expectation('P', [0], [])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
-        self.assertAlmostEqual(var, hbar/2, delta=self.tol)
+        # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
         # test correct mean and variance for Homodyne measurement
-        mean, var = dev.ev('Homodyne', [0], [np.pi/2])
+        mean = dev.expectation('Homodyne', [0], [np.pi/2])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
-        self.assertAlmostEqual(var, hbar/2, delta=self.tol)
+        # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
     def test_reduced_state(self):
         """Test reduced state"""
@@ -524,7 +538,7 @@ class TestDefaultGaussianIntegration(BaseTest):
 
             # compare to reference result
             def reference(*x):
-                """SF reference circuit"""
+                """reference circuit"""
                 if g == 'GaussianState':
                     return x[0][0]
 
@@ -556,8 +570,7 @@ if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', default.gaussian plugin.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestAuxillaryFunctions,
-              TestGates,
+    for t in (TestGates,
               TestStates,
               TestDefaultGaussianDevice,
               TestDefaultGaussianIntegration):
