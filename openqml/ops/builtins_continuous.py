@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Built-in continuous-variable quantum Operations
-===============================================
+Built-in continuous quantum operations
+======================================
 
 .. todo::
 
@@ -28,13 +28,22 @@ from openqml.operation import CVOperation
 
 
 def _rotation(phi, bare=False):
-    """Utility function, returns the Heisenberg transformation of a phase rotation gate.
+    r"""Utility function, returns the Heisenberg transformation of a phase rotation gate.
+
+    The transformation matrix returned is:
+
+    .. math:: T = \begin{bmatrix}
+        1 & 0 & 0\\
+        0 & \cos\phi & -\sin\phi\\
+        0 & \sin\phi & \cos\phi
+        \end{bmatrix}
 
     Args:
-      phi (float): rotation angle
-      bare (bool): if True, return a simple 2d rotation matrix
+        phi (float): rotation angle.
+        bare (bool): if True, return a simple 2d rotation matrix.
+
     Returns:
-      array[float]: transformation matrix
+        array[float]: transformation matrix.
     """
     c = np.cos(phi)
     s = np.sin(phi)
