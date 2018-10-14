@@ -48,7 +48,8 @@ Classes
 .. autosummary::
    DefaultQubit
 
-----
+Details
+-------
 """
 import logging as log
 
@@ -71,10 +72,10 @@ def spectral_decomposition_qubit(A):
     r"""Spectral decomposition of a 2*2 Hermitian matrix.
 
     Args:
-      A (array): 2*2 Hermitian matrix
+        A (array): 2*2 Hermitian matrix
 
     Returns:
-      (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
+        (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
         such that :math:`A = \sum_k a_k P_k`.
     """
     d, v = eigh(A)
@@ -156,7 +157,7 @@ def fr3(a, b, c):
     Args:
         a,b,c (float): rotation angles
     Returns:
-        array: unitary 2x2 rotation matrix rz(c) @ ry(b) @ rz(a)
+        array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
     return frz(c) @ (fry(b) @ frz(a))
 
@@ -213,9 +214,9 @@ class DefaultQubit(Device):
     """Default qubit device for OpenQML.
 
     Args:
-      wires (int): the number of modes to initialize the device in
-      shots (int): How many times should the circuit be evaluated (or sampled) to estimate
-        the expectation values? 0 yields the exact result.
+        wires (int): the number of modes to initialize the device in
+        shots (int): How many times should the circuit be evaluated (or sampled) to estimate
+            the expectation values. 0 yields the exact result.
     """
     name = 'Default OpenQML plugin'
     short_name = 'default.qubit'
@@ -226,8 +227,6 @@ class DefaultQubit(Device):
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
     # the internal device state directly.
-    # These two operators would be better suited for
-    # methods, but are not in scope for class attributes.
     _operator_map = {
         'BasisState': None,
         'QubitStateVector': None,

@@ -219,11 +219,15 @@ class TestStates(BaseTest):
         r = 0.432
         phi = 0.123
         means, cov = squeezed_state(r, phi, hbar=hbar)
-        S = squeezing(r, phi)
+
+        # test vector of means is zero
         self.assertAllAlmostEqual(means, np.zeros([2]), delta=self.tol)
-        # verify that the resulting covariance matrix is equivalent
-        # to applying the squeezing symplectic matrix to the identity
-        self.assertAllAlmostEqual(cov, S @ S.T, delta=self.tol)
+
+        R = rotation(phi/2)
+        expected = R @ np.array([[np.exp(-2*r), 0],
+                                 [0, np.exp(2*r)]]) * hbar/2 @ R.T
+        # test covariance matrix is correct
+        self.assertAllAlmostEqual(cov, expected, delta=self.tol)
 
     def test_displaced_squeezed_state(self):
         """Test the displaced squeezed state is correct."""
@@ -232,11 +236,15 @@ class TestStates(BaseTest):
         r = 0.432
         phi = 0.123
         means, cov = displaced_squeezed_state(a, r, phi, hbar=hbar)
-        S = squeezing(r, phi)
+
+        # test vector of means is correct
         self.assertAllAlmostEqual(means, np.array([a.real, a.imag])*np.sqrt(2*hbar), delta=self.tol)
-        # verify that the resulting covariance matrix is equivalent
-        # to applying the squeezing symplectic matrix to the identity
-        self.assertAllAlmostEqual(cov, S @ S.T, delta=self.tol)
+
+        R = rotation(phi/2)
+        expected = R @ np.array([[np.exp(-2*r), 0],
+                                 [0, np.exp(2*r)]]) * hbar/2 @ R.T
+        # test covariance matrix is correct
+        self.assertAllAlmostEqual(cov, expected, delta=self.tol)
 
     def thermal_state(self):
         """Test the thermal state is correct."""
