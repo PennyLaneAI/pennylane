@@ -96,7 +96,8 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
 
    plugins/overview
    plugins/device
-   plugins/default
+   plugins/default_qubit
+   plugins/default_gaussian
 
 
 Indices and tables
