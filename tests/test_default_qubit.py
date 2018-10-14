@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml` configuration classe :class:`Configuration`.
+Unit tests for the :mod:`openqml.plugin.DefaultQubit` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
@@ -22,7 +22,7 @@ import logging as log
 import numpy as np
 
 from defaults import openqml as qm, BaseTest
-from openqml.plugins.default import (spectral_decomposition_qubit,
+from openqml.plugins.default_qubit import (spectral_decomposition_qubit,
                                      I, X, Z, CNOT, Rphi, frx, fry, frz, fr3,
                                      unitary, hermitian, DefaultQubit)
 
@@ -566,7 +566,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
             # compare to reference result
             def reference(*x):
-                """SF reference circuit"""
+                """reference circuit"""
                 if callable(qop):
                     # if the default.qubit is an operation accepting parameters,
                     # initialise it using the parameters generated above.
@@ -628,7 +628,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
             # compare to reference result
             def reference(*x):
-                """SF reference circuit"""
+                """reference circuit"""
                 if callable(qop):
                     # if the default.qubit is an operation accepting parameters,
                     # initialise it using the parameters generated above.

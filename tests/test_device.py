@@ -29,18 +29,12 @@ from defaults import openqml as qm, BaseTest
 class DeviceTest(BaseTest):
     """Device tests."""
     def setUp(self):
-        self.default_devices = ['default.qubit',
-                                'strawberryfields.gaussian',
-                                'strawberryfields.fock']
+        self.default_devices = ['default.qubit', 'default.gaussian']
 
         self.dev = {}
 
         for device_name in self.default_devices:
-            kwargs = {}
-            if 'fock' in device_name or 'tf' in device_name:
-                kwargs = {'cutoff_dim':5}
-
-            self.dev[device_name] = qm.device(device_name, wires=2, **kwargs)
+            self.dev[device_name] = qm.device(device_name, wires=2)
 
     def test_reset(self):
         """Test reset works (no error is raised). Does not verify

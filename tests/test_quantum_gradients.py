@@ -23,7 +23,7 @@ import autograd
 import autograd.numpy as np
 
 from defaults import openqml as qm, BaseTest
-from openqml.plugins.default import frx as Rx, fry as Ry, frz as Rz
+from openqml.plugins.default_qubit import frx as Rx, fry as Ry, frz as Rz
 
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
@@ -37,11 +37,7 @@ class QuadratureGradientTest(BaseTest):
     """Tests of the automatic gradient method for circuits acting on quadratures.
     """
     def setUp(self):
-        self.fock_dev1 = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=25)
-        self.fock_dev1s = qm.device('strawberryfields.fock', wires=1, hbar=hbar, cutoff_dim=60) # squeezing tests are highly sensitive to low cutoffs
-        self.fock_dev2 = qm.device('strawberryfields.fock', wires=2, hbar=hbar, cutoff_dim=10)
-        self.gaussian_dev = qm.device('strawberryfields.gaussian', wires=2)
-        #TODO: check all tests for both gaussian and fock backends?
+        self.gaussian_dev = qm.device('default.gaussian', wires=2)
 
     def test_rotation_gradient(self):
         "Tests that the automatic gradient of a phase space rotation is correct."
@@ -49,7 +45,7 @@ class QuadratureGradientTest(BaseTest):
 
         alpha = 0.5
 
-        @qm.qfunc(self.fock_dev1)
+        @qm.qfunc(self.gaussian_dev)
         def circuit(y):
             qm.Displacement(alpha, 0., [0])
             qm.Rotation(y, [0])
@@ -70,7 +66,7 @@ class QuadratureGradientTest(BaseTest):
 
         alpha = 0.5
 
-        @qm.qfunc(self.fock_dev2)
+        @qm.qfunc(self.gaussian_dev)
         def circuit(y):
             qm.Displacement(alpha, 0., [0])
             qm.Beamsplitter(y, 0, [0, 1])
@@ -89,7 +85,7 @@ class QuadratureGradientTest(BaseTest):
         "Tests that the automatic gradient of a phase space displacement is correct."
         self.logTestName()
 
-        @qm.qfunc(self.fock_dev1)
+        @qm.qfunc(self.gaussian_dev)
         def circuit(r, phi):
             qm.Displacement(r, phi, [0])
             return qm.expectation.X(0)
@@ -111,7 +107,7 @@ class QuadratureGradientTest(BaseTest):
 
         alpha = 0.5
 
-        @qm.qfunc(self.fock_dev1s)
+        @qm.qfunc(self.gaussian_dev)
         def circuit(y):
             qm.Displacement(alpha, 0., [0])
             qm.Squeezing(y, 0., [0])
