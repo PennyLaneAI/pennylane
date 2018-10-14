@@ -63,6 +63,13 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
 
 .. toctree::
    :maxdepth: 1
+   :caption: Tutorials
+   :hidden:
+
+   tutorials/basic
+
+.. toctree::
+   :maxdepth: 1
    :caption: API
    :hidden:
 
@@ -87,6 +94,7 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :caption: Plugin API
    :hidden:
 
+   plugins/overview
    plugins/device
    plugins/default
 
