@@ -24,7 +24,7 @@ from autograd import numpy as np
 
 from defaults import openqml as qm, BaseTest
 
-from openqml.qnode import _flatten
+from openqml.qnode import _flatten, unflatten, QNode
 from openqml.plugins.default import CNOT, frx, fry, frz, I, Y, Z
 from openqml.device import QuantumFunctionError, DeviceError
 
@@ -35,6 +35,16 @@ def expZ(state):
 
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
+a = np.linspace(-1,1,64)
+shapes = [(64,),
+          (64,1),
+          (32,2),
+          (16,4),
+          (8,8),
+          (16,2,2),
+          (8,2,2,2),
+          (4,2,2,2,2),
+          (2,2,2,2,2,2)]
 
 class BasicTest(BaseTest):
     """Qnode tests.
@@ -43,10 +53,52 @@ class BasicTest(BaseTest):
         self.dev1 = qm.device('default.qubit', wires=1)
         self.dev2 = qm.device('default.qubit', wires=2)
 
+    def test_flatten(self):
+        "Tests that _flatten successfully flattens multidimensional arrays."
+        self.logTestName()
+        flat = a
+        for s in shapes:
+            reshaped = np.reshape(flat, s)
+            flattened = np.array([x for x in _flatten(reshaped)])
+
+            self.assertEqual(flattened.shape, flat.shape)
+            self.assertAllEqual(flattened, flat)
+
+    def test_unflatten(self):
+        "Tests that _unflatten successfully unflattens multidimensional arrays."
+        self.logTestName()
+        flat = a
+        for s in shapes:
+            reshaped = np.reshape(flat, s)
+            unflattened = np.array([x for x in unflatten(flat, reshaped)])
+
+            self.assertEqual(unflattened.shape, reshaped.shape)
+            self.assertAllEqual(unflattened, reshaped)
+
+        with self.assertRaisesRegex(TypeError, 'Unsupported type in the model'):
+            model = lambda x: x # not a valid model for unflatten
+            unflatten(flat, model)
+
+        with self.assertRaisesRegex(ValueError, 'Flattened iterable has more elements than the model'):
+            unflatten(np.concatenate([flat, flat]), reshaped)
+
+
     def test_qnode_fail(self):
         "Tests that expected failures correctly raise exceptions."
         self.logTestName()
         par = 0.5
+
+        #---------------------------------------------------------
+        ## QNode internal issues
+
+        # current context should not be set before `construct` is called
+        def qf(x):
+            return qm.expectation.PauliZ(0)
+        qnode = QNode(qf, self.dev1)
+        QNode._current_context = qnode
+        with self.assertRaisesRegex(QuantumFunctionError, 'QNode._current_context must not be modified outside this method.'):
+            qnode.construct([0.0])
+        QNode._current_context = None
 
         #---------------------------------------------------------
         ## faulty quantum functions
@@ -148,6 +200,20 @@ class BasicTest(BaseTest):
         q = qm.QNode(qf, self.dev2)
         with self.assertRaisesRegex(ValueError, 'analytic gradient method cannot be used with'):
             q.jacobian(par, method='A')
+
+        # bogus gradient method set
+        def qf(x):
+            qm.RX(x, [0])
+            return qm.expectation.PauliZ(0)
+        q = qm.QNode(qf, self.dev2)
+        q.evaluate([0.0])
+        keys = q.grad_method_for_par.keys()
+        if len(keys) > 0:
+            k0 = [k for k in keys][0]
+
+        q.grad_method_for_par[k0] = 'J'
+        with self.assertRaisesRegex(ValueError, 'Unknown gradient method'):
+            q.jacobian(par)
 
         #---------------------------------------------------------
         ## bad input parameters
@@ -259,6 +325,7 @@ class BasicTest(BaseTest):
         q = qm.QNode(qf, self.dev1)
         grad_A = q.jacobian(par, method='A')
         grad_F = q.jacobian(par, method='F')
+
 
         # the different methods agree
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
