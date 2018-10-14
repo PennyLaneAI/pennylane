@@ -24,15 +24,15 @@ def objective(variables):
     return circuit(variables)
 
 
-vars_init = np.array([0.001, 0.001])
-print('Initial rotation angles:', vars_init)
-print('Initial cost: {: 0.7f}'.format(objective(vars_init)))
-
-print('\nGradient descent Optimizer')
 o = GradientDescentOptimizer(0.5)
-variables = vars_init
+
+vars = np.array([0.001, 0.001])
+print('Initial rotation angles:'.format(vars))
+print('Initial cost: {: 0.7f}'.format(objective(vars)))
+
 for it in range(100):
-    variables = o.step(objective, variables)
+    vars = o.step(objective, vars)
     if it % 5 == 0:
-        print('Cost after step {:5d}: {: 0.7f}'.format(it+1, objective(variables)))
-        print('Optimized rotation angles:', variables)
+        print('Cost after step {:5d}: {: 0.7f}'.format(it+1, objective(vars)))
+
+print('Optimized rotation angles:'.format(vars))
