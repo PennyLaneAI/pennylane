@@ -71,7 +71,6 @@ import scipy as sp
 from openqml.operation import CVOperation
 
 
-
 def _rotation(phi, bare=False):
     r"""Utility function, returns the Heisenberg transformation of a phase rotation gate.
 
@@ -129,7 +128,7 @@ class Rotation(CVOperation):
 
 
 class Displacement(CVOperation):
-    r"""Displacement(r, phi, wires=None)
+    r"""Displacement(r, phi, wires)
     Continuous-variable phase space displacement.
 
     .. math::
@@ -167,7 +166,7 @@ class Displacement(CVOperation):
 
 
 class Squeezing(CVOperation):
-    r"""Squeezing(r, phi, wires=None)
+    r"""Squeezing(r, phi, wires)
     Continuous-variable phase space squeezing.
 
     .. math::
@@ -205,7 +204,7 @@ class Squeezing(CVOperation):
 
 
 class TwoModeSqueezing(CVOperation):
-    r"""TwoModeSqueezing(r, phi, wires=None)
+    r"""TwoModeSqueezing(r, phi, wires)
     Continuous-variable phase space two-mode squeezing.
 
     .. math::
@@ -231,7 +230,7 @@ class TwoModeSqueezing(CVOperation):
 
 
 class QuadraticPhase(CVOperation):
-    r"""QuadraticPhase(s, wires=None)
+    r"""QuadraticPhase(s, wires)
     Continuous-variable quadratic phase shift.
 
     .. math::
@@ -253,7 +252,7 @@ class QuadraticPhase(CVOperation):
 
 
 class CubicPhase(CVOperation):
-    r"""CubicPhase(gamma, wires=None)
+    r"""CubicPhase(gamma, wires)
     Continuous-variable cubic phase shift.
 
     .. math::
@@ -275,7 +274,7 @@ class CubicPhase(CVOperation):
 
 
 class Kerr(CVOperation):
-    r"""Kerr(kappa, wires=None)
+    r"""Kerr(kappa, wires)
     Continuous-variable Kerr interaction.
 
     .. math::
@@ -297,7 +296,7 @@ class Kerr(CVOperation):
 
 
 class CrossKerr(CVOperation):
-    r"""CrossKerr(kappa, wires=None)
+    r"""CrossKerr(kappa, wires)
     Continuous-variable Cross-Kerr interaction.
 
     .. math::
@@ -319,7 +318,7 @@ class CrossKerr(CVOperation):
 
 
 class Beamsplitter(CVOperation):
-    r"""Beamsplitter(theta, phi, wires=None)
+    r"""Beamsplitter(theta, phi, wires)
     Continuous-variable beamsplitter interaction.
 
     .. math::
@@ -365,7 +364,7 @@ class Beamsplitter(CVOperation):
 
 
 class ControlledAddition(CVOperation):
-    r"""ControlledAddition(s, wires=None)
+    r"""ControlledAddition(s, wires)
     Continuous-variable controlled addition Operation.
 
     .. math::
@@ -388,7 +387,7 @@ class ControlledAddition(CVOperation):
 
 
 class ControlledPhase(CVOperation):
-    r"""ControlledPhase(s, wires=None)
+    r"""ControlledPhase(s, wires)
     Continuous-variable controlled phase Operation.
 
     .. math::
@@ -416,7 +415,7 @@ class ControlledPhase(CVOperation):
 
 
 class CoherentState(CVOperation):
-    r"""CoherentState(a, phi, wires=None)
+    r"""CoherentState(a, phi, wires)
     Prepares a coherent state.
 
     **Details:**
@@ -436,7 +435,7 @@ class CoherentState(CVOperation):
 
 
 class SqueezedState(CVOperation):
-    r"""SqueezedState(r, phi, wires=None)
+    r"""SqueezedState(r, phi, wires)
     Prepares a squeezed vacuum state.
 
     **Details:**
@@ -456,7 +455,7 @@ class SqueezedState(CVOperation):
 
 
 class DisplacedSqueezedState(CVOperation):
-    r"""DisplacedSqueezedState(a, r, phi, wires=None)
+    r"""DisplacedSqueezedState(a, r, phi, wires)
     Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
@@ -485,7 +484,7 @@ class DisplacedSqueezedState(CVOperation):
 
 
 class FockState(CVOperation):
-    r"""FockState(n, wires=None)
+    r"""FockState(n, wires)
     Prepares a single Fock state.
 
     **Details:**
@@ -505,7 +504,7 @@ class FockState(CVOperation):
 
 
 class ThermalState(CVOperation):
-    r"""ThermalState(nbar, wires=None)
+    r"""ThermalState(nbar, wires)
     Prepares a thermal state.
 
     **Details:**
@@ -524,7 +523,7 @@ class ThermalState(CVOperation):
 
 
 class CatState(CVOperation):
-    r"""CatState(alpha, p, wires=None)
+    r"""CatState(alpha, p, wires)
     Prepares a cat state.
 
     A cat state is the coherent superposition of two coherent states,
@@ -552,7 +551,7 @@ class CatState(CVOperation):
 
 
 class FockStateVector(CVOperation):
-    r"""FockStateVector(state, wires=None)
+    r"""FockStateVector(state, wires)
     Prepare subsystems using the given ket vector in the Fock basis.
 
     **Details:**
@@ -571,7 +570,7 @@ class FockStateVector(CVOperation):
     grad_method = 'F'
 
 class FockDensityMatrix(CVOperation):
-    r"""FockDensityMatrix(state, wires=None)
+    r"""FockDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix in the Fock basis.
 
     **Details:**
@@ -590,7 +589,7 @@ class FockDensityMatrix(CVOperation):
     grad_method = 'F'
 
 class GaussianState(CVOperation):
-    r"""GaussianState(r, V, wires=None)
+    r"""GaussianState(r, V, wires)
     Prepare subsystems in a given Gaussian state.
 
     **Details:**

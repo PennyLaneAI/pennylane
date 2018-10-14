@@ -15,7 +15,33 @@
 Core expectations
 =================
 
-TODO
+OpenQML also supports a collection of built-in quantum **expectations**,
+including both discrete-variable (DV) expectations as used in the qubit model,
+and continuous-variable expectations as used in the qumode model of quantum
+computation.
+
+Here, we summaries the built-in expectations supported by OpenQML, as well
+as the conventions chosen for their implementation.
+
+.. note::
+
+    If writing a plugin device for OpenQML, make sure that your plugin
+    supports the required OpenQML built-in expectations defined here,
+    by including them in your device ``_observable_map``.
+
+    If the operator convention differs between the built-in OpenQML operator
+    and the corresponding expectation in the targeted framework, ensure that the
+    conversion between the two conventions takes places automatically
+    by the plugin device.
+
+
+.. rst-class:: contents local topic
+
+.. toctree::
+   :maxdepth: 2
+
+   expectation/discrete
+   expectation/continuous
 """
 
 from .builtins_continuous import *
