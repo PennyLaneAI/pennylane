@@ -10,6 +10,8 @@ Writing your own OpenQML plugin, to allow an external quantum library to take ad
 
     Once installed, these devices can be loaded directly from OpenQML without any additional steps required by the user - however, depending on the scope of the plugin, the user may have to import additional operations.
 
+.. note:: In your plugin module, vanilla NumPy should be imported in all places: ``import numpy as np``.
+
 
 The device short name
 ---------------------
@@ -28,7 +30,7 @@ Creating your device
 
 The first step in creating your OpenQML plugin is creating your device class. This is as simple as importing the abstract base class :class:`~.Device` from OpenQML, and subclassing it:
 
-.. code-block::
+.. code-block:: python
 
     from openqml import Device
 
