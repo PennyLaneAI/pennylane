@@ -45,7 +45,8 @@ info = {
                 ],
     'entry_points': {
         'openqml.plugins': [
-            'default.qubit = openqml.plugins:DefaultQubit'
+            'default.qubit = openqml.plugins:DefaultQubit',
+            'default.gaussian = openqml.plugins:DefaultGaussian'
             ],
         },
     'description': 'OpenQML is a Python quantum machine learning library by Xanadu Inc.',
