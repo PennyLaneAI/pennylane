@@ -102,6 +102,8 @@ In most cases, there are a minimum of two methods that need to be defined:
 
 However, additional flexibility is sometimes required for interfacing with more complicated frameworks. In such cases, the following (optional) methods may also be defined:
 
+* :meth:`~.Device.__init__`: by default, receives the ``short_name`` of the device, number of wires (``self.num_wires``), and number of shots ``self.shots``. You may overwrite this if you need to add additional options that the user must pass to the device on initialization - however, ensure that you call ``super().__init__(self.short_name, wires, shots)`` at some point here.
+
 * :meth:`~.Device.execution_context`: this returns a context manager that may be required for applying operations and measuring expectation values from the device.
 
 * :meth:`~.Device.pre_apply`: for any setup/code that must be executed before applying operations.
@@ -112,7 +114,7 @@ However, additional flexibility is sometimes required for interfacing with more 
 
 * :meth:`~.Device.post_expectations`: for any setup/code that must be executed after measuring observables.
 
-.. note:: In advanced cases, the :meth:`~.Device.execute` method may be overwritten, to provide complete flexibility for handling device execution. However, this may have unintended side-effects and is not recommended - if possible, try implementing a suitable subset of the methods provided above.
+.. warning:: In advanced cases, the :meth:`~.Device.execute` method may be overwritten, to provide complete flexibility for handling device execution. However, this may have unintended side-effects and is not recommended - if possible, try implementing a suitable subset of the methods provided above.
 
 
 Installation
@@ -188,9 +190,9 @@ In this case, as the plugin is providing a custom operation not supported by Ope
 
 .. note::
 
-    If you are providing a custom/unsupported continuous-variable operation or expectation, you must subclass the :class:`CVOperation` or :class:`CVExpectation` classes instead.
+    If you are providing a custom/unsupported continuous-variable operation or expectation, you must subclass the :class:`~.CVOperation` or :class:`~.CVExpectation` classes instead.
 
-    In addition, for Gaussian CV operations, you may need to provide the static class method :meth:`~._heisenberg_rep` that returns the Heisenberg representation of the operator given its list of parameters:
+    In addition, for Gaussian CV operations, you may need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of the operator given its list of parameters:
 
     .. code-block:: python
 
