@@ -61,7 +61,8 @@ Classes
 .. autosummary::
    DefaultGaussian
 
-----
+Details
+-------
 """
 # pylint: disable=attribute-defined-outside-init
 import logging as log
@@ -98,14 +99,12 @@ def displacement(state, wire, alpha, hbar=2):
     """Displacement in the phase space
 
     Args:
-        state (tuple): contains means vector
-            and covariance matrix.
+        state (tuple): contains means vector and covariance matrix.
         wire (int): wire that the displacement acts on.
         alpha (float): complex displacement.
 
     Returns:
-        tuple: contains the vector of means
-            and covariance matrix.
+        tuple: contains the vector of means and covariance matrix.
     """
     mu = state[0]
     mu[wire] += alpha.real*np.sqrt(2*hbar)
@@ -242,10 +241,9 @@ def squeezed_cov(r, phi, hbar=2):
     cov = np.array([[np.exp(-2*r), 0],
                     [0, np.exp(2*r)]]) * hbar/2
 
-    R = np.array([[np.cos(phi/2), -np.sin(phi/2)],
-                  [np.sin(phi/2), np.cos(phi/2)]])
+    R = rotation(phi/2)
 
-    return np.dot(np.dot(R, cov), R.T)
+    return R @ cov @ R.T
 
 
 def vacuum_state(wires, hbar=2.):
@@ -419,8 +417,8 @@ def homodyne(phi=None):
 
     Returns:
         function: A function that accepts a single mode means vector, covariance matrix,
-            and phase space angle phi, and returns the quadrature expectation
-            value and variance.
+        and phase space angle phi, and returns the quadrature expectation
+        value and variance.
     """
     if phi is not None:
         def _homodyne(mu, cov, wires, params, hbar=2.):
@@ -494,12 +492,14 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
 
 
 class DefaultGaussian(Device):
-    """Default qubit device for OpenQML.
+    r"""Default Gaussian device for OpenQML.
 
     Args:
-      wires (int): the number of modes to initialize the device in
-      shots (int): How many times should the circuit be evaluated (or sampled) to estimate
-        the expectation values? 0 yields the exact result.
+        wires (int): the number of modes to initialize the device in
+        shots (int): How many times should the circuit be evaluated (or sampled) to estimate
+            the expectation values. 0 yields the exact result.
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`.
     """
     name = 'Default Gaussian OpenQML plugin'
     short_name = 'default.gaussian'
