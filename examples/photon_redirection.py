@@ -1,6 +1,6 @@
 """Photon redirection example.
 
-In this demo we optimize a beam splitter
+This "hello world" example for PennyLane optimizes a beam splitter
 to redirect a photon from the first to the second mode.
 """
 
@@ -18,7 +18,7 @@ def circuit(weights):
     qm.FockState(1, [0])
     qm.Beamsplitter(weights[0], weights[1], [0, 1])
 
-    return qm.expectation.PhotonNumber(1)
+    return qm.expectation.PhotonNumber(0)
 
 
 def objective(weights):

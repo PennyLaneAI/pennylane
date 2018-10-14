@@ -247,6 +247,9 @@ class CV:
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
+        if num_wires < len(self.wires):
+            raise ValueError('{}: Number of wires is too small to fit Heisenberg matrix'.format(self.name, num_wires))
+
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis
         dim = 1 + num_wires*2
         def loc(w):
