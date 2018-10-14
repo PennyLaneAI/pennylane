@@ -1,7 +1,7 @@
-"""Photon redirection example.
+"""Quadrature displacement example.
 
-This "hello world" example for PennyLane optimizes a beam splitter
-to redirect a photon from the first to the second mode.
+This "hello world" example for PennyLane optimizes a displacement
+gate to shift the x-quadrature of a Gaussian state to a value of 0.5.
 """
 
 import openqml as qm
