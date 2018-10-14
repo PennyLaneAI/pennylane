@@ -12,56 +12,75 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Devices API
-===========
+Device base class
+=================
 
 **Module name:** :mod:`openqml.device`
 
 .. currentmodule:: openqml.device
 
-This module contains the :class:`Device` class.
-
-
-Classes
--------
+This module contains the :class:`Device` class. This is an abstract base class,
+which should be subclassed, and the appropriate class attributes and methods
+defined. As such, the :class:`Device` class should never be accessed or instantiated
+directly. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`
+or :class:`~.DefaultGaussian`.
 
 .. autosummary::
-   Device
+    Device
 
 Device attributes and methods
 -----------------------------
 
 .. currentmodule:: openqml.device.Device
 
-.. autosummary::
-   short_name
-   gates
-   observables
-   templates
-   capabilities
-   execute
-   reset
-
-Internal Device attributes and methods
---------------------------------------
+The following methods and attributes are accessible from the OpenQML
+user interface:
 
 .. autosummary::
-   _operator_map
-   _observable_map
-   pre_apply
-   post_apply
-   pre_expectations
-   post_expectations
-   execution_context
-   supported
-   check_validity
-   apply
-   expectation
+    short_name
+    gates
+    observables
+    capabilities
+    supported
+    execute
+    reset
+
+Abstract methods and attributes
+-------------------------------
+
+The following methods and attributes must be defined for all devices:
+
+.. autosummary::
+    _operator_map
+    _observable_map
+    apply
+    expectation
+
+In addition, the following may also be optionally defined:
+
+.. autosummary::
+    pre_apply
+    post_apply
+    pre_expectations
+    post_expectations
+    execution_context
+
+
+Internal attributes and methods
+-------------------------------
+
+The following methods and attributes are used internally by the :class:`Device` class,
+to ensure correct operation and internal consistency.
+
+.. autosummary::
+    check_validity
 
 .. currentmodule:: openqml.device
 
-----
+Details
+-------
 """
+# pylint: disable=too-many-format-args
 
 import abc
 import logging
@@ -87,10 +106,10 @@ class Device(abc.ABC):
     """Abstract base class for OpenQML devices.
 
     Args:
-      name  (str): name of the device
-      wires (int): number of subsystems in the quantum state represented by the device
-      shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
-        For simulator devices, 0 means the exact EV is returned.
+        name (str): name of the device.
+        wires (int): number of subsystems in the quantum state represented by the device.
+        shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
+            For simulator devices, 0 results in the exact expectation value being is returned.
     """
     name = ''          #: str: official device plugin name
     api_version = ''   #: str: version of OpenQML for which the plugin was made
@@ -100,18 +119,17 @@ class Device(abc.ABC):
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
     def __init__(self, name, wires, shots):
-        self.name = name    #: str: name of the device
-        self.wires = wires  #: int: number of subsystems
-        self.shots = shots  #: int: number of circuit evaluations used to estimate expectation values, 0 means the exact ev is returned
+        self.name = name
+        self.num_wires = wires
+        self.shots = shots
 
     def __repr__(self):
         """String representation."""
-        return self.__module__ +'.' +self.__class__.__name__ +'\nInstance: ' +self.name
+        return "{}.\nInstance: ".format(self.__module__, self.__class__.__name__, self.name)
 
     def __str__(self):
         """Verbose string representation."""
-        return self.__repr__() +'\nName: ' +self.name +'\nAPI version: ' +self.api_version\
-            +'\nPlugin version: ' +self.version +'\nAuthor: ' +self.author +'\n'
+        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.api_version, self.version, self.author)
 
     @abc.abstractproperty
     def short_name(self):
@@ -155,7 +173,7 @@ class Device(abc.ABC):
         Measurements, batching etc.
 
         Returns:
-          dict[str->*]: results
+            dict[str->*]: results
         """
         return cls._capabilities
 
@@ -167,11 +185,11 @@ class Device(abc.ABC):
         :meth:`apply`, and :meth:`expectation`.
 
         Args:
-          queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device
-          observe (Iterable[~.operation.Expectation]): expectation values to measure and return
-        Returns:
-          array[float]: expectation value(s)
+            queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
+            observe (Iterable[~.operation.Expectation]): expectation values to measure and return.
 
+        Returns:
+            array[float]: expectation value(s)
         """
         self.check_validity(queue, observe)
         with self.execution_context():
@@ -209,6 +227,7 @@ class Device(abc.ABC):
         all operations and method calls (including :meth:`apply` and :meth:`expectation`)
         are then evaluated within the context of this context manager.
         """
+        # pylint: disable=no-self-use
         class MockContext(object): # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute()."""
             def __enter__(self):
@@ -222,9 +241,10 @@ class Device(abc.ABC):
         """Checks if an operation or observable is supported by this device.
 
         Args:
-          name (str): name of the operation or observable
+            name (str): name of the operation or observable
+
         Returns:
-          bool: True iff it is supported
+            bool: True iff it is supported
         """
         return name in self.gates.union(self.observables)
 
@@ -232,8 +252,8 @@ class Device(abc.ABC):
         """Check whether the operations and observables are supported by the device.
 
         Args:
-          queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device
-          observe (Iterable[~.operation.Expectation]): expectation values to measure and return
+            queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
+            observe (Iterable[~.operation.Expectation]): expectation values to measure and return.
         """
         for operation in queue:
             if not self.supported(operation.name):
@@ -248,9 +268,9 @@ class Device(abc.ABC):
         """Apply a quantum operation.
 
         Args:
-          gate_name (str): name of the operation
-          wires (Sequence[int]): subsystems the operation is applied on
-          par (tuple): parameters for the operation
+            gate_name (str): name of the operation
+            wires (Sequence[int]): subsystems the operation is applied on
+            par (tuple): parameters for the operation
         """
         raise NotImplementedError
 
@@ -259,11 +279,12 @@ class Device(abc.ABC):
         """Expectation value of an observable.
 
         Args:
-          observable (str): name of the observable
-          wires (Sequence[int]): subsystems the observable is measured on
-          par (tuple): parameters for the observable
+            observable (str): name of the observable
+            wires (Sequence[int]): subsystems the observable is measured on
+            par (tuple): parameters for the observable
+
         Returns:
-          float: expectation value
+            float: expectation value
         """
         raise NotImplementedError
 
