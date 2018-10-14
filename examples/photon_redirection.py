@@ -8,36 +8,31 @@ import openqml as qm
 from openqml import numpy as np
 from openqml.optimize import GradientDescentOptimizer
 
-#TODO: default CV
-dev = qm.device('default.cv', wires=2, cutoff_dim=10)
+dev = qm.device('default.gaussian', wires=1)
 
 
 @qm.qfunc(dev)
-def circuit(weights):
+def circuit(variables):
 
-    qm.FockState(1, [0])
-    qm.Beamsplitter(weights[0], weights[1], [0, 1])
+    qm.Displacement(variables[0], variables[1], [0])
 
-    return qm.expectation.PhotonNumber(0)
-
-
-def objective(weights):
-    return circuit(weights)
+    return qm.expectation.X(0)
 
 
-weights0 = np.array([0.1, 0.0])
+def objective(variables):
+    return np.abs(circuit(variables) - 0.5)**2
+
 
 o = GradientDescentOptimizer(0.1)
-weights = o.step(objective, weights0)
 
+variables = np.array([5.0, 0.0])
+print('Initial displacement parameters: {}\n'.format(variables))
 
-weights = weights0
-for iteration in range(101):
-    weights = o.step(objective, weights)
-    if iteration % 5 == 0:
-        print('Cost after step {:3d}: {:0.7f}'
-              ''.format(iteration, objective(weights)))
+for iteration in range(10):
+    variables = o.step(objective, variables)
 
+    print('Cost after step {:3d}: {:0.7f}'.format(iteration, objective(variables)))
 
+print('\nOptimized displacement parameters: {}'.format(variables))
 
 
