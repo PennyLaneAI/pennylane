@@ -54,9 +54,8 @@ Details
 from openqml.operation import Operation
 
 
-
 class Hadamard(Operation):
-    r"""Hadamard(wires=None)
+    r"""Hadamard(wires)
     The Hadamard operator.
 
     .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}
@@ -74,7 +73,7 @@ class Hadamard(Operation):
 
 
 class PauliX(Operation):
-    r"""PauliX(wires=None)
+    r"""PauliX(wires)
     The Pauli X operator.
 
     .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}
@@ -92,7 +91,7 @@ class PauliX(Operation):
 
 
 class PauliY(Operation):
-    r"""PauliY(wires=None)
+    r"""PauliY(wires)
     The Pauli Y operator.
 
     .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}
@@ -110,7 +109,7 @@ class PauliY(Operation):
 
 
 class PauliZ(Operation):
-    r"""PauliZ(wires=None)
+    r"""PauliZ(wires)
     The Pauli Z operator.
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}
@@ -128,7 +127,7 @@ class PauliZ(Operation):
 
 
 class CNOT(Operation):
-    r"""CNOT(wires=None)
+    r"""CNOT(wires)
     The controlled-NOT operator.
 
     .. math:: CNOT = \begin{bmatrix}
@@ -153,7 +152,7 @@ class CNOT(Operation):
 
 
 class CZ(Operation):
-    r"""CZ(wires=None)
+    r"""CZ(wires)
     The controlled-Z operator.
 
     .. math:: CZ = \begin{bmatrix}
@@ -178,7 +177,7 @@ class CZ(Operation):
 
 
 class SWAP(Operation):
-    r"""SWAP(wires=None)
+    r"""SWAP(wires)
     The swap operator.
 
     .. math:: SWAP = \begin{bmatrix}
@@ -203,7 +202,7 @@ class SWAP(Operation):
 
 
 class RX(Operation):
-    r"""RX(phi, wires=None)
+    r"""RX(phi, wires)
     The single qubit X rotation.
 
     .. math:: R_x(\phi) = e^{-i\phi\sigma_x/2} = \begin{bmatrix}
@@ -226,7 +225,7 @@ class RX(Operation):
 
 
 class RY(Operation):
-    r"""RY(phi, wires=None)
+    r"""RY(phi, wires)
     The single qubit Y rotation.
 
     .. math:: R_y(\phi) = e^{-i\phi\sigma_y/2} = \begin{bmatrix}
@@ -249,7 +248,7 @@ class RY(Operation):
 
 
 class RZ(Operation):
-    r"""RZ(phi, wires=None)
+    r"""RZ(phi, wires)
     The single qubit Z rotation.
 
     .. math:: R_z(\phi) = e^{-i\phi\sigma_z/2} = \begin{bmatrix}
@@ -272,7 +271,7 @@ class RZ(Operation):
 
 
 class PhaseShift(Operation):
-    r"""PhaseShift(phi, wires=None)
+    r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift.
 
     .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
@@ -295,7 +294,7 @@ class PhaseShift(Operation):
 
 
 class Rot(Operation):
-    r"""Rot(phi, theta, rho, wires=None)
+    r"""Rot(phi, theta, rho, wires)
     Arbitrary single qubit rotation.
 
     .. math:: R(\phi,\theta,\rho) = RZ(\phi)RY(\theta)RZ(\rho)= \begin{bmatrix}
@@ -324,7 +323,7 @@ class Rot(Operation):
 #=============================================================================
 
 class BasisState(Operation):
-    r"""BasisState(n, wires=None)
+    r"""BasisState(n, wires)
     Prepares a single computational basis state.
 
     **Details:**
@@ -343,7 +342,7 @@ class BasisState(Operation):
 
 
 class QubitStateVector(Operation):
-    r"""QubitStateVector(state, wires=None)
+    r"""QubitStateVector(state, wires)
     Prepare subsystems using the given ket vector in the Fock basis.
 
     **Details:**
@@ -366,7 +365,7 @@ class QubitStateVector(Operation):
 
 
 class QubitUnitary(Operation):
-    r"""QubitUnitary(U, wires=None)
+    r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix.
 
     **Details:**
