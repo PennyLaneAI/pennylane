@@ -98,11 +98,11 @@ def _rotation(phi, bare=False):
 
 
 class Rotation(CVOperation):
-    r"""Continuous-variable phase space rotation.
+    r"""Continuous-variable phase space rotation
 
     .. math::
         R(\phi) = \exp\left(i \phi \ad \a\right)=\exp\left(i \frac{\phi}{2}
-        \left(\frac{\x^2+  \p^2}{\hbar}-\I\right)\right)
+        \left(\frac{\x^2+  \p^2}{\hbar}-\I\right)\right).
 
     **Details:**
 
@@ -129,11 +129,11 @@ class Rotation(CVOperation):
 
 class Displacement(CVOperation):
     r"""Displacement(r, phi, wires)
-    Continuous-variable phase space displacement.
+    Continuous-variable phase space displacement
 
     .. math::
        D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
-       = \exp\left(-i\sqrt{2}(\re(\alpha) \hat{p} -\im(\alpha) \hat{x})/\sqrt{\hbar}\right)
+       = \exp\left(-i\sqrt{\frac{2}{\hbar}}(\re(\alpha) \hat{p} -\im(\alpha) \hat{x})/\right).
 
     where :math:`\alpha = r e^{i\phi}` has magnitude :math:`r\geq 0` and phase :math:`\phi`.
 
@@ -167,10 +167,10 @@ class Displacement(CVOperation):
 
 class Squeezing(CVOperation):
     r"""Squeezing(r, phi, wires)
-    Continuous-variable phase space squeezing.
+    Continuous-variable phase space squeezing
 
     .. math::
-        S(z) = \exp\left(\frac{1}{2}(z^* a^2 -z {a^\dagger}^2)\right)
+        S(z) = \exp\left(\frac{1}{2}(z^* a^2 -z {a^\dagger}^2)\right).
 
     where :math:`z = r e^{i\phi}`.
 
@@ -205,11 +205,11 @@ class Squeezing(CVOperation):
 
 class TwoModeSqueezing(CVOperation):
     r"""TwoModeSqueezing(r, phi, wires)
-    Continuous-variable phase space two-mode squeezing.
+    Continuous-variable phase space two-mode squeezing
 
     .. math::
         S_2(z) = \exp\left(z^* ab -z a^\dagger b^\dagger \right)
-        = \exp\left(r (e^{-i\phi} ab -e^{i\phi} a^\dagger b^\dagger \right)
+        = \exp\left(r (e^{-i\phi} ab -e^{i\phi} a^\dagger b^\dagger \right).
 
     where :math:`z = r e^{i\phi}`.
 
@@ -231,10 +231,10 @@ class TwoModeSqueezing(CVOperation):
 
 class QuadraticPhase(CVOperation):
     r"""QuadraticPhase(s, wires)
-    Continuous-variable quadratic phase shift.
+    Continuous-variable quadratic phase shift
 
     .. math::
-        P(s) = e^{i \frac{s}{2} \hat{x}^2/\hbar}
+        P(s) = e^{i \frac{s}{2} \hat{x}^2/\hbar}.
 
     **Details:**
 
@@ -253,10 +253,10 @@ class QuadraticPhase(CVOperation):
 
 class CubicPhase(CVOperation):
     r"""CubicPhase(gamma, wires)
-    Continuous-variable cubic phase shift.
+    Continuous-variable cubic phase shift
 
     .. math::
-        V(\gamma) = e^{i \frac{\gamma}{3} \hat{x}^3/\hbar}
+        V(\gamma) = e^{i \frac{\gamma}{3} \hat{x}^3/\hbar}.
 
     **Details:**
 
@@ -275,10 +275,10 @@ class CubicPhase(CVOperation):
 
 class Kerr(CVOperation):
     r"""Kerr(kappa, wires)
-    Continuous-variable Kerr interaction.
+    Continuous-variable Kerr interaction
 
     .. math::
-        K(\kappa) = e^{i \kappa \hat{n}^2}
+        K(\kappa) = e^{i \kappa \hat{n}^2}.
 
     **Details:**
 
@@ -297,10 +297,10 @@ class Kerr(CVOperation):
 
 class CrossKerr(CVOperation):
     r"""CrossKerr(kappa, wires)
-    Continuous-variable Cross-Kerr interaction.
+    Continuous-variable Cross-Kerr interaction
 
     .. math::
-        CK(\kappa) = e^{i \kappa \hat{n}_1\hat{n}_2}
+        CK(\kappa) = e^{i \kappa \hat{n}_1\hat{n}_2}.
 
     **Details:**
 
@@ -319,10 +319,10 @@ class CrossKerr(CVOperation):
 
 class Beamsplitter(CVOperation):
     r"""Beamsplitter(theta, phi, wires)
-    Continuous-variable beamsplitter interaction.
+    Continuous-variable beamsplitter interaction
 
     .. math::
-        B(\theta,\phi) = \exp\left(\theta (e^{i \phi} a b^\dagger -e^{-i \phi}a^\dagger b) \right)
+        B(\theta,\phi) = \exp\left(\theta (e^{i \phi} a b^\dagger -e^{-i \phi}a^\dagger b) \right).
 
     **Details:**
 
@@ -365,11 +365,11 @@ class Beamsplitter(CVOperation):
 
 class ControlledAddition(CVOperation):
     r"""ControlledAddition(s, wires)
-    Continuous-variable controlled addition Operation.
+    Continuous-variable controlled addition Operation
 
     .. math::
            \text{CX}(s) = \int dx \ket{x}\bra{x} \otimes D\left({\frac{1}{\sqrt{2\hbar}}}s x\right)
-           = e^{-i s \: \hat{x} \otimes \hat{p}/\hbar}
+           = e^{-i s \: \hat{x} \otimes \hat{p}/\hbar}.
 
     **Details:**
 
@@ -388,11 +388,11 @@ class ControlledAddition(CVOperation):
 
 class ControlledPhase(CVOperation):
     r"""ControlledPhase(s, wires)
-    Continuous-variable controlled phase Operation.
+    Continuous-variable controlled phase Operation
 
     .. math::
            \text{CX}(s) =  \iint dx dy \: e^{i sxy/\hbar} \ket{x,y}\bra{x,y}
-           = e^{i s \: \hat{x} \otimes \hat{x}/\hbar}
+           = e^{i s \: \hat{x} \otimes \hat{x}/\hbar}.
 
     **Details:**
 
@@ -459,7 +459,7 @@ class DisplacedSqueezedState(CVOperation):
     Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
-    then applying a displacement operator.
+    then applying a displacement operator,
 
     .. math::
        \ket{\alpha,z} = D(\alpha)\ket{0,z} = D(\alpha)S(z)\ket{0},
