@@ -84,10 +84,10 @@ def _rotation(phi, bare=False):
 
     Args:
         phi (float): rotation angle.
-        bare (bool): if True, return a simple 2d rotation matrix.
+        bare (bool): if True, return a simple 2d rotation matrix
 
     Returns:
-        array[float]: transformation matrix.
+        array[float]: transformation matrix
     """
     c = np.cos(phi)
     s = np.sin(phi)
@@ -118,7 +118,7 @@ class Rotation(CVOperation):
         \end{bmatrix}
 
     Args:
-        phi (float): the rotation angle.
+        phi (float): the rotation angle
     """
     n_wires = 1
     n_params = 1
@@ -141,8 +141,8 @@ class Displacement(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}D(r,\phi) = \frac{1}{2s} \left[D(r+s, \phi) - D(r-s, \phi)\right]`
-      where :math:`s=0.1` by default.
+    * Gradient recipe: :math:`\frac{d}{dr}D(r,\phi) = \frac{1}{2s} \left[D(r+s, \phi) - D(r-s, \phi)\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default)
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix} 1 & 0 & 0 \\ 2r\cos\phi & 1 & 0 \\ 2r\sin\phi & 0 & 1\end{bmatrix}
@@ -150,7 +150,7 @@ class Displacement(CVOperation):
     Args:
         r (float): displacement magnitude :math:`r=|\alpha|`
         phi (float): phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 2
@@ -178,8 +178,8 @@ class Squeezing(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}S(r,\phi) = \frac{1}{2\sinh s} \left[S(r+s, \phi) - S(r-s, \phi)\right]`
-      where :math:`s=0.1` by default.
+    * Gradient recipe: :math:`\frac{d}{dr}S(r,\phi) = \frac{1}{2\sinh s} \left[S(r+s, \phi) - S(r-s, \phi)\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -191,7 +191,7 @@ class Squeezing(CVOperation):
     Args:
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 2
@@ -217,12 +217,12 @@ class TwoModeSqueezing(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 2
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 2
     n_wires = 2
@@ -240,11 +240,11 @@ class QuadraticPhase(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         s (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 1
     n_wires = 1
@@ -262,11 +262,11 @@ class CubicPhase(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         gamma (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 1
     n_wires = 1
@@ -284,11 +284,11 @@ class Kerr(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         kappa (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 1
     n_wires = 1
@@ -306,11 +306,11 @@ class CrossKerr(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         kappa (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 1
     n_wires = 2
@@ -346,7 +346,7 @@ class Beamsplitter(CVOperation):
         phi (float): Phase angle :math:`\phi`. The reflection amplitude of the
             beamsplitter is :math:`r = e^{i\phi}\sin(\theta)`.
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 2
     n_wires = 2
@@ -375,11 +375,11 @@ class ControlledAddition(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         s (float): addition multiplier
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 2
     n_params = 1
@@ -398,11 +398,11 @@ class ControlledPhase(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         s (float):  phase shift multiplier
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 2
     n_params = 1
@@ -427,7 +427,7 @@ class CoherentState(CVOperation):
     Args:
         a (float): displacement magnitude :math:`r=|\alpha|`
         phi (float): phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 2
@@ -447,7 +447,7 @@ class SqueezedState(CVOperation):
     Args:
         r (float): squeezing magnitude
         phi (float): squeezing angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 2
@@ -470,13 +470,13 @@ class DisplacedSqueezedState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 3
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         alpha (complex): displacement parameter
         r (float): squeezing magnitude
         phi (float): squeezing angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 3
@@ -491,11 +491,11 @@ class FockState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         n (int): Fock state to prepare
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 1
@@ -511,11 +511,11 @@ class ThermalState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         nbar (float): mean thermal population of the mode
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 1
@@ -537,13 +537,13 @@ class CatState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         alpha (complex): displacement parameter
         p (float): parity, where :math:`\phi=p\pi`. ``p=0`` corresponds to an even
             cat state, and ``p=1`` an odd cat state.
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 2
@@ -556,13 +556,13 @@ class FockStateVector(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system).
+    * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         state (array): a single ket vector, for single mode state preparation,
-            or a multimode ket, with one array dimension per mode.
+            or a multimode ket, with one array dimension per mode
     """
     n_wires = 0
     n_params = 1
@@ -581,7 +581,7 @@ class FockDensityMatrix(CVOperation):
 
     Args:
         state (array): a single mode two-dimensional matrix :math:`\rho_{ij}`, or
-            a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode.
+            a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
     n_wires = 0
     n_params = 1
@@ -594,14 +594,14 @@ class GaussianState(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system).
+    * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         r (array): a length :math:`2N` vector of means, of the
-            form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`.
-        V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix.
+            form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
+        V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
     n_wires = 0
     n_params = 2
