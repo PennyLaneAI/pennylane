@@ -20,6 +20,8 @@ CV quantum operations
 This section contains the available built-in continuous-variable
 quantum operations supported by OpenQML, as well as their conventions.
 
+.. todo:: Should the state preparations have gradient recipes as well?
+
 .. todo::
 
    The gradient computation assumes all parameters are real (floats), some
@@ -129,7 +131,7 @@ class Rotation(CVOperation):
 
 class Displacement(CVOperation):
     r"""Displacement(r, phi, wires)
-    Continuous-variable phase space displacement
+    Phase space displacement.
 
     .. math::
        D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
@@ -167,7 +169,7 @@ class Displacement(CVOperation):
 
 class Squeezing(CVOperation):
     r"""Squeezing(r, phi, wires)
-    Continuous-variable phase space squeezing
+    Phase space squeezing.
 
     .. math::
         S(z) = \exp\left(\frac{1}{2}(z^* a^2 -z {a^\dagger}^2)\right).
@@ -205,7 +207,7 @@ class Squeezing(CVOperation):
 
 class TwoModeSqueezing(CVOperation):
     r"""TwoModeSqueezing(r, phi, wires)
-    Continuous-variable phase space two-mode squeezing
+    Phase space two-mode squeezing.
 
     .. math::
         S_2(z) = \exp\left(z^* ab -z a^\dagger b^\dagger \right)
@@ -219,11 +221,14 @@ class TwoModeSqueezing(CVOperation):
     * Number of parameters: 2
     * Gradient recipe: None (uses finite differences)
 
+    .. todo:: add a gradient recipe
+
     Args:
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    # TODO: add a gradient recipe
     n_params = 2
     n_wires = 2
     grad_method = 'F'
@@ -231,7 +236,7 @@ class TwoModeSqueezing(CVOperation):
 
 class QuadraticPhase(CVOperation):
     r"""QuadraticPhase(s, wires)
-    Continuous-variable quadratic phase shift
+    Quadratic phase shift.
 
     .. math::
         P(s) = e^{i \frac{s}{2} \hat{x}^2/\hbar}.
@@ -242,10 +247,13 @@ class QuadraticPhase(CVOperation):
     * Number of parameters: 1
     * Gradient recipe: None (uses finite differences)
 
+    .. todo:: add a gradient recipe.
+
     Args:
         s (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    # TODO: add a gradient recipe
     n_params = 1
     n_wires = 1
     grad_method = 'F'
@@ -253,7 +261,7 @@ class QuadraticPhase(CVOperation):
 
 class CubicPhase(CVOperation):
     r"""CubicPhase(gamma, wires)
-    Continuous-variable cubic phase shift
+    Cubic phase shift.
 
     .. math::
         V(\gamma) = e^{i \frac{\gamma}{3} \hat{x}^3/\hbar}.
@@ -275,7 +283,7 @@ class CubicPhase(CVOperation):
 
 class Kerr(CVOperation):
     r"""Kerr(kappa, wires)
-    Continuous-variable Kerr interaction
+    Kerr interaction.
 
     .. math::
         K(\kappa) = e^{i \kappa \hat{n}^2}.
@@ -297,7 +305,7 @@ class Kerr(CVOperation):
 
 class CrossKerr(CVOperation):
     r"""CrossKerr(kappa, wires)
-    Continuous-variable Cross-Kerr interaction
+    Cross-Kerr interaction.
 
     .. math::
         CK(\kappa) = e^{i \kappa \hat{n}_1\hat{n}_2}.
@@ -319,14 +327,14 @@ class CrossKerr(CVOperation):
 
 class Beamsplitter(CVOperation):
     r"""Beamsplitter(theta, phi, wires)
-    Continuous-variable beamsplitter interaction
+    Beamsplitter interaction.
 
     .. math::
         B(\theta,\phi) = \exp\left(\theta (e^{i \phi} a b^\dagger -e^{-i \phi}a^\dagger b) \right).
 
     **Details:**
 
-    * Number of wires: 1
+    * Number of wires: 2
     * Number of parameters: 2
     * Gradient recipe: :math:`\frac{d}{dr}B(r,\phi) = \frac{1}{2} \left[B(\theta+\pi/2, \phi) - B(\theta-\pi/2, \phi)\right]`
     * Heisenberg representation:
@@ -365,7 +373,7 @@ class Beamsplitter(CVOperation):
 
 class ControlledAddition(CVOperation):
     r"""ControlledAddition(s, wires)
-    Continuous-variable controlled addition Operation
+    Controlled addition operation.
 
     .. math::
            \text{CX}(s) = \int dx \ket{x}\bra{x} \otimes D\left({\frac{1}{\sqrt{2\hbar}}}s x\right)
@@ -377,10 +385,13 @@ class ControlledAddition(CVOperation):
     * Number of parameters: 1
     * Gradient recipe: None (uses finite differences)
 
+    .. todo:: add a gradient recipe
+
     Args:
         s (float): addition multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    # TODO: add a gradient recipe
     n_wires = 2
     n_params = 1
     grad_method = 'F'
@@ -388,7 +399,7 @@ class ControlledAddition(CVOperation):
 
 class ControlledPhase(CVOperation):
     r"""ControlledPhase(s, wires)
-    Continuous-variable controlled phase Operation
+    Controlled phase operation.
 
     .. math::
            \text{CX}(s) =  \iint dx dy \: e^{i sxy/\hbar} \ket{x,y}\bra{x,y}
@@ -400,10 +411,13 @@ class ControlledPhase(CVOperation):
     * Number of parameters: 1
     * Gradient recipe: None (uses finite differences)
 
+    .. todo:: add a gradient recipe
+
     Args:
         s (float):  phase shift multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    # TODO: add a gradient recipe
     n_wires = 2
     n_params = 1
     grad_method = 'F'
@@ -491,7 +505,7 @@ class FockState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (not differentiable)
 
     Args:
         n (int): Fock state to prepare
@@ -512,6 +526,8 @@ class ThermalState(CVOperation):
     * Number of wires: 1
     * Number of parameters: 1
     * Gradient recipe: None (uses finite differences)
+
+    .. todo:: Does the thermal state have a gradient recipe?
 
     Args:
         nbar (float): mean thermal population of the mode
@@ -597,6 +613,11 @@ class GaussianState(CVOperation):
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite differences)
+
+    .. todo::
+
+        Is there a gradient recipe for Gaussian state?
+        Only issue is, how do you define the gradient for array arguments?
 
     Args:
         r (array): a length :math:`2N` vector of means, of the

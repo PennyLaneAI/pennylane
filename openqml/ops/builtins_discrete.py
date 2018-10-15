@@ -285,6 +285,8 @@ class PhaseShift(Operation):
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}R_\phi(\phi) = \frac{1}{2}\left[R_\phi(\phi+\pi/2)+R_\phi(\phi-\pi/2)\right]`
 
+    .. todo:: double check this gradient formula.
+
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
@@ -306,7 +308,8 @@ class Rot(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}R(\phi) = \frac{1}{2}\left[R(\phi+\pi/2)+R(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}R(\phi) = \frac{1}{2}\left[R(\phi+\pi/2)+R(\phi-\pi/2)\right]`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \rho\}`.
 
     Args:
         phi (float): rotation angle :math:`\phi`

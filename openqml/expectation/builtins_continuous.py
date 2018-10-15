@@ -139,7 +139,7 @@ class PolyXP(CVExpectation):
     For second-order observables the representation is a real symmetric
     matrix :math:`A` such that :math:`P(\x,\p) = \mathbf{r}^T A \mathbf{r}`.
 
-    Used by :meth:`~QNode._pd_analytic` for evaluating arbitrary order-2 CV observables.
+    Used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV observables.
 
     **Details:**
 
