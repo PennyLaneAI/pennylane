@@ -100,7 +100,8 @@ def _rotation(phi, bare=False):
 
 
 class Rotation(CVOperation):
-    r"""Continuous-variable phase space rotation
+    r"""Rotation(phi, wires)
+    Continuous-variable phase space rotation
 
     .. math::
         R(\phi) = \exp\left(i \phi \ad \a\right)=\exp\left(i \frac{\phi}{2}
