@@ -414,7 +414,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         self.logTestName()
 
         dev = qm.device('default.gaussian', wires=2, hbar=2)
-        self.assertEqual(dev.wires, 2)
+        self.assertEqual(dev.num_wires, 2)
         self.assertEqual(dev.shots, 0)
         self.assertEqual(dev.hbar, 2)
         self.assertEqual(dev.short_name, 'default.gaussian')
