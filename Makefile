@@ -34,15 +34,12 @@ dist:
 
 .PHONY : clean
 clean:
-	rm -rf qmlt/__pycache__
-	rm -rf qmlt/numeric/__pycache__
-	rm -rf qmlt/tf/__pycache__
+	rm -rf openqml/__pycache__
+	rm -rf openqml/optimize/__pycache__
+	rm -rf openqml/expectation/__pycache__
+	rm -rf openqml/ops/__pycache__
+	rm -rf openqml/plugins/__pycache__
 	rm -rf tests/__pycache__
-	rm -rf logsNUM logsAUTO
-	rm -rf tests/logsNUM
-	rm -rf tests/logsAUTO
-	rm -rf examples/logsNUM
-	rm -rf examples/logsAUTO
 	rm -rf dist
 	rm -rf build
 	rm -rf .coverage coverage_html_report/
