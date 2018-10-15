@@ -48,7 +48,7 @@ class PauliX(Expectation):
     .. math::
         \braket{\sigma_z} = \braketT{\psi}{\cdots \otimes I\otimes \sigma_x\otimes I\cdots}{\psi}
 
-    such that :math:`\sigma_x` acts on the requested wire.
+    where :math:`\sigma_x` acts on the requested wire.
 
     **Details:**
 
@@ -56,7 +56,7 @@ class PauliX(Expectation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 0
@@ -71,7 +71,7 @@ class PauliY(Expectation):
     .. math::
         \braket{\sigma_z} = \braketT{\psi}{\cdots \otimes I\otimes \sigma_y\otimes I\cdots}{\psi}
 
-    such that :math:`\sigma_y` acts on the requested wire.
+    where :math:`\sigma_y` acts on the requested wire
 
     **Details:**
 
@@ -94,7 +94,7 @@ class PauliZ(Expectation):
     .. math::
         \braket{\sigma_z} = \braketT{\psi}{\cdots \otimes I\otimes \sigma_z\otimes I\cdots}{\psi}
 
-    such that :math:`\sigma_z` acts on the requested wire.
+    where :math:`\sigma_z` acts on the requested wire.
 
     **Details:**
 
@@ -102,7 +102,7 @@ class PauliZ(Expectation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 0
@@ -112,18 +112,18 @@ class Hermitian(Expectation):
     r"""Hermitian(A, wires)
     Returns the expectation value of an arbitrary Hermitian observable.
 
-    For Hermitian matrix :math:`A`, this expectation command returns the value
+    For a Hermitian matrix :math:`A`, this expectation command returns the value
 
     .. math::
         \braket{A} = \braketT{\psi}{\cdots \otimes I\otimes A\otimes I\cdots}{\psi}
 
-    such that :math:`A` acts on the requested wire.
+    where :math:`A` acts on the requested wire.
 
     where
 
     Args:
         A (array): square hermitian matrix.
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_wires = 1
     n_params = 1
