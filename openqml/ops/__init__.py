@@ -17,10 +17,10 @@ Core operations
 
 OpenQML supports a collection of built-in quantum operations,
 including both discrete-variable (DV) gates as used in the qubit model,
-and continuous-variable gates as used in the qumode model of quantum
+and continuous-variable (CV) gates as used in the qumode model of quantum
 computation.
 
-Here, we summaries the built-in operations supported by OpenQML, as well
+Here, we summarize the built-in operations supported by OpenQML, as well
 as the conventions chosen for their implementation.
 
 .. note::
