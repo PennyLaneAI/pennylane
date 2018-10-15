@@ -548,7 +548,7 @@ class DefaultGaussian(Device):
             return # we are done here
 
         if gate_name == 'GaussianState':
-            if wires != list(range(self.wires)):
+            if wires != list(range(self.num_wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
             self._state = self._operator_map[gate_name](*par, hbar=self.hbar)
@@ -587,9 +587,9 @@ class DefaultGaussian(Device):
         Returns:
             array: the resulting 2Nx2N Symplectic matrix.
         """
-        S2 = np.identity(2*self.wires)
+        S2 = np.identity(2*self.num_wires)
 
-        ind = np.concatenate([np.array([wire]), np.array([wire])+self.wires])
+        ind = np.concatenate([np.array([wire]), np.array([wire])+self.num_wires])
         rows = ind.reshape(-1, 1)
         cols = ind.reshape(1, -1)
         S2[rows, cols] = S.copy()
@@ -606,13 +606,13 @@ class DefaultGaussian(Device):
         Returns:
             array: the resulting 2Nx2N Symplectic matrix.
         """
-        S2 = np.identity(2*self.wires)
+        S2 = np.identity(2*self.num_wires)
         w = np.array(wires)
 
         S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:2, :2].copy() #X
-        S2[(w+self.wires).reshape(-1, 1), (w+self.wires).reshape(1, -1)] = S[2:, 2:].copy() #P
-        S2[w.reshape(-1, 1), (w+self.wires).reshape(1, -1)] = S[:2, 2:].copy() #XP
-        S2[(w+self.wires).reshape(-1, 1), w.reshape(1, -1)] = S[2:, :2].copy() #PX
+        S2[(w+self.num_wires).reshape(-1, 1), (w+self.num_wires).reshape(1, -1)] = S[2:, 2:].copy() #P
+        S2[w.reshape(-1, 1), (w+self.num_wires).reshape(1, -1)] = S[:2, 2:].copy() #XP
+        S2[(w+self.num_wires).reshape(-1, 1), w.reshape(1, -1)] = S[2:, :2].copy() #PX
 
         return S2
 
@@ -635,7 +635,7 @@ class DefaultGaussian(Device):
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
-        self._state = vacuum_state(self.wires, self.hbar)
+        self._state = vacuum_state(self.num_wires, self.hbar)
 
     def reduced_state(self, wires):
         r""" Returns the vector of means and the covariance matrix of the specified wires.
@@ -647,7 +647,7 @@ class DefaultGaussian(Device):
             tuple (means, cov): where means is an array containing the vector of means,
             and cov is a square array containing the covariance matrix.
         """
-        if wires == list(range(self.wires)):
+        if wires == list(range(self.num_wires)):
             # reduced state is full state
             return self._state
 
@@ -655,11 +655,11 @@ class DefaultGaussian(Device):
         if isinstance(wires, int):
             wires = [wires]
 
-        if np.any(np.array(wires) > self.wires):
+        if np.any(np.array(wires) > self.num_wires):
             raise ValueError("The specified wires cannot "
                              "be larger than the number of subsystems.")
 
-        ind = np.concatenate([np.array(wires), np.array(wires)+self.wires])
+        ind = np.concatenate([np.array(wires), np.array(wires)+self.num_wires])
         rows = ind.reshape(-1, 1)
         cols = ind.reshape(1, -1)
 

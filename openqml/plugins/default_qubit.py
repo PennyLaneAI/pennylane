@@ -263,13 +263,13 @@ class DefaultQubit(Device):
     def apply(self, gate_name, wires, par):
         if gate_name == 'QubitStateVector':
             state = np.asarray(par[0], dtype=np.float64)
-            if state.ndim == 1 and state.shape[0] == 2**self.wires:
+            if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             return
         elif gate_name == 'BasisState':
-            if int(par[0])-par[0] != 0. or par[0] >= 2**self.wires or par[0] < 0:
+            if int(par[0])-par[0] != 0. or par[0] >= 2**self.num_wires or par[0] < 0:
                 raise ValueError('Computational basis state must be a positive integer.')
             self._state = np.zeros_like(self._state)
             self._state[int(par[0])] = 1.
@@ -340,7 +340,7 @@ class DefaultQubit(Device):
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
-        self._state = np.zeros(2**self.wires, dtype=complex)
+        self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
 
     def expand_one(self, U, wires):
@@ -359,7 +359,7 @@ class DefaultQubit(Device):
             raise ValueError('One target subsystem required.')
         wires = wires[0]
         before = 2**wires
-        after = 2**(self.wires-wires-1)
+        after = 2**(self.num_wires-wires-1)
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
         return U
 
@@ -378,7 +378,7 @@ class DefaultQubit(Device):
         if len(wires) != 2:
             raise ValueError('Two target subsystems required.')
         wires = np.asarray(wires)
-        if np.any(wires < 0) or np.any(wires >= self.wires) or wires[0] == wires[1]:
+        if np.any(wires < 0) or np.any(wires >= self.num_wires) or wires[0] == wires[1]:
             raise ValueError('Bad target subsystems.')
 
         a = np.min(wires)
@@ -386,7 +386,7 @@ class DefaultQubit(Device):
         n_between = b-a-1  # number of qubits between a and b
         # dimensions of the untouched subsystems
         before = 2**a
-        after = 2**(self.wires-b-1)
+        after = 2**(self.num_wires-b-1)
         between = 2**n_between
 
         U = np.kron(U, np.eye(between))

@@ -332,7 +332,7 @@ class TestDefaultQubitDevice(BaseTest):
                 # the parameter is an integer
                 p = [1, 3, 4][:op.n_params]
                 if gate_name == 'BasisState':
-                    expected_out = np.zeros([2**self.dev.wires], dtype=np.complex128)
+                    expected_out = np.zeros([2**self.dev.num_wires], dtype=np.complex128)
                     expected_out[p[0]] = 1.
             else:
                 # the parameter is a float
@@ -433,7 +433,7 @@ class TestDefaultQubitIntegration(BaseTest):
         self.logTestName()
 
         dev = qm.device('default.qubit', wires=2)
-        self.assertEqual(dev.wires, 2)
+        self.assertEqual(dev.num_wires, 2)
         self.assertEqual(dev.shots, 0)
         self.assertEqual(dev.short_name, 'default.qubit')
 
@@ -581,7 +581,7 @@ class TestDefaultQubitIntegration(BaseTest):
                 elif g == 'QubitStateVector':
                     out_state = x[0]
                 elif g == 'BasisState':
-                    out_state = np.zeros([2**dev.wires], dtype=np.complex128)
+                    out_state = np.zeros([2**dev.num_wires], dtype=np.complex128)
                     out_state[x[0]] = 1.
                 else:
                     out_state = O @ dev._state

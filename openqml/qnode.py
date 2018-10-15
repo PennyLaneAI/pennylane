@@ -213,7 +213,7 @@ class QNode:
     def __init__(self, func, device):
         self.func = func
         self.device = device
-        self.num_wires = device.wires
+        self.num_wires = device.num_wires
         self.ops = []
         self.variable_ops = {}  #: dict[int->list[(int, int)]]: Mapping from free parameter index to the list of Operations (in this circuit) that depend on it. The first element of the tuple is the index of Operation in the program queue, the second the index of the parameter within the Operation.
 
