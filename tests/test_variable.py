@@ -16,7 +16,7 @@ Unit tests for the :mod:`openqml` utility classes :class:`ParRef`, :class:`Comma
 """
 import unittest
 import logging as log
-log.getLogger('defaults')
+from string import ascii_lowercase
 
 import numpy as np
 import numpy.random as nr
@@ -24,10 +24,12 @@ import numpy.random as nr
 from defaults import openqml, BaseTest
 from openqml.variable import Variable
 
+log.getLogger('defaults')
+
 class BasicTest(BaseTest):
     """Variable class tests."""
     def test_variable(self):
-        "Variable reference tests."
+        """Positional Variable reference tests."""
         self.logTestName()
 
         n = 10
@@ -55,6 +57,40 @@ class BasicTest(BaseTest):
         par = [-Variable(k) for k in range(n)]
         check(par, -par_free)
         par = [m[k] * -Variable(k) * m[k] for k in range(n)]
+        check(par, -par_free * m**2)
+
+        # fixed values remain constant
+        check(par_fixed, par_fixed)
+
+    def test_keyword_variable(self):
+        """Keyword Variable reference tests."""
+        self.logTestName()
+
+        n = 10
+        m = nr.randn(n)  # parameter multipliers
+        par_fixed = nr.randn(n)  # fixed parameter values
+        par_free  = nr.randn(n)  # free parameter values
+        Variable.kwarg_values = {k: v for k, v in zip(ascii_lowercase, par_free)}
+
+        # test __str__()
+        p = Variable(0, name='kw1')
+        self.assertEqual(str(p), "Variable 0: name = kw1, ")
+        self.assertEqual(str(-p), "Variable 0: name = kw1,  * -1")
+        self.assertEqual(str(1.2*p*0.4), "Variable 0: name = kw1,  * 0.48")
+
+        def check(par, res):
+            "Apply the parameter mapping, compare with the expected result."
+            temp = np.array([p.val if isinstance(p, Variable) else p for p in par]).flatten()
+            self.assertAllAlmostEqual(temp, res, self.tol)
+
+        # mapping function must yield the correct parameter values
+        par = [m[k] * Variable(name=n) for k,n in zip(range(n), ascii_lowercase)]
+        check(par, par_free * m)
+        par = [Variable(name=n) * m[k] for k,n in zip(range(n), ascii_lowercase)]
+        check(par, par_free * m)
+        par = [-Variable(name=n) for k,n in zip(range(n), ascii_lowercase)]
+        check(par, -par_free)
+        par = [m[k] * -Variable(name=n) * m[k] for k,n in zip(range(n), ascii_lowercase)]
         check(par, -par_free * m**2)
 
         # fixed values remain constant

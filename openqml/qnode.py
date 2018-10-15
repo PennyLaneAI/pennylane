@@ -109,7 +109,7 @@ QNode internal methods
 
 ----
 """
-
+import inspect
 import copy
 import collections
 
@@ -199,6 +199,23 @@ def _inv_dict(d):
     return ret
 
 
+def _get_default_args(func):
+    """Get the default arguments of a function.
+
+    Args:
+        func (function): a valid Python function.
+
+    Returns:
+        dict: dictionary containing the argument name and default value.
+    """
+    signature = inspect.signature(func)
+    return {
+        k: v.default
+        for k, v in signature.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
+
+
 class QNode:
     """Quantum node in the hybrid computational graph.
 
@@ -256,6 +273,19 @@ class QNode:
         # arrange the newly created Variables in the nested structure of args
         variables = unflatten(temp, args)
 
+        # get default kwargs that weren't passed
+        self.keyword_defaults = _get_default_args(self.func)
+
+        keyword_values = {}
+        keyword_values.update(self.keyword_defaults)
+        keyword_values.update(kwargs)
+
+        # warp each keyword argument as a Variable
+        kwarg_variables = {}
+        for key, val in keyword_values.items():
+            temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
+            kwarg_variables[key] = unflatten(temp, val)
+
         # set up the context for Operation entry
         if QNode._current_context is None:
             QNode._current_context = self
@@ -263,7 +293,7 @@ class QNode:
             raise QuantumFunctionError('QNode._current_context must not be modified outside this method.')
         # generate the program queue by executing the qfunc
         try:
-            res = self.func(*variables, **kwargs)
+            res = self.func(*variables, **kwarg_variables)
         finally:
             # remove the context
             QNode._current_context = None
@@ -322,7 +352,8 @@ class QNode:
         for k, op in enumerate(self.ops):
             for idx, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
-                    self.variable_ops.setdefault(p.idx, []).append((k, idx))
+                    if p.name is None: # ignore keyword arguments
+                        self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}  #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
 
@@ -428,6 +459,13 @@ class QNode:
 
         # temporarily store the free parameter values in the Variable class
         Variable.free_param_values = np.array(list(_flatten(args)))
+
+        # temporarily store keyword arguments
+        keyword_values = {}
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()})
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in kwargs.items()})
+
+        Variable.kwarg_values = keyword_values
 
         self.device.reset()
         ret = self.device.execute(self.queue, self.ev)

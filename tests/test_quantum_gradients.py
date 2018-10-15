@@ -108,12 +108,12 @@ class QuadratureGradientTest(BaseTest):
         alpha = 0.5
 
         @qm.qfunc(self.gaussian_dev)
-        def circuit(y):
-            qm.Displacement(alpha, 0., [0])
+        def circuit(y, r=0.5):
+            qm.Displacement(r, 0., [0])
             qm.Squeezing(y, 0., [0])
             return qm.expectation.X(0)
 
-        grad_fn = autograd.grad(circuit)
+        grad_fn = autograd.grad(circuit, 0)
 
         for r in sqz_vals:
             autograd_val = grad_fn(r)
