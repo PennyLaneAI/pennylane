@@ -12,126 +12,310 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Built-in discrete-variable quantum Operations
-=============================================
+Qubit quantum operations
+========================
 
-At the moment just qubit operations.
+.. currentmodule:: openqml.ops.builtins_discrete
+
+This section contains the available built-in discrete-variable
+quantum operations supported by OpenQML, as well as their conventions.
+
+Gates
+-----
+
+.. autosummary::
+    Hadamard
+    PauliX
+    PauliY
+    PauliZ
+    CNOT
+    CZ
+    SWAP
+    RX
+    RY
+    RZ
+    PhaseShift
+    Rot
+    QubitUnitary
 
 
+State preparation
+-----------------
+
+.. autosummary::
+    BasisState
+    QubitStateVector
+
+
+Details
+-------
 """
 
 from openqml.operation import Operation
 
 
-
 class Hadamard(Operation):
-    r"""The Hadamard operator.
+    r"""Hadamard(wires)
+    The Hadamard operator
+
+    .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 0
     n_wires = 1
 
 
 class PauliX(Operation):
-    r"""The Pauli X operator.
+    r"""PauliX(wires)
+    The Pauli X operator
+
+    .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 0
     n_wires = 1
 
 
 class PauliY(Operation):
-    r"""The Pauli Y operator.
+    r"""PauliY(wires)
+    The Pauli Y operator
+
+    .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 0
     n_wires = 1
 
 
 class PauliZ(Operation):
-    r"""The Pauli Z operator.
+    r"""PauliZ(wires)
+    The Pauli Z operator
+
+    .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 0
     n_wires = 1
 
 
 class CNOT(Operation):
-    r"""The controlled-NOT operator.
+    r"""CNOT(wires)
+    The controlled-NOT operator
 
-    The first subsystem corresponds to the control qubit.
+    .. math:: CNOT = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & 0 & 1\\
+            0 & 0 & 1 & 0
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
     """
     n_params = 0
     n_wires = 2
 
 
 class CZ(Operation):
-    r"""The controlled-Z operator.
+    r"""CZ(wires)
+    The controlled-Z operator
 
-    The first subsystem corresponds to the control qubit.
+    .. math:: CZ = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & 1 & 0\\
+            0 & 0 & 0 & -1
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
     """
     n_params = 0
     n_wires = 2
 
 
 class SWAP(Operation):
-    r"""The swap operator.
+    r"""SWAP(wires)
+    The swap operator
+
+    .. math:: SWAP = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 0 & 1 & 0\\
+            0 & 1 & 0 & 0\\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
     """
     n_params = 0
     n_wires = 2
 
 
 class RX(Operation):
-    r"""The single qubit X rotation.
+    r"""RX(phi, wires)
+    The single qubit X rotation
 
-    .. math:: RX(\phi) = e^{-i\phi\sigma_x/2}
+    .. math:: R_x(\phi) = e^{-i\phi\sigma_x/2} = \begin{bmatrix}
+                \cos(\phi/2) & -i\sin(\phi/2) \\
+                -i\sin(\phi/2) & \cos(\phi/2)
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}R_x(\phi) = \frac{1}{2}\left[R_x(\phi+\pi/2)+R_x(\phi-\pi/2)\right]`
 
     Args:
         phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 1
     n_wires = 1
 
 
 class RY(Operation):
-    r"""The single qubit Y rotation.
+    r"""RY(phi, wires)
+    The single qubit Y rotation.
 
-    .. math:: RY(\phi) = e^{-i\phi\sigma_y/2}
+    .. math:: R_y(\phi) = e^{-i\phi\sigma_y/2} = \begin{bmatrix}
+                \cos(\phi/2) & -\sin(\phi/2) \\
+                \sin(\phi/2) & \cos(\phi/2)
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}R_y(\phi) = \frac{1}{2}\left[R_y(\phi+\pi/2)+R_y(\phi-\pi/2)\right]`
 
     Args:
         phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 1
     n_wires = 1
 
 
 class RZ(Operation):
-    r"""The single qubit Z rotation.
+    r"""RZ(phi, wires)
+    The single qubit Z rotation
 
-    .. math:: RZ(\phi) = e^{-i\phi\sigma_z/2}
+    .. math:: R_z(\phi) = e^{-i\phi\sigma_z/2} = \begin{bmatrix}
+                e^{-i\phi/2} & 0 \\
+                0 & e^{i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}R_z(\phi) = \frac{1}{2}\left[R_z(\phi+\pi/2)+R_z(\phi-\pi/2)\right]`
 
     Args:
         phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 1
     n_wires = 1
 
 
 class PhaseShift(Operation):
-    r"""Arbitrary single qubit local phase shift.
+    r"""PhaseShift(phi, wires)
+    Arbitrary single qubit local phase shift
+
+    .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                1 & 0 \\
+                0 & e^{i\phi/4}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}R_\phi(\phi) = \frac{1}{2}\left[R_\phi(\phi+\pi/2)+R_\phi(\phi-\pi/2)\right]`
+
+    .. todo:: double check this gradient formula.
 
     Args:
-        phi (float): phase shift :math:`\phi`
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 1
     n_wires = 1
 
 
 class Rot(Operation):
-    r"""Arbitrary single qubit rotation.
+    r"""Rot(phi, theta, rho, wires)
+    Arbitrary single qubit rotation
 
-    .. math:: R(\phi,\theta,\rho) = RZ(\phi)RY(\theta)RZ(\rho)
+    .. math:: R(\phi,\theta,\rho) = RZ(\phi)RY(\theta)RZ(\rho)= \begin{bmatrix}
+                e^{-i(\rho+\phi)/2}\cos(\theta/2) & -e^{i(\rho-\phi)/2}\sin(\theta/2) \\
+                e^{-i(\rho-\phi)/2}\sin(\theta/2) & e^{i(\rho+\phi)/2}\cos(\theta/2)
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}R(\phi) = \frac{1}{2}\left[R(\phi+\pi/2)+R(\phi-\pi/2)\right]`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \rho\}`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
         rho (float): rotation angle :math:`\rho`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     n_params = 3
     n_wires = 1
@@ -142,10 +326,18 @@ class Rot(Operation):
 #=============================================================================
 
 class BasisState(Operation):
-    r"""Prepares a single computational basis state.
+    r"""BasisState(n, wires)
+    Prepares a single computational basis state.
+
+    **Details:**
+
+    * Number of wires: None (applied to the entire system)
+    * Number of parameters: 1
+    * Gradient recipe: None (integer parameters not supported)
 
     Args:
         n (int): prepares the state :math:`\ket{n}`
+        wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     n_wires = 0
     par_domain = 'N'
@@ -153,10 +345,18 @@ class BasisState(Operation):
 
 
 class QubitStateVector(Operation):
-    r"""Prepare subsystems using the given ket vector in the Fock basis.
+    r"""QubitStateVector(state, wires)
+    Prepare subsystems using the given ket vector in the Fock basis.
+
+    **Details:**
+
+    * Number of wires: None (applied to the entire system)
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
+        wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     n_wires = 0
     par_domain = 'A'
@@ -168,10 +368,18 @@ class QubitStateVector(Operation):
 
 
 class QubitUnitary(Operation):
-    r"""Apply an arbitrary unitary matrix.
+    r"""QubitUnitary(U, wires)
+    Apply an arbitrary unitary matrix.
+
+    **Details:**
+
+    * Number of wires: None (applied to the entire system)
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite differences)
 
     Args:
         U (array[complex]): square unitary matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     n_wires = 0
     par_domain = 'A'

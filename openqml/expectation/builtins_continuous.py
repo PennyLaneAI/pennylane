@@ -11,19 +11,62 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains operations for the default phase space observables"""
+"""
+CV quantum expectations
+=======================
+
+.. currentmodule:: openqml.expectation.builtins_continuous
+
+This section contains the available built-in continuous-variable
+quantum operations supported by OpenQML, as well as their conventions.
+
+.. note:: Currently, all expectation commands act on only one wire.
+
+Summary
+-------
+
+.. autosummary::
+    PhotonNumber
+    X
+    P
+    PolyXP
+    Homodyne
+
+Details
+-------
+"""
 
 import numpy as np
 
 from openqml.operation import CVExpectation
 
 
-
 class PhotonNumber(CVExpectation):
-    r"""Returns the photon number expectation value.
+    r"""PhotonNumber(wires)
+    Returns the photon number expectation value.
 
-    The photon number operator is :math:`n = a^\dagger a = \frac{1}{2\hbar}(x^2 +p^2) -\I/2`.
+    This expectation command returns the value
+    :math:`\braket{\hat{n}}` where the number operator is
+    :math:`\hat{n} = \a^\dagger \a = \frac{1}{2\hbar}(\x^2 +\p^2) -\I/2`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Expectation order: 2nd order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: M = \frac{1}{2\hbar}\begin{bmatrix}
+            -\hbar & 0 & 0\\
+            0 & 1 & 0\\
+            0 & 0 & 1
+        \end{bmatrix}
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on.
     """
+    n_wires = 1
+    n_params = 0
     ev_order = 2
     @staticmethod
     def _heisenberg_rep(p):
@@ -32,8 +75,25 @@ class PhotonNumber(CVExpectation):
 
 
 class X(CVExpectation):
-    r"""Returns the position expectation value in the phase space.
+    r"""X(wires)
+    Returns the position expectation value in the phase space.
+
+    This expectation command returns the value :math:`\braket{\x}`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Expectation order: 1st order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: d = [0, 1, 0]
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on.
     """
+    n_wires = 1
+    n_params = 0
     ev_order = 1
     @staticmethod
     def _heisenberg_rep(p):
@@ -41,49 +101,55 @@ class X(CVExpectation):
 
 
 class P(CVExpectation):
-    r"""Returns the momentum expectation value in the phase space.
+    r"""P(wires)
+    Returns the momentum expectation value in the phase space.
 
+    This expectation command returns the value :math:`\braket{\p}`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Expectation order: 1st order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: d = [0, 0, 1]
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on.
     """
+    n_wires = 1
+    n_params = 0
     ev_order = 1
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([0, 0, 1])
 
 
-class Homodyne(CVExpectation):
-    r"""Returns the homodyne expectation value in the phase space.
-
-    Args:
-        phi (float): axis in the phase space at which to calculate
-            the homodyne measurement.
-    """
-    n_params = 1
-    ev_order = 1
-    @staticmethod
-    def _heisenberg_rep(p):
-        phi = p[0]
-        return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
-
-
-class Heterodyne(CVExpectation):
-    r"""Returns the displacement expectation value in the phase space.
-
-    """
-
-
 class PolyXP(CVExpectation):
-    r"""Second order polynomial observable.
+    r"""PolyXP(wires)
+    Second order polynomial observable.
 
-    Represents an arbitrary observable Q that is a second order polynomial in the basis
-    :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+    Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
+    polynomial in the basis :math:`\mathbf{r} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
 
-    For first-order observables the representation is a real vector q such that :math:`Q = \sum_i q_i E_i`.
-    For second-order observables the representation is a real symmetric matrix q such that :math:`Q = \sum_{ij} q_{ij} E_i E_j`.
+    For first-order observables the representation is a real vector
+    :math:`\mathbf{d}` such that :math:`P(\x,\p) = \mathbf{d}^T \mathbf{r}`.
+
+    For second-order observables the representation is a real symmetric
+    matrix :math:`A` such that :math:`P(\x,\p) = \mathbf{r}^T A \mathbf{r}`.
 
     Used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV observables.
 
+    **Details:**
+
+    * Number of wires: None (applied to the entire system).
+    * Number of parameters: 1
+    * Expectation order: 2nd order in the quadrature operators.
+    * Heisenberg representation: :math:`A`
+
     Args:
-      q (array[float]): expansion coefficients
+        q (array[float]): expansion coefficients
     """
     n_wires  = 0
     n_params = 1
@@ -94,6 +160,37 @@ class PolyXP(CVExpectation):
         return p[0]
 
 
-all_ops = [Heterodyne, Homodyne, PhotonNumber, P, X, PolyXP]
+class Homodyne(CVExpectation):
+    r"""Homodyne(wires)
+    Returns the homodyne expectation value in the phase space.
+
+    This expectation command returns the value :math:`\braket{\x_\phi}`,
+    where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalised
+    quadrature operator.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Expectation order: 1st order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: d = [0, \cos\phi, \sin\phi]
+
+    Args:
+        phi (float): axis in the phase space at which to calculate
+            the homodyne measurement.
+        wires (Sequence[int] or int): the wire the operation acts on.
+    """
+    n_wires = 1
+    n_params = 1
+    ev_order = 1
+    @staticmethod
+    def _heisenberg_rep(p):
+        phi = p[0]
+        return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
+
+
+all_ops = [Homodyne, PhotonNumber, P, X, PolyXP]
 
 __all__ = [cls.__name__ for cls in all_ops]
