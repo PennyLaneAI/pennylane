@@ -1,4 +1,4 @@
-.. automodule:: openqml.expectation
+.. automodule:: openqml.expval
    :members:
    :private-members:
    :inherited-members:

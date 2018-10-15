@@ -91,7 +91,7 @@ class BasicTest(BaseTest):
                 op.heisenberg_expand(U, len(op.wires))
 
 
-        for cls in openqml.ops.builtins_continuous.all_ops + openqml.expectation.builtins_continuous.all_ops:
+        for cls in openqml.ops.builtins_continuous.all_ops + openqml.expval.builtins_continuous.all_ops:
             if cls._heisenberg_rep is not None:  # only test gaussian operations
                 h_test(cls)
 
@@ -173,10 +173,10 @@ class BasicTest(BaseTest):
         for cls in openqml.ops.builtins_continuous.all_ops:
             op_test(cls)
 
-        for cls in openqml.expectation.builtins_discrete.all_ops:
+        for cls in openqml.expval.builtins_discrete.all_ops:
             op_test(cls)
 
-        for cls in openqml.expectation.builtins_continuous.all_ops:
+        for cls in openqml.expval.builtins_continuous.all_ops:
             op_test(cls)
 
 

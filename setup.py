@@ -39,7 +39,7 @@ info = {
     'packages': [
                     'openqml',
                     'openqml.ops',
-                    'openqml.expectation',
+                    'openqml.expval',
                     'openqml.plugins',
                     'openqml.optimize'
                 ],

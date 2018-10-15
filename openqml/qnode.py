@@ -32,7 +32,7 @@ The quantum circuit is described using a quantum function (qfunc), which must be
         qm.Zrotation(x, 0)
         qm.CNOT([0,1])
         qm.Yrotation(-2*y, 1)
-        return qm.expectation.Z(0)
+        return qm.expval.Z(0)
 
 The body of the qfunc must consist of only :class:`~operation.Operation` constructor calls, and must return
 a tuple of :class:`~operation.Expectation` instances (or just a single instance).
@@ -55,18 +55,18 @@ For example,
 
 .. note::
 
-        The :func:`~openqml.qfunc` decorator is provided as a convenience
+        The :func:`~openqml.decorator.qnode` decorator is provided as a convenience
         to automate the process of creating quantum nodes. Using this decorator,
         the above example becomes:
 
         .. code-block:: python
 
-            @qfunc(device)
+            @qm.qnode(device)
             def my_quantum_function(x, y):
                 qm.Zrotation(x, 0)
                 qm.CNOT([0,1])
                 qm.Yrotation(-2*y, 1)
-                return qm.expectation.Z(0)
+                return qm.expval.Z(0)
 
             result = my_quantum_function(np.pi/4)
 
@@ -728,7 +728,7 @@ class QNode:
                     if q.ndim == 2:
                         # 2nd order observable
                         qp = qp +qp.T
-                    return openqml.expectation.PolyXP(qp, wires=range(w), do_queue=False)
+                    return openqml.expval.PolyXP(qp, wires=range(w), do_queue=False)
 
                 # transform the observables
                 obs = list(map(tr_obs, self.ev))
