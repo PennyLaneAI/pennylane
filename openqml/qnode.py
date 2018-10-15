@@ -206,12 +206,13 @@ def _get_default_args(func):
         func (function): a valid Python function.
 
     Returns:
-        dict: dictionary containing the argument name and default value.
+        dict: dictionary containing the argument name and tuple
+            (positional idx, default value).
     """
     signature = inspect.signature(func)
     return {
-        k: v.default
-        for k, v in signature.parameters.items()
+        k: (idx, v.default)
+        for idx, (k, v) in enumerate(signature.parameters.items())
         if v.default is not inspect.Parameter.empty
     }
 
@@ -274,7 +275,9 @@ class QNode:
         variables = unflatten(temp, args)
 
         # get default kwargs that weren't passed
-        self.keyword_defaults = _get_default_args(self.func)
+        keyword_sig = _get_default_args(self.func)
+        self.keyword_defaults = {k: v[1] for k, v in keyword_sig.items()}
+        self.keyword_positions = {v[0]: k for k, v in keyword_sig.items()}
 
         keyword_values = {}
         keyword_values.update(self.keyword_defaults)
@@ -457,14 +460,25 @@ class QNode:
             # construct the circuit
             self.construct(args, **kwargs)
 
-        # temporarily store the free parameter values in the Variable class
-        Variable.free_param_values = np.array(list(_flatten(args)))
-
         # temporarily store keyword arguments
         keyword_values = {}
         keyword_values.update({k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()})
         keyword_values.update({k: np.array(list(_flatten(v))) for k, v in kwargs.items()})
 
+        # Try and insert kwargs-as-positional back into the kwargs dictionary.
+        # NOTE: this works, but the creation of new, temporary arguments
+        # by pd_analytic breaks this.
+        # positional = []
+        # kwargs_as_position = {}
+        # for idx, v in enumerate(args):
+        #     if idx not in self.keyword_positions:
+        #     positional.append(v)
+        #     else:
+        #         kwargs_as_position[self.keyword_positions[idx]] = np.array(list(_flatten(v)))
+        # keyword_values.update(kwargs_as_position)
+
+        # temporarily store the free parameter values in the Variable class
+        Variable.free_param_values = np.array(list(_flatten(args)))
         Variable.kwarg_values = keyword_values
 
         self.device.reset()
