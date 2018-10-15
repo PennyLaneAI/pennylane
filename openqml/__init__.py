@@ -34,9 +34,14 @@ from .qnode import QNode
 from ._version import __version__
 
 
-# set up logger
-logLevel = 'info'
-numeric_level = getattr(log, logLevel.upper(), 10)
+# set up logging
+if "LOGGING" in os.environ:
+    logLevel = os.environ["LOGGING"]
+    print('Logging:', logLevel)
+    numeric_level = getattr(log, logLevel.upper(), 10)
+else:
+    numeric_level = 100 # info
+
 log.basicConfig(
     level=numeric_level,
     format='%(asctime)s %(levelname)s %(message)s',
