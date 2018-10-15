@@ -67,6 +67,11 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :hidden:
 
    tutorials/basic
+   tutorials/photon_redirection.ipynb
+   tutorials/quantum_neural_net.ipynb
+   tutorials/qubit_rotation.ipynb
+   tutorials/variational_quantum_eigensolver.ipynb
+   tutorials/variational_classifier.ipynb
 
 .. toctree::
    :maxdepth: 1
