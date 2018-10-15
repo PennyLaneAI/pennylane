@@ -108,8 +108,10 @@ class Device(abc.ABC):
     Args:
         name (str): name of the device.
         wires (int): number of subsystems in the quantum state represented by the device.
-        shots (int): number of circuit evaluations/random samples used to estimate expectation values of observables.
-            For simulator devices, 0 results in the exact expectation value being is returned.
+            Default 1 if not specified.
+        shots (int): number of circuit evaluations/random samples used to estimate
+            expectation values of observables. For simulator devices, 0 results
+            in the exact expectation value being is returned. Default 0 if not specified.
     """
     name = ''          #: str: official device plugin name
     api_version = ''   #: str: version of OpenQML for which the plugin was made
@@ -118,7 +120,7 @@ class Device(abc.ABC):
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, name, wires, shots):
+    def __init__(self, name, wires=1, shots=0):
         self.name = name
         self.num_wires = wires
         self.shots = shots
