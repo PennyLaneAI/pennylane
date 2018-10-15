@@ -17,10 +17,10 @@ Core expectations
 
 OpenQML also supports a collection of built-in quantum **expectations**,
 including both discrete-variable (DV) expectations as used in the qubit model,
-and continuous-variable expectations as used in the qumode model of quantum
+and continuous-variable (CV) expectations as used in the qumode model of quantum
 computation.
 
-Here, we summaries the built-in expectations supported by OpenQML, as well
+Here, we summarize the built-in expectations supported by OpenQML, as well
 as the conventions chosen for their implementation.
 
 .. note::
@@ -29,7 +29,7 @@ as the conventions chosen for their implementation.
     supports the required OpenQML built-in expectations defined here,
     by including them in your device ``_observable_map``.
 
-    If the operator convention differs between the built-in OpenQML operator
+    If the convention differs between the built-in OpenQML operator
     and the corresponding expectation in the targeted framework, ensure that the
     conversion between the two conventions takes places automatically
     by the plugin device.
