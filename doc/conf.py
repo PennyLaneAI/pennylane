@@ -68,6 +68,8 @@ project = 'OpenQML'
 copyright = "Copyright 2018, Xanadu Inc."
 author = 'Xanadu Inc.'
 
+add_module_names = False
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
