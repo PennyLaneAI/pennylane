@@ -69,7 +69,7 @@ For example, a very basic operator map that supports only two gates might look l
 
     _operator_map = {'CNOT': cnot_function, 'PauliX': X_function}
 
-where ``'CNOT'`` represents the built-in operation :class:`~.CNOT`, and ``'PauliX'`` represents the built-in operation :class:`~.PauliX`. The functions in the dictionary can be of any form you like, and can exist in the plugin within the same file, separate files, or may even be imported from a different library. As long as the corresponding key representing the supported operator is there, OpenQML will allow that operation to be placed on the device.
+where ``'CNOT'`` represents the built-in operation :class:`~.CNOT`, and ``'PauliX'`` represents the built-in operation :class:`~.ops.PauliX`. The functions in the dictionary can be of any form you like, and can exist in the plugin within the same file, separate files, or may even be imported from a different library. As long as the corresponding key representing the supported operator is there, OpenQML will allow that operation to be placed on the device.
 
 For a better idea of how the ``_operator_map`` and ``_observable_map`` work, refer to the two reference plugins.
 

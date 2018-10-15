@@ -15,7 +15,7 @@
 Qubit quantum expectations
 ==========================
 
-.. currentmodule:: openqml.expectation.builtins_discrete
+.. currentmodule:: openqml.expval.builtins_discrete
 
 This section contains the available built-in discrete-variable
 quantum operations supported by OpenQML, as well as their conventions.
@@ -40,7 +40,7 @@ from openqml.operation import Expectation
 
 
 class PauliX(Expectation):
-    r"""PauliX(wires)
+    r"""openqml.expval.PauliX(wires)
     Returns the Pauli-X expectation value.
 
     This expectation command returns the value
@@ -63,7 +63,7 @@ class PauliX(Expectation):
 
 
 class PauliY(Expectation):
-    r"""PauliY(wires)
+    r"""openqml.expval.PauliY(wires)
     Returns the Pauli-Y expectation value.
 
     This expectation command returns the value
@@ -86,7 +86,7 @@ class PauliY(Expectation):
 
 
 class PauliZ(Expectation):
-    r"""PauliZ(wires)
+    r"""openqml.expval.PauliZ(wires)
     Returns the Pauli-Z expectation value.
 
     This expectation command returns the value
@@ -109,7 +109,7 @@ class PauliZ(Expectation):
 
 
 class Hermitian(Expectation):
-    r"""Hermitian(A, wires)
+    r"""openqml.expval.Hermitian(A, wires)
     Returns the expectation value of an arbitrary Hermitian observable.
 
     For a Hermitian matrix :math:`A`, this expectation command returns the value

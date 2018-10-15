@@ -163,10 +163,9 @@ class OpenQMLInitTests(BaseTest):
         self.logTestName()
 
         config = Configuration(name=filename)
-        dev = qm.device('strawberryfields.fock', wires=2, config=config)
+        dev = qm.device('default.gaussian', wires=2, config=config)
 
         self.assertTrue(dev.hbar, 1)
-        self.assertTrue(dev.cutoff, 10)
 
 if __name__ == '__main__':
     print('Testing OpenQML version ' + openqml.version() + ', Configuration class.')

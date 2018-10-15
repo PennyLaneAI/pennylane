@@ -15,7 +15,7 @@
 CV quantum expectations
 =======================
 
-.. currentmodule:: openqml.expectation.builtins_continuous
+.. currentmodule:: openqml.expval.builtins_continuous
 
 This section contains the available built-in continuous-variable
 quantum operations supported by OpenQML, as well as their conventions.
@@ -42,7 +42,7 @@ from openqml.operation import CVExpectation
 
 
 class PhotonNumber(CVExpectation):
-    r"""PhotonNumber(wires)
+    r"""openqml.expval.PhotonNumber(wires)
     Returns the photon number expectation value.
 
     This expectation command returns the value
@@ -75,7 +75,7 @@ class PhotonNumber(CVExpectation):
 
 
 class X(CVExpectation):
-    r"""X(wires)
+    r"""openqml.expval.X(wires)
     Returns the position expectation value in the phase space.
 
     This expectation command returns the value :math:`\braket{\x}`.
@@ -101,7 +101,7 @@ class X(CVExpectation):
 
 
 class P(CVExpectation):
-    r"""P(wires)
+    r"""openqml.expval.P(wires)
     Returns the momentum expectation value in the phase space.
 
     This expectation command returns the value :math:`\braket{\p}`.
@@ -127,7 +127,7 @@ class P(CVExpectation):
 
 
 class PolyXP(CVExpectation):
-    r"""PolyXP(wires)
+    r"""openqml.expval.PolyXP(wires)
     Second order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
@@ -161,7 +161,7 @@ class PolyXP(CVExpectation):
 
 
 class Homodyne(CVExpectation):
-    r"""Homodyne(wires)
+    r"""openqml.expval.Homodyne(wires)
     Returns the homodyne expectation value in the phase space.
 
     This expectation command returns the value :math:`\braket{\x_\phi}`,

@@ -82,7 +82,7 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    API/configuration
    API/optimize
    API/qnode
-   API/qfunc
+   API/decorator
    API/operation
    API/variable
 
@@ -92,7 +92,7 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :hidden:
 
    API/ops
-   API/expectation
+   API/expval
 
 .. toctree::
    :maxdepth: 1
