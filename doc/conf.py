@@ -39,8 +39,8 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
-    'edit_on_github',
-    'nbsphinx'
+    'edit_on_github'
+    # 'nbsphinx'
 ]
 
 # nbsphinx settings
