@@ -162,7 +162,7 @@ def device(name, *args, **kwargs):
     Args:
         name (str): the name of the device to load
         wires (int): the number of wires (subsystems) to initialise
-            the device with.
+            the device with
 
     Keyword Args:
         config (openqml.Configuration): an OpenQML configuration object
