@@ -92,10 +92,8 @@ class Variable:
         if self.name is None:
             # The variable is a placeholder for a positional argument
             value = self.free_param_values[self.idx] * self.mult
-            logging.debug("Positional arg idx: %g val: %f", self.idx, value)
             return value
 
         # The variable is a placeholder for a keyword argument
         value = self.kwarg_values[self.name][self.idx] * self.mult
-        logging.debug("Keyword arg name: %s idx: %g val: %f", self.name, self.idx, value)
         return value
