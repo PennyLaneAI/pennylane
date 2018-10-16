@@ -29,10 +29,10 @@ The quantum circuit is described using a quantum function (qfunc), which must be
 .. code-block:: python
 
     def my_quantum_function(x, y):
-        qm.Zrotation(x, 0)
+        qm.RZ(x, 0)
         qm.CNOT([0,1])
-        qm.Yrotation(-2*y, 1)
-        return qm.expval.Z(0)
+        qm.RY(-2*y, 1)
+        return qm.expval.PauliZ(0)
 
 The body of the qfunc must consist of only :class:`~operation.Operation` constructor calls, and must return
 a tuple of :class:`~operation.Expectation` instances (or just a single instance).
@@ -63,10 +63,10 @@ For example,
 
             @qm.qnode(device)
             def my_quantum_function(x, y):
-                qm.Zrotation(x, 0)
+                qm.RZ(x, 0)
                 qm.CNOT([0,1])
-                qm.Yrotation(-2*y, 1)
-                return qm.expval.Z(0)
+                qm.RY(-2*y, 1)
+                return qm.expval.PauliZ(0)
 
             result = my_quantum_function(np.pi/4)
 

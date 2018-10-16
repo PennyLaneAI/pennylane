@@ -35,7 +35,7 @@ Example:
 
 To become a valid QNode, the user-defined function must consist of
 only OpenQML operators and expectation values (one per line), contain
-no classical processing or functions, and must  with the measurement
+no classical processing or functions, and must end with the measurement
 of a single or tuple of expectation values.
 
 Once defined, the QNode can then be used to construct the loss function,
