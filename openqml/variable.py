@@ -52,7 +52,7 @@ free parameters stored as Variable instances.
     If the user defines a keyword argument, they then always have to pass the
     corresponding variable as a keyword argument, otherwise it won't register.
 
-For each successive QNode execution, the user provided arguments and keyword
+For each successive QNode execution, the user-provided arguments and keyword
 arguments are stored in the :attr:`Variable.free_param_values` and
 :attr:`Variable.kwarg_values` list and dictionaries respectively; these are
 then returned by :meth:`Variable.val`, using its ``idx`` value, and, for
