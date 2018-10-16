@@ -71,7 +71,7 @@ class BasicTest(BaseTest):
             U = op.heisenberg_tr(0)
             for k in range(cls.num_params):
                 D = op.heisenberg_pd(k)  # using the recipe
-                # using finite differences
+                # using finite difference
                 op.params[k] += h
                 Up = op.heisenberg_tr(0)
                 op.params = par

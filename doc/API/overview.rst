@@ -144,7 +144,7 @@ All plugins should come with extensive unit tests, to ensure that the device sup
 In general, as all supported operations have their gradient formula defined and tested by OpenQML, testing that your device calculates the correct gradients is not required - just that it *applies* and *measures* quantum operations and observables correctly.
 
 
-Unsupported operations
+Supporting new operations
 ----------------------
 
 If you would like to support an operation or observable that is not currently supported by OpenQML, you can subclass the :class:`~.Operation` and :class:`~.Expectation` classes, and define the number of parameters the operation takes, and the number of wires the operation acts on. For example, to define the Ising gate :math:`XX_\phi` depending on parameter :math:`\phi`,
@@ -165,7 +165,7 @@ where
 
 * :attr:`~.Operation.num_wires`: the number of wires the operation acts on.
 
-* :attr:`~.Operation.par_domain`: the domain of the gate parameters; ``'N'`` for natural numbers (including zero), ``'R'`` for floats, and ``'A'`` for arrays of floats/complex numbers.
+* :attr:`~.Operation.par_domain`: the domain of the gate parameters; ``'N'`` for natural numbers (including zero), ``'R'`` for floats, ``'A'`` for arrays of floats/complex numbers, and ``None`` if the gate does not have free parameters.
 
 * :attr:`~.Operation.grad_method`: The gradient computation method; ``'A'`` for the analytic method, ``'F'`` for finite differences, and ``None`` if the operation may not be differentiated.
 

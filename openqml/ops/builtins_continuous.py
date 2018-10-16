@@ -230,7 +230,7 @@ class TwoModeSqueezing(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 2
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     .. todo:: add a gradient recipe
 
@@ -257,7 +257,7 @@ class QuadraticPhase(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     .. todo:: add a gradient recipe.
 
@@ -283,7 +283,7 @@ class CubicPhase(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         gamma (float): parameter
@@ -306,7 +306,7 @@ class Kerr(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         kappa (float): parameter
@@ -329,7 +329,7 @@ class CrossKerr(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         kappa (float): parameter
@@ -402,7 +402,7 @@ class ControlledAddition(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     .. todo:: add a gradient recipe
 
@@ -429,7 +429,7 @@ class ControlledPhase(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     .. todo:: add a gradient recipe
 
@@ -457,7 +457,7 @@ class CoherentState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         a (float): displacement magnitude :math:`r=|\alpha|`
@@ -478,7 +478,7 @@ class SqueezedState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         r (float): squeezing magnitude
@@ -507,7 +507,7 @@ class DisplacedSqueezedState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 3
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         alpha (complex): displacement parameter
@@ -549,7 +549,7 @@ class ThermalState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     .. todo:: Does the thermal state have a gradient recipe?
 
@@ -578,7 +578,7 @@ class CatState(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         alpha (complex): displacement parameter
@@ -600,7 +600,7 @@ class FockStateVector(CVOperation):
 
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         state (array): a single ket vector, for single mode state preparation,
@@ -617,9 +617,9 @@ class FockDensityMatrix(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system).
+    * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences).
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         state (array): a single mode two-dimensional matrix :math:`\rho_{ij}`, or
@@ -638,7 +638,7 @@ class GaussianState(CVOperation):
 
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     .. todo::
 

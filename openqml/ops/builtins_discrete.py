@@ -370,7 +370,7 @@ class QubitStateVector(Operation):
 
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
@@ -394,7 +394,7 @@ class QubitUnitary(Operation):
 
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         U (array[complex]): square unitary matrix
