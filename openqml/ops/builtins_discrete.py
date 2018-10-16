@@ -289,7 +289,7 @@ class PhaseShift(Operation):
 
     .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
                 1 & 0 \\
-                0 & e^{i\phi/4}
+                0 & e^{i\phi}
             \end{bmatrix}.
 
     **Details:**
@@ -297,8 +297,6 @@ class PhaseShift(Operation):
     * Number of wires: 1
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}R_\phi(\phi) = \frac{1}{2}\left[R_\phi(\phi+\pi/2)+R_\phi(\phi-\pi/2)\right]`
-
-    .. todo:: double check this gradient formula.
 
     Args:
         phi (float): rotation angle :math:`\phi`
