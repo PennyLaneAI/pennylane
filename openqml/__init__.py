@@ -90,12 +90,12 @@ from pkg_resources import iter_entry_points
 from autograd import numpy
 from autograd import grad as _grad
 
+import openqml.operation
+import openqml.expval
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
-import openqml.operation
 from .ops import *
-import openqml.expval
 from .optimize import *
 from .qnode import QNode, QuantumFunctionError
 from ._version import __version__
@@ -189,7 +189,7 @@ def device(name, *args, **kwargs):
         p = plugin_devices[name].load()(*args, **options)
 
         if p.api_version != __version__:
-            log.warning('Plugin API version {} does not match OpenQML version {}.'.format(p.api_version, __version__))
+            log.warning('Plugin API version %s does not match OpenQML version %s.', p.api_version, __version__)
 
         return p
     else:
@@ -209,6 +209,7 @@ def grad(func):
         function: the function that returns the gradient of the input
             function with respect to the first parameter.
     """
+    # pylint: disable=no-value-for-parameter
     return _grad(func)
 
 
