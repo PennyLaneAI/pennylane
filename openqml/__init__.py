@@ -149,7 +149,7 @@ def device(name, *args, **kwargs):
     :ref:`plugins` for more details.
 
     All devices must be loaded by specifying its **short-name** as listed above,
-    followed by the number of *wires* (subsystems) you wish to initialise.
+    followed by the number of *wires* (subsystems) you wish to initialize.
 
     In addition, some devices accept additional arguments. For instance,
     ``default.gaussian`` accepts the keyword argument ``hbar``, to set
