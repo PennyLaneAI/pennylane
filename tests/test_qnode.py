@@ -36,15 +36,18 @@ def expZ(state):
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
 a = np.linspace(-1,1,64)
-shapes = [(64,),
-          (64,1),
-          (32,2),
-          (16,4),
-          (8,8),
-          (16,2,2),
-          (8,2,2,2),
-          (4,2,2,2,2),
-          (2,2,2,2,2,2)]
+a_shapes = [(64,),
+            (64,1),
+            (32,2),
+            (16,4),
+            (8,8),
+            (16,2,2),
+            (8,2,2,2),
+            (4,2,2,2,2),
+            (2,2,2,2,2,2)]
+
+b = np.linspace(-1., 1., 8)
+b_shapes = [(8,), (8,1), (4,2), (2,2,2), (2,1,2,1,2)]
 
 class BasicTest(BaseTest):
     """Qnode tests.
@@ -52,12 +55,14 @@ class BasicTest(BaseTest):
     def setUp(self):
         self.dev1 = qm.device('default.qubit', wires=1)
         self.dev2 = qm.device('default.qubit', wires=2)
+        self.dev3 = qm.device('default.qubit', wires=3)
+        self.dev8 = qm.device('default.qubit', wires=8)
 
     def test_flatten(self):
         "Tests that _flatten successfully flattens multidimensional arrays."
         self.logTestName()
         flat = a
-        for s in shapes:
+        for s in a_shapes:
             reshaped = np.reshape(flat, s)
             flattened = np.array([x for x in _flatten(reshaped)])
 
@@ -68,7 +73,7 @@ class BasicTest(BaseTest):
         "Tests that _unflatten successfully unflattens multidimensional arrays."
         self.logTestName()
         flat = a
-        for s in shapes:
+        for s in a_shapes:
             reshaped = np.reshape(flat, s)
             unflattened = np.array([x for x in unflatten(flat, reshaped)])
 
@@ -375,7 +380,7 @@ class BasicTest(BaseTest):
 
 
     def test_qnode_array_parameters(self):
-        """Test that QNode can take arrays as input arguments, and that they interact properly with autograd."""
+        "Test that QNode can take arrays as input arguments, and that they interact properly with autograd."
         self.logTestName()
 
         @qm.qnode(self.dev1)
@@ -615,7 +620,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(res1, res2, delta=self.tol)
 
     def test_multiple_keywordargs_used(self):
-        "Tests that qnodes uses multiple keyword arguments."
+        "Tests that qnodes use multiple keyword arguments."
         self.logTestName()
 
         def circuit(w, x=None, y=None):
@@ -629,7 +634,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
 
     def test_multidimensional_keywordargs_used(self):
-        "Tests that qnodes uses multi-dimensional keyword arguments."
+        "Tests that qnodes use multi-dimensional keyword arguments."
         self.logTestName()
 
         def circuit(w, x=None):
@@ -643,7 +648,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
 
     def test_keywordargs_used(self):
-        "Tests that qnodes uses keyword arguments."
+        "Tests that qnodes use keyword arguments."
         self.logTestName()
 
         def circuit(w, x=None):
@@ -686,6 +691,139 @@ class BasicTest(BaseTest):
 
         c = classnode(0., x=np.pi)
         self.assertAllAlmostEqual(c, [1., -1.], delta=self.tol)
+
+    def test_multidim_array(self):
+        "Tests that arguments which are multidimensional arrays are properly evaluated and differentiated in QNodes."
+        self.logTestName()
+
+        for s in b_shapes:
+            multidim_array = np.reshape(b, s)
+            def circuit(w):
+                qm.RX(w[np.unravel_index(0,s)], 0) # b[0]
+                qm.RX(w[np.unravel_index(1,s)], 1) # b[1]
+                qm.RX(w[np.unravel_index(2,s)], 2) # ...
+                qm.RX(w[np.unravel_index(3,s)], 3)
+                qm.RX(w[np.unravel_index(4,s)], 4)
+                qm.RX(w[np.unravel_index(5,s)], 5)
+                qm.RX(w[np.unravel_index(6,s)], 6)
+                qm.RX(w[np.unravel_index(7,s)], 7)
+                return tuple(qm.expval.PauliZ(idx) for idx in range(len(b)))
+            circuit = qm.QNode(circuit, self.dev8)
+
+            # circuit evaluations
+            circuit_output = circuit(multidim_array)
+            expected_output = np.cos(b)
+            self.assertAllAlmostEqual(circuit_output, expected_output, delta=self.tol)
+
+            # circuit jacobians
+            circuit_jacobian = circuit.jacobian(multidim_array)
+            expected_jacobian = -np.diag(np.sin(b))
+            self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
+
+    def test_differentiate_all_positional(self):
+        "Tests that all positional arguments are differentiated."
+        self.logTestName()
+
+        ## all positional args used
+        def circuit1(a,b,c):
+            qm.RX(a, 0)
+            qm.RX(b, 1)
+            qm.RX(c, 2)
+            return tuple(qm.expval.PauliZ(idx) for idx in range(3))
+        circuit1 = qm.QNode(circuit1, self.dev3)
+
+        vals = np.array([np.pi, np.pi/2, np.pi/3])
+        circuit_output = circuit1(*vals)
+        expected_output = np.cos(vals)
+        self.assertAllAlmostEqual(circuit_output, expected_output, delta=self.tol)
+
+        # circuit jacobians
+        circuit_jacobian = circuit1.jacobian(vals)
+        expected_jacobian = -np.diag(np.sin(vals))
+        self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
+
+        ## only first positional arg used
+        def circuit2(a,b):
+            qm.RX(a,0)
+            return qm.expval.PauliZ(0)
+        circuit2 = qm.QNode(circuit2, self.dev2)
+
+        a = 0.7418
+        b = -5.
+        circuit_output = circuit2(a,b)
+        expected_output = np.cos(a)
+        self.assertAllAlmostEqual(circuit_output, expected_output, delta=self.tol)
+
+        # circuit jacobians
+        circuit_jacobian = circuit2.jacobian([a,b])
+        expected_jacobian = np.array([[-np.sin(a), 0]])
+        self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
+
+        ## only second positional arg used
+        def circuit3(a, b):
+            qm.RX(b, 0)
+            return qm.expval.PauliZ(0)
+
+        circuit3 = qm.QNode(circuit3, self.dev2)
+
+        a = 0.7418
+        b = -5.
+        circuit_output = circuit3(a, b)
+        expected_output = np.cos(b)
+        self.assertAllAlmostEqual(circuit_output, expected_output, delta=self.tol)
+
+        # circuit jacobians
+        circuit_jacobian = circuit3.jacobian([a, b])
+        expected_jacobian = np.array([[0, -np.sin(b)]])
+        self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
+
+        ## second and third positional arguments used
+        def circuit4(a, b, c):
+            qm.RX(b, 0)
+            qm.RX(c, 1)
+            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
+
+        circuit4 = qm.QNode(circuit4, self.dev2)
+
+        a = 0.7418
+        b = -5.
+        c = np.pi / 7
+        circuit_output = circuit4(a, b, c)
+        expected_output = np.array([[np.cos(b), np.cos(c)]])
+        self.assertAllAlmostEqual(circuit_output, expected_output, delta=self.tol)
+
+        # circuit jacobians
+        circuit_jacobian = circuit4.jacobian([a, b, c])
+        expected_jacobian = np.array([[0., -np.sin(b), 0.],
+                                      [0., 0., -np.sin(c)]])
+        self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
+
+    def test_differentiate_positional_multidim(self):
+        "Tests that all positional arguments are differentiated when they are multidimensional."
+        self.logTestName()
+
+        def circuit(a, b):
+            qm.RX(a[0], 0)
+            qm.RX(a[1], 1)
+            qm.RX(b[2,1], 2)
+            return qm.expval.PauliZ(0), qm.expval.PauliZ(1), qm.expval.PauliZ(2)
+
+        circuit = qm.QNode(circuit, self.dev3)
+
+        a = np.array([-np.sqrt(2), -0.54])
+        b = np.array([np.pi/7] * 6).reshape([3,2])
+        circuit_output = circuit(a, b)
+        expected_output = np.cos(np.array([[a[0], a[1], b[-1,0]]]))
+        self.assertAllAlmostEqual(circuit_output, expected_output, delta=self.tol)
+
+        # circuit jacobians
+        circuit_jacobian = circuit.jacobian([a, b])
+        expected_jacobian = np.array([[-np.sin(a[0])] + [0.] * 7, # expval 0
+                                      [0., -np.sin(a[1])] + [0.] * 6, #expval 1
+                                      [0.] * 2 + [0.] * 5 + [-np.sin(b[2,1])]]) # expval 2
+        self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
+
+
 
 
 if __name__ == '__main__':
