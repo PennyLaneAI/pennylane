@@ -69,7 +69,7 @@ class PhotonNumber(CVExpectation):
     num_params = 0
     par_domain = None
 
-    grad_method = 'A'
+    grad_method = None
     ev_order = 2
 
     @staticmethod
@@ -100,7 +100,7 @@ class X(CVExpectation):
     num_params = 0
     par_domain = None
 
-    grad_method = 'A'
+    grad_method = None
     ev_order = 1
 
     @staticmethod
@@ -130,7 +130,7 @@ class P(CVExpectation):
     num_params = 0
     par_domain = None
 
-    grad_method = 'A'
+    grad_method = None
     ev_order = 1
 
     @staticmethod

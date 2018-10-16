@@ -61,7 +61,7 @@ class PauliX(Expectation):
     num_wires = 1
     num_params = 0
     par_domain = None
-    grad_method = 'F'
+    grad_method = None
 
 
 class PauliY(Expectation):
@@ -86,7 +86,7 @@ class PauliY(Expectation):
     num_wires = 1
     num_params = 0
     par_domain = None
-    grad_method = 'F'
+    grad_method = None
 
 
 class PauliZ(Expectation):
@@ -111,7 +111,7 @@ class PauliZ(Expectation):
     num_wires = 1
     num_params = 0
     par_domain = None
-    grad_method = 'F'
+    grad_method = None
 
 
 class Hermitian(Expectation):
