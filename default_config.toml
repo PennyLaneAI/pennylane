@@ -22,7 +22,7 @@ shots = 0
 ## and to also set options specific to certain device.
 
 [default.gaussian]
-hbar = 1
+hbar = 2
 
 
 [strawberryfields.global]
