@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Quantum nodes
-=============
+QNodes and QFuncs
+=================
 
 **Module name:** :mod:`openqml.qnode`
 
@@ -107,7 +107,8 @@ QNode internal methods
 
 .. currentmodule:: openqml.qnode
 
-----
+Code details
+~~~~~~~~~~~~
 """
 import inspect
 import copy
@@ -123,9 +124,12 @@ import autograd.extend as ae
 import autograd.builtins
 
 import openqml.operation
-from .device    import QuantumFunctionError
 from .variable  import Variable
 
+
+class QuantumFunctionError(Exception):
+    """Exception raised when an illegal operation is defined in a quantum function."""
+    pass
 
 
 def _flatten(x):

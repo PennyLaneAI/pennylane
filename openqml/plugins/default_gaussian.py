@@ -62,7 +62,7 @@ Classes
    DefaultGaussian
 
 Details
--------
+~~~~~~~
 """
 # pylint: disable=attribute-defined-outside-init
 import logging as log
@@ -70,7 +70,7 @@ import logging as log
 import numpy as np
 
 import openqml as qm
-from openqml.device import Device
+from openqml import Device
 
 log.getLogger()
 

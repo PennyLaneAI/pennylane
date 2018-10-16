@@ -62,6 +62,9 @@ and processed classically using NumPy. For example,
 
         my_qnode = qm.QNode(my_quantum_function, dev1)
         result = my_qnode(0.543)
+
+Code details
+~~~~~~~~~~~~
 """
 import logging as log
 log.getLogger()
