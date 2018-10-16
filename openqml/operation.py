@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+# pylint: disable=protected-access
+r"""
 Symbolic quantum operations
 ===========================
 
@@ -19,61 +20,155 @@ Symbolic quantum operations
 
 .. currentmodule:: openqml.operation
 
+Operation base classes
+----------------------
 
-Classes
--------
+This module contains the symbolic base class for performing quantum operations
+and measuring expectation values in OpenQML.
+
+* Each :class:`~.Operation` subclass represents a type of quantum operation,
+  for example a unitary quantum gate. Each instance of these subclasses then
+  represents an application of the operation with given parameter values to
+  a given sequence of wires (subsystems).
+
+* Each  :class:`~.Expectation` subclass represents a type of expectation value,
+  for example the expectation value of an observable, such as an Hermitian operator.
+
+In general, an operation is differentiable (at least using the finite difference method) iff
+
+* it has parameters, and
+* its parameter domain is continuous (i.e. the domain is not the natural numbers).
+
+For an operation to be differentiable with respect to a particular parameter
+using the analytic method of differentiation, it must satisfy an additional constraint:
+
+* its parameter domain must be real.
+
+.. note::
+
+    These conditions are *not* sufficient for analytic differentiation. For example,
+    the analytic method does not work on non-Gaussian CV gates.
+
+For gates that *are* supported via the analytic method, the gradient recipe
+(with multiplier :math:`c_k`, parameter shift :math:`s_k`) works as follows:
+
+.. math::
+   \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}
+   = c_k \left(Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots)\right)
+
+Summary
+^^^^^^^
 
 .. autosummary::
    Operation
    Expectation
+
+CV Operation base classes
+-------------------------
+
+Due to additional requirements, continuous-variable (CV) operations must subclass the
+:class:`~.CVOperation` or :class:`~.CVExpectation` classes instead.
+
+In addition, for Gaussian CV operations, you may need to provide the static class
+method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
+the operator given its list of parameters:
+
+* This method should return the matrix of the linear transformation carried out by the
+  gate for the given parameter values, and is used for calculating the gradient using
+  the analytic method.
+
+* For observables, this method should return a real vector (first-order observables)
+  or symmetric matrix (second-order observables) of coefficients of the quadrature
+  operators :math:`\x` and :math:`\p`.
+
+  - For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
+  - For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+
+.. note::
+    Non-Gaussian CV operations and expectations are currently only supported via
+    the finite difference method of gradient computation.
+
+Summary
+^^^^^^^
+
+.. autosummary::
    CV
    CVOperation
    CVExpectation
 
-----
+Details
+-------
 """
 import abc
 import numbers
 import logging as log
-log.getLogger()
-
-from pkg_resources import iter_entry_points
 
 import autograd.numpy as np
 
 from .qnode import _flatten, _unflatten, QNode, QuantumFunctionError
 from .variable import Variable
 
+log.getLogger()
+
+
+#=============================================================================
+# Class property
+#=============================================================================
+
+
+class ClassPropertyDescriptor(object):
+    """Allows a class property to be defined"""
+    # pylint: disable=too-few-public-methods
+    def __init__(self, fget, fset=None):
+        self.fget = fget
+        self.fset = fset
+
+    def __get__(self, obj, klass=None):
+        if klass is None:
+            klass = type(obj)
+        return self.fget.__get__(obj, klass)()
+
+    def __set__(self, obj, value):
+        if not self.fset:
+            raise AttributeError("can't set attribute")
+        type_ = type(obj)
+        return self.fset.__get__(obj, type_)(value)
+
+    def setter(self, func):
+        """Set the function as a class method, and store as an attribute."""
+        if not isinstance(func, (classmethod, staticmethod)):
+            func = classmethod(func)
+        self.fset = func
+        return self
+
+def classproperty(func):
+    """The class property decorator"""
+    if not isinstance(func, (classmethod, staticmethod)):
+        func = classmethod(func)
+
+    return ClassPropertyDescriptor(func)
+
+
+#=============================================================================
+# Base Operation class
+#=============================================================================
+
 
 class Operation(abc.ABC):
     r"""Base class for quantum operations supported by a device.
 
-    * Each Operation subclass represents a type of quantum operation,
-      for example a unitary quantum gate.
+    The following class attributes must be defined for all Operations:
 
-    * Each instance of these subclasses represents an application of the
-      operation with given parameter values to a given sequence of wires (subsystems).
+    * :attr:`~.Operation.num_params`
+    * :attr:`~.Operation.num_wires`
+    * :attr:`~.Operation.par_domain`
 
-    In general, an operation is differentiable (at least using the finite difference method 'F') iff
+    The following two class attributes are optional, but in most cases
+    should be clearly defined to avoid unexpected behavior during
+    differentiation.
 
-    * it has parameters, i.e. ``num_params > 0``, and
-    * its parameter domain is continuous (i.e. ``par_domain`` is not ``'N'``).
-
-    For an operation to be differentiable using the analytic method 'A', additionally:
-
-    * its `par_domain` must be 'R'.
-
-    .. note::
-
-        These conditions are *not* sufficient for analytic differentiation. For example,
-    This is not sufficient though, the 'A' method does not work on non-Gaussian CV gates for example.
-
-    The gradient recipe (multiplier :math:`c_k`, parameter shift :math:`s_k`)
-    works as follows:
-
-    .. math::
-       \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}
-       = c_k \left(Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots)\right)
+    * :attr:`~.Operation.grad_method`
+    * :attr:`~.Operation.grad_recipe`
 
     Args:
         args (tuple[float, int, array, Variable]): operation parameters.
@@ -102,11 +197,6 @@ class Operation(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractproperty
-    def num_params(self):
-        """Number of parameters the operation takes."""
-        raise NotImplementedError
-
-    @abc.abstractproperty
     def par_domain(self):
         """Domain of the gate parameters.
 
@@ -125,9 +215,9 @@ class Operation(abc.ABC):
         * ``'F'``: finite differences numerical differentiation.
         * ``None``: the operation may not be differentiated.
 
-        Default is 'F'.
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        return 'F'
+        return None if self.num_params == 0 else 'F'
 
     @property
     def grad_recipe(self):
@@ -150,7 +240,8 @@ class Operation(abc.ABC):
         self._grad_recipe = value
 
     def __init__(self, *args, wires=None, do_queue=True):
-        self.name  = self.__class__.__name__   #: str: name of the operation
+        # pylint: disable=too-many-branches
+        self.name = self.__class__.__name__   #: str: name of the operation
 
         # extract the arguments
         if wires is not None:
@@ -215,6 +306,7 @@ class Operation(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
+        # pylint: disable=too-many-branches
         try:
             if isinstance(p, Variable):
                 if self.par_domain == 'A':
@@ -250,10 +342,12 @@ class Operation(abc.ABC):
     def parameters(self):
         """Current parameter values.
 
-        Fixed parameters are returned as is, free parameters represented by :class:`~.variable.Variable` instances are replaced by their current numerical value.
+        Fixed parameters are returned as is, free parameters represented by
+        :class:`~.variable.Variable` instances are replaced by their
+        current numerical value.
 
         Returns:
-          list[float]: parameter values
+            list[float]: parameter values
         """
         temp = list(_flatten(self.params))
         temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
@@ -268,10 +362,29 @@ class Operation(abc.ABC):
         return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
 
 
+#=============================================================================
+# Base Expectation class
+#=============================================================================
+
+
 class Expectation(Operation):
     """Base class for expectation value measurements supported by a device.
 
     :class:`Expectation` is used to describe Hermitian quantum observables.
+
+    As with :class:`~.Operation`, the following class attributes must be
+    defined for all expectations:
+
+    * :attr:`~.Expectation.num_params`
+    * :attr:`~.Expectation.num_wires`
+    * :attr:`~.Expectation.par_domain`
+
+    The following two class attributes are optional, but in most cases
+    should be clearly defined to avoid unexpected behavior during
+    differentiation.
+
+    * :attr:`~.Expectation.grad_method`
+    * :attr:`~.Expectation.grad_recipe`
 
     Args:
         args (tuple[float, int, array, Variable]): Expectation parameters
@@ -283,20 +396,27 @@ class Expectation(Operation):
             pushed into a :class:`QNode` circuit queue. This flag is useful if
             there is some reason to run an Expectation outside of a QNode context.
     """
+    # pylint: disable=abstract-method
     pass
+
+
+#=============================================================================
+# CV Operations and expectations
+#=============================================================================
 
 
 class CV:
     """A mixin base class denoting a continuous-variable operation."""
+    # pylint: disable=no-member
 
     def heisenberg_expand(self, U, num_wires):
         """Expand the given local Heisenberg-picture array into a full-system one.
 
         Args:
-            U (array[float]): array to expand (expected to be of the dimension 1+2*self.num_wires)
-            num_wires  (int): total number of wires in the quantum circuit. If zero, return U as is.
+            U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
+            num_wires (int): total number of wires in the quantum circuit. If zero, return ``U`` as is.
         Returns:
-            array[float]: expanded array, dimension 1+2*num_wires
+            array[float]: expanded array, dimension ``1+2*num_wires``
         """
         U_dim = len(U)
         nw = len(self.wires)
@@ -308,7 +428,7 @@ class CV:
             return U
 
         if num_wires < len(self.wires):
-            raise ValueError('{}: Number of wires is too small to fit Heisenberg matrix'.format(self.name, num_wires))
+            raise ValueError('{}: Number of wires {} is too small to fit Heisenberg matrix'.format(self.name, num_wires))
 
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis
         dim = 1 + num_wires*2
@@ -353,7 +473,7 @@ class CV:
           transformation carried out by the gate for the given parameter values.
           The method is not defined for non-Gaussian gates.
 
-          .. note:: The existence of this method is equivalent to ``grad_method = 'A'``.
+          **The existence of this method is equivalent to setting ``grad_method = 'A'``.**
 
         * For observables, returns a real vector (first-order observables) or
           symmetric matrix (second-order observables) of expansion coefficients
@@ -374,13 +494,21 @@ class CV:
             array[float]: :math:`\tilde{U}` or :math:`q`
         """
         # TODO: check the note in the docstring.
-        pass
+        # pylint: disable=unused-argument
+        return None
 
-    _heisenberg_rep = None  # disable the method, we just want the docstring here
+    @classproperty
+    def isgaussian(self):
+        """Returns True if the CV Operation has a defined :meth:`~.CV._heisenberg_rep`
+        static method, indicating that the operation is Gaussian.
+        """
+        p = list(range(self.num_params))
+        return self._heisenberg_rep(p) is not None
 
 
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""
+    # pylint: disable=abstract-method
 
     def heisenberg_pd(self, idx):
         """Partial derivative of the Heisenberg picture transform matrix.
@@ -388,9 +516,10 @@ class CVOperation(CV, Operation):
         Computed using grad_recipe.
 
         Args:
-          idx (int): index of the parameter wrt. which the partial derivative is computed
+            idx (int): index of the parameter with respect to which the
+                partial derivative is computed.
         Returns:
-          array[float]: partial derivative
+            array[float]: partial derivative.
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
@@ -400,63 +529,85 @@ class CVOperation(CV, Operation):
         p = self.parameters
         # evaluate the transform at the shifted parameter values
         p[idx] += shift
-        U2 = self._heisenberg_rep(p)
+        U2 = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
         p[idx] -= 2*shift
-        U1 = self._heisenberg_rep(p)
+        U1 = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
         return (U2-U1) * multiplier  # partial derivative of the transformation
 
-
     def heisenberg_tr(self, num_wires, inverse=False):
-        r"""Heisenberg picture representation of the linear transformation carried out by the gate at current parameter values.
+        r"""Heisenberg picture representation of the linear transformation carried
+        out by the gate at current parameter values.
 
-        Given a unitary quantum gate :math:`U`, we may consider its linear transformation in the Heisenberg picture,
-        :math:`U^\dagger(\cdot) U`. If the gate is Gaussian, this linear transformation preserves the polynomial order
-        of any observables that are polynomials in :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
-        This also means it maps :math:`\text{span} \: \vec{E}` into itself:
+        Given a unitary quantum gate :math:`U`, we may consider its linear
+        transformation in the Heisenberg picture, :math:`U^\dagger(\cdot) U`.
 
-        .. math:: U^\dagger E_i U = \sum_j \tilde{U}_{ij} E_j
+        If the gate is Gaussian, this linear transformation preserves the polynomial order
+        of any observables that are polynomials in :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+        This also means it maps :math:`\text{span} \: \mathbf{r}` into itself:
 
-        For Gaussian CV gates, this method returns the transformation matrix for the current parameter values
-        of the Operation. The method is not defined for non-Gaussian (and non-CV) gates.
+        .. math:: U^\dagger \mathbf{r}_i U = \sum_j \tilde{U}_{ij} \mathbf{r}_j
+
+        For Gaussian CV gates, this method returns the transformation matrix for
+        the current parameter values of the Operation. The method is not defined
+        for non-Gaussian (and non-CV) gates.
 
         Args:
-          num_wires (int): total number of wires in the quantum circuit
-          inverse  (bool): if True, return the inverse transformation instead
+            num_wires (int): total number of wires in the quantum circuit
+            inverse  (bool): if True, return the inverse transformation instead
 
         Returns:
-          array[float]: :math:`\tilde{U}`
+            array[float]: :math:`\tilde{U}`
         """
         # not defined?
-        if self._heisenberg_rep is None:
+        p = self.parameters
+
+        if self._heisenberg_rep(p) is None:
             raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
 
-        p = self.parameters
         if inverse:
             p[0] = -p[0]  # negate first parameter
-        U = self._heisenberg_rep(p)
+        U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
 
         return self.heisenberg_expand(U, num_wires)
 
 
 class CVExpectation(CV, Expectation):
-    """Base class for continuous-variable expectation value measurements.
+    r"""Base class for continuous-variable expectation value measurements.
 
-    :meth:`_heisenberg_rep` is defined iff `ev_order` is not None, and it returns an array of the corresponding ndim.
+    The class attribute :attr:`~.ev_order` can be defined to indicate
+    to OpenQML whether the corresponding CV observable is a polynomial in the
+    quadrature operators. If so,
+
+    * ``ev_order = 1`` indicates a first order polynomial in quadrature
+      operators :math:`(\x, \p)`.
+
+    * ``ev_order = 2`` indicates a second order polynomial in quadrature
+      operators :math:`(\x, \p)`.
+
+    If :attr:`~.ev_order` is not ``None``, then the Heisenberg representation
+    of the observable should be defined in the static method :meth:`~.CV._heisenberg_rep`,
+    returning an array of the correct dimension.
     """
+    # pylint: disable=abstract-method
     ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
     def heisenberg_obs(self, num_wires):
         r"""Representation of the observable in the position/momentum operator basis.
 
-        Returns the expansion :math:`q` of the observable, :math:`Q`, in the basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
-        For first-order observables returns a real vector such that :math:`Q = \sum_i q_i E_i`.
-        For second-order observables returns a real symmetric matrix such that :math:`Q = \sum_{ij} q_{ij} E_i E_j`.
+        Returns the expansion :math:`q` of the observable, :math:`Q`, in the
+        basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+
+        * For first-order observables returns a real vector such
+          that :math:`Q = \sum_i q_i \mathbf{r}_i`.
+
+        * For second-order observables returns a real symmetric matrix
+          such that :math:`Q = \sum_{ij} q_{ij} \mathbf{r}_i \mathbf{r}_j`.
 
         Args:
-          num_wires (int): total number of wires in the quantum circuit
+            num_wires (int): total number of wires in the quantum circuit
         Returns:
-          array[float]: :math:`q`
+            array[float]: :math:`q`
         """
         p = self.parameters
-        U = self._heisenberg_rep(p)
+        U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
         return self.heisenberg_expand(U, num_wires)

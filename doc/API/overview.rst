@@ -1,5 +1,5 @@
-Overview of the Plugin API
-==========================
+Overview of the developer API
+=============================
 
 Writing your own OpenQML plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of OpenQML, is a simple and easy process. In this section, we will walk through the steps for creating your own OpenQML plugin. In addition, we also provide two default reference plugins - ``'default.qubit'`` for basic pure state qubit simulations, and ``'default.gaussian'`` for basic Gaussian continuous-variable simulations.
 
@@ -147,23 +147,23 @@ In general, as all supported operations have their gradient formula defined and 
 Unsupported operations
 ----------------------
 
-If you would like to support an operation or observable that is not currently supported by OpenQML, you can subclass the :class:`~.Operation` and :class:`~.Expectation` classes, and define the number of parameters the operation takes, and the number of wires the operation acts on. For example, to define the :math:`\sqrt{\sigma_x}` gate,
+If you would like to support an operation or observable that is not currently supported by OpenQML, you can subclass the :class:`~.Operation` and :class:`~.Expectation` classes, and define the number of parameters the operation takes, and the number of wires the operation acts on. For example, to define the Ising gate :math:`XX_\phi` depending on parameter :math:`\phi`,
 
 .. code-block:: python
 
-    class SqrtX(Operation):
-        """Square root X gate"""
-        n_params = 0
-        n_wires = 1
+    class Ising(Operation):
+        """Ising gate"""
+        num_params = 1
+        n_wires = 2
         par_domain = 'R'
         grad_method = 'A'
         grad_recipe = None
 
 where
 
-* :attr:`~.Operation.n_params`: the number of parameters the operation takes.
+* :attr:`~.Operation.num_params`: the number of parameters the operation takes.
 
-* :attr:`~.Operation.n_wires`: the number of wires the operation acts on.
+* :attr:`~.Operation.num_wires`: the number of wires the operation acts on.
 
 * :attr:`~.Operation.par_domain`: the domain of the gate parameters; ``'N'`` for natural numbers (including zero), ``'R'`` for floats, and ``'A'`` for arrays of floats/complex numbers.
 
@@ -186,7 +186,7 @@ The user can then import this operation directly from your plugin, and use it wh
     def my_qfunc(x):
         qm.Hadamard(0)
         SqrtX(0)
-        return qm.expectation.PauliZ(0)
+        return qm.expval.PauliZ(0)
 
 In this case, as the plugin is providing a custom operation not supported by OpenQML, it is recommended that the plugin unittests **do** provide tests to ensure that OpenQML returns the correct gradient for the custom operations.
 
@@ -199,8 +199,8 @@ In this case, as the plugin is providing a custom operation not supported by Ope
     .. code-block:: python
 
         class Custom(CVOperation):
-            """Square root X gate"""
-            n_params = 0
+            """Custom gate"""
+            n_params = 2
             n_wires = 1
             par_domain = 'R'
             grad_method = 'A'
@@ -214,7 +214,7 @@ In this case, as the plugin is providing a custom operation not supported by Ope
 
     * For observables, this method should return a real vector (first-order observables) or symmetric matrix (second-order observables) of coefficients of the quadrature operators :math:`\x` and :math:`\p`.
 
-      - For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, x, p)`.
-      - For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+      - For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
+      - For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
     Non-Gaussian CV operations and expectations are currently only supported via the finite difference method of gradient computation.

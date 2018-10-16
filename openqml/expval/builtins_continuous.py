@@ -69,7 +69,6 @@ class PhotonNumber(CVExpectation):
     num_params = 0
     par_domain = None
 
-    grad_method = None
     ev_order = 2
 
     @staticmethod
@@ -100,7 +99,6 @@ class X(CVExpectation):
     num_params = 0
     par_domain = None
 
-    grad_method = None
     ev_order = 1
 
     @staticmethod
@@ -130,7 +128,6 @@ class P(CVExpectation):
     num_params = 0
     par_domain = None
 
-    grad_method = None
     ev_order = 1
 
     @staticmethod
@@ -163,7 +160,7 @@ class PolyXP(CVExpectation):
     Args:
         q (array[float]): expansion coefficients
     """
-    num_wires  = 0
+    num_wires = 0
     num_params = 1
     par_domain = 'A'
 
@@ -199,10 +196,10 @@ class Homodyne(CVExpectation):
     """
     num_wires = 1
     num_params = 1
-    ev_order = 1
+    par_domain = 'R'
 
     grad_method = 'A'
-    par_domain = 'R'
+    ev_order = 1
 
     @staticmethod
     def _heisenberg_rep(p):
