@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The QFunc decorator
+The QNode decorator
 ===================
 
-Decorator factory for converting a Python function containing OpenQML quantum
+Decorator for converting a quantum function containing OpenQML quantum
 operations to a QNode that will run on a quantum device.
 
 Example:
@@ -24,18 +24,19 @@ Example:
 
     device1 = qm.device('strawberryfields.fock', wires=2)
 
-    @qfunc(device1)
+    @qm.qnode(device1)
     def my_quantum_function(x):
         qm.Zrotation(x, 0)
         qm.CNOT(0,1)
         qm.Yrotation(x**2, 1)
-        return qm.expectation.Z(0)
+        return qm.expval.Z(0)
 
     result = my_quantum_function(0.543)
 
 To become a valid QNode, the user-defined function must consist of
-only OpenQML operators and expectation values, one per line, and must
-end with the measurement of a single or tuple of expectation values.
+only OpenQML operators and expectation values (one per line), contain
+no classical processing or functions, and must end with the measurement
+of a single or tuple of expectation values.
 
 Once defined, the QNode can then be used to construct the loss function,
 and processed classically using NumPy. For example,
@@ -47,9 +48,9 @@ and processed classically using NumPy. For example,
 
 .. note::
 
-    Applying the qfunc decorator to a user-defined function is equivalent
-    to instatiating the QNode object manually. For example, the above example
-    can also be written as follows:
+    Applying the :func:`~.decorator.qnode` decorator to a user-defined
+    function is equivalent to instantiating the QNode object manually.
+    For example, the above example can also be written as follows:
 
     .. code-block:: python
 
@@ -57,7 +58,7 @@ and processed classically using NumPy. For example,
             qm.Zrotation(x, 0)
             qm.CNOT(0,1)
             qm.Yrotation(x**2, 1)
-            return qm.expectation.Z(0)
+            return qm.expval.Z(0)
 
         my_qnode = qm.QNode(my_quantum_function, dev1)
         result = my_qnode(0.543)
@@ -70,8 +71,8 @@ from functools import wraps, lru_cache
 from .qnode import QNode
 
 
-def qfunc(device):
-    """QFunc decorator.
+def qnode(device):
+    """QNode decorator.
 
     Args:
         device (openqml.Device): an OpenQML-compatible device.

@@ -25,6 +25,13 @@ as the conventions chosen for their implementation.
 
 .. note::
 
+    All quantum operations in OpenQML are top level; they can be accessed
+    via ``qm.OperationName``. Expectation values, however, are contained within
+    the :mod:`openqml.expval`, and are thus accessed via ``qm.expval.ExpectationName``.
+
+
+.. note::
+
     If writing a plugin device for OpenQML, make sure that your plugin
     supports the required OpenQML built-in expectations defined here,
     by including them in your device ``_observable_map``.
@@ -40,8 +47,8 @@ as the conventions chosen for their implementation.
 .. toctree::
    :maxdepth: 2
 
-   expectation/discrete
-   expectation/continuous
+   expval/discrete
+   expval/continuous
 """
 
 from .builtins_continuous import *

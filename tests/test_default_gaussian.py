@@ -280,7 +280,7 @@ class TestDefaultGaussianDevice(BaseTest):
     def test_observable_map(self):
         """Test that default Gaussian device supports all OpenQML Gaussian continuous expectations."""
         self.logTestName()
-        self.assertEqual(set(qm.expectation.builtins_continuous.__all__)-{'Heterodyne'},
+        self.assertEqual(set(qm.expval.builtins_continuous.__all__)-{'Heterodyne'},
                          set(self.dev._observable_map))
 
     def test_apply(self):
@@ -442,16 +442,16 @@ class TestDefaultGaussianIntegration(BaseTest):
             else:
                 wires = list(range(op.n_wires))
 
-            @qm.qfunc(dev)
+            @qm.qnode(dev)
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
                 op(*x, wires=wires)
 
                 if issubclass(op, qm.operation.CV):
-                    return qm.expectation.X(0)
+                    return qm.expval.X(0)
 
-                return qm.expectation.PauliZ(0)
+                return qm.expval.PauliZ(0)
 
             with self.assertRaisesRegex(qm.DeviceError, "Gate {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.n_params])
@@ -463,17 +463,17 @@ class TestDefaultGaussianIntegration(BaseTest):
         dev = qm.device('default.gaussian', wires=2)
 
         obs = set(dev._observable_map.keys())
-        all_obs = {m[0] for m in inspect.getmembers(qm.expectation, inspect.isclass)}
+        all_obs = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
 
         for g in all_obs - obs:
-            op = getattr(qm.expectation, g)
+            op = getattr(qm.expval, g)
 
             if op.n_wires == 0:
                 wires = [0]
             else:
                 wires = list(range(op.n_wires))
 
-            @qm.qfunc(dev)
+            @qm.qnode(dev)
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
@@ -490,11 +490,11 @@ class TestDefaultGaussianIntegration(BaseTest):
 
         p = 0.543
 
-        @qm.qfunc(dev)
+        @qm.qnode(dev)
         def circuit(x):
             """Test quantum function"""
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         self.assertAlmostEqual(circuit(p), p*np.sqrt(2*hbar), delta=self.tol)
 
@@ -507,11 +507,11 @@ class TestDefaultGaussianIntegration(BaseTest):
 
         p = 0.543
 
-        @qm.qfunc(dev)
+        @qm.qnode(dev)
         def circuit(x):
             """Test quantum function"""
             qm.Displacement(x, 0, wires=0)
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         runs = []
         for _ in range(100):
@@ -537,12 +537,12 @@ class TestDefaultGaussianIntegration(BaseTest):
             else:
                 wires = list(range(op.n_wires))
 
-            @qm.qfunc(dev)
+            @qm.qnode(dev)
             def circuit(*x):
                 """Reference quantum function"""
                 qm.Displacement(a, 0, wires=[0])
                 op(*x, wires=wires)
-                return qm.expectation.X(0)
+                return qm.expval.X(0)
 
             # compare to reference result
             def reference(*x):

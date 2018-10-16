@@ -93,7 +93,7 @@ class BasicTest(BaseTest):
 
         # current context should not be set before `construct` is called
         def qf(x):
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
         qnode = QNode(qf, self.dev1)
         QNode._current_context = qnode
         with self.assertRaisesRegex(QuantumFunctionError, 'QNode._current_context must not be modified outside this method.'):
@@ -104,80 +104,80 @@ class BasicTest(BaseTest):
         ## faulty quantum functions
 
         # qfunc must return only Expectations
-        @qm.qfunc(self.dev2)
+        @qm.qnode(self.dev2)
         def qf(x):
             qm.RX(x, [0])
-            return qm.expectation.PauliZ(0), 0.3
+            return qm.expval.PauliZ(0), 0.3
         with self.assertRaisesRegex(QuantumFunctionError, 'must return either'):
             qf(par)
 
         # all EVs must be returned...
-        @qm.qfunc(self.dev2)
+        @qm.qnode(self.dev2)
         def qf(x):
             qm.RX(x, [0])
-            ex = qm.expectation.PauliZ(1)
-            return qm.expectation.PauliZ(0)
+            ex = qm.expval.PauliZ(1)
+            return qm.expval.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
             qf(par)
 
         # ...in the correct order
-        @qm.qfunc(self.dev2)
+        @qm.qnode(self.dev2)
         def qf(x):
             qm.RX(x, [0])
-            ex = qm.expectation.PauliZ(1)
-            return qm.expectation.PauliZ(0), ex
+            ex = qm.expval.PauliZ(1)
+            return qm.expval.PauliZ(0), ex
         with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
             qf(par)
 
         # gates must precede EVs
-        @qm.qfunc(self.dev2)
+        @qm.qnode(self.dev2)
         def qf(x):
             qm.RX(x, [0])
-            ev = qm.expectation.PauliZ(1)
+            ev = qm.expval.PauliZ(1)
             qm.RY(0.5, [0])
             return ev
         with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
             qf(par)
 
         # a wire cannot be measured more than once=
-        @qm.qfunc(self.dev2)
+        @qm.qnode(self.dev2)
         def qf(x):
             qm.RX(x, [0])
             qm.CNOT([0, 1])
-            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1), qm.expectation.PauliX(0)
+            return qm.expval.PauliZ(0), qm.expval.PauliZ(1), qm.expval.PauliX(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'can only be measured once'):
             qf(par)
 
         # device must have enough wires for the qfunc
-        @qm.qfunc(self.dev2)
+        @qm.qnode(self.dev2)
         def qf(x):
             qm.RX(x, [0])
             qm.CNOT([0, 2])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'device only has'):
             qf(par)
 
         # CV and discrete ops must not be mixed
-        @qm.qfunc(self.dev1)
+        @qm.qnode(self.dev1)
         def qf(x):
             qm.RX(x, [0])
             qm.Displacement(0.5, 0, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'Continuous and discrete'):
             qf(par)
 
         # default plugin cannot execute CV operations, neither gates...
-        @qm.qfunc(self.dev1)
+        @qm.qnode(self.dev1)
         def qf(x):
             qm.Displacement(0.5, 0, [0])
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
         with self.assertRaisesRegex(DeviceError, 'Gate [a-zA-Z]+ not supported on device'):
             qf(par)
 
         # ...nor observables
-        @qm.qfunc(self.dev1)
+        @qm.qnode(self.dev1)
         def qf(x):
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
         with self.assertRaisesRegex(DeviceError, 'Observable [a-zA-Z]+ not supported on device'):
             qf(par)
 
@@ -188,7 +188,7 @@ class BasicTest(BaseTest):
         def qf(x):
             qm.BasisState(x, [0,1])
             qm.RX(x, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
         q = qm.QNode(qf, self.dev2)
         with self.assertRaisesRegex(ValueError, 'Cannot differentiate wrt'):
             q.jacobian(par)
@@ -196,7 +196,7 @@ class BasicTest(BaseTest):
         # operation that does not support the 'A' method
         def qf(x):
             qm.RX(x, [0])
-            return qm.expectation.Hermitian(np.diag([x, 0]), 0)
+            return qm.expval.Hermitian(np.diag([x, 0]), 0)
         q = qm.QNode(qf, self.dev2)
         with self.assertRaisesRegex(ValueError, 'analytic gradient method cannot be used with'):
             q.jacobian(par, method='A')
@@ -204,7 +204,7 @@ class BasicTest(BaseTest):
         # bogus gradient method set
         def qf(x):
             qm.RX(x, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
         q = qm.QNode(qf, self.dev2)
         q.evaluate([0.0])
         keys = q.grad_method_for_par.keys()
@@ -219,7 +219,7 @@ class BasicTest(BaseTest):
         ## bad input parameters
         def qf_ok(x):
             qm.Rot(0.3, x, -0.2, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         # if indices wrt. which the gradient is taken are specified they must be unique
         q = qm.QNode(qf_ok, self.dev2)
@@ -261,7 +261,7 @@ class BasicTest(BaseTest):
             qm.Squeezing(0.3, y, [1])
             qm.Rotation(1.3, [1])
             #qm.Kerr(0.4, [0])  # nongaussian succeeding x but not y   TODO when QNode uses a DAG to describe the circuit, uncomment this line
-            return qm.expectation.X(0), qm.expectation.X(1)
+            return qm.expval.X(0), qm.expval.X(1)
         check_methods(qf, {0:'F', 1:'A'})
 
         def qf(x, y):
@@ -269,7 +269,7 @@ class BasicTest(BaseTest):
             qm.CubicPhase(0.2, [0])  # nongaussian succeeding x
             qm.Squeezing(0.3, x, [1])  # x affects gates on both wires, y unused
             qm.Rotation(1.3, [1])
-            return qm.expectation.X(0), qm.expectation.X(1)
+            return qm.expval.X(0), qm.expval.X(1)
         check_methods(qf, {0:'F'})
 
         def qf(x, y):
@@ -278,14 +278,14 @@ class BasicTest(BaseTest):
             qm.Beamsplitter(0.2, 1.7, [0, 1])
             qm.Rotation(1.9, [0])
             qm.Kerr(0.3, [1])  # nongaussian succeeding both x and y due to the beamsplitter
-            return qm.expectation.X(0), qm.expectation.X(1)
+            return qm.expval.X(0), qm.expval.X(1)
         check_methods(qf, {0:'F', 1:'F'})
 
         def qf(x, y):
             qm.Kerr(y, [1])
             qm.Displacement(x, 0, [0])
             qm.Beamsplitter(0.2, 1.7, [0, 1])
-            return qm.expectation.X(0), qm.expectation.X(1)
+            return qm.expval.X(0), qm.expval.X(1)
         check_methods(qf, {0:'A', 1:'F'})
 
     def test_qnode_multiple_gate_parameters(self):
@@ -297,7 +297,7 @@ class BasicTest(BaseTest):
             qm.RX(0.4, [0])
             qm.Rot(x, y, z, [0])
             qm.RY(-0.2, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         q = qm.QNode(qf, self.dev1)
         value = q(*par)
@@ -320,7 +320,7 @@ class BasicTest(BaseTest):
         def qf(x, y):
             qm.RX(np.pi/4, [0])
             qm.Rot(y, x, 2*x, [0])
-            return qm.expectation.PauliX(0)
+            return qm.expval.PauliX(0)
 
         q = qm.QNode(qf, self.dev1)
         grad_A = q.jacobian(par, method='A')
@@ -338,7 +338,7 @@ class BasicTest(BaseTest):
         def qf(x, y):
             qm.RX(x, [0])
             qm.RY(x, [0])
-            return qm.expectation.Hermitian(np.diag([y, 1]), 0)
+            return qm.expval.Hermitian(np.diag([y, 1]), 0)
 
         q = qm.QNode(qf, self.dev1)
         grad = q.jacobian(par)
@@ -358,7 +358,7 @@ class BasicTest(BaseTest):
             qm.RX(reused_param, [0])
             qm.RZ(other_param, [0])
             qm.RX(reused_param, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         f = qm.QNode(circuit, self.dev1)
 
@@ -378,24 +378,24 @@ class BasicTest(BaseTest):
         """Test that QNode can take arrays as input arguments, and that they interact properly with autograd."""
         self.logTestName()
 
-        @qm.qfunc(self.dev1)
+        @qm.qnode(self.dev1)
         def circuit_n1s(dummy1, array, dummy2):
             qm.RY(0.5 * array[0,1], 0)
             qm.RY(-0.5 * array[1,1], 0)
-            return qm.expectation.PauliX(0)  # returns a scalar
+            return qm.expval.PauliX(0)  # returns a scalar
 
-        @qm.qfunc(self.dev1)
+        @qm.qnode(self.dev1)
         def circuit_n1v(dummy1, array, dummy2):
             qm.RY(0.5 * array[0,1], 0)
             qm.RY(-0.5 * array[1,1], 0)
-            return qm.expectation.PauliX(0),  # note the comma, returns a 1-vector
+            return qm.expval.PauliX(0),  # note the comma, returns a 1-vector
 
-        @qm.qfunc(self.dev2)
+        @qm.qnode(self.dev2)
         def circuit_nn(dummy1, array, dummy2):
             qm.RY(0.5 * array[0,1], 0)
             qm.RY(-0.5 * array[1,1], 0)
             qm.RY(array[1,0], 1)
-            return qm.expectation.PauliX(0), qm.expectation.PauliX(1)  # returns a 2-vector
+            return qm.expval.PauliX(0), qm.expval.PauliX(1)  # returns a 2-vector
 
         args = (0.46, np.array([[2., 3., 0.3], [7., 4., 2.1]]), -0.13)
         grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
@@ -421,7 +421,7 @@ class BasicTest(BaseTest):
             qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
             qm.Rot(x, y, z, 0)
             qm.CNOT([0, 1])
-            return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
+            return qm.expval.PauliZ(0), qm.expval.PauliY(1)
 
         def circuit1(x, y, z):
             return ansatz(x, y, z)
@@ -466,7 +466,7 @@ class BasicTest(BaseTest):
             qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
             qm.Rot(x, y, z, 0)
             qm.CNOT([0, 1])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         def circuit1(x, y, z):
             return ansatz(x, y, z)
@@ -519,14 +519,14 @@ class BasicTest(BaseTest):
 
         a, b, c = 0.5, 0.54, 0.3
 
-        @qm.qfunc(self.dev2)
+        @qm.qnode(self.dev2)
         def circuit(x, y, z):
             qm.RX(x, [0])
             qm.RZ(y, [0])
             qm.CNOT([0, 1])
             qm.RY(y, [0])
             qm.RX(z, [0])
-            return qm.expectation.PauliY(0), qm.expectation.PauliZ(1)
+            return qm.expval.PauliY(0), qm.expval.PauliZ(1)
 
         res = circuit(a, b, c)
 
@@ -548,7 +548,7 @@ class BasicTest(BaseTest):
             qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
             qm.Rot(x, y, z, 0)
             qm.CNOT([0, 1])
-            return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
+            return qm.expval.PauliZ(0), qm.expval.PauliY(1)
 
         circuit = qm.QNode(circuit, self.dev2)
 
@@ -576,7 +576,7 @@ class BasicTest(BaseTest):
            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
            qm.Rot(weights[0], weights[1], weights[2], 0)
            qm.CNOT([0, 1])
-           return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
+           return qm.expval.PauliZ(0), qm.expval.PauliY(1)
 
         circuit = qm.QNode(circuit, self.dev2)
 

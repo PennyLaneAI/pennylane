@@ -100,7 +100,7 @@ def _rotation(phi, bare=False):
 
 
 class Rotation(CVOperation):
-    r"""Rotation(phi, wires)
+    r"""openqml.Rotation(phi, wires)
     Continuous-variable phase space rotation
 
     .. math::
@@ -131,7 +131,7 @@ class Rotation(CVOperation):
 
 
 class Displacement(CVOperation):
-    r"""Displacement(r, phi, wires)
+    r"""openqml.Displacement(r, phi, wires)
     Phase space displacement.
 
     .. math::
@@ -169,7 +169,7 @@ class Displacement(CVOperation):
 
 
 class Squeezing(CVOperation):
-    r"""Squeezing(r, phi, wires)
+    r"""openqml.Squeezing(r, phi, wires)
     Phase space squeezing.
 
     .. math::
@@ -207,7 +207,7 @@ class Squeezing(CVOperation):
 
 
 class TwoModeSqueezing(CVOperation):
-    r"""TwoModeSqueezing(r, phi, wires)
+    r"""openqml.TwoModeSqueezing(r, phi, wires)
     Phase space two-mode squeezing.
 
     .. math::
@@ -236,7 +236,7 @@ class TwoModeSqueezing(CVOperation):
 
 
 class QuadraticPhase(CVOperation):
-    r"""QuadraticPhase(s, wires)
+    r"""openqml.QuadraticPhase(s, wires)
     Quadratic phase shift.
 
     .. math::
@@ -261,7 +261,7 @@ class QuadraticPhase(CVOperation):
 
 
 class CubicPhase(CVOperation):
-    r"""CubicPhase(gamma, wires)
+    r"""openqml.CubicPhase(gamma, wires)
     Cubic phase shift.
 
     .. math::
@@ -283,7 +283,7 @@ class CubicPhase(CVOperation):
 
 
 class Kerr(CVOperation):
-    r"""Kerr(kappa, wires)
+    r"""openqml.Kerr(kappa, wires)
     Kerr interaction.
 
     .. math::
@@ -305,7 +305,7 @@ class Kerr(CVOperation):
 
 
 class CrossKerr(CVOperation):
-    r"""CrossKerr(kappa, wires)
+    r"""openqml.CrossKerr(kappa, wires)
     Cross-Kerr interaction.
 
     .. math::
@@ -327,7 +327,7 @@ class CrossKerr(CVOperation):
 
 
 class Beamsplitter(CVOperation):
-    r"""Beamsplitter(theta, phi, wires)
+    r"""openqml.Beamsplitter(theta, phi, wires)
     Beamsplitter interaction.
 
     .. math::
@@ -373,7 +373,7 @@ class Beamsplitter(CVOperation):
 
 
 class ControlledAddition(CVOperation):
-    r"""ControlledAddition(s, wires)
+    r"""openqml.ControlledAddition(s, wires)
     Controlled addition operation.
 
     .. math::
@@ -399,7 +399,7 @@ class ControlledAddition(CVOperation):
 
 
 class ControlledPhase(CVOperation):
-    r"""ControlledPhase(s, wires)
+    r"""openqml.ControlledPhase(s, wires)
     Controlled phase operation.
 
     .. math::
@@ -430,7 +430,7 @@ class ControlledPhase(CVOperation):
 
 
 class CoherentState(CVOperation):
-    r"""CoherentState(a, phi, wires)
+    r"""openqml.CoherentState(a, phi, wires)
     Prepares a coherent state.
 
     **Details:**
@@ -450,7 +450,7 @@ class CoherentState(CVOperation):
 
 
 class SqueezedState(CVOperation):
-    r"""SqueezedState(r, phi, wires)
+    r"""openqml.SqueezedState(r, phi, wires)
     Prepares a squeezed vacuum state.
 
     **Details:**
@@ -470,7 +470,7 @@ class SqueezedState(CVOperation):
 
 
 class DisplacedSqueezedState(CVOperation):
-    r"""DisplacedSqueezedState(a, r, phi, wires)
+    r"""openqml.DisplacedSqueezedState(a, r, phi, wires)
     Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
@@ -499,7 +499,7 @@ class DisplacedSqueezedState(CVOperation):
 
 
 class FockState(CVOperation):
-    r"""FockState(n, wires)
+    r"""openqml.FockState(n, wires)
     Prepares a single Fock state.
 
     **Details:**
@@ -519,7 +519,7 @@ class FockState(CVOperation):
 
 
 class ThermalState(CVOperation):
-    r"""ThermalState(nbar, wires)
+    r"""openqml.ThermalState(nbar, wires)
     Prepares a thermal state.
 
     **Details:**
@@ -540,7 +540,7 @@ class ThermalState(CVOperation):
 
 
 class CatState(CVOperation):
-    r"""CatState(alpha, p, wires)
+    r"""openqml.CatState(alpha, p, wires)
     Prepares a cat state.
 
     A cat state is the coherent superposition of two coherent states,
@@ -568,7 +568,7 @@ class CatState(CVOperation):
 
 
 class FockStateVector(CVOperation):
-    r"""FockStateVector(state, wires)
+    r"""openqml.FockStateVector(state, wires)
     Prepare subsystems using the given ket vector in the Fock basis.
 
     **Details:**
@@ -587,7 +587,7 @@ class FockStateVector(CVOperation):
     grad_method = 'F'
 
 class FockDensityMatrix(CVOperation):
-    r"""FockDensityMatrix(state, wires)
+    r"""openqml.FockDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix in the Fock basis.
 
     **Details:**
@@ -606,7 +606,7 @@ class FockDensityMatrix(CVOperation):
     grad_method = 'F'
 
 class GaussianState(CVOperation):
-    r"""GaussianState(r, V, wires)
+    r"""openqml.GaussianState(r, V, wires)
     Prepare subsystems in a given Gaussian state.
 
     **Details:**

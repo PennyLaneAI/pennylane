@@ -27,11 +27,15 @@ from .configuration import Configuration
 from .device import Device, DeviceError, QuantumFunctionError
 import openqml.operation
 from .ops import *
-import openqml.expectation
+import openqml.expval
 from .optimize import *
-from .qfunc import qfunc
 from .qnode import QNode
 from ._version import __version__
+
+
+# NOTE: this has to be imported last,
+# otherwise it will clash with the .qnode import.
+from .decorator import qnode
 
 
 # set up logging
