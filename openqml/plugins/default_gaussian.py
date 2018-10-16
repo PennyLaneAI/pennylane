@@ -61,7 +61,7 @@ Classes
 .. autosummary::
    DefaultGaussian
 
-Details
+Code details
 ~~~~~~~
 """
 # pylint: disable=attribute-defined-outside-init
