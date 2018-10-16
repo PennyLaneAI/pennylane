@@ -151,7 +151,7 @@ def device(name, *args, **kwargs):
     All devices must be loaded by specifying its **short-name** as listed above,
     followed by the number of *wires* (subsystems) you wish to initialize.
 
-    In addition, some devices accept additional arguments. For instance,
+    Some devices may accept additional arguments. For instance,
     ``default.gaussian`` accepts the keyword argument ``hbar``, to set
     the convention used in the commutation relation :math:`[\x,\p]=i\hbar`
     (by default set to 2).
