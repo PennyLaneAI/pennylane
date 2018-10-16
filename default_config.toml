@@ -21,6 +21,10 @@ shots = 0
 ## to set global configuration options on a device-by-device basis.
 ## and to also set options specific to certain device.
 
+[default.gaussian]
+hbar = 2
+
+
 [strawberryfields.global]
 ## Global options for the StrawberryFields plugin.
 ## If not specified, the OpenQML default is used.

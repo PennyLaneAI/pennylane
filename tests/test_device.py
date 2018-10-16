@@ -99,9 +99,9 @@ class DeviceTest(BaseTest):
 
             temp = [isinstance(op, qm.operation.CV) for op in queue]
             if all(temp):
-                expval = dev.execute(queue, [qm.expectation.X(0, do_queue=False)])
+                expval = dev.execute(queue, [qm.expval.X(0, do_queue=False)])
             else:
-                expval = dev.execute(queue, [qm.expectation.PauliX(0, do_queue=False)])
+                expval = dev.execute(queue, [qm.expval.PauliX(0, do_queue=False)])
 
             self.assertTrue(isinstance(expval, np.ndarray))
 
@@ -132,15 +132,15 @@ class DeviceTest(BaseTest):
 
                 with self.assertRaisesRegex(qm.DeviceError, 'not supported on device'):
                     if temp:
-                        expval = dev.execute(queue, [qm.expectation.X(0, do_queue=False)])
+                        expval = dev.execute(queue, [qm.expval.X(0, do_queue=False)])
                     else:
-                        expval = dev.execute(queue, [qm.expectation.PauliX(0, do_queue=False)])
+                        expval = dev.execute(queue, [qm.expval.PauliX(0, do_queue=False)])
 
             obs = dev.observables
-            all_obs = {m[0] for m in inspect.getmembers(qm.expectation, inspect.isclass)}
+            all_obs = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
 
             for g in all_obs-obs:
-                op = qm.expectation.__getattribute__(g)
+                op = qm.expval.__getattribute__(g)
 
                 if op.par_domain == 'A':
                     # skip observables with array parameters, as there are too

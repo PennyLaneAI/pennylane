@@ -45,11 +45,11 @@ class QuadratureGradientTest(BaseTest):
 
         alpha = 0.5
 
-        @qm.qfunc(self.gaussian_dev)
+        @qm.qnode(self.gaussian_dev)
         def circuit(y):
             qm.Displacement(alpha, 0., [0])
             qm.Rotation(y, [0])
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         grad_fn = autograd.grad(circuit)
 
@@ -66,11 +66,11 @@ class QuadratureGradientTest(BaseTest):
 
         alpha = 0.5
 
-        @qm.qfunc(self.gaussian_dev)
+        @qm.qnode(self.gaussian_dev)
         def circuit(y):
             qm.Displacement(alpha, 0., [0])
             qm.Beamsplitter(y, 0, [0, 1])
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         grad_fn = autograd.grad(circuit)
 
@@ -85,10 +85,10 @@ class QuadratureGradientTest(BaseTest):
         "Tests that the automatic gradient of a phase space displacement is correct."
         self.logTestName()
 
-        @qm.qfunc(self.gaussian_dev)
+        @qm.qnode(self.gaussian_dev)
         def circuit(r, phi):
             qm.Displacement(r, phi, [0])
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         grad_fn = autograd.grad(circuit)
 
@@ -107,11 +107,11 @@ class QuadratureGradientTest(BaseTest):
 
         alpha = 0.5
 
-        @qm.qfunc(self.gaussian_dev)
+        @qm.qnode(self.gaussian_dev)
         def circuit(y, r=0.5):
             qm.Displacement(r, 0., [0])
             qm.Squeezing(y, 0., [0])
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         grad_fn = autograd.grad(circuit, 0)
 
@@ -125,7 +125,7 @@ class QuadratureGradientTest(BaseTest):
         """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
         self.logTestName()
 
-        class PolyN(qm.expectation.PolyXP):
+        class PolyN(qm.expval.PolyXP):
             "Mimics PhotonNumber using the arbitrary 2nd order observable interface. Results should be identical."
             def __init__(self, wires):
                 hbar = 2
@@ -134,7 +134,7 @@ class QuadratureGradientTest(BaseTest):
                 self.name = 'PolyXP'
 
         gates = [cls for cls in qm.ops.builtins_continuous.all_ops if cls._heisenberg_rep is not None]
-        obs   = [qm.expectation.X, qm.expectation.PhotonNumber, PolyN]
+        obs   = [qm.expval.X, qm.expval.PhotonNumber, PolyN]
         par = [0.4]
 
         for G in reversed(gates):
@@ -180,7 +180,7 @@ class QuadratureGradientTest(BaseTest):
             qm.Displacement(x, 0.2, [0])
             qm.Squeezing(y, z, [0])
             qm.Rotation(-0.2, [0])
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         q = qm.QNode(qf, self.gaussian_dev)
         grad_F = q.jacobian(par, method='F')
@@ -202,7 +202,7 @@ class QuadratureGradientTest(BaseTest):
         def qf(x, y):
             qm.Displacement(x, 0, [0])
             qm.Squeezing(y, -1.3*y, [0])
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         q = qm.QNode(qf, self.gaussian_dev)
         grad_F = q.jacobian(par, method='F')
@@ -228,7 +228,7 @@ class QuadratureGradientTest(BaseTest):
             M[1,1] = y
             M[1,2] = 1.0
             M[2,1] = 1.0
-            return qm.expectation.PolyXP(M, [0, 1])
+            return qm.expval.PolyXP(M, [0, 1])
 
         q = qm.QNode(qf, self.gaussian_dev)
         grad = q.jacobian(par)
@@ -251,7 +251,7 @@ class QuadratureGradientTest(BaseTest):
             qm.Displacement(x, 0, [0])
             qm.Rotation(y, [0])
             qm.Displacement(0, x, [0])
-            return qm.expectation.X(0)
+            return qm.expval.X(0)
 
         q = qm.QNode(circuit, self.gaussian_dev)
         grad_F = q.jacobian(par, method='F')
@@ -276,10 +276,10 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a Pauli X-rotation is correct."
         self.logTestName()
 
-        @qm.qfunc(self.qubit_dev1)
+        @qm.qnode(self.qubit_dev1)
         def circuit(x):
             qm.RX(x, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         grad_fn = autograd.grad(circuit)
 
@@ -292,10 +292,10 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a Pauli Y-rotation is correct."
         self.logTestName()
 
-        @qm.qfunc(self.qubit_dev1)
+        @qm.qnode(self.qubit_dev1)
         def circuit(x):
             qm.RY(x, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         grad_fn = autograd.grad(circuit)
 
@@ -308,10 +308,10 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a Pauli Z-rotation is correct."
         self.logTestName()
 
-        @qm.qfunc(self.qubit_dev1)
+        @qm.qnode(self.qubit_dev1)
         def circuit(x):
             qm.RZ(x, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         grad_fn = autograd.grad(circuit)
 
@@ -324,10 +324,10 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
         self.logTestName()
 
-        #@qm.qfunc(self.qubit_dev1)
+        #@qm.qnode(self.qubit_dev1)
         def circuit(x,y,z):
             qm.Rot(x,y,z, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         circuit = qm.QNode(circuit, self.qubit_dev1)
         grad_fn = autograd.grad(circuit.evaluate)
@@ -353,7 +353,7 @@ class QubitGradientTest(BaseTest):
             qm.CNOT([1, 0])
             qm.RX(z, [0])
             qm.CNOT([0, 1])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         qnode = qm.QNode(circuit, self.qubit_dev2)
         params = np.array([0.1, -1.6, np.pi / 5])
@@ -385,7 +385,7 @@ class QubitGradientTest(BaseTest):
             qm.CNOT([1, 0])
             qm.RX(x, [0])
             qm.CNOT([0, 1])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         classifier = qm.QNode(classifier_circuit, self.qubit_dev2)
 
@@ -433,7 +433,7 @@ class QubitGradientTest(BaseTest):
             qm.RY(reused_param, [0])
             qm.RZ(other_param, [0])
             qm.RX(reused_param, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         f = qm.QNode(circuit, self.qubit_dev1)
         zero_state = np.array([1., 0.])

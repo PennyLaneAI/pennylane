@@ -201,7 +201,7 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that default qubit device supports all OpenQML discrete expectations."""
         self.logTestName()
 
-        self.assertEqual(set(qm.expectation.builtins_discrete.__all__), set(self.dev._observable_map))
+        self.assertEqual(set(qm.expval.builtins_discrete.__all__), set(self.dev._observable_map))
 
     def test_expand_one(self):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
@@ -279,7 +279,7 @@ class TestDefaultQubitDevice(BaseTest):
             try:
                 op = qm.ops.__getattribute__(name)
             except AttributeError:
-                op = qm.expectation.__getattribute__(name)
+                op = qm.expval.__getattribute__(name)
 
             p = [0.432423, -0.12312, 0.324][:op.n_params]
 
@@ -384,7 +384,7 @@ class TestDefaultQubitDevice(BaseTest):
             self.dev._state = np.array([1, 0, 1, 1])/np.sqrt(3)
 
             # get the equivalent openqml operator class
-            op = qm.expectation.__getattribute__(name)
+            op = qm.expval.__getattribute__(name)
 
             if op.par_domain == 'A':
                 # the parameter is an array
@@ -460,16 +460,16 @@ class TestDefaultQubitIntegration(BaseTest):
             else:
                 wires = list(range(op.n_wires))
 
-            @qm.qfunc(dev)
+            @qm.qnode(dev)
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
                 op(*x, wires=wires)
 
                 if issubclass(op, qm.operation.CV):
-                    return qm.expectation.X(0)
+                    return qm.expval.X(0)
 
-                return qm.expectation.PauliZ(0)
+                return qm.expval.PauliZ(0)
 
             with self.assertRaisesRegex(qm.DeviceError, "Gate {} not supported on device default.qubit".format(g)):
                 x = np.random.random([op.n_params])
@@ -481,17 +481,17 @@ class TestDefaultQubitIntegration(BaseTest):
         dev = qm.device('default.qubit', wires=2)
 
         obs = set(dev._observable_map.keys())
-        all_obs = {m[0] for m in inspect.getmembers(qm.expectation, inspect.isclass)}
+        all_obs = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
 
         for g in all_obs - obs:
-            op = getattr(qm.expectation, g)
+            op = getattr(qm.expval, g)
 
             if op.n_wires == 0:
                 wires = [0]
             else:
                 wires = list(range(op.n_wires))
 
-            @qm.qfunc(dev)
+            @qm.qnode(dev)
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
@@ -508,11 +508,11 @@ class TestDefaultQubitIntegration(BaseTest):
 
         p = 0.543
 
-        @qm.qfunc(dev)
+        @qm.qnode(dev)
         def circuit(x):
             """Test quantum function"""
             qm.RX(x, wires=0)
-            return qm.expectation.PauliY(0)
+            return qm.expval.PauliY(0)
 
         # <0|RX(p)^\dagger.PauliY.RX(p)|0> = -sin(p)
         expected = -np.sin(p)
@@ -527,11 +527,11 @@ class TestDefaultQubitIntegration(BaseTest):
 
         p = 0.543
 
-        @qm.qfunc(dev)
+        @qm.qnode(dev)
         def circuit(x):
             """Test quantum function"""
             qm.RX(x, wires=0)
-            return qm.expectation.PauliY(0)
+            return qm.expval.PauliY(0)
 
         runs = []
         for _ in range(100):
@@ -558,11 +558,11 @@ class TestDefaultQubitIntegration(BaseTest):
             else:
                 wires = list(range(op.n_wires))
 
-            @qm.qfunc(dev)
+            @qm.qnode(dev)
             def circuit(*x):
                 """Reference quantum function"""
                 op(*x, wires=wires)
-                return qm.expectation.PauliX(0)
+                return qm.expval.PauliX(0)
 
             # compare to reference result
             def reference(*x):
@@ -614,13 +614,13 @@ class TestDefaultQubitIntegration(BaseTest):
             self.assertTrue(dev.supported(g))
             dev.reset()
 
-            op = getattr(qm.expectation, g)
+            op = getattr(qm.expval, g)
             if op.n_wires == 0:
                 wires = [0]
             else:
                 wires = list(range(op.n_wires))
 
-            @qm.qfunc(dev)
+            @qm.qnode(dev)
             def circuit(*x):
                 """Reference quantum function"""
                 qm.RX(a, wires=0)

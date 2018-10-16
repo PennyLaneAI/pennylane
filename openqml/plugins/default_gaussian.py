@@ -456,7 +456,7 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
     N = len(mu)//2
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
-    op = qm.expectation.PolyXP(Q, wires=wires, do_queue=False)
+    op = qm.expval.PolyXP(Q, wires=wires, do_queue=False)
     Q = op.heisenberg_obs(N)
 
     if Q.ndim == 1:
