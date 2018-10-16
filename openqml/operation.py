@@ -479,7 +479,7 @@ class CV:
           transformation carried out by the gate for the given parameter values.
           The method is not defined for non-Gaussian gates.
 
-          **The existence of this method is equivalent to setting** ``grad_method = 'A'``**.**
+          **The existence of this method is equivalent to setting** ``grad_method = 'A'``.
 
         * For observables, returns a real vector (first-order observables) or
           symmetric matrix (second-order observables) of expansion coefficients
