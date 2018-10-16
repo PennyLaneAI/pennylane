@@ -171,10 +171,10 @@ class Operation(abc.ABC):
     * :attr:`~.Operation.grad_recipe`
 
     Args:
-        args (tuple[float, int, array, Variable]): operation parameters.
+        args (tuple[float, int, array, Variable]): operation parameters
 
     Keyword Args:
-        wires (Sequence[int]): subsystems it acts on. If not given, args[-1]
+        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
         do_queue (bool): Indicates whether the operation should be
             immediately pushed into a :class:`QNode` circuit queue.
@@ -212,7 +212,7 @@ class Operation(abc.ABC):
         """Gradient computation method.
 
         * ``'A'``: analytic differentiation.
-        * ``'F'``: finite differences numerical differentiation.
+        * ``'F'``: finite difference numerical differentiation.
         * ``None``: the operation may not be differentiated.
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
@@ -519,7 +519,7 @@ class CVOperation(CV, Operation):
             idx (int): index of the parameter with respect to which the
                 partial derivative is computed.
         Returns:
-            array[float]: partial derivative.
+            array[float]: partial derivative
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
@@ -543,7 +543,7 @@ class CVOperation(CV, Operation):
 
         If the gate is Gaussian, this linear transformation preserves the polynomial order
         of any observables that are polynomials in :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
-        This also means it maps :math:`\text{span} \: \mathbf{r}` into itself:
+        This also means it maps :math:`\text{span}(\mathbf{r})` into itself:
 
         .. math:: U^\dagger \mathbf{r}_i U = \sum_j \tilde{U}_{ij} \mathbf{r}_j
 
@@ -556,7 +556,7 @@ class CVOperation(CV, Operation):
             inverse  (bool): if True, return the inverse transformation instead
 
         Returns:
-            array[float]: :math:`\tilde{U}`
+            array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
         # not defined?
         p = self.parameters

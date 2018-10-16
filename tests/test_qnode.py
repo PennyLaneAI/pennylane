@@ -597,7 +597,7 @@ class BasicTest(BaseTest):
            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
            qm.Rot(weights[0], weights[1], x, 0)
            qm.CNOT([0, 1])
-           return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
+           return qm.expval.PauliZ(0), qm.expval.PauliY(1)
 
         circuit1 = qm.QNode(circuit1, self.dev2)
 
@@ -605,7 +605,7 @@ class BasicTest(BaseTest):
            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
            qm.Rot(weights[0], weights[1], 0.3, 0)
            qm.CNOT([0, 1])
-           return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
+           return qm.expval.PauliZ(0), qm.expval.PauliY(1)
 
         circuit2 = qm.QNode(circuit2, self.dev2)
 
@@ -621,7 +621,7 @@ class BasicTest(BaseTest):
         def circuit(w, x=None, y=None):
             qm.RX(x, [0])
             qm.RX(y, [1])
-            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1)
+            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
 
         circuit = qm.QNode(circuit, self.dev2)
 
@@ -635,7 +635,7 @@ class BasicTest(BaseTest):
         def circuit(w, x=None):
             qm.RX(x[0], [0])
             qm.RX(x[1], [1])
-            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1)
+            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
 
         circuit = qm.QNode(circuit, self.dev2)
 
@@ -648,7 +648,7 @@ class BasicTest(BaseTest):
 
         def circuit(w, x=None):
             qm.RX(x, [0])
-            return qm.expectation.PauliZ(0)
+            return qm.expval.PauliZ(0)
 
         circuit = qm.QNode(circuit, self.dev1)
 
@@ -662,7 +662,7 @@ class BasicTest(BaseTest):
         def circuit(w, x=None):
             qm.RX(w, [0])
             qm.RX(x, [1])
-            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1)
+            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
 
         circuit = qm.QNode(circuit, self.dev2)
 
@@ -677,7 +677,7 @@ class BasicTest(BaseTest):
         def circuit(w, x=None):
             qm.RX(w, [0])
             qm.RX(x, [1])
-            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1)
+            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
 
         circuit = qm.QNode(circuit, self.dev2)
 
