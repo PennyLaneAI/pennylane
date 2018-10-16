@@ -34,7 +34,7 @@ Example:
     result = my_quantum_function(0.543)
 
 To become a valid QNode, the user-defined function must consist of
-only OpenQML operators and expectation values, one per line, contain
+only OpenQML operators and expectation values (one per line), contain
 no classical processing or functions, and must  with the measurement
 of a single or tuple of expectation values.
 
@@ -49,7 +49,7 @@ and processed classically using NumPy. For example,
 .. note::
 
     Applying the :func:`~.decorator.qnode` decorator to a user-defined
-    function is equivalent to instatiating the QNode object manually.
+    function is equivalent to instantiating the QNode object manually.
     For example, the above example can also be written as follows:
 
     .. code-block:: python
