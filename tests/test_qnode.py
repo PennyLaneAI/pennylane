@@ -615,7 +615,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(res1, res2, delta=self.tol)
 
     def test_multiple_keywordargs_used(self):
-        "Tests that qnodes uses multiple keyword arguments."
+        "Tests that qnodes use multiple keyword arguments."
         self.logTestName()
 
         def circuit(w, x=None, y=None):
@@ -629,7 +629,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
 
     def test_multidimensional_keywordargs_used(self):
-        "Tests that qnodes uses multi-dimensional keyword arguments."
+        "Tests that qnodes use multi-dimensional keyword arguments."
         self.logTestName()
 
         def circuit(w, x=None):
@@ -643,7 +643,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
 
     def test_keywordargs_used(self):
-        "Tests that qnodes uses keyword arguments."
+        "Tests that qnodes use keyword arguments."
         self.logTestName()
 
         def circuit(w, x=None):
