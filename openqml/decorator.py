@@ -16,9 +16,19 @@ The QNode decorator
 ===================
 
 Decorator for converting a quantum function containing OpenQML quantum
-operations to a QNode that will run on a quantum device.
+operations to a :mod:`QNode <openqml.qnode>` that will run on a quantum device.
 
-Example:
+This decorator is provided for convenience, and allows a qfunc to be
+converted to a QNode implicitly, avoiding the need to manually
+instantiate a :mod:`QNode <openqml.qnode>` object.
+
+Note that the decorator completely replaces the Python-defined
+function with a QNode of the same name - as such, the original
+function is no longer accessible (but is accessible via the
+:attr:`~.QNode.func` attribute).
+
+Example
+-------
 
 .. code-block:: python
 
@@ -32,11 +42,6 @@ Example:
         return qm.expval.Z(0)
 
     result = my_quantum_function(0.543)
-
-To become a valid QNode, the user-defined function must consist of
-only OpenQML operators and expectation values (one per line), contain
-no classical processing or functions, and must end with the measurement
-of a single or tuple of expectation values.
 
 Once defined, the QNode can then be used to construct the loss function,
 and processed classically using NumPy. For example,
@@ -64,21 +69,22 @@ and processed classically using NumPy. For example,
         result = my_qnode(0.543)
 
 Code details
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 """
+# pylint: disable=redefined-outer-name
 import logging as log
-log.getLogger()
-
 from functools import wraps, lru_cache
 
 from .qnode import QNode
+
+log.getLogger()
 
 
 def qnode(device):
     """QNode decorator.
 
     Args:
-        device (openqml.Device): an OpenQML-compatible device.
+        device (~openqml._device.Device): an OpenQML-compatible device.
     """
     @lru_cache()
     def qfunc_decorator(func):
@@ -88,6 +94,7 @@ def qnode(device):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            """Wrapper function"""
             return qnode(*args, **kwargs)
         return wrapper
     return qfunc_decorator
