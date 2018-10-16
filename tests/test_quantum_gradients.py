@@ -133,7 +133,7 @@ class QuadratureGradientTest(BaseTest):
                 super().__init__(q, wires=wires)
                 self.name = 'PolyXP'
 
-        gates = [cls for cls in qm.ops.builtins_continuous.all_ops if cls.isgaussian]
+        gates = [cls for cls in qm.ops.builtins_continuous.all_ops if cls.supports_analytic]
         obs   = [qm.expval.X, qm.expval.PhotonNumber, PolyN]
         par = [0.4]
 

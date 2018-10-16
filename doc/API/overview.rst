@@ -154,7 +154,7 @@ If you would like to support an operation or observable that is not currently su
     class Ising(Operation):
         """Ising gate"""
         num_params = 1
-        n_wires = 2
+        num_wires = 2
         par_domain = 'R'
         grad_method = 'A'
         grad_recipe = None
