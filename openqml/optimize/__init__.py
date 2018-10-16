@@ -47,7 +47,7 @@ Available optimizers
    RMSPropOptimizer
 
 Code details
-------------
+~~~~~~~~~~~~
 """
 
 # Python optimizers that are available in OpenQML

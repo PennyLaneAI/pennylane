@@ -26,7 +26,8 @@ Classes
 .. autosummary::
    Variable
 
-----
+Code details
+~~~~~~~~~~~~
 """
 import logging
 import copy

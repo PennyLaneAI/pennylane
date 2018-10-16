@@ -24,9 +24,9 @@ from autograd import numpy as np
 
 from defaults import openqml as qm, BaseTest
 
-from openqml.qnode import _flatten, unflatten, QNode
+from openqml.qnode import _flatten, unflatten, QNode, QuantumFunctionError
 from openqml.plugins.default_qubit import CNOT, frx, fry, frz, I, Y, Z
-from openqml.device import QuantumFunctionError, DeviceError
+from openqml._device import DeviceError
 
 
 def expZ(state):

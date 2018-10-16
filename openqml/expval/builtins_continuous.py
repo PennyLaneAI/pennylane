@@ -32,8 +32,8 @@ Summary
     PolyXP
     Homodyne
 
-Details
--------
+Code details
+~~~~~~~~~~~~
 """
 
 import numpy as np
