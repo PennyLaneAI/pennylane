@@ -798,6 +798,32 @@ class BasicTest(BaseTest):
                                       [0., 0., -np.sin(c)]])
         self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
 
+    def test_differentiate_positional_multidim(self):
+        "Tests that all positional arguments are differentiated when they are multidimensional."
+        self.logTestName()
+
+        def circuit(a, b):
+            qm.RX(a[0], 0)
+            qm.RX(a[1], 1)
+            qm.RX(b[2,1], 2)
+            return qm.expval.PauliZ(0), qm.expval.PauliZ(1), qm.expval.PauliZ(2)
+
+        circuit = qm.QNode(circuit, self.dev3)
+
+        a = np.array([-np.sqrt(2), -0.54])
+        b = np.array([np.pi/7] * 6).reshape([3,2])
+        circuit_output = circuit(a, b)
+        expected_output = np.cos(np.array([[a[0], a[1], b[-1,0]]]))
+        self.assertAllAlmostEqual(circuit_output, expected_output, delta=self.tol)
+
+        # circuit jacobians
+        circuit_jacobian = circuit.jacobian([a, b])
+        expected_jacobian = np.array([[-np.sin(a[0])] + [0.] * 7, # expval 0
+                                      [0., -np.sin(a[1])] + [0.] * 6, #expval 1
+                                      [0.] * 2 + [0.] * 5 + [-np.sin(b[2,1])]]) # expval 2
+        self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
+
+
 
 
 if __name__ == '__main__':
