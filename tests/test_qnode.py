@@ -36,15 +36,18 @@ def expZ(state):
 thetas = np.linspace(-2*np.pi, 2*np.pi, 7)
 
 a = np.linspace(-1,1,64)
-shapes = [(64,),
-          (64,1),
-          (32,2),
-          (16,4),
-          (8,8),
-          (16,2,2),
-          (8,2,2,2),
-          (4,2,2,2,2),
-          (2,2,2,2,2,2)]
+a_shapes = [(64,),
+            (64,1),
+            (32,2),
+            (16,4),
+            (8,8),
+            (16,2,2),
+            (8,2,2,2),
+            (4,2,2,2,2),
+            (2,2,2,2,2,2)]
+
+b = np.linspace(-1., 1., 8)
+b_shapes = [(8,), (8,1), (4,2), (2,2,2), (2,1,2,1,2)]
 
 class BasicTest(BaseTest):
     """Qnode tests.
@@ -52,12 +55,13 @@ class BasicTest(BaseTest):
     def setUp(self):
         self.dev1 = qm.device('default.qubit', wires=1)
         self.dev2 = qm.device('default.qubit', wires=2)
+        self.dev8 = qm.device('default.qubit', wires=8)
 
     def test_flatten(self):
         "Tests that _flatten successfully flattens multidimensional arrays."
         self.logTestName()
         flat = a
-        for s in shapes:
+        for s in a_shapes:
             reshaped = np.reshape(flat, s)
             flattened = np.array([x for x in _flatten(reshaped)])
 
@@ -68,7 +72,7 @@ class BasicTest(BaseTest):
         "Tests that _unflatten successfully unflattens multidimensional arrays."
         self.logTestName()
         flat = a
-        for s in shapes:
+        for s in a_shapes:
             reshaped = np.reshape(flat, s)
             unflattened = np.array([x for x in unflatten(flat, reshaped)])
 
@@ -375,7 +379,7 @@ class BasicTest(BaseTest):
 
 
     def test_qnode_array_parameters(self):
-        """Test that QNode can take arrays as input arguments, and that they interact properly with autograd."""
+        "Test that QNode can take arrays as input arguments, and that they interact properly with autograd."
         self.logTestName()
 
         @qm.qnode(self.dev1)
@@ -686,6 +690,35 @@ class BasicTest(BaseTest):
 
         c = classnode(0., x=np.pi)
         self.assertAllAlmostEqual(c, [1., -1.], delta=self.tol)
+
+    def test_multidim_array(self):
+        "Tests that arguments which are multidimensional arrays are properly evaluated and differentiated in QNodes."
+        self.logTestName()
+
+        for s in b_shapes:
+            multidim_array = np.reshape(b, s)
+            def circuit(w):
+                qm.RX(w[np.unravel_index(0,s)], 0) # b[0]
+                qm.RX(w[np.unravel_index(1,s)], 1) # b[1]
+                qm.RX(w[np.unravel_index(2,s)], 2) # ...
+                qm.RX(w[np.unravel_index(3,s)], 3)
+                qm.RX(w[np.unravel_index(4,s)], 4)
+                qm.RX(w[np.unravel_index(5,s)], 5)
+                qm.RX(w[np.unravel_index(6,s)], 6)
+                qm.RX(w[np.unravel_index(7,s)], 7)
+                return tuple(qm.expval.PauliZ(idx) for idx in range(len(b)))
+            circuit = qm.QNode(circuit, self.dev8)
+
+            # circuit evaluations
+            circuit_output = circuit(multidim_array)
+            expected_output = np.cos(b)
+            self.assertAllAlmostEqual(circuit_output, expected_output, delta=self.tol)
+
+            # circuit jacobians
+            circuit_jacobian = circuit.jacobian(multidim_array)
+            expected_jacobian = -np.diag(np.sin(b))
+            self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
+
 
 
 if __name__ == '__main__':
