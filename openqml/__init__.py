@@ -41,7 +41,6 @@ from .decorator import qnode
 # set up logging
 if "LOGGING" in os.environ:
     logLevel = os.environ["LOGGING"]
-    print('Logging:', logLevel)
     numeric_level = getattr(log, logLevel.upper(), 10)
 else:
     numeric_level = 100 # info
