@@ -587,6 +587,106 @@ class BasicTest(BaseTest):
         res = jac(np.array([a, b, c]))
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
 
+    def test_keywordarg_not_differentiated(self):
+        "Tests that qnodes do not differentiate w.r.t. keyword arguments."
+        self.logTestName()
+
+        a, b = 0.5, 0.54
+
+        def circuit1(weights, x=0.3):
+           qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+           qm.Rot(weights[0], weights[1], x, 0)
+           qm.CNOT([0, 1])
+           return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
+
+        circuit1 = qm.QNode(circuit1, self.dev2)
+
+        def circuit2(weights):
+           qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+           qm.Rot(weights[0], weights[1], 0.3, 0)
+           qm.CNOT([0, 1])
+           return qm.expectation.PauliZ(0), qm.expectation.PauliY(1)
+
+        circuit2 = qm.QNode(circuit2, self.dev2)
+
+        res1 = circuit1.jacobian([np.array([a, b])])
+        res2 = circuit2.jacobian([np.array([a, b])])
+
+        self.assertAllAlmostEqual(res1, res2, delta=self.tol)
+
+    def test_multiple_keywordargs_used(self):
+        "Tests that qnodes uses multiple keyword arguments."
+        self.logTestName()
+
+        def circuit(w, x=None, y=None):
+            qm.RX(x, [0])
+            qm.RX(y, [1])
+            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1)
+
+        circuit = qm.QNode(circuit, self.dev2)
+
+        c = circuit(1., x=np.pi, y=np.pi)
+        self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
+
+    def test_multidimensional_keywordargs_used(self):
+        "Tests that qnodes uses multi-dimensional keyword arguments."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qm.RX(x[0], [0])
+            qm.RX(x[1], [1])
+            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1)
+
+        circuit = qm.QNode(circuit, self.dev2)
+
+        c = circuit(1., x=[np.pi, np.pi])
+        self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
+
+    def test_keywordargs_used(self):
+        "Tests that qnodes uses keyword arguments."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qm.RX(x, [0])
+            return qm.expectation.PauliZ(0)
+
+        circuit = qm.QNode(circuit, self.dev1)
+
+        c = circuit(1., x=np.pi)
+        self.assertAlmostEqual(c, -1., delta=self.tol)
+
+    def test_keywordarg_updated_in_multiple_calls(self):
+        "Tests that qnodes update keyword arguments in consecutive calls."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qm.RX(w, [0])
+            qm.RX(x, [1])
+            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1)
+
+        circuit = qm.QNode(circuit, self.dev2)
+
+        c1 = circuit(0.1, x=0.)
+        c2 = circuit(0.1, x=np.pi)
+        self.assertTrue(c1[1] != c2[1])
+
+    def test_keywordarg_passes_through_classicalnode(self):
+        "Tests that qnodes' keyword arguments pass through classical nodes."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qm.RX(w, [0])
+            qm.RX(x, [1])
+            return qm.expectation.PauliZ(0), qm.expectation.PauliZ(1)
+
+        circuit = qm.QNode(circuit, self.dev2)
+
+        def classnode(w, x=None):
+            return circuit(w, x=x)
+
+        c = classnode(0., x=np.pi)
+        self.assertAllAlmostEqual(c, [1., -1.], delta=self.tol)
+
 
 if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', QNode class.')
