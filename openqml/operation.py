@@ -32,7 +32,7 @@ Classes
 
 ----
 """
-
+import abc
 import numbers
 import logging as log
 log.getLogger()
@@ -45,29 +45,27 @@ from .qnode import _flatten, _unflatten, QNode, QuantumFunctionError
 from .variable import Variable
 
 
-class Operation:
-    r"""Base class for quantum operation supported by a device.
+class Operation(abc.ABC):
+    r"""Base class for quantum operations supported by a device.
 
-    * Each Operation subclass represents a type of quantum operation, e.g. a unitary quantum gate.
+    * Each Operation subclass represents a type of quantum operation,
+      for example a unitary quantum gate.
+
     * Each instance of these subclasses represents an application of the
-      operation with given parameter values to a given sequence of subsystems.
-
-    Args:
-        args (tuple[float, int, array, Variable]): operation parameters
-
-    Keyword Args:
-        wires (Sequence[int]): subsystems it acts on. If not given, args[-1] is interpreted as wires.
-        do_queue (bool): Indicates whether the operation should be immediately pushed into a :class:`QNode` circuit queue.
+      operation with given parameter values to a given sequence of wires (subsystems).
 
     In general, an operation is differentiable (at least using the finite difference method 'F') iff
 
-    * it has parameters, i.e. `n_params > 0`, and
-    * its `par_domain` is not 'N'.
+    * it has parameters, i.e. ``num_params > 0``, and
+    * its parameter domain is continuous (i.e. ``par_domain`` is not ``'N'``).
 
-    For an operation to be differentiable using the analytic method 'A', additionally
+    For an operation to be differentiable using the analytic method 'A', additionally:
 
     * its `par_domain` must be 'R'.
 
+    .. note::
+
+        These conditions are *not* sufficient for analytic differentiation. For example,
     This is not sufficient though, the 'A' method does not work on non-Gaussian CV gates for example.
 
     The gradient recipe (multiplier :math:`c_k`, parameter shift :math:`s_k`)
@@ -77,13 +75,79 @@ class Operation:
        \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}
        = c_k \left(Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots)\right)
 
-    To find out in detail how the circuit gradients are computed, see :ref:`circuit_gradients`.
+    Args:
+        args (tuple[float, int, array, Variable]): operation parameters.
+
+    Keyword Args:
+        wires (Sequence[int]): subsystems it acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`QNode` circuit queue.
+            This flag is useful if there is some reason to run an Operation
+            outside of a QNode context.
     """
-    n_params = 1        #: int: number of parameters the operation takes
-    n_wires  = 1        #: int: number of subsystems the operation acts on. The value 0 means any number of subsystems is OK.
-    par_domain  = 'R'   #: str: Domain of the gate parameters; 'N'=natural numbers (incl. zero), 'R'=float, 'A'=array[complex].
-    grad_method = 'A'   #: str: gradient computation method; 'A'=analytic, 'F'=finite differences, None=may not be differentiated.
-    grad_recipe = None  #: list[tuple[float]]: Gradient recipe for the 'A' method. One tuple for each parameter, (multiplier c_k, parameter shift s_k). None means (0.5, \pi/2) (the most common case).
+    _grad_recipe = None
+
+    @abc.abstractproperty
+    def num_params(self):
+        """Number of parameters the operation takes."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def num_wires(self):
+        """Number of wires the operation acts on.
+
+        The value 0 allows the operation to act on any number of wires.
+        """
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def num_params(self):
+        """Number of parameters the operation takes."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def par_domain(self):
+        """Domain of the gate parameters.
+
+        * ``'N'``: natural numbers (including zero).
+        * ``'R'``: floats.
+        * ``'A'``: arrays of real or complex values.
+        * ``None``: if there are no parameters.
+        """
+        raise NotImplementedError
+
+    @property
+    def grad_method(self):
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation.
+        * ``'F'``: finite differences numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is 'F'.
+        """
+        return 'F'
+
+    @property
+    def grad_recipe(self):
+        r"""Gradient recipe for the analytic differentiation method.
+
+        This is a list with one tuple per operation parameter. For parameter
+        :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in
+        a gradient recipe of
+
+        .. math:: \frac{d}{d\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
+
+        If this property returns ``None``, the default gradient recipe
+        :math:`(c_k, s_k)=(1/2, \pi/2)` is assumed for every parameter.
+        """
+        return self._grad_recipe
+
+    @grad_recipe.setter
+    def grad_recipe(self, value):
+        """Setter for the grad_recipe property"""
+        self._grad_recipe = value
 
     def __init__(self, *args, wires=None, do_queue=True):
         self.name  = self.__class__.__name__   #: str: name of the operation
@@ -95,28 +159,28 @@ class Operation:
             params = args[:-1]
             wires = args[-1]
 
-        if len(params) != self.n_params:
+        if len(params) != self.num_params:
             raise ValueError("{}: wrong number of parameters. "
-                             "{} parameters passed, {} expected.".format(self.name, params, self.n_params))
+                             "{} parameters passed, {} expected.".format(self.name, params, self.num_params))
 
         # check the validity of the params
         for p in params:
             self.check_domain(p)
-        self.params = list(params)  #: list[float, int, array, Variable]: operation parameters, both fixed and free
+        self.params = list(params)
 
         # check the grad_method validity
         if self.par_domain == 'N':
-            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters!'
+            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters.'
         elif self.par_domain == 'A':
-            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method!'
+            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method.'
 
         # check the grad_recipe validity
         if self.grad_method == 'A':
             if self.grad_recipe is None:
                 # default recipe for every parameter
-                self.grad_recipe = [None] * self.n_params
+                self.grad_recipe = [None] * self.num_params
             else:
-                assert len(self.grad_recipe) == self.n_params, 'Gradient recipe must have one entry for each parameter!'
+                assert len(self.grad_recipe) == self.num_params, 'Gradient recipe must have one entry for each parameter!'
         else:
             assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
 
@@ -124,9 +188,9 @@ class Operation:
         if isinstance(wires, int):
             wires = [wires]
 
-        if self.n_wires != 0 and len(wires) != self.n_wires:
+        if self.num_wires != 0 and len(wires) != self.num_wires:
             raise ValueError("{}: wrong number of wires. "
-                             "{} wires given, {} expected.".format(self.name, len(wires), self.n_wires))
+                             "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
 
         if len(set(wires)) != len(wires):
             raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
@@ -135,22 +199,21 @@ class Operation:
         if do_queue:
             self.queue()
 
-
     def __str__(self):
         """Print the operation name and some information."""
         return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
-
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
 
         Args:
-          p (Number, array, Variable): parameter to check
-          flattened (bool): True means p is an element of a flattened parameter sequence (affects the handling of 'A' parameters)
+            p (Number, array, Variable): parameter to check
+            flattened (bool): True means p is an element of a flattened parameter
+                sequence (affects the handling of 'A' parameters)
         Raises:
-          TypeError: parameter is not an element of the expected domain
+            TypeError: parameter is not an element of the expected domain
         Returns:
-          Number, array, Variable: p
+            Number, array, Variable: p
         """
         try:
             if isinstance(p, Variable):
@@ -196,7 +259,6 @@ class Operation:
         temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
         return _unflatten(temp_val, self.params)[0]
 
-
     def queue(self):
         """Append the operation to a QNode queue."""
         if QNode._current_context is None:
@@ -204,7 +266,6 @@ class Operation:
         else:
             QNode._current_context._append_op(self)
         return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
-
 
 
 class Expectation(Operation):
@@ -216,27 +277,26 @@ class Expectation(Operation):
         args (tuple[float, int, array, Variable]): Expectation parameters
 
     Keyword Args:
-        wires (Sequence[int]): subsystems it acts on. Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operation should be immediately pushed into a :class:`QNode` circuit queue.
+        wires (Sequence[int]): subsystems it acts on.
+            Currently, only one subsystem is supported.
+        do_queue (bool): Indicates whether the operation should be immediately
+            pushed into a :class:`QNode` circuit queue. This flag is useful if
+            there is some reason to run an Expectation outside of a QNode context.
     """
-    n_params = 0
-    grad_method = 'F'  # fallback that should work with any differentiable operation
-    grad_recipe = None
-
+    pass
 
 
 class CV:
     """A mixin base class denoting a continuous-variable operation."""
-    #grad_method = 'F'
 
     def heisenberg_expand(self, U, num_wires):
         """Expand the given local Heisenberg-picture array into a full-system one.
 
         Args:
-          U (array[float]): array to expand (expected to be of the dimension 1+2*self.n_wires)
-          num_wires  (int): total number of wires in the quantum circuit. If zero, return U as is.
+            U (array[float]): array to expand (expected to be of the dimension 1+2*self.num_wires)
+            num_wires  (int): total number of wires in the quantum circuit. If zero, return U as is.
         Returns:
-          array[float]: expanded array, dimension 1+2*num_wires
+            array[float]: expanded array, dimension 1+2*num_wires
         """
         U_dim = len(U)
         nw = len(self.wires)
@@ -267,12 +327,18 @@ class CV:
                 W = np.zeros((dim, dim))
             else:
                 W = np.eye(dim)
+
             W[0, 0] = U[0, 0]
+
             for k1, w1 in enumerate(self.wires):
                 s1 = loc(k1)
                 d1 = loc(w1)
-                W[d1, 0] = U[s1, 0]  # first column
-                W[0, d1] = U[0, s1]  # first row (for gates, the first row is always (1, 0, 0, ...), but not for observables!)
+
+                # first column
+                W[d1, 0] = U[s1, 0]
+                # first row (for gates, the first row is always (1, 0, 0, ...), but not for observables!)
+                W[0, d1] = U[0, s1]
+
                 for k2, w2 in enumerate(self.wires):
                     W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
         else:
@@ -283,30 +349,34 @@ class CV:
     def _heisenberg_rep(p):
         r"""Heisenberg picture representation of the operation.
 
-        * For Gaussian CV gates, this method returns the matrix of the linear transformation carried out by the gate
-          for the given parameter values. The method is not defined for non-Gaussian gates.
-          The existence of this method is equivalent to `grad_method`=='A'.
+        * For Gaussian CV gates, this method returns the matrix of the linear
+          transformation carried out by the gate for the given parameter values.
+          The method is not defined for non-Gaussian gates.
 
-        * For observables, returns a real vector (first-order observables) or symmetric matrix (second-order observables)
-          of expansion coefficients of the observable.
+          .. note:: The existence of this method is equivalent to ``grad_method = 'A'``.
 
-        For single-mode Operations we use the basis :math:`\vec{E} = (\I, x, p)`.
-        For multi-mode Operations we use the basis :math:`\vec{E} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+        * For observables, returns a real vector (first-order observables) or
+          symmetric matrix (second-order observables) of expansion coefficients
+          of the observable.
 
-        .. note:: For gates, assumes that the inverse transformation is obtained by negating the first parameter.
+        For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
+        For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+
+        .. note::
+
+            For gates, we assume that the inverse transformation is obtained
+            by negating the first parameter.
 
         Args:
-          p (Sequence[float]): parameter values for the transformation
+            p (Sequence[float]): parameter values for the transformation
 
         Returns:
-          array[float]: :math:`\tilde{U}` or :math:`q`
+            array[float]: :math:`\tilde{U}` or :math:`q`
         """
         # TODO: check the note in the docstring.
         pass
 
     _heisenberg_rep = None  # disable the method, we just want the docstring here
-
-
 
 
 class CVOperation(CV, Operation):
@@ -366,7 +436,6 @@ class CVOperation(CV, Operation):
         U = self._heisenberg_rep(p)
 
         return self.heisenberg_expand(U, num_wires)
-
 
 
 class CVExpectation(CV, Expectation):

@@ -142,10 +142,10 @@ class QuadratureGradientTest(BaseTest):
             for O in obs:
                 log.debug('Testing observable %s...', O.__name__[0])
                 def circuit(x):
-                    args = [0.3] * G.n_params
+                    args = [0.3] * G.num_params
                     args[0] = x
                     qm.Displacement(0.5, 0, wires=0)
-                    G(*args, wires=range(G.n_wires))
+                    G(*args, wires=range(G.num_wires))
                     qm.Beamsplitter(1.3, -2.3, wires=[0, 1])
                     qm.Displacement(-0.5, 0, wires=0)
                     qm.Squeezing(0.5, -1.5, wires=0)

@@ -91,11 +91,11 @@ class DeviceTest(BaseTest):
                     # directly within the plugin tests.
                     continue
                 elif op.par_domain == 'N':
-                    params = np.asarray(np.random.random([op.n_params]), dtype=np.int64)
+                    params = np.asarray(np.random.random([op.num_params]), dtype=np.int64)
                 else:
-                    params = np.random.random([op.n_params])
+                    params = np.random.random([op.num_params])
 
-                queue.append(op(*params, wires=list(range(op.n_wires)), do_queue=False))
+                queue.append(op(*params, wires=list(range(op.num_wires)), do_queue=False))
 
             temp = [isinstance(op, qm.operation.CV) for op in queue]
             if all(temp):
@@ -122,11 +122,11 @@ class DeviceTest(BaseTest):
                     # directly within the plugin tests.
                     continue
                 elif op.par_domain == 'N':
-                    params = np.asarray(np.random.random([op.n_params]), dtype=np.int64)
+                    params = np.asarray(np.random.random([op.num_params]), dtype=np.int64)
                 else:
-                    params = np.random.random([op.n_params])
+                    params = np.random.random([op.num_params])
 
-                queue = [op(*params, wires=list(range(op.n_wires)), do_queue=False)]
+                queue = [op(*params, wires=list(range(op.num_wires)), do_queue=False)]
 
                 temp = isinstance(queue[0], qm.operation.CV)
 
@@ -148,11 +148,11 @@ class DeviceTest(BaseTest):
                     # directly within the plugin tests.
                     continue
                 elif op.par_domain == 'N':
-                    params = np.asarray(np.random.random([op.n_params]), dtype=np.int64)
+                    params = np.asarray(np.random.random([op.num_params]), dtype=np.int64)
                 else:
-                    params = np.random.random([op.n_params])
+                    params = np.random.random([op.num_params])
 
-                queue = [op(*params, wires=list(range(op.n_wires)), do_queue=False)]
+                queue = [op(*params, wires=list(range(op.num_wires)), do_queue=False)]
 
                 temp = isinstance(queue[0], qm.operation.CV)
 
