@@ -145,7 +145,7 @@ In general, as all supported operations have their gradient formula defined and 
 
 
 Supporting new operations
-----------------------
+-------------------------
 
 If you would like to support an operation or observable that is not currently supported by OpenQML, you can subclass the :class:`~.Operation` and :class:`~.Expectation` classes, and define the number of parameters the operation takes, and the number of wires the operation acts on. For example, to define the Ising gate :math:`XX_\phi` depending on parameter :math:`\phi`,
 
