@@ -96,7 +96,7 @@ def _rotation(phi, bare=False):
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
-    return sp.linalg.block_diag(1, temp)
+    return sp.linalg.block_diag(1, temp) # pylint: disable=no-member
 
 
 class Rotation(CVOperation):
@@ -384,7 +384,7 @@ class Beamsplitter(CVOperation):
         c = np.cos(p[0])
         s = np.sin(p[0])
         U = c * np.eye(5)
-        U[0,0] = 1
+        U[0, 0] = 1
         U[1:3, 3:5] = -s * R.T
         U[3:5, 1:3] = s * R
         return U

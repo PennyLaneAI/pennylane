@@ -82,7 +82,7 @@ class BasicTest(BaseTest):
             # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
             # so only check multimode ops
             if len(op.wires) > 1:
-                with self.assertRaisesRegex(ValueError, 'Number of wires is too small to fit Heisenberg matrix'):
+                with self.assertRaisesRegex(ValueError, 'is too small to fit Heisenberg matrix'):
                     op.heisenberg_expand(U, len(op.wires) - 1)
 
             # validate size of input for `heisenberg_expand` method
@@ -92,7 +92,7 @@ class BasicTest(BaseTest):
 
 
         for cls in openqml.ops.builtins_continuous.all_ops + openqml.expval.builtins_continuous.all_ops:
-            if cls._heisenberg_rep is not None:  # only test gaussian operations
+            if cls.isgaussian:  # only test gaussian operations
                 h_test(cls)
 
 

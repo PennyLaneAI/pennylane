@@ -71,7 +71,6 @@ class Hadamard(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    grad_method = 'A'
 
 
 class PauliX(Operation):
@@ -91,7 +90,6 @@ class PauliX(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    grad_method = 'A'
 
 
 class PauliY(Operation):
@@ -111,7 +109,6 @@ class PauliY(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    grad_method = 'A'
 
 
 class PauliZ(Operation):
@@ -131,7 +128,6 @@ class PauliZ(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    grad_method = 'A'
 
 
 class CNOT(Operation):
@@ -158,7 +154,6 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    grad_method = 'A'
 
 
 class CZ(Operation):
@@ -185,7 +180,6 @@ class CZ(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    grad_method = 'A'
 
 
 class SWAP(Operation):
@@ -212,7 +206,6 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    grad_method = 'A'
 
 
 class RX(Operation):

@@ -67,6 +67,8 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :hidden:
 
    tutorials/basic
+
+.. 
    tutorials/photon_redirection.ipynb
    tutorials/quantum_neural_net.ipynb
    tutorials/qubit_rotation.ipynb
@@ -75,32 +77,38 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
 
 .. toctree::
    :maxdepth: 1
-   :caption: API
+   :caption: Library details
    :hidden:
 
-   API/init
-   API/configuration
-   API/optimize
-   API/qnode
-   API/decorator
-   API/operation
-   API/variable
+   code/init
+   code/qnode
+   code/decorator
+   code/optimize
+   code/configuration
 
 .. toctree::
    :maxdepth: 1
    :caption: Supported operations
    :hidden:
 
-   API/ops
-   API/expval
+   code/ops
+   code/expval
 
 .. toctree::
    :maxdepth: 1
-   :caption: Plugin API
+   :caption: Developer API
    :hidden:
 
-   plugins/overview
-   plugins/device
+   API/overview
+   API/device
+   API/operation
+   API/variable
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference plugins
+   :hidden:
+
    plugins/default_qubit
    plugins/default_gaussian
 
