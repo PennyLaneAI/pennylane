@@ -92,7 +92,7 @@ class BasicTest(BaseTest):
 
 
         for cls in openqml.ops.builtins_continuous.all_ops + openqml.expval.builtins_continuous.all_ops:
-            if cls.isgaussian:  # only test gaussian operations
+            if cls.supports_analytic:  # only test gaussian operations
                 h_test(cls)
 
 

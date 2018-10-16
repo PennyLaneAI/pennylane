@@ -47,14 +47,15 @@ using the analytic method of differentiation, it must satisfy an additional cons
 .. note::
 
     These conditions are *not* sufficient for analytic differentiation. For example,
-    the analytic method does not work on non-Gaussian CV gates.
+    CV gates must also define a matrix representing their Heisenberg linear
+    transformation on the quadrature operators.
 
 For gates that *are* supported via the analytic method, the gradient recipe
-(with multiplier :math:`c_k`, parameter shift :math:`s_k`) works as follows:
+(with multiplier :math:`c_k`, parameter shift :math:`s_k` for parameter :math:`\phi_k`)
+works as follows:
 
-.. math::
-   \frac{\partial Q(\ldots, \theta_k, \ldots)}{\partial \theta_k}
-   = c_k \left(Q(\ldots, \theta_k+s_k, \ldots) -Q(\ldots, \theta_k-s_k, \ldots)\right)
+.. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
+
 
 Summary
 ^^^^^^^
@@ -67,22 +68,27 @@ CV Operation base classes
 -------------------------
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
-:class:`~.CVOperation` or :class:`~.CVExpectation` classes instead.
+:class:`~.CVOperation` or :class:`~.CVExpectation` classes instead of :class:`~.Operation`
+and :class:`~.Expectation`.
 
 In addition, for Gaussian CV operations, you may need to provide the static class
 method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
 the operator given its list of parameters:
 
 * This method should return the matrix of the linear transformation carried out by the
-  gate for the given parameter values, and is used for calculating the gradient using
-  the analytic method.
+  gate on the vector of quadrature operators :math:`\mathbf{r}` for the given parameter
+  values.
 
 * For observables, this method should return a real vector (first-order observables)
   or symmetric matrix (second-order observables) of coefficients of the quadrature
   operators :math:`\x` and :math:`\p`.
 
-  - For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
-  - For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+In both cases, :meth:`~.CV._heisenberg_rep` is used for calculating the gradient
+using the analytic method.
+
+Note that for single-mode operations and expectations we use the basis
+:math:`\mathbf{r} = (\I, \x, \p)`, while ror multi-mode operations and expectations
+we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
 .. note::
     Non-Gaussian CV operations and expectations are currently only supported via
@@ -227,7 +233,7 @@ class Operation(abc.ABC):
         :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in
         a gradient recipe of
 
-        .. math:: \frac{d}{d\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
+        .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
         If this property returns ``None``, the default gradient recipe
         :math:`(c_k, s_k)=(1/2, \pi/2)` is assumed for every parameter.
@@ -473,7 +479,7 @@ class CV:
           transformation carried out by the gate for the given parameter values.
           The method is not defined for non-Gaussian gates.
 
-          **The existence of this method is equivalent to setting ``grad_method = 'A'``.**
+          **The existence of this method is equivalent to setting** ``grad_method = 'A'``**.**
 
         * For observables, returns a real vector (first-order observables) or
           symmetric matrix (second-order observables) of expansion coefficients
@@ -498,9 +504,9 @@ class CV:
         return None
 
     @classproperty
-    def isgaussian(self):
+    def supports_analytic(self):
         """Returns True if the CV Operation has a defined :meth:`~.CV._heisenberg_rep`
-        static method, indicating that the operation is Gaussian.
+        static method, indicating that analytic differentiation is supported.
         """
         p = list(range(self.num_params))
         return self._heisenberg_rep(p) is not None
