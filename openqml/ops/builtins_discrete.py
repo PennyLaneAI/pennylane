@@ -68,8 +68,9 @@ class Hadamard(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 0
-    n_wires = 1
+    num_params = 0
+    num_wires = 1
+    par_domain = None
 
 
 class PauliX(Operation):
@@ -86,8 +87,9 @@ class PauliX(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 0
-    n_wires = 1
+    num_params = 0
+    num_wires = 1
+    par_domain = None
 
 
 class PauliY(Operation):
@@ -104,8 +106,9 @@ class PauliY(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 0
-    n_wires = 1
+    num_params = 0
+    num_wires = 1
+    par_domain = None
 
 
 class PauliZ(Operation):
@@ -122,8 +125,9 @@ class PauliZ(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 0
-    n_wires = 1
+    num_params = 0
+    num_wires = 1
+    par_domain = None
 
 
 class CNOT(Operation):
@@ -147,8 +151,9 @@ class CNOT(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
-    n_params = 0
-    n_wires = 2
+    num_params = 0
+    num_wires = 2
+    par_domain = None
 
 
 class CZ(Operation):
@@ -172,8 +177,9 @@ class CZ(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
-    n_params = 0
-    n_wires = 2
+    num_params = 0
+    num_wires = 2
+    par_domain = None
 
 
 class SWAP(Operation):
@@ -197,8 +203,9 @@ class SWAP(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
-    n_params = 0
-    n_wires = 2
+    num_params = 0
+    num_wires = 2
+    par_domain = None
 
 
 class RX(Operation):
@@ -220,8 +227,10 @@ class RX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 1
-    n_wires = 1
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
+    grad_method = 'A'
 
 
 class RY(Operation):
@@ -243,8 +252,10 @@ class RY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 1
-    n_wires = 1
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
+    grad_method = 'A'
 
 
 class RZ(Operation):
@@ -266,8 +277,10 @@ class RZ(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 1
-    n_wires = 1
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
+    grad_method = 'A'
 
 
 class PhaseShift(Operation):
@@ -291,8 +304,10 @@ class PhaseShift(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 1
-    n_wires = 1
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
+    grad_method = 'A'
 
 
 class Rot(Operation):
@@ -317,8 +332,10 @@ class Rot(Operation):
         rho (float): rotation angle :math:`\rho`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 3
-    n_wires = 1
+    num_params = 3
+    num_wires = 1
+    par_domain = 'R'
+    grad_method = 'A'
 
 
 #=============================================================================
@@ -339,7 +356,8 @@ class BasisState(Operation):
         n (int): prepares the state :math:`\ket{n}`
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    n_wires = 0
+    num_params = 1
+    num_wires = 0
     par_domain = 'N'
     grad_method = None
 
@@ -352,13 +370,14 @@ class QubitStateVector(Operation):
 
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    n_wires = 0
+    num_params = 1
+    num_wires = 0
     par_domain = 'A'
     grad_method = 'F'
 
@@ -375,13 +394,14 @@ class QubitUnitary(Operation):
 
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite differences)
+    * Gradient recipe: None (uses finite difference)
 
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    n_wires = 0
+    num_params = 1
+    num_wires = 0
     par_domain = 'A'
     grad_method = 'F'
 

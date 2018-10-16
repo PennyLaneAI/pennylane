@@ -387,7 +387,7 @@ class QNode:
 
         Use the analytic method iff every gate that depends on the parameter supports it.
         If even one gate does not support differentiation we cannot differentiate wrt. this parameter at all.
-        Otherwise use the finite differences method.
+        Otherwise use the finite difference method.
 
         Args:
           idx (int): free parameter index
@@ -521,7 +521,7 @@ class QNode:
           circuits containing first- and second-order observables.
           The circuit is evaluated twice for each incidence of each parameter in the circuit.
         * Best known method for each parameter (``'B'``): uses the analytic method if
-          possible, otherwise finite differences.
+          possible, otherwise finite difference.
 
         .. note::
            The finite difference method cannot tolerate any statistical noise in the circuit output,
@@ -572,7 +572,7 @@ class QNode:
             raise ValueError('Cannot differentiate wrt parameter(s) {}.'.format(bad))
 
         if method in ('A', 'F'):
-            if method =='A':
+            if method == 'A':
                 bad = check_method('F')
                 if bad:
                     raise ValueError('The analytic gradient method cannot be used with the parameter(s) {}.'.format(bad))

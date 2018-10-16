@@ -41,10 +41,10 @@ class BasicTest(BaseTest):
             log.debug('\tTesting: cls.{}'.format(cls.__name__))
             # fixed parameter values
             if cls.par_domain == 'A':
-                par = [nr.randn(1,1)] * cls.n_params
+                par = [nr.randn(1,1)] * cls.num_params
             else:
-                par = list(nr.randn(cls.n_params))
-            ww = list(range(cls.n_wires))
+                par = list(nr.randn(cls.num_params))
+            ww = list(range(cls.num_wires))
             op = cls(*par, wires=ww, do_queue=False)
 
             if issubclass(cls, oo.Expectation):
@@ -69,9 +69,9 @@ class BasicTest(BaseTest):
             # compare gradient recipe to numerical gradient
             h = 1e-7
             U = op.heisenberg_tr(0)
-            for k in range(cls.n_params):
+            for k in range(cls.num_params):
                 D = op.heisenberg_pd(k)  # using the recipe
-                # using finite differences
+                # using finite difference
                 op.params[k] += h
                 Up = op.heisenberg_tr(0)
                 op.params = par
@@ -82,7 +82,7 @@ class BasicTest(BaseTest):
             # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
             # so only check multimode ops
             if len(op.wires) > 1:
-                with self.assertRaisesRegex(ValueError, 'Number of wires is too small to fit Heisenberg matrix'):
+                with self.assertRaisesRegex(ValueError, 'is too small to fit Heisenberg matrix'):
                     op.heisenberg_expand(U, len(op.wires) - 1)
 
             # validate size of input for `heisenberg_expand` method
@@ -92,7 +92,7 @@ class BasicTest(BaseTest):
 
 
         for cls in openqml.ops.builtins_continuous.all_ops + openqml.expval.builtins_continuous.all_ops:
-            if cls._heisenberg_rep is not None:  # only test gaussian operations
+            if cls.supports_analytic:  # only test gaussian operations
                 h_test(cls)
 
 
@@ -103,8 +103,8 @@ class BasicTest(BaseTest):
         def op_test(cls):
             "Test the Operation subclass."
             log.debug('\tTesting: cls.{}'.format(cls.__name__))
-            n = cls.n_params
-            w = cls.n_wires
+            n = cls.num_params
+            w = cls.num_wires
             ww = list(range(w))
             # valid pars
             if cls.par_domain == 'A':

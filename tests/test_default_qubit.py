@@ -281,7 +281,7 @@ class TestDefaultQubitDevice(BaseTest):
             except AttributeError:
                 op = qm.expval.__getattribute__(name)
 
-            p = [0.432423, -0.12312, 0.324][:op.n_params]
+            p = [0.432423, -0.12312, 0.324][:op.num_params]
 
             if name == 'QubitStateVector':
                 p = [np.array([1, 0, 0, 0])]
@@ -317,7 +317,7 @@ class TestDefaultQubitDevice(BaseTest):
             # get the equivalent openqml operator class
             op = qm.ops.__getattribute__(gate_name)
             # the list of wires to apply the operator to
-            w = list(range(op.n_wires))
+            w = list(range(op.num_wires))
 
             if op.par_domain == 'A':
                 # the parameter is an array
@@ -330,13 +330,13 @@ class TestDefaultQubitDevice(BaseTest):
                     expected_out = np.kron(U @ np.array([1, 0]), np.array([1, 0]))
             elif op.par_domain == 'N':
                 # the parameter is an integer
-                p = [1, 3, 4][:op.n_params]
+                p = [1, 3, 4][:op.num_params]
                 if gate_name == 'BasisState':
                     expected_out = np.zeros([2**self.dev.num_wires], dtype=np.complex128)
                     expected_out[p[0]] = 1.
             else:
                 # the parameter is a float
-                p = [0.432423, -0.12312, 0.324][:op.n_params]
+                p = [0.432423, -0.12312, 0.324][:op.num_params]
 
                 if callable(fn):
                     # if the default.qubit is an operation accepting parameters,
@@ -347,9 +347,9 @@ class TestDefaultQubitDevice(BaseTest):
                     O = fn
 
                 # calculate the expected output
-                if op.n_wires == 1:
+                if op.num_wires == 1:
                     expected_out = np.kron(O @ np.array([1, 0]), np.array([1, 0]))
-                elif op.n_wires == 2:
+                elif op.num_wires == 2:
                     expected_out = O @ self.dev._state
 
             self.dev.apply(gate_name, wires=w, par=p)
@@ -391,7 +391,7 @@ class TestDefaultQubitDevice(BaseTest):
                 p = [H]
             else:
                 # the parameter is a float
-                p = [0.432423, -0.12312, 0.324][:op.n_params]
+                p = [0.432423, -0.12312, 0.324][:op.num_params]
 
             if callable(fn):
                 # if the default.qubit is an operation accepting parameters,
@@ -402,9 +402,9 @@ class TestDefaultQubitDevice(BaseTest):
                 O = fn
 
             # calculate the expected output
-            if op.n_wires == 1:
+            if op.num_wires == 1:
                 expected_out = self.dev._state.conj() @ np.kron(O, I) @ self.dev._state
-            elif op.n_wires == 2:
+            elif op.num_wires == 2:
                 expected_out = self.dev._state.conj() @ O @ self.dev._state
 
             res = self.dev.ev(O, wires=[0])
@@ -455,10 +455,10 @@ class TestDefaultQubitIntegration(BaseTest):
         for g in all_gates - gates:
             op = getattr(qm.ops, g)
 
-            if op.n_wires == 0:
+            if op.num_wires == 0:
                 wires = [0]
             else:
-                wires = list(range(op.n_wires))
+                wires = list(range(op.num_wires))
 
             @qm.qnode(dev)
             def circuit(*x):
@@ -472,7 +472,7 @@ class TestDefaultQubitIntegration(BaseTest):
                 return qm.expval.PauliZ(0)
 
             with self.assertRaisesRegex(qm.DeviceError, "Gate {} not supported on device default.qubit".format(g)):
-                x = np.random.random([op.n_params])
+                x = np.random.random([op.num_params])
                 circuit(*x)
 
     def test_unsupported_observables(self):
@@ -486,10 +486,10 @@ class TestDefaultQubitIntegration(BaseTest):
         for g in all_obs - obs:
             op = getattr(qm.expval, g)
 
-            if op.n_wires == 0:
+            if op.num_wires == 0:
                 wires = [0]
             else:
-                wires = list(range(op.n_wires))
+                wires = list(range(op.num_wires))
 
             @qm.qnode(dev)
             def circuit(*x):
@@ -498,7 +498,7 @@ class TestDefaultQubitIntegration(BaseTest):
                 return op(*x, wires=wires)
 
             with self.assertRaisesRegex(qm.DeviceError, "Observable {} not supported on device default.qubit".format(g)):
-                x = np.random.random([op.n_params])
+                x = np.random.random([op.num_params])
                 circuit(*x)
 
     def test_qubit_circuit(self):
@@ -553,10 +553,10 @@ class TestDefaultQubitIntegration(BaseTest):
             dev.reset()
 
             op = getattr(qm.ops, g)
-            if op.n_wires == 0:
+            if op.num_wires == 0:
                 wires = [0]
             else:
-                wires = list(range(op.n_wires))
+                wires = list(range(op.num_wires))
 
             @qm.qnode(dev)
             def circuit(*x):
@@ -576,7 +576,7 @@ class TestDefaultQubitIntegration(BaseTest):
                     O = qop
 
                 # calculate the expected output
-                if op.n_wires == 1 or g == 'QubitUnitary':
+                if op.num_wires == 1 or g == 'QubitUnitary':
                     out_state = np.kron(O @ np.array([1, 0]), np.array([1, 0]))
                 elif g == 'QubitStateVector':
                     out_state = x[0]
@@ -597,9 +597,9 @@ class TestDefaultQubitIntegration(BaseTest):
                 self.assertAllEqual(circuit(p), reference(p))
             elif g == 'QubitUnitary':
                 self.assertAllEqual(circuit(U), reference(U))
-            elif op.n_params == 1:
+            elif op.num_params == 1:
                 self.assertAllEqual(circuit(a), reference(a))
-            elif op.n_params == 2:
+            elif op.num_params == 2:
                 self.assertAllEqual(circuit(a, b), reference(a, b))
 
     def test_supported_observables(self):
@@ -615,10 +615,10 @@ class TestDefaultQubitIntegration(BaseTest):
             dev.reset()
 
             op = getattr(qm.expval, g)
-            if op.n_wires == 0:
+            if op.num_wires == 0:
                 wires = [0]
             else:
-                wires = list(range(op.n_wires))
+                wires = list(range(op.num_wires))
 
             @qm.qnode(dev)
             def circuit(*x):
@@ -642,7 +642,7 @@ class TestDefaultQubitIntegration(BaseTest):
                 expectation = out_state.conj() @ np.kron(O, np.identity(2)) @ out_state
                 return expectation
 
-            if op.n_params == 0:
+            if op.num_params == 0:
                 self.assertAllEqual(circuit(), reference())
             elif g == 'Hermitian':
                 self.assertAllEqual(circuit(H), reference(H))

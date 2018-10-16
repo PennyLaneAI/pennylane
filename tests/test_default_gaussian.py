@@ -303,7 +303,7 @@ class TestDefaultGaussianDevice(BaseTest):
             # get the equivalent openqml operator class
             op = qm.ops.__getattribute__(gate_name)
             # the list of wires to apply the operator to
-            w = list(range(op.n_wires))
+            w = list(range(op.num_wires))
 
             if op.par_domain == 'A':
                 # the parameter is an array
@@ -313,7 +313,7 @@ class TestDefaultGaussianDevice(BaseTest):
                     expected_out = p
             else:
                 # the parameter is a float
-                p = [0.432423, -0.12312, 0.324][:op.n_params]
+                p = [0.432423, -0.12312, 0.324][:op.num_params]
 
                 if gate_name == 'Displacement':
                     alpha = p[0]*np.exp(1j*p[1])
@@ -337,7 +337,7 @@ class TestDefaultGaussianDevice(BaseTest):
                     S = fn(*p)
 
                     # calculate the expected output
-                    if op.n_wires == 1:
+                    if op.num_wires == 1:
                         # reorder from symmetric ordering to xp-ordering
                         S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
 
@@ -437,10 +437,10 @@ class TestDefaultGaussianIntegration(BaseTest):
         for g in all_gates - gates:
             op = getattr(qm.ops, g)
 
-            if op.n_wires == 0:
+            if op.num_wires == 0:
                 wires = [0]
             else:
-                wires = list(range(op.n_wires))
+                wires = list(range(op.num_wires))
 
             @qm.qnode(dev)
             def circuit(*x):
@@ -454,7 +454,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 return qm.expval.PauliZ(0)
 
             with self.assertRaisesRegex(qm.DeviceError, "Gate {} not supported on device default.gaussian".format(g)):
-                x = np.random.random([op.n_params])
+                x = np.random.random([op.num_params])
                 circuit(*x)
 
     def test_unsupported_observables(self):
@@ -468,10 +468,10 @@ class TestDefaultGaussianIntegration(BaseTest):
         for g in all_obs - obs:
             op = getattr(qm.expval, g)
 
-            if op.n_wires == 0:
+            if op.num_wires == 0:
                 wires = [0]
             else:
-                wires = list(range(op.n_wires))
+                wires = list(range(op.num_wires))
 
             @qm.qnode(dev)
             def circuit(*x):
@@ -480,7 +480,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 return op(*x, wires=wires)
 
             with self.assertRaisesRegex(qm.DeviceError, "Observable {} not supported on device default.gaussian".format(g)):
-                x = np.random.random([op.n_params])
+                x = np.random.random([op.num_params])
                 circuit(*x)
 
     def test_gaussian_circuit(self):
@@ -532,10 +532,10 @@ class TestDefaultGaussianIntegration(BaseTest):
             dev.reset()
 
             op = getattr(qm.ops, g)
-            if op.n_wires == 0:
+            if op.num_wires == 0:
                 wires = list(range(2))
             else:
-                wires = list(range(op.n_wires))
+                wires = list(range(op.num_wires))
 
             @qm.qnode(dev)
             def circuit(*x):
@@ -561,7 +561,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 S = qop(*x)
 
                 # calculate the expected output
-                if op.n_wires == 1:
+                if op.num_wires == 1:
                     S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
 
                 return (S @ np.array([a.real, a.imag, 0, 0])*np.sqrt(2*hbar))[0]
@@ -569,7 +569,7 @@ class TestDefaultGaussianIntegration(BaseTest):
             if g == 'GaussianState':
                 p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
             else:
-                p = [0.432423, -0.12312, 0.324][:op.n_params]
+                p = [0.432423, -0.12312, 0.324][:op.num_params]
 
             self.assertAllEqual(circuit(*p), reference(*p))
 

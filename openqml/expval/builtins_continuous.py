@@ -65,9 +65,12 @@ class PhotonNumber(CVExpectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    n_wires = 1
-    n_params = 0
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+
     ev_order = 2
+
     @staticmethod
     def _heisenberg_rep(p):
         hbar = 2
@@ -92,9 +95,12 @@ class X(CVExpectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    n_wires = 1
-    n_params = 0
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+
     ev_order = 1
+
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([0, 1, 0])
@@ -118,9 +124,12 @@ class P(CVExpectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    n_wires = 1
-    n_params = 0
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+
     ev_order = 1
+
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([0, 0, 1])
@@ -151,10 +160,13 @@ class PolyXP(CVExpectation):
     Args:
         q (array[float]): expansion coefficients
     """
-    n_wires  = 0
-    n_params = 1
+    num_wires = 0
+    num_params = 1
     par_domain = 'A'
+
+    grad_method = 'F'
     ev_order = 2
+
     @staticmethod
     def _heisenberg_rep(p):
         return p[0]
@@ -182,9 +194,13 @@ class Homodyne(CVExpectation):
             the homodyne measurement.
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    n_wires = 1
-    n_params = 1
+    num_wires = 1
+    num_params = 1
+    par_domain = 'R'
+
+    grad_method = 'A'
     ev_order = 1
+
     @staticmethod
     def _heisenberg_rep(p):
         phi = p[0]
