@@ -160,7 +160,7 @@ def device(name, *args, **kwargs):
     additional arguments that might be required or supported.
 
     Args:
-        name (str): the name of the device to load.
+        name (str): the name of the device to load
         wires (int): the number of wires (subsystems) to initialise
             the device with.
 
