@@ -572,7 +572,7 @@ class QNode:
             raise ValueError('Cannot differentiate wrt parameter(s) {}.'.format(bad))
 
         if method in ('A', 'F'):
-            if method =='A':
+            if method == 'A':
                 bad = check_method('F')
                 if bad:
                     raise ValueError('The analytic gradient method cannot be used with the parameter(s) {}.'.format(bad))

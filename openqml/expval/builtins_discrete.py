@@ -58,8 +58,10 @@ class PauliX(Expectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 0
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+    grad_method = 'F'
 
 
 class PauliY(Expectation):
@@ -81,8 +83,10 @@ class PauliY(Expectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    n_wires = 1
-    n_params = 0
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+    grad_method = 'F'
 
 
 class PauliZ(Expectation):
@@ -104,8 +108,10 @@ class PauliZ(Expectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 0
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+    grad_method = 'F'
 
 
 class Hermitian(Expectation):
@@ -125,9 +131,10 @@ class Hermitian(Expectation):
         A (array): square hermitian matrix.
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 1
+    num_wires = 1
+    num_params = 1
     par_domain = 'A'
+    grad_method = 'F'
 
 
 all_ops = [PauliX, PauliY, PauliZ, Hermitian]

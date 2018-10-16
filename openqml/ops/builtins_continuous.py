@@ -123,8 +123,11 @@ class Rotation(CVOperation):
     Args:
         phi (float): the rotation angle
     """
-    n_wires = 1
-    n_params = 1
+    num_wires = 1
+    num_params = 1
+    par_domain = 'R'
+    grad_method = 'A'
+
     @staticmethod
     def _heisenberg_rep(p):
         return _rotation(p[0])
@@ -155,8 +158,11 @@ class Displacement(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 2
+    num_wires = 1
+    num_params = 2
+    par_domain = 'R'
+    grad_method = 'A'
+
     shift = 0.1
     grad_recipe = [(0.5/shift, shift), None]
 
@@ -196,10 +202,14 @@ class Squeezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 2
+    num_wires = 1
+    num_params = 2
+    par_domain = 'R'
+    grad_method = 'A'
+
     shift = 0.1
     grad_recipe = [(0.5/np.sinh(shift), shift), None]
+
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1] / 2)
@@ -230,8 +240,9 @@ class TwoModeSqueezing(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     # TODO: add a gradient recipe
-    n_params = 2
-    n_wires = 2
+    num_params = 2
+    num_wires = 2
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -255,8 +266,9 @@ class QuadraticPhase(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     # TODO: add a gradient recipe
-    n_params = 1
-    n_wires = 1
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -277,8 +289,9 @@ class CubicPhase(CVOperation):
         gamma (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 1
-    n_wires = 1
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -299,8 +312,9 @@ class Kerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 1
-    n_wires = 1
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -321,8 +335,9 @@ class CrossKerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 1
-    n_wires = 2
+    num_params = 1
+    num_wires = 2
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -357,8 +372,11 @@ class Beamsplitter(CVOperation):
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_params = 2
-    n_wires = 2
+    num_params = 2
+    num_wires = 2
+    par_domain = 'R'
+    grad_method = 'A'
+
     # For the beamsplitter, both parameters are rotation-like
     @staticmethod
     def _heisenberg_rep(p):
@@ -393,8 +411,9 @@ class ControlledAddition(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     # TODO: add a gradient recipe
-    n_wires = 2
-    n_params = 1
+    num_wires = 2
+    num_params = 1
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -419,8 +438,9 @@ class ControlledPhase(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     # TODO: add a gradient recipe
-    n_wires = 2
-    n_params = 1
+    num_wires = 2
+    num_params = 1
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -444,8 +464,9 @@ class CoherentState(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 2
+    num_wires = 1
+    num_params = 2
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -464,8 +485,9 @@ class SqueezedState(CVOperation):
         phi (float): squeezing angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 2
+    num_wires = 1
+    num_params = 2
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -493,8 +515,9 @@ class DisplacedSqueezedState(CVOperation):
         phi (float): squeezing angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 3
+    num_wires = 1
+    num_params = 3
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -512,8 +535,8 @@ class FockState(CVOperation):
         n (int): Fock state to prepare
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 1
+    num_wires = 1
+    num_params = 1
     par_domain = 'N'
     grad_method = None
 
@@ -534,8 +557,9 @@ class ThermalState(CVOperation):
         nbar (float): mean thermal population of the mode
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 1
+    num_wires = 1
+    num_params = 1
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -562,8 +586,9 @@ class CatState(CVOperation):
             cat state, and ``p=1`` an odd cat state.
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    n_wires = 1
-    n_params = 2
+    num_wires = 1
+    num_params = 2
+    par_domain = 'R'
     grad_method = 'F'
 
 
@@ -581,8 +606,8 @@ class FockStateVector(CVOperation):
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
     """
-    n_wires = 0
-    n_params = 1
+    num_wires = 0
+    num_params = 1
     par_domain = 'A'
     grad_method = 'F'
 
@@ -600,8 +625,8 @@ class FockDensityMatrix(CVOperation):
         state (array): a single mode two-dimensional matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
-    n_wires = 0
-    n_params = 1
+    num_wires = 0
+    num_params = 1
     par_domain = 'A'
     grad_method = 'F'
 
@@ -625,8 +650,8 @@ class GaussianState(CVOperation):
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
-    n_wires = 0
-    n_params = 2
+    num_wires = 0
+    num_params = 2
     par_domain = 'A'
     grad_method = 'F'
 
