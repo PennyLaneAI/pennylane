@@ -30,7 +30,7 @@ and keyword arguments are wrapped in a `Variable` as follows:
 
 * All positional arguments in ``*args``, including those with multiple dimensions, are
   flattened to a single list, and each element wrapped as a Variable instance,
-  indexed by it's position in the list.
+  indexed by its position in the list.
 
   The list is then unflattened back to the original shape of ``*args``.
   This allows OpenQML to inspect the shape and type of arguments
