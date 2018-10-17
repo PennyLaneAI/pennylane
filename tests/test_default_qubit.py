@@ -330,8 +330,7 @@ class TestDefaultQubitDevice(BaseTest):
                     expected_out = np.kron(U @ np.array([1, 0]), np.array([1, 0]))
                 elif gate_name == 'BasisState':
                     p = [np.array([1, 1])]
-                    expected_out = np.zeros([2**self.dev.num_wires], dtype=np.complex128)
-                    expected_out[3] = 1.
+                    expected_out = np.array([0, 0, 0, 1])
 
             elif op.par_domain == 'N':
                 # the parameter is an integer
@@ -583,8 +582,7 @@ class TestDefaultQubitIntegration(BaseTest):
                 elif g == 'QubitStateVector':
                     out_state = x[0]
                 elif g == 'BasisState':
-                    out_state = np.zeros([2**dev.num_wires], dtype=np.complex128)
-                    out_state[3] = 1.
+                    out_state = np.array([0, 0, 0, 1])
                 else:
                     out_state = O @ dev._state
 
