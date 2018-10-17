@@ -3,7 +3,7 @@
 Overview of the developer API
 =============================
 
-Writing your own OpenQML plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of OpenQML, is a simple and easy process. In this section, we will walk through the steps for creating your own OpenQML plugin. In addition, we also provide two default reference plugins - ``'default.qubit'`` for basic pure state qubit simulations, and ``'default.gaussian'`` for basic Gaussian continuous-variable simulations.
+Writing your own OpenQML plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of OpenQML, is a simple and easy process. In this section, we will walk through the steps for creating your own OpenQML plugin. In addition, we also provide two default reference plugins - :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
 
 .. note::
@@ -46,34 +46,34 @@ The first step in creating your OpenQML plugin is creating your device class. Th
 
 Here, we have begun defining some important class attributes ('identifiers') that allow OpenQML to identify the device. These include:
 
-* ``name``: a string containing the official name of the device
-* ``short_name``: the string used to identify and load the device by users of OpenQML
-* ``api_version``: the version number of OpenQML that this device was made for. If the user attempts to load the device on a different version of OpenQML, a :class:`~.DeviceError` will be raised.
-* ``version``: the version number of the device.
-* ``author``: the author of the device.
+* :attr:`~.Device.name`: a string containing the official name of the device
+* :attr:`~.Device.short_name`: the string used to identify and load the device by users of OpenQML
+* :attr:`~.Device.api_version`: the version number of OpenQML that this device was made for. If the user attempts to load the device on a different version of OpenQML, a :class:`~.DeviceError` will be raised.
+* :attr:`~.Device.version`: the version number of the device.
+* :attr:`~.Device.author`: the author of the device.
 
-Note that, apart from ``short_name``, these are all optional. ``short_name``, however, **must** be defined, so that it is accessible from the OpenQML interface.
+Note that, apart from :attr:`~.Device.short_name`, these are all optional. :attr:`~.Device.short_name`, however, **must** be defined, so that it is accessible from the OpenQML interface.
 
 Supporting operators and expectations
 -------------------------------------
 
 There are also three private class attributes to be defined for your custom device:
 
-* ``_operator_map``: a dictionary mapping an OpenQML supported operation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.gates` and public method :meth:`~.Device.supported`.
+* :attr:`~.Device._operation_map`: a dictionary mapping an OpenQML supported operation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.gates` and public method :meth:`~.Device.supported`.
 
-* ``_observable_map``: a dictionary mapping an OpenQML supported expectation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.observables` and public method :meth:`~.Device.supported`.
+* :attr:`~.Device._expectation_map`: a dictionary mapping an OpenQML supported expectation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.expectations` and public method :meth:`~.Device.supported`.
 
-* ``_capabilities``: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user - this is accessible from the OpenQML frontend via the public method :meth:`~.Device.capabilities`.
+* :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user - this is accessible from the OpenQML frontend via the public method :meth:`~.Device.capabilities`.
 
 For example, a very basic operator map that supports only two gates might look like so:
 
 .. code-block:: python
 
-    _operator_map = {'CNOT': cnot_function, 'PauliX': X_function}
+    _operation_map = {'CNOT': cnot_function, 'PauliX': X_function}
 
-where ``'CNOT'`` represents the built-in operation :class:`~.CNOT`, and ``'PauliX'`` represents the built-in operation :class:`~.ops.PauliX`. The functions in the dictionary can be of any form you like, and can exist in the plugin within the same file, separate files, or may even be imported from a different library. As long as the corresponding key representing the supported operator is there, OpenQML will allow that operation to be placed on the device.
+where ``'CNOT'`` represents the built-in operation :class:`~.CNOT`, and ``'PauliX'`` represents the built-in operation :class:`~openqml.ops.builtins_discrete.PauliX`. The functions in the dictionary can be of any form you like, and can exist in the plugin within the same file, separate files, or may even be imported from a different library. As long as the corresponding key representing the supported operator is there, OpenQML will allow that operation to be placed on the device.
 
-For a better idea of how the ``_operator_map`` and ``_observable_map`` work, refer to the two reference plugins.
+For a better idea of how the :attr:`~.Device._operation_map` and :attr:`~.Device._expectation_map` work, refer to the two reference plugins.
 
 Applying operations
 -------------------
@@ -90,9 +90,9 @@ When OpenQML needs to evaluate a QNode, it accesses the :meth:`~.Device.execute`
             self.apply(operation.name, operation.wires, operation.parameters)
         self.post_apply()
 
-        self.pre_expectations()
-        expectations = [self.expectation(observable.name, observable.wires, observable.parameters) for observable in observe]
-        self.post_expectations()
+        self.pre_expval()
+        expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
+        self.post_expval()
 
         return np.array(expectations)
 
@@ -100,7 +100,7 @@ In most cases, there are a minimum of two methods that need to be defined:
 
 * :meth:`~.Device.apply`: this accepts an operation name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the operation, and applies the resulting operation to the device.
 
-* :meth:`~.Device.expectation`: this accepts an observable name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the expectation, returns the resulting expectation value from the device.
+* :meth:`~.Device.expval`: this accepts an observable name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the expectation, returns the resulting expectation value from the device.
 
   .. note:: Currently, OpenQML only supports single-wire observables.
 
@@ -114,9 +114,9 @@ However, additional flexibility is sometimes required for interfacing with more 
 
 * :meth:`~.Device.post_apply`: for any setup/code that must be executed after applying operations.
 
-* :meth:`~.Device.pre_expectations`: for any setup/code that must be executed before measuring observables.
+* :meth:`~.Device.pre_expval`: for any setup/code that must be executed before measuring observables.
 
-* :meth:`~.Device.post_expectations`: for any setup/code that must be executed after measuring observables.
+* :meth:`~.Device.post_expval`: for any setup/code that must be executed after measuring observables.
 
 .. warning:: In advanced cases, the :meth:`~.Device.execute` method may be overwritten, to provide complete flexibility for handling device execution. However, this may have unintended side-effects and is not recommended - if possible, try implementing a suitable subset of the methods provided above.
 
@@ -175,19 +175,19 @@ where
 
   .. math:: \frac{d}{d\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
-  Note that if ``grad_recipe=None``, the default gradient recipe is :math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
+  Note that if ``grad_recipe = None``, the default gradient recipe is :math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
 
 The user can then import this operation directly from your plugin, and use it when defining a QNode:
 
 .. code-block:: python
 
     import openqml as qm
-    from MyModule.MySubModule import SqrtX
+    from MyModule.MySubModule import Ising
 
     @qnode(dev1)
-    def my_qfunc(x):
-        qm.Hadamard(0)
-        SqrtX(0)
+    def my_qfunc(phi):
+        qm.Hadamard(wires=0)
+        Ising(phi, wires=0)
         return qm.expval.PauliZ(0)
 
 In this case, as the plugin is providing a custom operation not supported by OpenQML, it is recommended that the plugin unittests **do** provide tests to ensure that OpenQML returns the correct gradient for the custom operations.

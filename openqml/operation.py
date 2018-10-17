@@ -381,16 +381,16 @@ class Expectation(Operation):
     As with :class:`~.Operation`, the following class attributes must be
     defined for all expectations:
 
-    * :attr:`~.Expectation.num_params`
-    * :attr:`~.Expectation.num_wires`
-    * :attr:`~.Expectation.par_domain`
+    * :attr:`~.Operation.num_params`
+    * :attr:`~.Operation.num_wires`
+    * :attr:`~.Operation.par_domain`
 
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
     differentiation.
 
-    * :attr:`~.Expectation.grad_method`
-    * :attr:`~.Expectation.grad_recipe`
+    * :attr:`~.Operation.grad_method`
+    * :attr:`~.Operation.grad_recipe`
 
     Args:
         args (tuple[float, int, array, Variable]): Expectation parameters
