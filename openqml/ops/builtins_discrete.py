@@ -352,7 +352,7 @@ class BasisState(Operation):
 
     Args:
         n (list): prepares the basis state :math:`\ket{n}`, where ``n`` is a
-            list of integers from the set :math:`\{0, 1\}`
+            list of integers from the set :math:`\{0, 1\}`, i.e., if :math:`n=[0,1,0]`, prepares the state :math:`|010\rangle`.
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
