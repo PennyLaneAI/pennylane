@@ -165,7 +165,7 @@ def _flatten(x):
     Args:
         x (array, Iterable, other): each element of the Iterable may be of the same types as x
 
-    Yieds:
+    Yields:
         other: elements of x in depth-first order
     """
     if isinstance(x, np.ndarray):
