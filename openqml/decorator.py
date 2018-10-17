@@ -34,7 +34,7 @@ Example:
     result = my_quantum_function(0.543)
 
 To become a valid QNode, the user-defined function must consist of
-only OpenQML operators and expectation values (one per line), contain
+only OpenQML operations and expectation values (one per line), contain
 no classical processing or functions, and must end with the measurement
 of a single or tuple of expectation values.
 

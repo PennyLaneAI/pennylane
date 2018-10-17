@@ -29,7 +29,7 @@ as the conventions chosen for their implementation.
     supports the required OpenQML built-in operations defined here,
     by including them in your device ``_operation_map``.
 
-    If the convention differs between the built-in OpenQML operator
+    If the convention differs between the built-in OpenQML operation
     and the corresponding operation in the targeted framework, ensure that the
     conversion between the two conventions takes places automatically
     by the plugin device.
