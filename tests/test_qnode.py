@@ -183,7 +183,7 @@ class BasicTest(BaseTest):
         @qm.qnode(self.dev1)
         def qf(x):
             return qm.expval.X(0)
-        with self.assertRaisesRegex(DeviceError, 'Observable [a-zA-Z]+ not supported on device'):
+        with self.assertRaisesRegex(DeviceError, 'Expectation [a-zA-Z]+ not supported on device'):
             qf(par)
 
         #---------------------------------------------------------

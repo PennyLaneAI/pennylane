@@ -38,8 +38,8 @@ user interface:
 
 .. autosummary::
     short_name
-    gates
-    observables
+    operations
+    expectations
     capabilities
     supported
     execute
@@ -51,8 +51,8 @@ Abstract methods and attributes
 The following methods and attributes must be defined for all devices:
 
 .. autosummary::
-    _operator_map
-    _observable_map
+    _operation_map
+    _expectation_map
     apply
     expectation
 
@@ -61,8 +61,8 @@ In addition, the following may also be optionally defined:
 .. autosummary::
     pre_apply
     post_apply
-    pre_expectations
-    post_expectations
+    pre_expval
+    post_expval
     execution_context
 
 
@@ -135,34 +135,34 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractproperty
-    def _operator_map(self):
-        """A dictionary {str: val} that maps OpenQML operator names to
-        the corresponding operator in the device."""
+    def _operation_map(self):
+        """A dictionary {str: val} that maps OpenQML operation names to
+        the corresponding operation in the device."""
         raise NotImplementedError
 
     @abc.abstractproperty
-    def _observable_map(self):
-        """A dictionary {str: val} that maps OpenQML observable names to
-        the corresponding observable in the device."""
+    def _expectation_map(self):
+        """A dictionary {str: val} that maps OpenQML expectation names to
+        the corresponding expectation in the device."""
         raise NotImplementedError
 
     @property
-    def gates(self):
-        """Get the supported gate set.
+    def operations(self):
+        """Get the supported set of operations.
 
         Returns:
-            set[str]: the set of OpenQML operator names the device supports.
+            set[str]: the set of OpenQML operation names the device supports.
         """
-        return set(self._operator_map.keys())
+        return set(self._operation_map.keys())
 
     @property
-    def observables(self):
-        """Get the supported observables.
+    def expectations(self):
+        """Get the supported set of expectations.
 
         Returns:
-            set[str]: the set of OpenQML observable names the device supports.
+            set[str]: the set of OpenQML expectation names the device supports.
         """
-        return set(self._observable_map.keys())
+        return set(self._expectation_map.keys())
 
     @classmethod
     def capabilities(cls):
@@ -175,7 +175,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, observe):
+    def execute(self, queue, expectation):
         """Apply a queue of quantum operations to the device, and then measure the given expectation values.
 
         Instead of overwriting this, consider implementing a suitable subset of
@@ -184,38 +184,38 @@ class Device(abc.ABC):
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
-            observe (Iterable[~.operation.Expectation]): expectation values to measure and return.
+            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return.
 
         Returns:
             array[float]: expectation value(s)
         """
-        self.check_validity(queue, observe)
+        self.check_validity(queue, expectation)
         with self.execution_context():
             self.pre_apply()
             for operation in queue:
                 self.apply(operation.name, operation.wires, operation.parameters)
             self.post_apply()
 
-            self.pre_expectations()
-            expectations = [self.expectation(observable.name, observable.wires, observable.parameters) for observable in observe]
-            self.post_expectations()
+            self.pre_expval()
+            expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
+            self.post_expval()
 
             return np.array(expectations)
 
     def pre_apply(self):
-        """Called during :meth:`execute` before the individual gates are executed."""
+        """Called during :meth:`execute` before the individual operations are executed."""
         pass
 
     def post_apply(self):
-        """Called during :meth:`execute` after the individual gates have been executed."""
+        """Called during :meth:`execute` after the individual operations have been executed."""
         pass
 
-    def pre_expectations(self):
-        """Called during :meth:`execute` before the individual observables are executed."""
+    def pre_expval(self):
+        """Called during :meth:`execute` before the individual expectations are executed."""
         pass
 
-    def post_expectations(self):
-        """Called during :meth:`execute` after the individual observables have been executed."""
+    def post_expval(self):
+        """Called during :meth:`execute` after the individual expectations have been executed."""
         pass
 
     def execution_context(self):
@@ -236,50 +236,50 @@ class Device(abc.ABC):
         return MockContext()
 
     def supported(self, name):
-        """Checks if an operation or observable is supported by this device.
+        """Checks if an operation or expectation is supported by this device.
 
         Args:
-            name (str): name of the operation or observable
+            name (str): name of the operation or expectation
 
         Returns:
             bool: True iff it is supported
         """
-        return name in self.gates.union(self.observables)
+        return name in self.operations.union(self.expectations)
 
-    def check_validity(self, queue, observe):
-        """Check whether the operations and observables are supported by the device.
+    def check_validity(self, queue, expectations):
+        """Check whether the operations and expectations are supported by the device.
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
-            observe (Iterable[~.operation.Expectation]): expectation values to measure and return.
+            expectations (Iterable[~.operation.Expectation]): expectation values to measure and return.
         """
         for operation in queue:
             if not self.supported(operation.name):
                 raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
 
-        for observable in observe:
-            if not self.supported(observable.name):
-                raise DeviceError("Observable {} not supported on device {}".format(observable.name, self.short_name))
+        for expectation in expectations:
+            if not self.supported(expectation.name):
+                raise DeviceError("Expectation {} not supported on device {}".format(expectation.name, self.short_name))
 
     @abc.abstractmethod
-    def apply(self, gate_name, wires, par):
+    def apply(self, op_name, wires, par):
         """Apply a quantum operation.
 
         Args:
-            gate_name (str): name of the operation
+            op_name (str): name of the operation
             wires (Sequence[int]): subsystems the operation is applied on
             par (tuple): parameters for the operation
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def expectation(self, observable, wires, par):
+    def expval(self, expectation, wires, par):
         """Expectation value of an observable.
 
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is measured on
-            par (tuple): parameters for the observable
+            expectation (str): name of the expectation to evaluate
+            wires (Sequence[int]): subsystems the expectation is measured on
+            par (tuple): parameters for the expectation
 
         Returns:
             float: expectation value

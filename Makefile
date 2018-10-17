@@ -4,7 +4,7 @@ COVERAGE3 := $(shell which coverage3 2>/dev/null)
 PYTHON := python3
 COVERAGE := coverage3
 COPTS := run --append
-TESTRUNNER := -m unittest discover tests
+TESTRUNNER := -m pytest tests
 
 .PHONY: help
 help:

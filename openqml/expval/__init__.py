@@ -34,9 +34,9 @@ as the conventions chosen for their implementation.
 
     If writing a plugin device for OpenQML, make sure that your plugin
     supports the required OpenQML built-in expectations defined here,
-    by including them in your device ``_observable_map``.
+    by including them in your device ``_expectation_map``.
 
-    If the convention differs between the built-in OpenQML operator
+    If the convention differs between the built-in OpenQML expectation
     and the corresponding expectation in the targeted framework, ensure that the
     conversion between the two conventions takes places automatically
     by the plugin device.

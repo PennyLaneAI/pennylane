@@ -52,16 +52,16 @@ class DeviceTest(BaseTest):
             self.assertEqual(dev.short_name, name)
 
     def test_supported(self):
-        """check that a nonempty set of gates/observables are supported"""
+        """check that a nonempty set of operations/expectations are supported"""
         self.logTestName()
 
         for dev in self.dev.values():
-            gates = dev.gates
-            obs = dev.observables
-            self.assertTrue(len(gates) > 0)
-            self.assertTrue(len(obs) > 0)
+            ops = dev.operations
+            exps = dev.expectations
+            self.assertTrue(len(ops) > 0)
+            self.assertTrue(len(exps) > 0)
 
-            for op in gates.union(obs):
+            for op in ops.union(exps):
                 self.assertTrue(dev.supported(op))
 
     def test_capabilities(self):
@@ -73,20 +73,20 @@ class DeviceTest(BaseTest):
             self.assertTrue(isinstance(caps, dict))
 
     def test_execute(self):
-        """check that execution works on supported gates/observables"""
+        """check that execution works on supported operations/expectations"""
         self.logTestName()
 
         for dev in self.dev.values():
-            gates = dev.gates
-            obs = dev.observables
+            ops = dev.operations
+            exps = dev.expectations
 
             queue = []
-            for g in gates:
-                log.debug('Queueing gate %s...', g)
-                op = qm.ops.__getattribute__(g)
+            for o in ops:
+                log.debug('Queueing gate %s...', o)
+                op = qm.ops.__getattribute__(o)
 
                 if op.par_domain == 'A':
-                    # skip gates with array parameters, as there are too
+                    # skip operations with array parameters, as there are too
                     # many constraints to consider. These should be tested
                     # directly within the plugin tests.
                     continue
@@ -106,18 +106,18 @@ class DeviceTest(BaseTest):
             self.assertTrue(isinstance(expval, np.ndarray))
 
     def test_validity(self):
-        """check that execution throws error on unsupported gates/observables"""
+        """check that execution throws error on unsupported operations/expectations"""
         self.logTestName()
 
         for dev in self.dev.values():
-            gates = dev.gates
-            all_gates = {m[0] for m in inspect.getmembers(qm.ops, inspect.isclass)}
+            ops = dev.operations
+            all_ops = {m[0] for m in inspect.getmembers(qm.ops, inspect.isclass)}
 
-            for g in all_gates-gates:
-                op = qm.ops.__getattribute__(g)
+            for o in all_ops-ops:
+                op = qm.ops.__getattribute__(o)
 
                 if op.par_domain == 'A':
-                    # skip gates with array parameters, as there are too
+                    # skip operations with array parameters, as there are too
                     # many constraints to consider. These should be tested
                     # directly within the plugin tests.
                     continue
@@ -136,14 +136,14 @@ class DeviceTest(BaseTest):
                     else:
                         expval = dev.execute(queue, [qm.expval.PauliX(0, do_queue=False)])
 
-            obs = dev.observables
-            all_obs = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
+            exps = dev.expectations
+            all_exps = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
 
-            for g in all_obs-obs:
+            for g in all_exps-exps:
                 op = qm.expval.__getattribute__(g)
 
                 if op.par_domain == 'A':
-                    # skip observables with array parameters, as there are too
+                    # skip expectations with array parameters, as there are too
                     # many constraints to consider. These should be tested
                     # directly within the plugin tests.
                     continue

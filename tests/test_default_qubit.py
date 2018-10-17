@@ -19,7 +19,7 @@ import unittest
 import inspect
 import logging as log
 
-import numpy as np
+from openqml import numpy as np
 
 from defaults import openqml as qm, BaseTest
 from openqml.plugins.default_qubit import (spectral_decomposition_qubit,
@@ -191,17 +191,17 @@ class TestDefaultQubitDevice(BaseTest):
     def setUp(self):
         self.dev = DefaultQubit(wires=2, shots=0)
 
-    def test_operator_map(self):
+    def test_operation_map(self):
         """Test that default qubit device supports all OpenQML discrete gates."""
         self.logTestName()
 
-        self.assertEqual(set(qm.ops.builtins_discrete.__all__), set(self.dev._operator_map))
+        self.assertEqual(set(qm.ops.builtins_discrete.__all__), set(self.dev._operation_map))
 
-    def test_observable_map(self):
+    def test_expectation_map(self):
         """Test that default qubit device supports all OpenQML discrete expectations."""
         self.logTestName()
 
-        self.assertEqual(set(qm.expval.builtins_discrete.__all__), set(self.dev._observable_map))
+        self.assertEqual(set(qm.expval.builtins_discrete.__all__), set(self.dev._expectation_map))
 
     def test_expand_one(self):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
@@ -275,7 +275,7 @@ class TestDefaultQubitDevice(BaseTest):
         """Test the the correct matrix is returned given an operation name"""
         self.logTestName()
 
-        for name, fn in {**self.dev._operator_map, **self.dev._observable_map}.items():
+        for name, fn in {**self.dev._operation_map, **self.dev._expectation_map}.items():
             try:
                 op = qm.ops.__getattribute__(name)
             except AttributeError:
@@ -307,16 +307,16 @@ class TestDefaultQubitDevice(BaseTest):
         self.logTestName()
         self.dev.reset()
 
-        # loop through all supported operators
-        for gate_name, fn in self.dev._operator_map.items():
+        # loop through all supported operations
+        for gate_name, fn in self.dev._operation_map.items():
             log.debug("\tTesting %s gate...", gate_name)
 
             # start in the state |00>
             self.dev._state = np.array([1, 0, 0, 0])
 
-            # get the equivalent openqml operator class
+            # get the equivalent openqml operation class
             op = qm.ops.__getattribute__(gate_name)
-            # the list of wires to apply the operator to
+            # the list of wires to apply the operation to
             w = list(range(op.num_wires))
 
             if op.par_domain == 'A':
@@ -377,13 +377,13 @@ class TestDefaultQubitDevice(BaseTest):
         self.dev.reset()
 
         # loop through all supported observables
-        for name, fn in self.dev._observable_map.items():
+        for name, fn in self.dev._expectation_map.items():
             log.debug("\tTesting %s observable...", name)
 
             # start in the state |00>
             self.dev._state = np.array([1, 0, 1, 1])/np.sqrt(3)
 
-            # get the equivalent openqml operator class
+            # get the equivalent openqml operation class
             op = qm.expval.__getattribute__(name)
 
             if op.par_domain == 'A':
@@ -449,7 +449,7 @@ class TestDefaultQubitIntegration(BaseTest):
         self.logTestName()
         dev = qm.device('default.qubit', wires=2)
 
-        gates = set(dev._operator_map.keys())
+        gates = set(dev._operation_map.keys())
         all_gates = {m[0] for m in inspect.getmembers(qm.ops, inspect.isclass)}
 
         for g in all_gates - gates:
@@ -480,7 +480,7 @@ class TestDefaultQubitIntegration(BaseTest):
         self.logTestName()
         dev = qm.device('default.qubit', wires=2)
 
-        obs = set(dev._observable_map.keys())
+        obs = set(dev._expectation_map.keys())
         all_obs = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
 
         for g in all_obs - obs:
@@ -497,7 +497,7 @@ class TestDefaultQubitIntegration(BaseTest):
                 x = prep_par(x, op)
                 return op(*x, wires=wires)
 
-            with self.assertRaisesRegex(qm.DeviceError, "Observable {} not supported on device default.qubit".format(g)):
+            with self.assertRaisesRegex(qm.DeviceError, "Expectation {} not supported on device default.qubit".format(g)):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 
@@ -547,7 +547,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
         dev = qm.device('default.qubit', wires=2)
 
-        for g, qop in dev._operator_map.items():
+        for g, qop in dev._operation_map.items():
             log.debug('\tTesting gate %s...', g)
             self.assertTrue(dev.supported(g))
             dev.reset()
@@ -609,7 +609,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
         dev = qm.device('default.qubit', wires=2)
 
-        for g, qop in dev._observable_map.items():
+        for g, qop in dev._expectation_map.items():
             log.debug('\tTesting observable %s...', g)
             self.assertTrue(dev.supported(g))
             dev.reset()
