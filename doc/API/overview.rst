@@ -1,3 +1,5 @@
+.. _developer_overview:
+
 Overview of the developer API
 =============================
 

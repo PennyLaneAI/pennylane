@@ -102,8 +102,8 @@ Summary
    CVOperation
    CVExpectation
 
-Details
--------
+Code details
+^^^^^^^^^^^^
 """
 import abc
 import numbers

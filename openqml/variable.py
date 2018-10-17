@@ -19,24 +19,62 @@ Quantum circuit parameters
 
 .. currentmodule:: openqml.variable
 
+This module contains the :class:`Variable` class, which is used to track
+and identify :class:`~openqml.qnode.QNode` parameters.
 
-Classes
--------
+The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
+:meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
+method is called, which performs a 'just-in-time' circuit construction
+on the :mod:`~openqml._device.Device`. As part of this construction, all arguments
+and keyword arguments are wrapped in a `Variable` as follows:
 
-.. autosummary::
-   Variable
+* All positional arguments in ``*args``, including those with multiple dimensions, are
+  flattened to a single list, and each element wrapped as a Variable instance,
+  indexed by its position in the list.
 
-----
+  The list is then unflattened back to the original shape of ``*args``.
+  This allows OpenQML to inspect the shape and type of arguments
+  the user wishes to pass.
+
+* The same is done for each keyword argument in ``**kwargs``, the only
+  difference being that the name of each contained Variable corresponds
+  with the keyword name.
+
+As a result, the device stores a list of operations and expectations, with all
+free parameters stored as Variable instances.
+
+.. note::
+    The QNode can be differentiated with respect to positional arguments,
+    but *not* with respect to keyword arguments. This makes keyword arguments
+    a natural location for data placeholders.
+
+.. important::
+    If the user defines a keyword argument, they then always have to pass the
+    corresponding variable as a keyword argument, otherwise it won't register.
+
+For each successive QNode execution, the user-provided arguments and keyword
+arguments are stored in the :attr:`Variable.free_param_values` and
+:attr:`Variable.kwarg_values` list and dictionaries respectively; these are
+then returned by :meth:`Variable.val`, using its ``idx`` value, and, for
+keyword arguments, its ``name``, to return the correct value to the operation.
+
+.. note::
+    The :meth:`Operation.parameters() <openqml.operation.Operation.parameters>`
+    property automates the process of unpacking the Variable value -
+    :meth:`Variable.val` should not need to be accessed outside of advanced usage.
+
+
+Code details
+~~~~~~~~~~~~
 """
 import logging
 import copy
-import collections
 
 logging.getLogger()
 
 
 class Variable:
-    """Free parameter reference.
+    """A reference class to dynamically track and update circuit parameters.
 
     Represents a placeholder variable. This can either be a free quantum
     circuit parameter (with a non-fixed value) times an optional scalar multiplier,
@@ -51,11 +89,12 @@ class Variable:
         operations other than scalar multiplication.
 
     Args:
-      idx  (int): parameter index >= 0
-      name (str): name of the variable (optional)
+        idx  (int): parameter index >= 0
+        name (str): name of the variable (optional)
     """
+    # pylint: disable=too-few-public-methods
     free_param_values = None  #: array[float]: current free parameter values, set in :meth:`QNode.evaluate`
-    kwarg_values = None # dictionary containing the keyword argument values.
+    kwarg_values = None #: dict: dictionary containing the keyword argument values, set in :meth:`QNode.evaluate`
 
     def __init__(self, idx=None, name=None):
         self.idx = idx    #: int: parameter index
@@ -87,6 +126,7 @@ class Variable:
         Returns:
             float: current value of the Variable
         """
+        # pylint: disable=unsubscriptable-object
         if self.name is None:
             # The variable is a placeholder for a positional argument
             value = self.free_param_values[self.idx] * self.mult

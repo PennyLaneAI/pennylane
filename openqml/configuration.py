@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Configuration module
-====================
+Configuration
+=============
 
 **Module name:** :mod:`openqml.configuration`
 
@@ -112,7 +112,7 @@ Helper methods
     safe_get
 
 Code details
-------------
+~~~~~~~~~~~~
 
 .. currentmodule:: openqml.configuration
 
