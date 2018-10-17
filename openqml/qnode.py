@@ -50,7 +50,7 @@ constraints:
   :mod:`operations <openqml.ops>`, one per line.
 
 * The qfunc must always return either a single or a tuple of
-  :mod:`expectation values <openqml.expval>`
+  :mod:`expectation values <openqml.expval>`.
 
 * Classical processing of function arguments, either by arithmetic operations
   or external functions, is not allowed. One current exception is simple scalar
@@ -165,7 +165,7 @@ def _flatten(x):
     Args:
         x (array, Iterable, other): each element of the Iterable may be of the same types as x
 
-    Yieds:
+    Yields:
         other: elements of x in depth-first order
     """
     if isinstance(x, np.ndarray):
