@@ -15,7 +15,7 @@
 CV quantum operations
 =====================
 
-.. currentmodule:: openqml.ops.builtins_continuous
+.. currentmodule:: openqml.ops.cv
 
 This section contains the available built-in continuous-variable
 quantum operations supported by OpenQML, as well as their conventions.

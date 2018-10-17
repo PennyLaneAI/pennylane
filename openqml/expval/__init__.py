@@ -45,10 +45,10 @@ as the conventions chosen for their implementation.
 .. rst-class:: contents local topic
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   expval/discrete
-   expval/continuous
+    expval/qubit
+    expval/cv
 """
 
 from .qubit import *

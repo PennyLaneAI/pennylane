@@ -15,7 +15,7 @@
 CV quantum expectations
 =======================
 
-.. currentmodule:: openqml.expval.builtins_continuous
+.. currentmodule:: openqml.expval.cv
 
 This section contains the available built-in continuous-variable
 quantum operations supported by OpenQML, as well as their conventions.
