@@ -110,9 +110,9 @@ from .decorator import qnode
 
 # overwrite module docstrings
 numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
-expval.__doc__ = "Contains quantum expectations."
-ops.__doc__ = "Contains quantum operations (these can also be imported directly from OpenQML)."
-optimize.__doc__ = "Various nuclear optimizers (these can also be imported directly from OpenQML)."
+# expval.__doc__ = "Contains quantum expectations."
+# ops.__doc__ = "Contains quantum operations (these can also be imported directly from OpenQML)."
+# optimize.__doc__ = "Various nuclear optimizers (these can also be imported directly from OpenQML)."
 
 
 # set up logging
