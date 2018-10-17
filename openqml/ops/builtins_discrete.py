@@ -312,9 +312,9 @@ class Rot(Operation):
     r"""Rot(phi, theta, rho, wires)
     Arbitrary single qubit rotation
 
-    .. math:: R(\phi,\theta,\rho) = RZ(\phi)RY(\theta)RZ(\rho)= \begin{bmatrix}
-                e^{-i(\rho+\phi)/2}\cos(\theta/2) & -e^{i(\rho-\phi)/2}\sin(\theta/2) \\
-                e^{-i(\rho-\phi)/2}\sin(\theta/2) & e^{i(\rho+\phi)/2}\cos(\theta/2)
+    .. math:: R(\phi,\theta,\rho) = RZ(\rho)RY(\theta)RZ(\phi)= \begin{bmatrix}
+                e^{-i(\phi+\rho)/2}\cos(\theta/2) & -e^{i(\phi-\rho)/2}\sin(\theta/2) \\
+                e^{-i(\phi-\rho)/2}\sin(\theta/2) & e^{i(\phi+\rho)/2}\cos(\theta/2)
             \end{bmatrix}.
 
     **Details:**
@@ -351,12 +351,13 @@ class BasisState(Operation):
     * Gradient recipe: None (integer parameters not supported)
 
     Args:
-        n (int): prepares the state :math:`\ket{n}`
+        n (list): prepares the basis state :math:`\ket{n}`, where ``n`` is a
+            list of integers from the set :math:`\{0, 1\}`
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
     num_wires = 0
-    par_domain = 'N'
+    par_domain = 'A'
     grad_method = None
 
 

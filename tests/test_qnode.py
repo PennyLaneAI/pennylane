@@ -191,7 +191,7 @@ class BasicTest(BaseTest):
 
         # undifferentiable operation
         def qf(x):
-            qm.BasisState(x, [0,1])
+            qm.BasisState(np.array([x, 0]), [0,1])
             qm.RX(x, [0])
             return qm.expval.PauliZ(0)
         q = qm.QNode(qf, self.dev2)

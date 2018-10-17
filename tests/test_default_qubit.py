@@ -328,12 +328,14 @@ class TestDefaultQubitDevice(BaseTest):
                     p = [U]
                     w = [0]
                     expected_out = np.kron(U @ np.array([1, 0]), np.array([1, 0]))
+                elif gate_name == 'BasisState':
+                    p = [np.array([1, 1])]
+                    expected_out = np.zeros([2**self.dev.num_wires], dtype=np.complex128)
+                    expected_out[3] = 1.
+
             elif op.par_domain == 'N':
                 # the parameter is an integer
                 p = [1, 3, 4][:op.num_params]
-                if gate_name == 'BasisState':
-                    expected_out = np.zeros([2**self.dev.num_wires], dtype=np.complex128)
-                    expected_out[p[0]] = 1.
             else:
                 # the parameter is a float
                 p = [0.432423, -0.12312, 0.324][:op.num_params]
@@ -365,8 +367,8 @@ class TestDefaultQubitDevice(BaseTest):
             p = [np.array([1, 0, 1, 1, 1])/np.sqrt(3)]
             self.dev.apply('QubitStateVector', wires=[0, 1], par=[p])
 
-        with self.assertRaisesRegex(ValueError, "basis state must be a positive integer"):
-            self.dev.apply('BasisState', wires=[0, 1], par=[2.5])
+        with self.assertRaisesRegex(ValueError, "BasisState parameter must be an array of 0/1 integers"):
+            self.dev.apply('BasisState', wires=[0, 1], par=[np.array([0, 1, 4.2])])
 
         with self.assertRaisesRegex(ValueError, "This plugin supports only one- and two-qubit gates."):
             self.dev.apply('QubitUnitary', wires=[0, 1, 2], par=[U2])
@@ -582,7 +584,7 @@ class TestDefaultQubitIntegration(BaseTest):
                     out_state = x[0]
                 elif g == 'BasisState':
                     out_state = np.zeros([2**dev.num_wires], dtype=np.complex128)
-                    out_state[x[0]] = 1.
+                    out_state[3] = 1.
                 else:
                     out_state = O @ dev._state
 
@@ -593,7 +595,7 @@ class TestDefaultQubitIntegration(BaseTest):
                 p = np.array([1, 0, 0, 1])/np.sqrt(2)
                 self.assertAllEqual(circuit(p), reference(p))
             elif g == 'BasisState':
-                p = 2
+                p = np.array([1, 1])
                 self.assertAllEqual(circuit(p), reference(p))
             elif g == 'QubitUnitary':
                 self.assertAllEqual(circuit(U), reference(U))
