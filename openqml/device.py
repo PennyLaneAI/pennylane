@@ -61,8 +61,8 @@ In addition, the following may also be optionally defined:
 .. autosummary::
     pre_apply
     post_apply
-    pre_expectations
-    post_expectations
+    pre_expval
+    post_expval
     execution_context
 
 
@@ -200,9 +200,9 @@ class Device(abc.ABC):
                 self.apply(operation.name, operation.wires, operation.parameters)
             self.post_apply()
 
-            self.pre_expectations()
+            self.pre_expval()
             expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
-            self.post_expectations()
+            self.post_expval()
 
             return np.array(expectations)
 
@@ -214,11 +214,11 @@ class Device(abc.ABC):
         """Called during :meth:`execute` after the individual operations have been executed."""
         pass
 
-    def pre_expectations(self):
+    def pre_expval(self):
         """Called during :meth:`execute` before the individual expectations are executed."""
         pass
 
-    def post_expectations(self):
+    def post_expval(self):
         """Called during :meth:`execute` after the individual expectations have been executed."""
         pass
 
