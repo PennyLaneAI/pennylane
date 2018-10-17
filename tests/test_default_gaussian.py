@@ -262,7 +262,7 @@ class TestDefaultGaussianDevice(BaseTest):
     def setUp(self):
         self.dev = DefaultGaussian(wires=2, shots=0, hbar=hbar)
 
-    def test_operator_map(self):
+    def test_operation_map(self):
         """Test that default Gaussian device supports all OpenQML Gaussian CV gates."""
         self.logTestName()
 
@@ -275,7 +275,7 @@ class TestDefaultGaussianDevice(BaseTest):
                        'Kerr'}
 
         self.assertEqual(set(qm.ops.builtins_continuous.__all__) - nonGaussian,
-                         set(self.dev._operator_map))
+                         set(self.dev._operation_map))
 
     def test_expectation_map(self):
         """Test that default Gaussian device supports all OpenQML Gaussian continuous expectations."""
@@ -287,8 +287,8 @@ class TestDefaultGaussianDevice(BaseTest):
         """Test the application of gates to a state"""
         self.logTestName()
 
-        # loop through all supported operators
-        for gate_name, fn in self.dev._operator_map.items():
+        # loop through all supported operations
+        for gate_name, fn in self.dev._operation_map.items():
             log.debug("\tTesting %s gate...", gate_name)
             self.dev.reset()
 
@@ -300,9 +300,9 @@ class TestDefaultGaussianDevice(BaseTest):
             self.dev.apply('DisplacedSqueezedState', wires=[0], par=[a, r, phi])
             self.dev.apply('DisplacedSqueezedState', wires=[1], par=[a, r, phi])
 
-            # get the equivalent openqml operator class
+            # get the equivalent openqml operation class
             op = qm.ops.__getattribute__(gate_name)
-            # the list of wires to apply the operator to
+            # the list of wires to apply the operation to
             w = list(range(op.num_wires))
 
             if op.par_domain == 'A':
@@ -431,7 +431,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         self.logTestName()
         dev = qm.device('default.gaussian', wires=2)
 
-        gates = set(dev._operator_map.keys())
+        gates = set(dev._operation_map.keys())
         all_gates = {m[0] for m in inspect.getmembers(qm.ops, inspect.isclass)}
 
         for g in all_gates - gates:
@@ -526,7 +526,7 @@ class TestDefaultGaussianIntegration(BaseTest):
 
         dev = qm.device('default.gaussian', wires=2)
 
-        for g, qop in dev._operator_map.items():
+        for g, qop in dev._operation_map.items():
             log.debug('\tTesting gate %s...', g)
             self.assertTrue(dev.supported(g))
             dev.reset()

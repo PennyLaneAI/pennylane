@@ -227,7 +227,7 @@ class DefaultQubit(Device):
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
     # the internal device state directly.
-    _operator_map = {
+    _operation_map = {
         'BasisState': None,
         'QubitStateVector': None,
         'QubitUnitary': unitary,
@@ -312,7 +312,7 @@ class DefaultQubit(Device):
         Returns:
           array: matrix representation.
         """
-        A = {**self._operator_map, **self._expectation_map}[op_name]
+        A = {**self._operation_map, **self._expectation_map}[op_name]
         if not callable(A):
             return A
         return A(*par)

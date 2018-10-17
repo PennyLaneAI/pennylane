@@ -51,7 +51,7 @@ Abstract methods and attributes
 The following methods and attributes must be defined for all devices:
 
 .. autosummary::
-    _operator_map
+    _operation_map
     _expectation_map
     apply
     expectation
@@ -139,9 +139,9 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractproperty
-    def _operator_map(self):
-        """A dictionary {str: val} that maps OpenQML operator names to
-        the corresponding operator in the device."""
+    def _operation_map(self):
+        """A dictionary {str: val} that maps OpenQML operation names to
+        the corresponding operation in the device."""
         raise NotImplementedError
 
     @abc.abstractproperty
@@ -155,9 +155,9 @@ class Device(abc.ABC):
         """Get the supported set of operations.
 
         Returns:
-            set[str]: the set of OpenQML operator names the device supports.
+            set[str]: the set of OpenQML operation names the device supports.
         """
-        return set(self._operator_map.keys())
+        return set(self._operation_map.keys())
 
     @property
     def expectations(self):
