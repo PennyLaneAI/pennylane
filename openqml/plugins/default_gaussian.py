@@ -26,7 +26,7 @@ The default plugin is meant to be used as a template for writing CV OpenQML
 device plugins for new backends.
 
 It implements all the :class:`~openqml.device.Device` methods as well as all built-in
-continuous-variable Gaussian gates and observables, and provides
+continuous-variable Gaussian operations and expectations, and provides
 a very simple simulation of a Gaussian-based quantum circuit architecture.
 
 Gates and operations
@@ -511,7 +511,7 @@ class DefaultGaussian(Device):
     version = '0.1.0'
     author = 'Xanadu Inc.'
 
-    _operator_map = {
+    _operation_map = {
         'Beamsplitter': beamsplitter,
         'ControlledAddition': controlled_addition,
         'ControlledPhase': controlled_phase,
@@ -527,7 +527,7 @@ class DefaultGaussian(Device):
         'GaussianState': gaussian_state
     }
 
-    _observable_map = {
+    _expectation_map = {
         'PhotonNumber': photon_number,
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
@@ -555,18 +555,18 @@ class DefaultGaussian(Device):
             if wires != list(range(self.num_wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
-            self._state = self._operator_map[gate_name](*par, hbar=self.hbar)
+            self._state = self._operation_map[gate_name](*par, hbar=self.hbar)
             return # we are done here
 
         if 'State' in gate_name:
             # set the new device state
-            mu, cov = self._operator_map[gate_name](*par, hbar=self.hbar)
+            mu, cov = self._operation_map[gate_name](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
             self._state = set_state(self._state, wires[0], mu, cov)
             return # we are done here
 
         # get the symplectic matrix
-        S = self._operator_map[gate_name](*par)
+        S = self._operation_map[gate_name](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:
@@ -620,13 +620,13 @@ class DefaultGaussian(Device):
 
         return S2
 
-    def expectation(self, observable, wires, par):
+    def expval(self, expectation, wires, par):
         mu, cov = self.reduced_state(wires)
 
-        if observable == 'PolyXP':
+        if expectation == 'PolyXP':
             mu, cov = self._state
 
-        ev, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
+        ev, var = self._expectation_map[expectation](mu, cov, wires, par, hbar=self.hbar)
 
         if self.shots != 0:
             # estimate the ev
