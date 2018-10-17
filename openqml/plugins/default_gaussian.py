@@ -26,7 +26,7 @@ The default plugin is meant to be used as a template for writing CV OpenQML
 device plugins for new backends.
 
 It implements all the :class:`~openqml.device.Device` methods as well as all built-in
-continuous-variable Gaussian gates and expectations, and provides
+continuous-variable Gaussian operations and expectations, and provides
 a very simple simulation of a Gaussian-based quantum circuit architecture.
 
 Gates and operations
