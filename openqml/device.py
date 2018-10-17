@@ -161,7 +161,7 @@ class Device(abc.ABC):
 
     @property
     def expectations(self):
-        """Get the supported expectations.
+        """Get the supported set of expectations.
 
         Returns:
             set[str]: the set of OpenQML expectation names the device supports.
