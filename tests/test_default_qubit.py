@@ -19,7 +19,7 @@ import unittest
 import inspect
 import logging as log
 
-import numpy as np
+from openqml import numpy as np
 
 from defaults import openqml as qm, BaseTest
 from openqml.plugins.default_qubit import (spectral_decomposition_qubit,

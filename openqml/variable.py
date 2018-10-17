@@ -32,8 +32,6 @@ import logging
 import copy
 import collections
 
-import numpy as np
-
 logging.getLogger()
 
 
