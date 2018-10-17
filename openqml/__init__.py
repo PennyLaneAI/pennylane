@@ -29,10 +29,11 @@ classes that will be used by a majority of users. For a good introduction
 on the user-interface of OpenQML, have a look at our tutorials.
 
 * The device loader: :func:`openqml.device`
-* The QNodes and QFuncs: :mod:`openqml.qnode`
-* The QNode decorator: :mod:`openqml.decorator`
+* The quantum node object: :mod:`openqml.QNode <openqml.qnode>`
+* The QNode decorator: :mod:`openqml.qnode <openqml.decorator>`
 * Optimization methods: :mod:`openqml.optimize`
-* Configuration: :mod:`openqml.configuration`
+* Configuration: :mod:`openqml.Configuration <openqml.configuration>`
+* NumPy with support for automatic differentiation: :mod:`openqml.numpy <openqml.numpy>`
 
 **Core operations**
 
@@ -52,33 +53,35 @@ Used to develop new plugins for OpenQML - providing new devices
 for QNodes, or supporting new operations and expectations. For more
 details, see :ref:`developer_overview`.
 
-* The base Device class: :mod:`openqml._device`
+* The base Device class: :mod:`openqml.Device <openqml._device>`
 * Symbolic quantum operations: :mod:`openqml.operation`
 * Quantum circuit parameters: :mod:`openqml.variable`
 
-Top level classes
------------------
-
-.. note::
-
-    All operations and optimizers are also available as top level functions.
-    Expectations can be accessed via the :mod:`openqml.expval` module.
+Summary
+-------
 
 .. autosummary::
+    :template: modules.rst
+
     ~configuration.Configuration
     ~_device.Device
     ~_device.DeviceError
+    device
+    expval
+    grad
+    ~autograd.numpy
+    ops
+    optimize
     ~qnode.QNode
     ~decorator.qnode
     ~qnode.QuantumFunctionError
-
-Top level functions
--------------------
-
-.. autosummary::
-    device
-    grad
     version
+
+.. note::
+
+    All individual operations (contained in :mod:`~.ops`) and optimizers
+    (contained in :mod:`~.optimize`) may also be imported directly from OpenQML.
+    Expectation values, however, must be accessed via the :mod:`~.expval` module.
 
 Code details
 ~~~~~~~~~~~~
@@ -103,6 +106,13 @@ from ._version import __version__
 # NOTE: this has to be imported last,
 # otherwise it will clash with the .qnode import.
 from .decorator import qnode
+
+
+# overwrite module docstrings
+numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
+expval.__doc__ = "Contains quantum expectations."
+ops.__doc__ = "Contains quantum operations (these can also be imported directly from OpenQML)."
+optimize.__doc__ = "Various nuclear optimizers (these can also be imported directly from OpenQML)."
 
 
 # set up logging
