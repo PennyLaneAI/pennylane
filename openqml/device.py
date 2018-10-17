@@ -188,7 +188,7 @@ class Device(abc.ABC):
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
-            expectation (Iterable[~.operation.Expectation]): expectation values to measure and return.
+            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return.
 
         Returns:
             array[float]: expectation value(s)
