@@ -44,5 +44,5 @@ as the conventions chosen for their implementation.
    ops/continuous
 """
 
-from .builtins_continuous import *
-from .builtins_discrete import *
+from .cv import *
+from .qubit import *

@@ -195,13 +195,13 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that default qubit device supports all OpenQML discrete gates."""
         self.logTestName()
 
-        self.assertEqual(set(qm.ops.builtins_discrete.__all__), set(self.dev._operation_map))
+        self.assertEqual(set(qm.ops.qubit.__all__), set(self.dev._operation_map))
 
     def test_expectation_map(self):
         """Test that default qubit device supports all OpenQML discrete expectations."""
         self.logTestName()
 
-        self.assertEqual(set(qm.expval.builtins_discrete.__all__), set(self.dev._expectation_map))
+        self.assertEqual(set(qm.expval.qubit.__all__), set(self.dev._expectation_map))
 
     def test_expand_one(self):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
