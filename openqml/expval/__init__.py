@@ -51,5 +51,5 @@ as the conventions chosen for their implementation.
    expval/continuous
 """
 
-from .builtins_continuous import *
-from .builtins_discrete import *
+from .qubit import *
+from .cv import *

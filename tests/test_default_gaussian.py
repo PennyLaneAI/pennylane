@@ -274,13 +274,13 @@ class TestDefaultGaussianDevice(BaseTest):
                        'CubicPhase',
                        'Kerr'}
 
-        self.assertEqual(set(qm.ops.builtins_continuous.__all__) - nonGaussian,
+        self.assertEqual(set(qm.ops.cv.__all__) - nonGaussian,
                          set(self.dev._operation_map))
 
     def test_expectation_map(self):
         """Test that default Gaussian device supports all OpenQML Gaussian continuous expectations."""
         self.logTestName()
-        self.assertEqual(set(qm.expval.builtins_continuous.__all__)-{'Heterodyne'},
+        self.assertEqual(set(qm.expval.cv.__all__)-{'Heterodyne'},
                          set(self.dev._expectation_map))
 
     def test_apply(self):
