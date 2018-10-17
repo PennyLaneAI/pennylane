@@ -19,7 +19,7 @@ import unittest
 import inspect
 import logging as log
 
-import numpy as np
+from openqml import numpy as np
 from scipy.linalg import block_diag
 
 from defaults import openqml as qm, BaseTest
