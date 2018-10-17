@@ -52,6 +52,7 @@ Code details
 ~~~~~~~~~~~~
 """
 import logging as log
+import collections
 
 import numpy as np
 from scipy.linalg import expm, eigh
@@ -269,10 +270,15 @@ class DefaultQubit(Device):
                 raise ValueError('State vector must be of length 2**wires.')
             return
         elif gate_name == 'BasisState':
-            if int(par[0])-par[0] != 0. or par[0] >= 2**self.num_wires or par[0] < 0:
-                raise ValueError('Computational basis state must be a positive integer.')
+            # get computational basis state number
+            if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
+                raise ValueError("BasisState parameter must be an array of 0/1 integers.")
+
+            n = len(par[0])
+            num = int(np.sum(np.array(par[0])*2**np.arange(n-1, -1, -1)))
+
             self._state = np.zeros_like(self._state)
-            self._state[int(par[0])] = 1.
+            self._state[num] = 1.
             return
 
         A = self._get_operator_matrix(gate_name, par)
