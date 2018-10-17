@@ -37,9 +37,9 @@ Example
     @qm.qnode(dev1)
     def qfunc1(x):
         qm.RZ(x, wires=0)
-        qm.CNOT(0, wires=1)
+        qm.CNOT(wires=[0,1])
         qm.RY(x, wires=1)
-        return qm.expval.Z(0)
+        return qm.expval.PauliZ(0)
 
     result = qfunc1(0.543)
 
@@ -69,10 +69,10 @@ build a hybrid computation. For example,
     .. code-block:: python
 
         def qfunc1(x):
-        qm.RZ(x, wires=0)
-        qm.CNOT(0, wires=1)
-        qm.RY(x, wires=1)
-        return qm.expval.Z(0)
+            qm.RZ(x, wires=0)
+            qm.CNOT(wires=[0,1])
+            qm.RY(x, wires=1)
+            return qm.expval.PauliZ(0)
 
         qnode1 = qm.QNode(qfunc1, dev1)
         result = qnode1(0.543)
