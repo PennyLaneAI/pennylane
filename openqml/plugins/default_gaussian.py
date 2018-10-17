@@ -507,7 +507,7 @@ class DefaultGaussian(Device):
     version = '0.1.0'
     author = 'Xanadu Inc.'
 
-    _operator_map = {
+    _operation_map = {
         'Beamsplitter': beamsplitter,
         'ControlledAddition': controlled_addition,
         'ControlledPhase': controlled_phase,
@@ -551,18 +551,18 @@ class DefaultGaussian(Device):
             if wires != list(range(self.num_wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
-            self._state = self._operator_map[gate_name](*par, hbar=self.hbar)
+            self._state = self._operation_map[gate_name](*par, hbar=self.hbar)
             return # we are done here
 
         if 'State' in gate_name:
             # set the new device state
-            mu, cov = self._operator_map[gate_name](*par, hbar=self.hbar)
+            mu, cov = self._operation_map[gate_name](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
             self._state = set_state(self._state, wires[0], mu, cov)
             return # we are done here
 
         # get the symplectic matrix
-        S = self._operator_map[gate_name](*par)
+        S = self._operation_map[gate_name](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:
