@@ -312,9 +312,9 @@ class Rot(Operation):
     r"""Rot(phi, theta, rho, wires)
     Arbitrary single qubit rotation
 
-    .. math:: R(\phi,\theta,\rho) = RZ(\rho)RY(\theta)RZ(\phi)= \begin{bmatrix}
-                e^{-i(\phi+\rho)/2}\cos(\theta/2) & -e^{i(\phi-\rho)/2}\sin(\theta/2) \\
-                e^{-i(\phi-\rho)/2}\sin(\theta/2) & e^{i(\phi+\rho)/2}\cos(\theta/2)
+    .. math:: R(\phi,\theta,\omega) = RZ(\omega)RY(\theta)RZ(\phi)= \begin{bmatrix}
+                e^{-i(\phi+\omega)/2}\cos(\theta/2) & -e^{i(\phi-\omega)/2}\sin(\theta/2) \\
+                e^{-i(\phi-\omega)/2}\sin(\theta/2) & e^{i(\phi+\omega)/2}\cos(\theta/2)
             \end{bmatrix}.
 
     **Details:**
@@ -322,12 +322,12 @@ class Rot(Operation):
     * Number of wires: 1
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}R(\phi) = \frac{1}{2}\left[R(\phi+\pi/2)+R(\phi-\pi/2)\right]`.
-      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \rho\}`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
-        rho (float): rotation angle :math:`\rho`
+        rho (float): rotation angle :math:`\omega`
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 3
