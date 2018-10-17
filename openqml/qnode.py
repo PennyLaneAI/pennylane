@@ -13,8 +13,8 @@
 # limitations under the License.
 # pylint: disable=cell-var-from-loop,attribute-defined-outside-init,too-many-branches,too-many-arguments
 """
-QNodes and qfuncs
-=================
+The quantum node object
+=======================
 
 **Module name:** :mod:`openqml.qnode`
 

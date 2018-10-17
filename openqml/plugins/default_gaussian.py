@@ -62,7 +62,7 @@ Classes
    DefaultGaussian
 
 Code details
-~~~~~~~
+~~~~~~~~~~~~
 """
 # pylint: disable=attribute-defined-outside-init
 import logging as log
