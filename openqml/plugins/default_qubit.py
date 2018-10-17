@@ -26,7 +26,7 @@ The default plugin is meant to be used as a template for writing OpenQML device
 plugins for new backends.
 
 It implements all the :class:`~openqml.device.Device` methods as well as all built-in
-discrete-variable gates and expectations, and provides a very simple pure state
+discrete-variable operations and expectations, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 
 Functions
