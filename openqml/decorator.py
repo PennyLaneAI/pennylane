@@ -36,15 +36,15 @@ Example
 
     @qm.qnode(device1)
     def my_quantum_function(x):
-        qm.Zrotation(x, 0)
+        qm.RZ(x, 0)
         qm.CNOT(0,1)
-        qm.Yrotation(x**2, 1)
+        qm.RY(x**2, 1)
         return qm.expval.Z(0)
 
     result = my_quantum_function(0.543)
 
-Once defined, the QNode can then be used to construct the loss function,
-and processed classically using NumPy. For example,
+Once defined, the QNode can then be used and processed classically
+using NumPy. For example,
 
 .. code-block:: python
 
@@ -84,7 +84,7 @@ def qnode(device):
     """QNode decorator.
 
     Args:
-        device (~openqml._device.Device): an OpenQML-compatible device.
+        device (~openqml._device.Device): an OpenQML-compatible device
     """
     @lru_cache()
     def qfunc_decorator(func):

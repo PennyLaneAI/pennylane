@@ -155,10 +155,10 @@ def device(name, *args, **kwargs):
     * :mod:`'default.gaussian' <openqml.plugins.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
 
-    In addition, additional devices are supported through plugins - see
+    In addition, additional devices are supported through plugins — see
     :ref:`plugins` for more details.
 
-    All devices must be loaded by specifying its **short-name** as listed above,
+    All devices must be loaded by specifying their **short-name** as listed above,
     followed by the number of *wires* (subsystems) you wish to initialize.
 
     Some devices may accept additional arguments. For instance,
@@ -207,17 +207,17 @@ def device(name, *args, **kwargs):
 
 
 def grad(func):
-    """Returns the gradient function of a hybrid computational graph.
+    """Returns the gradient (as a callable function) of :class:`~.QNode` objects.
 
     This is a wrapper around the :mod:`autograd.grad` function.
 
     Args:
         func (function): a Python function or QNode that contains
-            a combination of quantum and classical nodes.
+            a combination of quantum and classical nodes
 
     Returns:
         function: the function that returns the gradient of the input
-            function with respect to the first parameter.
+        function with respect to the first parameter
     """
     # pylint: disable=no-value-for-parameter
     return _grad(func)

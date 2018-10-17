@@ -20,7 +20,7 @@ Quantum circuit parameters
 .. currentmodule:: openqml.variable
 
 This module contains the :class:`Variable` class, which is used to track
-and identity :class:`~openqml.qnode.QNode` parameters.
+and identify :class:`~openqml.qnode.QNode` parameters.
 
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
@@ -74,7 +74,7 @@ logging.getLogger()
 
 
 class Variable:
-    """Free parameter reference.
+    """A reference class to dynamically track and update circuit parameters.
 
     Represents a placeholder variable. This can either be a free quantum
     circuit parameter (with a non-fixed value) times an optional scalar multiplier,
