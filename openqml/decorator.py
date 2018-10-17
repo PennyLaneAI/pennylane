@@ -32,24 +32,33 @@ Example
 
 .. code-block:: python
 
-    device1 = qm.device('strawberryfields.fock', wires=2)
+    dev1 = qm.device('default.qubit', wires=2)
 
-    @qm.qnode(device1)
-    def my_quantum_function(x):
-        qm.RZ(x, 0)
-        qm.CNOT(0,1)
-        qm.RY(x**2, 1)
+    @qm.qnode(dev1)
+    def qfunc1(x):
+        qm.RZ(x, wires=0)
+        qm.CNOT(0, wires=1)
+        qm.RY(x, wires=1)
         return qm.expval.Z(0)
 
-    result = my_quantum_function(0.543)
+    result = qfunc1(0.543)
 
-Once defined, the QNode can then be used and processed classically
-using NumPy. For example,
+Once defined, the QNode can then be used like any other function in Python.
+This includes combining it with other QNodes and classical functions to
+build a hybrid computation. For example,
 
 .. code-block:: python
 
-    def loss(x):
-        return np.sin(my_quantum_function(x))
+    dev2 = qm.device('default.gaussian', wires=2)
+
+    @qm.qnode(dev2)
+    def qfunc2(x, y):
+        qm.Displacement(x, 0, wires=0)
+        qm.Beamsplitter(y, 0, wires=[0, 1])
+        return qm.expval.PhotonNumber(0)
+
+    def hybrid_computation(x, y):
+        return np.sin(qfunc1(y))*np.exp(-qfunc2(x+y, x)**2)
 
 .. note::
 
@@ -59,14 +68,14 @@ using NumPy. For example,
 
     .. code-block:: python
 
-        def my_quantum_function(x):
-            qm.Zrotation(x, 0)
-            qm.CNOT(0,1)
-            qm.Yrotation(x**2, 1)
-            return qm.expval.Z(0)
+        def qfunc1(x):
+        qm.RZ(x, wires=0)
+        qm.CNOT(0, wires=1)
+        qm.RY(x, wires=1)
+        return qm.expval.Z(0)
 
-        my_qnode = qm.QNode(my_quantum_function, dev1)
-        result = my_qnode(0.543)
+        qnode1 = qm.QNode(qfunc1, dev1)
+        result = qnode1(0.543)
 
 Code details
 ^^^^^^^^^^^^
