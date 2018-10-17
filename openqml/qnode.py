@@ -238,11 +238,11 @@ def _get_default_args(func):
     """Get the default arguments of a function.
 
     Args:
-        func (function): a valid Python function.
+        func (function): a valid Python function
 
     Returns:
         dict: dictionary containing the argument name and tuple
-            (positional idx, default value).
+        (positional idx, default value)
     """
     signature = inspect.signature(func)
     return {
@@ -592,7 +592,8 @@ class QNode:
           where ``n = len(which)``.
 
         * Analytic method (``'A'``). Works for all one-parameter gates where the generator
-          only has two unique eigenvalues. Additionally, can be used in CV systems for Gaussian
+          only has two unique eigenvalues; this includes one-parameter qubit gates, as well as
+          Gaussian circuits of order one or two. Additionally, can be used in CV systems for Gaussian
           circuits containing first- and second-order observables.
 
           The circuit is evaluated twice for each incidence of each parameter in the circuit.
@@ -601,7 +602,7 @@ class QNode:
           possible, otherwise finite difference.
 
         .. note::
-           The finite difference method cannot tolerate any statistical noise in the circuit output,
+           The finite difference method is sensitive to statistical noise in the circuit output,
            since it compares the output at two points infinitesimally close to each other. Hence the
            'F' method requires exact expectation values, i.e. `shots=0`.
 
@@ -698,9 +699,9 @@ class QNode:
 
         Args:
             params (array[float]): point in parameter space at which to evaluate
-                the partial derivative.
+                the partial derivative
             idx (int): return the partial derivative with respect to this parameter
-            h (float): step size.
+            h (float): step size
             order (int): finite difference method order, 1 or 2
             y0 (float): Value of the circuit at params. Should only be computed once.
 
@@ -734,9 +735,9 @@ class QNode:
 
         Args:
             params (array[float]): point in free parameter space at which
-                to evaluate the partial derivative.
+                to evaluate the partial derivative
             idx (int): return the partial derivative with respect to this
-                free parameter.
+                free parameter
 
         Returns:
             float: partial derivative of the node.
@@ -834,6 +835,8 @@ class QNode:
 def QNode_vjp(ans, self, args, **kwargs):
     """Returns the vector Jacobian product operator for a QNode, as a function
     of the QNode evaluation for specific argnums at the specified parameter values.
+
+    This function is required for integration with Autograd.
     """
     # pylint: disable=unused-argument
     def gradient_product(g):
