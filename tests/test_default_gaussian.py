@@ -277,11 +277,11 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertEqual(set(qm.ops.builtins_continuous.__all__) - nonGaussian,
                          set(self.dev._operator_map))
 
-    def test_observable_map(self):
+    def test_expectation_map(self):
         """Test that default Gaussian device supports all OpenQML Gaussian continuous expectations."""
         self.logTestName()
         self.assertEqual(set(qm.expval.builtins_continuous.__all__)-{'Heterodyne'},
-                         set(self.dev._observable_map))
+                         set(self.dev._expectation_map))
 
     def test_apply(self):
         """Test the application of gates to a state"""
@@ -368,19 +368,19 @@ class TestDefaultGaussianDevice(BaseTest):
         alpha = 0.324-0.59j
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
-        mean = dev.expectation('PhotonNumber', [0], [])
+        mean = dev.expval('PhotonNumber', [0], [])
         self.assertAlmostEqual(mean, np.abs(alpha)**2+nbar, delta=self.tol)
         # self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
 
         # test correct mean and variance for Homodyne P measurement
         alpha = 0.324-0.59j
         dev.apply('CoherentState', wires=[0], par=[alpha])
-        mean = dev.expectation('P', [0], [])
+        mean = dev.expval('P', [0], [])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
         # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
         # test correct mean and variance for Homodyne measurement
-        mean = dev.expectation('Homodyne', [0], [np.pi/2])
+        mean = dev.expval('Homodyne', [0], [np.pi/2])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
         # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
@@ -462,7 +462,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         self.logTestName()
         dev = qm.device('default.gaussian', wires=2)
 
-        obs = set(dev._observable_map.keys())
+        obs = set(dev._expectation_map.keys())
         all_obs = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
 
         for g in all_obs - obs:
@@ -479,7 +479,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 x = prep_par(x, op)
                 return op(*x, wires=wires)
 
-            with self.assertRaisesRegex(qm.DeviceError, "Observable {} not supported on device default.gaussian".format(g)):
+            with self.assertRaisesRegex(qm.DeviceError, "Expectation {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 
