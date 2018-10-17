@@ -71,6 +71,20 @@ class BasicTest(BaseTest):
                                                          [0., 0.]]),
                                      lambda x: np.array([[2 * x_[0], 0.] for x_ in x])]
 
+
+    def test_optimizer_takes_list(self):
+        """Tests that gradient descent optimizer can take lists."""
+        self.logTestName()
+
+        gradf = self.grad_multi_funcs[0]
+        f = self.multivariate_funcs[0]
+
+        x = [1., 2.]
+        x_new = self.sgd_opt.step(f, x)
+        x_correct = x - gradf(x) * stepsize
+        self.assertAlmostEqual(x_new, x_correct, delta=self.tol)
+
+
     def test_gradient_descent_optimizer_univar(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for uni-variate functions."""
