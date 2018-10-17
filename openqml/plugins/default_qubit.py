@@ -380,7 +380,7 @@ class DefaultQubit(Device):
           array: :math:`2^n\times 2^n` matrix
         """
         if U.shape != (4, 4):
-            raise ValueError(':math:`4\times 4` matrix required.')
+            raise ValueError('4x4 matrix required.')
         if len(wires) != 2:
             raise ValueError('Two target subsystems required.')
         wires = np.asarray(wires)
