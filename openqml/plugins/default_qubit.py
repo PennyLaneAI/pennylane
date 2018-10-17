@@ -48,15 +48,15 @@ Classes
 .. autosummary::
    DefaultQubit
 
-Details
--------
+Code details
+~~~~~~~~~~~~
 """
 import logging as log
 
 import numpy as np
 from scipy.linalg import expm, eigh
 
-from openqml.device import Device
+from openqml import Device
 
 log.getLogger()
 

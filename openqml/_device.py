@@ -15,9 +15,9 @@
 Device base class
 =================
 
-**Module name:** :mod:`openqml.device`
+**Module name:** :mod:`openqml._device`
 
-.. currentmodule:: openqml.device
+.. currentmodule:: openqml._device
 
 This module contains the :class:`Device` class. This is an abstract base class,
 which should be subclassed, and the appropriate class attributes and methods
@@ -31,7 +31,7 @@ or :class:`~.DefaultGaussian`.
 Device attributes and methods
 -----------------------------
 
-.. currentmodule:: openqml.device.Device
+.. currentmodule:: openqml._device.Device
 
 The following methods and attributes are accessible from the OpenQML
 user interface:
@@ -75,10 +75,11 @@ to ensure correct operation and internal consistency.
 .. autosummary::
     check_validity
 
-.. currentmodule:: openqml.device
+.. currentmodule:: openqml._device
 
-Details
--------
+
+Code details
+~~~~~~~~~~~~
 """
 # pylint: disable=too-many-format-args
 
@@ -91,14 +92,9 @@ logging.getLogger()
 
 
 class DeviceError(Exception):
-    """Exception raised by a :class:`Device` when it encounters an illegal
+    """Exception raised by a :class:`~.openqml._device.Device` when it encounters an illegal
     operation in the quantum circuit.
     """
-    pass
-
-
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
     pass
 
 

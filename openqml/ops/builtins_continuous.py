@@ -64,8 +64,8 @@ State preparation
     GaussianState
 
 
-Details
--------
+Code details
+~~~~~~~~~~~~
 """
 import numpy as np
 import scipy as sp

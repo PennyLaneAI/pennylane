@@ -47,8 +47,8 @@ State preparation
     QubitStateVector
 
 
-Details
--------
+Code details
+~~~~~~~~~~~~
 """
 
 from openqml.operation import Operation

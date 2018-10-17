@@ -61,8 +61,8 @@ Classes
 .. autosummary::
    DefaultGaussian
 
-Details
--------
+Code details
+~~~~~~~~~~~~
 """
 # pylint: disable=attribute-defined-outside-init
 import logging as log
@@ -70,7 +70,7 @@ import logging as log
 import numpy as np
 
 import openqml as qm
-from openqml.device import Device
+from openqml import Device
 
 log.getLogger()
 
@@ -353,6 +353,7 @@ def gaussian_state(mu, cov, hbar=2.):
     Returns:
         array: the thermal state
     """
+    # pylint: disable=unused-argument
     return mu, cov
 
 
@@ -404,6 +405,7 @@ def photon_number(mu, cov, wires, params, hbar=2.):
     Returns:
         tuple: contains the photon number expectation and variance.
     """
+    # pylint: disable=unused-argument
     ex = (np.trace(cov) + mu.T @ mu)/(2*hbar) - 1/2
     var = (np.trace(cov @ cov) + 2*mu.T @ cov @ mu)/(2*hbar**2) - 1/4
     return ex, var
@@ -423,6 +425,7 @@ def homodyne(phi=None):
     if phi is not None:
         def _homodyne(mu, cov, wires, params, hbar=2.):
             """Arbitrary angle homodyne expectation."""
+            # pylint: disable=unused-argument
             rot = rotation(phi)
             muphi = rot.T @ mu
             covphi = rot.T @ cov @ rot
@@ -431,6 +434,7 @@ def homodyne(phi=None):
 
     def _homodyne(mu, cov, wires, params, hbar=2.):
         """Arbitrary angle homodyne expectation."""
+        # pylint: disable=unused-argument
         rot = rotation(params[0])
         muphi = rot.T @ mu
         covphi = rot.T @ cov @ rot

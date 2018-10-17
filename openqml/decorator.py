@@ -16,35 +16,49 @@ The QNode decorator
 ===================
 
 Decorator for converting a quantum function containing OpenQML quantum
-operations to a QNode that will run on a quantum device.
+operations to a :mod:`QNode <openqml.qnode>` that will run on a quantum device.
 
-Example:
+This decorator is provided for convenience, and allows a qfunc to be
+converted to a QNode implicitly, avoiding the need to manually
+instantiate a :mod:`QNode <openqml.qnode>` object.
 
-.. code-block:: python
+Note that the decorator completely replaces the Python-defined
+function with a QNode of the same name - as such, the original
+function is no longer accessible (but is accessible via the
+:attr:`~.QNode.func` attribute).
 
-    device1 = qm.device('strawberryfields.fock', wires=2)
-
-    @qm.qnode(device1)
-    def my_quantum_function(x):
-        qm.Zrotation(x, 0)
-        qm.CNOT(0,1)
-        qm.Yrotation(x**2, 1)
-        return qm.expval.Z(0)
-
-    result = my_quantum_function(0.543)
-
-To become a valid QNode, the user-defined function must consist of
-only OpenQML operations and expectation values (one per line), contain
-no classical processing or functions, and must end with the measurement
-of a single or tuple of expectation values.
-
-Once defined, the QNode can then be used to construct the loss function,
-and processed classically using NumPy. For example,
+Example
+-------
 
 .. code-block:: python
 
-    def loss(x):
-        return np.sin(my_quantum_function(x))
+    dev1 = qm.device('default.qubit', wires=2)
+
+    @qm.qnode(dev1)
+    def qfunc1(x):
+        qm.RZ(x, wires=0)
+        qm.CNOT(wires=[0,1])
+        qm.RY(x, wires=1)
+        return qm.expval.PauliZ(0)
+
+    result = qfunc1(0.543)
+
+Once defined, the QNode can then be used like any other function in Python.
+This includes combining it with other QNodes and classical functions to
+build a hybrid computation. For example,
+
+.. code-block:: python
+
+    dev2 = qm.device('default.gaussian', wires=2)
+
+    @qm.qnode(dev2)
+    def qfunc2(x, y):
+        qm.Displacement(x, 0, wires=0)
+        qm.Beamsplitter(y, 0, wires=[0, 1])
+        return qm.expval.PhotonNumber(0)
+
+    def hybrid_computation(x, y):
+        return np.sin(qfunc1(y))*np.exp(-qfunc2(x+y, x)**2)
 
 .. note::
 
@@ -54,28 +68,32 @@ and processed classically using NumPy. For example,
 
     .. code-block:: python
 
-        def my_quantum_function(x):
-            qm.Zrotation(x, 0)
-            qm.CNOT(0,1)
-            qm.Yrotation(x**2, 1)
-            return qm.expval.Z(0)
+        def qfunc1(x):
+            qm.RZ(x, wires=0)
+            qm.CNOT(wires=[0,1])
+            qm.RY(x, wires=1)
+            return qm.expval.PauliZ(0)
 
-        my_qnode = qm.QNode(my_quantum_function, dev1)
-        result = my_qnode(0.543)
+        qnode1 = qm.QNode(qfunc1, dev1)
+        result = qnode1(0.543)
+
+Code details
+^^^^^^^^^^^^
 """
+# pylint: disable=redefined-outer-name
 import logging as log
-log.getLogger()
-
 from functools import wraps, lru_cache
 
 from .qnode import QNode
+
+log.getLogger()
 
 
 def qnode(device):
     """QNode decorator.
 
     Args:
-        device (openqml.Device): an OpenQML-compatible device.
+        device (~openqml._device.Device): an OpenQML-compatible device
     """
     @lru_cache()
     def qfunc_decorator(func):
@@ -85,6 +103,7 @@ def qnode(device):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            """Wrapper function"""
             return qnode(*args, **kwargs)
         return wrapper
     return qfunc_decorator

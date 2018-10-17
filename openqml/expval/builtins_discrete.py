@@ -32,8 +32,8 @@ Summary
     Hermitian
 
 
-Details
--------
+Code details
+~~~~~~~~~~~~
 """
 
 from openqml.operation import Expectation

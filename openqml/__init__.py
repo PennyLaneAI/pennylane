@@ -12,8 +12,79 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Top level OpenQML module
-========================
+Library overview
+================
+
+The OpenQML codebase contains a number of complementary components.
+These can be roughly separated into a user-interface, supported core
+operations, and a developer API.
+
+Software components
+-------------------
+
+**User interface**
+
+The main user-interface to OpenQML. These are the functions and
+classes that will be used by a majority of users. For a good introduction
+on the user-interface of OpenQML, have a look at our tutorials.
+
+* The device loader: :func:`openqml.device`
+* The quantum node object: :mod:`openqml.QNode <openqml.qnode>`
+* The QNode decorator: :mod:`openqml.qnode <openqml.decorator>`
+* Optimization methods: :mod:`openqml.optimize`
+* Configuration: :mod:`openqml.Configuration <openqml.configuration>`
+* NumPy with support for automatic differentiation: :mod:`openqml.numpy <openqml.numpy>`
+
+**Core operations**
+
+The main operations and expectations supported by OpenQML.
+Each of these operations/expectations supports a method
+of automatic differentiation (either analytically or numerically).
+
+The conventions used in defining these operations are also
+provided here.
+
+* Supported operations: :mod:`openqml.ops`
+* Supported expectations: :mod:`openqml.expval`
+
+**Developer API**
+
+Used to develop new plugins for OpenQML - providing new devices
+for QNodes, or supporting new operations and expectations. For more
+details, see :ref:`developer_overview`.
+
+* The base Device class: :mod:`openqml.Device <openqml._device>`
+* Symbolic quantum operations: :mod:`openqml.operation`
+* Quantum circuit parameters: :mod:`openqml.variable`
+
+Summary
+-------
+
+.. autosummary::
+    :template: modules.rst
+
+    ~configuration.Configuration
+    ~_device.Device
+    ~_device.DeviceError
+    device
+    expval
+    grad
+    ~autograd.numpy
+    ops
+    optimize
+    ~qnode.QNode
+    ~decorator.qnode
+    ~qnode.QuantumFunctionError
+    version
+
+.. note::
+
+    All individual operations (contained in :mod:`~.ops`) and optimizers
+    (contained in :mod:`~.optimize`) may also be imported directly from OpenQML.
+    Expectation values, however, must be accessed via the :mod:`~.expval` module.
+
+Code details
+~~~~~~~~~~~~
 """
 import os
 import logging as log
@@ -22,20 +93,26 @@ from pkg_resources import iter_entry_points
 from autograd import numpy
 from autograd import grad as _grad
 
+import openqml.operation
+import openqml.expval
 
 from .configuration import Configuration
-from .device import Device, DeviceError, QuantumFunctionError
-import openqml.operation
+from ._device import Device, DeviceError
 from .ops import *
-import openqml.expval
 from .optimize import *
-from .qnode import QNode
+from .qnode import QNode, QuantumFunctionError
 from ._version import __version__
-
 
 # NOTE: this has to be imported last,
 # otherwise it will clash with the .qnode import.
 from .decorator import qnode
+
+
+# overwrite module docstrings
+numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
+# expval.__doc__ = "Contains quantum expectations."
+# ops.__doc__ = "Contains quantum operations (these can also be imported directly from OpenQML)."
+# optimize.__doc__ = "Various nuclear optimizers (these can also be imported directly from OpenQML)."
 
 
 # set up logging
@@ -64,10 +141,38 @@ plugin_devices = {
 
 
 def device(name, *args, **kwargs):
-    """Load a plugin Device class and return the instance to the user.
+    r"""device(name, wires=1, *args, **kwargs)
+    Load a plugin :class:`~.Device` and return the instance.
+
+    This function is used to load a particular quantum device,
+    which can then be used to construct QNodes.
+
+    OpenQML comes with support for the following two devices:
+
+    * :mod:`'default.qubit' <openqml.plugins.default_qubit>`: a simple pure
+      state simulator of qubit-based quantum circuit architectures.
+
+    * :mod:`'default.gaussian' <openqml.plugins.default_gaussian>`: a simple simulator
+      of Gaussian states and operations on continuous-variable circuit architectures.
+
+    In addition, additional devices are supported through plugins — see
+    :ref:`plugins` for more details.
+
+    All devices must be loaded by specifying their **short-name** as listed above,
+    followed by the number of *wires* (subsystems) you wish to initialize.
+
+    Some devices may accept additional arguments. For instance,
+    ``default.gaussian`` accepts the keyword argument ``hbar``, to set
+    the convention used in the commutation relation :math:`[\x,\p]=i\hbar`
+    (by default set to 2).
+
+    Please refer to the documentation for the individual devices to see any
+    additional arguments that might be required or supported.
 
     Args:
-        name (str): the name of the device to load.
+        name (str): the name of the device to load
+        wires (int): the number of wires (subsystems) to initialise
+            the device with
 
     Keyword Args:
         config (openqml.Configuration): an OpenQML configuration object
@@ -94,7 +199,7 @@ def device(name, *args, **kwargs):
         p = plugin_devices[name].load()(*args, **options)
 
         if p.api_version != __version__:
-            log.warning('Plugin API version {} does not match OpenQML version {}.'.format(p.api_version, __version__))
+            log.warning('Plugin API version %s does not match OpenQML version %s.', p.api_version, __version__)
 
         return p
     else:
@@ -102,10 +207,22 @@ def device(name, *args, **kwargs):
 
 
 def grad(func):
-    """Wrapper around the autograd.grad function."""
+    """Returns the gradient (as a callable function) of :class:`~.QNode` objects.
+
+    This is a wrapper around the :mod:`autograd.grad` function.
+
+    Args:
+        func (function): a Python function or QNode that contains
+            a combination of quantum and classical nodes
+
+    Returns:
+        function: the function that returns the gradient of the input
+        function with respect to the first parameter
+    """
+    # pylint: disable=no-value-for-parameter
     return _grad(func)
 
 
 def version():
-    """Version number"""
+    """Returns the OpenQML version number."""
     return __version__
