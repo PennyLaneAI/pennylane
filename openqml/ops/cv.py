@@ -101,7 +101,7 @@ def _rotation(phi, bare=False):
 
 class Rotation(CVOperation):
     r"""openqml.Rotation(phi, wires)
-    Continuous-variable phase space rotation
+    Phase space rotation
 
     .. math::
         R(\phi) = \exp\left(i \phi \ad \a\right)=\exp\left(i \frac{\phi}{2}
