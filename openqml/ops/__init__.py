@@ -38,10 +38,10 @@ as the conventions chosen for their implementation.
 .. rst-class:: contents local topic
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   ops/discrete
-   ops/continuous
+    ops/qubit
+    ops/cv
 """
 
 from .cv import *

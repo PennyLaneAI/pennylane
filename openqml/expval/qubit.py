@@ -15,7 +15,7 @@
 Qubit quantum expectations
 ==========================
 
-.. currentmodule:: openqml.expval.builtins_discrete
+.. currentmodule:: openqml.expval.qubit
 
 This section contains the available built-in discrete-variable
 quantum operations supported by OpenQML, as well as their conventions.

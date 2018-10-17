@@ -15,7 +15,7 @@
 Qubit quantum operations
 ========================
 
-.. currentmodule:: openqml.ops.builtins_discrete
+.. currentmodule:: openqml.ops.qubit
 
 This section contains the available built-in discrete-variable
 quantum operations supported by OpenQML, as well as their conventions.
