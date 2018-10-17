@@ -25,7 +25,7 @@ Default Gaussian plugin
 The default plugin is meant to be used as a template for writing CV OpenQML
 device plugins for new backends.
 
-It implements all the :class:`~openqml.device.Device` methods as well as all built-in
+It implements all the :class:`~openqml._device.Device` methods as well as all built-in
 continuous-variable Gaussian operations and expectations, and provides
 a very simple simulation of a Gaussian-based quantum circuit architecture.
 
@@ -339,13 +339,13 @@ def gaussian_state(mu, cov, hbar=2.):
     can be passed via the parameters unchanged.
 
     Note that both the means vector and covariance
-    matrix should be in (x1, ..., xN, p1, ..., pN)
+    matrix should be in :math:`(\x_1,\dots, \x_N, \p_1, \dots, \p_N)`
     ordering.
 
     Args:
-        mu (array): vector means. Must be length-2N,
+        mu (array): vector means. Must be length-:math:`2N`,
             where N is the number of modes.
-        cov (array): covariance matrix. Must be dimension 2Nx2N,
+        cov (array): covariance matrix. Must be dimension :math:`2N\times 2N`,
             where N is the number of modes.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
@@ -397,7 +397,7 @@ def photon_number(mu, cov, wires, params, hbar=2.):
 
     Args:
         mu (array): length-2 vector of means.
-        cov (array): 2x2 covariance matrix.
+        cov (array): :math:`2\times 2` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
@@ -448,7 +448,7 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
 
     Args:
         mu (array): length-2 vector of means.
-        cov (array): 2x2 covariance matrix.
+        cov (array): :math:`2\times 2` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
@@ -582,14 +582,14 @@ class DefaultGaussian(Device):
         self._state = [means, cov]
 
     def expand_one(self, S, wire):
-        """Expands a one-mode Symplectic matrix S to act on the entire subsystem.
+        r"""Expands a one-mode Symplectic matrix S to act on the entire subsystem.
 
         Args:
-            S (array): 2x2 Symplectic matrix.
+            S (array): :math:`2\times 2` Symplectic matrix.
             wire (int): the wire S acts on.
 
         Returns:
-            array: the resulting 2Nx2N Symplectic matrix.
+            array: the resulting :math:`2N\times 2N` Symplectic matrix.
         """
         S2 = np.identity(2*self.num_wires)
 
@@ -601,14 +601,14 @@ class DefaultGaussian(Device):
         return S2
 
     def expand_two(self, S, wires):
-        """Expands a two-mode Symplectic matrix S to act on the entire subsystem.
+        r"""Expands a two-mode Symplectic matrix S to act on the entire subsystem.
 
         Args:
-            S (array): 4x4 Symplectic matrix.
+            S (array): :math:`4\times 4` Symplectic matrix.
             wires (Sequence[int]): the list of two wires S acts on.
 
         Returns:
-            array: the resulting 2Nx2N Symplectic matrix.
+            array: the resulting :math:`2N\times 2N` Symplectic matrix.
         """
         S2 = np.identity(2*self.num_wires)
         w = np.array(wires)

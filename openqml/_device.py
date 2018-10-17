@@ -54,7 +54,7 @@ The following methods and attributes must be defined for all devices:
     _operation_map
     _expectation_map
     apply
-    expectation
+    expval
 
 In addition, the following may also be optionally defined:
 
@@ -179,8 +179,8 @@ class Device(abc.ABC):
         """Apply a queue of quantum operations to the device, and then measure the given expectation values.
 
         Instead of overwriting this, consider implementing a suitable subset of
-        :meth:`pre_apply`, :meth:`post_apply`, :meth:`execution_context`,
-        :meth:`apply`, and :meth:`expectation`.
+        :meth:`pre_apply`, :meth:`apply`, :meth:`post_apply`, :meth:`pre_expval`,
+        :meth:`expval`, :meth:`post_expval`, and :meth:`execution_context`.
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
@@ -222,7 +222,7 @@ class Device(abc.ABC):
         """The device execution context used during calls to :meth:`execute`.
 
         You can overwrite this function to return a suitable context manager;
-        all operations and method calls (including :meth:`apply` and :meth:`expectation`)
+        all operations and method calls (including :meth:`apply` and :meth:`expval`)
         are then evaluated within the context of this context manager.
         """
         # pylint: disable=no-self-use
@@ -253,13 +253,13 @@ class Device(abc.ABC):
             queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
             expectations (Iterable[~.operation.Expectation]): expectation values to measure and return.
         """
-        for operation in queue:
-            if not self.supported(operation.name):
-                raise DeviceError("Gate {} not supported on device {}".format(operation.name, self.short_name))
+        for o in queue:
+            if not self.supported(o.name):
+                raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
-        for expectation in expectations:
-            if not self.supported(expectation.name):
-                raise DeviceError("Expectation {} not supported on device {}".format(expectation.name, self.short_name))
+        for e in expectations:
+            if not self.supported(e.name):
+                raise DeviceError("Expectation {} not supported on device {}".format(e.name, self.short_name))
 
     @abc.abstractmethod
     def apply(self, op_name, wires, par):

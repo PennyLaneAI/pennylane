@@ -25,7 +25,7 @@ Default qubit plugin
 The default plugin is meant to be used as a template for writing OpenQML device
 plugins for new backends.
 
-It implements all the :class:`~openqml.device.Device` methods as well as all built-in
+It implements all the :class:`~openqml._device.Device` methods as well as all built-in
 discrete-variable operations and expectations, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 
@@ -70,10 +70,10 @@ tolerance = 1e-10
 #========================================================
 
 def spectral_decomposition_qubit(A):
-    r"""Spectral decomposition of a 2*2 Hermitian matrix.
+    r"""Spectral decomposition of a :math:`2\times 2` Hermitian matrix.
 
     Args:
-        A (array): 2*2 Hermitian matrix
+        A (array): :math:`2\times 2` Hermitian matrix
 
     Returns:
         (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
@@ -327,7 +327,7 @@ class DefaultQubit(Device):
         r"""Evaluates a one-qubit expectation in the current state.
 
         Args:
-          A (array): 2*2 hermitian matrix corresponding to the expectation
+          A (array): :math:`2\times 2` Hermitian matrix corresponding to the expectation
           wires (Sequence[int]): target subsystem
 
         Returns:
@@ -350,14 +350,14 @@ class DefaultQubit(Device):
         self._state[0] = 1
 
     def expand_one(self, U, wires):
-        """Expand a one-qubit operator into a full system operator.
+        r"""Expand a one-qubit operator into a full system operator.
 
         Args:
-          U (array): 2*2 matrix
+          U (array): :math:`2\times 2` matrix
           wires (Sequence[int]): target subsystem
 
         Returns:
-          array: 2^n*2^n matrix
+          array: :math:`2^n\times 2^n` matrix
         """
         if U.shape != (2, 2):
             raise ValueError('2x2 matrix required.')
@@ -370,17 +370,17 @@ class DefaultQubit(Device):
         return U
 
     def expand_two(self, U, wires):
-        """Expand a two-qubit operator into a full system operator.
+        r"""Expand a two-qubit operator into a full system operator.
 
         Args:
-          U (array): 4x4 matrix
+          U (array): :math:`4\times 4` matrix
           wires (Sequence[int]): two target subsystems (order matters!)
 
         Returns:
-          array: 2^n*2^n matrix
+          array: :math:`2^n\times 2^n` matrix
         """
         if U.shape != (4, 4):
-            raise ValueError('4x4 matrix required.')
+            raise ValueError(':math:`4\times 4` matrix required.')
         if len(wires) != 2:
             raise ValueError('Two target subsystems required.')
         wires = np.asarray(wires)
