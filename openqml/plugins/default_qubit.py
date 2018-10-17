@@ -26,7 +26,7 @@ The default plugin is meant to be used as a template for writing OpenQML device
 plugins for new backends.
 
 It implements all the :class:`~openqml.device.Device` methods as well as all built-in
-discrete-variable gates and observables, and provides a very simple pure state
+discrete-variable gates and expectations, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 
 Functions
@@ -187,7 +187,7 @@ def unitary(*args):
 
 
 def hermitian(*args):
-    r"""Input validation for an arbitary Hermitian observable.
+    r"""Input validation for an arbitary Hermitian expectation.
 
     Args:
         args (array): square hermitian matrix.
@@ -198,10 +198,10 @@ def hermitian(*args):
     A = np.asarray(args[0])
 
     if A.shape[0] != A.shape[1]:
-        raise ValueError("Observable must be a square matrix.")
+        raise ValueError("Expectation must be a square matrix.")
 
     if not np.allclose(A, A.conj().T):
-        raise ValueError("Observable must be Hermitian.")
+        raise ValueError("Expectation must be Hermitian.")
     return A
 
 
@@ -245,7 +245,7 @@ class DefaultQubit(Device):
         'Rot': fr3
     }
 
-    _observable_map = {
+    _expectation_map = {
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
@@ -287,9 +287,9 @@ class DefaultQubit(Device):
 
         self._state = U @ self._state
 
-    def expectation(self, observable, wires, par):
+    def expval(self, expectation, wires, par):
         # measurement/expectation value <psi|A|psi>
-        A = self._get_operator_matrix(observable, par)
+        A = self._get_operator_matrix(expectation, par)
         if self.shots == 0:
             # exact expectation value
             ev = self.ev(A, wires)
@@ -304,24 +304,24 @@ class DefaultQubit(Device):
         return ev
 
     def _get_operator_matrix(self, op_name, par):
-        """Get the operator matrix for a given operation.
+        """Get the operator matrix for a given operation or expectation.
 
         Args:
-          op_name    (str): name of the operation/observable
+          op_name    (str): name of the operation/expectation
           par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        A = {**self._operator_map, **self._observable_map}[op_name]
+        A = {**self._operator_map, **self._expectation_map}[op_name]
         if not callable(A):
             return A
         return A(*par)
 
     def ev(self, A, wires):
-        r"""Expectation value of a one-qubit observable in the current state.
+        r"""Evaluates a one-qubit expectation in the current state.
 
         Args:
-          A (array): 2*2 hermitian matrix corresponding to the observable
+          A (array): 2*2 hermitian matrix corresponding to the expectation
           wires (Sequence[int]): target subsystem
 
         Returns:

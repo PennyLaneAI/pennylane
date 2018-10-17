@@ -26,7 +26,7 @@ The default plugin is meant to be used as a template for writing CV OpenQML
 device plugins for new backends.
 
 It implements all the :class:`~openqml.device.Device` methods as well as all built-in
-continuous-variable Gaussian gates and observables, and provides
+continuous-variable Gaussian gates and expectations, and provides
 a very simple simulation of a Gaussian-based quantum circuit architecture.
 
 Gates and operations
@@ -523,7 +523,7 @@ class DefaultGaussian(Device):
         'GaussianState': gaussian_state
     }
 
-    _observable_map = {
+    _expectation_map = {
         'PhotonNumber': photon_number,
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
@@ -616,13 +616,13 @@ class DefaultGaussian(Device):
 
         return S2
 
-    def expectation(self, observable, wires, par):
+    def expval(self, expectation, wires, par):
         mu, cov = self.reduced_state(wires)
 
-        if observable == 'PolyXP':
+        if expectation == 'PolyXP':
             mu, cov = self._state
 
-        ev, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
+        ev, var = self._expectation_map[expectation](mu, cov, wires, par, hbar=self.hbar)
 
         if self.shots != 0:
             # estimate the ev
