@@ -426,7 +426,7 @@ class QNode:
                 - ``None``: return all successors
 
         Returns:
-            Iterable[Operation]: successors in a topological order
+            list[Operation]: successors in a topological order
         """
         succ = self.ops[o_idx+1:]
         # TODO at some point we may wish to upgrade to a DAG description of the circuit instead
@@ -440,9 +440,9 @@ class QNode:
         #
         # if it is in a topological order? the docs aren't clear.
         if only == 'E':
-            return filter(lambda x: isinstance(x, openqml.operation.Expectation), succ)
+            return list(filter(lambda x: isinstance(x, openqml.operation.Expectation), succ))
         elif only == 'G':
-            return filter(lambda x: not isinstance(x, openqml.operation.Expectation), succ)
+            return list(filter(lambda x: not isinstance(x, openqml.operation.Expectation), succ))
         return succ
 
     def _best_method(self, idx):
@@ -687,8 +687,6 @@ class QNode:
                 grad[:, i] = self._pd_analytic(flat_params, k, **kwargs)
             elif par_method == 'F':
                 grad[:, i] = self._pd_finite_diff(flat_params, k, h, order, y0, **kwargs)
-            elif par_method is None:
-                raise ValueError('Cannot differentiate wrt parameter {}.'.format(k))
             else:
                 raise ValueError('Unknown gradient method.')
 
@@ -748,8 +746,6 @@ class QNode:
         # find the Commands in which the free parameter appears, use the product rule
         for o_idx, p_idx in self.variable_ops[idx]:
             op = self.ops[o_idx]
-            if op.grad_method[0] != 'A':
-                raise ValueError('{} does not support the analytic method.'.format(op.name))
 
             # we temporarily edit the Operation such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operations depending on the original.
