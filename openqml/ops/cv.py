@@ -239,7 +239,6 @@ class TwoModeSqueezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    # TODO: add a gradient recipe
     num_params = 2
     num_wires = 2
     par_domain = 'R'
@@ -251,12 +250,13 @@ class TwoModeSqueezing(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1], bare=True)
-        R[:, 1] *= -1
-        s = np.sinh(p[0])
+
+        S = np.sinh(p[0]) * np.diag([1, -1])
         U = np.cosh(p[0]) * np.identity(5)
+
         U[0, 0] = 1
-        U[1:3, 3:5] = s*R
-        U[3:5, 1:3] = s*R
+        U[1:3, 3:5] = S @ R.T
+        U[3:5, 1:3] = S @ R.T
         return U
 
 
@@ -273,13 +273,10 @@ class QuadraticPhase(CVOperation):
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
-    .. todo:: add a gradient recipe.
-
     Args:
         s (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    # TODO: add a gradient recipe
     num_params = 1
     num_wires = 1
     par_domain = 'R'
@@ -427,13 +424,10 @@ class ControlledAddition(CVOperation):
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
-    .. todo:: add a gradient recipe
-
     Args:
         s (float): addition multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    # TODO: add a gradient recipe
     num_wires = 2
     num_params = 1
     par_domain = 'R'
@@ -464,13 +458,10 @@ class ControlledPhase(CVOperation):
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
-    .. todo:: add a gradient recipe
-
     Args:
         s (float):  phase shift multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    # TODO: add a gradient recipe
     num_wires = 2
     num_params = 1
     par_domain = 'R'
