@@ -243,7 +243,21 @@ class TwoModeSqueezing(CVOperation):
     num_params = 2
     num_wires = 2
     par_domain = 'R'
-    grad_method = 'F'
+
+    grad_method = 'A'
+    shift = 0.1
+    grad_recipe = [(0.5/np.sinh(shift), shift), None]
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        R = _rotation(p[1], bare=True)
+        R[:, 1] *= -1
+        s = np.sinh(p[0])
+        U = np.cosh(p[0]) * np.identity(5)
+        U[0, 0] = 1
+        U[1:3, 3:5] = s*R
+        U[3:5, 1:3] = s*R
+        return U
 
 
 class QuadraticPhase(CVOperation):
@@ -277,7 +291,7 @@ class QuadraticPhase(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         U = np.identity(3)
-        U[1, 2] = p[0]
+        U[2, 1] = p[0]
         return U
 
 
