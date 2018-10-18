@@ -269,7 +269,16 @@ class QuadraticPhase(CVOperation):
     num_params = 1
     num_wires = 1
     par_domain = 'R'
-    grad_method = 'F'
+
+    grad_method = 'A'
+    shift = 0.1
+    grad_recipe = [(0.5/shift, shift)]
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        U = np.identity(3)
+        U[1, 2] = p[0]
+        return U
 
 
 class CubicPhase(CVOperation):
@@ -414,7 +423,17 @@ class ControlledAddition(CVOperation):
     num_wires = 2
     num_params = 1
     par_domain = 'R'
-    grad_method = 'F'
+
+    grad_method = 'A'
+    shift = 0.1
+    grad_recipe = [(0.5/shift, shift)]
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        U = np.identity(5)
+        U[2, 4] = -p[0]
+        U[3, 1] = p[0]
+        return U
 
 
 class ControlledPhase(CVOperation):
@@ -441,7 +460,17 @@ class ControlledPhase(CVOperation):
     num_wires = 2
     num_params = 1
     par_domain = 'R'
-    grad_method = 'F'
+
+    grad_method = 'A'
+    shift = 0.1
+    grad_recipe = [(0.5/shift, shift)]
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        U = np.identity(5)
+        U[2, 3] = p[0]
+        U[4, 1] = p[0]
+        return U
 
 
 #=============================================================================
