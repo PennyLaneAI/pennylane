@@ -8,10 +8,11 @@ exclude_lines =
     # Have to re-enable the standard pragma
     pragma: no cover
 
-    # Don't complain about missing debug-only code:
+    # Don't complain about debug-only or logging code:
     def __repr__
     def __eq__
     if self\.debug
+    if "LOGGING" in os.environ
 
     # print statements
     def __str__
