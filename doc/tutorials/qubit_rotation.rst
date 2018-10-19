@@ -1,51 +1,102 @@
 Qubit rotation
 ==============
 
-This tutorial demonstrates PennyLane's "hello-world" example for
-qubit-based architectures with the projectq backend.
+To see how OpenQML allows the easy construction and optimization of quantum functions, let's
+consider the simple case of **qubit rotation** - the OpenQML version of the 'Hello, world!'
+example.
 
-The task is to optimize two rotation gates in order to flip a single
+The task at hand is to optimize two rotation gates in order to flip a single
 qubit from state :math:`\ket{0}` to state :math:`\ket{1}`.
 
-Imports
--------
+Importing OpenQML and NumPy
+---------------------------
 
-First we need to import openqml, as well as openqml's version of numpy.
-This allows us to automatically compute gradients for functions that
-manipulate numpy arrays, including quantum functions. We also want to
-compare two optimizers, basic gradient descent and adagrad.
+The first thing we need to import OpenQML, as well as the wrapped version
+of NumPy provided by OpenQML.
 
 .. code-block:: python
 
     import openqml as qm
     from openqml import numpy as np
-    from openqml.optimize import GradientDescentOptimizer, AdagradOptimizer
 
-Next, create a projecq simulator as a "device" to run the quantum node.
-We only need a single quantum wire.
+
+.. important::
+
+    When constructing a hybrid quantum/classical computational model with OpenQML,
+    it is important to **always import NumPy from OpenQML**, not the standard NumPy!
+
+    By importing the wrapped version of NumPy provided by OpenQML, you can continue
+    to use the same NumPy functions and arrays you love, but with the added ability
+    to combine quantum functions (as quantum nodes) and classical functions (provided by NumPy)
+    and allow OpenQML to automatically calculate the gradients.
+
+
+Creating a device
+-----------------
+
+Before we can construct our quantum node, we need to initialize a **device**. In OpenQML, a device is any computational object that can apply quantum operations, and return an expectation value - this could be a hardware device (such as the IBM QX4, via the OpenQML-PQ plugin), or a software simulator (such as Strawberry Fields, via the OpenQML-SF plugin).
+
+Furthermore, OpenQML supports both devices using the qubit model of quantum computation, and devices using the CV model of quantum computation. In fact, even a hyrbid computation containing both qubit and CV quantum nodes is possible; see (here) for more details.
+
+For this tutorial, we are using the qubit model, so let's initialize a ``'default.qubit'`` device provided by OpenQML - a simple, pure state, qubit simulator.
 
 .. code-block:: python
 
-    dev = qm.device('projectq.simulator', wires=1)
+    dev1 = qm.device('default.qubit', wires=1)
 
-Quantum node
-------------
+For all devices, :func:`~.openqml.device` accepts the following arguments:
 
-We define a quantum node called "circuit". The decorator
-``qm.qfunc(dev1)`` that saves us to create a quantum node via
-``circuit = qm.qnode.QNode(circuit, dev)``.
+* ``name``: the name of the device to be loaded.
+* ``wires``: the number of subsystems to initialize the device with.
+
+Here, as we only require a single qubit for this example, we set ``wires=1``.
+
+Constructing the quantum node
+-----------------------------
+
+Now that we have initialized our device, we can begin to construct our quantum node (or :class:`~.QNode`). QNodes are an abstract encapsulation of both (a) a quantum device, and (b) a quantum function that is executed by this device. Now that we have a device ``dev1`` that we can use, we need to define the quantum function in order to construct the QNode.
+
+We do this as follows:
 
 .. code-block:: python
 
-    @qm.qnode(dev)
     def circuit(vars):
-
-        qm.RX(vars[0], [0])
-        qm.RY(vars[1], [0])
-
+        qm.RX(vars[0], wires=0)
+        qm.RY(vars[1], wires=0)
         return qm.expval.PauliZ(0)
 
-This function uses openqml to run the following quantum circuit:
+Notice that the quantum function ``circuit(vars)`` is constructed as if it were any other Python function, with some restrictions:
+
+* **It must only contain quantum operations, one operation per line, in the order in which they are to be applied.** In addition, we must always specify the subsystem the operation applies to, by passing the ``wires`` keyword argument; this may be a list or an integer, depending on how many wires the operation acts on.
+
+  For a full list of quantum operations, see :mod:`supported operations <openqml.ops>`.
+
+* **It must return either a single or a tuple of expectation values**. As a result, the quantum function always returns a classical quantity, allowing the QNode to interface with both other quantum and classical ndoes.
+  For a full list of quantum expectation values, see :mod:`supported expectations <openqml.expval>`.
+
+* **It must not contain any classical processing of circuit parameters.**
+
+.. note:: Certain devices may only support a subset of the available OpenQML operations/expectations, or may even provide additional operations/expectations. Please consult the documentation for the plugin or the device for more details.
+
+Once we have written the quantum function, we convert it into a :class:`~.QNode` running on device ``dev1`` by applying the :mod:`qnode decorator <openqml.decorator>` directly above the function definition:
+
+
+.. code-block:: python
+
+    @qm.qnode(dev1)
+    def circuit(vars):
+        qm.RX(vars[0], wires=0)
+        qm.RY(vars[1], wires=0)
+        return qm.expval.PauliZ(0)
+
+Thus, our ``circuit(vars)`` quantum function is now a ``QNode``, which will run on device ``dev1`` everytime it is evaluated.
+
+But, what are we actually doing in this QNode?
+
+Qubit rotation circuit
+----------------------
+
+Here, we are first applying rotation around the :math:`x` axis on the first qubit, followed by rotation around the :math:`y` axis on the first qubit - equivalent to the following quantum circuit:
 
 .. raw:: html
 
@@ -60,11 +111,11 @@ This function uses openqml to run the following quantum circuit:
 
     <br>
 
-Starting with a qubit in the ground state,
+Breaking this down, step-by-step, we first start with a qubit in the ground state,
 
 .. math::  |0\rangle = \begin{pmatrix}1 \\ 0 \end{pmatrix},
 
-we first rotate the qubit around the x-axis by
+amd rotate the qubit around the x-axis by
 
 .. math::
 
@@ -82,11 +133,11 @@ and then around the y-axis by
                    \sin \frac{v_2}{2} &  \cos \frac{v_2}{2}
    \end{pmatrix}.
 
-After these operations the qubit is in the state
+After these operations the qubit is now in the state
 
-.. math::  | \psi \rangle = R_y(v_1) R_x(v_2) | 0 \rangle
+.. math::  | \psi \rangle = R_y(v_1) R_x(v_2) | 0 \rangle.
 
-Finally, we measure the expectation :math:`\langle \psi \mid Z \mid \psi \rangle` of the Pauli-Z operator
+Finally, we measure the expectation :math:`\langle \psi \mid Z \mid \psi \rangle` of the Pauli-Z operator:
 
 .. math::
 
