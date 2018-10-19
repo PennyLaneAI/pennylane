@@ -151,7 +151,7 @@ class Device(abc.ABC):
         """Get the supported set of operations.
 
         Returns:
-            set[str]: the set of OpenQML operation names the device supports.
+            set[str]: the set of OpenQML operation names the device supports
         """
         return set(self._operation_map.keys())
 
@@ -160,7 +160,7 @@ class Device(abc.ABC):
         """Get the supported set of expectations.
 
         Returns:
-            set[str]: the set of OpenQML expectation names the device supports.
+            set[str]: the set of OpenQML expectation names the device supports
         """
         return set(self._expectation_map.keys())
 
@@ -183,8 +183,8 @@ class Device(abc.ABC):
         :meth:`expval`, :meth:`post_expval`, and :meth:`execution_context`.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
-            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return.
+            queue (Iterable[~.operation.Operation]): quantum operation objects to apply on the device
+            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return
 
         Returns:
             array[float]: expectation value(s)
@@ -250,8 +250,8 @@ class Device(abc.ABC):
         """Check whether the operations and expectations are supported by the device.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects to apply to the device.
-            expectations (Iterable[~.operation.Expectation]): expectation values to measure and return.
+            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device
+            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in device
         """
         for o in queue:
             if not self.supported(o.name):
