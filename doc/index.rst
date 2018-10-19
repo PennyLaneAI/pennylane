@@ -68,6 +68,7 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :hidden:
 
    tutorials/basic
+   tutorials/qubit_rotation
 
 .. 
    tutorials/photon_redirection.ipynb

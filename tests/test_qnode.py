@@ -87,9 +87,49 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(ValueError, 'Flattened iterable has more elements than the model'):
             unflatten(np.concatenate([flat, flat]), reshaped)
 
+    def test_op_successors(self):
+        "Tests QNode._op_successors()."
+        self.logTestName()
+
+        def qf(x):
+            qm.RX(x, [0])
+            qm.CNOT([0, 1])
+            qm.RY(0.4, [0])
+            qm.RZ(-0.2, [1])
+            return qm.expval.PauliX(0), qm.expval.PauliZ(1)
+        q = qm.QNode(qf, self.dev2)
+        q.construct([1.0])
+
+        # the six operations in qf should appear in q.ops in the same order they appear above
+        self.assertTrue(q.ops[0].name == 'RX')
+        self.assertTrue(q.ops[1].name == 'CNOT')
+        self.assertTrue(q.ops[2].name == 'RY')
+        self.assertTrue(q.ops[3].name == 'RZ')
+        self.assertTrue(q.ops[4].name == 'PauliX')
+        self.assertTrue(q.ops[5].name == 'PauliZ')
+        # only gates
+        temp = q._op_successors(0, only='G')
+        self.assertTrue(q.ops[0] not in temp)
+        self.assertTrue(q.ops[1] in temp)
+        self.assertTrue(q.ops[4] not in temp)
+        # only evs
+        temp = q._op_successors(0, only='E')
+        self.assertTrue(q.ops[0] not in temp)
+        self.assertTrue(q.ops[1] not in temp)
+        self.assertTrue(q.ops[4] in temp)
+        # both
+        temp = q._op_successors(0, only=None)
+        self.assertTrue(q.ops[0] not in temp)
+        self.assertTrue(q.ops[1] in temp)
+        self.assertTrue(q.ops[4] in temp)
+        # TODO once _op_successors has been upgraded to return only strict successors using a DAG
+        #temp = q._op_successors(2, only=None)
+        #self.assertTrue(q.ops[4] in temp)
+        #self.assertTrue(q.ops[5] not in temp)
+
 
     def test_qnode_fail(self):
-        "Tests that expected failures correctly raise exceptions."
+        "Tests that QNode initialization failures correctly raise exceptions."
         self.logTestName()
         par = 0.5
 
@@ -144,7 +184,7 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
             qf(par)
 
-        # a wire cannot be measured more than once=
+        # a wire cannot be measured more than once
         @qm.qnode(self.dev2)
         def qf(x):
             qm.RX(x, [0])
@@ -186,8 +226,14 @@ class BasicTest(BaseTest):
         with self.assertRaisesRegex(DeviceError, 'Expectation [a-zA-Z]+ not supported on device'):
             qf(par)
 
+
+    def test_jacobian_fail(self):
+        "Tests that QNode.jacobian failures correctly raise exceptions."
+        self.logTestName()
+        par = 0.5
+
         #---------------------------------------------------------
-        ## gradient issues
+        ## bad circuit
 
         # undifferentiable operation
         def qf(x):
@@ -195,7 +241,7 @@ class BasicTest(BaseTest):
             qm.RX(x, [0])
             return qm.expval.PauliZ(0)
         q = qm.QNode(qf, self.dev2)
-        with self.assertRaisesRegex(ValueError, 'Cannot differentiate wrt'):
+        with self.assertRaisesRegex(ValueError, 'Cannot differentiate wrt parameter'):
             q.jacobian(par)
 
         # operation that does not support the 'A' method
@@ -222,6 +268,7 @@ class BasicTest(BaseTest):
 
         #---------------------------------------------------------
         ## bad input parameters
+
         def qf_ok(x):
             qm.Rot(0.3, x, -0.2, [0])
             return qm.expval.PauliZ(0)
@@ -247,6 +294,7 @@ class BasicTest(BaseTest):
         q = qm.QNode(qf_ok, self.dev1)
         with self.assertRaisesRegex(ValueError, 'Order must be 1 or 2'):
             q.jacobian(par, method='F', order=3)
+
 
     def test_qnode_cv_gradient_methods(self):
         "Tests the gradient computation methods on CV circuits."
