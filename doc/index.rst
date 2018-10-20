@@ -58,7 +58,6 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    concepts/autograd_quantum
    concepts/quantum_nodes
    concepts/hybrid_computation
-   concepts/conventions
    references
 
 

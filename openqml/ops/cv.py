@@ -20,7 +20,7 @@ CV quantum operations
 This section contains the available built-in continuous-variable
 quantum operations supported by OpenQML, as well as their conventions.
 
-.. todo:: Should the state preparations have gradient recipes as well?
+.. todo:: Add gradient recipes for Gaussian state preparations
 
 .. todo::
 
@@ -230,9 +230,8 @@ class TwoModeSqueezing(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 2
-    * Gradient recipe: None (uses finite difference)
-
-    .. todo:: add a gradient recipe
+    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
 
     Args:
         r (float): squeezing amount
@@ -585,8 +584,6 @@ class ThermalState(CVOperation):
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
-    .. todo:: Does the thermal state have a gradient recipe?
-
     Args:
         nbar (float): mean thermal population of the mode
         wires (Sequence[int] or int): the wire the operation acts on
@@ -673,11 +670,6 @@ class GaussianState(CVOperation):
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
-
-    .. todo::
-
-        Is there a gradient recipe for Gaussian state?
-        Only issue is, how do you define the gradient for array arguments?
 
     Args:
         r (array): a length :math:`2N` vector of means, of the

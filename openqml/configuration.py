@@ -19,7 +19,7 @@ Configuration
 
 .. currentmodule:: openqml.configuration
 
-This module contains the `~openqml.Configuration` class, which is used to
+This module contains the :class:`Configuration` class, which is used to
 load, store, save, and modify configuration options for OpenQML and all
 supported plugins and devices.
 
