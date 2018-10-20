@@ -31,6 +31,11 @@ quantum operations supported by OpenQML, as well as their conventions.
    Possible solution: disallow such operations to depend on free parameters,
    this way they won't be differentiated.
 
+.. note::
+
+   For the Heisenberg matrix representation of CV operations, we use the ordering
+   :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
+   and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 
 Gates
 -----
@@ -105,7 +110,7 @@ class Rotation(CVOperation):
 
     .. math::
         R(\phi) = \exp\left(i \phi \ad \a\right)=\exp\left(i \frac{\phi}{2}
-        \left(\frac{\x^2+  \p^2}{\hbar}-\I\right)\right).
+        \left(\frac{\x^2+  \p^2}{\hbar}-\hat{\mathbf{1}}\right)\right).
 
     **Details:**
 
@@ -282,15 +287,14 @@ class TwoModeSqueezing(CVOperation):
     * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
       where :math:`s` is an arbitrary real number (:math:`0.1` by default).
 
-      .. todo:: fill in Heisenberg representation
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
-            1 & 0 & 0 & 0 & 0\ \
-            0 & . & . & . & .\\
-            0 & . & . & . & .\\
-            0 & . & . & . & .\\
-            0 & . & . & . & .
+            1 & 0 & 0 & 0 & 0 \\
+            0 & \cosh r & 0 & \sinh r \cos \phi & \sinh r \sin \phi\\
+            0 & 0 & \cosh r & \sinh r \sin \phi & -\sinh r \cos \phi\\
+            0 & \sinh r \cos \phi & \sinh r \sin \phi & \cosh r & 0\\
+            0 & \sinh r \sin \phi & -\sinh r \cos \phi & 0 & \cosh r
         \end{bmatrix}
 
     Args:
@@ -334,15 +338,12 @@ class QuadraticPhase(CVOperation):
     * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
       where :math:`s` is an arbitrary real number (:math:`0.1` by default).
 
-      .. todo:: fill in Heisenberg representation
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
-            1 & 0 & 0 & 0 & 0\ \
-            0 & . & . & . & .\\
-            0 & . & . & . & .\\
-            0 & . & . & . & .\\
-            0 & . & . & . & .
+            1 & 0 & 0 \\
+            0 & 1 & 0 \\
+            0 & s & 1 \\
         \end{bmatrix}
 
     Args:
@@ -380,15 +381,14 @@ class ControlledAddition(CVOperation):
     * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
       where :math:`s` is an arbitrary real number (:math:`0.1` by default).
 
-      .. todo:: fill in Heisenberg representation
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
-            1 & 0 & 0 & 0 & 0\ \
-            0 & . & . & . & .\\
-            0 & . & . & . & .\\
-            0 & . & . & . & .\\
-            0 & . & . & . & .
+            1 & 0 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 & 0 \\
+            0 & 0 & 1 & 0 & -s \\
+            0 & s & 0 & 1 & 0 \\
+            0 & 0 & 0 & 0 & 1
         \end{bmatrix}
 
     Args:
@@ -427,15 +427,14 @@ class ControlledPhase(CVOperation):
     * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
       where :math:`s` is an arbitrary real number (:math:`0.1` by default).
 
-      .. todo:: fill in Heisenberg representation
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
-            1 & 0 & 0 & 0 & 0\ \
-            0 & . & . & . & .\\
-            0 & . & . & . & .\\
-            0 & . & . & . & .\\
-            0 & . & . & . & .
+            1 & 0 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 & 0 \\
+            0 & 0 & 1 & s & 0 \\
+            0 & 0 & 0 & 1 & 0 \\
+            0 & s & 0 & 0 & 1
         \end{bmatrix}
 
     Args:
@@ -531,7 +530,7 @@ class CubicPhase(CVOperation):
 # State preparation
 #=============================================================================
 
-#TODO: fill in Heisenberg reps of state preparations in docstrings?
+#TODO: put Heisenberg reps of state preparations in docstrings?
 
 class CoherentState(CVOperation):
     r"""openqml.CoherentState(a, phi, wires)
