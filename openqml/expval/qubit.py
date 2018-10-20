@@ -80,7 +80,7 @@ class PauliY(Expectation):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 0

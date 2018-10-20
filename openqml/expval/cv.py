@@ -29,8 +29,8 @@ Summary
     PhotonNumber
     X
     P
-    PolyXP
     Homodyne
+    PolyXP
 
 Code details
 ~~~~~~~~~~~~
@@ -79,7 +79,7 @@ class PhotonNumber(CVExpectation):
 
 class X(CVExpectation):
     r"""openqml.expval.X(wires)
-    Returns the position expectation value in the phase space.
+    Returns the position expectation value in phase space.
 
     This expectation command returns the value :math:`\braket{\x}`.
 
@@ -108,7 +108,7 @@ class X(CVExpectation):
 
 class P(CVExpectation):
     r"""openqml.expval.P(wires)
-    Returns the momentum expectation value in the phase space.
+    Returns the momentum expectation value in phase space.
 
     This expectation command returns the value :math:`\braket{\p}`.
 
@@ -133,6 +133,41 @@ class P(CVExpectation):
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([0, 0, 1])
+
+
+class Homodyne(CVExpectation):
+    r"""openqml.expval.Homodyne(wires)
+    Returns the homodyne expectation value in phase space.
+
+    This expectation command returns the value :math:`\braket{\x_\phi}`,
+    where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalised
+    quadrature operator.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Expectation order: 1st order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: d = [0, \cos\phi, \sin\phi]
+
+    Args:
+        phi (float): axis in the phase space at which to calculate
+            the homodyne measurement.
+        wires (Sequence[int] or int): the wire the operation acts on.
+    """
+    num_wires = 1
+    num_params = 1
+    par_domain = 'R'
+
+    grad_method = 'A'
+    ev_order = 1
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        phi = p[0]
+        return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
 
 
 class PolyXP(CVExpectation):
@@ -170,41 +205,6 @@ class PolyXP(CVExpectation):
     @staticmethod
     def _heisenberg_rep(p):
         return p[0]
-
-
-class Homodyne(CVExpectation):
-    r"""openqml.expval.Homodyne(wires)
-    Returns the homodyne expectation value in the phase space.
-
-    This expectation command returns the value :math:`\braket{\x_\phi}`,
-    where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalised
-    quadrature operator.
-
-    **Details:**
-
-    * Number of wires: 1
-    * Number of parameters: 1
-    * Expectation order: 1st order in the quadrature operators.
-    * Heisenberg representation:
-
-      .. math:: d = [0, \cos\phi, \sin\phi]
-
-    Args:
-        phi (float): axis in the phase space at which to calculate
-            the homodyne measurement.
-        wires (Sequence[int] or int): the wire the operation acts on.
-    """
-    num_wires = 1
-    num_params = 1
-    par_domain = 'R'
-
-    grad_method = 'A'
-    ev_order = 1
-
-    @staticmethod
-    def _heisenberg_rep(p):
-        phi = p[0]
-        return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
 
 
 all_ops = [Homodyne, PhotonNumber, P, X, PolyXP]

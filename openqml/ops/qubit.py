@@ -235,7 +235,7 @@ class RX(Operation):
 
 class RY(Operation):
     r"""RY(phi, wires)
-    The single qubit Y rotation.
+    The single qubit Y rotation
 
     .. math:: R_y(\phi) = e^{-i\phi\sigma_y/2} = \begin{bmatrix}
                 \cos(\phi/2) & -\sin(\phi/2) \\
@@ -309,7 +309,7 @@ class PhaseShift(Operation):
 
 
 class Rot(Operation):
-    r"""Rot(phi, theta, rho, wires)
+    r"""Rot(phi, theta, omega, wires)
     Arbitrary single qubit rotation
 
     .. math:: R(\phi,\theta,\omega) = RZ(\omega)RY(\theta)RZ(\phi)= \begin{bmatrix}
@@ -327,7 +327,7 @@ class Rot(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
-        rho (float): rotation angle :math:`\omega`
+        omega (float): rotation angle :math:`\omega`
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 3
@@ -337,8 +337,34 @@ class Rot(Operation):
 
 
 #=============================================================================
+# Arbitrary operations
+#=============================================================================
+
+
+class QubitUnitary(Operation):
+    r"""QubitUnitary(U, wires)
+    Apply an arbitrary unitary matrix
+
+    **Details:**
+
+    * Number of wires: None (applied to the entire system)
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+
+    Args:
+        U (array[complex]): square unitary matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+    """
+    num_params = 1
+    num_wires = 0
+    par_domain = 'A'
+    grad_method = 'F'
+
+
+#=============================================================================
 # State preparation
 #=============================================================================
+
 
 class BasisState(Operation):
     r"""BasisState(n, wires)
@@ -374,30 +400,6 @@ class QubitStateVector(Operation):
 
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
-        wires (Sequence[int] or int): the wire(s) the operation acts on
-    """
-    num_params = 1
-    num_wires = 0
-    par_domain = 'A'
-    grad_method = 'F'
-
-#=============================================================================
-# Arbitrary operations
-#=============================================================================
-
-
-class QubitUnitary(Operation):
-    r"""QubitUnitary(U, wires)
-    Apply an arbitrary unitary matrix.
-
-    **Details:**
-
-    * Number of wires: None (applied to the entire system)
-    * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-
-    Args:
-        U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
