@@ -36,16 +36,16 @@ Gates
 -----
 
 .. autosummary::
-    Beamsplitter
-    ControlledAddition
-    ControlledPhase
-    Displacement
-    Kerr
-    CrossKerr
-    QuadraticPhase
     Rotation
     Squeezing
+    Displacement
+    Beamsplitter
     TwoModeSqueezing
+    QuadraticPhase
+    ControlledAddition
+    ControlledPhase
+    Kerr
+    CrossKerr
     CubicPhase
 
 
@@ -53,15 +53,15 @@ State preparation
 -----------------
 
 .. autosummary::
-    CatState
     CoherentState
-    FockDensityMatrix
-    DisplacedSqueezedState
-    FockState
-    FockStateVector
     SqueezedState
+    DisplacedSqueezedState
     ThermalState
     GaussianState
+    FockState
+    FockStateVector
+    FockDensityMatrix
+    CatState
 
 
 Code details
@@ -133,47 +133,6 @@ class Rotation(CVOperation):
         return _rotation(p[0])
 
 
-class Displacement(CVOperation):
-    r"""openqml.Displacement(r, phi, wires)
-    Phase space displacement.
-
-    .. math::
-       D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
-       = \exp\left(-i\sqrt{\frac{2}{\hbar}}(\re(\alpha) \hat{p} -\im(\alpha) \hat{x})/\right).
-
-    where :math:`\alpha = r e^{i\phi}` has magnitude :math:`r\geq 0` and phase :math:`\phi`.
-
-    **Details:**
-
-    * Number of wires: 1
-    * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}D(r,\phi) = \frac{1}{2s} \left[D(r+s, \phi) - D(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default)
-    * Heisenberg representation:
-
-      .. math:: M = \begin{bmatrix} 1 & 0 & 0 \\ 2r\cos\phi & 1 & 0 \\ 2r\sin\phi & 0 & 1\end{bmatrix}
-
-    Args:
-        r (float): displacement magnitude :math:`r=|\alpha|`
-        phi (float): phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
-    """
-    num_wires = 1
-    num_params = 2
-    par_domain = 'R'
-    grad_method = 'A'
-
-    shift = 0.1
-    grad_recipe = [(0.5/shift, shift), None]
-
-    @staticmethod
-    def _heisenberg_rep(p):
-        c = np.cos(p[1])
-        s = np.sin(p[1])
-        scale = 2  # \sqrt(2 \hbar)
-        return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
-
-
 class Squeezing(CVOperation):
     r"""openqml.Squeezing(r, phi, wires)
     Phase space squeezing.
@@ -216,148 +175,45 @@ class Squeezing(CVOperation):
         return R @ np.diag([1, np.exp(-p[0]), np.exp(p[0])]) @ R.T
 
 
-class TwoModeSqueezing(CVOperation):
-    r"""openqml.TwoModeSqueezing(r, phi, wires)
-    Phase space two-mode squeezing.
+class Displacement(CVOperation):
+    r"""openqml.Displacement(r, phi, wires)
+    Phase space displacement.
 
     .. math::
-        S_2(z) = \exp\left(z^* ab -z a^\dagger b^\dagger \right)
-        = \exp\left(r (e^{-i\phi} ab -e^{i\phi} a^\dagger b^\dagger \right).
+       D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
+       = \exp\left(-i\sqrt{\frac{2}{\hbar}}(\re(\alpha) \hat{p} -\im(\alpha) \hat{x})/\right).
 
-    where :math:`z = r e^{i\phi}`.
+    where :math:`\alpha = r e^{i\phi}` has magnitude :math:`r\geq 0` and phase :math:`\phi`.
 
     **Details:**
 
-    * Number of wires: 2
+    * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{dr}D(r,\phi) = \frac{1}{2s} \left[D(r+s, \phi) - D(r-s, \phi)\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default)
+    * Heisenberg representation:
+
+      .. math:: M = \begin{bmatrix} 1 & 0 & 0 \\ 2r\cos\phi & 1 & 0 \\ 2r\sin\phi & 0 & 1\end{bmatrix}
 
     Args:
-        r (float): squeezing amount
-        phi (float): squeezing phase angle :math:`\phi`
+        r (float): displacement magnitude :math:`r=|\alpha|`
+        phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_wires = 1
     num_params = 2
-    num_wires = 2
     par_domain = 'R'
-
     grad_method = 'A'
+
     shift = 0.1
-    grad_recipe = [(0.5/np.sinh(shift), shift), None]
+    grad_recipe = [(0.5/shift, shift), None]
 
     @staticmethod
     def _heisenberg_rep(p):
-        R = _rotation(p[1], bare=True)
-
-        S = np.sinh(p[0]) * np.diag([1, -1])
-        U = np.cosh(p[0]) * np.identity(5)
-
-        U[0, 0] = 1
-        U[1:3, 3:5] = S @ R.T
-        U[3:5, 1:3] = S @ R.T
-        return U
-
-
-class QuadraticPhase(CVOperation):
-    r"""openqml.QuadraticPhase(s, wires)
-    Quadratic phase shift.
-
-    .. math::
-        P(s) = e^{i \frac{s}{2} \hat{x}^2/\hbar}.
-
-    **Details:**
-
-    * Number of wires: 1
-    * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-
-    Args:
-        s (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
-    """
-    num_params = 1
-    num_wires = 1
-    par_domain = 'R'
-
-    grad_method = 'A'
-    shift = 0.1
-    grad_recipe = [(0.5/shift, shift)]
-
-    @staticmethod
-    def _heisenberg_rep(p):
-        U = np.identity(3)
-        U[2, 1] = p[0]
-        return U
-
-
-class CubicPhase(CVOperation):
-    r"""openqml.CubicPhase(gamma, wires)
-    Cubic phase shift.
-
-    .. math::
-        V(\gamma) = e^{i \frac{\gamma}{3} \hat{x}^3/\hbar}.
-
-    **Details:**
-
-    * Number of wires: 1
-    * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-
-    Args:
-        gamma (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
-    """
-    num_params = 1
-    num_wires = 1
-    par_domain = 'R'
-    grad_method = 'F'
-
-
-class Kerr(CVOperation):
-    r"""openqml.Kerr(kappa, wires)
-    Kerr interaction.
-
-    .. math::
-        K(\kappa) = e^{i \kappa \hat{n}^2}.
-
-    **Details:**
-
-    * Number of wires: 1
-    * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-
-    Args:
-        kappa (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
-    """
-    num_params = 1
-    num_wires = 1
-    par_domain = 'R'
-    grad_method = 'F'
-
-
-class CrossKerr(CVOperation):
-    r"""openqml.CrossKerr(kappa, wires)
-    Cross-Kerr interaction.
-
-    .. math::
-        CK(\kappa) = e^{i \kappa \hat{n}_1\hat{n}_2}.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-
-    Args:
-        kappa (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
-    """
-    num_params = 1
-    num_wires = 2
-    par_domain = 'R'
-    grad_method = 'F'
+        c = np.cos(p[1])
+        s = np.sin(p[1])
+        scale = 2  # \sqrt(2 \hbar)
+        return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
 
 class Beamsplitter(CVOperation):
@@ -409,6 +265,105 @@ class Beamsplitter(CVOperation):
         return U
 
 
+class TwoModeSqueezing(CVOperation):
+    r"""openqml.TwoModeSqueezing(r, phi, wires)
+    Phase space two-mode squeezing.
+
+    .. math::
+        S_2(z) = \exp\left(z^* ab -z a^\dagger b^\dagger \right)
+        = \exp\left(r (e^{-i\phi} ab -e^{i\phi} a^\dagger b^\dagger \right).
+
+    where :math:`z = r e^{i\phi}`.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 2
+    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+
+      .. todo:: fill in Heisenberg representation
+    * Heisenberg representation:
+
+      .. math:: M = \begin{bmatrix}
+            1 & 0 & 0 & 0 & 0\ \
+            0 & . & . & . & .\\
+            0 & . & . & . & .\\
+            0 & . & . & . & .\\
+            0 & . & . & . & .
+        \end{bmatrix}
+
+    Args:
+        r (float): squeezing amount
+        phi (float): squeezing phase angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 2
+    num_wires = 2
+    par_domain = 'R'
+
+    grad_method = 'A'
+    shift = 0.1
+    grad_recipe = [(0.5/np.sinh(shift), shift), None]
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        R = _rotation(p[1], bare=True)
+
+        S = np.sinh(p[0]) * np.diag([1, -1])
+        U = np.cosh(p[0]) * np.identity(5)
+
+        U[0, 0] = 1
+        U[1:3, 3:5] = S @ R.T
+        U[3:5, 1:3] = S @ R.T
+        return U
+
+
+class QuadraticPhase(CVOperation):
+    r"""openqml.QuadraticPhase(s, wires)
+    Quadratic phase shift.
+
+    .. math::
+        P(s) = e^{i \frac{s}{2} \hat{x}^2/\hbar}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+
+      .. todo:: fill in Heisenberg representation
+    * Heisenberg representation:
+
+      .. math:: M = \begin{bmatrix}
+            1 & 0 & 0 & 0 & 0\ \
+            0 & . & . & . & .\\
+            0 & . & . & . & .\\
+            0 & . & . & . & .\\
+            0 & . & . & . & .
+        \end{bmatrix}
+
+    Args:
+        s (float): parameter
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
+
+    grad_method = 'A'
+    shift = 0.1
+    grad_recipe = [(0.5/shift, shift)]
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        U = np.identity(3)
+        U[2, 1] = p[0]
+        return U
+
+
 class ControlledAddition(CVOperation):
     r"""openqml.ControlledAddition(s, wires)
     Controlled addition operation.
@@ -422,6 +377,19 @@ class ControlledAddition(CVOperation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+
+      .. todo:: fill in Heisenberg representation
+    * Heisenberg representation:
+
+      .. math:: M = \begin{bmatrix}
+            1 & 0 & 0 & 0 & 0\ \
+            0 & . & . & . & .\\
+            0 & . & . & . & .\\
+            0 & . & . & . & .\\
+            0 & . & . & . & .
+        \end{bmatrix}
 
     Args:
         s (float): addition multiplier
@@ -456,6 +424,19 @@ class ControlledPhase(CVOperation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+
+      .. todo:: fill in Heisenberg representation
+    * Heisenberg representation:
+
+      .. math:: M = \begin{bmatrix}
+            1 & 0 & 0 & 0 & 0\ \
+            0 & . & . & . & .\\
+            0 & . & . & . & .\\
+            0 & . & . & . & .\\
+            0 & . & . & . & .
+        \end{bmatrix}
 
     Args:
         s (float):  phase shift multiplier
@@ -477,10 +458,80 @@ class ControlledPhase(CVOperation):
         return U
 
 
+class Kerr(CVOperation):
+    r"""openqml.Kerr(kappa, wires)
+    Kerr interaction.
+
+    .. math::
+        K(\kappa) = e^{i \kappa \hat{n}^2}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+
+    Args:
+        kappa (float): parameter
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
+    grad_method = 'F'
+
+
+class CrossKerr(CVOperation):
+    r"""openqml.CrossKerr(kappa, wires)
+    Cross-Kerr interaction.
+
+    .. math::
+        CK(\kappa) = e^{i \kappa \hat{n}_1\hat{n}_2}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+
+    Args:
+        kappa (float): parameter
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = 'R'
+    grad_method = 'F'
+
+
+class CubicPhase(CVOperation):
+    r"""openqml.CubicPhase(gamma, wires)
+    Cubic phase shift.
+
+    .. math::
+        V(\gamma) = e^{i \frac{\gamma}{3} \hat{x}^3/\hbar}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+
+    Args:
+        gamma (float): parameter
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = 'R'
+    grad_method = 'F'
+
+
 #=============================================================================
 # State preparation
 #=============================================================================
 
+#TODO: fill in Heisenberg reps of state preparations in docstrings?
 
 class CoherentState(CVOperation):
     r"""openqml.CoherentState(a, phi, wires)
@@ -554,6 +605,47 @@ class DisplacedSqueezedState(CVOperation):
     grad_method = 'F'
 
 
+class ThermalState(CVOperation):
+    r"""openqml.ThermalState(nbar, wires)
+    Prepares a thermal state.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+
+    Args:
+        nbar (float): mean thermal population of the mode
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_wires = 1
+    num_params = 1
+    par_domain = 'R'
+    grad_method = 'F'
+
+
+class GaussianState(CVOperation):
+    r"""openqml.GaussianState(r, V, wires)
+    Prepare subsystems in a given Gaussian state.
+
+    **Details:**
+
+    * Number of wires: None (applied to the entire system)
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+
+    Args:
+        r (array): a length :math:`2N` vector of means, of the
+            form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
+        V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
+    """
+    num_wires = 0
+    num_params = 2
+    par_domain = 'A'
+    grad_method = 'F'
+
+
 class FockState(CVOperation):
     r"""openqml.FockState(n, wires)
     Prepares a single Fock state.
@@ -574,23 +666,43 @@ class FockState(CVOperation):
     grad_method = None
 
 
-class ThermalState(CVOperation):
-    r"""openqml.ThermalState(nbar, wires)
-    Prepares a thermal state.
+class FockStateVector(CVOperation):
+    r"""openqml.FockStateVector(state, wires)
+    Prepare subsystems using the given ket vector in the Fock basis.
 
     **Details:**
 
-    * Number of wires: 1
+    * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
     Args:
-        nbar (float): mean thermal population of the mode
-        wires (Sequence[int] or int): the wire the operation acts on
+        state (array): a single ket vector, for single mode state preparation,
+            or a multimode ket, with one array dimension per mode
     """
-    num_wires = 1
+    num_wires = 0
     num_params = 1
-    par_domain = 'R'
+    par_domain = 'A'
+    grad_method = 'F'
+
+
+class FockDensityMatrix(CVOperation):
+    r"""openqml.FockDensityMatrix(state, wires)
+    Prepare subsystems using the given density matrix in the Fock basis.
+
+    **Details:**
+
+    * Number of wires: None (applied to the entire system)
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+
+    Args:
+        state (array): a single mode matrix :math:`\rho_{ij}`, or
+            a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
+    """
+    num_wires = 0
+    num_params = 1
+    par_domain = 'A'
     grad_method = 'F'
 
 
@@ -620,65 +732,6 @@ class CatState(CVOperation):
     num_wires = 1
     num_params = 2
     par_domain = 'R'
-    grad_method = 'F'
-
-
-class FockStateVector(CVOperation):
-    r"""openqml.FockStateVector(state, wires)
-    Prepare subsystems using the given ket vector in the Fock basis.
-
-    **Details:**
-
-    * Number of wires: None (applied to the entire system)
-    * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-
-    Args:
-        state (array): a single ket vector, for single mode state preparation,
-            or a multimode ket, with one array dimension per mode
-    """
-    num_wires = 0
-    num_params = 1
-    par_domain = 'A'
-    grad_method = 'F'
-
-class FockDensityMatrix(CVOperation):
-    r"""openqml.FockDensityMatrix(state, wires)
-    Prepare subsystems using the given density matrix in the Fock basis.
-
-    **Details:**
-
-    * Number of wires: None (applied to the entire system)
-    * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-
-    Args:
-        state (array): a single mode two-dimensional matrix :math:`\rho_{ij}`, or
-            a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
-    """
-    num_wires = 0
-    num_params = 1
-    par_domain = 'A'
-    grad_method = 'F'
-
-class GaussianState(CVOperation):
-    r"""openqml.GaussianState(r, V, wires)
-    Prepare subsystems in a given Gaussian state.
-
-    **Details:**
-
-    * Number of wires: None (applied to the entire system)
-    * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-
-    Args:
-        r (array): a length :math:`2N` vector of means, of the
-            form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
-        V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
-    """
-    num_wires = 0
-    num_params = 2
-    par_domain = 'A'
     grad_method = 'F'
 
 
