@@ -317,7 +317,7 @@ class Operation(abc.ABC):
             if isinstance(p, Variable):
                 if self.par_domain == 'A':
                     # NOTE: for now Variables can only represent real scalars.
-                    raise TypeError('Free parameters must represent scalars, I need an array.')
+                    raise TypeError('Free parameters must represent scalars, please provide an array.')
                 return p
 
             # p is not a Variable
