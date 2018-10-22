@@ -84,8 +84,8 @@ class TestHeisenberg(BaseTest):
                 true_matrix = np.array([[1, 0, 0, 0, 0],
                                         [0, np.cos(theta), 0, -np.cos(phi) * np.sin(theta), -np.sin(phi) * np.sin(theta)],
                                         [0, 0, np.cos(theta), np.sin(phi) * np.sin(theta), -np.cos(phi) * np.sin(theta)],
-                                        [0, np.cos(phi) * np.sin(theta), np.sin(phi) * np.sin(theta), np.cos(theta), 0],
-                                        [0, -np.sin(phi) * np.sin(theta), np.cos(phi) * np.sin(theta), 0, np.cos(theta)]])
+                                        [0, np.cos(phi) * np.sin(theta), -np.sin(phi) * np.sin(theta), np.cos(theta), 0],
+                                        [0, np.sin(phi) * np.sin(theta), np.cos(phi) * np.sin(theta), 0, np.cos(theta)]])
                 self.assertAllAlmostEqual(matrix, true_matrix, delta=self.tol)
 
 

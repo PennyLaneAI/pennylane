@@ -239,8 +239,8 @@ class Beamsplitter(CVOperation):
             1 & 0 & 0 & 0 & 0\\
             0 & \cos\theta & 0 & -\cos\phi\sin\theta & -\sin\phi\sin\theta \\
             0 & 0 & \cos\theta & \sin\phi\sin\theta & -\cos\phi\sin\theta\\
-            0 & \cos\phi\sin\theta & \sin\phi\sin\theta & \cos\theta & 0\\
-            0 & -\sin\phi\sin\theta & \cos\phi\sin\theta & 0 & \cos\theta
+            0 & \cos\phi\sin\theta & -\sin\phi\sin\theta & \cos\theta & 0\\
+            0 & \sin\phi\sin\theta & \cos\phi\sin\theta & 0 & \cos\theta
         \end{bmatrix}
 
     Args:
