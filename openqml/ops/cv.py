@@ -217,7 +217,7 @@ class Displacement(CVOperation):
     def _heisenberg_rep(p):
         c = np.cos(p[1])
         s = np.sin(p[1])
-        scale = 2  # \sqrt(2 \hbar)
+        scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
 
@@ -237,10 +237,10 @@ class Beamsplitter(CVOperation):
 
       .. math:: M = \begin{bmatrix}
             1 & 0 & 0 & 0 & 0\\
-            0 & \cos\theta & 0 & -\cos\phi\sin\theta & -\sin\theta\sin\phi \\
-            0 & 0 & \cos\theta & \sin\theta\sin\phi & -\cos\phi\sin\theta\\
-            0 & \cos\phi\sin\theta & \sin\theta\sin\phi & \cos\theta & 0\\
-            0 & -\sin\theta\sin\phi & \cos\phi\sin\theta & 0 & \cos\theta
+            0 & \cos\theta & 0 & -\cos\phi\sin\theta & -\sin\phi\sin\theta \\
+            0 & 0 & \cos\theta & \sin\phi\sin\theta & -\cos\phi\sin\theta\\
+            0 & \cos\phi\sin\theta & \sin\phi\sin\theta & \cos\theta & 0\\
+            0 & -\sin\phi\sin\theta & \cos\phi\sin\theta & 0 & \cos\theta
         \end{bmatrix}
 
     Args:
