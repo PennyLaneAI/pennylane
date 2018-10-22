@@ -8,6 +8,65 @@ example.
 The task at hand is to optimize two rotation gates in order to flip a single
 qubit from state :math:`\ket{0}` to state :math:`\ket{1}`.
 
+
+The qubit rotation circuit
+--------------------------
+
+Here, we are first applying rotation around the :math:`x` axis on the first qubit, followed by rotation around the :math:`y` axis on the first qubit - equivalent to the following quantum circuit:
+
+.. raw:: html
+
+    <br>
+
+.. figure:: figures/rotation_circuit.png
+    :align: center
+    :width: 100%
+    :target: javascript:void(0);
+
+.. raw:: html
+
+    <br>
+
+Breaking this down, step-by-step, we first start with a qubit in the ground state :math:`|0\rangle = \begin{bmatrix}1 & 0 \end{bmatrix}^T`, and rotate the qubit around the x-axis by
+
+.. math::
+    R_x(\phi_1) = e^{-i \phi_1 \sigma_x /2} =
+    \begin{bmatrix} \cos \frac{\phi_1}{2} &  -i \sin \frac{\phi_1}{2} \\
+                   -i \sin \frac{\phi_1}{2} &  \cos \frac{\phi_1}{2}
+    \end{bmatrix},
+
+and then around the y-axis by
+
+.. math::
+    R_y(\phi_2) = e^{-i \phi_2 \sigma_y/2} =
+   \begin{bmatrix} \cos \frac{\phi_2}{2} &  - \sin \frac{\phi_2}{2} \\
+                   \sin \frac{\phi_2}{2} &  \cos \frac{\phi_2}{2}
+   \end{bmatrix}.
+
+After these operations the qubit is now in the state
+
+.. math::  | \psi \rangle = R_y(\phi_2) R_x(\phi_1) | 0 \rangle.
+
+Finally, we measure the expectation :math:`\langle \psi \mid Z \mid \psi \rangle` of the Pauli-Z operator:
+
+.. math::
+   \sigma_z =
+   \begin{bmatrix} 1 &  0 \\
+                   0 & -1
+   \end{bmatrix}.
+
+Using the above to calculate the exact expectation value, we find that
+
+.. math::
+    \braketT{\psi}{Z}{\psi} = \braketT{0}{R_x(\phi_1)^\dagger R_y(\phi_2)^\dagger \sigma_z  R_y(\phi_2) R_x(\phi_1)}{0} = \cos(\phi_1)\cos(\phi_2).
+
+Depending on the circuit parameters :math:`\phi_1` and :math:`\phi_2`, the
+output expectation lies between :math:`1` (if :math:`\ket{\psi} = \ket{0}`)
+and :math:`-1` (if :math:`\ket{\psi} = \ket{1}`).
+
+Now, let's see how we can easily implement and optimize this circuit using OpenQML.
+
+
 Importing OpenQML and NumPy
 ---------------------------
 
@@ -65,7 +124,7 @@ We do this as follows:
         qm.RY(vars[1], wires=0)
         return qm.expval.PauliZ(0)
 
-Notice that the quantum function ``circuit(vars)`` is constructed as if it were any other Python function, with some restrictions:
+This is a simple circuit, that contain two qubit rotations (:class:`~.RX` and :class:`~.RY`) and returns the expectation value in the Pauli-Z basis (:class:`~.expval.qubit.PauliZ`), as per the circuit diagram above. Notice that the quantum function ``circuit()`` is constructed as if it were any other Python function, with some restrictions:
 
 * **It must only contain quantum operations, one operation per line, in the order in which they are to be applied.** In addition, we must always specify the subsystem the operation applies to, by passing the ``wires`` keyword argument; this may be a list or an integer, depending on how many wires the operation acts on.
 
@@ -89,150 +148,66 @@ Once we have written the quantum function, we convert it into a :class:`~.QNode`
         qm.RY(vars[1], wires=0)
         return qm.expval.PauliZ(0)
 
-Thus, our ``circuit(vars)`` quantum function is now a ``QNode``, which will run on device ``dev1`` everytime it is evaluated.
+Thus, our ``circuit()`` quantum function is now a ``QNode``, which will run on device ``dev1`` every time it is evaluated.
 
-But, what are we actually doing in this QNode?
+In fact, we can see this in action straight away. We simply call the QNode with numerical values, exactly as we defined the original quantum function:
 
-Qubit rotation circuit
-----------------------
+>>> circuit([0.54, 0.12])
+0.8515405859048368
 
-Here, we are first applying rotation around the :math:`x` axis on the first qubit, followed by rotation around the :math:`y` axis on the first qubit - equivalent to the following quantum circuit:
+We can also differentiate with respect to the first argument by using the :func:`~.openqml.grad` function:
 
-.. raw:: html
+>>> dcircuit = qm.grad(circuit)
+>>> dcircuit([0.54, 0.12])
+[-0.510438652516502, -0.10267819945693203]
 
-    <br>
-
-.. figure:: figures/rotation_circuit.png
-    :align: center
-    :width: 100%
-    :target: javascript:void(0);
-
-.. raw:: html
-
-    <br>
-
-Breaking this down, step-by-step, we first start with a qubit in the ground state,
-
-.. math::  |0\rangle = \begin{pmatrix}1 \\ 0 \end{pmatrix},
-
-amd rotate the qubit around the x-axis by
-
-.. math::
-
-   R_x(v_1) = e^{-iv_1 X /2} =
-   \begin{pmatrix} \cos \frac{v_1}{2} &  -i \sin \frac{v_1}{2} \\
-                   -i \sin \frac{v_1}{2} &  \cos \frac{v_1}{2}
-   \end{pmatrix},
-
-and then around the y-axis by
-
-.. math::
-
-    R_y(v_2) = e^{-i v_2 Y/2} =
-   \begin{pmatrix} \cos \frac{v_2}{2} &  - \sin \frac{v_2}{2} \\
-                   \sin \frac{v_2}{2} &  \cos \frac{v_2}{2}
-   \end{pmatrix}.
-
-After these operations the qubit is now in the state
-
-.. math::  | \psi \rangle = R_y(v_1) R_x(v_2) | 0 \rangle.
-
-Finally, we measure the expectation :math:`\langle \psi \mid Z \mid \psi \rangle` of the Pauli-Z operator:
-
-.. math::
-
-   Z =
-   \begin{pmatrix} 1 &  0 \\
-                   0 & -1
-   \end{pmatrix}.
-
-Depending on the circuit parameters :math:`v_1` and :math:`v_2`, the
-output expectation lies between :math:`1` (if :math:`\ket{\psi} = \ket{0}`)
-and :math:`-1` (if :math:`\ket{\psi} = \ket{1}`).
-
-Objective
----------
-
-Next, we define a cost. Here, the cost is directly the expectation of
-the PauliZ measurement, so that the cost is trivially the output of the
-circuit.
-
-.. code-block:: python
-
-    def objective(vars):
-        return circuit(vars)
-
-With this objective, the optimization procedure is supposed to find the
-weights that rotate the qubit from the ground state
-
-.. raw:: html
-
-    <br>
-
-.. figure:: figures/bloch_before.png
-    :align: center
-    :width: 30%
-    :target: javascript:void(0);
-
-.. raw:: html
-
-    <br>
-
-to the excited state
-
-.. raw:: html
-
-    <br>
-
-.. figure:: figures/bloch_after.png
-    :align: center
-    :width: 30%
-    :target: javascript:void(0);
-
-.. raw:: html
-
-    <br>
-
-The rotation gates give the optimization landscape a trigonometric shape
-with four global minima and five global maxima.
-
-*Note: To run the following cell you need the matplotlib library.*
-
-.. code-block:: python
-
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    from matplotlib.ticker import MaxNLocator
-
-
-    fig = plt.figure(figsize = (6, 4))
-    ax = fig.gca(projection='3d')
-
-    X = np.arange(-3.1, 3.1, 0.2)
-    Y = np.arange(-3.1, 3.1, 0.2)
-    length = len(X)
-    xx, yy = np.meshgrid(X, Y)
-    Z = np.array([[objective([x, y]) for x in X] for y in Y]).reshape(length, length)
-    surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
-
-    ax.set_xlabel("v1")
-    ax.set_ylabel("v2")
-    ax.zaxis.set_major_locator(MaxNLocator(nbins = 5, prune = 'lower'))
-
-    plt.show()
-
-
-
-.. parsed-literal::
-
-    <Figure size 600x400 with 1 Axes>
+Note that :func:`~.openqml.grad` returns a **function** representing the derivative of the QNode with respect to each parameter contained in the first function argument. We then call this function at the particular point in the parameter space we would like to know the derivatives.
 
 
 Optimization
 ------------
 
-The initial values of the x- and y-rotation parameters :math:`v_1, v_2`
+Next, let's make use of OpenQML's built in optimizers to optimize the two circuit parameters :math:`\phi_1` and :math:`\phi_2` such that the qubit - originally in state :math:`\ket{0}` - is rotated to be in state :math:`\ket{1}`. This is equivalent to measuring a Pauli-Z expectation of :math:`-1`, since the state :math:`\ket{1}` is an eigenvector of the Pauli-Z matrix with eigenvalue :math:`\lambda=-1`.
+
+In other words, the optimization procedure will find the weights :math:`\phi_1` and :math:`\phi_2` that result in the following rotation in the Bloch sphere:
+
+.. raw:: html
+
+    <br>
+
+.. figure:: figures/bloch.png
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+.. raw:: html
+
+    <br>
+
+
+To do so, we need to define a **cost** function. By *minimizing* the cost function, the optimizer will determine the values of the circuit parameters that produces the desired outcome. In this case, our desired outcome is a Pauli-Z expectation value of :math:`-1`; additionally, since we know that the Pauli-Z expectation is bound between :math:`[-1, 1]`, we can define a cost that is trivially the output of the QNode:
+
+.. code-block:: python
+
+    def cost(vars):
+        return circuit(vars)
+
+
+The rotation gates give the optimization landscape a trigonometric shape
+with four global minima and five global maxima.
+
+.. raw:: html
+
+    <br>
+
+.. figure:: figures/qubit_landscape.png
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+
+
+The initial values of the x- and y-rotation parameters :math:`\phi_1, \phi_2`
 are set to near-zero. This corresponds to identity gates, in other
 words, the circuit leaves the qubit in the ground state.
 
