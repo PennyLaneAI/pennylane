@@ -1,51 +1,18 @@
 Qubit rotation
 ==============
 
-This tutorial demonstrates PennyLane's "hello-world" example for
-qubit-based architectures with the projectq backend.
+To see how OpenQML allows the easy construction and optimization of quantum functions, let's
+consider the simple case of **qubit rotation** - the OpenQML version of the 'Hello, world!'
+example.
 
-The task is to optimize two rotation gates in order to flip a single
+The task at hand is to optimize two rotation gates in order to flip a single
 qubit from state :math:`\ket{0}` to state :math:`\ket{1}`.
 
-Imports
--------
 
-First we need to import openqml, as well as openqml's version of numpy.
-This allows us to automatically compute gradients for functions that
-manipulate numpy arrays, including quantum functions. We also want to
-compare two optimizers, basic gradient descent and adagrad.
+The qubit rotation circuit
+--------------------------
 
-.. code-block:: python
-
-    import openqml as qm
-    from openqml import numpy as np
-    from openqml.optimize import GradientDescentOptimizer, AdagradOptimizer
-
-Next, create a projecq simulator as a "device" to run the quantum node.
-We only need a single quantum wire.
-
-.. code-block:: python
-
-    dev = qm.device('projectq.simulator', wires=1)
-
-Quantum node
-------------
-
-We define a quantum node called "circuit". The decorator
-``qm.qfunc(dev1)`` that saves us to create a quantum node via
-``circuit = qm.qnode.QNode(circuit, dev)``.
-
-.. code-block:: python
-
-    @qm.qnode(dev)
-    def circuit(vars):
-
-        qm.RX(vars[0], [0])
-        qm.RY(vars[1], [0])
-
-        return qm.expval.PauliZ(0)
-
-This function uses openqml to run the following quantum circuit:
+Here, we are first applying rotation around the :math:`x` axis on the first qubit, followed by rotation around the :math:`y` axis on the first qubit - equivalent to the following quantum circuit:
 
 .. raw:: html
 
@@ -60,128 +27,187 @@ This function uses openqml to run the following quantum circuit:
 
     <br>
 
-Starting with a qubit in the ground state,
-
-.. math::  |0\rangle = \begin{pmatrix}1 \\ 0 \end{pmatrix},
-
-we first rotate the qubit around the x-axis by
+Breaking this down, step-by-step, we first start with a qubit in the ground state :math:`|0\rangle = \begin{bmatrix}1 & 0 \end{bmatrix}^T`, and rotate the qubit around the x-axis by
 
 .. math::
-
-   R_x(v_1) = e^{-iv_1 X /2} =
-   \begin{pmatrix} \cos \frac{v_1}{2} &  -i \sin \frac{v_1}{2} \\
-                   -i \sin \frac{v_1}{2} &  \cos \frac{v_1}{2}
-   \end{pmatrix},
+    R_x(\phi_1) = e^{-i \phi_1 \sigma_x /2} =
+    \begin{bmatrix} \cos \frac{\phi_1}{2} &  -i \sin \frac{\phi_1}{2} \\
+                   -i \sin \frac{\phi_1}{2} &  \cos \frac{\phi_1}{2}
+    \end{bmatrix},
 
 and then around the y-axis by
 
 .. math::
+    R_y(\phi_2) = e^{-i \phi_2 \sigma_y/2} =
+   \begin{bmatrix} \cos \frac{\phi_2}{2} &  - \sin \frac{\phi_2}{2} \\
+                   \sin \frac{\phi_2}{2} &  \cos \frac{\phi_2}{2}
+   \end{bmatrix}.
 
-    R_y(v_2) = e^{-i v_2 Y/2} =
-   \begin{pmatrix} \cos \frac{v_2}{2} &  - \sin \frac{v_2}{2} \\
-                   \sin \frac{v_2}{2} &  \cos \frac{v_2}{2}
-   \end{pmatrix}.
+After these operations the qubit is now in the state
 
-After these operations the qubit is in the state
+.. math::  | \psi \rangle = R_y(\phi_2) R_x(\phi_1) | 0 \rangle.
 
-.. math::  | \psi \rangle = R_y(v_1) R_x(v_2) | 0 \rangle
-
-Finally, we measure the expectation :math:`\langle \psi \mid Z \mid \psi \rangle` of the Pauli-Z operator
+Finally, we measure the expectation :math:`\langle \psi \mid Z \mid \psi \rangle` of the Pauli-Z operator:
 
 .. math::
-
-   Z =
-   \begin{pmatrix} 1 &  0 \\
+   \sigma_z =
+   \begin{bmatrix} 1 &  0 \\
                    0 & -1
-   \end{pmatrix}.
+   \end{bmatrix}.
 
-Depending on the circuit parameters :math:`v_1` and :math:`v_2`, the
+Using the above to calculate the exact expectation value, we find that
+
+.. math::
+    \braketT{\psi}{Z}{\psi} = \braketT{0}{R_x(\phi_1)^\dagger R_y(\phi_2)^\dagger \sigma_z  R_y(\phi_2) R_x(\phi_1)}{0} = \cos(\phi_1)\cos(\phi_2).
+
+Depending on the circuit parameters :math:`\phi_1` and :math:`\phi_2`, the
 output expectation lies between :math:`1` (if :math:`\ket{\psi} = \ket{0}`)
 and :math:`-1` (if :math:`\ket{\psi} = \ket{1}`).
 
-Objective
----------
+Now, let's see how we can easily implement and optimize this circuit using OpenQML.
 
-Next, we define a cost. Here, the cost is directly the expectation of
-the PauliZ measurement, so that the cost is trivially the output of the
-circuit.
 
-.. code-block:: python
+Importing OpenQML and NumPy
+---------------------------
 
-    def objective(vars):
-        return circuit(vars)
-
-With this objective, the optimization procedure is supposed to find the
-weights that rotate the qubit from the ground state
-
-.. raw:: html
-
-    <br>
-
-.. figure:: figures/bloch_before.png
-    :align: center
-    :width: 30%
-    :target: javascript:void(0);
-
-.. raw:: html
-
-    <br>
-
-to the excited state
-
-.. raw:: html
-
-    <br>
-
-.. figure:: figures/bloch_after.png
-    :align: center
-    :width: 30%
-    :target: javascript:void(0);
-
-.. raw:: html
-
-    <br>
-
-The rotation gates give the optimization landscape a trigonometric shape
-with four global minima and five global maxima.
-
-*Note: To run the following cell you need the matplotlib library.*
+The first thing we need to import OpenQML, as well as the wrapped version
+of NumPy provided by OpenQML.
 
 .. code-block:: python
 
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    from matplotlib.ticker import MaxNLocator
+    import openqml as qm
+    from openqml import numpy as np
 
 
-    fig = plt.figure(figsize = (6, 4))
-    ax = fig.gca(projection='3d')
+.. important::
 
-    X = np.arange(-3.1, 3.1, 0.2)
-    Y = np.arange(-3.1, 3.1, 0.2)
-    length = len(X)
-    xx, yy = np.meshgrid(X, Y)
-    Z = np.array([[objective([x, y]) for x in X] for y in Y]).reshape(length, length)
-    surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
+    When constructing a hybrid quantum/classical computational model with OpenQML,
+    it is important to **always import NumPy from OpenQML**, not the standard NumPy!
 
-    ax.set_xlabel("v1")
-    ax.set_ylabel("v2")
-    ax.zaxis.set_major_locator(MaxNLocator(nbins = 5, prune = 'lower'))
-
-    plt.show()
+    By importing the wrapped version of NumPy provided by OpenQML, you can continue
+    to use the same NumPy functions and arrays you love, but with the added ability
+    to combine quantum functions (as quantum nodes) and classical functions (provided by NumPy)
+    and allow OpenQML to automatically calculate the gradients.
 
 
+Creating a device
+-----------------
 
-.. parsed-literal::
+Before we can construct our quantum node, we need to initialize a **device**. In OpenQML, a device is any computational object that can apply quantum operations, and return an expectation value - this could be a hardware device (such as the IBM QX4, via the OpenQML-PQ plugin), or a software simulator (such as Strawberry Fields, via the OpenQML-SF plugin).
 
-    <Figure size 600x400 with 1 Axes>
+Furthermore, OpenQML supports both devices using the qubit model of quantum computation, and devices using the CV model of quantum computation. In fact, even a hyrbid computation containing both qubit and CV quantum nodes is possible; see (here) for more details.
+
+For this tutorial, we are using the qubit model, so let's initialize a ``'default.qubit'`` device provided by OpenQML - a simple, pure state, qubit simulator.
+
+.. code-block:: python
+
+    dev1 = qm.device('default.qubit', wires=1)
+
+For all devices, :func:`~.openqml.device` accepts the following arguments:
+
+* ``name``: the name of the device to be loaded.
+* ``wires``: the number of subsystems to initialize the device with.
+
+Here, as we only require a single qubit for this example, we set ``wires=1``.
+
+Constructing the quantum node
+-----------------------------
+
+Now that we have initialized our device, we can begin to construct our quantum node (or :class:`~.QNode`). QNodes are an abstract encapsulation of both (a) a quantum device, and (b) a quantum function that is executed by this device. Now that we have a device ``dev1`` that we can use, we need to define the quantum function in order to construct the QNode.
+
+We do this as follows:
+
+.. code-block:: python
+
+    def circuit(vars):
+        qm.RX(vars[0], wires=0)
+        qm.RY(vars[1], wires=0)
+        return qm.expval.PauliZ(0)
+
+This is a simple circuit, that contain two qubit rotations (:class:`~.RX` and :class:`~.RY`) and returns the expectation value in the Pauli-Z basis (:class:`~.expval.qubit.PauliZ`), as per the circuit diagram above. Notice that the quantum function ``circuit()`` is constructed as if it were any other Python function, with some restrictions:
+
+* **It must only contain quantum operations, one operation per line, in the order in which they are to be applied.** In addition, we must always specify the subsystem the operation applies to, by passing the ``wires`` keyword argument; this may be a list or an integer, depending on how many wires the operation acts on.
+
+  For a full list of quantum operations, see :mod:`supported operations <openqml.ops>`.
+
+* **It must return either a single or a tuple of expectation values**. As a result, the quantum function always returns a classical quantity, allowing the QNode to interface with both other quantum and classical ndoes.
+  For a full list of quantum expectation values, see :mod:`supported expectations <openqml.expval>`.
+
+* **It must not contain any classical processing of circuit parameters.**
+
+.. note:: Certain devices may only support a subset of the available OpenQML operations/expectations, or may even provide additional operations/expectations. Please consult the documentation for the plugin or the device for more details.
+
+Once we have written the quantum function, we convert it into a :class:`~.QNode` running on device ``dev1`` by applying the :mod:`qnode decorator <openqml.decorator>` directly above the function definition:
+
+
+.. code-block:: python
+
+    @qm.qnode(dev1)
+    def circuit(vars):
+        qm.RX(vars[0], wires=0)
+        qm.RY(vars[1], wires=0)
+        return qm.expval.PauliZ(0)
+
+Thus, our ``circuit()`` quantum function is now a ``QNode``, which will run on device ``dev1`` every time it is evaluated.
+
+In fact, we can see this in action straight away. We simply call the QNode with numerical values, exactly as we defined the original quantum function:
+
+>>> circuit([0.54, 0.12])
+0.8515405859048368
+
+We can also differentiate with respect to the first argument by using the :func:`~.openqml.grad` function:
+
+>>> dcircuit = qm.grad(circuit)
+>>> dcircuit([0.54, 0.12])
+[-0.510438652516502, -0.10267819945693203]
+
+Note that :func:`~.openqml.grad` returns a **function** representing the derivative of the QNode with respect to each parameter contained in the first function argument. We then call this function at the particular point in the parameter space we would like to know the derivatives.
 
 
 Optimization
 ------------
 
-The initial values of the x- and y-rotation parameters :math:`v_1, v_2`
+Next, let's make use of OpenQML's built in optimizers to optimize the two circuit parameters :math:`\phi_1` and :math:`\phi_2` such that the qubit - originally in state :math:`\ket{0}` - is rotated to be in state :math:`\ket{1}`. This is equivalent to measuring a Pauli-Z expectation of :math:`-1`, since the state :math:`\ket{1}` is an eigenvector of the Pauli-Z matrix with eigenvalue :math:`\lambda=-1`.
+
+In other words, the optimization procedure will find the weights :math:`\phi_1` and :math:`\phi_2` that result in the following rotation in the Bloch sphere:
+
+.. raw:: html
+
+    <br>
+
+.. figure:: figures/bloch.png
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+.. raw:: html
+
+    <br>
+
+
+To do so, we need to define a **cost** function. By *minimizing* the cost function, the optimizer will determine the values of the circuit parameters that produces the desired outcome. In this case, our desired outcome is a Pauli-Z expectation value of :math:`-1`; additionally, since we know that the Pauli-Z expectation is bound between :math:`[-1, 1]`, we can define a cost that is trivially the output of the QNode:
+
+.. code-block:: python
+
+    def cost(vars):
+        return circuit(vars)
+
+
+The rotation gates give the optimization landscape a trigonometric shape
+with four global minima and five global maxima.
+
+.. raw:: html
+
+    <br>
+
+.. figure:: figures/qubit_landscape.png
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+
+
+The initial values of the x- and y-rotation parameters :math:`\phi_1, \phi_2`
 are set to near-zero. This corresponds to identity gates, in other
 words, the circuit leaves the qubit in the ground state.
 

@@ -42,9 +42,7 @@ class AdamOptimizer(GradientDescentOptimizer):
 
     The shift :math:`\epsilon` avoids division by zero and is set to :math:`10^{-8}` in OpenQML.
 
-    For more details, see https://arxiv.org/pdf/1412.6980.pdf, :cite:`kingma2014adam`.
-
-    .. todo:: add the arxiv paper to the reference list.
+    For more details, see https://arxiv.org/pdf/1412.6980.pdf :cite:`kingma2014adam`.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`

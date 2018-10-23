@@ -1032,6 +1032,14 @@ div.seealso {
   border: 1px solid #ff6;
 }
 
+
+.admonition.see {
+    font-style: italic;
+    margin: -15px 0px 10px 0px;
+    padding: 5px;
+    border-color: #ace0ec white white #ace0ec;
+}
+
 div.admonition tt.xref, div.admonition a tt {
   border-bottom: 1px solid #fafafa;
 }
