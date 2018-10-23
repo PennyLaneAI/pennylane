@@ -3,7 +3,7 @@ COVERAGE3 := $(shell which coverage3 2>/dev/null)
 
 PYTHON := python3
 COVERAGE := coverage3
-COPTS := run --append
+COPTS := run
 TESTRUNNER := -m pytest tests
 
 .PHONY: help

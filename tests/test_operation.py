@@ -87,9 +87,13 @@ class BasicTest(BaseTest):
 
             # validate size of input for `heisenberg_expand` method
             with self.assertRaisesRegex(ValueError, 'Heisenberg matrix is the wrong size'):
-                U = U[1:,1:]
-                op.heisenberg_expand(U, len(op.wires))
+                U_wrong_size = U[1:,1:]
+                op.heisenberg_expand(U_wrong_size, len(op.wires))
 
+            # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
+            with self.assertRaisesRegex(ValueError, 'Only order-1 and order-2 arrays supported'):
+                U_high_order = np.array([U] * 3)
+                op.heisenberg_expand(U_high_order, len(op.wires))
 
         for cls in openqml.ops.cv.all_ops + openqml.expval.cv.all_ops:
             if cls.supports_analytic:  # only test gaussian operations
@@ -145,6 +149,9 @@ class BasicTest(BaseTest):
                 # params must be arrays
                 with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
                     cls(*n*[0.0], wires=ww, do_queue=False)
+                # params must not be Variables
+                with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
+                    cls(*n*[ov.Variable(0)], wires=ww, do_queue=False)
             elif cls.par_domain == 'N':
                 # params must be natural numbers
                 with self.assertRaisesRegex(TypeError, 'Natural number'):
