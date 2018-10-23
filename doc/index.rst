@@ -66,7 +66,6 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    :caption: Tutorials
    :hidden:
 
-   tutorials/basic
    tutorials/qubit_rotation
 
 .. 
