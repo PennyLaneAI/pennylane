@@ -49,7 +49,7 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    research
 
 .. toctree::
-   :titlesonly:
+   :maxdepth: 1
    :caption: Key concepts
    :hidden:
 
