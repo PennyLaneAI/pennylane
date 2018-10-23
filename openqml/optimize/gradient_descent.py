@@ -14,6 +14,7 @@
 """Gradient descent optimizer"""
 
 import autograd
+import numpy as np
 
 
 class GradientDescentOptimizer(object):
@@ -46,6 +47,12 @@ class GradientDescentOptimizer(object):
         Returns:
             array: the new weights :math:`x^{(t+1)}`
         """
+
+        try:
+            x = np.array(x)
+            print(type(x))
+        except ValueError:
+            print('Second argument of step() has to be convertable to a numpy array.')
 
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
 

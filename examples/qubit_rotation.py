@@ -5,18 +5,18 @@ to flip a qubit from state |0> to state |1>.
 """
 
 import openqml as qm
-from openqml import numpy as np
+import numpy as np
 from openqml.optimize import GradientDescentOptimizer
 
 dev = qm.device('default.qubit', wires=1)
 
 
-@qm.qfunc(dev)
+@qm.qnode(dev)
 def circuit(variables):
     """QNode"""
     qm.RX(variables[0], [0])
     qm.RY(variables[1], [0])
-    return qm.expectation.PauliZ(0)
+    return qm.expval.PauliZ(0)
 
 
 def objective(variables):

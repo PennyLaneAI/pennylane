@@ -5,22 +5,23 @@ gate to shift the x-quadrature of a Gaussian state to a value of 0.5.
 """
 
 import openqml as qm
-from openqml import numpy as np
+import numpy as np
+from openqml import numpy as onp
 from openqml.optimize import GradientDescentOptimizer
 
 dev = qm.device('default.gaussian', wires=1)
 
 
-@qm.qfunc(dev)
+@qm.qnode(dev)
 def circuit(variables):
 
     qm.Displacement(variables[0], variables[1], [0])
 
-    return qm.expectation.X(0)
+    return qm.expval.X(0)
 
 
 def objective(variables):
-    return np.abs(circuit(variables) - 0.5)**2
+    return onp.abs(circuit(variables) - 0.5)**2
 
 
 o = GradientDescentOptimizer(0.1)
