@@ -206,7 +206,7 @@ def device(name, *args, **kwargs):
         raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
 
 
-def grad(func):
+def grad(func, argnum=0):
     """Returns the gradient (as a callable function) of :class:`~.QNode` objects.
 
     This is a wrapper around the :mod:`autograd.grad` function.
@@ -214,13 +214,15 @@ def grad(func):
     Args:
         func (function): a Python function or QNode that contains
             a combination of quantum and classical nodes
+        argnum (int or list(int)): which argument(s) to take the gradient
+            with respect to (default is 0)
 
     Returns:
         function: the function that returns the gradient of the input
-        function with respect to the first parameter
+        function with respect to the arguments in argnum
     """
     # pylint: disable=no-value-for-parameter
-    return _grad(func)
+    return _grad(func, argnum)
 
 
 def version():

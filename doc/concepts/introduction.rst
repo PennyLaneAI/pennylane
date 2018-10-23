@@ -6,7 +6,7 @@
 Introduction
 ============
 
-The main principle underlying OpenQML is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. OpenQML employs a model where both classical and quantum computers are used in the same basic way: as computational **devices** which we program to evaluate mathematical functions. 
+The main principle underlying OpenQML is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. OpenQML employs a model where both classical and quantum computers are used in the same basic way: as computational **devices** which we program to evaluate mathematical functions.
 
 The core of OpenQML is designed around four main concepts:
 
@@ -18,8 +18,11 @@ The core of OpenQML is designed around four main concepts:
 
 4. **Hybrid computation**: a computing model which seamlessly integrates both classical and quantum nodes
 
-Quantum functions
------------------
+:html:`<h3>Quantum functions</h3>`
+
+.. rst-class:: admonition see
+
+    See the main :ref:`qfuncs` page for more details.
 
 :html:`<br>`
 
@@ -36,14 +39,18 @@ The primary motivation for building quantum computers is that they should be abl
 
 .. note:: For a function :math:`f(x; \bm{\theta})`, :math:`x` is considered to be the function's input and :math:`\bm{\theta}` are parameters which determine the exact form of :math:`f`.
 
-.. seealso:: See the main :ref:`qfuncs` page for more details.
+.. 
+    .. seealso:: See the main :ref:`qfuncs` page for more details.
 
-Quantum gradients
------------------
+:html:`<h3>Quantum gradients</h3>`
+
+.. rst-class:: admonition see
+
+    See the main :ref:`autograd_quantum` page for more details.
 
 A core element of modern machine learning libraries is the automatic computation of analytic gradients. OpenQML extends this key feature to quantum functions.
 
-Evaluating qfuncs is inefficient on classical computers, so we might expect the gradients of qfuncs to be similarly intractable. Fortunately, we can often compute the gradient of a qfunc :math:`\nabla_{\bm{\theta}}f(x;\bm{\theta})` exactly using a linear combination of closely related qfuncs: 
+Evaluating qfuncs is inefficient on classical computers, so we might expect the gradients of qfuncs to be similarly intractable. Fortunately, we can often compute the gradient of a qfunc :math:`\nabla_{\bm{\theta}}f(x;\bm{\theta})` exactly using a linear combination of closely related qfuncs:
 
 :html:`<br>`
 
@@ -58,12 +65,14 @@ Evaluating qfuncs is inefficient on classical computers, so we might expect the 
 
 We can thus **use the same quantum device** to compute both quantum functions and also gradients of quantum functions. This is accomplished with minor assistance of a classical coprocessor, which combines the terms. 
 
-.. seealso:: See the main :ref:`autograd_quantum` page for more details.
 
-Quantum nodes
--------------
+:html:`<h3>Quantum nodes</h3>`
 
-Quantum information is fragile -- especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations? 
+.. rst-class:: admonition see
+
+    See the main :ref:`autograd_quantum` page for more details.
+
+Quantum information is fragile -- especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations?
 
 This leads to the notion of a **quantum node**: a basic computational unit -- programmed on a quantum circuit -- which evaluates a qfunc. Only classical data can enter or exit a quantum node. 
 
@@ -80,10 +89,12 @@ This leads to the notion of a **quantum node**: a basic computational unit -- pr
 
 To a classical device, a quantum node is a black box which can evaluate functions. A quantum device, however, resolves the finer details of the circuit.
 
-.. seealso:: See the main :ref:`quantum_nodes` page for more details.
 
-Hybrid computation
-------------------
+:html:`<h3>Hybrid computation</h3>`
+
+.. rst-class:: admonition see
+
+    See the main :ref:`hybrid_computation` page for more details.
 
 In many proposed hybrid algorithms, quantum circuits are used to evaluate quantum functions, and a classical co-processor is used primarily to post-process circuit outputs. But why should the division of labour be so regimented? 
 
@@ -99,5 +110,3 @@ In many proposed hybrid algorithms, quantum circuits are used to evaluate quantu
 :html:`<br>`
 
 In a **true hybrid** computational model, both the classical and the quantum devices are responsible for arbitrary parts of an overall computation, subject to the rules of quantum nodes. This allows quantum and classical devices to be used jointly, each forming an integral and inseparable part of a larger computation.
-
-.. seealso:: See the main :ref:`hybrid_computation` page for more details.
