@@ -1,9 +1,7 @@
 PYTHON3 := $(shell which python3 2>/dev/null)
-COVERAGE3 := $(shell which coverage3 2>/dev/null)
 
 PYTHON := python3
-COVERAGE := coverage3
-COPTS := run
+COVERAGE := --cov=openqml --cov-report term-missing --cov-report=html:coverage_html_report
 TESTRUNNER := -m pytest tests
 
 .PHONY: help
@@ -57,6 +55,4 @@ test:
 
 coverage:
 	@echo "Generating coverage report..."
-	$(COVERAGE) $(COPTS) $(TESTRUNNER)
-	$(COVERAGE) report
-	$(COVERAGE) html
+	$(PYTHON) $(TESTRUNNER) $(COVERAGE)
