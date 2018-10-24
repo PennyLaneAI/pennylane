@@ -122,7 +122,7 @@ log.getLogger()
 #=============================================================================
 
 
-class ClassPropertyDescriptor(object):
+class ClassPropertyDescriptor(object): # pragma: no cover
     """Allows a class property to be defined"""
     # pylint: disable=too-few-public-methods
     def __init__(self, fget, fset=None):
@@ -312,37 +312,31 @@ class Operation(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
-        # pylint: disable=too-many-branches
-        try:
-            if isinstance(p, Variable):
-                if self.par_domain == 'A':
-                    # NOTE: for now Variables can only represent real scalars.
-                    raise TypeError('Free parameters must represent scalars, please provide an array.')
-                return p
-
-            # p is not a Variable
+        if isinstance(p, Variable):
             if self.par_domain == 'A':
-                if flattened:
-                    if isinstance(p, np.ndarray):
-                        raise TypeError('Flattened array parameter expected, got {}.'.format(type(p)))
-                else:
-                    if not isinstance(p, np.ndarray):
-                        raise TypeError('Array parameter expected, got {}.'.format(type(p)))
-            elif self.par_domain in ('R', 'N'):
-                if not isinstance(p, numbers.Real):
-                    raise TypeError('Real scalar parameter expected, got {}.'.format(type(p)))
-
-                if self.par_domain == 'N':
-                    if not isinstance(p, numbers.Integral):
-                        raise TypeError('Natural number parameter expected, got {}.'.format(type(p)))
-                    if p < 0:
-                        raise TypeError('Natural number parameter expected, got {}.'.format(p))
-            else:
-                raise TypeError('Unknown parameter domain \'{}\'.'.format(self.par_domain))
+                raise TypeError('{}: Array parameter expected, got a Variable, which can only represent real scalars.'.format(self.name))
             return p
-        except TypeError as exc:
-            # add the name of the operation to the error message
-            raise TypeError(self.name + ': ' +str(exc)) from None
+
+        # p is not a Variable
+        if self.par_domain == 'A':
+            if flattened:
+                if isinstance(p, np.ndarray):
+                    raise TypeError('{}: Flattened array parameter expected, got {}.'.format(self.name, type(p)))
+            else:
+                if not isinstance(p, np.ndarray):
+                    raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
+        elif self.par_domain in ('R', 'N'):
+            if not isinstance(p, numbers.Real):
+                raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
+
+            if self.par_domain == 'N':
+                if not isinstance(p, numbers.Integral):
+                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, type(p)))
+                if p < 0:
+                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, p))
+        else:
+            raise TypeError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
+        return p
 
     @property
     def parameters(self):
@@ -426,6 +420,11 @@ class CV:
         """
         U_dim = len(U)
         nw = len(self.wires)
+
+
+        if U.ndim > 2:
+            raise ValueError('Only order-1 and order-2 arrays supported.')
+
         if U_dim != 1+2*nw:
             raise ValueError('{}: Heisenberg matrix is the wrong size {}.'.format(self.name, U_dim))
 
@@ -467,8 +466,6 @@ class CV:
 
                 for k2, w2 in enumerate(self.wires):
                     W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
-        else:
-            raise ValueError('Only order-1 and order-2 arrays supported.')
         return W
 
     @staticmethod

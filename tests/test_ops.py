@@ -33,6 +33,8 @@ phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)
 mags = np.linspace(0., 1., 7)
 s_vals = np.linspace(-3,3,13)
 
+nongaussian_gates = [cv.Kerr, cv.CrossKerr, cv.CubicPhase]
+
 class TestHeisenberg(BaseTest):
     """Tests for the Heisenberg representation of gates."""
 
@@ -143,12 +145,29 @@ class TestHeisenberg(BaseTest):
                                     [0, s, 0, 0, 1]])
             self.assertAllAlmostEqual(matrix, true_matrix, delta=self.tol)
 
+class TestNonGaussian(BaseTest):
+    """Tests that non-Gaussian gates are properly handled."""
+
+    def test_heisenberg_rep_nonguassian(self):
+        """Tests that the `_heisenberg_rep` for a non-Gaussian gates is None"""
+        for op in nongaussian_gates:
+            self.assertTrue(op._heisenberg_rep(*[0.1] * op.num_params) is None)
+
+    def test_heisenberg_transformation_nongaussian(self):
+        """Tests that proper exceptions are raised if we try to call the Heisenberg
+        transformation of non-Gaussian gates."""
+        self.logTestName()
+
+        with self.assertRaisesRegex(RuntimeError, 'is not a Gaussian operation'):
+            for op in nongaussian_gates:
+                op_ = op(*[0.1] * op.num_params, [0] * op.num_wires, do_queue=False)
+                op_.heisenberg_tr(op.num_wires)
 
 if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', default.gaussian plugin.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestHeisenberg,):
+    for t in (TestHeisenberg,TestNonGaussian):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
