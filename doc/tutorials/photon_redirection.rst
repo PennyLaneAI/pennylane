@@ -188,6 +188,8 @@ Have a go running this yourself - the optimization should converge quickly, givi
 
 Comparing this to the :ref:`exact calculation <photon_redirection_calc>` above, this is close to the exact optimum value of :math:`\theta=\pi/2`, while the value of :math:`\phi` has not changed - consistent with the knowledge that :math:`\braket{\hat{n}_1}` is independent of :math:`\phi`.
 
+.. _hybrid_computation_example:
+
 Hybrid computation
 ------------------
 
