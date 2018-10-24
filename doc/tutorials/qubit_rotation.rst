@@ -1,10 +1,10 @@
 .. role:: html(raw)
    :format: html
 
-.. _qubit_rotation_tutorial:
+.. _qubit_rotation:
 
-Qubit rotation
-==============
+Basic tutorial: qubit rotation
+==============================
 
 To see how OpenQML allows the easy construction and optimization of quantum functions, let's
 consider the simple case of **qubit rotation** - the OpenQML version of the 'Hello, world!'
@@ -17,7 +17,7 @@ qubit from state :math:`\ket{0}` to state :math:`\ket{1}`.
 The quantum circuit
 -------------------
 
-Here, we are first applying rotation around the :math:`x` axis on the first qubit, followed by rotation around the :math:`y` axis on the first qubit - equivalent to the following quantum circuit:
+In the qubit rotation example, we wish to implement the following quantum circuit:
 
 :html:`<br>`
 
@@ -195,7 +195,7 @@ We can also differentiate with respect to the first argument by using the built-
 
 >>> dcircuit = qm.grad(circuit)
 >>> dcircuit([0.54, 0.12])
-[-0.510438652516502, -0.10267819945693203]
+array([-0.510438652516502, -0.10267819945693203])
 
 Note that :func:`~.openqml.grad` returns a **function** representing the derivative of the QNode with respect to each parameter. **By default, only the derivative with respect to the first argument is returned**. We then call this function at the particular point in the parameter space we would like to know the derivatives.
 
@@ -255,7 +255,7 @@ To begin our optimization, let's choose the following initial values of :math:`\
 
 We can see that for these initial parameter values, the cost function is close to :math:`1`.
 
-Next, we choose a simple gradient descent optimizer, and use it to update the circuit parameters for 10 steps. To do so, we can use the built-in :class:`openqml.optimize.GradientDescentOptimizer` class:
+Next, we choose a simple gradient descent optimizer, and use it to update the circuit parameters for 100 steps. To do so, we can use the built-in :class:`openqml.optimize.GradientDescentOptimizer` class:
 
 .. code-block:: python
 
@@ -276,7 +276,7 @@ Next, we choose a simple gradient descent optimizer, and use it to update the ci
 
     print('\nOptimized rotation angles: {}'.format(params))
 
-Have a go running this yourself - the optimization should converge after 40 steps, giving the following optimum values of :math:`\phi_1` and :math:`\phi_2`:
+Have a go running this yourself - the optimization should converge after approximately 40 steps, giving the following optimum values of :math:`\phi_1` and :math:`\phi_2`:
 
 .. code-block:: python
 
@@ -286,7 +286,7 @@ Substituting this into the theoretical result :math:`\braketT{\psi}{\sigma_z}{\p
 
 .. note::
 
-    Other 'nuclear optimizers' (optimizers that perform a single optimization step) are available in OpenQML; see :mod:`openqml.optimize` for more details.
+    Other optimizers are available in OpenQML; see :mod:`openqml.optimize` for more details.
 
     Note that some optimizers, such as :class:`~.openqml.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the optimizer instance. These can be reset using the ``reset()`` method.
 
