@@ -29,6 +29,14 @@ It implements all the :class:`~openqml._device.Device` methods as well as all bu
 continuous-variable Gaussian operations and expectations, and provides
 a very simple simulation of a Gaussian-based quantum circuit architecture.
 
+Auxillary functions
+-------------------
+
+.. autosummary::
+    bloch_messiah
+    density_matrix
+
+
 Gates and operations
 --------------------
 
@@ -55,6 +63,17 @@ State preparation
     gaussian_state
     set_state
 
+
+Expectations
+------------
+
+.. autosummary::
+    photon_number
+    homodyne
+    poly_quad_expectations
+    fock_expectation
+
+
 Classes
 -------
 
@@ -68,6 +87,9 @@ Code details
 import logging as log
 
 import numpy as np
+from numpy.polynomial.hermite import hermval
+
+from scipy.special import binom, factorial as fac
 
 import openqml as qm
 from openqml import Device
@@ -76,6 +98,98 @@ log.getLogger()
 
 # tolerance for numerical errors
 tolerance = 1e-10
+
+
+#========================================================
+#  auxillary functions
+#========================================================
+
+def bloch_messiah(cov):
+    r"""Performs the Bloch-Messiah decomposition of single mode
+    Gaussian state.
+
+    Args:
+        cov (array): :math:`2\times 2` covariance matrix.
+
+    Returns:
+        tuple: mean photon number, rotation angle, and
+        squeezing magnitude of the Gaussian state.
+    """
+    det = np.linalg.det(cov)
+    nbar = (np.sqrt(det)-1)/2
+
+    mm = cov/np.sqrt(det)
+    a = mm[0, 0]
+    b = mm[0, 1]
+
+    r = -0.5*np.arccosh((1+a*a+b*b)/(2*a))
+    phi = 0.5*np.arctan2((2*a*b), (-1+a*a-b*b))
+    return nbar, phi, r
+
+
+def density_matrix(mu, cov, cutoff, hbar=2.):
+    r"""Returns the density matrix for a single mode Gaussian state.
+
+    Args:
+        mu (array): length-:math:`2N` means vector
+        cov (array): :math:`2\times 2` covariance matrix
+        m (int): :math:`m`th row of the density matrix
+        n (int): :math:`n`th column of the density matrix
+
+    Returns:
+        complex: density matrix element :math:`\rho_{mn}`
+    """
+    # calculate mean photon number, rotation, and squeezing
+    nbar, phi, r = bloch_messiah(cov)
+    # calculate the displacement
+    beta = (mu[0] + mu[1]*1j)/np.sqrt(2*hbar)
+
+    # change signs to account for convention
+    beta = -beta
+    r = -r
+    phi = -2*phi
+
+    m = np.arange(cutoff+1).reshape(-1, 1, 1)
+    n = np.arange(cutoff+1).reshape(1, -1, 1)
+    i = np.arange(cutoff+1).reshape(1, 1, -1)
+
+    # we only perform the sum when 0 <= i <= min(m, n)
+    mask = i <= np.minimum(m, n)
+    m_i = mask*(m-i)
+    n_i = mask*(n-i)
+
+    if np.abs(r) <= tolerance:
+        # squeezing is trivial
+        terms = ((-1)**m_i) * (beta**n_i) * (beta.conj()**m_i) * binom(m, i)/fac(n_i)
+        coeff = np.sqrt(fac(n)/(fac(m))) * np.exp(-np.abs(beta)**2/2)
+    else:
+        # squeezing is non-trivial
+        v = np.exp(-1j*phi)*np.sinh(r)
+        u = np.cosh(r)
+
+        alpha = beta*u-np.conjugate(beta)*v
+
+        H_m = hermval(-alpha.conj()/np.sqrt(-2*u*v.conj()), np.identity(cutoff+1))
+        H_n = hermval(beta/np.sqrt(2*u*v), np.identity(cutoff+1))
+
+        terms = (binom(m, i)/fac(n_i)) * ((2/(u*v))**(i/2)) * ((-v.conj()/(2*u))**((m_i)/2)) * H_n[n_i] * H_m[m_i]
+        coeff = np.sqrt(fac(n)/(fac(m)*u)) * (v/(2*u))**(n/2) * np.exp(-(np.abs(beta)**2-v.conj()*beta**2/u)/2)
+
+    f = np.sum(coeff*terms*mask, axis=2).conj()
+
+    if abs(nbar) < tolerance:
+        # thermal population is trivial
+        psi = f[:, 0]
+        return np.outer(psi, psi.conj())
+
+    # thermal population is non-trivial
+    ratio = nbar/(1+nbar)
+
+    n = np.arange(cutoff+1).reshape(1, -1)
+    psi = np.sqrt(ratio**n) * f
+    rho = np.einsum('in,jn->ij', psi, psi.conj())/(1+nbar)
+
+    return rho
 
 
 #========================================================
@@ -399,6 +513,7 @@ def photon_number(mu, cov, wires, params, hbar=2.):
         mu (array): length-2 vector of means.
         cov (array): :math:`2\times 2` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
+        params (None): no parameters are used for this expectation value.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
 
@@ -450,11 +565,14 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
         mu (array): length-2 vector of means.
         cov (array): :math:`2\times 2` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
+        params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
+            and quadratic coefficients of the quadrature operators
+            :math:`(I, \x_0, \p_0, \x_1, \p_1,\dots)`.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
 
     Returns:
-        tuple: contains the photon number expectation and variance.
+        tuple: contains the quadrature expectation and variance.
     """
     Q = params[0]
     N = len(mu)//2
@@ -488,6 +606,29 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
     var -= groenewald_correction
 
     return ex, var
+
+
+def fock_expectation(mu, cov, wires, params, hbar=2.):
+    r"""Calculates the expectation and variance for a single mode
+    Fock state probability.
+
+    Args:
+        mu (array): length-2 vector of means.
+        cov (array): :math:`2\times 2` covariance matrix.
+        wires (Sequence[int]): wires to calculate the expectation for.
+        params (int): the Fock state to return the expectation value for.
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`.
+
+    Returns:
+        tuple: contains the Fock state expectation and variance.
+    """
+    n = params[0]
+    cutoff = n + 5 # is there a better heuristic for this?
+    dm = density_matrix(mu, cov, cutoff, hbar=hbar)
+
+    # note: currently not sure how to return the variance for this
+    return np.abs(dm[n, n]), 0
 
 
 #========================================================
@@ -532,7 +673,8 @@ class DefaultGaussian(Device):
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
         'Homodyne': homodyne(None),
-        'PolyXP': poly_quad_expectations
+        'PolyXP': poly_quad_expectations,
+        'NumberState': fock_expectation
     }
 
     _circuits = {}

@@ -20,9 +20,12 @@ import inspect
 import logging as log
 
 from openqml import numpy as np
+from scipy.special import factorial as fac
 from scipy.linalg import block_diag
 
 from defaults import openqml as qm, BaseTest
+
+from openqml.plugins.default_gaussian import (bloch_messiah, density_matrix)
 
 from openqml.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
                                               beamsplitter, two_mode_squeezing,
@@ -58,6 +61,39 @@ def prep_par(par, op):
     if op.par_domain == 'A':
         return [np.diag([x, 1]) for x in par]
     return par
+
+
+class TestAuxillaryFunctions(BaseTest):
+    """Tests the auxillary functions"""
+
+    def setUp(self):
+        # a random Gaussian state generated using Strawberry Fields
+        self.mu = np.array([1.086, 0.246])
+        self.cov = np.array([[ 1.59264605, -1.6636522 ],
+                             [-1.6636522, 3.34521199]])
+
+        self.fock_probs = np.array([0.47719798, 0.30087111, 0.09620182, 0.05389537,
+                                    0.0305576, 0.01688266, 0.00992211, 0.00580102,
+                                    0.00344726, 0.00206146, 0.00124025])
+
+        # parameters used to generate the above state
+        self.nbar = 0.3
+        self.r = -0.5
+        self.phi = 0.543
+        self.alpha = 0.543+0.123j
+
+    def test_bloch_messiah(self):
+        """Test bloch_messiah returns correct result"""
+        nbar, phi, r = bloch_messiah(self.cov)
+        self.assertAlmostEqual(nbar, self.nbar, delta=self.tol)
+        self.assertAlmostEqual(r, self.r, delta=self.tol)
+        self.assertAlmostEqual(phi, self.phi-np.pi/2, delta=self.tol)
+
+    def test_density_matrix(self):
+        """Test density_matrix returns correct result"""
+        dm = density_matrix(self.mu, self.cov, 10, hbar=2.)
+        fock_probs = np.abs(np.diag(dm))
+        self.assertAllAlmostEqual(fock_probs, self.fock_probs, delta=self.tol)
 
 
 class TestGates(BaseTest):
@@ -384,6 +420,12 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
         # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
+        # test correct mean and variance for number state expectation
+        n = 3
+        mean = dev.expval('NumberState', [0], [n])
+        expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
+        self.assertAlmostEqual(mean, expected, delta=self.tol)
+
     def test_reduced_state(self):
         """Test reduced state"""
         self.logTestName()
@@ -578,7 +620,8 @@ if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', default.gaussian plugin.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestGates,
+    for t in (TestAuxillaryFunctions,
+              TestGates,
               TestStates,
               TestDefaultGaussianDevice,
               TestDefaultGaussianIntegration):
