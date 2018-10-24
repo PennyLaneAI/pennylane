@@ -138,7 +138,7 @@ class P(CVExpectation):
 
 
 class Homodyne(CVExpectation):
-    r"""openqml.expval.Homodyne(wires)
+    r"""openqml.expval.Homodyne(phi, wires)
     Returns the homodyne expectation value in phase space.
 
     This expectation command returns the value :math:`\braket{\x_\phi}`,
@@ -173,7 +173,7 @@ class Homodyne(CVExpectation):
 
 
 class PolyXP(CVExpectation):
-    r"""openqml.expval.PolyXP(wires)
+    r"""openqml.expval.PolyXP(q, wires)
     Second order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
@@ -209,6 +209,33 @@ class PolyXP(CVExpectation):
         return p[0]
 
 
-all_ops = [Homodyne, PhotonNumber, P, X, PolyXP]
+class NumberState(CVExpectation):
+    r"""openqml.expval.NumberState(n, wires)
+    Number state observable :math:`\ket{n}\bra{n}`.
+
+    Represents the number state observable :math:`\ket{n}\bra{n}`, a non-Gaussian
+    Hermitian observable. The expectation of this observable,
+    :math:`\braket{\psi}{n}\braket{n}{\psi}=|\braket{n}{\psi}|^2`, corresponds to
+    the probablity of measuring the state :math:`\ket{\psi}` in Fock
+    state :math:`\ket{n}`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Expectation order: None (non-Gaussian)
+
+    Args:
+        n (int): expectation value of observable :math:`\ket{n}\bra{n}`
+    """
+    num_wires = 1
+    num_params = 1
+    par_domain = 'N'
+
+    grad_method = None
+    ev_order = None
+
+
+all_ops = [Homodyne, PhotonNumber, P, X, PolyXP, NumberState]
 
 __all__ = [cls.__name__ for cls in all_ops]
