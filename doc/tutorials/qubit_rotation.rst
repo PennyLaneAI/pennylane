@@ -144,7 +144,7 @@ Now that we have initialized our device, we can begin to construct our quantum n
 .. admonition:: Definition
     :class: defn
 
-    QNodes are an abstract encapsulation of a quantun function, described by a quantum circuit. QNodes
+    QNodes are an abstract encapsulation of a quantum function, described by a quantum circuit. QNodes
     are bound to a particular quantum device, which is used to evaluate expectation values of this circuit.
 
 .. tip::
