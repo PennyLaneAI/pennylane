@@ -99,7 +99,6 @@ class BasicTest(BaseTest):
             if cls.supports_analytic:  # only test gaussian operations
                 h_test(cls)
 
-
     def test_ops(self):
         "Operation initialization."
         self.logTestName()
@@ -185,6 +184,25 @@ class BasicTest(BaseTest):
 
         for cls in openqml.expval.cv.all_ops:
             op_test(cls)
+
+    def test_operation_outside_queue(self):
+        """Test that an error is raised if an operation is called
+        outside of a QNode context."""
+        self.logTestName()
+
+        with self.assertRaisesRegex(openqml.QuantumFunctionError, "can only be used inside a qfunc"):
+            openqml.qubit.Hadamard(wires=0)
+
+    def test_operation_no_queue(self):
+        """Test that an operation can be called outside a QNode with the do_queue flag"""
+        self.logTestName()
+
+        try:
+            openqml.qubit.Hadamard(wires=0, do_queue=False)
+        except openqml.QuantumFunctionError:
+            self.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
+
+
 
 
 if __name__ == '__main__':
