@@ -1,7 +1,7 @@
 .. role:: html(raw)
    :format: html
 
-.. _photon_redirection_tutorial:
+.. _photon_redirection:
 
 Photon redirection and hybrid computation
 =========================================
@@ -45,9 +45,9 @@ Breaking this down, step-by-step:
 
 4. **Finally, we measure the photon number expectation value** :math:`\braket{\hat{n}}` of the second wire, where
 
-   .. math:: \hat{n} = \frac{\x^2+\p^2}{2\hbar} - \frac{1}{2}, ~~ \hat{n}\ket{n} = n\ket{n}
+   .. math:: \hat{n} = \frac{\x^2+\p^2}{2\hbar} - \frac{1}{2}
 
-   is the number operator.
+   is the number operator, acting on the Fock basis number states such that :math:`\hat{n}\ket{n} = n\ket{n}`.
 
 The aim of this tutorial is to optimize the beamsplitter parameters :math:`(\theta, \phi)` such that the expected photon number of the second wire is **maximized**. Since the beamsplitter is a passive optical element that preserves the total photon number, this corresponds to the output state :math:`\ket{0,1}` - the incident photon from the first wire has been 'redirected' to the second wire.
 

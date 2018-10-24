@@ -125,8 +125,8 @@ For all devices, :func:`~.openqml.device` accepts the following arguments:
 
 Here, as we only require a single qubit for this example, we set ``wires=1``.
 
-Constructing the quantum node
------------------------------
+Constructing the QNode
+----------------------
 
 Now that we have initialized our device, we can begin to construct our quantum node (or :class:`~.QNode`).
 
@@ -290,4 +290,4 @@ Substituting this into the theoretical result :math:`\braketT{\psi}{\sigma_z}{\p
 
     Note that some optimizers, such as :class:`~.openqml.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the optimizer instance. These can be reset using the ``reset()`` method.
 
-Continue on to the (todo) next tutorial, to see an example of a hybrid qubit, continuous-variable, and classical computation using OpenQML.
+Continue on to the next tutorial :ref:`photon_redirection` to learn how to utilize the extensive plugin ecosystem of OpenQML, build continuous-variable (CV) quantum nodes, and to see an example of a hybrid qubit-CV-classical computation using OpenQML.
