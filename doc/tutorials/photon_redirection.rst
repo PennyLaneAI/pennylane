@@ -45,7 +45,7 @@ Breaking this down, step-by-step:
 
 4. **Finally, we measure the photon number expectation value** :math:`\braket{\hat{n}}` of the second wire, where
 
-   .. math:: \hat{n} = \frac{\x^2+\p^2}{2\hbar} - \frac{1}{2}
+   .. math:: \hat{n} = \ad\a = \frac{\x^2+\p^2}{2\hbar} - \frac{1}{2}
 
    is the number operator, acting on the Fock basis number states such that :math:`\hat{n}\ket{n} = n\ket{n}`.
 
@@ -222,6 +222,16 @@ First, let's define our three nodes of the computation; two quantum nodes (the q
 
 
 Now, we can define the cost function associated with the optimization, linking together our three nodes. Here, we wish to perform the following hybrid quantum-classical optimization:
+
+
+:html:`<br>`
+
+.. figure:: figures/hybrid_graph.svg
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+:html:`<br>`
 
 
 1. Qubit rotation will be performed with some fixed rotation angles :math:`\phi_1` and :math:`\phi_2`.

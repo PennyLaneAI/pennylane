@@ -21,9 +21,9 @@ In the qubit rotation example, we wish to implement the following quantum circui
 
 :html:`<br>`
 
-.. figure:: figures/rotation_circuit.png
+.. figure:: figures/rotation_circuit.svg
     :align: center
-    :width: 100%
+    :width: 40%
     :target: javascript:void(0);
 
 :html:`<br>`
@@ -191,7 +191,19 @@ In fact, we can see this in action straight away. We simply call the QNode with 
 Calculating quantum gradients
 -----------------------------
 
-We can also differentiate with respect to the first argument by using the built-in :func:`~.openqml.grad` function:
+.. admonition:: Definition
+    :class: defn
+
+    The quantum gradient of a hybrid computational graph can be calculated by backpropagating through the computational graph, and utilizing the quantum devices themselves to compute the gradients of the quantum nodes.
+
+    OpenQML supports both analytic automatic differentiation of quantum nodes, as well as numerical methods (such as the method of finite differences).
+
+.. tip::
+
+   *The quantum gradient function of the hybrid computational graph is returned by* :func:`openqml.grad`
+
+
+We can differentiate with respect to the first argument by using the built-in :func:`~.openqml.grad` function:
 
 >>> dcircuit = qm.grad(circuit)
 >>> dcircuit([0.54, 0.12])
@@ -223,6 +235,15 @@ Note that :func:`~.openqml.grad` returns a **function** representing the derivat
 
 Optimization
 ------------
+
+.. admonition:: Definition
+    :class: defn
+
+    OpenQML provides a submodule of single-step optimizers. All optimizers accept a cost function and initial parameters, and utilize OpenQML's automatic differentiation of hybrid computational graphs to perform a single-step parameter update to minimize the cost.
+
+.. tip::
+
+   *See* :mod:`openqml.optimize` *for details and documentation of available optimizers*
 
 Next, let's make use of OpenQML's built in optimizers to optimize the two circuit parameters :math:`\phi_1` and :math:`\phi_2` such that the qubit, originally in state :math:`\ket{0}`, is rotated to be in state :math:`\ket{1}`. This is equivalent to measuring a Pauli-Z expectation of :math:`-1`, since the state :math:`\ket{1}` is an eigenvector of the Pauli-Z matrix with eigenvalue :math:`\lambda=-1`.
 
@@ -286,8 +307,6 @@ Substituting this into the theoretical result :math:`\braketT{\psi}{\sigma_z}{\p
 
 .. note::
 
-    Other optimizers are available in OpenQML; see :mod:`openqml.optimize` for more details.
-
-    Note that some optimizers, such as :class:`~.openqml.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the optimizer instance. These can be reset using the ``reset()`` method.
+    Some optimizers, such as :class:`~.openqml.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the optimizer instance. These can be reset using the ``reset()`` method.
 
 Continue on to the next tutorial :ref:`photon_redirection` to learn how to utilize the extensive plugin ecosystem of OpenQML, build continuous-variable (CV) quantum nodes, and to see an example of a hybrid qubit-CV-classical computation using OpenQML.
