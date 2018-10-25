@@ -630,21 +630,20 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
     r"""Calculates the expectation and variance of a Fock state probability.
 
     Args:
-        mu (array): length-:math:`2N` vector of means.
-        cov (array): :math:`2N\times 2N` covariance matrix.
-        wires (Sequence[int]): wires to calculate the expectation for.
-        params (Sequence[int]): the Fock state to return the expectation value for.
+        mu (array): length-:math:`2N` vector of means
+        cov (array): :math:`2N\times 2N` covariance matrix
+        wires (Sequence[int]): wires to calculate the expectation for
+        params (Sequence[int]): the Fock state to return the expectation value for
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
-        tuple: contains the Fock state expectation and variance.
+        tuple: the Fock state expectation and variance.
     """
     # pylint: disable=unused-argument
     ex = fock_prob(mu, cov, params[0], hbar=hbar)
 
-    # E[|n><n|^2] = E[|n><n|n><n|] = E[|n><n|]
-    # therefore var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
+    # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
     var = ex - ex**2
     return ex, var
 

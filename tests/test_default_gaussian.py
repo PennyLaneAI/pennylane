@@ -69,14 +69,14 @@ class TestAuxillaryFunctions(BaseTest):
     def setUp(self):
         self.hbar = 2.
 
-        # a random two-mode Gaussian state generated using Strawberry Fields
+        # an arbitrary two-mode Gaussian state generated using Strawberry Fields
         self.mu = np.array([0.6862, 0.4002, 0.09, 0.558])*np.sqrt(self.hbar)
         self.cov = np.array([[0.50750512, -0.04125979, -0.21058229, -0.07866912],
                              [-0.04125979, 0.50750512, -0.07866912, -0.21058229],
                              [-0.21058229, -0.07866912, 0.95906208, 0.27133391],
                              [-0.07866912, -0.21058229, 0.27133391, 0.95906208]])*self.hbar
 
-        # expected Fock state prpbabilities
+        # expected Fock state probabilities
         self.events = [(0, 0), (0, 1), (1, 1), (2, 3)]
         self.probs = [0.430461524043, 0.163699407559, 0.0582788388927, 0.00167706931355]
 
@@ -411,14 +411,14 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
         # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
-        # test correct mean and variance for number state expectation |<n|psi>|^2
+        # test correct mean and variance for number state expectation |<n|alpha>|^2
         # on a coherent state
         for n in range(3):
             mean = dev.expval('NumberState', [0], [np.array([n])])
             expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             self.assertAlmostEqual(mean, expected, delta=self.tol)
 
-        # test correct mean and variance for number state expectation |<n|psi>|^2
+        # test correct mean and variance for number state expectation |<n|S(r)>|^2
         # on a squeezed state
         n = 1
         r = 0.4523
