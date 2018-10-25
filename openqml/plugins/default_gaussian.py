@@ -648,7 +648,7 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
             relation :math:`[\x,\p]=i\hbar`
 
     Returns:
-        tuple: the Fock state expectation and variance.
+        tuple: the Fock state expectation and variance
     """
     # pylint: disable=unused-argument
     ex = fock_prob(mu, cov, params[0], hbar=hbar)
