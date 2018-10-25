@@ -634,7 +634,7 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
         wires (Sequence[int]): wires to calculate the expectation for
         params (Sequence[int]): the Fock state to return the expectation value for
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
         tuple: contains the Fock state expectation and variance.
