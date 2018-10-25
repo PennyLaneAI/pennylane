@@ -25,7 +25,7 @@ from scipy.linalg import block_diag
 
 from defaults import openqml as qm, BaseTest
 
-from openqml.plugins.default_gaussian import (fock_prob)
+from openqml.plugins.default_gaussian import fock_prob
 
 from openqml.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
                                               beamsplitter, two_mode_squeezing,

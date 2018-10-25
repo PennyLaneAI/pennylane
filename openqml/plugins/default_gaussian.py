@@ -146,7 +146,7 @@ def fock_prob(mu, cov, event, hbar=2.):
     Args:
         mu (array): length-:math:`2N` means vector
         cov (array): :math:`2N\times 2N` covariance matrix
-        event (array): length-:math:`N` array of positive integers representing the
+        event (array): length-:math:`N` array of non-negative integers representing the
             PNR detection event of the multi-mode system.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
@@ -171,7 +171,8 @@ def fock_prob(mu, cov, event, hbar=2.):
     # the (symmetric) matrix elements <a_i a_j>
     aiaj = (x-p+1j*(xp+xp.T))/4
 
-    # calculate the covariance matrix for the Q function
+    # calculate the covariance matrix sigma_Q appearing in the Q function:
+    # Q(alpha) = exp[-(alpha-beta).sigma_Q^{-1}.(alpha-beta)/2]/|sigma_Q|
     Q = np.block([[aidaj, aiaj.conj()], [aiaj, aidaj.conj()]]) + np.identity(2*N)
 
     # inverse Q matrix
