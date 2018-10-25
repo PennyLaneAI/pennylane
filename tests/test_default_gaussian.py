@@ -69,7 +69,7 @@ class TestAuxillaryFunctions(BaseTest):
     def setUp(self):
         self.hbar = 2.
 
-        # a random two-mode Gaussian state generated using Strawberry Fields
+        # an arbitrary two-mode Gaussian state generated using Strawberry Fields
         self.mu = np.array([0.6862, 0.4002, 0.09, 0.558])*np.sqrt(self.hbar)
         self.cov = np.array([[0.50750512, -0.04125979, -0.21058229, -0.07866912],
                              [-0.04125979, 0.50750512, -0.07866912, -0.21058229],
