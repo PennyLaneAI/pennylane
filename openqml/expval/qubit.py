@@ -20,7 +20,7 @@ Qubit quantum expectations
 This section contains the available built-in discrete-variable
 quantum operations supported by OpenQML, as well as their conventions.
 
-.. note:: Currently, all expectation commands act on only one wire.
+.. note:: Currently, all expectation commands return scalars.
 
 Summary
 -------
@@ -121,8 +121,6 @@ class Hermitian(Expectation):
         \braket{A} = \braketT{\psi}{\cdots \otimes I\otimes A\otimes I\cdots}{\psi}
 
     where :math:`A` acts on the requested wire.
-
-    where
 
     Args:
         A (array): square hermitian matrix.

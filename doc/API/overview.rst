@@ -8,11 +8,17 @@ Writing your own OpenQML plugin, to allow an external quantum library to take ad
 
 .. note::
 
-    A quick primer on terminology of OpenQML plugins in this section. A plugin is an external Python package that provides additional quantum *devices* to OpenQML. Each plugin may provide one (or more) devices, that are accessible directly by OpenQML, as well as any additional private functions or classes.
+    A quick primer on terminology of OpenQML plugins in this section.
 
-    Once installed, these devices can be loaded directly from OpenQML without any additional steps required by the user - however, depending on the scope of the plugin, the user may have to import additional operations.
+    * A plugin is an external Python package that provides additional quantum *devices* to OpenQML.
 
-.. note:: In your plugin module, vanilla NumPy should be imported in all places: ``import numpy as np``.
+    * Each plugin may provide one (or more) devices, that are accessible directly by OpenQML, as well as any additional private functions or classes.
+
+    Once installed, these devices can be loaded directly from OpenQML without any additional steps required by the user - however, depending on the scope of the plugin, you may wish for the user to import additional (custom) quantum operations and expectations.
+
+.. important::
+
+    In your plugin module, **standard NumPy** (*not* the wrapped NumPy module provided by OpenQML) should be imported in all places (i.e., ``import numpy as np``).
 
 
 The device short name
@@ -102,7 +108,7 @@ In most cases, there are a minimum of two methods that need to be defined:
 
 * :meth:`~.Device.expval`: this accepts an observable name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the expectation, returns the resulting expectation value from the device.
 
-  .. note:: Currently, OpenQML only supports single-wire observables.
+  .. note:: Currently, OpenQML only supports expectations that return a scalar value.
 
 However, additional flexibility is sometimes required for interfacing with more complicated frameworks. In such cases, the following (optional) methods may also be defined:
 
