@@ -25,7 +25,7 @@ from scipy.linalg import block_diag
 
 from defaults import openqml as qm, BaseTest
 
-# from openqml.plugins.default_gaussian import (bloch_messiah, density_matrix)
+from openqml.plugins.default_gaussian import (fock_prob)
 
 from openqml.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
                                               beamsplitter, two_mode_squeezing,
@@ -67,33 +67,24 @@ class TestAuxillaryFunctions(BaseTest):
     """Tests the auxillary functions"""
 
     def setUp(self):
-        # a random Gaussian state generated using Strawberry Fields
-        self.mu = np.array([1.086, 0.246])
-        self.cov = np.array([[ 1.59264605, -1.6636522 ],
-                             [-1.6636522, 3.34521199]])
+        self.hbar = 2.
 
-        self.fock_probs = np.array([0.47719798, 0.30087111, 0.09620182, 0.05389537,
-                                    0.0305576, 0.01688266, 0.00992211, 0.00580102,
-                                    0.00344726, 0.00206146, 0.00124025])
+        # a random two-mode Gaussian state generated using Strawberry Fields
+        self.mu = np.array([0.6862, 0.4002, 0.09, 0.558])*np.sqrt(self.hbar)
+        self.cov = np.array([[0.50750512, -0.04125979, -0.21058229, -0.07866912],
+                             [-0.04125979, 0.50750512, -0.07866912, -0.21058229],
+                             [-0.21058229, -0.07866912, 0.95906208, 0.27133391],
+                             [-0.07866912, -0.21058229, 0.27133391, 0.95906208]])*self.hbar
 
-        # parameters used to generate the above state
-        self.nbar = 0.3
-        self.r = -0.5
-        self.phi = 0.543
-        self.alpha = 0.543+0.123j
+        # expected Fock state prpbabilities
+        self.events = [(0, 0), (0, 1), (1, 1), (2, 3)]
+        self.probs = [0.430461524043, 0.163699407559, 0.0582788388927, 0.00167706931355]
 
-    # def test_bloch_messiah(self):
-    #     """Test bloch_messiah returns correct result"""
-    #     nbar, phi, r = bloch_messiah(self.cov)
-    #     self.assertAlmostEqual(nbar, self.nbar, delta=self.tol)
-    #     self.assertAlmostEqual(r, self.r, delta=self.tol)
-    #     self.assertAlmostEqual(phi, self.phi-np.pi/2, delta=self.tol)
-
-    # def test_density_matrix(self):
-    #     """Test density_matrix returns correct result"""
-    #     dm = density_matrix(self.mu, self.cov, 10, hbar=2.)
-    #     fock_probs = np.abs(np.diag(dm))
-    #     self.assertAllAlmostEqual(fock_probs, self.fock_probs, delta=self.tol)
+    def test_fock_prob(self):
+        """Test fock_prob returns the correct Fock probabilities"""
+        for idx, e in enumerate(self.events):
+            res = fock_prob(self.mu, self.cov, e, hbar=self.hbar)
+            self.assertAlmostEqual(res, self.probs[idx], delta=self.tol)
 
 
 class TestGates(BaseTest):
