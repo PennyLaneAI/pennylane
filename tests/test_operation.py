@@ -22,7 +22,6 @@ import numpy as np
 import numpy.random as nr
 
 from defaults import openqml, BaseTest
-import openqml.qnode as oq
 import openqml.operation as oo
 import openqml.variable as ov
 
@@ -208,6 +207,7 @@ class DeveloperTests(BaseTest):
 
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -221,6 +221,7 @@ class DeveloperTests(BaseTest):
 
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -234,6 +235,7 @@ class DeveloperTests(BaseTest):
 
     def test_incorrect_param_domain(self):
         """Test that an exception is raised if an incorrect parameter domain is requested"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -247,6 +249,7 @@ class DeveloperTests(BaseTest):
 
     def test_incorrect_grad_recipe_length(self):
         """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
+        self.logTestName()
 
         class DummyOp(oo.CVOperation):
             r"""Dummy custom operation"""
@@ -261,6 +264,7 @@ class DeveloperTests(BaseTest):
 
     def test_grad_method_with_integer_params(self):
         """Test that an exception is raised if a non-None grad-method is provided for natural number params"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -274,6 +278,7 @@ class DeveloperTests(BaseTest):
 
     def test_analytic_grad_with_array_param(self):
         """Test that an exception is raised if an analytic gradient is requested with an array param"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -287,6 +292,7 @@ class DeveloperTests(BaseTest):
 
     def test_numerical_grad_with_grad_recipe(self):
         """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -301,6 +307,7 @@ class DeveloperTests(BaseTest):
 
     def test_variable_instead_of_array(self):
         """Test that an exception is raised if an array is expected but a variable is passed"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -316,6 +323,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if an array is expected, but an array is passed
         to check_domain when flattened=True. Note that this exception is currently not accessible
         by the developer or the user, but is kept in case it will be used in the future."""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -330,6 +338,7 @@ class DeveloperTests(BaseTest):
 
     def test_scalar_instead_of_array(self):
         """Test that an exception is raised if an array is expected but a scalar is passed"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -343,6 +352,7 @@ class DeveloperTests(BaseTest):
 
     def test_array_instead_of_real(self):
         """Test that an exception is raised if an real is expected but an array is passed"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
@@ -356,6 +366,7 @@ class DeveloperTests(BaseTest):
 
     def test_not_natural_param(self):
         """Test that an exception is raised if an natural number is expected but not passed"""
+        self.logTestName()
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
