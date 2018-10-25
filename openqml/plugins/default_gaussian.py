@@ -143,6 +143,16 @@ def partitions(s, include_singles=True):
 def fock_prob(mu, cov, event, hbar=2.):
     r"""Returns the probability of detection of a particular PNR detection event.
 
+    For more details, see:
+
+    * Kruse, R., Hamilton, C. S., Sansoni, L., Barkhofen, S., Silberhorn, C., & Jex, I.
+      "A detailed study of Gaussian Boson Sampling." `arXiv:1801.07488. (2018).
+      <https://arxiv.org/abs/1801.07488>`_
+
+    * Hamilton, C. S., Kruse, R., Sansoni, L., Barkhofen, S., Silberhorn, C., & Jex, I.
+      "Gaussian boson sampling." `Physical review letters, 119(17), 170501. (2017).
+      <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.119.170501>`_
+
     Args:
         mu (array): length-:math:`2N` means vector
         cov (array): :math:`2N\times 2N` covariance matrix
