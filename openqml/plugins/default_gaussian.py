@@ -35,7 +35,8 @@ Auxillary functions
 .. autosummary::
     bloch_messiah
     density_matrix
-
+    two_partition
+    fock_prob
 
 Gates and operations
 --------------------
@@ -118,12 +119,11 @@ def bloch_messiah(cov):
     det = np.linalg.det(cov)
     nbar = (np.sqrt(det)-1)/2
 
-    mm = cov/np.sqrt(det)
-    a = mm[0, 0]
-    b = mm[0, 1]
+    a = cov[0, 0]/np.sqrt(det)
+    b = cov[0, 1]/np.sqrt(det)
 
-    r = -0.5*np.arccosh((1+a*a+b*b)/(2*a))
-    phi = 0.5*np.arctan2((2*a*b), (-1+a*a-b*b))
+    r = -np.arccosh((1+a**2+b**2)/(2*a))/2
+    phi = np.arctan2(2*a*b, a**2-b**2-1)/2
     return nbar, phi, r
 
 
@@ -131,10 +131,11 @@ def density_matrix(mu, cov, cutoff, hbar=2.):
     r"""Returns the density matrix for a single mode Gaussian state.
 
     Args:
-        mu (array): length-:math:`2N` means vector
+        mu (array): length-:math:`2` means vector
         cov (array): :math:`2\times 2` covariance matrix
-        m (int): :math:`m`th row of the density matrix
-        n (int): :math:`n`th column of the density matrix
+        cutoff (int): Fock basis truncation of the returned density matrix
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`.
 
     Returns:
         complex: density matrix element :math:`\rho_{mn}`
@@ -190,6 +191,118 @@ def density_matrix(mu, cov, cutoff, hbar=2.):
     rho = np.einsum('in,jn->ij', psi, psi.conj())/(1+nbar)
 
     return rho
+
+
+def two_partitions(s, include_singles=True):
+    """Partitions a sequence into all groupings of pairs and singles of elements.
+
+    Args:
+        s (sequence): the sequence to partition
+        include_singles (bool): if False, only partitions into pairs
+            is returned.
+
+    Returns:
+        tuple: returns a nested tuple, containing all partitions of the sequence.
+    """
+    # pylint: disable=too-many-branches
+    if len(s) == 2:
+        if include_singles:
+            yield (s[0],), (s[1],)
+
+        yield tuple(s),
+    else:
+        # pull off a single item and partition the rest
+        if include_singles:
+            if len(s) > 1:
+                item_partition = (s[0],)
+                rest = s[1:]
+                rest_partitions = two_partitions(rest, include_singles)
+                for p in rest_partitions:
+                    if isinstance(p[0], tuple):
+                        yield ((item_partition),) + p
+                    else:
+                        yield (item_partition, p)
+            else:
+                yield tuple(s),
+
+        # pull off a pair of items and partition the rest
+        for idx1 in range(1, len(s)):
+            item_partition = (s[0], s[idx1])
+            rest = s[1:idx1] + s[idx1+1:]
+            rest_partitions = two_partitions(rest, include_singles)
+            for p in rest_partitions:
+                if isinstance(p[0], tuple):
+                    yield ((item_partition),) + p
+                else:
+                    yield (item_partition, p)
+
+
+def fock_prob(mu, cov, event, hbar=2.):
+    r"""Returns the probability of detection of a particular PNR detection event.
+
+    Args:
+        mu (array): length-:math:`2N` means vector
+        cov (array): :math:`2N\times 2N` covariance matrix
+        event (array): length-:math:`N` array of positive integers representing the
+            PNR detection event of the multi-mode system.
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`.
+
+    Returns:
+        float: probability of detecting the event
+    """
+    # number of modes
+    N = len(mu)//2
+    I = np.identity(N)
+
+    # mean displacement of each mode
+    alpha = (mu[:N] + 1j*mu[N:])/np.sqrt(2*hbar)
+    # the expectation values (<a_1>, <a_2>,...,<a_N>, <a^\dagger_1>, ..., <a^\dagger_N>)
+    beta = np.concatenate([alpha, alpha.conj()])
+
+    x = cov[:N, :N]*2/hbar
+    xp = cov[:N, N:]*2/hbar
+    p = cov[N:, N:]*2/hbar
+    # the (Hermitian) matrix elements <a_i^\dagger a_j>
+    aidaj = (x+p+1j*(xp-xp.T)-2*I)/4
+    # the (symmetric) matrix elements <a_i a_j>
+    aiaj = (x-p+1j*(xp+xp.T))/4
+
+    # calculate the covariance matrix for the Q function
+    Q = np.block([[aidaj, aiaj.conj()], [aiaj, aidaj.conj()]]) + np.identity(2*N)
+
+    # inverse Q matrix
+    Qinv = np.linalg.inv(Q)
+    # 1/sqrt(|Q|)
+    sqrt_Qdet = 1/np.sqrt(np.linalg.det(Q).real)
+
+    prefactor = np.exp(-beta @ Qinv @ beta.conj()/2)
+
+    if np.all(np.array(event) == 0):
+        # all PNRs detect the vacuum state
+        return (prefactor*sqrt_Qdet).real/np.prod(fac(event))
+
+    # the matrix X_n = [[0, I_n], [I_n, 0]]
+    O = np.zeros_like(I)
+    X = np.block([[O, I], [I, O]])
+
+    gamma = X @ Qinv.conj() @ beta
+
+    # For each mode, repeat the mode number event[i] times
+    ind = [i for sublist in [[idx]*j for idx, j in enumerate(event)] for i in sublist]
+    # extend the indices for xp-ordering of the Gaussian state
+    ind += [i+N for i in ind]
+
+    if np.linalg.norm(beta) < tolerance:
+        part = two_partitions(ind, include_singles=False)
+    else:
+        part = two_partitions(ind, include_singles=True)
+
+    # calculate Hamilton's A matrix: A = X.(I-Q^{-1})^*
+    A = X @ (np.identity(2*N)-Qinv).conj()
+    summation = np.sum([np.prod([gamma[i[0]] if len(i)==1 else A[i] for i in p]) for p in part])
+
+    return (prefactor*sqrt_Qdet*summation).real/np.prod(fac(event))
 
 
 #========================================================
@@ -609,12 +722,11 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
 
 
 def fock_expectation(mu, cov, wires, params, hbar=2.):
-    r"""Calculates the expectation and variance for a single mode
-    Fock state probability.
+    r"""Calculates the expectation and variance of a Fock state probability.
 
     Args:
-        mu (array): length-2 vector of means.
-        cov (array): :math:`2\times 2` covariance matrix.
+        mu (array): length-:math:`2N` vector of means.
+        cov (array): :math:`2N\times 2N` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
         params (int): the Fock state to return the expectation value for.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
@@ -623,12 +735,8 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
     Returns:
         tuple: contains the Fock state expectation and variance.
     """
-    n = params[0]
-    cutoff = n + 5 # is there a better heuristic for this?
-    dm = density_matrix(mu, cov, cutoff, hbar=hbar)
-
     # note: currently not sure how to return the variance for this
-    return np.abs(dm[n, n]), 0
+    return fock_prob(mu, cov, params[0], hbar=hbar), 0
 
 
 #========================================================
