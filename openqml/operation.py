@@ -335,7 +335,7 @@ class Operation(abc.ABC):
                 if p < 0:
                     raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, p))
         else:
-            raise TypeError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
+            raise ValueError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
         return p
 
     @property
