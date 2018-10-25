@@ -395,7 +395,7 @@ class TestDefaultGaussianDevice(BaseTest):
         alpha = 0.324-0.59j
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
-        mean = dev.expval('PhotonNumber', [0], [])
+        mean = dev.expval('MeanPhoton', [0], [])
         self.assertAlmostEqual(mean, np.abs(alpha)**2+nbar, delta=self.tol)
         # self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
 

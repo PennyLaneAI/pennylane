@@ -144,7 +144,7 @@ running on Strawberry Fields.
     def photon_redirection(params):
         qm.FockState(1, wires=0)
         qm.Beamsplitter(params[0], params[1], wires=[0, 1])
-        return qm.expval.PhotonNumber(1)
+        return qm.expval.MeanPhoton(1)
 
 The ``'strawberryfields.fock'`` device supports all CV operations provided by OpenQML; see the following pages for a full list
 of :ref:`CV operations <cv_ops>` and :ref:`CV expectations <cv_expval>` in OpenQML.
@@ -248,7 +248,7 @@ returns the squared difference of its two inputs using NumPy:
         """The photon redirection QNode"""
         qm.FockState(1, wires=0)
         qm.Beamsplitter(params[0], params[1], wires=[0, 1])
-        return qm.expval.PhotonNumber(1)
+        return qm.expval.MeanPhoton(1)
 
     def squared_difference(x, y):
         """Classical node to compute the squared
