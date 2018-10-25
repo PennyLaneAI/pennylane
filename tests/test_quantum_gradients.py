@@ -33,8 +33,8 @@ mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 sqz_vals = np.linspace(0., 1., 5)
 
-class QuadratureGradientTest(BaseTest):
-    """Tests of the automatic gradient method for circuits acting on quadratures.
+class CVGradientTest(BaseTest):
+    """Tests of the automatic gradient method for CV circuits.
     """
     def setUp(self):
         self.gaussian_dev = qm.device('default.gaussian', wires=2)
@@ -324,18 +324,17 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
         self.logTestName()
 
-        #@qm.qnode(self.qubit_dev1)
+        @qm.qnode(self.qubit_dev1)
         def circuit(x,y,z):
             qm.Rot(x,y,z, [0])
             return qm.expval.PauliZ(0)
 
-        circuit = qm.QNode(circuit, self.qubit_dev1)
-        grad_fn = autograd.grad(circuit.evaluate)
+        grad_fn = autograd.grad(circuit, argnum=[0,1,2])
 
         eye = np.eye(3)
         for theta in thetas:
             angle_inputs = np.array([theta, theta ** 3, np.sqrt(2) * theta])
-            autograd_val = grad_fn(angle_inputs)
+            autograd_val = grad_fn(*angle_inputs)
             for idx in range(3):
                 onehot_idx = eye[idx]
                 manualgrad_val = (circuit(angle_inputs + np.pi / 2 * onehot_idx) - circuit(angle_inputs - np.pi / 2 * onehot_idx)) / 2
@@ -461,7 +460,7 @@ if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', automatic gradients.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (QuadratureGradientTest,QubitGradientTest):
+    for t in (CVGradientTest, QubitGradientTest):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 
