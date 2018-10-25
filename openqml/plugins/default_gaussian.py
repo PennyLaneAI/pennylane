@@ -640,8 +640,12 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
         tuple: contains the Fock state expectation and variance.
     """
     # pylint: disable=unused-argument
-    # note: currently not sure how to return the variance for this
-    return fock_prob(mu, cov, params[0], hbar=hbar), 0
+    ex = fock_prob(mu, cov, params[0], hbar=hbar)
+
+    # E[|n><n|^2] = E[|n><n|n><n|] = E[|n><n|]
+    # therefore var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
+    var = ex - ex**2
+    return ex, var
 
 
 #========================================================
