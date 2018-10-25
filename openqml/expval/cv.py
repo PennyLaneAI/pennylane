@@ -22,7 +22,7 @@ CV quantum expectations
 This section contains the available built-in continuous-variable
 quantum operations supported by OpenQML, as well as their conventions.
 
-.. note:: Currently, all expectation commands act on only one wire.
+.. note:: Currently, all expectation commands return scalars.
 
 Summary
 -------
