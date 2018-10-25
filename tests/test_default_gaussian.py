@@ -420,10 +420,20 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
         # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
-        # test correct mean and variance for number state expectation
-        n = 3
-        mean = dev.expval('NumberState', [0], [n])
-        expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
+        # test correct mean and variance for number state expectation |<n|psi>|^2
+        # on a coherent state
+        for n in range(3):
+            mean = dev.expval('NumberState', [0], [np.array([n])])
+            expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
+            self.assertAlmostEqual(mean, expected, delta=self.tol)
+
+        # test correct mean and variance for number state expectation |<n|psi>|^2
+        # on a squeezed state
+        n = 1
+        r = 0.4523
+        dev.apply('SqueezedState', wires=[0], par=[r, 0])
+        mean = dev.expval('NumberState', [0], [np.array([2*n])])
+        expected = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         self.assertAlmostEqual(mean, expected, delta=self.tol)
 
     def test_reduced_state(self):

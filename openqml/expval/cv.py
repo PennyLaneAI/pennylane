@@ -216,21 +216,22 @@ class NumberState(CVExpectation):
     Represents the number state observable :math:`\ket{n}\bra{n}`, a non-Gaussian
     Hermitian observable. The expectation of this observable,
     :math:`\braket{\psi}{n}\braket{n}{\psi}=|\braket{n}{\psi}|^2`, corresponds to
-    the probablity of measuring the state :math:`\ket{\psi}` in Fock
+    the probablity of measuring the state :math:`\ket{\psi}` in (multi-wire) Fock
     state :math:`\ket{n}`.
 
     **Details:**
 
-    * Number of wires: 1
+    * Number of wires: 0
     * Number of parameters: 1
     * Expectation order: None (non-Gaussian)
 
     Args:
-        n (int): expectation value of observable :math:`\ket{n}\bra{n}`
+        n (array): Array of positive integers representing the number state
+        observable :math:`\ket{n}\bra{n}`
     """
-    num_wires = 1
+    num_wires = 0
     num_params = 1
-    par_domain = 'N'
+    par_domain = 'A'
 
     grad_method = None
     ev_order = None
