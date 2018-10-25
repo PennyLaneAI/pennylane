@@ -629,7 +629,7 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
     r"""Calculates the expectation and variance of a Fock state probability.
 
     Args:
-        mu (array): length-:math:`2N` vector of means.
+        mu (array): length-:math:`2N` vector of means
         cov (array): :math:`2N\times 2N` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
         params (Sequence[int]): the Fock state to return the expectation value for.
