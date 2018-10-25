@@ -29,6 +29,13 @@ It implements all the :class:`~openqml._device.Device` methods as well as all bu
 continuous-variable Gaussian operations and expectations, and provides
 a very simple simulation of a Gaussian-based quantum circuit architecture.
 
+Auxillary functions
+-------------------
+
+.. autosummary::
+    partitions
+    fock_prob
+
 Gates and operations
 --------------------
 
@@ -55,6 +62,17 @@ State preparation
     gaussian_state
     set_state
 
+
+Expectations
+------------
+
+.. autosummary::
+    photon_number
+    homodyne
+    poly_quad_expectations
+    fock_expectation
+
+
 Classes
 -------
 
@@ -69,6 +87,8 @@ import logging as log
 
 import numpy as np
 
+from scipy.special import factorial as fac
+
 import openqml as qm
 from openqml import Device
 
@@ -76,6 +96,128 @@ log.getLogger()
 
 # tolerance for numerical errors
 tolerance = 1e-10
+
+
+#========================================================
+#  auxillary functions
+#========================================================
+
+def partitions(s, include_singles=True):
+    """Partitions a sequence into all groupings of pairs and singles of elements.
+
+    Args:
+        s (sequence): the sequence to partition
+        include_singles (bool): if False, only partitions into pairs
+            is returned.
+
+    Returns:
+        tuple: returns a nested tuple, containing all partitions of the sequence.
+    """
+    # pylint: disable=too-many-branches
+    if len(s) == 2:
+        if include_singles:
+            yield (s[0],), (s[1],)
+
+        yield tuple(s),
+    else:
+        # pull off a single item and partition the rest
+        if include_singles:
+            if len(s) > 1:
+                item_partition = (s[0],)
+                rest = s[1:]
+                rest_partitions = partitions(rest, include_singles)
+                for p in rest_partitions:
+                    yield ((item_partition),) + p
+            else:
+                yield tuple(s),
+
+        # pull off a pair of items and partition the rest
+        for idx1 in range(1, len(s)):
+            item_partition = (s[0], s[idx1])
+            rest = s[1:idx1] + s[idx1+1:]
+            rest_partitions = partitions(rest, include_singles)
+            for p in rest_partitions:
+                yield ((item_partition),) + p
+
+
+def fock_prob(mu, cov, event, hbar=2.):
+    r"""Returns the probability of detection of a particular PNR detection event.
+
+    For more details, see:
+
+    * Kruse, R., Hamilton, C. S., Sansoni, L., Barkhofen, S., Silberhorn, C., & Jex, I.
+      "A detailed study of Gaussian Boson Sampling." `arXiv:1801.07488. (2018).
+      <https://arxiv.org/abs/1801.07488>`_
+
+    * Hamilton, C. S., Kruse, R., Sansoni, L., Barkhofen, S., Silberhorn, C., & Jex, I.
+      "Gaussian boson sampling." `Physical review letters, 119(17), 170501. (2017).
+      <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.119.170501>`_
+
+    Args:
+        mu (array): length-:math:`2N` means vector
+        cov (array): :math:`2N\times 2N` covariance matrix
+        event (array): length-:math:`N` array of non-negative integers representing the
+            PNR detection event of the multi-mode system.
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`.
+
+    Returns:
+        float: probability of detecting the event
+    """
+    # number of modes
+    N = len(mu)//2
+    I = np.identity(N)
+
+    # mean displacement of each mode
+    alpha = (mu[:N] + 1j*mu[N:])/np.sqrt(2*hbar)
+    # the expectation values (<a_1>, <a_2>,...,<a_N>, <a^\dagger_1>, ..., <a^\dagger_N>)
+    beta = np.concatenate([alpha, alpha.conj()])
+
+    x = cov[:N, :N]*2/hbar
+    xp = cov[:N, N:]*2/hbar
+    p = cov[N:, N:]*2/hbar
+    # the (Hermitian) matrix elements <a_i^\dagger a_j>
+    aidaj = (x+p+1j*(xp-xp.T)-2*I)/4
+    # the (symmetric) matrix elements <a_i a_j>
+    aiaj = (x-p+1j*(xp+xp.T))/4
+
+    # calculate the covariance matrix sigma_Q appearing in the Q function:
+    # Q(alpha) = exp[-(alpha-beta).sigma_Q^{-1}.(alpha-beta)/2]/|sigma_Q|
+    Q = np.block([[aidaj, aiaj.conj()], [aiaj, aidaj.conj()]]) + np.identity(2*N)
+
+    # inverse Q matrix
+    Qinv = np.linalg.inv(Q)
+    # 1/sqrt(|Q|)
+    sqrt_Qdet = 1/np.sqrt(np.linalg.det(Q).real)
+
+    prefactor = np.exp(-beta @ Qinv @ beta.conj()/2)
+
+    if np.all(np.array(event) == 0):
+        # all PNRs detect the vacuum state
+        return (prefactor*sqrt_Qdet).real/np.prod(fac(event))
+
+    # the matrix X_n = [[0, I_n], [I_n, 0]]
+    O = np.zeros_like(I)
+    X = np.block([[O, I], [I, O]])
+
+    gamma = X @ Qinv.conj() @ beta
+
+    # For each mode, repeat the mode number event[i] times
+    ind = [i for sublist in [[idx]*j for idx, j in enumerate(event)] for i in sublist]
+    # extend the indices for xp-ordering of the Gaussian state
+    ind += [i+N for i in ind]
+
+    if np.linalg.norm(beta) < tolerance:
+        # state has no displacement
+        part = partitions(ind, include_singles=False)
+    else:
+        part = partitions(ind, include_singles=True)
+
+    # calculate Hamilton's A matrix: A = X.(I-Q^{-1})*
+    A = X @ (np.identity(2*N)-Qinv).conj()
+    summation = np.sum([np.prod([gamma[i[0]] if len(i) == 1 else A[i] for i in p]) for p in part])
+
+    return (prefactor*sqrt_Qdet*summation).real/np.prod(fac(event))
 
 
 #========================================================
@@ -399,6 +541,7 @@ def photon_number(mu, cov, wires, params, hbar=2.):
         mu (array): length-2 vector of means.
         cov (array): :math:`2\times 2` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
+        params (None): no parameters are used for this expectation value.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
 
@@ -450,11 +593,14 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
         mu (array): length-2 vector of means.
         cov (array): :math:`2\times 2` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
+        params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
+            and quadratic coefficients of the quadrature operators
+            :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
 
     Returns:
-        tuple: contains the photon number expectation and variance.
+        tuple: the mean and variance of the quadrature-polynomial observable
     """
     Q = params[0]
     N = len(mu)//2
@@ -487,6 +633,28 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
     groenewald_correction = np.sum([np.linalg.det(hbar*A[:, m][n]) for m in modes for n in modes])
     var -= groenewald_correction
 
+    return ex, var
+
+
+def fock_expectation(mu, cov, wires, params, hbar=2.):
+    r"""Calculates the expectation and variance of a Fock state probability.
+
+    Args:
+        mu (array): length-:math:`2N` vector of means
+        cov (array): :math:`2N\times 2N` covariance matrix
+        wires (Sequence[int]): wires to calculate the expectation for
+        params (Sequence[int]): the Fock state to return the expectation value for
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`
+
+    Returns:
+        tuple: the Fock state expectation and variance
+    """
+    # pylint: disable=unused-argument
+    ex = fock_prob(mu, cov, params[0], hbar=hbar)
+
+    # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
+    var = ex - ex**2
     return ex, var
 
 
@@ -528,11 +696,12 @@ class DefaultGaussian(Device):
     }
 
     _expectation_map = {
-        'PhotonNumber': photon_number,
+        'MeanPhoton': photon_number,
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
         'Homodyne': homodyne(None),
-        'PolyXP': poly_quad_expectations
+        'PolyXP': poly_quad_expectations,
+        'NumberState': fock_expectation
     }
 
     _circuits = {}
@@ -546,27 +715,27 @@ class DefaultGaussian(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, gate_name, wires, par):
-        if gate_name == 'Displacement':
+    def apply(self, op_name, wires, par):
+        if op_name == 'Displacement':
             self._state = displacement(self._state, wires[0], par[0]*np.exp(1j*par[1]))
             return # we are done here
 
-        if gate_name == 'GaussianState':
+        if op_name == 'GaussianState':
             if wires != list(range(self.num_wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
-            self._state = self._operation_map[gate_name](*par, hbar=self.hbar)
+            self._state = self._operation_map[op_name](*par, hbar=self.hbar)
             return # we are done here
 
-        if 'State' in gate_name:
+        if 'State' in op_name:
             # set the new device state
-            mu, cov = self._operation_map[gate_name](*par, hbar=self.hbar)
+            mu, cov = self._operation_map[op_name](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
             self._state = set_state(self._state, wires[0], mu, cov)
             return # we are done here
 
         # get the symplectic matrix
-        S = self._operation_map[gate_name](*par)
+        S = self._operation_map[op_name](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:

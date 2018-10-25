@@ -55,7 +55,7 @@ build a hybrid computation. For example,
     def qfunc2(x, y):
         qm.Displacement(x, 0, wires=0)
         qm.Beamsplitter(y, 0, wires=[0, 1])
-        return qm.expval.PhotonNumber(0)
+        return qm.expval.MeanPhoton(0)
 
     def hybrid_computation(x, y):
         return np.sin(qfunc1(y))*np.exp(-qfunc2(x+y, x)**2)

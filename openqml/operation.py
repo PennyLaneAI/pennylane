@@ -87,8 +87,8 @@ In both cases, :meth:`~.CV._heisenberg_rep` is used for calculating the gradient
 using the analytic method.
 
 Note that for single-mode operations and expectations we use the basis
-:math:`\mathbf{r} = (\hat{\mathbf{1}}, \x, \p)`, while ror multi-mode operations and expectations
-we use the basis :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+:math:`\mathbf{r} = (\I, \x, \p)`, while for multi-mode operations and expectations
+we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
 .. note::
     Non-Gaussian CV operations and expectations are currently only supported via
@@ -122,7 +122,7 @@ log.getLogger()
 #=============================================================================
 
 
-class ClassPropertyDescriptor(object):
+class ClassPropertyDescriptor(object): # pragma: no cover
     """Allows a class property to be defined"""
     # pylint: disable=too-few-public-methods
     def __init__(self, fget, fset=None):
@@ -312,37 +312,31 @@ class Operation(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
-        # pylint: disable=too-many-branches
-        try:
-            if isinstance(p, Variable):
-                if self.par_domain == 'A':
-                    # NOTE: for now Variables can only represent real scalars.
-                    raise TypeError('Free parameters must represent scalars, please provide an array.')
-                return p
-
-            # p is not a Variable
+        if isinstance(p, Variable):
             if self.par_domain == 'A':
-                if flattened:
-                    if isinstance(p, np.ndarray):
-                        raise TypeError('Flattened array parameter expected, got {}.'.format(type(p)))
-                else:
-                    if not isinstance(p, np.ndarray):
-                        raise TypeError('Array parameter expected, got {}.'.format(type(p)))
-            elif self.par_domain in ('R', 'N'):
-                if not isinstance(p, numbers.Real):
-                    raise TypeError('Real scalar parameter expected, got {}.'.format(type(p)))
-
-                if self.par_domain == 'N':
-                    if not isinstance(p, numbers.Integral):
-                        raise TypeError('Natural number parameter expected, got {}.'.format(type(p)))
-                    if p < 0:
-                        raise TypeError('Natural number parameter expected, got {}.'.format(p))
-            else:
-                raise TypeError('Unknown parameter domain \'{}\'.'.format(self.par_domain))
+                raise TypeError('{}: Array parameter expected, got a Variable, which can only represent real scalars.'.format(self.name))
             return p
-        except TypeError as exc:
-            # add the name of the operation to the error message
-            raise TypeError(self.name + ': ' +str(exc)) from None
+
+        # p is not a Variable
+        if self.par_domain == 'A':
+            if flattened:
+                if isinstance(p, np.ndarray):
+                    raise TypeError('{}: Flattened array parameter expected, got {}.'.format(self.name, type(p)))
+            else:
+                if not isinstance(p, np.ndarray):
+                    raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
+        elif self.par_domain in ('R', 'N'):
+            if not isinstance(p, numbers.Real):
+                raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
+
+            if self.par_domain == 'N':
+                if not isinstance(p, numbers.Integral):
+                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, type(p)))
+                if p < 0:
+                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, p))
+        else:
+            raise ValueError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
+        return p
 
     @property
     def parameters(self):
@@ -426,6 +420,11 @@ class CV:
         """
         U_dim = len(U)
         nw = len(self.wires)
+
+
+        if U.ndim > 2:
+            raise ValueError('Only order-1 and order-2 arrays supported.')
+
         if U_dim != 1+2*nw:
             raise ValueError('{}: Heisenberg matrix is the wrong size {}.'.format(self.name, U_dim))
 
@@ -467,8 +466,6 @@ class CV:
 
                 for k2, w2 in enumerate(self.wires):
                     W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
-        else:
-            raise ValueError('Only order-1 and order-2 arrays supported.')
         return W
 
     @staticmethod
@@ -485,8 +482,8 @@ class CV:
           symmetric matrix (second-order observables) of expansion coefficients
           of the observable.
 
-        For single-mode Operations we use the basis :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x, \p)`.
-        For multi-mode Operations we use the basis :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+        For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
+        For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
         .. note::
 
@@ -548,7 +545,7 @@ class CVOperation(CV, Operation):
         transformation in the Heisenberg picture, :math:`U^\dagger(\cdot) U`.
 
         If the gate is Gaussian, this linear transformation preserves the polynomial order
-        of any observables that are polynomials in :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+        of any observables that are polynomials in :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
         This also means it maps :math:`\text{span}(\mathbf{r})` into itself:
 
         .. math:: U^\dagger \mathbf{r}_i U = \sum_j \tilde{U}_{ij} \mathbf{r}_j
@@ -601,7 +598,7 @@ class CVExpectation(CV, Expectation):
         r"""Representation of the observable in the position/momentum operator basis.
 
         Returns the expansion :math:`q` of the observable, :math:`Q`, in the
-        basis :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+        basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
         * For first-order observables returns a real vector such
           that :math:`Q = \sum_i q_i \mathbf{r}_i`.
