@@ -411,7 +411,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
         # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
-        # test correct mean and variance for number state expectation |<n|psi>|^2
+        # test correct mean and variance for number state expectation |<n|alpha>|^2
         # on a coherent state
         for n in range(3):
             mean = dev.expval('NumberState', [0], [np.array([n])])
