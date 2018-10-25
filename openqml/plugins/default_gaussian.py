@@ -33,7 +33,7 @@ Auxillary functions
 -------------------
 
 .. autosummary::
-    two_partition
+    partitions
     fock_prob
 
 Gates and operations
@@ -86,9 +86,8 @@ Code details
 import logging as log
 
 import numpy as np
-from numpy.polynomial.hermite import hermval
 
-from scipy.special import binom, factorial as fac
+from scipy.special import factorial as fac
 
 import openqml as qm
 from openqml import Device
@@ -103,95 +102,7 @@ tolerance = 1e-10
 #  auxillary functions
 #========================================================
 
-# def bloch_messiah(cov):
-#     r"""Performs the Bloch-Messiah decomposition of single mode
-#     Gaussian state.
-
-#     Args:
-#         cov (array): :math:`2\times 2` covariance matrix.
-
-#     Returns:
-#         tuple: mean photon number, rotation angle, and
-#         squeezing magnitude of the Gaussian state.
-#     """
-#     det = np.linalg.det(cov)
-#     nbar = (np.sqrt(det)-1)/2
-
-#     a = cov[0, 0]/np.sqrt(det)
-#     b = cov[0, 1]/np.sqrt(det)
-
-#     r = -np.arccosh((1+a**2+b**2)/(2*a))/2
-#     phi = np.arctan2(2*a*b, a**2-b**2-1)/2
-#     return nbar, phi, r
-
-
-# def density_matrix(mu, cov, cutoff, hbar=2.):
-#     r"""Returns the density matrix for a single mode Gaussian state.
-
-#     Args:
-#         mu (array): length-:math:`2` means vector
-#         cov (array): :math:`2\times 2` covariance matrix
-#         cutoff (int): Fock basis truncation of the returned density matrix
-#         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-#             relation :math:`[\x,\p]=i\hbar`.
-
-#     Returns:
-#         complex: density matrix element :math:`\rho_{mn}`
-#     """
-#     # calculate mean photon number, rotation, and squeezing
-#     nbar, phi, r = bloch_messiah(cov)
-#     # calculate the displacement
-#     beta = (mu[0] + mu[1]*1j)/np.sqrt(2*hbar)
-
-#     # change signs to account for convention
-#     beta = -beta
-#     r = -r
-#     phi = -2*phi
-
-#     m = np.arange(cutoff+1).reshape(-1, 1, 1)
-#     n = np.arange(cutoff+1).reshape(1, -1, 1)
-#     i = np.arange(cutoff+1).reshape(1, 1, -1)
-
-#     # we only perform the sum when 0 <= i <= min(m, n)
-#     mask = i <= np.minimum(m, n)
-#     m_i = mask*(m-i)
-#     n_i = mask*(n-i)
-
-#     if np.abs(r) <= tolerance:
-#         # squeezing is trivial
-#         terms = ((-1)**m_i) * (beta**n_i) * (beta.conj()**m_i) * binom(m, i)/fac(n_i)
-#         coeff = np.sqrt(fac(n)/(fac(m))) * np.exp(-np.abs(beta)**2/2)
-#     else:
-#         # squeezing is non-trivial
-#         v = np.exp(-1j*phi)*np.sinh(r)
-#         u = np.cosh(r)
-
-#         alpha = beta*u-np.conjugate(beta)*v
-
-#         H_m = hermval(-alpha.conj()/np.sqrt(-2*u*v.conj()), np.identity(cutoff+1))
-#         H_n = hermval(beta/np.sqrt(2*u*v), np.identity(cutoff+1))
-
-#         terms = (binom(m, i)/fac(n_i)) * ((2/(u*v))**(i/2)) * ((-v.conj()/(2*u))**((m_i)/2)) * H_n[n_i] * H_m[m_i]
-#         coeff = np.sqrt(fac(n)/(fac(m)*u)) * (v/(2*u))**(n/2) * np.exp(-(np.abs(beta)**2-v.conj()*beta**2/u)/2)
-
-#     f = np.sum(coeff*terms*mask, axis=2).conj()
-
-#     if abs(nbar) < tolerance:
-#         # thermal population is trivial
-#         psi = f[:, 0]
-#         return np.outer(psi, psi.conj())
-
-#     # thermal population is non-trivial
-#     ratio = nbar/(1+nbar)
-
-#     n = np.arange(cutoff+1).reshape(1, -1)
-#     psi = np.sqrt(ratio**n) * f
-#     rho = np.einsum('in,jn->ij', psi, psi.conj())/(1+nbar)
-
-#     return rho
-
-
-def two_partitions(s, include_singles=True):
+def partitions(s, include_singles=True):
     """Partitions a sequence into all groupings of pairs and singles of elements.
 
     Args:
@@ -214,12 +125,9 @@ def two_partitions(s, include_singles=True):
             if len(s) > 1:
                 item_partition = (s[0],)
                 rest = s[1:]
-                rest_partitions = two_partitions(rest, include_singles)
+                rest_partitions = partitions(rest, include_singles)
                 for p in rest_partitions:
-                    if isinstance(p[0], tuple):
-                        yield ((item_partition),) + p
-                    else:
-                        yield (item_partition, p)
+                    yield ((item_partition),) + p
             else:
                 yield tuple(s),
 
@@ -227,12 +135,9 @@ def two_partitions(s, include_singles=True):
         for idx1 in range(1, len(s)):
             item_partition = (s[0], s[idx1])
             rest = s[1:idx1] + s[idx1+1:]
-            rest_partitions = two_partitions(rest, include_singles)
+            rest_partitions = partitions(rest, include_singles)
             for p in rest_partitions:
-                if isinstance(p[0], tuple):
-                    yield ((item_partition),) + p
-                else:
-                    yield (item_partition, p)
+                yield ((item_partition),) + p
 
 
 def fock_prob(mu, cov, event, hbar=2.):
@@ -293,13 +198,13 @@ def fock_prob(mu, cov, event, hbar=2.):
 
     if np.linalg.norm(beta) < tolerance:
         # state has no displacement
-        part = two_partitions(ind, include_singles=False)
+        part = partitions(ind, include_singles=False)
     else:
-        part = two_partitions(ind, include_singles=True)
+        part = partitions(ind, include_singles=True)
 
-    # calculate Hamilton's A matrix: A = X.(I-Q^{-1})^*
+    # calculate Hamilton's A matrix: A = X.(I-Q^{-1})*
     A = X @ (np.identity(2*N)-Qinv).conj()
-    summation = np.sum([np.prod([gamma[i[0]] if len(i)==1 else A[i] for i in p]) for p in part])
+    summation = np.sum([np.prod([gamma[i[0]] if len(i) == 1 else A[i] for i in p]) for p in part])
 
     return (prefactor*sqrt_Qdet*summation).real/np.prod(fac(event))
 
@@ -727,13 +632,14 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
         mu (array): length-:math:`2N` vector of means.
         cov (array): :math:`2N\times 2N` covariance matrix.
         wires (Sequence[int]): wires to calculate the expectation for.
-        params (int): the Fock state to return the expectation value for.
+        params (Sequence[int]): the Fock state to return the expectation value for.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
 
     Returns:
         tuple: contains the Fock state expectation and variance.
     """
+    # pylint: disable=unused-argument
     # note: currently not sure how to return the variance for this
     return fock_prob(mu, cov, params[0], hbar=hbar), 0
 
@@ -795,27 +701,27 @@ class DefaultGaussian(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, gate_name, wires, par):
-        if gate_name == 'Displacement':
+    def apply(self, op_name, wires, par):
+        if op_name == 'Displacement':
             self._state = displacement(self._state, wires[0], par[0]*np.exp(1j*par[1]))
             return # we are done here
 
-        if gate_name == 'GaussianState':
+        if op_name == 'GaussianState':
             if wires != list(range(self.num_wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
-            self._state = self._operation_map[gate_name](*par, hbar=self.hbar)
+            self._state = self._operation_map[op_name](*par, hbar=self.hbar)
             return # we are done here
 
-        if 'State' in gate_name:
+        if 'State' in op_name:
             # set the new device state
-            mu, cov = self._operation_map[gate_name](*par, hbar=self.hbar)
+            mu, cov = self._operation_map[op_name](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
             self._state = set_state(self._state, wires[0], mu, cov)
             return # we are done here
 
         # get the symplectic matrix
-        S = self._operation_map[gate_name](*par)
+        S = self._operation_map[op_name](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:
