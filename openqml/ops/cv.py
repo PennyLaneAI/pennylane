@@ -112,7 +112,7 @@ class Rotation(CVOperation):
 
     .. math::
         R(\phi) = \exp\left(i \phi \ad \a\right)=\exp\left(i \frac{\phi}{2}
-        \left(\frac{\x^2+  \p^2}{\hbar}-\hat{\mathbf{1}}\right)\right).
+        \left(\frac{\x^2+  \p^2}{\hbar}-\I\right)\right).
 
     **Details:**
 

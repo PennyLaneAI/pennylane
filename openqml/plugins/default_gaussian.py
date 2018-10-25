@@ -595,7 +595,7 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
         wires (Sequence[int]): wires to calculate the expectation for.
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
             and quadratic coefficients of the quadrature operators
-            :math:`(\mathbf{1}, \x_0, \p_0, \x_1, \p_1,\dots)`.
+            :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
 

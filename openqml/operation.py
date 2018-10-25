@@ -87,8 +87,8 @@ In both cases, :meth:`~.CV._heisenberg_rep` is used for calculating the gradient
 using the analytic method.
 
 Note that for single-mode operations and expectations we use the basis
-:math:`\mathbf{r} = (\hat{\mathbf{1}}, \x, \p)`, while ror multi-mode operations and expectations
-we use the basis :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+:math:`\mathbf{r} = (\I, \x, \p)`, while for multi-mode operations and expectations
+we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
 .. note::
     Non-Gaussian CV operations and expectations are currently only supported via
@@ -482,8 +482,8 @@ class CV:
           symmetric matrix (second-order observables) of expansion coefficients
           of the observable.
 
-        For single-mode Operations we use the basis :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x, \p)`.
-        For multi-mode Operations we use the basis :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+        For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
+        For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
         .. note::
 
@@ -545,7 +545,7 @@ class CVOperation(CV, Operation):
         transformation in the Heisenberg picture, :math:`U^\dagger(\cdot) U`.
 
         If the gate is Gaussian, this linear transformation preserves the polynomial order
-        of any observables that are polynomials in :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+        of any observables that are polynomials in :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
         This also means it maps :math:`\text{span}(\mathbf{r})` into itself:
 
         .. math:: U^\dagger \mathbf{r}_i U = \sum_j \tilde{U}_{ij} \mathbf{r}_j
@@ -598,7 +598,7 @@ class CVExpectation(CV, Expectation):
         r"""Representation of the observable in the position/momentum operator basis.
 
         Returns the expansion :math:`q` of the observable, :math:`Q`, in the
-        basis :math:`\mathbf{r} = (\hat{\mathbf{1}}, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+        basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
         * For first-order observables returns a real vector such
           that :math:`Q = \sum_i q_i \mathbf{r}_i`.
