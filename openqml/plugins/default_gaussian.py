@@ -630,7 +630,7 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
 
     Args:
         mu (array): length-:math:`2N` vector of means
-        cov (array): :math:`2N\times 2N` covariance matrix.
+        cov (array): :math:`2N\times 2N` covariance matrix
         wires (Sequence[int]): wires to calculate the expectation for.
         params (Sequence[int]): the Fock state to return the expectation value for.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
