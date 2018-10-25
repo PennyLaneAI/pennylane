@@ -203,7 +203,7 @@ class BasicTest(BaseTest):
 
 
 class DeveloperTests(BaseTest):
-    """test custom operations construction."""
+    """Test custom operations construction."""
 
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
@@ -321,8 +321,8 @@ class DeveloperTests(BaseTest):
 
     def test_array_instead_of_flattened_array(self):
         """Test that an exception is raised if an array is expected, but an array is passed
-        to check_domain when flattened=True. Note that this exception is currently not accessible
-        by the developer or the user, but is kept in case it will be used in the future."""
+        to check_domain when flattened=True. In the initial release of the library, this is not
+        accessible by the developer or the user, but is kept in case it will be used in the future."""
         self.logTestName()
 
         class DummyOp(oo.Operation):
@@ -351,7 +351,7 @@ class DeveloperTests(BaseTest):
             op = DummyOp(0.5, wires=[0], do_queue=False)
 
     def test_array_instead_of_real(self):
-        """Test that an exception is raised if an real is expected but an array is passed"""
+        """Test that an exception is raised if a real number is expected but an array is passed"""
         self.logTestName()
 
         class DummyOp(oo.Operation):
@@ -365,7 +365,7 @@ class DeveloperTests(BaseTest):
             op = DummyOp(np.array([1.]), wires=[0], do_queue=False)
 
     def test_not_natural_param(self):
-        """Test that an exception is raised if an natural number is expected but not passed"""
+        """Test that an exception is raised if a natural number is expected but not passed"""
         self.logTestName()
 
         class DummyOp(oo.Operation):
