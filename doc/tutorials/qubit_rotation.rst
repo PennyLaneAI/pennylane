@@ -325,9 +325,9 @@ Next, we use an optimizer to update the circuit parameters for 100 steps. We can
         if (i+1) % 5 == 0:
             print('Cost after step {:5d}: {: .7f}'.format(i+1, cost(params)))
 
-    print('\nOptimized rotation angles: {}'.format(params))
+    print('Optimized rotation angles: {}'.format(params))
 
-Try this yourself - the optimization should converge after approximately 40 steps, giving the following numerically optimum values of
+Try this yourself -- the optimization should converge after approximately 40 steps, giving the following numerically optimum values of
 :math:`\phi_1` and :math:`\phi_2`:
 
 .. code-block:: python
