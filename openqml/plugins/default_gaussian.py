@@ -696,7 +696,7 @@ class DefaultGaussian(Device):
     }
 
     _expectation_map = {
-        'PhotonNumber': photon_number,
+        'MeanPhoton': photon_number,
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
         'Homodyne': homodyne(None),

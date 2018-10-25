@@ -28,7 +28,7 @@ Summary
 -------
 
 .. autosummary::
-    PhotonNumber
+    MeanPhoton
     X
     P
     Homodyne
@@ -44,8 +44,8 @@ import numpy as np
 from openqml.operation import CVExpectation
 
 
-class PhotonNumber(CVExpectation):
-    r"""openqml.expval.PhotonNumber(wires)
+class MeanPhoton(CVExpectation):
+    r"""openqml.expval.MeanPhoton(wires)
     Returns the photon number expectation value.
 
     This expectation command returns the value
@@ -260,6 +260,6 @@ class NumberState(CVExpectation):
     ev_order = None
 
 
-all_ops = [Homodyne, PhotonNumber, P, X, PolyXP, NumberState]
+all_ops = [Homodyne, MeanPhoton, P, X, PolyXP, NumberState]
 
 __all__ = [cls.__name__ for cls in all_ops]
