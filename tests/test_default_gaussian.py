@@ -25,7 +25,7 @@ from scipy.linalg import block_diag
 
 from defaults import openqml as qm, BaseTest
 
-from openqml.plugins.default_gaussian import (bloch_messiah, density_matrix)
+# from openqml.plugins.default_gaussian import (bloch_messiah, density_matrix)
 
 from openqml.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
                                               beamsplitter, two_mode_squeezing,
@@ -82,18 +82,18 @@ class TestAuxillaryFunctions(BaseTest):
         self.phi = 0.543
         self.alpha = 0.543+0.123j
 
-    def test_bloch_messiah(self):
-        """Test bloch_messiah returns correct result"""
-        nbar, phi, r = bloch_messiah(self.cov)
-        self.assertAlmostEqual(nbar, self.nbar, delta=self.tol)
-        self.assertAlmostEqual(r, self.r, delta=self.tol)
-        self.assertAlmostEqual(phi, self.phi-np.pi/2, delta=self.tol)
+    # def test_bloch_messiah(self):
+    #     """Test bloch_messiah returns correct result"""
+    #     nbar, phi, r = bloch_messiah(self.cov)
+    #     self.assertAlmostEqual(nbar, self.nbar, delta=self.tol)
+    #     self.assertAlmostEqual(r, self.r, delta=self.tol)
+    #     self.assertAlmostEqual(phi, self.phi-np.pi/2, delta=self.tol)
 
-    def test_density_matrix(self):
-        """Test density_matrix returns correct result"""
-        dm = density_matrix(self.mu, self.cov, 10, hbar=2.)
-        fock_probs = np.abs(np.diag(dm))
-        self.assertAllAlmostEqual(fock_probs, self.fock_probs, delta=self.tol)
+    # def test_density_matrix(self):
+    #     """Test density_matrix returns correct result"""
+    #     dm = density_matrix(self.mu, self.cov, 10, hbar=2.)
+    #     fock_probs = np.abs(np.diag(dm))
+    #     self.assertAllAlmostEqual(fock_probs, self.fock_probs, delta=self.tol)
 
 
 class TestGates(BaseTest):
