@@ -122,7 +122,7 @@ class QuadratureGradientTest(BaseTest):
             self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
 
     def test_number_state_gradient(self):
-        "Tests that the automatic gradient of a number state expectation."
+        "Tests that the automatic gradient of a squeezed state with number state expectation is correct."
         self.logTestName()
 
         @qm.qnode(self.gaussian_dev)
@@ -132,8 +132,8 @@ class QuadratureGradientTest(BaseTest):
 
         grad_fn = autograd.grad(circuit, 0)
 
-        # (d/dr) |<2|psi>|^2 = 0.5 tanh(r)^3 (2 csch(r)^2 - 1) sech(r)
-        for r in sqz_vals[1:]:
+        # (d/dr) |<2|S(r)>|^2 = 0.5 tanh(r)^3 (2 csch(r)^2 - 1) sech(r)
+        for r in sqz_vals[1:]: # formula above is not valid for r=0
             autograd_val = grad_fn(r)
             manualgrad_val = 0.5*np.tanh(r)**3 * (2/(np.sinh(r)**2)-1) / np.cosh(r)
             self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
