@@ -108,24 +108,24 @@ class BasicTest(BaseTest):
         self.assertTrue(q.ops[4].name == 'PauliX')
         self.assertTrue(q.ops[5].name == 'PauliZ')
         # only gates
-        temp = q._op_successors(0, only='G')
-        self.assertTrue(q.ops[0] not in temp)
-        self.assertTrue(q.ops[1] in temp)
-        self.assertTrue(q.ops[4] not in temp)
+        gate_successors = q._op_successors(0, only='G')
+        self.assertTrue(q.ops[0] not in gate_successors)
+        self.assertTrue(q.ops[1] in gate_successors)
+        self.assertTrue(q.ops[4] not in gate_successors)
         # only evs
-        temp = q._op_successors(0, only='E')
-        self.assertTrue(q.ops[0] not in temp)
-        self.assertTrue(q.ops[1] not in temp)
-        self.assertTrue(q.ops[4] in temp)
+        ev_sucessors = q._op_successors(0, only='E')
+        self.assertTrue(q.ops[0] not in ev_sucessors)
+        self.assertTrue(q.ops[1] not in ev_sucessors)
+        self.assertTrue(q.ops[4] in ev_sucessors)
         # both
-        temp = q._op_successors(0, only=None)
-        self.assertTrue(q.ops[0] not in temp)
-        self.assertTrue(q.ops[1] in temp)
-        self.assertTrue(q.ops[4] in temp)
+        successors = q._op_successors(0, only=None)
+        self.assertTrue(q.ops[0] not in successors)
+        self.assertTrue(q.ops[1] in successors)
+        self.assertTrue(q.ops[4] in successors)
         # TODO once _op_successors has been upgraded to return only strict successors using a DAG
-        #temp = q._op_successors(2, only=None)
-        #self.assertTrue(q.ops[4] in temp)
-        #self.assertTrue(q.ops[5] not in temp)
+        #successors = q._op_successors(2, only=None)
+        #self.assertTrue(q.ops[4] in successors)
+        #self.assertTrue(q.ops[5] not in successors)
 
 
     def test_qnode_fail(self):
