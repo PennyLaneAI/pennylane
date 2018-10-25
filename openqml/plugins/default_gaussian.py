@@ -642,7 +642,7 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
     # pylint: disable=unused-argument
     ex = fock_prob(mu, cov, params[0], hbar=hbar)
 
-    # therefore var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
+    # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
     var = ex - ex**2
     return ex, var
 
