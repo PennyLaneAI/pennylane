@@ -33,8 +33,8 @@ mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 sqz_vals = np.linspace(0., 1., 5)
 
-class QuadratureGradientTest(BaseTest):
-    """Tests of the automatic gradient method for circuits acting on quadratures.
+class CVGradientTest(BaseTest):
+    """Tests of the automatic gradient method for CV circuits.
     """
     def setUp(self):
         self.gaussian_dev = qm.device('default.gaussian', wires=2)
@@ -121,12 +121,29 @@ class QuadratureGradientTest(BaseTest):
             manualgrad_val = -np.exp(-r) * hbar * alpha
             self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
 
+    def test_number_state_gradient(self):
+        "Tests that the automatic gradient of a squeezed state with number state expectation is correct."
+        self.logTestName()
+
+        @qm.qnode(self.gaussian_dev)
+        def circuit(y):
+            qm.Squeezing(y, 0., [0])
+            return qm.expval.NumberState(np.array([2, 0]), wires=[0, 1])
+
+        grad_fn = autograd.grad(circuit, 0)
+
+        # (d/dr) |<2|S(r)>|^2 = 0.5 tanh(r)^3 (2 csch(r)^2 - 1) sech(r)
+        for r in sqz_vals[1:]: # formula above is not valid for r=0
+            autograd_val = grad_fn(r)
+            manualgrad_val = 0.5*np.tanh(r)**3 * (2/(np.sinh(r)**2)-1) / np.cosh(r)
+            self.assertAlmostEqual(autograd_val, manualgrad_val, delta=self.tol)
+
     def test_cv_gradients_gaussian_circuit(self):
         """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
         self.logTestName()
 
         class PolyN(qm.expval.PolyXP):
-            "Mimics PhotonNumber using the arbitrary 2nd order observable interface. Results should be identical."
+            "Mimics MeanPhoton using the arbitrary 2nd order observable interface. Results should be identical."
             def __init__(self, wires):
                 hbar = 2
                 q = np.diag([-0.5, 0.5/hbar, 0.5/hbar])
@@ -134,7 +151,7 @@ class QuadratureGradientTest(BaseTest):
                 self.name = 'PolyXP'
 
         gates = [cls for cls in qm.ops.cv.all_ops if cls.supports_analytic]
-        obs   = [qm.expval.X, qm.expval.PhotonNumber, PolyN]
+        obs   = [qm.expval.X, qm.expval.MeanPhoton, PolyN]
         par = [0.4]
 
         for G in reversed(gates):
@@ -324,18 +341,17 @@ class QubitGradientTest(BaseTest):
         "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
         self.logTestName()
 
-        #@qm.qnode(self.qubit_dev1)
+        @qm.qnode(self.qubit_dev1)
         def circuit(x,y,z):
             qm.Rot(x,y,z, [0])
             return qm.expval.PauliZ(0)
 
-        circuit = qm.QNode(circuit, self.qubit_dev1)
-        grad_fn = autograd.grad(circuit.evaluate)
+        grad_fn = autograd.grad(circuit, argnum=[0,1,2])
 
         eye = np.eye(3)
         for theta in thetas:
             angle_inputs = np.array([theta, theta ** 3, np.sqrt(2) * theta])
-            autograd_val = grad_fn(angle_inputs)
+            autograd_val = grad_fn(*angle_inputs)
             for idx in range(3):
                 onehot_idx = eye[idx]
                 manualgrad_val = (circuit(angle_inputs + np.pi / 2 * onehot_idx) - circuit(angle_inputs - np.pi / 2 * onehot_idx)) / 2
@@ -461,7 +477,7 @@ if __name__ == '__main__':
     print('Testing OpenQML version ' + qm.version() + ', automatic gradients.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (QuadratureGradientTest,QubitGradientTest):
+    for t in (CVGradientTest, QubitGradientTest):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 

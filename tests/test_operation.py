@@ -22,7 +22,6 @@ import numpy as np
 import numpy.random as nr
 
 from defaults import openqml, BaseTest
-import openqml.qnode as oq
 import openqml.operation as oo
 import openqml.variable as ov
 
@@ -87,14 +86,17 @@ class BasicTest(BaseTest):
 
             # validate size of input for `heisenberg_expand` method
             with self.assertRaisesRegex(ValueError, 'Heisenberg matrix is the wrong size'):
-                U = U[1:,1:]
-                op.heisenberg_expand(U, len(op.wires))
+                U_wrong_size = U[1:,1:]
+                op.heisenberg_expand(U_wrong_size, len(op.wires))
 
+            # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
+            with self.assertRaisesRegex(ValueError, 'Only order-1 and order-2 arrays supported'):
+                U_high_order = np.array([U] * 3)
+                op.heisenberg_expand(U_high_order, len(op.wires))
 
         for cls in openqml.ops.cv.all_ops + openqml.expval.cv.all_ops:
             if cls.supports_analytic:  # only test gaussian operations
                 h_test(cls)
-
 
     def test_ops(self):
         "Operation initialization."
@@ -145,6 +147,9 @@ class BasicTest(BaseTest):
                 # params must be arrays
                 with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
                     cls(*n*[0.0], wires=ww, do_queue=False)
+                # params must not be Variables
+                with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
+                    cls(*n*[ov.Variable(0)], wires=ww, do_queue=False)
             elif cls.par_domain == 'N':
                 # params must be natural numbers
                 with self.assertRaisesRegex(TypeError, 'Natural number'):
@@ -158,7 +163,7 @@ class BasicTest(BaseTest):
 
             # if par_domain ever gets overridden to an unsupported value, should raise exception
             tmp = cls.par_domain
-            with self.assertRaisesRegex(TypeError, 'Unknown parameter domain'):
+            with self.assertRaisesRegex(ValueError, 'Unknown parameter domain'):
                 cls.par_domain = 'junk'
                 cls(*n*[0.0], wires=ww, do_queue=False)
                 cls.par_domain = 7
@@ -179,12 +184,208 @@ class BasicTest(BaseTest):
         for cls in openqml.expval.cv.all_ops:
             op_test(cls)
 
+    def test_operation_outside_queue(self):
+        """Test that an error is raised if an operation is called
+        outside of a QNode context."""
+        self.logTestName()
+
+        with self.assertRaisesRegex(openqml.QuantumFunctionError, "can only be used inside a qfunc"):
+            openqml.qubit.Hadamard(wires=0)
+
+    def test_operation_no_queue(self):
+        """Test that an operation can be called outside a QNode with the do_queue flag"""
+        self.logTestName()
+
+        try:
+            openqml.qubit.Hadamard(wires=0, do_queue=False)
+        except openqml.QuantumFunctionError:
+            self.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
+
+
+class DeveloperTests(BaseTest):
+    """Test custom operations construction."""
+
+    def test_incorrect_num_wires(self):
+        """Test that an exception is raised if called with wrong number of wires"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+            grad_method = 'A'
+
+        with self.assertRaisesRegex(ValueError, "wrong number of wires"):
+            DummyOp(0.5, wires=[0, 1], do_queue=False)
+
+    def test_incorrect_num_params(self):
+        """Test that an exception is raised if called with wrong number of parameters"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+            grad_method = 'A'
+
+        with self.assertRaisesRegex(ValueError, "wrong number of parameters"):
+            DummyOp(0.5, 0.6, wires=0, do_queue=False)
+
+    def test_incorrect_param_domain(self):
+        """Test that an exception is raised if an incorrect parameter domain is requested"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'J'
+            grad_method = 'A'
+
+        with self.assertRaisesRegex(ValueError, "Unknown parameter domain"):
+            DummyOp(0.5, wires=0, do_queue=False)
+
+    def test_incorrect_grad_recipe_length(self):
+        """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
+        self.logTestName()
+
+        class DummyOp(oo.CVOperation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+            grad_method = 'A'
+            grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
+
+        with self.assertRaisesRegex(AssertionError, "Gradient recipe must have one entry for each parameter"):
+            DummyOp(0.5, wires=[0, 1], do_queue=False)
+
+    def test_grad_method_with_integer_params(self):
+        """Test that an exception is raised if a non-None grad-method is provided for natural number params"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'N'
+            grad_method = 'A'
+
+        with self.assertRaisesRegex(AssertionError, "An operation may only be differentiated with respect to real scalar parameters"):
+            DummyOp(5, wires=[0, 1], do_queue=False)
+
+    def test_analytic_grad_with_array_param(self):
+        """Test that an exception is raised if an analytic gradient is requested with an array param"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'A'
+            grad_method = 'A'
+
+        with self.assertRaisesRegex(AssertionError, "Operations that depend on arrays containing free variables may only be differentiated using the F method"):
+            DummyOp(np.array([1.]), wires=[0, 1], do_queue=False)
+
+    def test_numerical_grad_with_grad_recipe(self):
+        """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+            grad_method = 'F'
+            grad_recipe = [(0.5, 0.1)]
+
+        with self.assertRaisesRegex(AssertionError, "Gradient recipe is only used by the A method"):
+            DummyOp(0.5, wires=[0, 1], do_queue=False)
+
+    def test_variable_instead_of_array(self):
+        """Test that an exception is raised if an array is expected but a variable is passed"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'A'
+            grad_method = 'A'
+
+        with self.assertRaisesRegex(TypeError, "Array parameter expected, got a Variable"):
+            DummyOp(ov.Variable(0), wires=[0], do_queue=False)
+
+    def test_array_instead_of_flattened_array(self):
+        """Test that an exception is raised if an array is expected, but an array is passed
+        to check_domain when flattened=True. In the initial release of the library, this is not
+        accessible by the developer or the user, but is kept in case it will be used in the future."""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'A'
+            grad_method = 'F'
+
+        with self.assertRaisesRegex(TypeError, "Flattened array parameter expected"):
+            op = DummyOp(np.array([1]), wires=[0], do_queue=False)
+            op.check_domain(np.array([1]), True)
+
+    def test_scalar_instead_of_array(self):
+        """Test that an exception is raised if an array is expected but a scalar is passed"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'A'
+            grad_method = 'F'
+
+        with self.assertRaisesRegex(TypeError, "Array parameter expected, got"):
+            op = DummyOp(0.5, wires=[0], do_queue=False)
+
+    def test_array_instead_of_real(self):
+        """Test that an exception is raised if a real number is expected but an array is passed"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+            grad_method = 'F'
+
+        with self.assertRaisesRegex(TypeError, "Real scalar parameter expected, got"):
+            op = DummyOp(np.array([1.]), wires=[0], do_queue=False)
+
+    def test_not_natural_param(self):
+        """Test that an exception is raised if a natural number is expected but not passed"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'N'
+            grad_method = None
+
+        with self.assertRaisesRegex(TypeError, "Natural number parameter expected, got"):
+            op = DummyOp(0.5, wires=[0], do_queue=False)
+
+        with self.assertRaisesRegex(TypeError, "Natural number parameter expected, got"):
+            op = DummyOp(-2, wires=[0], do_queue=False)
 
 if __name__ == '__main__':
     print('Testing OpenQML version ' + openqml.version() + ', Operation class.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (BasicTest,):
+    for t in (BasicTest, DeveloperTests):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)

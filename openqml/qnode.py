@@ -38,9 +38,9 @@ The quantum function (qfunc) encapsulated by the QNode must be of the following 
 .. code-block:: python
 
     def my_quantum_function(x, y):
-        qm.RZ(x, 0)
-        qm.CNOT([0,1])
-        qm.RY(-2*y, 1)
+        qm.RZ(x, wires=0)
+        qm.CNOT(wires=[0,1])
+        qm.RY(-2*y, wires=1)
         return qm.expval.PauliZ(0)
 
 Qfuncs are a restricted subset of Python functions, adhering to the following
@@ -87,9 +87,9 @@ For example,
 
             @qm.qnode(device)
             def my_quantum_function(x, y):
-                qm.RZ(x, 0)
-                qm.CNOT([0,1])
-                qm.RY(-2*y, 1)
+                qm.RZ(x, wires=0)
+                qm.CNOT(wires=[0,1])
+                qm.RY(-2*y, wires=1)
                 return qm.expval.PauliZ(0)
 
             result = my_quantum_function(np.pi/4)
@@ -805,9 +805,13 @@ class QNode:
 
                 def tr_obs(ex):
                     """Transform the observable"""
-                    # TODO test: if ex is not a successor of op, multiplying by Z should do nothing.
-                    if ex not in ev_successors:
-                        return ex
+                    # TODO: At initial release, since we use a queue to represent circuit, all expectations values
+                    # are successors to all gates in the same circuit.
+                    # When library uses a DAG representation for circuits, uncomment following if statement
+
+                    ## if ex is not a successor of op, multiplying by Z should do nothing.
+                    #if ex not in ev_successors:
+                    #    return ex
                     q = ex.heisenberg_obs(w)
                     qp = q @ Z
                     if q.ndim == 2:
