@@ -178,7 +178,7 @@ class PolyXP(CVExpectation):
     Expectation value of a second-order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
-    polynomial in the basis :math:`\mathbf{r} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
+    polynomial in the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
 
     For first-order observables the representation is a real vector
     :math:`\mathbf{d}` such that :math:`P(\x,\p) = \mathbf{d}^T \mathbf{r}`.
