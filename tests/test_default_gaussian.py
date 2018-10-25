@@ -418,7 +418,7 @@ class TestDefaultGaussianDevice(BaseTest):
             expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             self.assertAlmostEqual(mean, expected, delta=self.tol)
 
-        # test correct mean and variance for number state expectation |<n|psi>|^2
+        # test correct mean and variance for number state expectation |<n|S(r)>|^2
         # on a squeezed state
         n = 1
         r = 0.4523
