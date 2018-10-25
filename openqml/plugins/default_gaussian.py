@@ -33,8 +33,6 @@ Auxillary functions
 -------------------
 
 .. autosummary::
-    bloch_messiah
-    density_matrix
     two_partition
     fock_prob
 
@@ -105,92 +103,92 @@ tolerance = 1e-10
 #  auxillary functions
 #========================================================
 
-def bloch_messiah(cov):
-    r"""Performs the Bloch-Messiah decomposition of single mode
-    Gaussian state.
+# def bloch_messiah(cov):
+#     r"""Performs the Bloch-Messiah decomposition of single mode
+#     Gaussian state.
 
-    Args:
-        cov (array): :math:`2\times 2` covariance matrix.
+#     Args:
+#         cov (array): :math:`2\times 2` covariance matrix.
 
-    Returns:
-        tuple: mean photon number, rotation angle, and
-        squeezing magnitude of the Gaussian state.
-    """
-    det = np.linalg.det(cov)
-    nbar = (np.sqrt(det)-1)/2
+#     Returns:
+#         tuple: mean photon number, rotation angle, and
+#         squeezing magnitude of the Gaussian state.
+#     """
+#     det = np.linalg.det(cov)
+#     nbar = (np.sqrt(det)-1)/2
 
-    a = cov[0, 0]/np.sqrt(det)
-    b = cov[0, 1]/np.sqrt(det)
+#     a = cov[0, 0]/np.sqrt(det)
+#     b = cov[0, 1]/np.sqrt(det)
 
-    r = -np.arccosh((1+a**2+b**2)/(2*a))/2
-    phi = np.arctan2(2*a*b, a**2-b**2-1)/2
-    return nbar, phi, r
+#     r = -np.arccosh((1+a**2+b**2)/(2*a))/2
+#     phi = np.arctan2(2*a*b, a**2-b**2-1)/2
+#     return nbar, phi, r
 
 
-def density_matrix(mu, cov, cutoff, hbar=2.):
-    r"""Returns the density matrix for a single mode Gaussian state.
+# def density_matrix(mu, cov, cutoff, hbar=2.):
+#     r"""Returns the density matrix for a single mode Gaussian state.
 
-    Args:
-        mu (array): length-:math:`2` means vector
-        cov (array): :math:`2\times 2` covariance matrix
-        cutoff (int): Fock basis truncation of the returned density matrix
-        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+#     Args:
+#         mu (array): length-:math:`2` means vector
+#         cov (array): :math:`2\times 2` covariance matrix
+#         cutoff (int): Fock basis truncation of the returned density matrix
+#         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+#             relation :math:`[\x,\p]=i\hbar`.
 
-    Returns:
-        complex: density matrix element :math:`\rho_{mn}`
-    """
-    # calculate mean photon number, rotation, and squeezing
-    nbar, phi, r = bloch_messiah(cov)
-    # calculate the displacement
-    beta = (mu[0] + mu[1]*1j)/np.sqrt(2*hbar)
+#     Returns:
+#         complex: density matrix element :math:`\rho_{mn}`
+#     """
+#     # calculate mean photon number, rotation, and squeezing
+#     nbar, phi, r = bloch_messiah(cov)
+#     # calculate the displacement
+#     beta = (mu[0] + mu[1]*1j)/np.sqrt(2*hbar)
 
-    # change signs to account for convention
-    beta = -beta
-    r = -r
-    phi = -2*phi
+#     # change signs to account for convention
+#     beta = -beta
+#     r = -r
+#     phi = -2*phi
 
-    m = np.arange(cutoff+1).reshape(-1, 1, 1)
-    n = np.arange(cutoff+1).reshape(1, -1, 1)
-    i = np.arange(cutoff+1).reshape(1, 1, -1)
+#     m = np.arange(cutoff+1).reshape(-1, 1, 1)
+#     n = np.arange(cutoff+1).reshape(1, -1, 1)
+#     i = np.arange(cutoff+1).reshape(1, 1, -1)
 
-    # we only perform the sum when 0 <= i <= min(m, n)
-    mask = i <= np.minimum(m, n)
-    m_i = mask*(m-i)
-    n_i = mask*(n-i)
+#     # we only perform the sum when 0 <= i <= min(m, n)
+#     mask = i <= np.minimum(m, n)
+#     m_i = mask*(m-i)
+#     n_i = mask*(n-i)
 
-    if np.abs(r) <= tolerance:
-        # squeezing is trivial
-        terms = ((-1)**m_i) * (beta**n_i) * (beta.conj()**m_i) * binom(m, i)/fac(n_i)
-        coeff = np.sqrt(fac(n)/(fac(m))) * np.exp(-np.abs(beta)**2/2)
-    else:
-        # squeezing is non-trivial
-        v = np.exp(-1j*phi)*np.sinh(r)
-        u = np.cosh(r)
+#     if np.abs(r) <= tolerance:
+#         # squeezing is trivial
+#         terms = ((-1)**m_i) * (beta**n_i) * (beta.conj()**m_i) * binom(m, i)/fac(n_i)
+#         coeff = np.sqrt(fac(n)/(fac(m))) * np.exp(-np.abs(beta)**2/2)
+#     else:
+#         # squeezing is non-trivial
+#         v = np.exp(-1j*phi)*np.sinh(r)
+#         u = np.cosh(r)
 
-        alpha = beta*u-np.conjugate(beta)*v
+#         alpha = beta*u-np.conjugate(beta)*v
 
-        H_m = hermval(-alpha.conj()/np.sqrt(-2*u*v.conj()), np.identity(cutoff+1))
-        H_n = hermval(beta/np.sqrt(2*u*v), np.identity(cutoff+1))
+#         H_m = hermval(-alpha.conj()/np.sqrt(-2*u*v.conj()), np.identity(cutoff+1))
+#         H_n = hermval(beta/np.sqrt(2*u*v), np.identity(cutoff+1))
 
-        terms = (binom(m, i)/fac(n_i)) * ((2/(u*v))**(i/2)) * ((-v.conj()/(2*u))**((m_i)/2)) * H_n[n_i] * H_m[m_i]
-        coeff = np.sqrt(fac(n)/(fac(m)*u)) * (v/(2*u))**(n/2) * np.exp(-(np.abs(beta)**2-v.conj()*beta**2/u)/2)
+#         terms = (binom(m, i)/fac(n_i)) * ((2/(u*v))**(i/2)) * ((-v.conj()/(2*u))**((m_i)/2)) * H_n[n_i] * H_m[m_i]
+#         coeff = np.sqrt(fac(n)/(fac(m)*u)) * (v/(2*u))**(n/2) * np.exp(-(np.abs(beta)**2-v.conj()*beta**2/u)/2)
 
-    f = np.sum(coeff*terms*mask, axis=2).conj()
+#     f = np.sum(coeff*terms*mask, axis=2).conj()
 
-    if abs(nbar) < tolerance:
-        # thermal population is trivial
-        psi = f[:, 0]
-        return np.outer(psi, psi.conj())
+#     if abs(nbar) < tolerance:
+#         # thermal population is trivial
+#         psi = f[:, 0]
+#         return np.outer(psi, psi.conj())
 
-    # thermal population is non-trivial
-    ratio = nbar/(1+nbar)
+#     # thermal population is non-trivial
+#     ratio = nbar/(1+nbar)
 
-    n = np.arange(cutoff+1).reshape(1, -1)
-    psi = np.sqrt(ratio**n) * f
-    rho = np.einsum('in,jn->ij', psi, psi.conj())/(1+nbar)
+#     n = np.arange(cutoff+1).reshape(1, -1)
+#     psi = np.sqrt(ratio**n) * f
+#     rho = np.einsum('in,jn->ij', psi, psi.conj())/(1+nbar)
 
-    return rho
+#     return rho
 
 
 def two_partitions(s, include_singles=True):
@@ -294,6 +292,7 @@ def fock_prob(mu, cov, event, hbar=2.):
     ind += [i+N for i in ind]
 
     if np.linalg.norm(beta) < tolerance:
+        # state has no displacement
         part = two_partitions(ind, include_singles=False)
     else:
         part = two_partitions(ind, include_singles=True)
