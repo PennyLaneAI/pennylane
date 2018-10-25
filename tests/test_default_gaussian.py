@@ -76,7 +76,7 @@ class TestAuxillaryFunctions(BaseTest):
                              [-0.21058229, -0.07866912, 0.95906208, 0.27133391],
                              [-0.07866912, -0.21058229, 0.27133391, 0.95906208]])*self.hbar
 
-        # expected Fock state prpbabilities
+        # expected Fock state probabilities
         self.events = [(0, 0), (0, 1), (1, 1), (2, 3)]
         self.probs = [0.430461524043, 0.163699407559, 0.0582788388927, 0.00167706931355]
 
