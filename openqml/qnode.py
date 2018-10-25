@@ -805,9 +805,13 @@ class QNode:
 
                 def tr_obs(ex):
                     """Transform the observable"""
-                    # TODO test: if ex is not a successor of op, multiplying by Z should do nothing.
-                    if ex not in ev_successors:
-                        return ex
+                    # TODO: At initial release, since we use a queue to represent circuit, all expectations values
+                    # are successors to all gates in the same circuit.
+                    # When library uses a DAG representation for circuits, uncomment following if statement
+
+                    ## if ex is not a successor of op, multiplying by Z should do nothing.
+                    #if ex not in ev_successors:
+                    #    return ex
                     q = ex.heisenberg_obs(w)
                     qp = q @ Z
                     if q.ndim == 2:
