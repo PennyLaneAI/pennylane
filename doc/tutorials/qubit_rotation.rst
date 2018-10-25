@@ -138,7 +138,7 @@ Here, as we only require a single qubit for this example, we set ``wires=1``.
 Constructing the QNode
 ----------------------
 
-Now that we have initialized our device, we can begin to construct our quantum node (or :class:`~.QNode`).
+Now that we have initialized our device, we can begin to construct our quantum node (or QNode).
 
 
 .. admonition:: Definition
@@ -173,14 +173,16 @@ However, quantum functions are a **restricted subset** of Python functions. For 
 be a valid quantum function, there are some important restrictions:
 
 * **Quantum functions must only contain quantum operations, one operation per line, in the order in which they are to be applied.**
-    In addition, we must always specify the subsystem the operation applies to, by passing the ``wires`` keyword argument;
-    this may be a list or an integer, depending on how many wires the operation acts on.
+
+  In addition, we must always specify the subsystem the operation applies to, by passing the ``wires`` keyword argument;
+  this may be a list or an integer, depending on how many wires the operation acts on.
 
   For a full list of quantum operations, see :mod:`supported operations <openqml.ops>`.
 
 * **Quantum functions must return either a single or a tuple of expectation values**.
-    As a result, the quantum function always returns a classical quantity, allowing the QNode to interface
-    with other classical functions (and also other QNodes).
+
+  As a result, the quantum function always returns a classical quantity, allowing the QNode to interface
+  with other classical functions (and also other QNodes).
 
   For a full list of quantum expectation values, see :mod:`supported expectations <openqml.expval>`.
 
@@ -191,7 +193,7 @@ be a valid quantum function, there are some important restrictions:
           for more details.
 
 Once we have written the quantum function, we convert it into a :class:`~.QNode` running on device ``dev1`` by
-applying the :mod:`qnode decorator <openqml.decorator>` **directly above** the function definition:
+applying the :func:`openqml.qnode` decorator **directly above** the function definition:
 
 
 .. code-block:: python
@@ -228,7 +230,25 @@ array([-0.510438652516502, -0.10267819945693203])
 Note that :func:`~.openqml.grad` **returns a function** representing the derivative of the QNode with respect to each parameter.
 We then call this function at a particular point in the parameter space.
 
-.. todo:: clarify more how ``argnum`` works and what the default behaviour of ``grad`` is
+.. todo::
+
+    * Clarify more how ``argnum`` works and what the default behaviour of ``grad`` is.
+
+      - At the moment, it matches ``autograd.grad()``, in that, by default, ``argnum=0``.
+
+        Should we change this such that ``argnum=range(args)`` by default?
+
+      - All optimizers in apply ``autograd.grad()`` to the cost/objective function. We should
+        change this to use ``openqml.grad``, so that it uses the same defaults in OpenQML.
+
+        Potentially we should also let you specify ``argnum`` for the optimizers.
+
+    * Need to also include a tutorial showing vector-valued QNodes.
+
+      In this case, the user must use ``autograd.jacobian``, as ``autograd.grad`` will raise an exception.
+
+      - Todo: should we also have ``openqml.jacobian``? Or perhaps ``openqml.grad`` should return the gradient *or*
+        the Jacobian depending on context?
 
 .. note::
 
