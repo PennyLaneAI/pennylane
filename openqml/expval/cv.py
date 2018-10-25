@@ -33,6 +33,7 @@ Summary
     P
     Homodyne
     PolyXP
+    NumberState
 
 Code details
 ~~~~~~~~~~~~
@@ -138,8 +139,8 @@ class P(CVExpectation):
 
 
 class Homodyne(CVExpectation):
-    r"""openqml.expval.Homodyne(wires)
-    Returns the homodyne expectation value in phase space.
+    r"""openqml.expval.Homodyne(phi, wires)
+    Expectation value of homodyne measurement in phase space.
 
     This expectation command returns the value :math:`\braket{\x_\phi}`,
     where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalised
@@ -173,8 +174,8 @@ class Homodyne(CVExpectation):
 
 
 class PolyXP(CVExpectation):
-    r"""openqml.expval.PolyXP(wires)
-    Second order polynomial observable.
+    r"""openqml.expval.PolyXP(q, wires)
+    Expectation value of a second-order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
     polynomial in the basis :math:`\mathbf{r} = (\I, x_0, p_0, x_1, p_1, \ldots)`.
@@ -209,6 +210,56 @@ class PolyXP(CVExpectation):
         return p[0]
 
 
-all_ops = [Homodyne, PhotonNumber, P, X, PolyXP]
+class NumberState(CVExpectation):
+    r"""openqml.expval.NumberState(n, wires)
+    Expectation value of the number state observable :math:`\ket{n}\bra{n}`.
+
+    Represents the non-Gaussian number state observable
+
+    .. math:: \ket{n}\bra{n} = \ket{n_0, n_1, \dots, n_P}\bra{n_0, n_1, \dots, n_P}
+
+    where :math:`n_i` is the occupation number of the :math:`i` th wire.
+
+    The expectation of this observable is
+
+    .. math::
+        E[\ket{n}\bra{n}] = \text{Tr}(\ket{n}\bra{n}\rho)
+        = \text{Tr}(\braketT{n}{\rho}{n})
+        = \braketT{n}{\rho}{n}
+
+    corresponding to the probability of measuring the quantum state in the state
+    :math:`\ket{n}=\ket{n_0, n_1, \dots, n_P}`.
+
+    .. note::
+
+        If ``NumberState`` is applied to a subset of wires,
+        the unaffected wires are traced out prior to the expectation value
+        calculation.
+
+    **Details:**
+
+    * Number of wires: None (applied to any subset of wires).
+    * Number of parameters: 1
+    * Expectation order: None (non-Gaussian)
+
+    Args:
+        n (array): Array of non-negative integers representing the number state
+            observable :math:`\ket{n}\bra{n}=\ket{n_0, n_1, \dots, n_P}\bra{n_0, n_1, \dots, n_P}`.
+
+            For example, to return the expectation value of observable :math:`\ket{0,4,2}\bra{0,4,2}`,
+            on wires 0, 1, and 3 of a QNode, you would call ``NumberState(np.array([0, 4, 2], wires=[0, 1, 3]))``.
+
+            Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
+            total number of wires in the QNode.
+    """
+    num_wires = 0
+    num_params = 1
+    par_domain = 'A'
+
+    grad_method = None
+    ev_order = None
+
+
+all_ops = [Homodyne, PhotonNumber, P, X, PolyXP, NumberState]
 
 __all__ = [cls.__name__ for cls in all_ops]
