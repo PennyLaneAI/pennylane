@@ -600,7 +600,7 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
             relation :math:`[\x,\p]=i\hbar`.
 
     Returns:
-        tuple: contains the quadrature expectation and variance
+        tuple: the mean and variance of the quadrature-polynomial observable
     """
     Q = params[0]
     N = len(mu)//2
