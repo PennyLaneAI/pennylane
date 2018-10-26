@@ -14,7 +14,7 @@
 """Gradient descent optimizer"""
 
 import autograd
-import numpy as np
+from .optimizer_utilities import _flatten, _unflatten
 
 
 class GradientDescentOptimizer(object):
@@ -48,13 +48,9 @@ class GradientDescentOptimizer(object):
             array: the new weights :math:`x^{(t+1)}`
         """
 
-        #TODO: Flatten
-
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
 
         x_out = self.apply_grad(g, x)
-
-        #TODO: UNFLATTEN
 
         return x_out
 
@@ -80,7 +76,8 @@ class GradientDescentOptimizer(object):
         return g
 
     def apply_grad(self, grad, x):
-        r"""Update the weights x to take a single optimization step.
+        r"""Update the weights x to take a single optimization step. Flattens and unflattens
+        the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
             grad (array): The gradient of the objective
@@ -90,4 +87,10 @@ class GradientDescentOptimizer(object):
         Returns:
             array: the new weights :math:`x^{(t+1)}`
         """
-        return x - self.stepsize * grad
+
+        x_flat = _flatten(x)
+        grad_flat = _flatten(grad)
+
+        new_x_flat = [a - self.stepsize * b for a, b in zip(x_flat, grad_flat)]
+
+        return _unflatten(new_x_flat, x)[0]

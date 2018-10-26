@@ -14,8 +14,8 @@
 """Adagrad optimizer"""
 
 import autograd.numpy as np
-
 from .gradient_descent import GradientDescentOptimizer
+from .optimizer_utilities import _flatten, _unflatten
 
 
 class AdagradOptimizer(GradientDescentOptimizer):
@@ -51,13 +51,19 @@ class AdagradOptimizer(GradientDescentOptimizer):
 
     def apply_grad(self, grad, x):
         # docstring is inherited from GradientDescentOptimizer
-        if self.accumulation is None:
-            self.accumulation = grad * grad
-        else:
-            self.accumulation += grad * grad
 
-        # elementwise multiplication
-        return x - (self.stepsize / np.sqrt(self.accumulation + 1e-8)) * grad
+        grad_flat = _flatten(grad)
+        x_flat = _flatten(x)
+
+        if self.accumulation is None:
+            self.accumulation = [g*g for g in grad_flat]
+        else:
+            self.accumulation = [a + g*g for a, g in zip(grad_flat, self.accumulation)]
+
+        x_new_flat = [e - (self.stepsize / np.sqrt(a + 1e-8)) * g for a, g, e
+                 in zip(grad_flat, self.accumulation, x_flat)]
+
+        return _unflatten(x_new_flat, x)[0]
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
