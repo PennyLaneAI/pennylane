@@ -74,7 +74,7 @@ Let's see how we can easily implement and optimize this circuit using PennyLane.
 
 
 Importing PennyLane and NumPy
----------------------------
+-----------------------------
 
 The first thing we need to do is import PennyLane, as well as the wrapped version
 of NumPy provided by PennyLane.
