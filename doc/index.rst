@@ -1,21 +1,40 @@
 PennyLane
-#######
+#########
 
 :Release: |release|
 :Date: |today|
 
 PennyLane is a Python library for building and training machine learning models which include quantum computer circuits.
 
-Main features of PennyLane:
+Features
+========
 
-- *Follow the gradient*: **automatic differentiation** of quantum circuits
-- *Best of both worlds*: support for **hybrid quantum & classical** models
-- *Batteries included*: built-in **optimization and machine learning** tools
-- *Device independent*: the same quantum circuit model can be **run on different backends**
+- **Follow the gradient**.
+  Built in **automatic differentiation** of quantum circuits
+
+- **Best of both worlds**.
+  Support for both **hybrid quantum and classical** models
+
+- **Batteries included**.
+  Provides **optimization and machine learning** tools
+
+- **Device independent**.
+  The same quantum circuit model can be **run on different backends**
+
+- **Large plugin ecosystem**.
+  Install plugins to run your computational circuits on more devices, including `Strawberry Fields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_
 
 Getting started
 ===============
 
+
+To get PennyLane installed and running on your system, begin at the :ref:`download and installation guide <installation>`. Then, familiarize yourself with the :ref:`hybrid classical-quantum machine learning <introduction>` approach.
+
+For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`photon redirection <photon_redirection>` hybrid quantum optimization tutorials. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
+
+Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid optimizations - these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
+
+Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided, for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
 
 How to cite
 ===========
@@ -69,12 +88,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    tutorials/qubit_rotation
    tutorials/photon_redirection
 
-.. 
-   tutorials/photon_redirection.ipynb
-   tutorials/quantum_neural_net.ipynb
-   tutorials/qubit_rotation.ipynb
-   tutorials/variational_quantum_eigensolver.ipynb
-   tutorials/variational_classifier.ipynb
 
 .. toctree::
    :maxdepth: 1
