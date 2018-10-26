@@ -48,15 +48,13 @@ class GradientDescentOptimizer(object):
             array: the new weights :math:`x^{(t+1)}`
         """
 
-        try:
-            x = np.array(x)
-            print(type(x))
-        except ValueError:
-            print('Second argument of step() has to be convertable to a numpy array.')
+        #TODO: Flatten
 
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
 
         x_out = self.apply_grad(g, x)
+
+        #TODO: UNFLATTEN
 
         return x_out
 
@@ -78,7 +76,7 @@ class GradientDescentOptimizer(object):
             g = grad_fn(x)  # just call the supplied grad function
         else:
             # default is autograd
-            g = autograd.grad(objective_fn)(x) # pylint: disable=no-value-for-parameter
+            g = autograd.grad(objective_fn)(x)  # pylint: disable=no-value-for-parameter
         return g
 
     def apply_grad(self, grad, x):
