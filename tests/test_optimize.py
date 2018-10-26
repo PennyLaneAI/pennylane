@@ -36,6 +36,22 @@ stepsize = 0.1
 gamma = 0.5
 delta = 0.8
 
+@qm.qnode(qm.device('default.qubit', wires=1))
+def quant_fun(variables):
+    qm.RX(variables[0][1], [0])
+    qm.RY(variables[1][2], [0])
+    qm.RY(variables[2], [0])
+    return qm.expval.PauliZ(0)
+
+
+def hybrid_fun(variables):
+    return quant_fun(variables) + variables[0][1]
+
+
+def class_fun(variables):
+    return variables[0][1] * 2. + variables[1][2] + variables[2]
+
+
 class BasicTest(BaseTest):
     """Basic optimizer tests.
     """
@@ -71,19 +87,49 @@ class BasicTest(BaseTest):
                                                          [0., 0.]]),
                                      lambda x: np.array([[2 * x_[0], 0.] for x_ in x])]
 
+        self.class_fun = class_fun
+        self.quant_fun = quant_fun
+        self.hybrid_fun = hybrid_fun
 
-    def test_optimizer_takes_list(self):
-        """Tests that gradient descent optimizer can take lists."""
+        self.mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
+        self.mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
+        self.array = np.array([[0.2, 0.3], [0.4, 0.2, 0.4], 0.1])
+
+    def test_arraylike_inputs_for_hybrid_optimization(self):
+        """Tests that gradient descent optimizer treats array-like objects the same
+        for hybrid optimization tasks."""
         self.logTestName()
 
-        gradf = self.grad_multi_funcs[0]
-        f = self.multivariate_funcs[0]
+        hybrid_list = self.sgd_opt.step(self.hybrid_fun)(self.mixed_list)
+        hybrid_tuple = self.sgd_opt.step(self.hybrid_fun)(self.mixed_tuple)
+        hybrid_array = self.sgd_opt.step(self.hybrid_fun)(self.array)
 
-        x = [1., 2.]
-        x_new = self.sgd_opt.step(f, x)
-        x_correct = x - gradf(x) * stepsize
-        self.assertAlmostEqual(x_new, x_correct, delta=self.tol)
+        self.assertAllAlmostEqual(hybrid_array, hybrid_list, delta=self.tol)
+        self.assertAllAlmostEqual(hybrid_array, hybrid_tuple, delta=self.tol)
 
+    def test_arraylike_inputs_for_classical_optimization(self):
+        """Tests that gradient descent optimizer treats array-like objects the same
+        for purely classical optimization tasks."""
+        self.logTestName()
+
+        class_list = self.sgd_opt.step(self.class_fun)(self.mixed_list)
+        class_tuple = self.sgd_opt.step(self.class_fun)(self.mixed_tuple)
+        class_array = self.sgd_opt.step(self.class_fun)(self.array)
+
+        self.assertAllAlmostEqual(class_array, class_tuple, delta=self.tol)
+        self.assertAllAlmostEqual(class_array, class_list, delta=self.tol)
+
+    def test_arraylike_inputs_for_quantum_optimization(self):
+        """Tests that gradient descent optimizer treats array-like objects the same
+        for purely quantum optimization tasks."""
+        self.logTestName()
+
+        quant_list = self.sgd_opt.step(self.quant_fun)(self.mixed_list)
+        quant_tuple = self.sgd_opt.step(self.quant_fun)(self.mixed_tuple)
+        quant_array = self.sgd_opt.step(self.quant_fun)(self.array)
+
+        self.assertAllAlmostEqual(quant_array, quant_tuple, delta=self.tol)
+        self.assertAllAlmostEqual(quant_array, quant_list, delta=self.tol)
 
     def test_gradient_descent_optimizer_univar(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
