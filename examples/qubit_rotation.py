@@ -26,7 +26,7 @@ def objective(variables):
 
 o = GradientDescentOptimizer(0.5)
 
-vars = np.array([0.001, 0.001])
+vars = np.array([0.011, 0.012])
 print('Initial rotation angles:'.format(vars))
 print('Initial cost: {: 0.7f}'.format(objective(vars)))
 
