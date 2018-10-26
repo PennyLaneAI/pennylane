@@ -14,8 +14,8 @@
 """Adam optimizer"""
 
 import autograd.numpy as np
-
 from .gradient_descent import GradientDescentOptimizer
+from .optimizer_utilities import _flatten, _unflatten
 
 
 class AdamOptimizer(GradientDescentOptimizer):
@@ -54,8 +54,8 @@ class AdamOptimizer(GradientDescentOptimizer):
         self.beta1 = beta1
         self.beta2 = beta2
         self.stepsize = stepsize
-        self.firstmoment = None
-        self.secondmoment = None
+        self.fm = None
+        self.sm = None
         self.t = 0
 
     def apply_grad(self, grad, x):
@@ -63,26 +63,30 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         self.t += 1
 
+        grad_flat = _flatten(grad)
+        x_flat = _flatten(x)
+
         # Update first moment
-        if self.firstmoment is None:
-            self.firstmoment = grad
+        if self.fm is None:
+            self.fm = grad_flat
         else:
-            self.firstmoment = self.beta1*self.firstmoment + (1-self.beta1)*grad
+            self.fm = [self.beta1 * f + (1 - self.beta1) * g for f, g in zip(self.fm, grad_flat)]
 
         # Update second moment
-        if self.secondmoment is None:
-            self.secondmoment = grad*grad
+        if self.sm is None:
+            self.sm = [g * g for g in grad_flat]
         else:
-            self.secondmoment = self.beta2*self.secondmoment + (1-self.beta2)*(grad*grad)
+            self.sm = [self.beta2 * f + (1 - self.beta2) * g * g for f, g in zip(self.sm, grad_flat)]
 
         # Update step size (instead of correcting for bias)
-        adapted_stepsize = self.stepsize*np.sqrt(1-self.beta2**self.t)/(1-self.beta1**self.t)
+        new_stepsize = self.stepsize*np.sqrt(1-self.beta2**self.t)/(1-self.beta1**self.t)
 
-        x_new = x - adapted_stepsize*self.firstmoment/(np.sqrt(self.secondmoment)+1e-8)
-        return x_new
+        x_new_flat = [e - new_stepsize * f / (np.sqrt(s)+1e-8) for f, s, e in zip(self.fm, self.sm, x_flat)]
+
+        return _unflatten(x_new_flat, x)[0]
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
-        self.firstmoment = None
-        self.secondmoment = None
+        self.fm = None
+        self.sm = None
         self.t = 0
