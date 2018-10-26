@@ -1,3 +1,3 @@
-.. automodule:: openqml.expval.qubit
+.. automodule:: pennylane.expval.qubit
    :members:
    :private-members:

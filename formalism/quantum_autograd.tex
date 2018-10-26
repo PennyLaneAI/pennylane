@@ -42,7 +42,7 @@ The final outputs of quantum circuits should be classical information obtained v
 The difference between a static versus dynamic graph picture is similar to the difference between a compiled computer program and an interpreted one. For concreteness, we will focus on a static graph, but it would be cool to see if our hybrid quantum/classical picture could also fit within a dynamic graph picture. 
 
 \paragraph{Physical systems}
-We would like to include both the CV and the qubit models. Obviously we include the CV model because it is the approach we are taking at Xanadu. We include the qubit model because we want openQML to be platform agnostic, and most (all?) other vendors are pursuing the qubit model.
+We would like to include both the CV and the qubit models. Obviously we include the CV model because it is the approach we are taking at Xanadu. We include the qubit model because we want PennyLane to be platform agnostic, and most (all?) other vendors are pursuing the qubit model.
 
 \paragraph{Differentiation support} 
 A primary ingredient of the library will be the ability to compute derivatives of functions, allowing for gradient-based optimization. Despite valiant attempts, we do not yet know how to compute exact gradients of CV model circuits. Hence, in order to include both CV and qubit models, we should support both automatic differentiation and numerical differentiation (e.g., via finite differences).

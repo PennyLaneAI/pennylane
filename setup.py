@@ -18,7 +18,7 @@ import os
 from setuptools import setup
 # from sphinx.setup_command import BuildDoc
 
-with open("openqml/_version.py") as f:
+with open("pennylane/_version.py") as f:
 	version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
@@ -30,28 +30,28 @@ requirements = [
 ]
 
 info = {
-    'name': 'OpenQML',
+    'name': 'PennyLane',
     'version': version,
     'maintainer': 'Xanadu Inc.',
     'maintainer_email': 'nathan@xanadu.ai',
     'url': 'http://xanadu.ai',
     'license': 'Apache License 2.0',
     'packages': [
-                    'openqml',
-                    'openqml.ops',
-                    'openqml.expval',
-                    'openqml.plugins',
-                    'openqml.optimize'
+                    'pennylane',
+                    'pennylane.ops',
+                    'pennylane.expval',
+                    'pennylane.plugins',
+                    'pennylane.optimize'
                 ],
     'entry_points': {
-        'openqml.plugins': [
-            'default.qubit = openqml.plugins:DefaultQubit',
-            'default.gaussian = openqml.plugins:DefaultGaussian'
+        'pennylane.plugins': [
+            'default.qubit = pennylane.plugins:DefaultQubit',
+            'default.gaussian = pennylane.plugins:DefaultGaussian'
             ],
         },
-    'description': 'OpenQML is a Python quantum machine learning library by Xanadu Inc.',
+    'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',
     'long_description': open('README.rst').read(),
-    'provides': ["openqml"],
+    'provides': ["pennylane"],
     'install_requires': requirements,
     # 'extras_require': extra_requirements,
     'command_options': {

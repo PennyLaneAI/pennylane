@@ -17,21 +17,21 @@
 Core operations
 ===============
 
-OpenQML supports a collection of built-in quantum operations,
+PennyLane supports a collection of built-in quantum operations,
 including both discrete-variable (DV) gates as used in the qubit model,
 and continuous-variable (CV) gates as used in the qumode model of quantum
 computation.
 
-Here, we summarize the built-in operations supported by OpenQML, as well
+Here, we summarize the built-in operations supported by PennyLane, as well
 as the conventions chosen for their implementation.
 
 .. note::
 
-    If writing a plugin device for OpenQML, make sure that your plugin
-    supports the required OpenQML built-in operations defined here,
+    If writing a plugin device for PennyLane, make sure that your plugin
+    supports the required PennyLane built-in operations defined here,
     by including them in your device ``_operation_map``.
 
-    If the convention differs between the built-in OpenQML operation
+    If the convention differs between the built-in PennyLane operation
     and the corresponding operation in the targeted framework, ensure that the
     conversion between the two conventions takes places automatically
     by the plugin device.

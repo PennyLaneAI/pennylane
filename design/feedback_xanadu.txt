@@ -24,7 +24,7 @@ I actually was speaking to Nathan about this a couple of months ago - at the mom
 7. I'm too new to optimization and tensorflow to be able to answer this question in depth!
 oh
 another thing that crossed my mind
-it would be super nice to have the tf.variable/tf.placeholder/optimization steps/parameter regularization etc. abstracted away by OpenQML, in the same way OpenFermion abstracts away a lot of the Hamiltonian/qubit transformations
+it would be super nice to have the tf.variable/tf.placeholder/optimization steps/parameter regularization etc. abstracted away by PennyLane, in the same way OpenFermion abstracts away a lot of the Hamiltonian/qubit transformations
 
 -------------------------------------------
 Tom:

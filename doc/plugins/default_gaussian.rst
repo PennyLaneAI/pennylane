@@ -1,3 +1,3 @@
-.. automodule:: openqml.plugins.default_gaussian
+.. automodule:: pennylane.plugins.default_gaussian
    :members:
    :private-members:

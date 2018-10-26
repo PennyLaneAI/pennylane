@@ -1,3 +1,3 @@
-.. automodule:: openqml.expval.cv
+.. automodule:: pennylane.expval.cv
    :members:
    :private-members:

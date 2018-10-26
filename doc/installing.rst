@@ -11,7 +11,7 @@ Dependencies
 
 .. highlight:: bash
 
-OpenQML requires the following libraries be installed: TODO FIXME
+PennyLane requires the following libraries be installed: TODO FIXME
 
 * `Python <http://python.org/>`_ >=3.5
 
@@ -29,15 +29,15 @@ If you currently do not have Python 3 installed, we recommend `Anaconda for Pyth
 Installation
 ============
 
-Installation of OpenQML, as well as all required Python packages mentioned above, can be installed via ``pip``:
+Installation of PennyLane, as well as all required Python packages mentioned above, can be installed via ``pip``:
 ::
 
-   	$ python -m pip install openqml
+   	$ python -m pip install pennylane
 
 
 Make sure you are using the Python 3 version of pip.
 
-Alternatively, you can install OpenQML from the source code by navigating to the top directory and running
+Alternatively, you can install PennyLane from the source code by navigating to the top directory and running
 ::
 
 	$ python setup.py install
@@ -46,7 +46,7 @@ Alternatively, you can install OpenQML from the source code by navigating to the
 Software tests
 ==============
 
-To ensure that OpenQML is working correctly after installation, the test suite can be run by navigating to the source code folder and running
+To ensure that PennyLane is working correctly after installation, the test suite can be run by navigating to the source code folder and running
 ::
 
 	$ make test

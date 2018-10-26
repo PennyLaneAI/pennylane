@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml` configuration classe :class:`Configuration`.
+Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
 # pylint: disable=protected-access
 import unittest
@@ -21,9 +21,9 @@ import logging as log
 
 import toml
 
-from defaults import openqml, BaseTest
-import openqml as qm
-from openqml import Configuration
+from defaults import pennylane, BaseTest
+import pennylane as qml
+from pennylane import Configuration
 
 log.getLogger('defaults')
 
@@ -80,7 +80,7 @@ class BasicTest(BaseTest):
             Configuration()
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
-            self.assertIn('No OpenQML configuration file found.', l.output[0])
+            self.assertIn('No PennyLane configuration file found.', l.output[0])
 
     def test_save(self):
         """Test saving a configuration file."""
@@ -112,7 +112,7 @@ class BasicTest(BaseTest):
         self.assertEqual(config['strawberryfields.fock'], {'cutoff_dim': 10})
 
         # get key that doesn't exist
-        self.assertEqual(config['projectq.ibmbackend.cutoff'], {})
+        self.assertEqual(config['projectq.ibm.cutoff'], {})
 
     def test_set_item(self):
         """Test setting items."""
@@ -130,8 +130,8 @@ class BasicTest(BaseTest):
         self.assertEqual(config['strawberryfields.global']['hbar'], 5)
 
         # set new options
-        config['projectq.ibmbackend']['device'] = 'ibmqx4'
-        self.assertEqual(config['projectq.ibmbackend.device'], 'ibmqx4')
+        config['projectq.ibm']['device'] = 'ibmqx4'
+        self.assertEqual(config['projectq.ibm.device'], 'ibmqx4')
 
         # set nested dictionaries
         config['strawberryfields.tf'] = {'batched': True, 'cutoff_dim': 6}
@@ -154,8 +154,8 @@ class BasicTest(BaseTest):
         self.assertTrue(config)
 
 
-class OpenQMLInitTests(BaseTest):
-    """Tests to ensure that the code in OpenQML/__init__.py
+class PennyLaneInitTests(BaseTest):
+    """Tests to ensure that the code in PennyLane/__init__.py
     correctly knows how to load and use configuration data"""
 
     def test_device_load(self):
@@ -163,15 +163,15 @@ class OpenQMLInitTests(BaseTest):
         self.logTestName()
 
         config = Configuration(name=filename)
-        dev = qm.device('default.gaussian', wires=2, config=config)
+        dev = qml.device('default.gaussian', wires=2, config=config)
 
         self.assertTrue(dev.hbar, 1)
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', Configuration class.')
+    print('Testing PennyLane version ' + pennylane.version() + ', Configuration class.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (BasicTest, OpenQMLInitTests):
+    for t in (BasicTest, PennyLaneInitTests):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)

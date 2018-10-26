@@ -15,35 +15,35 @@ r"""
 Configuration
 =============
 
-**Module name:** :mod:`openqml.configuration`
+**Module name:** :mod:`pennylane.configuration`
 
-.. currentmodule:: openqml.configuration
+.. currentmodule:: pennylane.configuration
 
 This module contains the :class:`Configuration` class, which is used to
-load, store, save, and modify configuration options for OpenQML and all
+load, store, save, and modify configuration options for PennyLane and all
 supported plugins and devices.
 
 Behaviour
 ---------
 
-On first import, OpenQML attempts to load the configuration file `config.toml`, by
+On first import, PennyLane attempts to load the configuration file `config.toml`, by
 scanning the following three directories in order of preference:
 
 1. The current directory
 2. The path stored in the environment variable ``OPENQML_CONF``
 3. The default user configuration directory:
 
-   * On Linux: ``~/.config/openqml``
-   * On Windows: ``~C:\Users\USERNAME\AppData\Local\Xanadu\openqml``
-   * On MacOS: ``~/Library/Preferences/openqml``
+   * On Linux: ``~/.config/pennylane``
+   * On Windows: ``~C:\Users\USERNAME\AppData\Local\Xanadu\pennylane``
+   * On MacOS: ``~/Library/Preferences/pennylane``
 
 If no configuration file is found, a warning message will be displayed in the logs,
 and all device parameters will need to be passed as keyword arguments when
 loading the device.
 
-The user can access the initialized configuration via `openqml.config`, view the
+The user can access the initialized configuration via `pennylane.config`, view the
 loaded configuration filepath, print the configurations options, access and modify
-them via keys (i.e. ``openqml.config['main.shots']``), and save/load new configuration files.
+them via keys (i.e. ``pennylane.config['main.shots']``), and save/load new configuration files.
 
 Configuration files
 -------------------
@@ -54,7 +54,7 @@ and has the following format:
 .. code-block:: toml
 
     [main]
-    # Global OpenQML options.
+    # Global PennyLane options.
     # Affects every loaded plugin if applicable.
     shots = 0
 
@@ -85,7 +85,7 @@ and has the following format:
       device = "ibmqx4"
       num_runs = 1024
 
-Main OpenQML options, that are passed to all loaded devices, are provided under the ``[main]``
+Main PennyLane options, that are passed to all loaded devices, are provided under the ``[main]``
 section. Alternatively, options can be specified on a per-plugin basis, by setting the options under
 ``[plugin.global]``.
 
@@ -97,7 +97,7 @@ you can also specify settings on a device-by-device basis, by placing the option
 Summary of methods
 ------------------
 
-.. currentmodule:: openqml.configuration.Configuration
+.. currentmodule:: pennylane.configuration.Configuration
 
 .. autosummary::
     path
@@ -114,7 +114,7 @@ Helper methods
 Code details
 ~~~~~~~~~~~~
 
-.. currentmodule:: openqml.configuration
+.. currentmodule:: pennylane.configuration
 
 """
 import os
@@ -129,7 +129,7 @@ log.getLogger()
 class Configuration:
     """Configuration class.
 
-    This class is responsible for loading, saving, and storing OpenQML
+    This class is responsible for loading, saving, and storing PennyLane
     and plugin/device configurations.
 
     Args:
@@ -142,7 +142,7 @@ class Configuration:
         self._config = {}
         self._filepath = None
         self._name = name
-        self._user_config_dir = user_config_dir('openqml', 'Xanadu')
+        self._user_config_dir = user_config_dir('pennylane', 'Xanadu')
         self._env_config_dir = os.environ.get("OPENQML_CONF", "")
 
         # search the current directory the directory under environment
@@ -155,7 +155,7 @@ class Configuration:
                 break
             except FileNotFoundError:
                 if idx == len(directories)-1:
-                    log.warning('No OpenQML configuration file found.')
+                    log.warning('No PennyLane configuration file found.')
 
     def __str__(self):
         if self._config:
@@ -163,7 +163,7 @@ class Configuration:
         return ""
 
     def __repr__(self):
-        return "OpenQML Configuration <{}>".format(self._filepath)
+        return "PennyLane Configuration <{}>".format(self._filepath)
 
     @property
     def path(self):
