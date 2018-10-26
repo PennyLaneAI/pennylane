@@ -47,7 +47,6 @@ def _unflatten(flat, model):
             res.append(val)
         return res, flat
     elif isinstance(model, (numbers.Number,)):
-        print(flat)
         return flat[0], flat[1:]
     else:
         raise TypeError('Unsupported type in the model: {}'.format(type(model)))
