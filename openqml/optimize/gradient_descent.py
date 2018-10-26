@@ -88,9 +88,9 @@ class GradientDescentOptimizer(object):
             array: the new weights :math:`x^{(t+1)}`
         """
 
-        x_flat = _flatten(x)
-        grad_flat = _flatten(grad)
+        x_flat = list(_flatten(x))
+        grad_flat = list(_flatten(grad))
 
-        new_x_flat = [a - self.stepsize * b for a, b in zip(x_flat, grad_flat)]
+        x_new_flat = [e - self.stepsize * g for g, e in zip(grad_flat, x_flat)]
 
-        return _unflatten(new_x_flat, x)[0]
+        return _unflatten(x_new_flat, x)[0]
