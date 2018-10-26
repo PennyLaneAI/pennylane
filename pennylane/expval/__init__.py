@@ -15,28 +15,28 @@
 Core expectations
 =================
 
-OpenQML also supports a collection of built-in quantum **expectations**,
+PennyLane also supports a collection of built-in quantum **expectations**,
 including both discrete-variable (DV) expectations as used in the qubit model,
 and continuous-variable (CV) expectations as used in the qumode model of quantum
 computation.
 
-Here, we summarize the built-in expectations supported by OpenQML, as well
+Here, we summarize the built-in expectations supported by PennyLane, as well
 as the conventions chosen for their implementation.
 
 .. note::
 
-    All quantum operations in OpenQML are top level; they can be accessed
-    via ``qm.OperationName``. Expectation values, however, are contained within
-    the :mod:`openqml.expval`, and are thus accessed via ``qm.expval.ExpectationName``.
+    All quantum operations in PennyLane are top level; they can be accessed
+    via ``qml.OperationName``. Expectation values, however, are contained within
+    the :mod:`pennylane.expval`, and are thus accessed via ``qml.expval.ExpectationName``.
 
 
 .. note::
 
-    If writing a plugin device for OpenQML, make sure that your plugin
-    supports the required OpenQML built-in expectations defined here,
+    If writing a plugin device for PennyLane, make sure that your plugin
+    supports the required PennyLane built-in expectations defined here,
     by including them in your device :attr:`~.Device._expectation_map`.
 
-    If the convention differs between the built-in OpenQML expectation
+    If the convention differs between the built-in PennyLane expectation
     and the corresponding expectation in the targeted framework, ensure that the
     conversion between the two conventions takes places automatically
     by the plugin device.

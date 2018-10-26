@@ -15,9 +15,9 @@
 Device base class
 =================
 
-**Module name:** :mod:`openqml._device`
+**Module name:** :mod:`pennylane._device`
 
-.. currentmodule:: openqml._device
+.. currentmodule:: pennylane._device
 
 This module contains the :class:`Device` class. This is an abstract base class,
 which should be subclassed, and the appropriate class attributes and methods
@@ -31,9 +31,9 @@ or :class:`~.DefaultGaussian`.
 Device attributes and methods
 -----------------------------
 
-.. currentmodule:: openqml._device.Device
+.. currentmodule:: pennylane._device.Device
 
-The following methods and attributes are accessible from the OpenQML
+The following methods and attributes are accessible from the PennyLane
 user interface:
 
 .. autosummary::
@@ -75,7 +75,7 @@ to ensure correct operation and internal consistency.
 .. autosummary::
     check_validity
 
-.. currentmodule:: openqml._device
+.. currentmodule:: pennylane._device
 
 
 Code details
@@ -92,14 +92,14 @@ logging.getLogger()
 
 
 class DeviceError(Exception):
-    """Exception raised by a :class:`~.openqml._device.Device` when it encounters an illegal
+    """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
     """
     pass
 
 
 class Device(abc.ABC):
-    """Abstract base class for OpenQML devices.
+    """Abstract base class for PennyLane devices.
 
     Args:
         name (str): name of the device.
@@ -110,7 +110,7 @@ class Device(abc.ABC):
             in the exact expectation value being is returned. Default 0 if not specified.
     """
     name = ''          #: str: official device plugin name
-    api_version = ''   #: str: version of OpenQML for which the plugin was made
+    api_version = ''   #: str: version of PennyLane for which the plugin was made
     version = ''       #: str: version of the device plugin itself
     author = ''        #: str: plugin author(s)
     _capabilities = {} #: dict[str->*]: plugin capabilities
@@ -136,13 +136,13 @@ class Device(abc.ABC):
 
     @abc.abstractproperty
     def _operation_map(self):
-        """A dictionary {str: val} that maps OpenQML operation names to
+        """A dictionary {str: val} that maps PennyLane operation names to
         the corresponding operation in the device."""
         raise NotImplementedError
 
     @abc.abstractproperty
     def _expectation_map(self):
-        """A dictionary {str: val} that maps OpenQML expectation names to
+        """A dictionary {str: val} that maps PennyLane expectation names to
         the corresponding expectation in the device."""
         raise NotImplementedError
 
@@ -151,7 +151,7 @@ class Device(abc.ABC):
         """Get the supported set of operations.
 
         Returns:
-            set[str]: the set of OpenQML operation names the device supports
+            set[str]: the set of PennyLane operation names the device supports
         """
         return set(self._operation_map.keys())
 
@@ -160,7 +160,7 @@ class Device(abc.ABC):
         """Get the supported set of expectations.
 
         Returns:
-            set[str]: the set of OpenQML expectation names the device supports
+            set[str]: the set of PennyLane expectation names the device supports
         """
         return set(self._expectation_map.keys())
 

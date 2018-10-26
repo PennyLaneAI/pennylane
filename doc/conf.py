@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# OpenQML documentation build configuration file, created by
+# PennyLane documentation build configuration file, created by
 # sphinx-quickstart on Tue Apr 17 11:43:51 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -64,7 +64,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'OpenQML'
+project = 'PennyLane'
 copyright = "Copyright 2018, Xanadu Inc."
 author = 'Xanadu Inc.'
 
@@ -74,9 +74,9 @@ add_module_names = False
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-import openqml
+import pennylane
 # The full version, including alpha/beta/rc tags.
-release = openqml.__version__
+release = pennylane.__version__
 
 # The short X.Y version.
 version = re.match(r'^(\d+\.\d+)', release).expand(r'\1')
@@ -224,7 +224,7 @@ html_sidebars = {
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'OpenQMLdoc'
+htmlhelp_basename = 'PennyLanedoc'
 
 # # -- Xanadu theme ---------------------------------------------------------
 html_theme = 'xanadu_theme'
@@ -240,7 +240,7 @@ html_theme_options = {
     # "index_template": "special_index.html",
 
     # Set the name of the project to appear in the left sidebar.
-    "project_nav_name": "OpenQML",
+    "project_nav_name": "PennyLane",
 
     # Set your Disqus short name to enable comments
     # "disqus_comments_shortname": "strawberryfields-1",
@@ -262,13 +262,13 @@ html_theme_options = {
     # "projectlink": "http://myproject.url",
 }
 
-edit_on_github_project = 'XanaduAI/openqml'
+edit_on_github_project = 'XanaduAI/pennylane'
 edit_on_github_branch = 'master/doc'
 
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'OpenQMLdoc'
+htmlhelp_basename = 'PennyLanedoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -297,7 +297,7 @@ latex_additional_files = ['macros.tex']
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'OpenQML.tex', 'OpenQML Documentation',
+    (master_doc, 'PennyLane.tex', 'PennyLane Documentation',
      'Xanadu Inc.', 'manual'),
 ]
 
@@ -307,7 +307,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'openqml', 'OpenQML Documentation',
+    (master_doc, 'pennylane', 'PennyLane Documentation',
      [author], 1)
 ]
 
@@ -318,8 +318,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'OpenQML', 'OpenQML Documentation',
-     author, 'OpenQML', 'Xanadu quantum machine learning library.',
+    (master_doc, 'PennyLane', 'PennyLane Documentation',
+     author, 'PennyLane', 'Xanadu quantum machine learning library.',
      'Miscellaneous'),
 ]
 

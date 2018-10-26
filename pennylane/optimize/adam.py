@@ -40,7 +40,7 @@ class AdamOptimizer(GradientDescentOptimizer):
     hyperparameters :math:`\beta_1` and :math:`\beta_2` can also be step-dependent.
     Initially, the first and second moment are zero.
 
-    The shift :math:`\epsilon` avoids division by zero and is set to :math:`10^{-8}` in OpenQML.
+    The shift :math:`\epsilon` avoids division by zero and is set to :math:`10^{-8}` in PennyLane.
 
     For more details, see https://arxiv.org/pdf/1412.6980.pdf :cite:`kingma2014adam`.
 

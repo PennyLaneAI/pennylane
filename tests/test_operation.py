@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for :mod:`openqml.operation`.
+Unit tests for :mod:`pennylane.operation`.
 """
 import unittest
 import logging as log
@@ -21,12 +21,12 @@ log.getLogger('defaults')
 import numpy as np
 import numpy.random as nr
 
-from defaults import openqml, BaseTest
-import openqml.operation as oo
-import openqml.variable as ov
+from defaults import pennylane, BaseTest
+import pennylane.operation as oo
+import pennylane.variable as ov
 
 
-dev = openqml.device('default.qubit', wires=2)
+dev = pennylane.device('default.qubit', wires=2)
 
 
 class BasicTest(BaseTest):
@@ -94,7 +94,7 @@ class BasicTest(BaseTest):
                 U_high_order = np.array([U] * 3)
                 op.heisenberg_expand(U_high_order, len(op.wires))
 
-        for cls in openqml.ops.cv.all_ops + openqml.expval.cv.all_ops:
+        for cls in pennylane.ops.cv.all_ops + pennylane.expval.cv.all_ops:
             if cls.supports_analytic:  # only test gaussian operations
                 h_test(cls)
 
@@ -172,16 +172,16 @@ class BasicTest(BaseTest):
             cls.par_domain = tmp
 
 
-        for cls in openqml.ops.qubit.all_ops:
+        for cls in pennylane.ops.qubit.all_ops:
             op_test(cls)
 
-        for cls in openqml.ops.cv.all_ops:
+        for cls in pennylane.ops.cv.all_ops:
             op_test(cls)
 
-        for cls in openqml.expval.qubit.all_ops:
+        for cls in pennylane.expval.qubit.all_ops:
             op_test(cls)
 
-        for cls in openqml.expval.cv.all_ops:
+        for cls in pennylane.expval.cv.all_ops:
             op_test(cls)
 
     def test_operation_outside_queue(self):
@@ -189,16 +189,16 @@ class BasicTest(BaseTest):
         outside of a QNode context."""
         self.logTestName()
 
-        with self.assertRaisesRegex(openqml.QuantumFunctionError, "can only be used inside a qfunc"):
-            openqml.qubit.Hadamard(wires=0)
+        with self.assertRaisesRegex(pennylane.QuantumFunctionError, "can only be used inside a qfunc"):
+            pennylane.qubit.Hadamard(wires=0)
 
     def test_operation_no_queue(self):
         """Test that an operation can be called outside a QNode with the do_queue flag"""
         self.logTestName()
 
         try:
-            openqml.qubit.Hadamard(wires=0, do_queue=False)
-        except openqml.QuantumFunctionError:
+            pennylane.qubit.Hadamard(wires=0, do_queue=False)
+        except pennylane.QuantumFunctionError:
             self.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
 
 
@@ -382,7 +382,7 @@ class DeveloperTests(BaseTest):
             op = DummyOp(-2, wires=[0], do_queue=False)
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', Operation class.')
+    print('Testing PennyLane version ' + pennylane.version() + ', Operation class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest, DeveloperTests):

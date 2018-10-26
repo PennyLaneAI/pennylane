@@ -29,7 +29,7 @@ On the other hand, **quantum information** will refer to the state of a complex-
 Interfacing the classical and quantum worlds
 ============================================
 
-There are many schemes for inputting classical information into quantum systems, but these can often get quite complex. To connect between the classical and quantum worlds, OpenQML uses two straightforward methods: 
+There are many schemes for inputting classical information into quantum systems, but these can often get quite complex. To connect between the classical and quantum worlds, PennyLane uses two straightforward methods: 
 
 1. **Gate parameters**: The gates used in a quantum circuit often have classical parameters associated with them. This classical information determines how a quantum state is transformed -- e.g., what angle we should rotate the quantum state by. Thus, gate arguments provide us a way to imprint classical data onto quantum states, converting classical information to quantum information [#]_.
 

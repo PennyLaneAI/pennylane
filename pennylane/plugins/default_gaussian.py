@@ -16,16 +16,16 @@
 Default Gaussian plugin
 =======================
 
-**Module name:** :mod:`openqml.plugins.default_gaussian`
+**Module name:** :mod:`pennylane.plugins.default_gaussian`
 
 **Short name:** ``"default.gaussian"``
 
-.. currentmodule:: openqml.plugins.default_gaussian
+.. currentmodule:: pennylane.plugins.default_gaussian
 
-The default plugin is meant to be used as a template for writing CV OpenQML
+The default plugin is meant to be used as a template for writing CV PennyLane
 device plugins for new backends.
 
-It implements all the :class:`~openqml._device.Device` methods as well as all built-in
+It implements all the :class:`~pennylane._device.Device` methods as well as all built-in
 continuous-variable Gaussian operations and expectations, and provides
 a very simple simulation of a Gaussian-based quantum circuit architecture.
 
@@ -89,8 +89,8 @@ import numpy as np
 
 from scipy.special import factorial as fac
 
-import openqml as qm
-from openqml import Device
+import pennylane as qml
+from pennylane import Device
 
 log.getLogger()
 
@@ -606,7 +606,7 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
     N = len(mu)//2
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
-    op = qm.expval.PolyXP(Q, wires=wires, do_queue=False)
+    op = qml.expval.PolyXP(Q, wires=wires, do_queue=False)
     Q = op.heisenberg_obs(N)
 
     if Q.ndim == 1:
@@ -664,7 +664,7 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
 
 
 class DefaultGaussian(Device):
-    r"""Default Gaussian device for OpenQML.
+    r"""Default Gaussian device for PennyLane.
 
     Args:
         wires (int): the number of modes to initialize the device in
@@ -673,7 +673,7 @@ class DefaultGaussian(Device):
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
     """
-    name = 'Default Gaussian OpenQML plugin'
+    name = 'Default Gaussian PennyLane plugin'
     short_name = 'default.gaussian'
     api_version = '0.1.0'
     version = '0.1.0'

@@ -6,7 +6,7 @@ Research and contribution
 Research
 ---------------
 
-If you are doing research using OpenQML, please cite our paper.
+If you are doing research using PennyLane, please cite our paper.
 
 We are always open for collaboration, and can be contacted at research@xanadu.ai.
 

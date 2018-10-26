@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml.plugin.DefaultGaussian` device.
+Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
 import inspect
 import logging as log
 
-from openqml import numpy as np
+from pennylane import numpy as np
 from scipy.linalg import block_diag
 
-from defaults import openqml as qm, BaseTest
-from openqml.ops import cv
+from defaults import pennylane as qml, BaseTest
+from pennylane.ops import cv
 
 
 log.getLogger('defaults')
@@ -164,7 +164,7 @@ class TestNonGaussian(BaseTest):
                 op_.heisenberg_tr(op.num_wires)
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + qm.version() + ', default.gaussian plugin.')
+    print('Testing PennyLane version ' + qml.version() + ', default.gaussian plugin.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (TestHeisenberg,TestNonGaussian):

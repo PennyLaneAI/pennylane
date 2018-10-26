@@ -16,16 +16,16 @@
 Default qubit plugin
 ====================
 
-**Module name:** :mod:`openqml.plugins.default_qubit`
+**Module name:** :mod:`pennylane.plugins.default_qubit`
 
 **Short name:** ``"default.qubit"``
 
-.. currentmodule:: openqml.plugins.default_qubit
+.. currentmodule:: pennylane.plugins.default_qubit
 
-The default plugin is meant to be used as a template for writing OpenQML device
+The default plugin is meant to be used as a template for writing PennyLane device
 plugins for new backends.
 
-It implements all the :class:`~openqml._device.Device` methods as well as all built-in
+It implements all the :class:`~pennylane._device.Device` methods as well as all built-in
 discrete-variable operations and expectations, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 
@@ -57,7 +57,7 @@ import collections
 import numpy as np
 from scipy.linalg import expm, eigh
 
-from openqml import Device
+from pennylane import Device
 
 log.getLogger()
 
@@ -212,14 +212,14 @@ def hermitian(*args):
 
 
 class DefaultQubit(Device):
-    """Default qubit device for OpenQML.
+    """Default qubit device for PennyLane.
 
     Args:
         wires (int): the number of modes to initialize the device in
         shots (int): How many times should the circuit be evaluated (or sampled) to estimate
             the expectation values. 0 yields the exact result.
     """
-    name = 'Default OpenQML plugin'
+    name = 'Default PennyLane plugin'
     short_name = 'default.qubit'
     api_version = '0.1.0'
     version = '0.1.0'

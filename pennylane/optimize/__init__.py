@@ -15,11 +15,11 @@ r"""
 Optimization methods
 ====================
 
-**Module name:** :mod:`openqml.optimize`
+**Module name:** :mod:`pennylane.optimize`
 
-.. currentmodule:: openqml.optimize
+.. currentmodule:: pennylane.optimize
 
-In openqml, a nuclear optimizer is a procedure that executes one weight
+In pennylane, a nuclear optimizer is a procedure that executes one weight
 update step along (some function of) the negative gradient of the cost.
 This update depends in general on:
 
@@ -50,7 +50,7 @@ Code details
 ~~~~~~~~~~~~
 """
 
-# Python optimizers that are available in OpenQML
+# Python optimizers that are available in PennyLane
 # listed in alphabetical order to avoid circular imports
 from .adagrad import AdagradOptimizer
 from .adam import AdamOptimizer

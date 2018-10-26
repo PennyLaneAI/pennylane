@@ -1,3 +1,3 @@
-.. automodule:: openqml.ops.qubit
+.. automodule:: pennylane.ops.qubit
    :members:
    :private-members:

@@ -1,14 +1,14 @@
 PYTHON3 := $(shell which python3 2>/dev/null)
 
 PYTHON := python3
-COVERAGE := --cov=openqml --cov-report term-missing --cov-report=html:coverage_html_report
+COVERAGE := --cov=pennylane --cov-report term-missing --cov-report=html:coverage_html_report
 TESTRUNNER := -m pytest tests
 
 .PHONY: help
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
-	@echo "  install            to install OpenQML"
-	@echo "  wheel              to build the OpenQML wheel"
+	@echo "  install            to install PennyLane"
+	@echo "  wheel              to build the PennyLane wheel"
 	@echo "  dist               to package the source distribution"
 	@echo "  clean              to delete all temporary, cache, and build files"
 	@echo "  clean-docs         to delete all built documentation"
@@ -18,7 +18,7 @@ help:
 .PHONY: install
 install:
 ifndef PYTHON3
-	@echo "To install OpenQML you need to have Python 3 installed"
+	@echo "To install PennyLane you need to have Python 3 installed"
 endif
 	$(PYTHON) setup.py install
 
@@ -32,11 +32,11 @@ dist:
 
 .PHONY : clean
 clean:
-	rm -rf openqml/__pycache__
-	rm -rf openqml/optimize/__pycache__
-	rm -rf openqml/expectation/__pycache__
-	rm -rf openqml/ops/__pycache__
-	rm -rf openqml/plugins/__pycache__
+	rm -rf pennylane/__pycache__
+	rm -rf pennylane/optimize/__pycache__
+	rm -rf pennylane/expectation/__pycache__
+	rm -rf pennylane/ops/__pycache__
+	rm -rf pennylane/plugins/__pycache__
 	rm -rf tests/__pycache__
 	rm -rf dist
 	rm -rf build

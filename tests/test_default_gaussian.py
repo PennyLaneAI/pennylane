@@ -12,29 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml.plugin.DefaultGaussian` device.
+Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
 import inspect
 import logging as log
 
-from openqml import numpy as np
+from pennylane import numpy as np
 from scipy.special import factorial as fac
 from scipy.linalg import block_diag
 
-from defaults import openqml as qm, BaseTest
+from defaults import pennylane as qml, BaseTest
 
-from openqml.plugins.default_gaussian import fock_prob
+from pennylane.plugins.default_gaussian import fock_prob
 
-from openqml.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
+from pennylane.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
                                               beamsplitter, two_mode_squeezing,
                                               controlled_addition, controlled_phase)
-from openqml.plugins.default_gaussian import (vacuum_state, coherent_state,
+from pennylane.plugins.default_gaussian import (vacuum_state, coherent_state,
                                               squeezed_state, displaced_squeezed_state,
                                               thermal_state)
 
-from openqml.plugins.default_gaussian import DefaultGaussian
+from pennylane.plugins.default_gaussian import DefaultGaussian
 
 
 log.getLogger('defaults')
@@ -290,7 +290,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.dev = DefaultGaussian(wires=2, shots=0, hbar=hbar)
 
     def test_operation_map(self):
-        """Test that default Gaussian device supports all OpenQML Gaussian CV gates."""
+        """Test that default Gaussian device supports all PennyLane Gaussian CV gates."""
         self.logTestName()
 
         nonGaussian = {'FockDensityMatrix',
@@ -301,13 +301,13 @@ class TestDefaultGaussianDevice(BaseTest):
                        'CubicPhase',
                        'Kerr'}
 
-        self.assertEqual(set(qm.ops.cv.__all__) - nonGaussian,
+        self.assertEqual(set(qml.ops.cv.__all__) - nonGaussian,
                          set(self.dev._operation_map))
 
     def test_expectation_map(self):
-        """Test that default Gaussian device supports all OpenQML Gaussian continuous expectations."""
+        """Test that default Gaussian device supports all PennyLane Gaussian continuous expectations."""
         self.logTestName()
-        self.assertEqual(set(qm.expval.cv.__all__)-{'Heterodyne'},
+        self.assertEqual(set(qml.expval.cv.__all__)-{'Heterodyne'},
                          set(self.dev._expectation_map))
 
     def test_apply(self):
@@ -327,8 +327,8 @@ class TestDefaultGaussianDevice(BaseTest):
             self.dev.apply('DisplacedSqueezedState', wires=[0], par=[a, r, phi])
             self.dev.apply('DisplacedSqueezedState', wires=[1], par=[a, r, phi])
 
-            # get the equivalent openqml operation class
-            op = qm.ops.__getattribute__(gate_name)
+            # get the equivalent pennylane operation class
+            op = qml.ops.__getattribute__(gate_name)
             # the list of wires to apply the operation to
             w = list(range(op.num_wires))
 
@@ -388,7 +388,7 @@ class TestDefaultGaussianDevice(BaseTest):
         """Test that expectation values are calculated correctly"""
         self.logTestName()
 
-        dev = qm.device('default.gaussian', wires=1, hbar=hbar)
+        dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
         # test correct mean and variance for <n> of a displaced thermal state
         nbar = 0.5431
@@ -450,13 +450,13 @@ class TestDefaultGaussianDevice(BaseTest):
 
 class TestDefaultGaussianIntegration(BaseTest):
     """Integration tests for default.gaussian. This test ensures it integrates
-    properly with the OpenQML interface, in particular QNode."""
+    properly with the PennyLane interface, in particular QNode."""
 
     def test_load_default_gaussian_device(self):
         """Test that the default plugin loads correctly"""
         self.logTestName()
 
-        dev = qm.device('default.gaussian', wires=2, hbar=2)
+        dev = qml.device('default.gaussian', wires=2, hbar=2)
         self.assertEqual(dev.num_wires, 2)
         self.assertEqual(dev.shots, 0)
         self.assertEqual(dev.hbar, 2)
@@ -467,77 +467,77 @@ class TestDefaultGaussianIntegration(BaseTest):
         self.logTestName()
 
         with self.assertRaisesRegex(TypeError, "missing 1 required positional argument: 'wires'"):
-            qm.device('default.gaussian')
+            qml.device('default.gaussian')
 
     def test_unsupported_gates(self):
         """Test error is raised with unsupported gates"""
         self.logTestName()
-        dev = qm.device('default.gaussian', wires=2)
+        dev = qml.device('default.gaussian', wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qm.ops, inspect.isclass)}
+        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
 
         for g in all_gates - gates:
-            op = getattr(qm.ops, g)
+            op = getattr(qml.ops, g)
 
             if op.num_wires == 0:
                 wires = [0]
             else:
                 wires = list(range(op.num_wires))
 
-            @qm.qnode(dev)
+            @qml.qnode(dev)
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
                 op(*x, wires=wires)
 
-                if issubclass(op, qm.operation.CV):
-                    return qm.expval.X(0)
+                if issubclass(op, qml.operation.CV):
+                    return qml.expval.X(0)
 
-                return qm.expval.PauliZ(0)
+                return qml.expval.PauliZ(0)
 
-            with self.assertRaisesRegex(qm.DeviceError, "Gate {} not supported on device default.gaussian".format(g)):
+            with self.assertRaisesRegex(qml.DeviceError, "Gate {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 
     def test_unsupported_observables(self):
         """Test error is raised with unsupported observables"""
         self.logTestName()
-        dev = qm.device('default.gaussian', wires=2)
+        dev = qml.device('default.gaussian', wires=2)
 
         obs = set(dev._expectation_map.keys())
-        all_obs = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
+        all_obs = {m[0] for m in inspect.getmembers(qml.expval, inspect.isclass)}
 
         for g in all_obs - obs:
-            op = getattr(qm.expval, g)
+            op = getattr(qml.expval, g)
 
             if op.num_wires == 0:
                 wires = [0]
             else:
                 wires = list(range(op.num_wires))
 
-            @qm.qnode(dev)
+            @qml.qnode(dev)
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
                 return op(*x, wires=wires)
 
-            with self.assertRaisesRegex(qm.DeviceError, "Expectation {} not supported on device default.gaussian".format(g)):
+            with self.assertRaisesRegex(qml.DeviceError, "Expectation {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 
     def test_gaussian_circuit(self):
         """Test that the default gaussian plugin provides correct result for simple circuit"""
         self.logTestName()
-        dev = qm.device('default.gaussian', wires=1)
+        dev = qml.device('default.gaussian', wires=1)
 
         p = 0.543
 
-        @qm.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x):
             """Test quantum function"""
-            qm.Displacement(x, 0, wires=0)
-            return qm.expval.X(0)
+            qml.Displacement(x, 0, wires=0)
+            return qml.expval.X(0)
 
         self.assertAlmostEqual(circuit(p), p*np.sqrt(2*hbar), delta=self.tol)
 
@@ -546,15 +546,15 @@ class TestDefaultGaussianIntegration(BaseTest):
         self.logTestName()
 
         shots = 10**4
-        dev = qm.device('default.gaussian', wires=1, shots=shots)
+        dev = qml.device('default.gaussian', wires=1, shots=shots)
 
         p = 0.543
 
-        @qm.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x):
             """Test quantum function"""
-            qm.Displacement(x, 0, wires=0)
-            return qm.expval.X(0)
+            qml.Displacement(x, 0, wires=0)
+            return qml.expval.X(0)
 
         runs = []
         for _ in range(100):
@@ -567,25 +567,25 @@ class TestDefaultGaussianIntegration(BaseTest):
         self.logTestName()
         a = 0.312
 
-        dev = qm.device('default.gaussian', wires=2)
+        dev = qml.device('default.gaussian', wires=2)
 
         for g, qop in dev._operation_map.items():
             log.debug('\tTesting gate %s...', g)
             self.assertTrue(dev.supported(g))
             dev.reset()
 
-            op = getattr(qm.ops, g)
+            op = getattr(qml.ops, g)
             if op.num_wires == 0:
                 wires = list(range(2))
             else:
                 wires = list(range(op.num_wires))
 
-            @qm.qnode(dev)
+            @qml.qnode(dev)
             def circuit(*x):
                 """Reference quantum function"""
-                qm.Displacement(a, 0, wires=[0])
+                qml.Displacement(a, 0, wires=[0])
                 op(*x, wires=wires)
-                return qm.expval.X(0)
+                return qml.expval.X(0)
 
             # compare to reference result
             def reference(*x):
@@ -618,7 +618,7 @@ class TestDefaultGaussianIntegration(BaseTest):
 
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + qm.version() + ', default.gaussian plugin.')
+    print('Testing PennyLane version ' + qml.version() + ', default.gaussian plugin.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (TestAuxillaryFunctions,

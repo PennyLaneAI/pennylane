@@ -6,8 +6,8 @@
 Basic tutorial: qubit rotation
 ==============================
 
-To see how OpenQML allows the easy construction and optimization of quantum functions, let's
-consider the simple case of **qubit rotation** - the OpenQML version of the 'Hello, world!'
+To see how PennyLane allows the easy construction and optimization of quantum functions, let's
+consider the simple case of **qubit rotation** - the PennyLane version of the 'Hello, world!'
 example.
 
 The task at hand is to optimize two rotation gates in order to flip a single
@@ -70,32 +70,32 @@ Depending on the circuit parameters :math:`\phi_1` and :math:`\phi_2`, the
 output expectation lies between :math:`1` (if :math:`\ket{\psi} = \ket{0}`)
 and :math:`-1` (if :math:`\ket{\psi} = \ket{1}`).
 
-Let's see how we can easily implement and optimize this circuit using OpenQML.
+Let's see how we can easily implement and optimize this circuit using PennyLane.
 
 
-Importing OpenQML and NumPy
+Importing PennyLane and NumPy
 ---------------------------
 
-The first thing we need to do is import OpenQML, as well as the wrapped version
-of NumPy provided by OpenQML.
+The first thing we need to do is import PennyLane, as well as the wrapped version
+of NumPy provided by PennyLane.
 
 .. code-block:: python
 
-    import openqml as qm
-    from openqml import numpy as np
+    import pennylane as qml
+    from pennylane import numpy as np
 
 
 .. important::
 
-    When constructing a hybrid quantum/classical computational model with OpenQML,
-    it is important to **always import NumPy from OpenQML**, not the standard NumPy!
+    When constructing a hybrid quantum/classical computational model with PennyLane,
+    it is important to **always import NumPy from PennyLane**, not the standard NumPy!
 
-    By importing the wrapped version of NumPy provided by OpenQML, you can combine
-    the power of NumPy with OpenQML:
+    By importing the wrapped version of NumPy provided by PennyLane, you can combine
+    the power of NumPy with PennyLane:
 
     * continue to use the classical NumPy functions and arrays you know and love
     * combine quantum functions (as quantum nodes) and classical functions (provided by NumPy)
-    * allow OpenQML to automatically calculate gradients of both classical and quantum functions
+    * allow PennyLane to automatically calculate gradients of both classical and quantum functions
 
 
 Creating a device
@@ -108,27 +108,27 @@ Before we can construct our quantum node, we need to initialize a **device**.
 
     Any computational object that can apply quantum operations, and return an expectation value.
 
-    In OpenQML, a device could be a hardware device (such as the IBM QX4, via the OpenQML-PQ plugin),
-    or a software simulator (such as Strawberry Fields, via the OpenQML-SF plugin).
+    In PennyLane, a device could be a hardware device (such as the IBM QX4, via the PennyLane-PQ plugin),
+    or a software simulator (such as Strawberry Fields, via the PennyLane-SF plugin).
 
 .. tip::
 
-   *Devices are loaded in OpenQML via the function* :func:`openqml.device`
+   *Devices are loaded in PennyLane via the function* :func:`pennylane.device`
 
 
-OpenQML supports devices using both the qubit model of quantum computation and devices using the CV model
+PennyLane supports devices using both the qubit model of quantum computation and devices using the CV model
 of quantum computation.
 In fact, even a hybrid computation containing both qubit and CV quantum nodes is possible;
 see the :ref:`hybrid computation example <hybrid_computation_example>` in the next tutorial for more details.
 
 For this tutorial, we are using the qubit model, so let's initialize the ``'default.qubit'`` device
-provided by OpenQML - a simple pure-state qubit simulator.
+provided by PennyLane - a simple pure-state qubit simulator.
 
 .. code-block:: python
 
-    dev1 = qm.device('default.qubit', wires=1)
+    dev1 = qml.device('default.qubit', wires=1)
 
-For all devices, :func:`~.openqml.device` accepts the following arguments:
+For all devices, :func:`~.pennylane.device` accepts the following arguments:
 
 * ``name``: the name of the device to be loaded
 * ``wires``: the number of subsystems to initialize the device with
@@ -149,8 +149,8 @@ Now that we have initialized our device, we can begin to construct our quantum n
 
 .. tip::
 
-   *QNodes can be constructed via the* :class:`openqml.QNode <openqml.qnode.QNode>` *class, or
-   by using the* :func:`openqml.qnode` *decorator.*
+   *QNodes can be constructed via the* :class:`pennylane.QNode <pennylane.qnode.QNode>` *class, or
+   by using the* :func:`pennylane.qnode` *decorator.*
 
 
 First, we need to define the quantum function that will be evaluated in the QNode.
@@ -160,9 +160,9 @@ We do this as follows:
 .. code-block:: python
 
     def circuit(params):
-        qm.RX(params[0], wires=0)
-        qm.RY(params[1], wires=0)
-        return qm.expval.PauliZ(0)
+        qml.RX(params[0], wires=0)
+        qml.RY(params[1], wires=0)
+        return qml.expval.PauliZ(0)
 
 This is a simple circuit, matching the one described above.
 Notice that the function ``circuit()`` is constructed as if it were any other Python function;
@@ -177,32 +177,32 @@ be a valid quantum function, there are some important restrictions:
   In addition, we must always specify the subsystem the operation applies to, by passing the ``wires`` keyword argument;
   this may be a list or an integer, depending on how many wires the operation acts on.
 
-  For a full list of quantum operations, see :mod:`supported operations <openqml.ops>`.
+  For a full list of quantum operations, see :mod:`supported operations <pennylane.ops>`.
 
 * **Quantum functions must return either a single or a tuple of expectation values**.
 
   As a result, the quantum function always returns a classical quantity, allowing the QNode to interface
   with other classical functions (and also other QNodes).
 
-  For a full list of quantum expectation values, see :mod:`supported expectations <openqml.expval>`.
+  For a full list of quantum expectation values, see :mod:`supported expectations <pennylane.expval>`.
 
 * **Quantum functions must not contain any classical processing of circuit parameters.**
 
-.. note:: Certain devices may only support a subset of the available OpenQML operations/expectations, or may even
+.. note:: Certain devices may only support a subset of the available PennyLane operations/expectations, or may even
           provide additional operations/expectations. Please consult the documentation for the plugin/device
           for more details.
 
 Once we have written the quantum function, we convert it into a :class:`~.QNode` running on device ``dev1`` by
-applying the :func:`openqml.qnode` decorator **directly above** the function definition:
+applying the :func:`pennylane.qnode` decorator **directly above** the function definition:
 
 
 .. code-block:: python
 
-    @qm.qnode(dev1)
+    @qml.qnode(dev1)
     def circuit(params):
-        qm.RX(params[0], wires=0)
-        qm.RY(params[1], wires=0)
-        return qm.expval.PauliZ(0)
+        qml.RX(params[0], wires=0)
+        qml.RY(params[1], wires=0)
+        return qml.expval.PauliZ(0)
 
 Thus, our ``circuit()`` quantum function is now a ``QNode``, which will run on device ``dev1`` every time it is evaluated.
 To evaluate, we simply call the function with some appropriate numerical inputs:
@@ -216,18 +216,18 @@ Calculating quantum gradients
 The gradient of the function ``circuit``, encapsulated within the ``QNode``, can be evaluated by utilizing the same quantum
 device (``dev1``) that we used to evaluate the function itself.
 
-OpenQML incorporates both analytic differentiation, as well as numerical methods (such as the method of
+PennyLane incorporates both analytic differentiation, as well as numerical methods (such as the method of
 finite differences). Both of these are done automatically.
 
-We can differentiate by using the built-in :func:`~.openqml.grad` function. This returns another function,
+We can differentiate by using the built-in :func:`~.pennylane.grad` function. This returns another function,
 representing the gradient (i.e., the vector of partial derivatives) of ``circuit``.
 The gradient can be evaluated in the same way as the original function:
 
->>> dcircuit = qm.grad(circuit)
+>>> dcircuit = qml.grad(circuit)
 >>> dcircuit([0.54, 0.12])
 array([-0.510438652516502, -0.10267819945693203])
 
-Note that :func:`~.openqml.grad` **returns a function** representing the derivative of the QNode with respect to each parameter.
+Note that :func:`~.pennylane.grad` **returns a function** representing the derivative of the QNode with respect to each parameter.
 We then call this function at a particular point in the parameter space.
 
 .. todo::
@@ -239,7 +239,7 @@ We then call this function at a particular point in the parameter space.
         Should we change this such that ``argnum=range(args)`` by default?
 
       - All optimizers in apply ``autograd.grad()`` to the cost/objective function. We should
-        change this to use ``openqml.grad``, so that it uses the same defaults in OpenQML.
+        change this to use ``pennylane.grad``, so that it uses the same defaults in PennyLane.
 
         Potentially we should also let you specify ``argnum`` for the optimizers.
 
@@ -247,7 +247,7 @@ We then call this function at a particular point in the parameter space.
 
       In this case, the user must use ``autograd.jacobian``, as ``autograd.grad`` will raise an exception.
 
-      - Todo: should we also have ``openqml.jacobian``? Or perhaps ``openqml.grad`` should return the gradient *or*
+      - Todo: should we also have ``pennylane.jacobian``? Or perhaps ``pennylane.grad`` should return the gradient *or*
         the Jacobian depending on context?
 
 .. note::
@@ -258,20 +258,20 @@ We then call this function at a particular point in the parameter space.
 
     .. code-block:: python
 
-        @qm.qnode(dev1)
+        @qml.qnode(dev1)
         def circuit2(phi1, phi2):
-            qm.RX(phi1, wires=0)
-            qm.RY(phi2, wires=0)
-            return qm.expval.PauliZ(0)
+            qml.RX(phi1, wires=0)
+            qml.RY(phi2, wires=0)
+            return qml.expval.PauliZ(0)
 
     When we calculate the gradient, we can use the optional ``argnum`` keyword argument to specify that we would like to return the
     gradient with respect to both arguments zero (``phi1``) and one (``phi2``):
 
-    >>> dcircuit = qm.grad(circuit2, argnum=[0, 1])
+    >>> dcircuit = qml.grad(circuit2, argnum=[0, 1])
     >>> dcircuit(0.54, 0.12)
     (array(-0.510438652516502), array(-0.10267819945693203))
 
-    Keyword arguments may also be used in your custom quantum function. OpenQML does differentiate QNodes with respect to keyword arguments,
+    Keyword arguments may also be used in your custom quantum function. PennyLane does differentiate QNodes with respect to keyword arguments,
     so they are useful for passing external data to your QNode.
 
 
@@ -281,14 +281,14 @@ Optimization
 .. admonition:: Definition
     :class: defn
 
-    OpenQML provides a collection of gradient-descent-based optimizers. These optimizers accept a cost function and initial parameters,
-    and utilize OpenQML's automatic differentiation to perform gradient descent.
+    PennyLane provides a collection of gradient-descent-based optimizers. These optimizers accept a cost function and initial parameters,
+    and utilize PennyLane's automatic differentiation to perform gradient descent.
 
 .. tip::
 
-   *See* :mod:`openqml.optimize` *for details and documentation of available optimizers*
+   *See* :mod:`pennylane.optimize` *for details and documentation of available optimizers*
 
-Next, let's make use of OpenQML's built-in optimizers to optimize the two circuit parameters :math:`\phi_1` and :math:`\phi_2` such
+Next, let's make use of PennyLane's built-in optimizers to optimize the two circuit parameters :math:`\phi_1` and :math:`\phi_2` such
 that the qubit, originally in state :math:`\ket{0}`, is rotated to be in state :math:`\ket{1}`. This is equivalent to measuring a
 Pauli-Z expectation of :math:`-1`, since the state :math:`\ket{1}` is an eigenvector of the Pauli-Z matrix with eigenvalue
 :math:`\lambda=-1`.
@@ -326,12 +326,12 @@ To begin our optimization, let's choose small initial values of :math:`\phi_1` a
 We can see that for these initial parameter values, the cost function is close to :math:`1`.
 
 Next, we use an optimizer to update the circuit parameters for 100 steps. We can use the built-in
-:class:`openqml.optimize.GradientDescentOptimizer` class:
+:class:`pennylane.optimize.GradientDescentOptimizer` class:
 
 .. code-block:: python
 
     # initialise the optimizer
-    op = qm.GradientDescentOptimizer(stepsize=0.4)
+    op = qml.GradientDescentOptimizer(stepsize=0.4)
 
     # set the number of steps
     steps = 100
@@ -360,8 +360,8 @@ the qubit being rotated to the state :math:`\ket{1}`.
 
 .. note::
 
-    Some optimizers, such as :class:`~.openqml.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the
+    Some optimizers, such as :class:`~.pennylane.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the
     optimizer instance. These can be reset using the ``reset()`` method.
 
-Continue on to the next tutorial, :ref:`photon_redirection`, to learn how to utilize the extensive plugin ecosystem of OpenQML,
-build continuous-variable (CV) quantum nodes, and to see an example of a hybrid qubit-CV-classical computation using OpenQML.
+Continue on to the next tutorial, :ref:`photon_redirection`, to learn how to utilize the extensive plugin ecosystem of PennyLane,
+build continuous-variable (CV) quantum nodes, and to see an example of a hybrid qubit-CV-classical computation using PennyLane.

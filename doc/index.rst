@@ -1,12 +1,12 @@
-OpenQML
+PennyLane
 #######
 
 :Release: |release|
 :Date: |today|
 
-OpenQML is a Python library for building and training machine learning models which include quantum computer circuits.
+PennyLane is a Python library for building and training machine learning models which include quantum computer circuits.
 
-Main features of OpenQML:
+Main features of PennyLane:
 
 - *Follow the gradient*: **automatic differentiation** of quantum circuits
 - *Best of both worlds*: support for **hybrid quantum & classical** models
@@ -20,23 +20,23 @@ Getting started
 How to cite
 ===========
 
-If you are doing research using OpenQML, please cite
+If you are doing research using PennyLane, please cite
 
 Support
 =======
 
-- **Source Code:** https://github.com/XanaduAI/openQML
-- **Issue Tracker:** https://github.com/XanaduAI/openQML/issues
+- **Source Code:** https://github.com/XanaduAI/PennyLane
+- **Issue Tracker:** https://github.com/XanaduAI/PennyLane/issues
 
 If you are having issues, please let us know by posting the issue on our Github issue tracker.
 
-For more details on contributing or performing research with OpenQML, please see
+For more details on contributing or performing research with PennyLane, please see
 :ref:`research`.
 
 License
 =======
 
-OpenQML is **free** and **open source**, released under the Apache License, Version 2.0.
+PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.
 
 
 .. toctree::
