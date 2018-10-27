@@ -35,7 +35,7 @@ Features
 
 - **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
 
-- **Best of both worlds**. Support for both **hybrid quantum & classical** models
+- **Best of both worlds**. Support for **hybrid quantum & classical** models
 
 - **Batteries included**. Provides **optimization and machine learning** tools
 
