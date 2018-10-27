@@ -13,7 +13,7 @@ Features
   Built-in **automatic differentiation** of quantum circuits
 
 - **Best of both worlds**.
-  Support for both **hybrid quantum and classical** models
+  Support for **hybrid quantum and classical** models
 
 - **Batteries included**.
   Provides **optimization and machine learning** tools
