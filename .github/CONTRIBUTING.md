@@ -22,7 +22,7 @@ It's up to you!
 * **Be a part of our community** - respond to questions, issues, and
   provide exciting updates of the projects/experiments you are investigating with PennyLane
 
-  You can even write your own PennyLane tutorials, or blog about your simulation results.
+  You can even write your own PennyLane tutorials, or blog about your results.
   Send us the link, and we may even add it to our documentation as an external resource!
 
 * **Test the cutting-edge PennyLane releases** - clone our GitHub repository, and keep up to
