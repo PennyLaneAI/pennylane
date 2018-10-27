@@ -19,7 +19,7 @@ Optimization methods
 
 .. currentmodule:: pennylane.optimize
 
-In pennylane, a nuclear optimizer is a procedure that executes one weight
+In PennyLane, an optimizer is a procedure that executes one weight
 update step along (some function of) the negative gradient of the cost.
 This update depends in general on:
 
