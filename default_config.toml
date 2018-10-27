@@ -1,5 +1,5 @@
 ## =================================================================
-##     MAIN OPENQML CONFIGURATION OPTIONS
+##     MAIN PENNYLANE CONFIGURATION OPTIONS
 ## =================================================================
 ## This section contains the main PennyLane configuration options.
 ## These options apply globally to PennyLane and all loaded plugins
