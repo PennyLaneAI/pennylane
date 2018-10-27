@@ -62,7 +62,7 @@ For getting started with PennyLane, check out our `qubit rotation <https://penny
 
 Our `documentation <https://pennylane.readthedocs.io>`_ is also a great starting point to familiarize yourself with the hybrid classical-quantum machine learning approach, and explore the available optimization tools provided by PennyLane. Play around with the numerous devices and plugins available for running your hybrid optimizations - these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
 
-Finally, detailed documentation on the PennyLane API is provided, for full details on available quantum operations and expectations, and detailed guides on `how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_ PennyLane compatible quantum device.
+Finally, detailed documentation on the PennyLane API is provided, for full details on available quantum operations and expectations, and detailed guides on `how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_ PennyLane-compatible quantum device.
 
 
 Contributing to PennyLane
