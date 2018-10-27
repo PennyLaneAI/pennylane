@@ -40,7 +40,7 @@ It's up to you!
   to our documentation, or suggest improvements/changes, let us know - or even submit a pull request directly. All authors
   who have contributed to the PennyLane codebase will be listed alongside the latest release.
 
-* **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum framework agnostic;
+* **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework agnostic;
   the quantum node device can be switched out to any other compatible devices, with no code changes necessary.
   We would love to support even more devices and quantum frameworks. If you would like to write a PennyLane plugin,
   see the [developer overview](https://pennylane.readthedocs.io/en/latest/API/overview.html) section of our documentation.
