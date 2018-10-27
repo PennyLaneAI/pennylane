@@ -26,7 +26,7 @@ Description of the issue - include code snippets and screenshots here if relevan
 #### System information
 
 * **Operating system:**
-  Include the operating system version if you can, e.g. Ubuntu Linux 16.04
+  Include the operating system version if you can, e.g., Ubuntu Linux 16.04
 
 
 * **PennyLane version:**
