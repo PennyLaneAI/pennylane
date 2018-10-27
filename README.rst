@@ -83,7 +83,7 @@ Authors
 
 Nathan Killoran, Josh Izaac, Nicolás Quesada, Ville Bergholm, Matthew Amy, and Christian Weedbrook.
 
-If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/1804.03159>`_:
+If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/XXXX.XXXXX>`_:
 
   Nathan Killoran, Josh Izaac, Nicolás Quesada, Ville Bergholm, Matthew Amy, and Christian Weedbrook. PennyLane: A Software Platform for Photonic Quantum Computing. *arXiv*, 2018. arXiv:1804.03159
 
