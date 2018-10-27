@@ -33,7 +33,7 @@ learning and automatic differentiation of hybrid quantum-classical computations.
 Features
 ========
 
-- **Follow the gradient**. Built in **automatic differentiation** of quantum circuits
+- **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
 
 - **Best of both worlds**. Support for both **hybrid quantum & classical** models
 
