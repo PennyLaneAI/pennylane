@@ -1,0 +1,11 @@
+requirements_file: doc/requirements.txt
+
+build:
+    image: latest
+
+python:
+    version: 3.5
+
+# Don't build any extra formats
+formats:
+    - none
