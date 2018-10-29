@@ -219,7 +219,7 @@ class DefaultQubit(Device):
         shots (int): How many times should the circuit be evaluated (or sampled) to estimate
             the expectation values. 0 yields the exact result.
     """
-    name = 'Default PennyLane plugin'
+    name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
     api_version = '0.1.0'
     version = '0.1.0'
