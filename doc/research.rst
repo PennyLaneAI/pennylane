@@ -8,7 +8,7 @@ Research
 
 If you are doing research using PennyLane, please cite our paper:
 
-  Nathan Killoran, Josh Izaac, Nicolás Quesada, Ville Bergholm, Matthew Amy, and Christian Weedbrook. PennyLane: A Software Platform for Photonic Quantum Computing. *arXiv*, 2018. arXiv:1804.03159
+  [Placeholder for PennyLane paper]
 
 We are always open for collaboration, and can be contacted at research@xanadu.ai.
 

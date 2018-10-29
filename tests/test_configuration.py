@@ -41,7 +41,7 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         os.curdir = "."
-        os.environ["OPENQML_CONF"] = ""
+        os.environ["PENNYLANE_CONF"] = ""
         config = Configuration(name=filename)
 
         self.assertEqual(config._config, expected_config)
@@ -53,12 +53,12 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         os.curdir = "None"
-        os.environ["OPENQML_CONF"] = os.getcwd()
+        os.environ["PENNYLANE_CONF"] = os.getcwd()
         config = Configuration(name=filename)
 
         self.assertEqual(config._config, expected_config)
-        self.assertEqual(config._env_config_dir, os.environ["OPENQML_CONF"])
-        self.assertEqual(config.path, os.path.join(os.environ["OPENQML_CONF"], filename))
+        self.assertEqual(config._env_config_dir, os.environ["PENNYLANE_CONF"])
+        self.assertEqual(config.path, os.path.join(os.environ["PENNYLANE_CONF"], filename))
 
     def test_loading_absolute_path(self):
         """Test that the default configuration file can be loaded
@@ -66,7 +66,7 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         os.curdir = "None"
-        os.environ["OPENQML_CONF"] = ""
+        os.environ["PENNYLANE_CONF"] = ""
         config = Configuration(name=os.path.join(os.getcwd(), filename))
 
         self.assertEqual(config._config, expected_config)

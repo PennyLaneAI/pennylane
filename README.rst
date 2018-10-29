@@ -33,9 +33,9 @@ learning and automatic differentiation of hybrid quantum-classical computations.
 Features
 ========
 
-- **Follow the gradient**. Built in **automatic differentiation** of quantum circuits
+- **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
 
-- **Best of both worlds**. Support for both **hybrid quantum & classical** models
+- **Best of both worlds**. Support for **hybrid quantum & classical** models
 
 - **Batteries included**. Provides **optimization and machine learning** tools
 
@@ -62,7 +62,7 @@ For getting started with PennyLane, check out our `qubit rotation <https://penny
 
 Our `documentation <https://pennylane.readthedocs.io>`_ is also a great starting point to familiarize yourself with the hybrid classical-quantum machine learning approach, and explore the available optimization tools provided by PennyLane. Play around with the numerous devices and plugins available for running your hybrid optimizations - these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
 
-Finally, detailed documentation on the PennyLane API is provided, for full details on available quantum operations and expectations, and detailed guides on `how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_ PennyLane compatible quantum device.
+Finally, detailed documentation on the PennyLane API is provided, for full details on available quantum operations and expectations, and detailed guides on `how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_ PennyLane-compatible quantum device.
 
 
 Contributing to PennyLane
@@ -83,9 +83,9 @@ Authors
 
 Nathan Killoran, Josh Izaac, Nicolás Quesada, Ville Bergholm, Matthew Amy, and Christian Weedbrook.
 
-If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/1804.03159>`_:
+If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/XXXX.XXXXX>`_:
 
-  Nathan Killoran, Josh Izaac, Nicolás Quesada, Ville Bergholm, Matthew Amy, and Christian Weedbrook. PennyLane: A Software Platform for Photonic Quantum Computing. *arXiv*, 2018. arXiv:1804.03159
+  [Placeholder for paper link]
 
 
 Support
