@@ -14,7 +14,8 @@
 """Gradient descent optimizer"""
 
 import autograd
-from .optimizer_utilities import _flatten, _unflatten
+
+from openqml.utils import _flatten, _unflatten
 
 
 class GradientDescentOptimizer(object):

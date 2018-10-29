@@ -1,6 +1,45 @@
+# Copyright 2018 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Utilities
+=========
+
+**Module name:** :mod:`openqml.utils`
+
+.. currentmodule:: openqml.utils
+
+This module contains utilities and auxillary functions, which are shared
+across the PennyLane submodules.
+
+
+Summary
+-------
+
+.. autosummary::
+    _flatten
+    _unflatten
+    unflatten
+
+Code details
+~~~~~~~~~~~~
+"""
 import collections
-import numpy as np
 import numbers
+
+import autograd.numpy as np
+
+from .variable  import Variable
 
 
 def _flatten(x):
@@ -46,7 +85,17 @@ def _unflatten(flat, model):
             val, flat = _unflatten(flat, x)
             res.append(val)
         return res, flat
-    elif isinstance(model, (numbers.Number,)):
+    elif isinstance(model, (numbers.Number, Variable)):
         return flat[0], flat[1:]
     else:
         raise TypeError('Unsupported type in the model: {}'.format(type(model)))
+
+
+def unflatten(flat, model):
+    """Wrapper for :func:`_unflatten`.
+    """
+    # pylint:disable=len-as-condition
+    res, tail = _unflatten(np.asarray(flat), model)
+    if len(tail) != 0:
+        raise ValueError('Flattened iterable has more elements than the model.')
+    return res

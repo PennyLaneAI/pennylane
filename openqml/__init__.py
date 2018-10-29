@@ -33,6 +33,7 @@ on the user-interface of OpenQML, have a look at our tutorials.
 * The QNode decorator: :mod:`openqml.qnode <openqml.decorator>`
 * Optimization methods: :mod:`openqml.optimize`
 * Configuration: :mod:`openqml.Configuration <openqml.configuration>`
+* Utilities: :mod:`openqml.utils <openqml.utils>`
 * NumPy with support for automatic differentiation: :mod:`openqml.numpy <openqml.numpy>`
 
 **Core operations**
