@@ -81,7 +81,7 @@ for more details.
 Authors
 =======
 
-Nathan Killoran, Josh Izaac, Nicolás Quesada, Ville Bergholm, Matthew Amy, and Christian Weedbrook.
+Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, and Nathan Killoran.
 
 If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/XXXX.XXXXX>`_:
 
