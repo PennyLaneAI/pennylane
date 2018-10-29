@@ -30,7 +30,7 @@ On first import, PennyLane attempts to load the configuration file `config.toml`
 scanning the following three directories in order of preference:
 
 1. The current directory
-2. The path stored in the environment variable ``OPENQML_CONF``
+2. The path stored in the environment variable ``PENNYLANE_CONF``
 3. The default user configuration directory:
 
    * On Linux: ``~/.config/pennylane``
@@ -143,10 +143,10 @@ class Configuration:
         self._filepath = None
         self._name = name
         self._user_config_dir = user_config_dir('pennylane', 'Xanadu')
-        self._env_config_dir = os.environ.get("OPENQML_CONF", "")
+        self._env_config_dir = os.environ.get("PENNYLANE_CONF", "")
 
         # search the current directory the directory under environment
-        # variable OPENQML_CONF, and default user config directory, in that order.
+        # variable PENNYLANE_CONF, and default user config directory, in that order.
         directories = [os.curdir, self._env_config_dir, self._user_config_dir, '']
         for idx, directory in enumerate(directories):
             try:
