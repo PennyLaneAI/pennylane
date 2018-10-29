@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Momentum optimizer"""
+from openqml.utils import _flatten, _unflatten
+
 from .gradient_descent import GradientDescentOptimizer
-from .optimizer_utilities import _flatten, _unflatten
 
 
 class MomentumOptimizer(GradientDescentOptimizer):

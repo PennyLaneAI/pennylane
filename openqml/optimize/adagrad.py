@@ -14,8 +14,10 @@
 """Adagrad optimizer"""
 
 import autograd.numpy as np
+
+from openqml.utils import _flatten, _unflatten
+
 from .gradient_descent import GradientDescentOptimizer
-from .optimizer_utilities import _flatten, _unflatten
 
 
 class AdagradOptimizer(GradientDescentOptimizer):

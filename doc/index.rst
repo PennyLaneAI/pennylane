@@ -86,6 +86,7 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    code/decorator
    code/optimize
    code/configuration
+   code/utils
 
 .. toctree::
    :maxdepth: 1

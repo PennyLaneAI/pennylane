@@ -111,7 +111,8 @@ import logging as log
 
 import autograd.numpy as np
 
-from .qnode import _flatten, _unflatten, QNode, QuantumFunctionError
+from .qnode import QNode, QuantumFunctionError
+from .utils import _flatten, _unflatten
 from .variable import Variable
 
 log.getLogger()

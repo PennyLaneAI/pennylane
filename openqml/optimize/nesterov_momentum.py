@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Nesterov momentum optimizer"""
-
 import autograd
 
+from openqml.utils import _flatten, _unflatten
+
 from .momentum import MomentumOptimizer
-from .optimizer_utilities import _flatten, _unflatten
 
 
 class NesterovMomentumOptimizer(MomentumOptimizer):

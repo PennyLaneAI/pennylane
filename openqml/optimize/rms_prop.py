@@ -15,8 +15,9 @@
 
 import autograd.numpy as np
 
+from openqml.utils import _flatten, _unflatten
+
 from .adagrad import AdagradOptimizer
-from .optimizer_utilities import _flatten, _unflatten
 
 
 class RMSPropOptimizer(AdagradOptimizer):
