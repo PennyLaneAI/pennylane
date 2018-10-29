@@ -15,17 +15,17 @@
 Quantum circuit parameters
 ==========================
 
-**Module name:** :mod:`openqml.variable`
+**Module name:** :mod:`pennylane.variable`
 
-.. currentmodule:: openqml.variable
+.. currentmodule:: pennylane.variable
 
 This module contains the :class:`Variable` class, which is used to track
-and identify :class:`~openqml.qnode.QNode` parameters.
+and identify :class:`~pennylane.qnode.QNode` parameters.
 
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
 method is called, which performs a 'just-in-time' circuit construction
-on the :mod:`~openqml._device.Device`. As part of this construction, all arguments
+on the :mod:`~pennylane._device.Device`. As part of this construction, all arguments
 and keyword arguments are wrapped in a `Variable` as follows:
 
 * All positional arguments in ``*args``, including those with multiple dimensions, are
@@ -33,7 +33,7 @@ and keyword arguments are wrapped in a `Variable` as follows:
   indexed by its position in the list.
 
   The list is then unflattened back to the original shape of ``*args``.
-  This allows OpenQML to inspect the shape and type of arguments
+  This allows PennyLane to inspect the shape and type of arguments
   the user wishes to pass.
 
 * The same is done for each keyword argument in ``**kwargs``, the only
@@ -59,7 +59,7 @@ then returned by :meth:`Variable.val`, using its ``idx`` value, and, for
 keyword arguments, its ``name``, to return the correct value to the operation.
 
 .. note::
-    The :meth:`Operation.parameters() <openqml.operation.Operation.parameters>`
+    The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
     property automates the process of unpacking the Variable value -
     :meth:`Variable.val` should not need to be accessed outside of advanced usage.
 

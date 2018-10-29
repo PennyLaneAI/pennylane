@@ -1,3 +1,3 @@
-.. automodule:: openqml.operation
+.. automodule:: pennylane.operation
    :members:
    :private-members:

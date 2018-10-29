@@ -1,4 +1,4 @@
-.. automodule:: openqml.ops
+.. automodule:: pennylane.ops
    :members:
    :private-members:
    :inherited-members:

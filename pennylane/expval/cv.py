@@ -17,10 +17,10 @@
 CV quantum expectations
 =======================
 
-.. currentmodule:: openqml.expval.cv
+.. currentmodule:: pennylane.expval.cv
 
 This section contains the available built-in continuous-variable
-quantum operations supported by OpenQML, as well as their conventions.
+quantum operations supported by PennyLane, as well as their conventions.
 
 .. note:: Currently, all expectation commands return scalars.
 
@@ -41,11 +41,11 @@ Code details
 
 import numpy as np
 
-from openqml.operation import CVExpectation
+from pennylane.operation import CVExpectation
 
 
 class MeanPhoton(CVExpectation):
-    r"""openqml.expval.MeanPhoton(wires)
+    r"""pennylane.expval.MeanPhoton(wires)
     Returns the photon number expectation value.
 
     This expectation command returns the value
@@ -81,7 +81,7 @@ class MeanPhoton(CVExpectation):
 
 
 class X(CVExpectation):
-    r"""openqml.expval.X(wires)
+    r"""pennylane.expval.X(wires)
     Returns the position expectation value in phase space.
 
     This expectation command returns the value :math:`\braket{\x}`.
@@ -110,7 +110,7 @@ class X(CVExpectation):
 
 
 class P(CVExpectation):
-    r"""openqml.expval.P(wires)
+    r"""pennylane.expval.P(wires)
     Returns the momentum expectation value in phase space.
 
     This expectation command returns the value :math:`\braket{\p}`.
@@ -139,7 +139,7 @@ class P(CVExpectation):
 
 
 class Homodyne(CVExpectation):
-    r"""openqml.expval.Homodyne(phi, wires)
+    r"""pennylane.expval.Homodyne(phi, wires)
     Expectation value of homodyne measurement in phase space.
 
     This expectation command returns the value :math:`\braket{\x_\phi}`,
@@ -174,7 +174,7 @@ class Homodyne(CVExpectation):
 
 
 class PolyXP(CVExpectation):
-    r"""openqml.expval.PolyXP(q, wires)
+    r"""pennylane.expval.PolyXP(q, wires)
     Expectation value of a second-order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
@@ -211,7 +211,7 @@ class PolyXP(CVExpectation):
 
 
 class NumberState(CVExpectation):
-    r"""openqml.expval.NumberState(n, wires)
+    r"""pennylane.expval.NumberState(n, wires)
     Expectation value of the number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable

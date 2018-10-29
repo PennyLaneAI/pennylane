@@ -1,4 +1,4 @@
-.. automodule:: openqml
+.. automodule:: pennylane
    :members:
    :private-members:
    :special-members:

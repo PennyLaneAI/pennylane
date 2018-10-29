@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml` utility classes :class:`ParRef`, :class:`Command`.
+Unit tests for the :mod:`pennylane` utility classes :class:`ParRef`, :class:`Command`.
 """
 import unittest
 import logging as log
@@ -21,8 +21,8 @@ from string import ascii_lowercase
 import numpy as np
 import numpy.random as nr
 
-from defaults import openqml, BaseTest
-from openqml.variable import Variable
+from defaults import pennylane, BaseTest
+from pennylane.variable import Variable
 
 log.getLogger('defaults')
 
@@ -97,7 +97,7 @@ class BasicTest(BaseTest):
         check(par_fixed, par_fixed)
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + openqml.version() + ', Variable class.')
+    print('Testing PennyLane version ' + pennylane.version() + ', Variable class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,):

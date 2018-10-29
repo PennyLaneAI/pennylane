@@ -3,44 +3,44 @@
 Overview of the developer API
 =============================
 
-Writing your own OpenQML plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of OpenQML, is a simple and easy process. In this section, we will walk through the steps for creating your own OpenQML plugin. In addition, we also provide two default reference plugins - :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
+Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins - :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
 
 .. note::
 
-    A quick primer on terminology of OpenQML plugins in this section.
+    A quick primer on terminology of PennyLane plugins in this section.
 
-    * A plugin is an external Python package that provides additional quantum *devices* to OpenQML.
+    * A plugin is an external Python package that provides additional quantum *devices* to PennyLane.
 
-    * Each plugin may provide one (or more) devices, that are accessible directly by OpenQML, as well as any additional private functions or classes.
+    * Each plugin may provide one (or more) devices, that are accessible directly by PennyLane, as well as any additional private functions or classes.
 
-    Once installed, these devices can be loaded directly from OpenQML without any additional steps required by the user - however, depending on the scope of the plugin, you may wish for the user to import additional (custom) quantum operations and expectations.
+    Once installed, these devices can be loaded directly from PennyLane without any additional steps required by the user - however, depending on the scope of the plugin, you may wish for the user to import additional (custom) quantum operations and expectations.
 
 .. important::
 
-    In your plugin module, **standard NumPy** (*not* the wrapped NumPy module provided by OpenQML) should be imported in all places (i.e., ``import numpy as np``).
+    In your plugin module, **standard NumPy** (*not* the wrapped NumPy module provided by PennyLane) should be imported in all places (i.e., ``import numpy as np``).
 
 
 The device short name
 ---------------------
 
-When performing a hybrid computation using OpenQML, one of the first steps is often to initialize the quantum devices which will be used by quantum nodes (:class:`~.QNode`). To do so, you load the device as follows:
+When performing a hybrid computation using PennyLane, one of the first steps is often to initialize the quantum devices which will be used by quantum nodes (:class:`~.QNode`). To do so, you load the device as follows:
 
 .. code-block:: python
 
-    import openqml as qm
-    dev1 = qm.device(short_name)
+    import pennylane as qml
+    dev1 = qml.device(short_name)
 
-where ``short_name`` is a string which uniquely identifies the device provided. In general, the short name has the following form: ``pluginname.devicename``. Examples include ``default.qubit`` and ``default.gaussian`` which are provided as reference plugins by OpenQML, as well as ``strawberryfields.fock``, ``strawberryfields.gaussian``, ``projectq.ibmqx4``, which are provided by the `StrawberryFields <https://github.com/XanaduAI/openqml-sf>`_ and `ProjectQ <https://github.com/XanaduAI/openqml-pq>`_ OpenQML plugins respectively.
+where ``short_name`` is a string which uniquely identifies the device provided. In general, the short name has the following form: ``pluginname.devicename``. Examples include ``default.qubit`` and ``default.gaussian`` which are provided as reference plugins by PennyLane, as well as ``strawberryfields.fock``, ``strawberryfields.gaussian``, ``projectq.ibm``, which are provided by the `StrawberryFields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_ PennyLane plugins respectively.
 
 Creating your device
 --------------------
 
-The first step in creating your OpenQML plugin is creating your device class. This is as simple as importing the abstract base class :class:`~.Device` from OpenQML, and subclassing it:
+The first step in creating your PennyLane plugin is creating your device class. This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
 
 .. code-block:: python
 
-    from openqml import Device
+    from pennylane import Device
 
     class MyDevice(Device):
         """MyDevice docstring"""
@@ -48,28 +48,28 @@ The first step in creating your OpenQML plugin is creating your device class. Th
         short_name = 'example.mydevice'
         api_version = '0.1.0'
         version = '0.0.1'
-        author = 'John Smith'
+        author = 'Ada Lovelace'
 
-Here, we have begun defining some important class attributes ('identifiers') that allow OpenQML to identify the device. These include:
+Here, we have begun defining some important class attributes ('identifiers') that allow PennyLane to identify the device. These include:
 
 * :attr:`~.Device.name`: a string containing the official name of the device
-* :attr:`~.Device.short_name`: the string used to identify and load the device by users of OpenQML
-* :attr:`~.Device.api_version`: the version number of OpenQML that this device was made for. If the user attempts to load the device on a different version of OpenQML, a :class:`~.DeviceError` will be raised.
+* :attr:`~.Device.short_name`: the string used to identify and load the device by users of PennyLane
+* :attr:`~.Device.api_version`: the version number of PennyLane that this device was made for. If the user attempts to load the device on a different version of PennyLane, a :class:`~.DeviceError` will be raised.
 * :attr:`~.Device.version`: the version number of the device.
 * :attr:`~.Device.author`: the author of the device.
 
-Note that, apart from :attr:`~.Device.short_name`, these are all optional. :attr:`~.Device.short_name`, however, **must** be defined, so that it is accessible from the OpenQML interface.
+Note that, apart from :attr:`~.Device.short_name`, these are all optional. :attr:`~.Device.short_name`, however, **must** be defined, so that it is accessible from the PennyLane interface.
 
 Supporting operators and expectations
 -------------------------------------
 
 There are also three private class attributes to be defined for your custom device:
 
-* :attr:`~.Device._operation_map`: a dictionary mapping an OpenQML supported operation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.gates` and public method :meth:`~.Device.supported`.
+* :attr:`~.Device._operation_map`: a dictionary mapping an PennyLane supported operation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.gates` and public method :meth:`~.Device.supported`.
 
-* :attr:`~.Device._expectation_map`: a dictionary mapping an OpenQML supported expectation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.expectations` and public method :meth:`~.Device.supported`.
+* :attr:`~.Device._expectation_map`: a dictionary mapping an PennyLane supported expectation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.expectations` and public method :meth:`~.Device.supported`.
 
-* :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user - this is accessible from the OpenQML frontend via the public method :meth:`~.Device.capabilities`.
+* :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user - this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
 
 For example, a very basic operator map that supports only two gates might look like so:
 
@@ -77,16 +77,16 @@ For example, a very basic operator map that supports only two gates might look l
 
     _operation_map = {'CNOT': cnot_function, 'PauliX': X_function}
 
-where ``'CNOT'`` represents the built-in operation :class:`~.CNOT`, and ``'PauliX'`` represents the built-in operation :class:`~openqml.ops.qubit.PauliX`. The functions in the dictionary can be of any form you like, and can exist in the plugin within the same file, separate files, or may even be imported from a different library. As long as the corresponding key representing the supported operator is there, OpenQML will allow that operation to be placed on the device.
+where ``'CNOT'`` represents the built-in operation :class:`~.CNOT`, and ``'PauliX'`` represents the built-in operation :class:`~pennylane.ops.qubit.PauliX`. The functions in the dictionary can be of any form you like, and can exist in the plugin within the same file, separate files, or may even be imported from a different library. As long as the corresponding key representing the supported operator is there, PennyLane will allow that operation to be placed on the device.
 
 For a better idea of how the :attr:`~.Device._operation_map` and :attr:`~.Device._expectation_map` work, refer to the two reference plugins.
 
 Applying operations
 -------------------
 
-Once all the class attributes are defined, it is necessary to define some required class methods, to allow OpenQML to apply operations to your device.
+Once all the class attributes are defined, it is necessary to define some required class methods, to allow PennyLane to apply operations to your device.
 
-When OpenQML needs to evaluate a QNode, it accesses the :meth:`~.Device.execute` method, which performs the following process:
+When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execute` method, which performs the following process:
 
 .. code-block:: python
 
@@ -108,7 +108,7 @@ In most cases, there are a minimum of two methods that need to be defined:
 
 * :meth:`~.Device.expval`: this accepts an observable name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the expectation, returns the resulting expectation value from the device.
 
-  .. note:: Currently, OpenQML only supports expectations that return a scalar value.
+  .. note:: Currently, PennyLane only supports expectations that return a scalar value.
 
 However, additional flexibility is sometimes required for interfacing with more complicated frameworks. In such cases, the following (optional) methods may also be defined:
 
@@ -130,7 +130,7 @@ However, additional flexibility is sometimes required for interfacing with more 
 Installation
 ------------
 
-OpenQML uses a ``setuptools`` ``entry_points`` approach to plugin integration. In order to make your plugin accessible from OpenQML, simply provide the following keyword argument to the ``setup()`` function in your ``setup.py`` file:
+PennyLane uses a ``setuptools`` ``entry_points`` approach to plugin integration. In order to make your plugin accessible from PennyLane, simply provide the following keyword argument to the ``setup()`` function in your ``setup.py`` file:
 
 .. code-block:: python
 
@@ -138,24 +138,24 @@ OpenQML uses a ``setuptools`` ``entry_points`` approach to plugin integration. I
             'example.mydevice1 = MyModule.MySubModule:MyDevice1'
             'example.mydevice2 = MyModule.MySubModule:MyDevice2'
         ],
-    setup(entry_points={'openqml.plugins': devices_list})
+    setup(entry_points={'pennylane.plugins': devices_list})
 
 where the ``devices_list`` is a list of devices you would like to register, ``example.mydevice1`` is the short name of the device, and ``MyModule.MySubModule`` is the path to your Device class, ``MyDevice1``.
 
-To ensure your device is working as expected, you can install it in developer mode using ``pip install -e .``. It will then be accessible via OpenQML.
+To ensure your device is working as expected, you can install it in developer mode using ``pip install -e .``. It will then be accessible via PennyLane.
 
 Testing
 -------
 
 All plugins should come with extensive unit tests, to ensure that the device supports the correct gates and observables, and is applying them correctly. For an example of a plugin test suite, see ``tests/test_default_qubit.py`` and ``tests/test_default_gaussian.py``.
 
-In general, as all supported operations have their gradient formula defined and tested by OpenQML, testing that your device calculates the correct gradients is not required - just that it *applies* and *measures* quantum operations and observables correctly.
+In general, as all supported operations have their gradient formula defined and tested by PennyLane, testing that your device calculates the correct gradients is not required - just that it *applies* and *measures* quantum operations and observables correctly.
 
 
 Supporting new operations
 -------------------------
 
-If you would like to support an operation or observable that is not currently supported by OpenQML, you can subclass the :class:`~.Operation` and :class:`~.Expectation` classes, and define the number of parameters the operation takes, and the number of wires the operation acts on. For example, to define the Ising gate :math:`XX_\phi` depending on parameter :math:`\phi`,
+If you would like to support an operation or observable that is not currently supported by PennyLane, you can subclass the :class:`~.Operation` and :class:`~.Expectation` classes, and define the number of parameters the operation takes, and the number of wires the operation acts on. For example, to define the Ising gate :math:`XX_\phi` depending on parameter :math:`\phi`,
 
 .. code-block:: python
 
@@ -187,16 +187,16 @@ The user can then import this operation directly from your plugin, and use it wh
 
 .. code-block:: python
 
-    import openqml as qm
+    import pennylane as qml
     from MyModule.MySubModule import Ising
 
     @qnode(dev1)
     def my_qfunc(phi):
-        qm.Hadamard(wires=0)
+        qml.Hadamard(wires=0)
         Ising(phi, wires=0)
-        return qm.expval.PauliZ(0)
+        return qml.expval.PauliZ(0)
 
-In this case, as the plugin is providing a custom operation not supported by OpenQML, it is recommended that the plugin unittests **do** provide tests to ensure that OpenQML returns the correct gradient for the custom operations.
+In this case, as the plugin is providing a custom operation not supported by PennyLane, it is recommended that the plugin unittests **do** provide tests to ensure that PennyLane returns the correct gradient for the custom operations.
 
 .. note::
 
