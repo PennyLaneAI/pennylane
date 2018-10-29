@@ -19,9 +19,9 @@ import unittest
 import logging as log
 log.getLogger('defaults')
 
-from defaults import openqml as qm, BaseTest
+from defaults import pennylane as qml, BaseTest
 
-from openqml import numpy as np
+from pennylane import numpy as np
 
 x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
@@ -59,7 +59,7 @@ class BasicTest(BaseTest):
         for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
                 for x in x_vals:
-                    g = qm.grad(f)
+                    g = qml.grad(f)
                     auto_grad = g(x)
                     correct_grad = gradf(x)
                     self.assertAlmostEqual(auto_grad, correct_grad, delta=self.tol)
@@ -72,7 +72,7 @@ class BasicTest(BaseTest):
             with self.subTest(i=name):
                 for jdx in range(len(x_vals[:-1])):
                     x_vec = x_vals[jdx:jdx+2]
-                    g = qm.grad(f)
+                    g = qml.grad(f)
                     auto_grad = g(x_vec)
                     correct_grad = gradf(x_vec)
                     self.assertAllAlmostEqual(auto_grad, correct_grad, delta=self.tol)
@@ -86,14 +86,14 @@ class BasicTest(BaseTest):
                 for jdx in range(len(x_vals[:-1])):
                     x_vec = x_vals[jdx:jdx+2]
                     x_vec_multidim = np.expand_dims(x_vec, axis=1)
-                    g = qm.grad(f)
+                    g = qml.grad(f)
                     auto_grad = g(x_vec_multidim)
                     correct_grad = gradf(x_vec_multidim)
                     self.assertAllAlmostEqual(auto_grad, correct_grad, delta=self.tol)
 
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + qm.version() + ', classical gradients.')
+    print('Testing PennyLane version ' + qml.version() + ', classical gradients.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,):

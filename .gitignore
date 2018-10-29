@@ -22,5 +22,6 @@ notebooks/*
 *.pdf
 *Notes.bib
 *.synctex.gz
+.pytest_cache/*
 
 !formalism/tasks.pdf

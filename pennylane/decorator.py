@@ -15,12 +15,12 @@
 The QNode decorator
 ===================
 
-Decorator for converting a quantum function containing OpenQML quantum
-operations to a :mod:`QNode <openqml.qnode>` that will run on a quantum device.
+Decorator for converting a quantum function containing PennyLane quantum
+operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
 This decorator is provided for convenience, and allows a qfunc to be
 converted to a QNode implicitly, avoiding the need to manually
-instantiate a :mod:`QNode <openqml.qnode>` object.
+instantiate a :mod:`QNode <pennylane.qnode>` object.
 
 Note that the decorator completely replaces the Python-defined
 function with a QNode of the same name - as such, the original
@@ -32,14 +32,14 @@ Example
 
 .. code-block:: python
 
-    dev1 = qm.device('default.qubit', wires=2)
+    dev1 = qml.device('default.qubit', wires=2)
 
-    @qm.qnode(dev1)
+    @qml.qnode(dev1)
     def qfunc1(x):
-        qm.RZ(x, wires=0)
-        qm.CNOT(wires=[0,1])
-        qm.RY(x, wires=1)
-        return qm.expval.PauliZ(0)
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.RY(x, wires=1)
+        return qml.expval.PauliZ(0)
 
     result = qfunc1(0.543)
 
@@ -49,13 +49,13 @@ build a hybrid computation. For example,
 
 .. code-block:: python
 
-    dev2 = qm.device('default.gaussian', wires=2)
+    dev2 = qml.device('default.gaussian', wires=2)
 
-    @qm.qnode(dev2)
+    @qml.qnode(dev2)
     def qfunc2(x, y):
-        qm.Displacement(x, 0, wires=0)
-        qm.Beamsplitter(y, 0, wires=[0, 1])
-        return qm.expval.MeanPhoton(0)
+        qml.Displacement(x, 0, wires=0)
+        qml.Beamsplitter(y, 0, wires=[0, 1])
+        return qml.expval.MeanPhoton(0)
 
     def hybrid_computation(x, y):
         return np.sin(qfunc1(y))*np.exp(-qfunc2(x+y, x)**2)
@@ -69,12 +69,12 @@ build a hybrid computation. For example,
     .. code-block:: python
 
         def qfunc1(x):
-            qm.RZ(x, wires=0)
-            qm.CNOT(wires=[0,1])
-            qm.RY(x, wires=1)
-            return qm.expval.PauliZ(0)
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0,1])
+            qml.RY(x, wires=1)
+            return qml.expval.PauliZ(0)
 
-        qnode1 = qm.QNode(qfunc1, dev1)
+        qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)
 
 Code details
@@ -93,7 +93,7 @@ def qnode(device):
     """QNode decorator.
 
     Args:
-        device (~openqml._device.Device): an OpenQML-compatible device
+        device (~pennylane._device.Device): an PennyLane-compatible device
     """
     @lru_cache()
     def qfunc_decorator(func):

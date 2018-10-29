@@ -6,7 +6,7 @@
 Photon redirection and hybrid computation
 =========================================
 
-This tutorial demonstrates the basic working principles of OpenQML for
+This tutorial demonstrates the basic working principles of PennyLane for
 continuous-variable (CV) devices, introduces plugins, and finishes with a combined qubit-CV-classical hybrid computation.
 Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` tutorial before attempting this tutorial.
 For more details about CV quantum computing, the `Strawberry Fields documentation <https://strawberryfields.readthedocs.io/en/latest/>`_
@@ -14,12 +14,12 @@ is a great starting point.
 
 .. note::
 
-    This tutorial requires the `OpenQML-SF plugin <https://github.com/XanaduAI/openqml-sf>`_, in order to access the
-    `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`_ Fock backend using OpenQML. It can be installed via pip:
+    This tutorial requires the `PennyLane-SF plugin <https://github.com/XanaduAI/pennylane-sf>`_, in order to access the
+    `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`_ Fock backend using PennyLane. It can be installed via pip:
 
     .. code-block:: bash
 
-        pip install openqml-sf
+        pip install pennylane-sf
 
 
 
@@ -39,7 +39,7 @@ In photon redirection, we have the following simple quantum circuit:
 
 Breaking this down, step-by-step:
 
-1. **We start the computation with two subsystems or qumodes**. In OpenQML, we use the shorthand 'wires' to refer to subsystems,
+1. **We start the computation with two subsystems or qumodes**. In PennyLane, we use the shorthand 'wires' to refer to subsystems,
    whether they are qumodes, qubits, or any other kind of quantum register.
 
 2. **Prepare the state** :math:`\ket{1,0}`. That is, the first wire (wire 0) is prepared in a single photon state, while the second
@@ -99,28 +99,28 @@ Therefore, we can see that:
 Loading the plugin device
 -------------------------
 
-While OpenQML provides a basic qubit simulator (``'default.qubit'``) and a basic CV Gaussian simulator (``'default.gaussian'``),
-the true power of OpenQML comes from its :ref:`plugin ecosystem <plugins>`, allowing quantum computations to be run on a variety
+While PennyLane provides a basic qubit simulator (``'default.qubit'``) and a basic CV Gaussian simulator (``'default.gaussian'``),
+the true power of PennyLane comes from its :ref:`plugin ecosystem <plugins>`, allowing quantum computations to be run on a variety
 of quantum simulator and hardware devices.
 
 In this tutorial, we will be using the ``'strawberryfields.fock'`` device to construct a QNode. This allows the underlying quantum
 computation to be performed using the `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`_ Fock backend.
 
-As before, we import OpenQML, as well as the wrapped version of NumPy provided by OpenQML:
+As before, we import PennyLane, as well as the wrapped version of NumPy provided by PennyLane:
 
 .. code-block:: python
 
-    import openqml as qm
-    from openqml import numpy as np
+    import pennylane as qml
+    from pennylane import numpy as np
 
-Next, we create a device to run the quantum node. This is easy in OpenQML; as soon as the OpenQML-SF plugin is installed, the
+Next, we create a device to run the quantum node. This is easy in PennyLane; as soon as the PennyLane-SF plugin is installed, the
 ``'strawberryfields.fock'`` device can be loaded -- no additional commands or library imports required.
 
 .. code:: python
 
-    dev_fock = qm.device('strawberryfields.fock', wires=2, cutoff_dim=10)
+    dev_fock = qml.device('strawberryfields.fock', wires=2, cutoff_dim=10)
 
-Compared to the default devices provided with OpenQML, the ``'strawberryfields.fock'`` device requires the additional keyword argument:
+Compared to the default devices provided with PennyLane, the ``'strawberryfields.fock'`` device requires the additional keyword argument:
 
 * ``cutoff_dim``: the Fock space truncation used to perform the quantum simulation
 
@@ -135,25 +135,25 @@ Constructing the QNode
 ----------------------
 
 Now that we have initialized the device, we can construct our quantum node. As before, we use the
-:mod:`qnode decorator <openqml.decorator>` to convert our quantum function (encoded by the circuit above) into a quantum node
+:mod:`qnode decorator <pennylane.decorator>` to convert our quantum function (encoded by the circuit above) into a quantum node
 running on Strawberry Fields.
 
 .. code-block:: python
 
-    @qm.qnode(dev_fock)
+    @qml.qnode(dev_fock)
     def photon_redirection(params):
-        qm.FockState(1, wires=0)
-        qm.Beamsplitter(params[0], params[1], wires=[0, 1])
-        return qm.expval.MeanPhoton(1)
+        qml.FockState(1, wires=0)
+        qml.Beamsplitter(params[0], params[1], wires=[0, 1])
+        return qml.expval.MeanPhoton(1)
 
-The ``'strawberryfields.fock'`` device supports all CV operations provided by OpenQML; see the following pages for a full list
-of :ref:`CV operations <cv_ops>` and :ref:`CV expectations <cv_expval>` in OpenQML.
+The ``'strawberryfields.fock'`` device supports all CV operations provided by PennyLane; see the following pages for a full list
+of :ref:`CV operations <cv_ops>` and :ref:`CV expectations <cv_expval>` in PennyLane.
 
 
 Optimization
 ------------
 
-As in the :ref:`qubit rotation <qubit_rotation>` tutorial, let's now use one of the built-in OpenQML optimizers in order to
+As in the :ref:`qubit rotation <qubit_rotation>` tutorial, let's now use one of the built-in PennyLane optimizers in order to
 carry out photon redirection. Since we wish to maximize the mean photon number of the second wire, we can define our cost function
 to minimize the *negative* of the circuit output.
 
@@ -179,9 +179,9 @@ and the output of the quantum circuit will be very close to :math:`\ket{1, 0}` -
     :math:`\frac{d}{d\theta}\braket{\hat{n}_1}|_{\theta=0}=2\sin\theta\cos\theta|_{\theta=0}=0`.
     Since the gradient is zero at our initial parameter values, our optimization algorithm will never descend from the maximum.
 
-    This can also be verified directly using OpenQML:
+    This can also be verified directly using PennyLane:
 
-    >>> dcircuit = qm.grad(circuit)
+    >>> dcircuit = qml.grad(circuit)
     >>> dphoton_redirection([0., 0.])
     [0.0, 0.0]
 
@@ -190,7 +190,7 @@ Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit p
 .. code-block:: python
 
     # initialise the optimizer
-    op = qm.GradientDescentOptimizer(stepsize=0.4)
+    op = qml.GradientDescentOptimizer(stepsize=0.4)
 
     # set the number of steps
     steps = 100
@@ -222,7 +222,7 @@ is independent of :math:`\phi`.
 Hybrid computation
 ------------------
 
-To really highlight the capabilities of OpenQML, let's now combine the qubit-rotation QNode from the
+To really highlight the capabilities of PennyLane, let's now combine the qubit-rotation QNode from the
 :ref:`qubit rotation tutorial <qubit_rotation>` with the CV photon-redirection QNode from above, as well as some classical processing,
 to produce a truly hybrid computational model.
 
@@ -233,22 +233,22 @@ returns the squared difference of its two inputs using NumPy:
 .. code-block:: python
 
     # create the devices
-    dev_qubit = qm.device('default.qubit', wires=1)
-    dev_fock = qm.device('strawberryfields.fock', wires=2, cutoff_dim=10)
+    dev_qubit = qml.device('default.qubit', wires=1)
+    dev_fock = qml.device('strawberryfields.fock', wires=2, cutoff_dim=10)
 
-    @qm.qnode(dev_qubit)
+    @qml.qnode(dev_qubit)
     def qubit_rotation(phi1, phi2):
         """Qubit rotation QNode"""
-        qm.RX(phi1, wires=0)
-        qm.RY(phi2, wires=0)
-        return qm.expval.PauliZ(0)
+        qml.RX(phi1, wires=0)
+        qml.RY(phi2, wires=0)
+        return qml.expval.PauliZ(0)
 
-    @qm.qnode(dev_fock)
+    @qml.qnode(dev_fock)
     def photon_redirection(params):
         """The photon redirection QNode"""
-        qm.FockState(1, wires=0)
-        qm.Beamsplitter(params[0], params[1], wires=[0, 1])
-        return qm.expval.MeanPhoton(1)
+        qml.FockState(1, wires=0)
+        qml.Beamsplitter(params[0], params[1], wires=[0, 1])
+        return qml.expval.MeanPhoton(1)
 
     def squared_difference(x, y):
         """Classical node to compute the squared
@@ -303,7 +303,7 @@ initial beamsplitter parameters of :math:`\theta=0.01`, :math:`\phi=0.01`.
 .. code-block:: python
 
     # initialise the optimizer
-    op = qm.GradientDescentOptimizer(stepsize=0.4)
+    op = qml.GradientDescentOptimizer(stepsize=0.4)
 
     # set the number of steps
     steps = 100

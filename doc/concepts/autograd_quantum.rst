@@ -18,7 +18,7 @@ Generally speaking, automatic differentiation is the ability for a software libr
 Computing gradients of quantum functions
 ----------------------------------------
 
-:ref:`qfuncs` are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute gradients of a quantum function, we could use this information in an optimization or machine learning algorithm, tuning the quantum circuit to produce a desired output. While numerical differentiation is an option, OpenQML is the first software library to support **automatic differentiation of quantum circuits** [#]_.
+:ref:`qfuncs` are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute gradients of a quantum function, we could use this information in an optimization or machine learning algorithm, tuning the quantum circuit to produce a desired output. While numerical differentiation is an option, PennyLane is the first software library to support **automatic differentiation of quantum circuits** [#]_.
 
 How is this accomplished? It turns out that the gradient of a quantum function :math:`f(x;\bm{\theta})` can in many cases be expressed as a linear combination of other quantum functions. In fact, these other quantum functions typically use the same circuit, differing only in a shift of the argument. 
 
@@ -38,7 +38,7 @@ Making a rough analogy to classically computable functions, this is similar to h
 A more technical explanation
 ----------------------------
 
-Circuits in OpenQML are specified by a sequence of gates. The unitary transformation carried out by the circuit can thus be broken down into a product of unitaries:
+Circuits in PennyLane are specified by a sequence of gates. The unitary transformation carried out by the circuit can thus be broken down into a product of unitaries:
 
 .. math:: U(x; \bm{\theta}) = U_N(\theta_{N}) U_{N-1}(\theta_{N-1}) \cdots U_i(\theta_i) \cdots U_1(\theta_1) U_0(x).
 
@@ -87,7 +87,7 @@ and its gradient is
 
 This gradient has the exact same form as the single-gate case, except we modify the state :math:`|x\rangle \rightarrow |\psi_{i-1}\rangle` and the measurement operator :math:`\hat{B}\rightarrow\hat{B}_{i+1}`. In terms of the circuit, this means we can leave all other gates as they are, and only modify gate :math:`U(\theta_i)` when we want to differentiate with respect to the parameter :math:`\theta_i`.
 
-.. note:: Sometimes we may want to use the same classical parameter with multiple gates in the circuit. Due to the `product rule <https://en.wikipedia.org/wiki/Product_rule>`_, the total gradient will then involve contributions from each gate that uses that parameter. OpenQML handles this automatically.
+.. note:: Sometimes we may want to use the same classical parameter with multiple gates in the circuit. Due to the `product rule <https://en.wikipedia.org/wiki/Product_rule>`_, the total gradient will then involve contributions from each gate that uses that parameter. PennyLane handles this automatically.
 
 Pauli gate example
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -252,7 +252,7 @@ Finally, its gradient can be expressed as
 
 .. [#] This should be contrasted with software which can perform automatic differentiation on classical simulations of quantum circuits, such as `Strawberry Fields <https://strawberryfields.readthedocs.io/en/latest/>`_. 
 
-.. [#] In situations where no formula for automatic quantum gradients is known, OpenQML falls back to approximate gradient estimation using numerical methods.
+.. [#] In situations where no formula for automatic quantum gradients is known, PennyLane falls back to approximate gradient estimation using numerical methods.
 
 .. [#] In physical experiments, it is beneficial to choose :math:`s` so that the additional squeezing is small. However, there is a tradeoff, because we also want to make sure :math:`\frac{1}{2\sinh(s)}` does not blow up numerically.
 

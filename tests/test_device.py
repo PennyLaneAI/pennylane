@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml` :class:`Device` class.
+Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 import unittest
 from unittest.mock import patch
@@ -23,7 +23,7 @@ log.getLogger('defaults')
 import autograd
 from autograd import numpy as np
 
-from defaults import openqml as qm, BaseTest
+from defaults import pennylane as qml, BaseTest
 
 
 class DeviceTest(BaseTest):
@@ -34,7 +34,7 @@ class DeviceTest(BaseTest):
         self.dev = {}
 
         for device_name in self.default_devices:
-            self.dev[device_name] = qm.device(device_name, wires=2)
+            self.dev[device_name] = qml.device(device_name, wires=2)
 
     def test_reset(self):
         """Test reset works (no error is raised). Does not verify
@@ -83,7 +83,7 @@ class DeviceTest(BaseTest):
             queue = []
             for o in ops:
                 log.debug('Queueing gate %s...', o)
-                op = qm.ops.__getattribute__(o)
+                op = qml.ops.__getattribute__(o)
 
                 if op.par_domain == 'A':
                     # skip operations with array parameters, as there are too
@@ -97,11 +97,11 @@ class DeviceTest(BaseTest):
 
                 queue.append(op(*params, wires=list(range(op.num_wires)), do_queue=False))
 
-            temp = [isinstance(op, qm.operation.CV) for op in queue]
+            temp = [isinstance(op, qml.operation.CV) for op in queue]
             if all(temp):
-                expval = dev.execute(queue, [qm.expval.X(0, do_queue=False)])
+                expval = dev.execute(queue, [qml.expval.X(0, do_queue=False)])
             else:
-                expval = dev.execute(queue, [qm.expval.PauliX(0, do_queue=False)])
+                expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
 
             self.assertTrue(isinstance(expval, np.ndarray))
 
@@ -111,10 +111,10 @@ class DeviceTest(BaseTest):
 
         for dev in self.dev.values():
             ops = dev.operations
-            all_ops = {m[0] for m in inspect.getmembers(qm.ops, inspect.isclass)}
+            all_ops = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
 
             for o in all_ops-ops:
-                op = qm.ops.__getattribute__(o)
+                op = qml.ops.__getattribute__(o)
 
                 if op.par_domain == 'A':
                     # skip operations with array parameters, as there are too
@@ -128,19 +128,19 @@ class DeviceTest(BaseTest):
 
                 queue = [op(*params, wires=list(range(op.num_wires)), do_queue=False)]
 
-                temp = isinstance(queue[0], qm.operation.CV)
+                temp = isinstance(queue[0], qml.operation.CV)
 
-                with self.assertRaisesRegex(qm.DeviceError, 'not supported on device'):
+                with self.assertRaisesRegex(qml.DeviceError, 'not supported on device'):
                     if temp:
-                        expval = dev.execute(queue, [qm.expval.X(0, do_queue=False)])
+                        expval = dev.execute(queue, [qml.expval.X(0, do_queue=False)])
                     else:
-                        expval = dev.execute(queue, [qm.expval.PauliX(0, do_queue=False)])
+                        expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
 
             exps = dev.expectations
-            all_exps = {m[0] for m in inspect.getmembers(qm.expval, inspect.isclass)}
+            all_exps = {m[0] for m in inspect.getmembers(qml.expval, inspect.isclass)}
 
             for g in all_exps-exps:
-                op = qm.expval.__getattribute__(g)
+                op = qml.expval.__getattribute__(g)
 
                 if op.par_domain == 'A':
                     # skip expectations with array parameters, as there are too
@@ -154,13 +154,13 @@ class DeviceTest(BaseTest):
 
                 queue = [op(*params, wires=list(range(op.num_wires)), do_queue=False)]
 
-                temp = isinstance(queue[0], qm.operation.CV)
+                temp = isinstance(queue[0], qml.operation.CV)
 
-                with self.assertRaisesRegex(qm.DeviceError, 'not supported on device'):
+                with self.assertRaisesRegex(qml.DeviceError, 'not supported on device'):
                     if temp:
-                        expval = dev.execute([qm.Rotation(0.5, wires=0, do_queue=False)], queue)
+                        expval = dev.execute([qml.Rotation(0.5, wires=0, do_queue=False)], queue)
                     else:
-                        expval = dev.execute([qm.RX(0.5, wires=0, do_queue=False)], queue)
+                        expval = dev.execute([qml.RX(0.5, wires=0, do_queue=False)], queue)
 
 
 class InitDeviceTests(BaseTest):
@@ -170,23 +170,23 @@ class InitDeviceTests(BaseTest):
         """Test exception raised for a device that doesn't exist"""
         self.logTestName()
 
-        with self.assertRaisesRegex(qm.DeviceError, 'Device does not exist'):
-            qm.device('None', wires=0)
+        with self.assertRaisesRegex(qml.DeviceError, 'Device does not exist'):
+            qml.device('None', wires=0)
 
-    @patch.object(qm, '__version__', return_value='0')
+    @patch.object(qml, '__version__', return_value='0')
     def test_outdated_API(self, n):
         """Test exception raised if plugin that targets an old API is loaded"""
         self.logTestName()
 
         with self.assertLogs(level='WARNING') as l:
-            qm.device('default.qubit', wires=0)
+            qml.device('default.qubit', wires=0)
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
             self.assertIn('Plugin API version', l.output[0])
 
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + qm.version() + ', Device class.')
+    print('Testing PennyLane version ' + qml.version() + ', Device class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (DeviceTest, InitDeviceTests):
