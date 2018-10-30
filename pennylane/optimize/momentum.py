@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Momentum optimizer"""
-from openqml.utils import _flatten, _unflatten
-
+from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -56,7 +55,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
 
         x_new_flat = [e-a for a, e in zip(self.accumulation, x_flat)]
 
-        return _unflatten(x_new_flat, x)[0]
+        return unflatten(x_new_flat, x)
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
