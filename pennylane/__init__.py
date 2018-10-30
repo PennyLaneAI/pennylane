@@ -209,8 +209,8 @@ def device(name, *args, **kwargs):
         raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
 
 
-def grad(func, argnum=0):
-    """Returns the gradient (as a callable function) of :class:`~.QNode` objects.
+def grad(func, argnum):
+    """Returns the gradient (as a callable function) of functions accessible within PennyLane.
 
     This is a wrapper around the :mod:`autograd.grad` function.
 
@@ -218,7 +218,7 @@ def grad(func, argnum=0):
         func (function): a Python function or QNode that contains
             a combination of quantum and classical nodes
         argnum (int or list(int)): which argument(s) to take the gradient
-            with respect to (default is 0)
+            with respect to
 
     Returns:
         function: the function that returns the gradient of the input
