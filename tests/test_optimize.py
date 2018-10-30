@@ -80,6 +80,30 @@ def hybrid_fun_flat(var):
     return quant_fun_flat(var) + var[4]
 
 
+@qml.qnode(qml.device('default.qubit', wires=1))
+def quant_fun_mdarr(var):
+    qml.RX(var[0, 1], wires=[0])
+    qml.RY(var[1, 0], wires=[0])
+    qml.RY(var[1, 1], wires=[0])
+    return qml.expval.PauliZ(0)
+
+
+def hybrid_fun_mdarr(var):
+    return quant_fun_mdarr(var) + var[0, 0]
+
+
+@qml.qnode(qml.device('default.qubit', wires=1))
+def quant_fun_mdlist(var):
+    qml.RX(var[0][1], wires=[0])
+    qml.RY(var[1][0], wires=[0])
+    qml.RY(var[1][1], wires=[0])
+    return qml.expval.PauliZ(0)
+
+
+def hybrid_fun_mdlist(var):
+    return quant_fun_mdlist(var) + var[0][0]
+
+
 class BasicTest(BaseTest):
     """Basic optimizer tests.
     """
@@ -120,11 +144,15 @@ class BasicTest(BaseTest):
         self.hybrid_fun = hybrid_fun
         self.hybrid_fun_nested = hybrid_fun_nested
         self.hybrid_fun_flat = hybrid_fun_flat
+        self.hybrid_fun_mdarr = hybrid_fun_mdarr
+        self.hybrid_fun_mdlist = hybrid_fun_mdlist
 
         self.mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
         self.mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
         self.nested_list = [[[0.2], 0.3], [0.1, [0.4]], -0.1]
         self.flat_list = [0.2, 0.3, 0.1, 0.4, -0.1]
+        self.multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
+        self.multid_list = [[0.1, 0.2], [-0.1, -0.4]]
 
     def test_mixed_inputs_for_hybrid_optimization(self):
         """Tests that gradient descent optimizer treats parameters of mixed types the same
@@ -171,6 +199,16 @@ class BasicTest(BaseTest):
         flat = self.sgd_opt.step(self.hybrid_fun_flat, self.flat_list)
 
         self.assertAllAlmostEqual(flat, list(_flatten(nested)), delta=self.tol)
+
+    def test_array_and_list_return_same_update(self):
+        """Tests that gradient descent optimizer has the same output for
+         lists and arrays."""
+        self.logTestName()
+
+        array = self.sgd_opt.step(self.hybrid_fun_mdarr, self.multid_array)
+        list = self.sgd_opt.step(self.hybrid_fun_mdlist, self.multid_list)
+
+        self.assertAllAlmostEqual(array, list, delta=self.tol)
 
     def test_gradient_descent_optimizer_univar(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
