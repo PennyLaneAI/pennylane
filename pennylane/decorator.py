@@ -15,6 +15,8 @@
 The QNode decorator
 ===================
 
+**Module name:** :mod:`pennylane.decorator`
+
 Decorator for converting a quantum function containing PennyLane quantum
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
