@@ -11,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-.. _operations:
+"""Submodule containing core quantum operations supported by PennyLane.
 
-Core operations
-===============
+.. currentmodule:: pennylane.ops
 
 PennyLane supports a collection of built-in quantum operations,
 including both discrete-variable (DV) gates as used in the qubit model,

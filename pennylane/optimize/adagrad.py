@@ -52,12 +52,11 @@ class AdagradOptimizer(GradientDescentOptimizer):
     def apply_grad(self, grad, x):
         # docstring is inherited from GradientDescentOptimizer
 
-        x_flat = list(_flatten(x))
+        x_flat = _flatten(x)
         grad_flat = list(_flatten(grad))
 
         if self.accumulation is None:
             self.accumulation = [g*g for g in grad_flat]
-
         else:
             self.accumulation = [a + g*g for a, g in zip(self.accumulation, grad_flat)]
 

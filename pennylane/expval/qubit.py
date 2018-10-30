@@ -17,6 +17,8 @@ Qubit quantum expectations
 
 .. currentmodule:: pennylane.expval.qubit
 
+**Module name:** :mod:`pennylane.expval.qubit`
+
 This section contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 

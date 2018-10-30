@@ -45,8 +45,8 @@ class MomentumOptimizer(GradientDescentOptimizer):
     def apply_grad(self, grad, x):
         # docstring is inherited from GradientDescentOptimizer
 
-        grad_flat = list(_flatten(grad))
-        x_flat = list(_flatten(x))
+        grad_flat = _flatten(grad)
+        x_flat = _flatten(x)
 
         if self.accumulation is None:
             self.accumulation = [self.stepsize * g for g in grad_flat]
