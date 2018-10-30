@@ -99,6 +99,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/decorator
    code/optimize
    code/configuration
+   code/utils
 
 .. toctree::
    :maxdepth: 1

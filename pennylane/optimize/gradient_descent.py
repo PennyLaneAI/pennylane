@@ -14,6 +14,7 @@
 """Gradient descent optimizer"""
 
 import autograd
+from pennylane.utils import _flatten, unflatten
 
 
 class GradientDescentOptimizer(object):
@@ -71,11 +72,12 @@ class GradientDescentOptimizer(object):
             g = grad_fn(x)  # just call the supplied grad function
         else:
             # default is autograd
-            g = autograd.grad(objective_fn)(x) # pylint: disable=no-value-for-parameter
+            g = autograd.grad(objective_fn)(x)  # pylint: disable=no-value-for-parameter
         return g
 
     def apply_grad(self, grad, x):
-        r"""Update the weights x to take a single optimization step.
+        r"""Update the weights x to take a single optimization step. Flattens and unflattens
+        the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
             grad (array): The gradient of the objective
@@ -85,4 +87,10 @@ class GradientDescentOptimizer(object):
         Returns:
             array: the new weights :math:`x^{(t+1)}`
         """
-        return x - self.stepsize * grad
+
+        x_flat = _flatten(x)
+        grad_flat = _flatten(grad)
+
+        x_new_flat = [e - self.stepsize * g for g, e in zip(grad_flat, x_flat)]
+
+        return unflatten(x_new_flat, x)

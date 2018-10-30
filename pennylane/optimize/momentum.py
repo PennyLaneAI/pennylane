@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Momentum optimizer"""
+from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -43,11 +44,18 @@ class MomentumOptimizer(GradientDescentOptimizer):
 
     def apply_grad(self, grad, x):
         # docstring is inherited from GradientDescentOptimizer
+
+        grad_flat = _flatten(grad)
+        x_flat = _flatten(x)
+
         if self.accumulation is None:
-            self.accumulation = self.stepsize * grad
+            self.accumulation = [self.stepsize * g for g in grad_flat]
         else:
-            self.accumulation = self.momentum * self.accumulation + self.stepsize * grad
-        return x - self.accumulation
+            self.accumulation = [self.momentum * a + self.stepsize * g for a, g in zip(self.accumulation, grad_flat)]
+
+        x_new_flat = [e-a for a, e in zip(self.accumulation, x_flat)]
+
+        return unflatten(x_new_flat, x)
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

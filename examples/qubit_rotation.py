@@ -11,12 +11,12 @@ from pennylane.optimize import GradientDescentOptimizer
 dev = qml.device('default.qubit', wires=1)
 
 
-@qml.qfunc(dev)
+@qm.qnode(dev)
 def circuit(variables):
     """QNode"""
     qml.RX(variables[0], [0])
     qml.RY(variables[1], [0])
-    return qml.expectation.PauliZ(0)
+    return qml.expval.PauliZ(0)
 
 
 def objective(variables):

@@ -17,6 +17,8 @@ Qubit quantum operations
 
 .. currentmodule:: pennylane.ops.qubit
 
+**Module name:** :mod:`pennylane.ops.qubit`
+
 This section contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 

@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Nesterov momentum optimizer"""
-
 import autograd
-
+from pennylane.utils import _flatten, unflatten
 from .momentum import MomentumOptimizer
 
 
@@ -49,10 +48,15 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         Returns:
             array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`
         """
+
+        x_flat = _flatten(x)
+
         if self.accumulation is None:
-            shifted_x = x
+            shifted_x_flat = list(x_flat)
         else:
-            shifted_x = x - self.momentum * self.accumulation
+            shifted_x_flat = [e - self.momentum * a for a, e in zip(self.accumulation, x_flat)]
+
+        shifted_x = unflatten(shifted_x_flat, x)
 
         if grad_fn is not None:
             g = grad_fn(shifted_x)  # just call the supplied grad function

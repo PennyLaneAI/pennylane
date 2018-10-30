@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Core expectations
-=================
+"""Submodule containing core quantum expectation values supported by PennyLane.
+
+.. currentmodule:: pennylane.expval
 
 PennyLane also supports a collection of built-in quantum **expectations**,
 including both discrete-variable (DV) expectations as used in the qubit model,

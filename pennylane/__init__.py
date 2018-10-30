@@ -35,6 +35,7 @@ on the user-interface of PennyLane, have a look at our tutorials.
 * The QNode decorator: :mod:`pennylane.qnode <pennylane.decorator>`
 * Optimization methods: :mod:`pennylane.optimize`
 * Configuration: :mod:`pennylane.Configuration <pennylane.configuration>`
+* Utilities: :mod:`pennylane.utils <pennylane.utils>`
 * NumPy with support for automatic differentiation: :mod:`pennylane.numpy <pennylane.numpy>`
 
 **Core operations**
@@ -63,7 +64,7 @@ Summary
 -------
 
 .. autosummary::
-    :template: modules.rst
+
 
     ~configuration.Configuration
     ~_device.Device

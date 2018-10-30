@@ -10,13 +10,12 @@ from pennylane.optimize import GradientDescentOptimizer
 
 dev = qml.device('default.gaussian', wires=1)
 
-
-@qml.qfunc(dev)
+@qml.qnode(dev)
 def circuit(variables):
 
     qml.Displacement(variables[0], variables[1], [0])
 
-    return qml.expectation.X(0)
+    return qml.expval.X(0)
 
 
 def objective(variables):
