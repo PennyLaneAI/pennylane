@@ -5,7 +5,7 @@ Schuld et al. 2018 (arXiv:1804.00633).
 """
 
 import pennylane as qml
-import numpy as np
+from pennylane import numpy as np
 from pennylane.optimize import GradientDescentOptimizer
 
 dev = qml.device('default.qubit', wires=2)
