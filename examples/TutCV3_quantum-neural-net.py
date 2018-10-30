@@ -5,11 +5,11 @@ from Killoran et al. (arXiv:1806.06871) with the example
 of function fitting.
 """
 
-import openqml as qm
-from openqml import numpy as np
-from openqml.optimize import AdamOptimizer
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.optimize import AdamOptimizer
 
-dev = qm.device('strawberryfields.fock', wires=1, cutoff_dim=10)
+dev = qml.device('strawberryfields.fock', wires=1, cutoff_dim=10)
 
 
 def layer(v):
@@ -20,18 +20,18 @@ def layer(v):
     """
 
     # Bias
-    qm.Displacement(v[0], v[1], [0])
+    qml.Displacement(v[0], v[1], [0])
 
     # Matrix multiplication of input layer
-    qm.Rotation(v[2], [0])
-    qm.Squeezing(v[3], v[4], [0])
-    qm.Rotation(v[5], [0])
+    qml.Rotation(v[2], [0])
+    qml.Squeezing(v[3], v[4], [0])
+    qml.Rotation(v[5], [0])
 
     # Nonlinear transformation
-    qm.Kerr(v[6], [0])
+    qml.Kerr(v[6], [0])
 
 
-@qm.qnode(dev)
+@qml.qnode(dev)
 def quantum_neural_net(var, x=None):
     """The quantum neural net variational circuit.
 
@@ -44,13 +44,13 @@ def quantum_neural_net(var, x=None):
     """
 
     # Encode input x into quantum state
-    qm.Displacement(x, 0., [0])
+    qml.Displacement(x, 0., [0])
 
     # execute "layers"
     for v in var:
         layer(v)
 
-    return qm.expval.X(0)
+    return qml.expval.X(0)
 
 
 def square_loss(labels, predictions):

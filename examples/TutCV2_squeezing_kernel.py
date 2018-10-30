@@ -4,12 +4,11 @@ In this demo we implement a variation of the "explicit" quantum kernel classifie
 from Schuld and Killoran (arXiv:1803.07128) with a 2-dimensional moons data set.
 """
 
-import numpy as np
-import openqml as qm
-from openqml import numpy as onp
-from openqml.optimize import AdamOptimizer
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.optimize import AdamOptimizer
 
-dev = qm.device('strawberryfields.fock', wires=2, cutoff_dim=20)
+dev = qml.device('strawberryfields.fock', wires=2, cutoff_dim=20)
 
 
 def featuremap(x):
@@ -19,8 +18,8 @@ def featuremap(x):
         x (array[float]): single input vector
     """
 
-    qm.Squeezing(1.9, x[0], wires=[0])
-    qm.Squeezing(1.9, x[1], wires=[1])
+    qml.Squeezing(1.9, x[0], wires=[0])
+    qml.Squeezing(1.9, x[1], wires=[1])
 
 
 def layer(v):
@@ -30,22 +29,22 @@ def layer(v):
         v (array[float]): array of variables for one layer
     """
 
-    qm.Beamsplitter(v[0], v[1], wires=[0, 1])
+    qml.Beamsplitter(v[0], v[1], wires=[0, 1])
 
     # linear gates in quadrature
-    qm.Displacement(v[2], 0., wires=[0])
-    qm.Displacement(v[3], 0., wires=[1])
+    qml.Displacement(v[2], 0., wires=[0])
+    qml.Displacement(v[3], 0., wires=[1])
 
     # quadratic gates in quadrature
-    qm.QuadraticPhase(v[4], wires=[0])
-    qm.QuadraticPhase(v[5], wires=[1])
+    qml.QuadraticPhase(v[4], wires=[0])
+    qml.QuadraticPhase(v[5], wires=[1])
 
     # cubic gates in quadrature
-    qm.CubicPhase(v[6], wires=[0])
-    qm.CubicPhase(v[7], wires=[1])
+    qml.CubicPhase(v[6], wires=[0])
+    qml.CubicPhase(v[7], wires=[1])
 
 
-@qm.qnode(dev)
+@qml.qnode(dev)
 def circuit1(var, x=None):
     """The first variational circuit of the quantum classifier.
 
@@ -64,10 +63,10 @@ def circuit1(var, x=None):
     for v in var:
         layer(v)
 
-    return qm.expval.NumberState(np.array([2, 0]), [0, 1])
+    return qml.expval.NumberState(np.array([2, 0]), [0, 1])
 
 
-@qm.qnode(dev)
+@qml.qnode(dev)
 def circuit2(var, x=None):
     """The second variational circuit of the quantum classifier.
 
@@ -86,7 +85,7 @@ def circuit2(var, x=None):
     for v in var:
         layer(v)
 
-    return qm.expval.NumberState(np.array([0, 2]), [0, 1])
+    return qml.expval.NumberState(np.array([0, 2]), [0, 1])
 
 
 def qclassifier(var, x=None):
@@ -155,7 +154,7 @@ def regularizer(var):
         float: regularization penalty
     """
 
-    reg = onp.sum(onp.inner(var, var))
+    reg = np.sum(np.inner(var, var))
 
     return reg
 

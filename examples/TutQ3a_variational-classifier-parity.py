@@ -6,7 +6,7 @@ can be optimized to reproduce the parity function.
 """
 
 import pennylane as qml
-import numpy as np
+from pennylane import numpy as np
 from pennylane.optimize import AdagradOptimizer
 
 dev = qml.device('default.qubit', wires=4)
