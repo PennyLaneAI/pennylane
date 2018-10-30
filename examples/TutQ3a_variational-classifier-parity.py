@@ -124,7 +124,7 @@ def cost(var, X, Y):
 
 
 # load parity data
-data = np.loadtxt("parity.txt")
+data = np.loadtxt("data/parity.txt")
 X = data[:, :-1]
 Y = data[:, -1]
 Y = Y*2 - np.ones(len(Y))  # shift label from {0, 1} to {-1, 1}

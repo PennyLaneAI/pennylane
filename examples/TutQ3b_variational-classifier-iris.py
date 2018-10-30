@@ -127,7 +127,7 @@ def cost(weights, features, labels):
 
 
 # load Iris data and normalise feature vectors
-data = np.loadtxt("iris_scaled.txt")
+data = np.loadtxt("data/iris_scaled.txt")
 X = data[:, :-1]
 normalization = np.sqrt(np.sum(X ** 2, -1))
 X = (X.T / normalization).T  # normalize each input
