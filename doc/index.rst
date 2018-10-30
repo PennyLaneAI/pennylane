@@ -1,42 +1,61 @@
-OpenQML
-#######
+PennyLane
+#########
 
 :Release: |release|
 :Date: |today|
 
-OpenQML is a Python library for building and training machine learning models which include quantum computer circuits.
+PennyLane is a Python library for building and training machine learning models which include quantum computer circuits.
 
-Main features of OpenQML:
+Features
+========
 
-- *Follow the gradient*: **automatic differentiation** of quantum circuits
-- *Best of both worlds*: support for **hybrid quantum & classical** models
-- *Batteries included*: built-in **optimization and machine learning** tools
-- *Device independent*: the same quantum circuit model can be **run on different backends**
+- **Follow the gradient**.
+  Built-in **automatic differentiation** of quantum circuits
+
+- **Best of both worlds**.
+  Support for **hybrid quantum and classical** models
+
+- **Batteries included**.
+  Provides **optimization and machine learning** tools
+
+- **Device independent**.
+  The same quantum circuit model can be **run on different backends**
+
+- **Large plugin ecosystem**.
+  Install plugins to run your computational circuits on more devices, including `Strawberry Fields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_
 
 Getting started
 ===============
 
 
+To get PennyLane installed and running on your system, begin at the :ref:`download and installation guide <installation>`. Then, familiarize yourself with the :ref:`hybrid classical-quantum machine learning <introduction>` approach.
+
+For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`photon redirection <photon_redirection>` hybrid quantum optimization tutorials. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
+
+Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid optimizations - these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
+
+Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided, for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
+
 How to cite
 ===========
 
-If you are doing research using OpenQML, please cite
+If you are doing research using PennyLane, please cite
 
 Support
 =======
 
-- **Source Code:** https://github.com/XanaduAI/openQML
-- **Issue Tracker:** https://github.com/XanaduAI/openQML/issues
+- **Source Code:** https://github.com/XanaduAI/PennyLane
+- **Issue Tracker:** https://github.com/XanaduAI/PennyLane/issues
 
 If you are having issues, please let us know by posting the issue on our Github issue tracker.
 
-For more details on contributing or performing research with OpenQML, please see
+For more details on contributing or performing research with PennyLane, please see
 :ref:`research`.
 
 License
 =======
 
-OpenQML is **free** and **open source**, released under the Apache License, Version 2.0.
+PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.
 
 
 .. toctree::
@@ -69,12 +88,6 @@ OpenQML is **free** and **open source**, released under the Apache License, Vers
    tutorials/qubit_rotation
    tutorials/photon_redirection
 
-.. 
-   tutorials/photon_redirection.ipynb
-   tutorials/quantum_neural_net.ipynb
-   tutorials/qubit_rotation.ipynb
-   tutorials/variational_quantum_eigensolver.ipynb
-   tutorials/variational_classifier.ipynb
 
 .. toctree::
    :maxdepth: 1

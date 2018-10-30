@@ -16,9 +16,9 @@
 The quantum node object
 =======================
 
-**Module name:** :mod:`openqml.qnode`
+**Module name:** :mod:`pennylane.qnode`
 
-.. currentmodule:: openqml
+.. currentmodule:: pennylane
 
 The :class:`~qnode.QNode` class is used to construct quantum nodes,
 encapsulating a :ref:`quantum function <qfuncs>` and the computational
@@ -26,7 +26,7 @@ device it is executed on.
 
 The computational device is an instance of the :class:`~_device.Device`
 class, and can represent either a simulator or hardware device. They can
-instantiated using the :func:`~device` loader. OpenQML comes included with
+instantiated using the :func:`~device` loader. PennyLane comes included with
 some basic devices; additional devices can be installed as plugins
 (see :ref:`plugins` for more details).
 
@@ -38,19 +38,19 @@ The quantum function (qfunc) encapsulated by the QNode must be of the following 
 .. code-block:: python
 
     def my_quantum_function(x, y):
-        qm.RZ(x, wires=0)
-        qm.CNOT(wires=[0,1])
-        qm.RY(-2*y, wires=1)
-        return qm.expval.PauliZ(0)
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.RY(-2*y, wires=1)
+        return qml.expval.PauliZ(0)
 
 Qfuncs are a restricted subset of Python functions, adhering to the following
 constraints:
 
-* The body of the qfunc must consist of only supported OpenQML
-  :mod:`operations <openqml.ops>`, one per line.
+* The body of the qfunc must consist of only supported PennyLane
+  :mod:`operations <pennylane.ops>`, one per line.
 
 * The qfunc must always return either a single or a tuple of
-  :mod:`expectation values <openqml.expval>`.
+  :mod:`expectation values <pennylane.expval>`.
 
 * Classical processing of function arguments, either by arithmetic operations
   or external functions, is not allowed. One current exception is simple scalar
@@ -73,29 +73,29 @@ For example,
 
 .. code-block:: python
 
-    device = qm.device('default.qubit', wires=1)
+    device = qml.device('default.qubit', wires=1)
     qnode1 = QNode(my_quantum_function, device)
     result = qnode1(np.pi/4, 0.7)
 
 .. note::
 
-        The :func:`~openqml.decorator.qnode` decorator is provided as a convenience
+        The :func:`~pennylane.decorator.qnode` decorator is provided as a convenience
         to automate the process of creating quantum nodes. Using this decorator,
         the above example becomes:
 
         .. code-block:: python
 
-            @qm.qnode(device)
+            @qml.qnode(device)
             def my_quantum_function(x, y):
-                qm.RZ(x, wires=0)
-                qm.CNOT(wires=[0,1])
-                qm.RY(-2*y, wires=1)
-                return qm.expval.PauliZ(0)
+                qml.RZ(x, wires=0)
+                qml.CNOT(wires=[0,1])
+                qml.RY(-2*y, wires=1)
+                return qml.expval.PauliZ(0)
 
             result = my_quantum_function(np.pi/4)
 
 
-.. currentmodule:: openqml.qnode
+.. currentmodule:: pennylane.qnode
 
 Auxiliary functions
 -------------------
@@ -108,7 +108,7 @@ Auxiliary functions
 QNode methods
 -------------
 
-.. currentmodule:: openqml.qnode.QNode
+.. currentmodule:: pennylane.qnode.QNode
 
 .. autosummary::
    __call__
@@ -127,7 +127,7 @@ QNode internal methods
    _pd_finite_diff
    _pd_analytic
 
-.. currentmodule:: openqml.qnode
+.. currentmodule:: pennylane.qnode
 
 Code details
 ~~~~~~~~~~~~
@@ -144,7 +144,7 @@ import autograd.numpy as np
 import autograd.extend as ae
 import autograd.builtins
 
-import openqml.operation
+import pennylane.operation
 from .variable  import Variable
 from .utils import _flatten, unflatten
 
@@ -199,7 +199,7 @@ class QNode:
     Args:
         func (callable): a Python function containing :class:`~.operation.Operation`
             constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
-        device (~openqml._device.Device): device to execute the function on
+        device (~pennylane._device.Device): device to execute the function on
     """
     # pylint: disable=too-many-instance-attributes
     _current_context = None  #: QNode: for building Operation sequences by executing qfuncs
@@ -225,7 +225,7 @@ class QNode:
             op (Operation): quantum operation to be added to the circuit
         """
         # EVs go to their own, temporary queue
-        if isinstance(op, openqml.operation.Expectation):
+        if isinstance(op, pennylane.operation.Expectation):
             self.ev.append(op)
         else:
             if self.ev:
@@ -249,7 +249,7 @@ class QNode:
 
         .. note::
 
-            Additional keyword arguments may be passed to the qfunc, however OpenQML
+            Additional keyword arguments may be passed to the qfunc, however PennyLane
             does not support differentiating with respect to keyword arguments. Instead,
             keyword arguments are useful for providing data or 'placeholders' to the qfunc.
         """
@@ -295,11 +295,11 @@ class QNode:
         # check the validity of the circuit
 
         # qfunc return validation
-        if isinstance(res, openqml.operation.Expectation):
+        if isinstance(res, pennylane.operation.Expectation):
             self.output_type = float
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, tuple) and res and all(isinstance(x, openqml.operation.Expectation) for x in res):
+        elif isinstance(res, tuple) and res and all(isinstance(x, pennylane.operation.Expectation) for x in res):
             # for multiple expectation values, we only support tuples.
             self.output_dim = len(res)
             self.output_type = np.asarray
@@ -333,7 +333,7 @@ class QNode:
             check_op(op)
 
         # classify the circuit contents
-        temp = [isinstance(op, openqml.operation.CV) for op in self.ops]
+        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops]
         if all(temp):
             self.type = 'CV'
         elif not True in temp:
@@ -381,9 +381,9 @@ class QNode:
         #
         # if it is in a topological order? the docs aren't clear.
         if only == 'E':
-            return list(filter(lambda x: isinstance(x, openqml.operation.Expectation), succ))
+            return list(filter(lambda x: isinstance(x, pennylane.operation.Expectation), succ))
         elif only == 'G':
-            return list(filter(lambda x: not isinstance(x, openqml.operation.Expectation), succ))
+            return list(filter(lambda x: not isinstance(x, pennylane.operation.Expectation), succ))
         return succ
 
     def _best_method(self, idx):
@@ -422,7 +422,7 @@ class QNode:
             "Returns the best gradient method for the operation op."
             op = self.ops[o_idx]
             # for discrete operations, other ops do not affect the choice
-            if not isinstance(op, openqml.operation.CV):
+            if not isinstance(op, pennylane.operation.CV):
                 return op.grad_method
 
             # for CV ops it is more complicated
@@ -758,7 +758,7 @@ class QNode:
                     if q.ndim == 2:
                         # 2nd order observable
                         qp = qp +qp.T
-                    return openqml.expval.PolyXP(qp, wires=range(w), do_queue=False)
+                    return pennylane.expval.PolyXP(qp, wires=range(w), do_queue=False)
 
                 # transform the observables
                 obs = list(map(tr_obs, self.ev))

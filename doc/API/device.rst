@@ -1,3 +1,3 @@
-.. automodule:: openqml._device
+.. automodule:: pennylane._device
    :members:
    :private-members:

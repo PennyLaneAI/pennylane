@@ -16,15 +16,15 @@ r"""
 Symbolic quantum operations
 ===========================
 
-**Module name:** :mod:`openqml.operation`
+**Module name:** :mod:`pennylane.operation`
 
-.. currentmodule:: openqml.operation
+.. currentmodule:: pennylane.operation
 
 Operation base classes
 ----------------------
 
 This module contains the symbolic base class for performing quantum operations
-and measuring expectation values in OpenQML.
+and measuring expectation values in PennyLane.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
   for example a unitary quantum gate. Each instance of these subclasses then
@@ -579,7 +579,7 @@ class CVExpectation(CV, Expectation):
     r"""Base class for continuous-variable expectation value measurements.
 
     The class attribute :attr:`~.ev_order` can be defined to indicate
-    to OpenQML whether the corresponding CV observable is a polynomial in the
+    to PennyLane whether the corresponding CV observable is a polynomial in the
     quadrature operators. If so,
 
     * ``ev_order = 1`` indicates a first order polynomial in quadrature

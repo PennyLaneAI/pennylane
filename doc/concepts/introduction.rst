@@ -6,9 +6,9 @@
 Introduction
 ============
 
-The main principle underlying OpenQML is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. OpenQML employs a model where both classical and quantum computers are used in the same basic way: as computational **devices** which we program to evaluate mathematical functions.
+The main principle underlying PennyLane is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. PennyLane employs a model where both classical and quantum computers are used in the same basic way: as computational **devices** which we program to evaluate mathematical functions.
 
-The core of OpenQML is designed around four main concepts:
+The core of PennyLane is designed around four main concepts:
 
 1. **Quantum functions**: a class of functions that are naturally evaluated using quantum computer circuits
 
@@ -48,7 +48,7 @@ The primary motivation for building quantum computers is that they should be abl
 
     See the main :ref:`autograd_quantum` page for more details.
 
-A core element of modern machine learning libraries is the automatic computation of analytic gradients. OpenQML extends this key feature to quantum functions.
+A core element of modern machine learning libraries is the automatic computation of analytic gradients. PennyLane extends this key feature to quantum functions.
 
 Evaluating qfuncs is inefficient on classical computers, so we might expect the gradients of qfuncs to be similarly intractable. Fortunately, we can often compute the gradient of a qfunc :math:`\nabla_{\bm{\theta}}f(x;\bm{\theta})` exactly using a linear combination of closely related qfuncs:
 

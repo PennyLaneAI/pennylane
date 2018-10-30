@@ -1,8 +1,8 @@
 ## =================================================================
-##     MAIN OPENQML CONFIGURATION OPTIONS
+##     MAIN PENNYLANE CONFIGURATION OPTIONS
 ## =================================================================
-## This section contains the main OpenQML configuration options.
-## These options apply globally to OpenQML and all loaded plugins
+## This section contains the main PennyLane configuration options.
+## These options apply globally to PennyLane and all loaded plugins
 ## and devices which support them.
 ##
 ## To overide these default configuration settings per device/plugin,
@@ -16,7 +16,7 @@ shots = 0
 # =================================================================
 #     PLUGIN AND DEVICE OPTIONS
 # =================================================================
-## This section contains the OpenQML configuration options for each
+## This section contains the PennyLane configuration options for each
 ## installed plugin or device. These configuration options allow you
 ## to set global configuration options on a device-by-device basis.
 ## and to also set options specific to certain device.
@@ -27,7 +27,7 @@ hbar = 2
 
 [strawberryfields.global]
 ## Global options for the StrawberryFields plugin.
-## If not specified, the OpenQML default is used.
+## If not specified, the PennyLane default is used.
 ##
 ## These global options may be overwritten by specifying
 ## the defaults for the Fock and Gaussian simulators below.
@@ -71,7 +71,7 @@ hbar = 1
     ## Random seed (uses random.randint(0, 4294967295) by default)
     # rnd_seed =
 
-    [projectq.ibmbackend]
+    [projectq.ibm]
     ## IBM Quantum Experience user name and password
     # user =
     # password =

@@ -1,4 +1,4 @@
-OpenQML
+PennyLane
 #######
 
 .. image:: https://img.shields.io/travis/XanaduAI/strawberryfields/master.svg?style=for-the-badge
@@ -25,80 +25,79 @@ OpenQML
     :alt: PyPI - Python Version
     :target: https://pypi.org/project/StrawberryFields
 
-`OpenQML <https://openqml.readthedocs.io>`_ is a full-stack Python library for quantum machine
+`PennyLane <https://pennylane.readthedocs.io>`_ is a full-stack Python library for quantum machine
 learning and automatic differentiation of hybrid quantum-classical computations.
 
-
-.. todo:: Update badges to point to OpenQML CI services.
 
 
 Features
 ========
 
-- *Follow the gradient*: an open-source Python library for **automatic differentiation** of quantum circuits
+- **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
 
-- *Best of both worlds*: support for **hybrid quantum and classical** computational models
+- **Best of both worlds**. Support for **hybrid quantum & classical** models
 
-- *Batteries included*: built-in **optimization and machine learning** tools
+- **Batteries included**. Provides **optimization and machine learning** tools
 
-- *Device independent*: the same quantum circuit model can be **run on different devices**
+- **Device independent**. The same quantum circuit model can be **run on different backends**
 
-- *Large plugin ecosystem*: install plugins to run your computational circuits on more devices,
-  including `Strawberry Fields <https://github.com/XanaduAI/openqml-sf>`_ and
-  `ProjectQ <https://github.com/XanaduAI/openqml-pq>`_
+- **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including `Strawberry Fields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_
 
 
 
 Installation
 ============
 
-OpenQML requires Python version 3.5 and above. Installation of OpenQML, as well as all dependencies, can be done using pip:
+PennyLane requires Python version 3.5 and above. Installation of PennyLane, as well as all dependencies, can be done using pip:
 
 .. code-block:: bash
 
-    $ python -m pip install openqml
+    $ python -m pip install pennylane
 
 
-Contributing to OpenQML
+Getting started
+===============
+
+For getting started with PennyLane, check out our `qubit rotation <https://pennylane.readthedocs.io/en/latest/tutorials/qubit_rotation.html>`_, `photon redirection <https://pennylane.readthedocs.io/en/latest/tutorials/photon_redirection.html>`_, `quantum GAN <https://pennylane.readthedocs.io/en/latest/tutorials/quantum_gan.html>`_, and other machine learning tutorials.
+
+Our `documentation <https://pennylane.readthedocs.io>`_ is also a great starting point to familiarize yourself with the hybrid classical-quantum machine learning approach, and explore the available optimization tools provided by PennyLane. Play around with the numerous devices and plugins available for running your hybrid optimizations - these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
+
+Finally, detailed documentation on the PennyLane API is provided, for full details on available quantum operations and expectations, and detailed guides on `how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_ PennyLane-compatible quantum device.
+
+
+Contributing to PennyLane
 =================================
 
-We welcome contributions - simply fork the OpenQML repository, and then make a
-`pull request <https://help.github.com/articles/about-pull-requests/>`_ containing your contribution.  All contributers to OpenQML will be listed as authors on the releases.
+We welcome contributions - simply fork the PennyLane repository, and then make a
+`pull request <https://help.github.com/articles/about-pull-requests/>`_ containing your contribution.  All contributers to PennyLane will be listed as authors on the releases. All users who contribute significantly to the code (new plugins, new functionality, etc.) will be listed on the PennyLane arXiv paper.
 
-We also encourage bug reports, suggestions for new features and enhancements, and even links to cool projects or applications built on OpenQML. If your contribution becomes part of OpenQML, or is highlighted in our Gallery, we will send you some exclusive Xanadu Swag™ - including t-shirts, stickers, and more.
+We also encourage bug reports, suggestions for new features and enhancements, and even links to cool projects or applications built on PennyLane.
 
-.. raw:: html
-
-    <img src="https://i.imgur.com/xSFMt3g.jpg" width="300px"  align="left"> <img src="https://i.imgur.com/dC0U1xG.jpg" width="300px"  align="left">
-
-TODO: See our `contributions page <https://github.com/XanaduAI/openqml/blob/master/.github/CONTRIBUTING.md>`_
-for more details, and then check out some of the OpenQML `challenges <https://github.com/XanaduAI/openqml/blob/master/.github/CHALLENGES.md>`_ for some inspiration.
+See our `contributions page <https://github.com/XanaduAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
+for more details.
 
 |
 
 Authors
 =======
 
-Nathan Killoran, Josh Izaac, Nicolás Quesada, Ville Bergholm, Matthew Amy, and Christian Weedbrook.
+Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, and Nathan Killoran.
 
-If you are doing research using OpenQML, please cite `our whitepaper <https://arxiv.org/abs/1804.03159>`_:
+If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/XXXX.XXXXX>`_:
 
-  Nathan Killoran, Josh Izaac, Nicolás Quesada, Ville Bergholm, Matthew Amy, and Christian Weedbrook. OpenQML: A Software Platform for Photonic Quantum Computing. *arXiv*, 2018. arXiv:1804.03159
+  [Placeholder for paper link]
 
 
 Support
 =======
 
-- **Source Code:** https://github.com/XanaduAI/openqml
-- **Issue Tracker:** https://github.com/XanaduAI/openqml/issues
+- **Source Code:** https://github.com/XanaduAI/pennylane
+- **Issue Tracker:** https://github.com/XanaduAI/pennylane/issues
 
 If you are having issues, please let us know by posting the issue on our Github issue tracker.
-
-We also have a `OpenQML Slack channel <https://u.openqml.ai/slack>`_ -
-come join the discussion and chat with our OpenQML team.
 
 
 License
 =======
 
-OpenQML is **free** and **open source**, released under the Apache License, Version 2.0.
+PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.

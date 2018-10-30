@@ -24,7 +24,7 @@ class RMSPropOptimizer(AdagradOptimizer):
     r"""Root mean squared propagation optimizer.
 
     The root mean square progation optimizer is a modified
-    :class:`Adagrad optimizer <openqml.optmimize.AdagradOptimizer>`,
+    :class:`Adagrad optimizer <pennylane.optmimize.AdagradOptimizer>`,
     with a decay of learning rate adaptation.
 
     Extensions of the Adagrad optimization method generally
