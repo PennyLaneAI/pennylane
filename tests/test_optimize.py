@@ -22,6 +22,7 @@ log.getLogger('defaults')
 from defaults import pennylane as qml, BaseTest
 
 from pennylane import numpy as np
+from pennylane.utils import _flatten
 from pennylane.optimize import (GradientDescentOptimizer,
                               MomentumOptimizer,
                               NesterovMomentumOptimizer,
@@ -36,12 +37,13 @@ stepsize = 0.1
 gamma = 0.5
 delta = 0.8
 
-@qm.qnode(qm.device('default.qubit', wires=1))
+
+@qml.qnode(qml.device('default.qubit', wires=1))
 def quant_fun(variables):
-    qm.RX(variables[0][1], [0])
-    qm.RY(variables[1][2], [0])
-    qm.RY(variables[2], [0])
-    return qm.expval.PauliZ(0)
+    qml.RX(variables[0][1], wires=[0])
+    qml.RY(variables[1][2], wires=[0])
+    qml.RY(variables[2], wires=[0])
+    return qml.expval.PauliZ(0)
 
 
 def hybrid_fun(variables):
@@ -50,6 +52,32 @@ def hybrid_fun(variables):
 
 def class_fun(variables):
     return variables[0][1] * 2. + variables[1][2] + variables[2]
+
+
+@qml.qnode(qml.device('default.qubit', wires=1))
+def quant_fun_nested(var):
+    qml.RX(var[0][0][0], wires=[0])
+    qml.RY(var[0][1], wires=[0])
+    qml.RY(var[1][0], wires=[0])
+    qml.RX(var[1][1][0], wires=[0])
+    return qml.expval.PauliZ(0)
+
+
+def hybrid_fun_nested(var):
+    return quant_fun_nested(var) + var[2]
+
+
+@qml.qnode(qml.device('default.qubit', wires=1))
+def quant_fun_flat(var):
+    qml.RX(var[0], wires=[0])
+    qml.RY(var[1], wires=[0])
+    qml.RY(var[2], wires=[0])
+    qml.RX(var[3], wires=[0])
+    return qml.expval.PauliZ(0)
+
+
+def hybrid_fun_flat(var):
+    return quant_fun_flat(var) + var[4]
 
 
 class BasicTest(BaseTest):
@@ -90,9 +118,13 @@ class BasicTest(BaseTest):
         self.class_fun = class_fun
         self.quant_fun = quant_fun
         self.hybrid_fun = hybrid_fun
+        self.hybrid_fun_nested = hybrid_fun_nested
+        self.hybrid_fun_flat = hybrid_fun_flat
 
         self.mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
         self.mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
+        self.nested_list = [[[0.2], 0.3], [0.1, [0.4]], -0.1]
+        self.flat_list = [0.2, 0.3, 0.1, 0.4, -0.1]
 
     def test_mixed_inputs_for_hybrid_optimization(self):
         """Tests that gradient descent optimizer treats parameters of mixed types the same
@@ -102,9 +134,9 @@ class BasicTest(BaseTest):
         hybrid_list = self.sgd_opt.step(self.hybrid_fun, self.mixed_list)
         hybrid_tuple = self.sgd_opt.step(self.hybrid_fun, self.mixed_tuple)
 
-        self.assertAllAlmostEqual(hybrid_tuple[0], hybrid_list[0], delta=self.tol)
-        self.assertAllAlmostEqual(hybrid_tuple[1], hybrid_list[1], delta=self.tol)
-        self.assertAllAlmostEqual(hybrid_tuple[2], hybrid_list[2], delta=self.tol)
+        self.assertAllAlmostEqual(hybrid_list[0], hybrid_tuple[0], delta=self.tol)
+        self.assertAllAlmostEqual(hybrid_list[1], hybrid_tuple[1], delta=self.tol)
+        self.assertAllAlmostEqual(hybrid_list[2], hybrid_tuple[2], delta=self.tol)
 
     def test_mixed_inputs_for_classical_optimization(self):
         """Tests that gradient descent optimizer treats parameters of mixed types the same
@@ -129,6 +161,16 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(quant_list[0], quant_tuple[0], delta=self.tol)
         self.assertAllAlmostEqual(quant_list[1], quant_tuple[1], delta=self.tol)
         self.assertAllAlmostEqual(quant_list[2], quant_tuple[2], delta=self.tol)
+
+    def test_nested_and_flat_returns_same_update(self):
+        """Tests that gradient descent optimizer has the same output for
+         nested and flat lists."""
+        self.logTestName()
+
+        nested = self.sgd_opt.step(self.hybrid_fun_nested, self.nested_list)
+        flat = self.sgd_opt.step(self.hybrid_fun_flat, self.flat_list)
+
+        self.assertAllAlmostEqual(flat, list(_flatten(nested)), delta=self.tol)
 
     def test_gradient_descent_optimizer_univar(self):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
