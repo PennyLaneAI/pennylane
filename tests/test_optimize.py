@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml` :class:`GradientDescentOptimizer` subclasses.
+Unit tests for the :mod:`pennylane` :class:`GradientDescentOptimizer` subclasses.
 """
 
 import unittest
 import logging as log
 log.getLogger('defaults')
 
-from defaults import openqml as qm, BaseTest
+from defaults import pennylane as qml, BaseTest
 
-from openqml import numpy as np
-from openqml.optimize import (GradientDescentOptimizer,
+from pennylane import numpy as np
+from pennylane.optimize import (GradientDescentOptimizer,
                               MomentumOptimizer,
                               NesterovMomentumOptimizer,
                               AdagradOptimizer,
@@ -426,7 +426,7 @@ class BasicTest(BaseTest):
 
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + qm.version() + ', basic optimizers.')
+    print('Testing PennyLane version ' + qml.version() + ', basic optimizers.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,):

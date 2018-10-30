@@ -21,11 +21,11 @@ import logging
 
 import numpy as np
 
-# Make sure openqml is always imported from the same source distribution where the tests reside, not e.g. from site-packages.
+# Make sure pennylane is always imported from the same source distribution where the tests reside, not e.g. from site-packages.
 # See https://docs.python-guide.org/en/latest/writing/structure/#test-suite
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import openqml
+import pennylane
 
 # defaults
 TOLERANCE = os.environ.get("TOL", 1e-5)

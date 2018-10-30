@@ -15,10 +15,10 @@
 Qubit quantum operations
 ========================
 
-.. currentmodule:: openqml.ops.qubit
+.. currentmodule:: pennylane.ops.qubit
 
 This section contains the available built-in discrete-variable
-quantum operations supported by OpenQML, as well as their conventions.
+quantum operations supported by PennyLane, as well as their conventions.
 
 Gates
 -----
@@ -51,7 +51,7 @@ Code details
 ~~~~~~~~~~~~
 """
 
-from openqml.operation import Operation
+from pennylane.operation import Operation
 
 
 class Hadamard(Operation):

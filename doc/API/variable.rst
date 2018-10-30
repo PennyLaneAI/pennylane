@@ -1,3 +1,3 @@
-.. automodule:: openqml.variable
+.. automodule:: pennylane.variable
    :members:
    :private-members:

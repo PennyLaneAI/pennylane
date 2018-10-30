@@ -17,10 +17,10 @@ r"""
 CV quantum operations
 =====================
 
-.. currentmodule:: openqml.ops.cv
+.. currentmodule:: pennylane.ops.cv
 
 This section contains the available built-in continuous-variable
-quantum operations supported by OpenQML, as well as their conventions.
+quantum operations supported by PennyLane, as well as their conventions.
 
 .. todo:: Add gradient recipes for Gaussian state preparations
 
@@ -77,7 +77,7 @@ Code details
 import numpy as np
 import scipy as sp
 
-from openqml.operation import CVOperation
+from pennylane.operation import CVOperation
 
 
 def _rotation(phi, bare=False):
@@ -107,7 +107,7 @@ def _rotation(phi, bare=False):
 
 
 class Rotation(CVOperation):
-    r"""openqml.Rotation(phi, wires)
+    r"""pennylane.Rotation(phi, wires)
     Phase space rotation
 
     .. math::
@@ -141,7 +141,7 @@ class Rotation(CVOperation):
 
 
 class Squeezing(CVOperation):
-    r"""openqml.Squeezing(r, phi, wires)
+    r"""pennylane.Squeezing(r, phi, wires)
     Phase space squeezing.
 
     .. math::
@@ -183,7 +183,7 @@ class Squeezing(CVOperation):
 
 
 class Displacement(CVOperation):
-    r"""openqml.Displacement(r, phi, wires)
+    r"""pennylane.Displacement(r, phi, wires)
     Phase space displacement.
 
     .. math::
@@ -224,7 +224,7 @@ class Displacement(CVOperation):
 
 
 class Beamsplitter(CVOperation):
-    r"""openqml.Beamsplitter(theta, phi, wires)
+    r"""pennylane.Beamsplitter(theta, phi, wires)
     Beamsplitter interaction.
 
     .. math::
@@ -273,7 +273,7 @@ class Beamsplitter(CVOperation):
 
 
 class TwoModeSqueezing(CVOperation):
-    r"""openqml.TwoModeSqueezing(r, phi, wires)
+    r"""pennylane.TwoModeSqueezing(r, phi, wires)
     Phase space two-mode squeezing.
 
     .. math::
@@ -326,7 +326,7 @@ class TwoModeSqueezing(CVOperation):
 
 
 class QuadraticPhase(CVOperation):
-    r"""openqml.QuadraticPhase(s, wires)
+    r"""pennylane.QuadraticPhase(s, wires)
     Quadratic phase shift.
 
     .. math::
@@ -368,7 +368,7 @@ class QuadraticPhase(CVOperation):
 
 
 class ControlledAddition(CVOperation):
-    r"""openqml.ControlledAddition(s, wires)
+    r"""pennylane.ControlledAddition(s, wires)
     Controlled addition operation.
 
     .. math::
@@ -414,7 +414,7 @@ class ControlledAddition(CVOperation):
 
 
 class ControlledPhase(CVOperation):
-    r"""openqml.ControlledPhase(s, wires)
+    r"""pennylane.ControlledPhase(s, wires)
     Controlled phase operation.
 
     .. math::
@@ -460,7 +460,7 @@ class ControlledPhase(CVOperation):
 
 
 class Kerr(CVOperation):
-    r"""openqml.Kerr(kappa, wires)
+    r"""pennylane.Kerr(kappa, wires)
     Kerr interaction.
 
     .. math::
@@ -483,7 +483,7 @@ class Kerr(CVOperation):
 
 
 class CrossKerr(CVOperation):
-    r"""openqml.CrossKerr(kappa, wires)
+    r"""pennylane.CrossKerr(kappa, wires)
     Cross-Kerr interaction.
 
     .. math::
@@ -506,7 +506,7 @@ class CrossKerr(CVOperation):
 
 
 class CubicPhase(CVOperation):
-    r"""openqml.CubicPhase(gamma, wires)
+    r"""pennylane.CubicPhase(gamma, wires)
     Cubic phase shift.
 
     .. math::
@@ -535,7 +535,7 @@ class CubicPhase(CVOperation):
 #TODO: put Heisenberg reps of state preparations in docstrings?
 
 class CoherentState(CVOperation):
-    r"""openqml.CoherentState(a, phi, wires)
+    r"""pennylane.CoherentState(a, phi, wires)
     Prepares a coherent state.
 
     **Details:**
@@ -556,7 +556,7 @@ class CoherentState(CVOperation):
 
 
 class SqueezedState(CVOperation):
-    r"""openqml.SqueezedState(r, phi, wires)
+    r"""pennylane.SqueezedState(r, phi, wires)
     Prepares a squeezed vacuum state.
 
     **Details:**
@@ -577,7 +577,7 @@ class SqueezedState(CVOperation):
 
 
 class DisplacedSqueezedState(CVOperation):
-    r"""openqml.DisplacedSqueezedState(a, r, phi, wires)
+    r"""pennylane.DisplacedSqueezedState(a, r, phi, wires)
     Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
@@ -607,7 +607,7 @@ class DisplacedSqueezedState(CVOperation):
 
 
 class ThermalState(CVOperation):
-    r"""openqml.ThermalState(nbar, wires)
+    r"""pennylane.ThermalState(nbar, wires)
     Prepares a thermal state.
 
     **Details:**
@@ -627,7 +627,7 @@ class ThermalState(CVOperation):
 
 
 class GaussianState(CVOperation):
-    r"""openqml.GaussianState(r, V, wires)
+    r"""pennylane.GaussianState(r, V, wires)
     Prepare subsystems in a given Gaussian state.
 
     **Details:**
@@ -648,7 +648,7 @@ class GaussianState(CVOperation):
 
 
 class FockState(CVOperation):
-    r"""openqml.FockState(n, wires)
+    r"""pennylane.FockState(n, wires)
     Prepares a single Fock state.
 
     **Details:**
@@ -668,7 +668,7 @@ class FockState(CVOperation):
 
 
 class FockStateVector(CVOperation):
-    r"""openqml.FockStateVector(state, wires)
+    r"""pennylane.FockStateVector(state, wires)
     Prepare subsystems using the given ket vector in the Fock basis.
 
     **Details:**
@@ -688,7 +688,7 @@ class FockStateVector(CVOperation):
 
 
 class FockDensityMatrix(CVOperation):
-    r"""openqml.FockDensityMatrix(state, wires)
+    r"""pennylane.FockDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix in the Fock basis.
 
     **Details:**
@@ -708,7 +708,7 @@ class FockDensityMatrix(CVOperation):
 
 
 class CatState(CVOperation):
-    r"""openqml.CatState(alpha, p, wires)
+    r"""pennylane.CatState(alpha, p, wires)
     Prepares a cat state.
 
     A cat state is the coherent superposition of two coherent states,

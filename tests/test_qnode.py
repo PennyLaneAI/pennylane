@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`openqml` :class:`QNode` class.
+Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
 
 import unittest
@@ -22,11 +22,11 @@ log.getLogger('defaults')
 import autograd
 from autograd import numpy as np
 
-from defaults import openqml as qm, BaseTest
+from defaults import pennylane as qml, BaseTest
 
-from openqml.qnode import _flatten, unflatten, QNode, QuantumFunctionError
-from openqml.plugins.default_qubit import CNOT, frx, fry, frz, I, Y, Z
-from openqml._device import DeviceError
+from pennylane.qnode import _flatten, unflatten, QNode, QuantumFunctionError
+from pennylane.plugins.default_qubit import CNOT, frx, fry, frz, I, Y, Z
+from pennylane._device import DeviceError
 
 
 def expZ(state):
@@ -53,8 +53,8 @@ class BasicTest(BaseTest):
     """Qnode basic tests.
     """
     def setUp(self):
-        self.dev1 = qm.device('default.qubit', wires=1)
-        self.dev2 = qm.device('default.qubit', wires=2)
+        self.dev1 = qml.device('default.qubit', wires=1)
+        self.dev2 = qml.device('default.qubit', wires=2)
 
     def test_flatten(self):
         "Tests that _flatten successfully flattens multidimensional arrays."
@@ -92,12 +92,12 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         def qf(x):
-            qm.RX(x, [0])
-            qm.CNOT([0, 1])
-            qm.RY(0.4, [0])
-            qm.RZ(-0.2, [1])
-            return qm.expval.PauliX(0), qm.expval.PauliZ(1)
-        q = qm.QNode(qf, self.dev2)
+            qml.RX(x, [0])
+            qml.CNOT([0, 1])
+            qml.RY(0.4, [0])
+            qml.RZ(-0.2, [1])
+            return qml.expval.PauliX(0), qml.expval.PauliZ(1)
+        q = qml.QNode(qf, self.dev2)
         q.construct([1.0])
 
         # the six operations in qf should appear in q.ops in the same order they appear above
@@ -138,7 +138,7 @@ class BasicTest(BaseTest):
 
         # current context should not be set before `construct` is called
         def qf(x):
-            return qm.expval.PauliZ(0)
+            return qml.expval.PauliZ(0)
         qnode = QNode(qf, self.dev1)
         QNode._current_context = qnode
         with self.assertRaisesRegex(QuantumFunctionError, 'QNode._current_context must not be modified outside this method.'):
@@ -149,80 +149,80 @@ class BasicTest(BaseTest):
         ## faulty quantum functions
 
         # qfunc must return only Expectations
-        @qm.qnode(self.dev2)
+        @qml.qnode(self.dev2)
         def qf(x):
-            qm.RX(x, [0])
-            return qm.expval.PauliZ(0), 0.3
+            qml.RX(x, [0])
+            return qml.expval.PauliZ(0), 0.3
         with self.assertRaisesRegex(QuantumFunctionError, 'must return either'):
             qf(par)
 
         # all EVs must be returned...
-        @qm.qnode(self.dev2)
+        @qml.qnode(self.dev2)
         def qf(x):
-            qm.RX(x, [0])
-            ex = qm.expval.PauliZ(1)
-            return qm.expval.PauliZ(0)
+            qml.RX(x, [0])
+            ex = qml.expval.PauliZ(1)
+            return qml.expval.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
             qf(par)
 
         # ...in the correct order
-        @qm.qnode(self.dev2)
+        @qml.qnode(self.dev2)
         def qf(x):
-            qm.RX(x, [0])
-            ex = qm.expval.PauliZ(1)
-            return qm.expval.PauliZ(0), ex
+            qml.RX(x, [0])
+            ex = qml.expval.PauliZ(1)
+            return qml.expval.PauliZ(0), ex
         with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
             qf(par)
 
         # gates must precede EVs
-        @qm.qnode(self.dev2)
+        @qml.qnode(self.dev2)
         def qf(x):
-            qm.RX(x, [0])
-            ev = qm.expval.PauliZ(1)
-            qm.RY(0.5, [0])
+            qml.RX(x, [0])
+            ev = qml.expval.PauliZ(1)
+            qml.RY(0.5, [0])
             return ev
         with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
             qf(par)
 
         # a wire cannot be measured more than once
-        @qm.qnode(self.dev2)
+        @qml.qnode(self.dev2)
         def qf(x):
-            qm.RX(x, [0])
-            qm.CNOT([0, 1])
-            return qm.expval.PauliZ(0), qm.expval.PauliZ(1), qm.expval.PauliX(0)
+            qml.RX(x, [0])
+            qml.CNOT([0, 1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1), qml.expval.PauliX(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'can only be measured once'):
             qf(par)
 
         # device must have enough wires for the qfunc
-        @qm.qnode(self.dev2)
+        @qml.qnode(self.dev2)
         def qf(x):
-            qm.RX(x, [0])
-            qm.CNOT([0, 2])
-            return qm.expval.PauliZ(0)
+            qml.RX(x, [0])
+            qml.CNOT([0, 2])
+            return qml.expval.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'device only has'):
             qf(par)
 
         # CV and discrete ops must not be mixed
-        @qm.qnode(self.dev1)
+        @qml.qnode(self.dev1)
         def qf(x):
-            qm.RX(x, [0])
-            qm.Displacement(0.5, 0, [0])
-            return qm.expval.PauliZ(0)
+            qml.RX(x, [0])
+            qml.Displacement(0.5, 0, [0])
+            return qml.expval.PauliZ(0)
         with self.assertRaisesRegex(QuantumFunctionError, 'Continuous and discrete'):
             qf(par)
 
         # default plugin cannot execute CV operations, neither gates...
-        @qm.qnode(self.dev1)
+        @qml.qnode(self.dev1)
         def qf(x):
-            qm.Displacement(0.5, 0, [0])
-            return qm.expval.X(0)
+            qml.Displacement(0.5, 0, [0])
+            return qml.expval.X(0)
         with self.assertRaisesRegex(DeviceError, 'Gate [a-zA-Z]+ not supported on device'):
             qf(par)
 
         # ...nor observables
-        @qm.qnode(self.dev1)
+        @qml.qnode(self.dev1)
         def qf(x):
-            return qm.expval.X(0)
+            return qml.expval.X(0)
         with self.assertRaisesRegex(DeviceError, 'Expectation [a-zA-Z]+ not supported on device'):
             qf(par)
 
@@ -237,26 +237,26 @@ class BasicTest(BaseTest):
 
         # undifferentiable operation
         def qf(x):
-            qm.BasisState(np.array([x, 0]), [0,1])
-            qm.RX(x, [0])
-            return qm.expval.PauliZ(0)
-        q = qm.QNode(qf, self.dev2)
+            qml.BasisState(np.array([x, 0]), [0,1])
+            qml.RX(x, [0])
+            return qml.expval.PauliZ(0)
+        q = qml.QNode(qf, self.dev2)
         with self.assertRaisesRegex(ValueError, 'Cannot differentiate wrt parameter'):
             q.jacobian(par)
 
         # operation that does not support the 'A' method
         def qf(x):
-            qm.RX(x, [0])
-            return qm.expval.Hermitian(np.diag([x, 0]), 0)
-        q = qm.QNode(qf, self.dev2)
+            qml.RX(x, [0])
+            return qml.expval.Hermitian(np.diag([x, 0]), 0)
+        q = qml.QNode(qf, self.dev2)
         with self.assertRaisesRegex(ValueError, 'analytic gradient method cannot be used with'):
             q.jacobian(par, method='A')
 
         # bogus gradient method set
         def qf(x):
-            qm.RX(x, [0])
-            return qm.expval.PauliZ(0)
-        q = qm.QNode(qf, self.dev2)
+            qml.RX(x, [0])
+            return qml.expval.PauliZ(0)
+        q = qml.QNode(qf, self.dev2)
         q.evaluate([0.0])
         keys = q.grad_method_for_par.keys()
         if len(keys) > 0:
@@ -270,28 +270,28 @@ class BasicTest(BaseTest):
         ## bad input parameters
 
         def qf_ok(x):
-            qm.Rot(0.3, x, -0.2, [0])
-            return qm.expval.PauliZ(0)
+            qml.Rot(0.3, x, -0.2, [0])
+            return qml.expval.PauliZ(0)
 
         # if indices wrt. which the gradient is taken are specified they must be unique
-        q = qm.QNode(qf_ok, self.dev2)
+        q = qml.QNode(qf_ok, self.dev2)
         with self.assertRaisesRegex(ValueError, 'indices must be unique'):
             q.jacobian(par, which=[0,0])
 
         # gradient wrt. nonexistent parameters
-        q = qm.QNode(qf_ok, self.dev2)
+        q = qml.QNode(qf_ok, self.dev2)
         with self.assertRaisesRegex(ValueError, 'Tried to compute the gradient wrt'):
             q.jacobian(par, which=[0,6])
         with self.assertRaisesRegex(ValueError, 'Tried to compute the gradient wrt'):
             q.jacobian(par, which=[1,-1])
 
         # unknown grad method
-        q = qm.QNode(qf_ok, self.dev1)
+        q = qml.QNode(qf_ok, self.dev1)
         with self.assertRaisesRegex(ValueError, 'Unknown gradient method'):
             q.jacobian(par, method='unknown')
 
         # only order-1 and order-2 finite diff methods are available
-        q = qm.QNode(qf_ok, self.dev1)
+        q = qml.QNode(qf_ok, self.dev1)
         with self.assertRaisesRegex(ValueError, 'Order must be 1 or 2'):
             q.jacobian(par, method='F', order=3)
 
@@ -301,12 +301,12 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         def circuit(reused_param, other_param):
-            qm.RX(reused_param, [0])
-            qm.RZ(other_param, [0])
-            qm.RX(reused_param, [0])
-            return qm.expval.PauliZ(0)
+            qml.RX(reused_param, [0])
+            qml.RZ(other_param, [0])
+            qml.RX(reused_param, [0])
+            return qml.expval.PauliZ(0)
 
-        f = qm.QNode(circuit, self.dev1)
+        f = qml.QNode(circuit, self.dev1)
 
         for reused_param in thetas:
             for theta in thetas:
@@ -324,24 +324,24 @@ class BasicTest(BaseTest):
         "Test that QNode can take arrays as input arguments, and that they interact properly with autograd."
         self.logTestName()
 
-        @qm.qnode(self.dev1)
+        @qml.qnode(self.dev1)
         def circuit_n1s(dummy1, array, dummy2):
-            qm.RY(0.5 * array[0,1], 0)
-            qm.RY(-0.5 * array[1,1], 0)
-            return qm.expval.PauliX(0)  # returns a scalar
+            qml.RY(0.5 * array[0,1], 0)
+            qml.RY(-0.5 * array[1,1], 0)
+            return qml.expval.PauliX(0)  # returns a scalar
 
-        @qm.qnode(self.dev1)
+        @qml.qnode(self.dev1)
         def circuit_n1v(dummy1, array, dummy2):
-            qm.RY(0.5 * array[0,1], 0)
-            qm.RY(-0.5 * array[1,1], 0)
-            return qm.expval.PauliX(0),  # note the comma, returns a 1-vector
+            qml.RY(0.5 * array[0,1], 0)
+            qml.RY(-0.5 * array[1,1], 0)
+            return qml.expval.PauliX(0),  # note the comma, returns a 1-vector
 
-        @qm.qnode(self.dev2)
+        @qml.qnode(self.dev2)
         def circuit_nn(dummy1, array, dummy2):
-            qm.RY(0.5 * array[0,1], 0)
-            qm.RY(-0.5 * array[1,1], 0)
-            qm.RY(array[1,0], 1)
-            return qm.expval.PauliX(0), qm.expval.PauliX(1)  # returns a 2-vector
+            qml.RY(0.5 * array[0,1], 0)
+            qml.RY(-0.5 * array[1,1], 0)
+            qml.RY(array[1,0], 1)
+            return qml.expval.PauliX(0), qml.expval.PauliX(1)  # returns a 2-vector
 
         args = (0.46, np.array([[2., 3., 0.3], [7., 4., 2.1]]), -0.13)
         grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
@@ -365,10 +365,10 @@ class BasicTest(BaseTest):
         a, b, c = 0.5, 0.54, 0.3
 
         def ansatz(x, y, z):
-            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
-            qm.Rot(x, y, z, 0)
-            qm.CNOT([0, 1])
-            return qm.expval.PauliZ(0), qm.expval.PauliY(1)
+            qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+            qml.Rot(x, y, z, 0)
+            qml.CNOT([0, 1])
+            return qml.expval.PauliZ(0), qml.expval.PauliY(1)
 
         def circuit1(x, y, z):
             return ansatz(x, y, z)
@@ -379,11 +379,11 @@ class BasicTest(BaseTest):
         def circuit3(array):
             return ansatz(*array)
 
-        circuit1 = qm.QNode(circuit1, self.dev2)
+        circuit1 = qml.QNode(circuit1, self.dev2)
         positional_res = circuit1(a, b, c)
         positional_grad = circuit1.jacobian([a, b, c])
 
-        circuit2 = qm.QNode(circuit2, self.dev2)
+        circuit2 = qml.QNode(circuit2, self.dev2)
         array_res = circuit2(a, np.array([b, c]))
         array_grad = circuit2.jacobian([a, np.array([b, c])])
 
@@ -393,7 +393,7 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
         self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
 
-        circuit3 = qm.QNode(circuit3, self.dev2)
+        circuit3 = qml.QNode(circuit3, self.dev2)
         array_res = circuit3(np.array([a, b, c]))
         array_grad = circuit3.jacobian([np.array([a, b, c])])
 
@@ -410,14 +410,14 @@ class BasicTest(BaseTest):
 
         a, b, c = 0.5, 0.54, 0.3
 
-        @qm.qnode(self.dev2)
+        @qml.qnode(self.dev2)
         def circuit(x, y, z):
-            qm.RX(x, [0])
-            qm.RZ(y, [0])
-            qm.CNOT([0, 1])
-            qm.RY(y, [0])
-            qm.RX(z, [0])
-            return qm.expval.PauliY(0), qm.expval.PauliZ(1)
+            qml.RX(x, [0])
+            qml.RZ(y, [0])
+            qml.CNOT([0, 1])
+            qml.RY(y, [0])
+            qml.RX(z, [0])
+            return qml.expval.PauliY(0), qml.expval.PauliZ(1)
 
         res = circuit(a, b, c)
 
@@ -435,11 +435,11 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None, y=None):
-            qm.RX(x, [0])
-            qm.RX(y, [1])
-            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
+            qml.RX(x, [0])
+            qml.RX(y, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
-        circuit = qm.QNode(circuit, self.dev2)
+        circuit = qml.QNode(circuit, self.dev2)
 
         c = circuit(1., x=np.pi, y=np.pi)
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
@@ -450,11 +450,11 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None):
-            qm.RX(x[0], [0])
-            qm.RX(x[1], [1])
-            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
+            qml.RX(x[0], [0])
+            qml.RX(x[1], [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
-        circuit = qm.QNode(circuit, self.dev2)
+        circuit = qml.QNode(circuit, self.dev2)
 
         c = circuit(1., x=[np.pi, np.pi])
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
@@ -465,10 +465,10 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None):
-            qm.RX(x, [0])
-            return qm.expval.PauliZ(0)
+            qml.RX(x, [0])
+            return qml.expval.PauliZ(0)
 
-        circuit = qm.QNode(circuit, self.dev1)
+        circuit = qml.QNode(circuit, self.dev1)
 
         c = circuit(1., x=np.pi)
         self.assertAlmostEqual(c, -1., delta=self.tol)
@@ -479,11 +479,11 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None):
-            qm.RX(w, [0])
-            qm.RX(x, [1])
-            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
+            qml.RX(w, [0])
+            qml.RX(x, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
-        circuit = qm.QNode(circuit, self.dev2)
+        circuit = qml.QNode(circuit, self.dev2)
 
         c1 = circuit(0.1, x=0.)
         c2 = circuit(0.1, x=np.pi)
@@ -495,11 +495,11 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None):
-            qm.RX(w, [0])
-            qm.RX(x, [1])
-            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
+            qml.RX(w, [0])
+            qml.RX(x, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
-        circuit = qm.QNode(circuit, self.dev2)
+        circuit = qml.QNode(circuit, self.dev2)
 
         def classnode(w, x=None):
             return circuit(w, x=x)
@@ -512,10 +512,10 @@ class GradientTest(BaseTest):
     """Qnode gradient tests.
     """
     def setUp(self):
-        self.dev1 = qm.device('default.qubit', wires=1)
-        self.dev2 = qm.device('default.qubit', wires=2)
-        self.dev3 = qm.device('default.qubit', wires=3)
-        self.dev8 = qm.device('default.qubit', wires=8)
+        self.dev1 = qml.device('default.qubit', wires=1)
+        self.dev2 = qml.device('default.qubit', wires=2)
+        self.dev3 = qml.device('default.qubit', wires=3)
+        self.dev8 = qml.device('default.qubit', wires=8)
 
 
     def test_multidim_array(self):
@@ -525,16 +525,16 @@ class GradientTest(BaseTest):
         for s in b_shapes:
             multidim_array = np.reshape(b, s)
             def circuit(w):
-                qm.RX(w[np.unravel_index(0,s)], 0) # b[0]
-                qm.RX(w[np.unravel_index(1,s)], 1) # b[1]
-                qm.RX(w[np.unravel_index(2,s)], 2) # ...
-                qm.RX(w[np.unravel_index(3,s)], 3)
-                qm.RX(w[np.unravel_index(4,s)], 4)
-                qm.RX(w[np.unravel_index(5,s)], 5)
-                qm.RX(w[np.unravel_index(6,s)], 6)
-                qm.RX(w[np.unravel_index(7,s)], 7)
-                return tuple(qm.expval.PauliZ(idx) for idx in range(len(b)))
-            circuit = qm.QNode(circuit, self.dev8)
+                qml.RX(w[np.unravel_index(0,s)], 0) # b[0]
+                qml.RX(w[np.unravel_index(1,s)], 1) # b[1]
+                qml.RX(w[np.unravel_index(2,s)], 2) # ...
+                qml.RX(w[np.unravel_index(3,s)], 3)
+                qml.RX(w[np.unravel_index(4,s)], 4)
+                qml.RX(w[np.unravel_index(5,s)], 5)
+                qml.RX(w[np.unravel_index(6,s)], 6)
+                qml.RX(w[np.unravel_index(7,s)], 7)
+                return tuple(qml.expval.PauliZ(idx) for idx in range(len(b)))
+            circuit = qml.QNode(circuit, self.dev8)
 
             # circuit evaluations
             circuit_output = circuit(multidim_array)
@@ -554,42 +554,42 @@ class GradientTest(BaseTest):
 
         par = [0.4, -2.3]
         def check_methods(qf, d):
-            q = qm.QNode(qf, self.dev2)
+            q = qml.QNode(qf, self.dev2)
             q.construct(par)  # NOTE: the default plugin is a discrete (qubit) simulator, it cannot execute CV gates, but the QNode can be constructed
             #print(q.grad_method_for_par)
             self.assertTrue(q.grad_method_for_par == d)
 
         def qf(x, y):
-            qm.Displacement(x, 0, [0])
-            qm.CubicPhase(0.2, [0])
-            qm.Squeezing(0.3, y, [1])
-            qm.Rotation(1.3, [1])
-            #qm.Kerr(0.4, [0])  # nongaussian succeeding x but not y   TODO when QNode uses a DAG to describe the circuit, uncomment this line
-            return qm.expval.X(0), qm.expval.X(1)
+            qml.Displacement(x, 0, [0])
+            qml.CubicPhase(0.2, [0])
+            qml.Squeezing(0.3, y, [1])
+            qml.Rotation(1.3, [1])
+            #qml.Kerr(0.4, [0])  # nongaussian succeeding x but not y   TODO when QNode uses a DAG to describe the circuit, uncomment this line
+            return qml.expval.X(0), qml.expval.X(1)
         check_methods(qf, {0:'F', 1:'A'})
 
         def qf(x, y):
-            qm.Displacement(x, 0, [0])
-            qm.CubicPhase(0.2, [0])  # nongaussian succeeding x
-            qm.Squeezing(0.3, x, [1])  # x affects gates on both wires, y unused
-            qm.Rotation(1.3, [1])
-            return qm.expval.X(0), qm.expval.X(1)
+            qml.Displacement(x, 0, [0])
+            qml.CubicPhase(0.2, [0])  # nongaussian succeeding x
+            qml.Squeezing(0.3, x, [1])  # x affects gates on both wires, y unused
+            qml.Rotation(1.3, [1])
+            return qml.expval.X(0), qml.expval.X(1)
         check_methods(qf, {0:'F'})
 
         def qf(x, y):
-            qm.Displacement(x, 0, [0])
-            qm.Displacement(1.2, y, [0])
-            qm.Beamsplitter(0.2, 1.7, [0, 1])
-            qm.Rotation(1.9, [0])
-            qm.Kerr(0.3, [1])  # nongaussian succeeding both x and y due to the beamsplitter
-            return qm.expval.X(0), qm.expval.X(1)
+            qml.Displacement(x, 0, [0])
+            qml.Displacement(1.2, y, [0])
+            qml.Beamsplitter(0.2, 1.7, [0, 1])
+            qml.Rotation(1.9, [0])
+            qml.Kerr(0.3, [1])  # nongaussian succeeding both x and y due to the beamsplitter
+            return qml.expval.X(0), qml.expval.X(1)
         check_methods(qf, {0:'F', 1:'F'})
 
         def qf(x, y):
-            qm.Kerr(y, [1])
-            qm.Displacement(x, 0, [0])
-            qm.Beamsplitter(0.2, 1.7, [0, 1])
-            return qm.expval.X(0), qm.expval.X(1)
+            qml.Kerr(y, [1])
+            qml.Displacement(x, 0, [0])
+            qml.Beamsplitter(0.2, 1.7, [0, 1])
+            return qml.expval.X(0), qml.expval.X(1)
         check_methods(qf, {0:'A', 1:'F'})
 
 
@@ -599,12 +599,12 @@ class GradientTest(BaseTest):
         par = [0.5, 0.3, -0.7]
 
         def qf(x, y, z):
-            qm.RX(0.4, [0])
-            qm.Rot(x, y, z, [0])
-            qm.RY(-0.2, [0])
-            return qm.expval.PauliZ(0)
+            qml.RX(0.4, [0])
+            qml.Rot(x, y, z, [0])
+            qml.RY(-0.2, [0])
+            return qml.expval.PauliZ(0)
 
-        q = qm.QNode(qf, self.dev1)
+        q = qml.QNode(qf, self.dev1)
         value = q(*par)
         grad_A = q.jacobian(par, method='A')
         grad_F = q.jacobian(par, method='F')
@@ -624,11 +624,11 @@ class GradientTest(BaseTest):
         par = [0.8, 1.3]
 
         def qf(x, y):
-            qm.RX(np.pi/4, [0])
-            qm.Rot(y, x, 2*x, [0])
-            return qm.expval.PauliX(0)
+            qml.RX(np.pi/4, [0])
+            qml.Rot(y, x, 2*x, [0])
+            return qml.expval.PauliX(0)
 
-        q = qm.QNode(qf, self.dev1)
+        q = qml.QNode(qf, self.dev1)
         grad_A = q.jacobian(par, method='A')
         grad_F = q.jacobian(par, method='F')
 
@@ -643,11 +643,11 @@ class GradientTest(BaseTest):
         par = [0.8, 1.3]
 
         def qf(x, y):
-            qm.RX(x, [0])
-            qm.RY(x, [0])
-            return qm.expval.Hermitian(np.diag([y, 1]), 0)
+            qml.RX(x, [0])
+            qml.RY(x, [0])
+            return qml.expval.Hermitian(np.diag([y, 1]), 0)
 
-        q = qm.QNode(qf, self.dev1)
+        q = qml.QNode(qf, self.dev1)
         grad = q.jacobian(par)
         grad_F = q.jacobian(par, method='F')
 
@@ -664,10 +664,10 @@ class GradientTest(BaseTest):
         a, b, c = 0.5, 0.54, 0.3
 
         def ansatz(x, y, z):
-            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
-            qm.Rot(x, y, z, 0)
-            qm.CNOT([0, 1])
-            return qm.expval.PauliZ(0)
+            qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+            qml.Rot(x, y, z, 0)
+            qml.CNOT([0, 1])
+            return qml.expval.PauliZ(0)
 
         def circuit1(x, y, z):
             return ansatz(x, y, z)
@@ -678,17 +678,17 @@ class GradientTest(BaseTest):
         def circuit3(array):
             return ansatz(*array)
 
-        circuit1 = qm.QNode(circuit1, self.dev2)
+        circuit1 = qml.QNode(circuit1, self.dev2)
         grad1 = autograd.grad(circuit1, argnum=[0, 1, 2])
 
         positional_grad = circuit1.jacobian([a, b, c])
         positional_autograd = grad1(a, b, c)
         self.assertAllAlmostEqual(positional_grad, positional_autograd, delta=self.tol)
 
-        circuit2 = qm.QNode(circuit2, self.dev2)
+        circuit2 = qml.QNode(circuit2, self.dev2)
         grad2 = autograd.grad(circuit2, argnum=[0, 1])
 
-        circuit3 = qm.QNode(circuit3, self.dev2)
+        circuit3 = qml.QNode(circuit3, self.dev2)
         grad3 = autograd.grad(circuit3)
 
         array_grad = circuit3.jacobian([np.array([a, b, c])])
@@ -717,12 +717,12 @@ class GradientTest(BaseTest):
         a, b, c = 0.5, 0.54, 0.3
 
         def circuit(x, y, z):
-            qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
-            qm.Rot(x, y, z, 0)
-            qm.CNOT([0, 1])
-            return qm.expval.PauliZ(0), qm.expval.PauliY(1)
+            qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+            qml.Rot(x, y, z, 0)
+            qml.CNOT([0, 1])
+            return qml.expval.PauliZ(0), qml.expval.PauliY(1)
 
-        circuit = qm.QNode(circuit, self.dev2)
+        circuit = qml.QNode(circuit, self.dev2)
 
         # compare our manual Jacobian computation to theoretical result
         # Note: circuit.jacobian actually returns a full jacobian in this case
@@ -746,12 +746,12 @@ class GradientTest(BaseTest):
         a, b, c = 0.5, 0.54, 0.3
 
         def circuit(weights):
-           qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
-           qm.Rot(weights[0], weights[1], weights[2], 0)
-           qm.CNOT([0, 1])
-           return qm.expval.PauliZ(0), qm.expval.PauliY(1)
+           qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+           qml.Rot(weights[0], weights[1], weights[2], 0)
+           qml.CNOT([0, 1])
+           return qml.expval.PauliZ(0), qml.expval.PauliY(1)
 
-        circuit = qm.QNode(circuit, self.dev2)
+        circuit = qml.QNode(circuit, self.dev2)
 
         res = circuit.jacobian([np.array([a, b, c])])
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
@@ -768,20 +768,20 @@ class GradientTest(BaseTest):
         a, b = 0.5, 0.54
 
         def circuit1(weights, x=0.3):
-           qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
-           qm.Rot(weights[0], weights[1], x, 0)
-           qm.CNOT([0, 1])
-           return qm.expval.PauliZ(0), qm.expval.PauliY(1)
+           qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+           qml.Rot(weights[0], weights[1], x, 0)
+           qml.CNOT([0, 1])
+           return qml.expval.PauliZ(0), qml.expval.PauliY(1)
 
-        circuit1 = qm.QNode(circuit1, self.dev2)
+        circuit1 = qml.QNode(circuit1, self.dev2)
 
         def circuit2(weights):
-           qm.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
-           qm.Rot(weights[0], weights[1], 0.3, 0)
-           qm.CNOT([0, 1])
-           return qm.expval.PauliZ(0), qm.expval.PauliY(1)
+           qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
+           qml.Rot(weights[0], weights[1], 0.3, 0)
+           qml.CNOT([0, 1])
+           return qml.expval.PauliZ(0), qml.expval.PauliY(1)
 
-        circuit2 = qm.QNode(circuit2, self.dev2)
+        circuit2 = qml.QNode(circuit2, self.dev2)
 
         res1 = circuit1.jacobian([np.array([a, b])])
         res2 = circuit2.jacobian([np.array([a, b])])
@@ -795,12 +795,12 @@ class GradientTest(BaseTest):
 
         ## all positional args used
         def circuit1(a, b, c):
-            qm.RX(a, 0)
-            qm.RX(b, 1)
-            qm.RX(c, 2)
-            return tuple(qm.expval.PauliZ(idx) for idx in range(3))
+            qml.RX(a, 0)
+            qml.RX(b, 1)
+            qml.RX(c, 2)
+            return tuple(qml.expval.PauliZ(idx) for idx in range(3))
 
-        circuit1 = qm.QNode(circuit1, self.dev3)
+        circuit1 = qml.QNode(circuit1, self.dev3)
 
         vals = np.array([np.pi, np.pi / 2, np.pi / 3])
         circuit_output = circuit1(*vals)
@@ -814,10 +814,10 @@ class GradientTest(BaseTest):
 
         ## only first positional arg used
         def circuit2(a, b):
-            qm.RX(a, 0)
-            return qm.expval.PauliZ(0)
+            qml.RX(a, 0)
+            return qml.expval.PauliZ(0)
 
-        circuit2 = qm.QNode(circuit2, self.dev2)
+        circuit2 = qml.QNode(circuit2, self.dev2)
 
         a = 0.7418
         b = -5.
@@ -832,10 +832,10 @@ class GradientTest(BaseTest):
 
         ## only second positional arg used
         def circuit3(a, b):
-            qm.RX(b, 0)
-            return qm.expval.PauliZ(0)
+            qml.RX(b, 0)
+            return qml.expval.PauliZ(0)
 
-        circuit3 = qm.QNode(circuit3, self.dev2)
+        circuit3 = qml.QNode(circuit3, self.dev2)
 
         a = 0.7418
         b = -5.
@@ -850,11 +850,11 @@ class GradientTest(BaseTest):
 
         ## second and third positional arguments used
         def circuit4(a, b, c):
-            qm.RX(b, 0)
-            qm.RX(c, 1)
-            return qm.expval.PauliZ(0), qm.expval.PauliZ(1)
+            qml.RX(b, 0)
+            qml.RX(c, 1)
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
-        circuit4 = qm.QNode(circuit4, self.dev2)
+        circuit4 = qml.QNode(circuit4, self.dev2)
 
         a = 0.7418
         b = -5.
@@ -875,12 +875,12 @@ class GradientTest(BaseTest):
         self.logTestName()
 
         def circuit(a, b):
-            qm.RX(a[0], 0)
-            qm.RX(a[1], 1)
-            qm.RX(b[2, 1], 2)
-            return qm.expval.PauliZ(0), qm.expval.PauliZ(1), qm.expval.PauliZ(2)
+            qml.RX(a[0], 0)
+            qml.RX(a[1], 1)
+            qml.RX(b[2, 1], 2)
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1), qml.expval.PauliZ(2)
 
-        circuit = qm.QNode(circuit, self.dev3)
+        circuit = qml.QNode(circuit, self.dev3)
 
         a = np.array([-np.sqrt(2), -0.54])
         b = np.array([np.pi / 7] * 6).reshape([3, 2])
@@ -896,7 +896,7 @@ class GradientTest(BaseTest):
         self.assertAllAlmostEqual(circuit_jacobian, expected_jacobian, delta=self.tol)
 
 if __name__ == '__main__':
-    print('Testing OpenQML version ' + qm.version() + ', QNode class.')
+    print('Testing PennyLane version ' + qml.version() + ', QNode class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest,GradientTest):

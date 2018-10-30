@@ -4,19 +4,19 @@ This "hello world" example for PennyLane optimizes two rotation angles
 to flip a qubit from state |0> to state |1>.
 """
 
-import openqml as qm
-import numpy as np
-from openqml.optimize import GradientDescentOptimizer
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.optimize import GradientDescentOptimizer
 
-dev = qm.device('default.qubit', wires=1)
+dev = qml.device('default.qubit', wires=1)
 
 
 @qm.qnode(dev)
 def circuit(variables):
     """QNode"""
-    qm.RX(variables[0], [0])
-    qm.RY(variables[1], [0])
-    return qm.expval.PauliZ(0)
+    qml.RX(variables[0], [0])
+    qml.RY(variables[1], [0])
+    return qml.expval.PauliZ(0)
 
 
 def objective(variables):

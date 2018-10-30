@@ -4,24 +4,22 @@ This "hello world" example for PennyLane optimizes a displacement
 gate to shift the x-quadrature of a Gaussian state to a value of 0.5.
 """
 
-import openqml as qm
-import numpy as np
-from openqml import numpy as onp
-from openqml.optimize import GradientDescentOptimizer
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.optimize import GradientDescentOptimizer
 
-dev = qm.device('default.gaussian', wires=1)
+dev = qml.device('default.gaussian', wires=1)
 
-
-@qm.qnode(dev)
+@qml.qnode(dev)
 def circuit(variables):
 
-    qm.Displacement(variables[0], variables[1], [0])
+    qml.Displacement(variables[0], variables[1], [0])
 
-    return qm.expval.X(0)
+    return qml.expval.X(0)
 
 
 def objective(variables):
-    return onp.abs(circuit(variables) - 0.5)**2
+    return np.abs(circuit(variables) - 0.5)**2
 
 
 o = GradientDescentOptimizer(0.1)
