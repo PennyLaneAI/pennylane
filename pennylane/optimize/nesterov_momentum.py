@@ -13,9 +13,7 @@
 # limitations under the License.
 """Nesterov momentum optimizer"""
 import autograd
-
-from openqml.utils import _flatten, _unflatten
-
+from pennylane.utils import _flatten, unflatten
 from .momentum import MomentumOptimizer
 
 
@@ -58,7 +56,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         else:
             shifted_x_flat = [e - self.momentum * a for a, e in zip(self.accumulation, x_flat)]
 
-        shifted_x = _unflatten(shifted_x_flat, x)[0]
+        shifted_x = unflatten(shifted_x_flat, x)
 
         if grad_fn is not None:
             g = grad_fn(shifted_x)  # just call the supplied grad function

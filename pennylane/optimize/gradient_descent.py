@@ -14,8 +14,7 @@
 """Gradient descent optimizer"""
 
 import autograd
-
-from openqml.utils import _flatten, _unflatten
+from pennylane.utils import _flatten, unflatten
 
 
 class GradientDescentOptimizer(object):
@@ -94,4 +93,4 @@ class GradientDescentOptimizer(object):
 
         x_new_flat = [e - self.stepsize * g for g, e in zip(grad_flat, x_flat)]
 
-        return _unflatten(x_new_flat, x)[0]
+        return unflatten(x_new_flat, x)

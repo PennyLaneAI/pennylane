@@ -14,9 +14,7 @@
 """Adagrad optimizer"""
 
 import autograd.numpy as np
-
-from openqml.utils import _flatten, _unflatten
-
+from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -65,7 +63,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
 
         x_new_flat = [e - (self.stepsize / np.sqrt(a + 1e-8)) * g for a, g, e in zip(self.accumulation, grad_flat, x_flat)]
 
-        return _unflatten(x_new_flat, x)[0]
+        return unflatten(x_new_flat, x)
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
