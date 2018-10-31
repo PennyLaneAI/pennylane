@@ -7,7 +7,7 @@ Basic tutorial: qubit rotation
 ==============================
 
 To see how PennyLane allows the easy construction and optimization of quantum functions, let's
-consider the simple case of **qubit rotation** - the PennyLane version of the 'Hello, world!'
+consider the simple case of **qubit rotation** — the PennyLane version of the 'Hello, world!'
 example.
 
 The task at hand is to optimize two rotation gates in order to flip a single
@@ -122,7 +122,7 @@ In fact, even a hybrid computation containing both qubit and CV quantum nodes is
 see the :ref:`hybrid computation example <hybrid_computation_example>` in the next tutorial for more details.
 
 For this tutorial, we are using the qubit model, so let's initialize the ``'default.qubit'`` device
-provided by PennyLane -- a simple pure-state qubit simulator.
+provided by PennyLane — a simple pure-state qubit simulator.
 
 .. code-block:: python
 
@@ -150,7 +150,7 @@ Now that we have initialized our device, we can begin to construct a **quantum n
 .. tip::
 
    *QNodes can be constructed via the* :class:`pennylane.QNode <pennylane.qnode.QNode>` *class, or
-   by using the provided* :ref:`qnode decorator <qnode_decorator>`.
+   by using the provided* :mod:`qnode decorator <pennylane.decorator>`.
 
 
 First, we need to define the quantum function that will be evaluated in the QNode:
@@ -191,7 +191,7 @@ be a valid quantum function, there are some important restrictions:
           for more details.
 
 Once we have written the quantum function, we convert it into a :class:`~.QNode` running on device ``dev1`` by
-applying the :ref:`qnode decorator <qnode_decorator>` **directly above** the function definition:
+applying the :mod:`qnode decorator <pennylane.decorator>` **directly above** the function definition:
 
 
 .. code-block:: python
@@ -325,7 +325,7 @@ Finally, we use an optimizer to update the circuit parameters for 100 steps. We 
 
     print('Optimized rotation angles: {}'.format(params))
 
-Try this yourself -- the optimization should converge after approximately 40 steps, giving the following numerically optimum values of
+Try this yourself — the optimization should converge after approximately 40 steps, giving the following numerically optimum values of
 :math:`\phi_1` and :math:`\phi_2`:
 
 .. code-block:: python
