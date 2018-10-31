@@ -28,7 +28,7 @@ In the qubit rotation example, we wish to implement the following quantum circui
 
 :html:`<br>`
 
-Breaking this down, step-by-step, we first start with a qubit in the ground state
+Breaking this down step-by-step, we first start with a qubit in the ground state
 :math:`|0\rangle = \begin{bmatrix}1 & 0 \end{bmatrix}^T`,
 and rotate the qubit around the x-axis by applying the gate
 
@@ -94,7 +94,7 @@ of NumPy provided by PennyLane.
     the power of NumPy with PennyLane:
 
     * continue to use the classical NumPy functions and arrays you know and love
-    * combine quantum functions (as quantum nodes) and classical functions (provided by NumPy)
+    * combine quantum functions (evaluated on quantum hardware/simulators) and classical functions (provided by NumPy)
     * allow PennyLane to automatically calculate gradients of both classical and quantum functions
 
 
@@ -106,7 +106,7 @@ Before we can construct our quantum node, we need to initialize a **device**.
 .. admonition:: Definition
     :class: defn
 
-    Any computational object that can apply quantum operations, and return an expectation value.
+    Any computational object that can apply quantum operations, and return an expectation value is called a quantum **device**.
 
     In PennyLane, a device could be a hardware device (such as the IBM QX4, via the PennyLane-PQ plugin),
     or a software simulator (such as Strawberry Fields, via the PennyLane-SF plugin).
@@ -122,7 +122,7 @@ In fact, even a hybrid computation containing both qubit and CV quantum nodes is
 see the :ref:`hybrid computation example <hybrid_computation_example>` in the next tutorial for more details.
 
 For this tutorial, we are using the qubit model, so let's initialize the ``'default.qubit'`` device
-provided by PennyLane - a simple pure-state qubit simulator.
+provided by PennyLane -- a simple pure-state qubit simulator.
 
 .. code-block:: python
 
@@ -138,7 +138,7 @@ Here, as we only require a single qubit for this example, we set ``wires=1``.
 Constructing the QNode
 ----------------------
 
-Now that we have initialized our device, we can begin to construct our quantum node (or QNode).
+Now that we have initialized our device, we can begin to construct a **quantum node** (or QNode).
 
 
 .. admonition:: Definition
@@ -150,12 +150,10 @@ Now that we have initialized our device, we can begin to construct our quantum n
 .. tip::
 
    *QNodes can be constructed via the* :class:`pennylane.QNode <pennylane.qnode.QNode>` *class, or
-   by using the* :func:`pennylane.qnode` *decorator.*
+   by using the provided* :ref:`qnode decorator <qnode_decorator>`.
 
 
-First, we need to define the quantum function that will be evaluated in the QNode.
-
-We do this as follows:
+First, we need to define the quantum function that will be evaluated in the QNode:
 
 .. code-block:: python
 
@@ -174,7 +172,7 @@ be a valid quantum function, there are some important restrictions:
 
 * **Quantum functions must only contain quantum operations, one operation per line, in the order in which they are to be applied.**
 
-  In addition, we must always specify the subsystem the operation applies to, by passing the ``wires`` keyword argument;
+  In addition, we must always specify the subsystem the operation applies to, by passing the ``wires`` argument;
   this may be a list or an integer, depending on how many wires the operation acts on.
 
   For a full list of quantum operations, see :mod:`supported operations <pennylane.ops>`.
@@ -193,7 +191,7 @@ be a valid quantum function, there are some important restrictions:
           for more details.
 
 Once we have written the quantum function, we convert it into a :class:`~.QNode` running on device ``dev1`` by
-applying the :func:`pennylane.qnode` decorator **directly above** the function definition:
+applying the :ref:`qnode decorator <qnode_decorator>` **directly above** the function definition:
 
 
 .. code-block:: python
@@ -223,32 +221,13 @@ We can differentiate by using the built-in :func:`~.pennylane.grad` function. Th
 representing the gradient (i.e., the vector of partial derivatives) of ``circuit``.
 The gradient can be evaluated in the same way as the original function:
 
->>> dcircuit = qml.grad(circuit)
+>>> dcircuit = qml.grad(circuit, argnum=0)
+
+The function :func:`~.pennylane.grad` itself **returns a function**, representing the derivative of the QNode with respect to the argument specified in ``argnum``. In this case, the function ``circuit`` takes one argument (``params``), so we specify ``argnum=0``. Because the argument has two elements, the returned gradient is two-dimensional.
+We can then evaluate this gradient function at any point in the parameter space.
+
 >>> dcircuit([0.54, 0.12])
-array([-0.510438652516502, -0.10267819945693203])
-
-Note that :func:`~.pennylane.grad` **returns a function** representing the derivative of the QNode with respect to each parameter.
-We then call this function at a particular point in the parameter space.
-
-.. todo::
-
-    * Clarify more how ``argnum`` works and what the default behaviour of ``grad`` is.
-
-      - At the moment, it matches ``autograd.grad()``, in that, by default, ``argnum=0``.
-
-        Should we change this such that ``argnum=range(args)`` by default?
-
-      - All optimizers in apply ``autograd.grad()`` to the cost/objective function. We should
-        change this to use ``pennylane.grad``, so that it uses the same defaults in PennyLane.
-
-        Potentially we should also let you specify ``argnum`` for the optimizers.
-
-    * Need to also include a tutorial showing vector-valued QNodes.
-
-      In this case, the user must use ``autograd.jacobian``, as ``autograd.grad`` will raise an exception.
-
-      - Todo: should we also have ``pennylane.jacobian``? Or perhaps ``pennylane.grad`` should return the gradient *or*
-        the Jacobian depending on context?
+[-0.510438652516502, -0.10267819945693203]
 
 .. note::
 
@@ -264,8 +243,7 @@ We then call this function at a particular point in the parameter space.
             qml.RY(phi2, wires=0)
             return qml.expval.PauliZ(0)
 
-    When we calculate the gradient, we can use the optional ``argnum`` keyword argument to specify that we would like to return the
-    gradient with respect to both arguments zero (``phi1``) and one (``phi2``):
+    When we calculate the gradient for such a function, the usage of ``argnum`` will be slightly different. In this case, ``argnum=0`` will return the gradient with respect to only the first parameter (``phi1``), and ``argnum=1`` will give the gradient for ``phi2``. To get the gradient with respect to both parameters, we can use ``argnum=[0,1]``:
 
     >>> dcircuit = qml.grad(circuit2, argnum=[0, 1])
     >>> dcircuit(0.54, 0.12)
@@ -281,7 +259,7 @@ Optimization
 .. admonition:: Definition
     :class: defn
 
-    PennyLane provides a collection of gradient-descent-based optimizers. These optimizers accept a cost function and initial parameters,
+    PennyLane provides a collection of optimizers based on gradient descent. These optimizers accept a cost function and initial parameters,
     and utilize PennyLane's automatic differentiation to perform gradient descent.
 
 .. tip::
@@ -307,10 +285,10 @@ rotation in the Bloch sphere:
 
 
 To do so, we need to define a **cost** function. By *minimizing* the cost function, the optimizer will determine the values of the
-circuit parameters that produces the desired outcome.
+circuit parameters that produce the desired outcome.
 
 In this case, our desired outcome is a Pauli-Z expectation value of :math:`-1`. Since we know that the Pauli-Z expectation is bound
-between :math:`[-1, 1]`, we can define a cost that is trivially the output of the QNode:
+between :math:`[-1, 1]`, we can define our cost directly as the output of the QNode:
 
 .. code-block:: python
 
@@ -323,9 +301,9 @@ To begin our optimization, let's choose small initial values of :math:`\phi_1` a
 >>> cost(init_params)
 0.9998675058299387
 
-We can see that for these initial parameter values, the cost function is close to :math:`1`.
+We can see that, for these initial parameter values, the cost function is close to :math:`1`.
 
-Next, we use an optimizer to update the circuit parameters for 100 steps. We can use the built-in
+Finally, we use an optimizer to update the circuit parameters for 100 steps. We can use the built-in
 :class:`pennylane.optimize.GradientDescentOptimizer` class:
 
 .. code-block:: python
