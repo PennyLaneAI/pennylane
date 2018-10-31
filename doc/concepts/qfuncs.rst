@@ -67,7 +67,7 @@ Measurement of the position operator on each wire will then give the result
 
 .. math:: (\langle \hat{x_1} \rangle, \cdots, \langle \hat{x_N} \rangle ) = (x_1, \dots, x_N).
 
-Thus, the displacement gate -- combined with vacuum input and position measurements -- can be used to directly encode data into a photonic quantum computer. 
+Thus, the displacement gate — combined with vacuum input and position measurements — can be used to directly encode data into a photonic quantum computer.
 
 Parameterized function example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -32,7 +32,7 @@ To get PennyLane installed and running on your system, begin at the :ref:`downlo
 
 For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`photon redirection <photon_redirection>` hybrid quantum optimization tutorials. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
 
-Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid optimizations - these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
+Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid optimizations — these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
 
 Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided, for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
 
