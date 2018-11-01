@@ -1,29 +1,29 @@
 PennyLane
 #######
 
-.. image:: https://img.shields.io/travis/XanaduAI/strawberryfields/master.svg?style=for-the-badge
+.. image:: https://img.shields.io/travis/XanaduAI/pennylane/master.svg?style=for-the-badge
     :alt: Travis
-    :target: https://travis-ci.org/XanaduAI/strawberryfields
+    :target: https://travis-ci.org/XanaduAI/pennylane
 
-.. image:: https://img.shields.io/codecov/c/github/xanaduai/strawberryfields/master.svg?style=for-the-badge
+.. image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?style=for-the-badge
     :alt: Codecov coverage
-    :target: https://codecov.io/gh/XanaduAI/strawberryfields
+    :target: https://codecov.io/gh/XanaduAI/pennylane
 
 .. image:: https://img.shields.io/codacy/grade/bd14437d17494f16ada064d8026498dd.svg?style=for-the-badge
     :alt: Codacy grade
-    :target: https://app.codacy.com/app/XanaduAI/strawberryfields?utm_source=github.com&utm_medium=referral&utm_content=XanaduAI/strawberryfields&utm_campaign=badger
+    :target: https://app.codacy.com/app/XanaduAI/pennylane?utm_source=github.com&utm_medium=referral&utm_content=XanaduAI/pennylane&utm_campaign=badger
 
-.. image:: https://img.shields.io/readthedocs/strawberryfields.svg?style=for-the-badge
+.. image:: https://img.shields.io/readthedocs/pennylane.svg?style=for-the-badge
     :alt: Read the Docs
-    :target: https://strawberryfields.readthedocs.io
+    :target: https://pennylane.readthedocs.io
 
-.. image:: https://img.shields.io/pypi/v/StrawberryFields.svg?style=for-the-badge
+.. image:: https://img.shields.io/pypi/v/PennyLane.svg?style=for-the-badge
     :alt: PyPI
-    :target: https://pypi.org/project/StrawberryFields
+    :target: https://pypi.org/project/PennyLane
 
-.. image:: https://img.shields.io/pypi/pyversions/StrawberryFields.svg?style=for-the-badge
+.. image:: https://img.shields.io/pypi/pyversions/PennyLane.svg?style=for-the-badge
     :alt: PyPI - Python Version
-    :target: https://pypi.org/project/StrawberryFields
+    :target: https://pypi.org/project/PennyLane
 
 `PennyLane <https://pennylane.readthedocs.io>`_ is a full-stack Python library for quantum machine
 learning and automatic differentiation of hybrid quantum-classical computations.

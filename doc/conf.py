@@ -243,7 +243,7 @@ html_theme_options = {
     "project_nav_name": "PennyLane",
 
     # Set your Disqus short name to enable comments
-    # "disqus_comments_shortname": "strawberryfields-1",
+    # "disqus_comments_shortname": "pennylane-1",
 
     # Set you GA account ID to enable tracking
     # "google_analytics_account": "UA-116279123-2",
