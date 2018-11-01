@@ -15,9 +15,9 @@
 Utilities
 =========
 
-**Module name:** :mod:`openqml.utils`
+**Module name:** :mod:`pennylane.utils`
 
-.. currentmodule:: openqml.utils
+.. currentmodule:: pennylane.utils
 
 This module contains utilities and auxillary functions, which are shared
 across the PennyLane submodules.

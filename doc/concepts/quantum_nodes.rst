@@ -9,7 +9,7 @@ Quantum nodes
 Classical and quantum information
 =================================
 
-It is important to distinguish between classical and quantum forms of information. For our purposes, we will consider the value of a number stored within a conventional digital computer (say, a floating point binary representation of a real or complex number) as **classical information**. Many common functions -- like addition, subtraction, multiplication, :math:`\sin,\cos,\exp,` etc. -- can all be evaluated efficiently on a classical computer, e.g., using the NumPy library in Python. These functions map floating point numbers to floating point numbers. In other words, they are functions which process classical information. 
+It is important to distinguish between classical and quantum forms of information. For our purposes, we will consider the value of a number stored within a conventional digital computer (say, a floating point binary representation of a real or complex number) as **classical information**. Many common functions — like addition, subtraction, multiplication, :math:`\sin,\cos,\exp,` etc. — can all be evaluated efficiently on a classical computer, e.g., using the NumPy library in Python. These functions map floating point numbers to floating point numbers. In other words, they are functions which process classical information.
 
 On the other hand, **quantum information** will refer to the state of a complex-valued vector in a quantum Hilbert space. Gates in a quantum computer transform quantum states to quantum states, i.e., they process quantum information. 
 
@@ -31,7 +31,7 @@ Interfacing the classical and quantum worlds
 
 There are many schemes for inputting classical information into quantum systems, but these can often get quite complex. To connect between the classical and quantum worlds, PennyLane uses two straightforward methods: 
 
-1. **Gate parameters**: The gates used in a quantum circuit often have classical parameters associated with them. This classical information determines how a quantum state is transformed -- e.g., what angle we should rotate the quantum state by. Thus, gate arguments provide us a way to imprint classical data onto quantum states, converting classical information to quantum information [#]_.
+1. **Gate parameters**: The gates used in a quantum circuit often have classical parameters associated with them. This classical information determines how a quantum state is transformed — e.g., what angle we should rotate the quantum state by. Thus, gate arguments provide us a way to imprint classical data onto quantum states, converting classical information to quantum information [#]_.
 
 2. **Measurement of a quantum circuit**: Measurements convert quantum information (the state of a quantum system) into classical information (the measurement value). Measurements often have a distribution of outcomes, with the pattern becoming clear only after a sufficient number of measurements are taken. To simplify things, we will work with expectation values (i.e., averages) of measurement outcomes as our primary mechanism for obtaining classical information from quantum devices [#]_. 
 

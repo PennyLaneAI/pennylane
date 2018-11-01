@@ -13,7 +13,7 @@ Derivatives and gradients are ubiquitous throughout science and engineering. In 
 
 Generally speaking, automatic differentiation is the ability for a software library to compute the derivatives of arbitrary numerical code. If you write an algorithm to compute some function :math:`g(x)` (which may include mathematical expressions, but also control flow statements like :code:`if`, :code:`for`, etc.), then automatic differentiation provides an algorithm for :math:`\nabla g(x)` with the same degree of complexity as the original function.
 
-*Automatic* differentiation should be distinguished from other forms of differentiation. *Manual differentiation*, where an expression is differentiated by hand -- often on paper -- is extremely time-consuming and error-prone. In *numerical differentiation*, such as the finite-difference method familiar from high-school calculus, the derivative of a function is approximated by numerically evaluating the function at two infinitesimaly separated points. However, this method can sometimes be imprecise due to the constraints of classical floating-point arithmetic.
+*Automatic* differentiation should be distinguished from other forms of differentiation. *Manual differentiation*, where an expression is differentiated by hand — often on paper — is extremely time-consuming and error-prone. In *numerical differentiation*, such as the finite-difference method familiar from high-school calculus, the derivative of a function is approximated by numerically evaluating the function at two infinitesimaly separated points. However, this method can sometimes be imprecise due to the constraints of classical floating-point arithmetic.
 
 Computing gradients of quantum functions
 ----------------------------------------

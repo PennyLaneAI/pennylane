@@ -39,13 +39,13 @@ In photon redirection, we have the following simple quantum circuit:
 
 Breaking this down, step-by-step:
 
-1. **We start the computation with two subsystems or qumodes**. In PennyLane, we use the shorthand 'wires' to refer to subsystems,
+1. **We start the computation with two subsystems (or qumodes)**. In PennyLane, we use the shorthand 'wires' to refer to subsystems,
    whether they are qumodes, qubits, or any other kind of quantum register.
 
 2. **Prepare the state** :math:`\ket{1,0}`. That is, the first wire (wire 0) is prepared in a single photon state, while the second
    wire (wire 1) is prepared in the vacuum state.
 
-3. **Both wires are then incident on a beamsplitter**, with trainable parameters :math:`\theta` and :math:`\phi`.
+3. **Both wires are then incident on a beamsplitter**, with free parameters :math:`\theta` and :math:`\phi`.
    Here, we use the convention that the beamsplitter transmission amplitude is :math:`t=\cos\theta`, and the reflection amplitude is
    :math:`r=e^{i\phi}\sin\theta`. See :ref:`operations` for a full list of operation conventions.
 
@@ -53,11 +53,11 @@ Breaking this down, step-by-step:
 
    .. math:: \hat{n} = \ad\a
 
-   is the number operator, acting on the Fock basis number states such that :math:`\hat{n}\ket{n} = n\ket{n}`.
+   is the number operator, acting on the Fock basis number states, such that :math:`\hat{n}\ket{n} = n\ket{n}`.
 
 The aim of this tutorial is to optimize the beamsplitter parameters :math:`(\theta, \phi)` such that the expected photon number of
 the second wire is **maximized**. Since the beamsplitter is a passive optical element that preserves the total photon number, this
-corresponds to the output state :math:`\ket{0,1}` - the incident photon from the first wire has been 'redirected' to the second wire.
+corresponds to the output state :math:`\ket{0,1}` — the incident photon from the first wire has been 'redirected' to the second wire.
 This example has a very similar spirit to the previous :ref:`qubit rotation <qubit_rotation>` tutorial.
 
 .. _photon_redirection_calc:
@@ -114,7 +114,7 @@ As before, we import PennyLane, as well as the wrapped version of NumPy provided
     from pennylane import numpy as np
 
 Next, we create a device to run the quantum node. This is easy in PennyLane; as soon as the PennyLane-SF plugin is installed, the
-``'strawberryfields.fock'`` device can be loaded -- no additional commands or library imports required.
+``'strawberryfields.fock'`` device can be loaded — no additional commands or library imports required.
 
 .. code:: python
 
@@ -127,7 +127,7 @@ Compared to the default devices provided with PennyLane, the ``'strawberryfields
 
 .. note::
 
-    Devices provided by external plugins may require additional arguments and keyword arguments -- consult the plugin
+    Devices provided by external plugins may require additional arguments and keyword arguments — consult the plugin
     documentation for more details.
 
 
@@ -146,8 +146,8 @@ running on Strawberry Fields.
         qml.Beamsplitter(params[0], params[1], wires=[0, 1])
         return qml.expval.MeanPhoton(1)
 
-The ``'strawberryfields.fock'`` device supports all CV operations provided by PennyLane; see the following pages for a full list
-of :ref:`CV operations <cv_ops>` and :ref:`CV expectations <cv_expval>` in PennyLane.
+The ``'strawberryfields.fock'`` device supports all CV operations provided by PennyLane; see :ref:`CV operations <cv_ops>`
+and :ref:`CV expectations <cv_expval>`.
 
 
 Optimization
@@ -169,7 +169,7 @@ To begin our optimization, let's choose the following small initial values of :m
 -9.999666671111085e-05
 
 Here, we choose the values of :math:`\theta` and :math:`\phi` to be very close to zero; this results in :math:`B(\theta,\phi)\approx I`,
-and the output of the quantum circuit will be very close to :math:`\ket{1, 0}` - i.e., the circuit leaves the photon in the first mode.
+and the output of the quantum circuit will be very close to :math:`\ket{1, 0}` — i.e., the circuit leaves the photon in the first mode.
 
 .. note::
 
@@ -177,11 +177,11 @@ and the output of the quantum circuit will be very close to :math:`\ket{1, 0}` -
 
     At this point in the parameter space, :math:`\braket{\hat{n}_1} = 0`, and
     :math:`\frac{d}{d\theta}\braket{\hat{n}_1}|_{\theta=0}=2\sin\theta\cos\theta|_{\theta=0}=0`.
-    Since the gradient is zero at our initial parameter values, our optimization algorithm will never descend from the maximum.
+    Since the gradient is zero at those initial parameter values, the optimization algorithm would never descend from the maximum.
 
     This can also be verified directly using PennyLane:
 
-    >>> dcircuit = qml.grad(circuit)
+    >>> dphoton_redirection = qml.grad(photon_redirection, argnum=0)
     >>> dphoton_redirection([0., 0.])
     [0.0, 0.0]
 
@@ -206,7 +206,7 @@ Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit p
 
     print('Optimized rotation angles: {}'.format(params))
 
-Try this yourself -- the optimization should converge quickly, giving the following values of
+Try this yourself — the optimization should converge quickly, giving the following values of
 :math:`\theta` and :math:`\phi`:
 
 .. code-block:: python
@@ -214,7 +214,7 @@ Try this yourself -- the optimization should converge quickly, giving the follow
     Optimized rotation angles: [ 1.57079633  0.01      ]
 
 Comparing this to the :ref:`exact calculation <photon_redirection_calc>` above, this is close to the exact optimum value
-of :math:`\theta=\pi/2`, while the value of :math:`\phi` has not changed -- consistent with the fact that :math:`\braket{\hat{n}_1}`
+of :math:`\theta=\pi/2`, while the value of :math:`\phi` has not changed — consistent with the fact that :math:`\braket{\hat{n}_1}`
 is independent of :math:`\phi`.
 
 .. _hybrid_computation_example:
@@ -278,7 +278,7 @@ perform the following hybrid quantum-classical optimization:
 3. The outputs of both QNodes will then be fed into the classical node, returning the squared difference of the two
    quantum functions.
 
-4. Finally, the optimizer will calculate the gradient of the entire computation with respect to the trainable parameters
+4. Finally, the optimizer will calculate the gradient of the entire computation with respect to the free parameters
    :math:`\theta` and :math:`\phi`, and update their values.
 
 In essence, we are optimizing the photon-redirection circuit to return the **same expectation value** as the qubit-rotation
@@ -290,12 +290,12 @@ Below, we choose default values :math:`\phi_1=0.5`, :math:`\phi_2=0.1`:
 .. code-block:: python
 
     def cost(params, phi1=0.5, phi2=0.1):
-        """Returns the absolute difference squared between
+        """Returns the squared difference between
         the photon-redirection and qubit-rotation QNodes, for
         fixed values of the qubit rotation angles phi1 and phi2"""
         qubit_result = qubit_rotation(phi1, phi2)
         photon_result = photon_redirection(params)
-        return absolute_difference(qubit_result, photon_result)
+        return squared_difference(qubit_result, photon_result)
 
 Now, we use the built-in :class:`~.GradientDescentOptimizer` to perform the optimization for 100 steps. As before, we choose
 initial beamsplitter parameters of :math:`\theta=0.01`, :math:`\phi=0.01`.
