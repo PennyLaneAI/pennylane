@@ -51,6 +51,21 @@ class BasicTest(BaseTest):
                                      lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[1, 0])],
                                                          [np.exp(x[0, 0] / 3) * (1 - np.tanh(x[1, 0]) ** 2)]]),
                                      lambda x: np.array([[2 * x_[0]] for x_ in x])]
+        self.margs_fns = [lambda x,y: np.sin(x) + np.cos(y),
+                          lambda x,y: np.exp(x / 3) * np.tanh(y),
+                          lambda x,y: np.sum(x_ ** 2 for x_ in [x,y])]
+        self.grad_margs_funcs = [lambda x,y: (np.cos(x), -np.sin(y)),
+                                 lambda x,y: (np.exp(x / 3) / 3 * np.tanh(y),
+                                              np.exp(x / 3) * (1 - np.tanh(y) ** 2)),
+                                 lambda x,y: (2 * x, 2 * y)]
+        self.margs_mdim_fns = [lambda x,y: (np.sin(x), np.cos(y)),
+                               lambda x,y: (np.exp(x / 3) * np.tanh(y), np.sinh(x * y)),
+                               lambda x,y: (x ** 2 + y ** 2, x * y)]
+        self.grad_margs_mdim_funcs = [lambda x,y: np.diag([np.cos(x), -np.sin(y)]),
+                                      lambda x,y: np.array([[np.exp(x / 3) / 3 * np.tanh(y), np.exp(x / 3) * np.sech(y) ** 2],
+                                                            [np.cosh(x * y) * y, np.cosh(x * y) * x]]),
+                                      lambda x,y: np.array([[2 * x, 2 * y],
+                                                            [y, x]])]
 
     def test_gradient_univar(self):
         """Tests gradients of univariate unidimensional functions."""
@@ -59,10 +74,35 @@ class BasicTest(BaseTest):
         for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
             with self.subTest(i=name):
                 for x in x_vals:
-                    g = qml.grad(f)
+                    g = qml.grad(f, 0)
                     auto_grad = g(x)
                     correct_grad = gradf(x)
                     self.assertAlmostEqual(auto_grad, correct_grad, delta=self.tol)
+
+    def test_gradient_multiargs(self):
+        """Tests gradients of univariate functions with multiple arguments in signature."""
+        self.logTestName()
+
+        for gradf, f, name in zip(self.grad_margs_funcs, self.margs_fns, self.fnames):
+            with self.subTest(i=name):
+                for jdx in range(len(x_vals[:-1])):
+                    x = x_vals[jdx]
+                    y = x_vals[jdx + 1]
+                    # gradient wrt first argument
+                    gx = qml.grad(f, 0)
+                    auto_gradx = gx(x,y)
+                    correct_gradx = gradf(x,y)[0]
+                    self.assertAllAlmostEqual(auto_gradx, correct_gradx, delta=self.tol)
+                    # gradient wrt second argument
+                    gy = qml.grad(f, 1)
+                    auto_grady = gy(x,y)
+                    correct_grady = gradf(x,y)[1]
+                    self.assertAllAlmostEqual(auto_grady, correct_grady, delta=self.tol)
+                    # gradient wrt both arguments
+                    gxy = qml.grad(f, [0,1])
+                    auto_gradxy = gxy(x,y)
+                    correct_gradxy = gradf(x,y)
+                    self.assertAllAlmostEqual(auto_gradxy, correct_gradxy, delta=self.tol)
 
     def test_gradient_multivar(self):
         """Tests gradients of multivariate unidimensional functions."""
@@ -72,7 +112,7 @@ class BasicTest(BaseTest):
             with self.subTest(i=name):
                 for jdx in range(len(x_vals[:-1])):
                     x_vec = x_vals[jdx:jdx+2]
-                    g = qml.grad(f)
+                    g = qml.grad(f, 0)
                     auto_grad = g(x_vec)
                     correct_grad = gradf(x_vec)
                     self.assertAllAlmostEqual(auto_grad, correct_grad, delta=self.tol)
@@ -86,7 +126,7 @@ class BasicTest(BaseTest):
                 for jdx in range(len(x_vals[:-1])):
                     x_vec = x_vals[jdx:jdx+2]
                     x_vec_multidim = np.expand_dims(x_vec, axis=1)
-                    g = qml.grad(f)
+                    g = qml.grad(f, 0)
                     auto_grad = g(x_vec_multidim)
                     correct_grad = gradf(x_vec_multidim)
                     self.assertAllAlmostEqual(auto_grad, correct_grad, delta=self.tol)

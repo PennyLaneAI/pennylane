@@ -19,6 +19,8 @@ CV quantum operations
 
 .. currentmodule:: pennylane.ops.cv
 
+**Module name:** :mod:`pennylane.ops.cv`
+
 This section contains the available built-in continuous-variable
 quantum operations supported by PennyLane, as well as their conventions.
 

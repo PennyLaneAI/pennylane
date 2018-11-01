@@ -64,7 +64,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         self.t += 1
 
         grad_flat = list(_flatten(grad))
-        x_flat = list(_flatten(x))
+        x_flat = _flatten(x)
 
         # Update first moment
         if self.fm is None:

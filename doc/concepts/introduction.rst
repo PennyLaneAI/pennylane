@@ -70,11 +70,11 @@ We can thus **use the same quantum device** to compute both quantum functions an
 
 .. rst-class:: admonition see
 
-    See the main :ref:`autograd_quantum` page for more details.
+    See the main :ref:`quantum_nodes` page for more details.
 
-Quantum information is fragile -- especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations?
+Quantum information is fragile — especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations?
 
-This leads to the notion of a **quantum node**: a basic computational unit -- programmed on a quantum circuit -- which evaluates a qfunc. Only classical data can enter or exit a quantum node. 
+This leads to the notion of a **quantum node**: a basic computational unit — programmed on a quantum circuit — which evaluates a qfunc. Only classical data can enter or exit a quantum node.
 
 :html:`<br>`
 

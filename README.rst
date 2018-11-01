@@ -60,7 +60,7 @@ Getting started
 
 For getting started with PennyLane, check out our `qubit rotation <https://pennylane.readthedocs.io/en/latest/tutorials/qubit_rotation.html>`_, `photon redirection <https://pennylane.readthedocs.io/en/latest/tutorials/photon_redirection.html>`_, `quantum GAN <https://pennylane.readthedocs.io/en/latest/tutorials/quantum_gan.html>`_, and other machine learning tutorials.
 
-Our `documentation <https://pennylane.readthedocs.io>`_ is also a great starting point to familiarize yourself with the hybrid classical-quantum machine learning approach, and explore the available optimization tools provided by PennyLane. Play around with the numerous devices and plugins available for running your hybrid optimizations - these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
+Our `documentation <https://pennylane.readthedocs.io>`_ is also a great starting point to familiarize yourself with the hybrid classical-quantum machine learning approach, and explore the available optimization tools provided by PennyLane. Play around with the numerous devices and plugins available for running your hybrid optimizations — these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
 
 Finally, detailed documentation on the PennyLane API is provided, for full details on available quantum operations and expectations, and detailed guides on `how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_ PennyLane-compatible quantum device.
 
@@ -68,7 +68,7 @@ Finally, detailed documentation on the PennyLane API is provided, for full detai
 Contributing to PennyLane
 =================================
 
-We welcome contributions - simply fork the PennyLane repository, and then make a
+We welcome contributions — simply fork the PennyLane repository, and then make a
 `pull request <https://help.github.com/articles/about-pull-requests/>`_ containing your contribution.  All contributers to PennyLane will be listed as authors on the releases. All users who contribute significantly to the code (new plugins, new functionality, etc.) will be listed on the PennyLane arXiv paper.
 
 We also encourage bug reports, suggestions for new features and enhancements, and even links to cool projects or applications built on PennyLane.

@@ -3,7 +3,7 @@
 Overview of the developer API
 =============================
 
-Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins - :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
+Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
 
 .. note::
@@ -14,7 +14,7 @@ Writing your own PennyLane plugin, to allow an external quantum library to take 
 
     * Each plugin may provide one (or more) devices, that are accessible directly by PennyLane, as well as any additional private functions or classes.
 
-    Once installed, these devices can be loaded directly from PennyLane without any additional steps required by the user - however, depending on the scope of the plugin, you may wish for the user to import additional (custom) quantum operations and expectations.
+    Once installed, these devices can be loaded directly from PennyLane without any additional steps required by the user — however, depending on the scope of the plugin, you may wish for the user to import additional (custom) quantum operations and expectations.
 
 .. important::
 
@@ -69,7 +69,7 @@ There are also three private class attributes to be defined for your custom devi
 
 * :attr:`~.Device._expectation_map`: a dictionary mapping an PennyLane supported expectation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.expectations` and public method :meth:`~.Device.supported`.
 
-* :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user - this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
+* :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user — this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
 
 For example, a very basic operator map that supports only two gates might look like so:
 
@@ -112,7 +112,7 @@ In most cases, there are a minimum of two methods that need to be defined:
 
 However, additional flexibility is sometimes required for interfacing with more complicated frameworks. In such cases, the following (optional) methods may also be defined:
 
-* :meth:`~.Device.__init__`: by default, receives the ``short_name`` of the device, number of wires (``self.num_wires``), and number of shots ``self.shots``. You may overwrite this if you need to add additional options that the user must pass to the device on initialization - however, ensure that you call ``super().__init__(self.short_name, wires, shots)`` at some point here.
+* :meth:`~.Device.__init__`: by default, receives the ``short_name`` of the device, number of wires (``self.num_wires``), and number of shots ``self.shots``. You may overwrite this if you need to add additional options that the user must pass to the device on initialization — however, ensure that you call ``super().__init__(self.short_name, wires, shots)`` at some point here.
 
 * :meth:`~.Device.execution_context`: this returns a context manager that may be required for applying operations and measuring expectation values from the device.
 
@@ -124,7 +124,7 @@ However, additional flexibility is sometimes required for interfacing with more 
 
 * :meth:`~.Device.post_expval`: for any setup/code that must be executed after measuring observables.
 
-.. warning:: In advanced cases, the :meth:`~.Device.execute` method may be overwritten, to provide complete flexibility for handling device execution. However, this may have unintended side-effects and is not recommended - if possible, try implementing a suitable subset of the methods provided above.
+.. warning:: In advanced cases, the :meth:`~.Device.execute` method may be overwritten, to provide complete flexibility for handling device execution. However, this may have unintended side-effects and is not recommended — if possible, try implementing a suitable subset of the methods provided above.
 
 
 Installation
@@ -149,7 +149,7 @@ Testing
 
 All plugins should come with extensive unit tests, to ensure that the device supports the correct gates and observables, and is applying them correctly. For an example of a plugin test suite, see ``tests/test_default_qubit.py`` and ``tests/test_default_gaussian.py``.
 
-In general, as all supported operations have their gradient formula defined and tested by PennyLane, testing that your device calculates the correct gradients is not required - just that it *applies* and *measures* quantum operations and observables correctly.
+In general, as all supported operations have their gradient formula defined and tested by PennyLane, testing that your device calculates the correct gradients is not required — just that it *applies* and *measures* quantum operations and observables correctly.
 
 
 Supporting new operations

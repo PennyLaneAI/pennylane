@@ -49,10 +49,10 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
             array: NumPy array containing the gradient :math:`\nabla f(x^{(t)})`
         """
 
-        x_flat = list(_flatten(x))
+        x_flat = _flatten(x)
 
         if self.accumulation is None:
-            shifted_x_flat = x_flat
+            shifted_x_flat = list(x_flat)
         else:
             shifted_x_flat = [e - self.momentum * a for a, e in zip(self.accumulation, x_flat)]
 
