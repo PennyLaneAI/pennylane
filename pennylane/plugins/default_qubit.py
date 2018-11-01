@@ -52,7 +52,6 @@ Code details
 ~~~~~~~~~~~~
 """
 import logging as log
-import collections
 
 import numpy as np
 from scipy.linalg import expm, eigh
@@ -261,15 +260,15 @@ class DefaultQubit(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, gate_name, wires, par):
-        if gate_name == 'QubitStateVector':
+    def apply(self, op_name, wires, par):
+        if op_name == 'QubitStateVector':
             state = np.asarray(par[0], dtype=np.float64)
             if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             return
-        elif gate_name == 'BasisState':
+        elif op_name == 'BasisState':
             # get computational basis state number
             if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
                 raise ValueError("BasisState parameter must be an array of 0/1 integers.")
@@ -281,7 +280,7 @@ class DefaultQubit(Device):
             self._state[num] = 1.
             return
 
-        A = self._get_operator_matrix(gate_name, par)
+        A = self._get_operator_matrix(op_name, par)
 
         # apply unitary operations
         if len(wires) == 1:
@@ -308,6 +307,20 @@ class DefaultQubit(Device):
             ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
 
         return ev
+
+    def var(self, expectation, wires, par):
+        # variance value <psi|A^2|psi> - <psi|A|psi>
+        A = self._get_operator_matrix(expectation, par)
+
+        if A.shape != (2, 2):
+            raise ValueError('2x2 matrix required.')
+
+        A = self.expand_one(A, wires)
+        expectation = np.vdot(self._state, A @ self._state)
+        expectationSq = np.vdot(self._state, (A @ A) @ self._state)
+
+        variance = expectationSq - expectation**2
+        return variance.real
 
     def _get_operator_matrix(self, op_name, par):
         """Get the operator matrix for a given operation or expectation.

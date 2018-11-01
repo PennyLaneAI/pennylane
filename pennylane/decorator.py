@@ -107,5 +107,15 @@ def qnode(device):
         def wrapper(*args, **kwargs):
             """Wrapper function"""
             return qnode(*args, **kwargs)
+
+        # bind the jacobian method to the wrapped function
+        wrapper.jacobian = qnode.jacobian
+
+        # bind the variance method to the wrapped function
+        wrapper.var = qnode.var
+
+        # bind the qnode attributes to the wrapped function
+        wrapper.__dict__.update(qnode.__dict__)
+
         return wrapper
     return qfunc_decorator

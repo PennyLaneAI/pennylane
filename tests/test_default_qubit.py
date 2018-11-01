@@ -424,6 +424,39 @@ class TestDefaultQubitDevice(BaseTest):
                 self.assertEqual(len(l.records), 1)
                 self.assertIn('Nonvanishing imaginary part', l.output[0])
 
+    def test_var(self):
+        """Test that the correct variances are returned"""
+        self.logTestName()
+
+        # variance for sigma_z on eigenstate {1, 0} should be zero
+        @qml.qnode(self.dev)
+        def qfunc():
+            return qml.expval.PauliZ(0)
+
+        self.assertAllAlmostEqual(qfunc.var(), 0, delta=self.tol)
+
+        # variance for sigma_y on Rx(x)|0> is cos^2(x)
+        @qml.qnode(self.dev)
+        def qfunc(x):
+            qml.RX(x, wires=0)
+            return qml.expval.PauliY(0)
+
+        x = 0.5432
+        self.assertAllAlmostEqual(qfunc.var(x), np.cos(x)**2, delta=self.tol)
+
+        # variance for sigma_z on Rx(x)|0> is sin^2(x)
+        @qml.qnode(self.dev)
+        def qfunc(x):
+            qml.RX(x, wires=0)
+            return qml.expval.PauliZ(0)
+
+        self.assertAllAlmostEqual(qfunc.var(x), np.sin(x)**2, delta=self.tol)
+
+        # text exception raised if matrix is not 2x2
+        with self.assertRaisesRegex(ValueError, "2x2 matrix required"):
+            print('here')
+            self.dev.var('Hermitian', [0], [np.identity(4)])
+
 
 class TestDefaultQubitIntegration(BaseTest):
     """Integration tests for default.qubit. This test ensures it integrates

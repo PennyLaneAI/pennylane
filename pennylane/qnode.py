@@ -115,6 +115,7 @@ QNode methods
    evaluate
    evaluate_obs
    jacobian
+   var
 
 QNode internal methods
 ----------------------
@@ -134,7 +135,6 @@ Code details
 """
 import inspect
 import copy
-import collections
 
 import logging as log
 
@@ -500,6 +500,36 @@ class QNode:
 
         self.device.reset()
         ret = self.device.execute(self.queue, self.ev)
+        return self.output_type(ret)
+
+    def var(self, *args, **kwargs):
+        """Evaluates the quantum function on the specified device, and
+        returns the variance of the expectation values.
+
+        Args:
+            args (tuple): input parameters to the quantum function
+
+        Returns:
+            float, array[float]: output variance value(s)
+        """
+        # pylint: disable=no-member
+        args = autograd.builtins.tuple(args)
+
+        if not self.ops:
+            # construct the circuit
+            self.construct(args, **kwargs)
+
+        # temporarily store keyword arguments
+        keyword_values = {}
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()})
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in kwargs.items()})
+
+        # temporarily store the free parameter values in the Variable class
+        Variable.free_param_values = np.array(list(_flatten(args)))
+        Variable.kwarg_values = keyword_values
+
+        self.device.reset()
+        ret = self.device.execute(self.queue, self.ev, variance=True)
         return self.output_type(ret)
 
     def evaluate_obs(self, obs, args, **kwargs):

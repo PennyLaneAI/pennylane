@@ -64,6 +64,7 @@ In addition, the following may also be optionally defined:
     pre_expval
     post_expval
     execution_context
+    var
 
 
 Internal attributes and methods
@@ -175,7 +176,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, expectation):
+    def execute(self, queue, expectation, variance=False):
         """Apply a queue of quantum operations to the device, and then measure the given expectation values.
 
         Instead of overwriting this, consider implementing a suitable subset of
@@ -185,6 +186,7 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects to apply on the device
             expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return
+            variance (bool): if True, the variances are returned instead of the expectation values.
 
         Returns:
             array[float]: expectation value(s)
@@ -197,10 +199,16 @@ class Device(abc.ABC):
             self.post_apply()
 
             self.pre_expval()
-            expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
+            if variance:
+                try:
+                    result = [self.var(e.name, e.wires, e.parameters) for e in expectation]
+                except NotImplementedError as e:
+                    raise DeviceError("Device does not support expectation value variances.") from None
+            else:
+                result = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
             self.post_expval()
 
-            return np.array(expectations)
+            return np.array(result)
 
     def pre_apply(self):
         """Called during :meth:`execute` before the individual operations are executed."""
@@ -275,6 +283,19 @@ class Device(abc.ABC):
     @abc.abstractmethod
     def expval(self, expectation, wires, par):
         """Expectation value of an observable.
+
+        Args:
+            expectation (str): name of the expectation to evaluate
+            wires (Sequence[int]): subsystems the expectation is measured on
+            par (tuple): parameters for the expectation
+
+        Returns:
+            float: expectation value
+        """
+        raise NotImplementedError
+
+    def var(self, expectation, wires, par):
+        """Variance value of an observable.
 
         Args:
             expectation (str): name of the expectation to evaluate

@@ -390,35 +390,32 @@ class TestDefaultGaussianDevice(BaseTest):
 
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
-        # test correct mean and variance for <n> of a displaced thermal state
+        # test correct mean for <n> of a displaced thermal state
         nbar = 0.5431
         alpha = 0.324-0.59j
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
         mean = dev.expval('MeanPhoton', [0], [])
         self.assertAlmostEqual(mean, np.abs(alpha)**2+nbar, delta=self.tol)
-        # self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
 
-        # test correct mean and variance for Homodyne P measurement
+        # test correct mean for Homodyne P measurement
         alpha = 0.324-0.59j
         dev.apply('CoherentState', wires=[0], par=[alpha])
         mean = dev.expval('P', [0], [])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
-        # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
-        # test correct mean and variance for Homodyne measurement
+        # test correct mean for Homodyne measurement
         mean = dev.expval('Homodyne', [0], [np.pi/2])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
-        # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
-        # test correct mean and variance for number state expectation |<n|alpha>|^2
+        # test correct mean for number state expectation |<n|alpha>|^2
         # on a coherent state
         for n in range(3):
             mean = dev.expval('NumberState', [0], [np.array([n])])
             expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             self.assertAlmostEqual(mean, expected, delta=self.tol)
 
-        # test correct mean and variance for number state expectation |<n|S(r)>|^2
+        # test correct mean for number state expectation |<n|S(r)>|^2
         # on a squeezed state
         n = 1
         r = 0.4523
@@ -426,6 +423,53 @@ class TestDefaultGaussianDevice(BaseTest):
         mean = dev.expval('NumberState', [0], [np.array([2*n])])
         expected = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         self.assertAlmostEqual(mean, expected, delta=self.tol)
+
+    def test_var(self):
+        """Test that variance values are calculated correctly"""
+        self.logTestName()
+
+        dev = qml.device('default.gaussian', wires=1, hbar=hbar)
+
+        # test correct variance for <n> of a displaced thermal state
+        nbar = 0.5431
+        alpha = 0.324-0.59j
+        dev.apply('ThermalState', wires=[0], par=[nbar])
+        dev.apply('Displacement', wires=[0], par=[alpha, 0])
+
+        var = dev.var('MeanPhoton', [0], [])
+        self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
+
+        # test the same quantity but using PolyXP
+        var = dev.var('PolyXP', [0], [np.array([[-0.5, 0, 0], [0, 0.25, 0], [0, 0, 0.25]])])
+        self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
+
+        # test correct variance for Homodyne P measurement
+        alpha = 0.324-0.59j
+        dev.apply('CoherentState', wires=[0], par=[alpha])
+        var = dev.var('P', [0], [])
+        self.assertAlmostEqual(var, hbar/2, delta=self.tol)
+
+        # test correct variance for Homodyne measurement
+        var = dev.var('Homodyne', [0], [np.pi/2])
+        self.assertAlmostEqual(var, hbar/2, delta=self.tol)
+
+        # test correct variance for number state expectation |<n|alpha>|^2
+        # on a coherent state
+        for n in range(3):
+            var = dev.var('NumberState', [0], [np.array([n])])
+            mean = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
+            expected = mean - mean**2
+            self.assertAlmostEqual(var, expected, delta=self.tol)
+
+        # test correct mean and variance for number state expectation |<n|S(r)>|^2
+        # on a squeezed state
+        n = 1
+        r = 0.4523
+        dev.apply('SqueezedState', wires=[0], par=[r, 0])
+        var = dev.var('NumberState', [0], [np.array([2*n])])
+        mean = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
+        expected = mean - mean**2
+        self.assertAlmostEqual(var, expected, delta=self.tol)
 
     def test_reduced_state(self):
         """Test reduced state"""

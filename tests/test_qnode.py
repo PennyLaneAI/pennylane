@@ -128,6 +128,60 @@ class BasicTest(BaseTest):
         #self.assertTrue(q.ops[5] not in successors)
 
 
+    def test_variances(self):
+        "Test that variances are correctly returned for supporting devices"
+        self.logTestName()
+        dev1 = qml.device('default.gaussian', wires=2)
+
+        # test positional arguments
+        @qml.qnode(dev1)
+        def qfunc(x, y):
+            qml.ThermalState(x, wires=0)
+            qml.CoherentState(y, 0, wires=1)
+            return qml.expval.MeanPhoton(0), qml.expval.MeanPhoton(1)
+
+        self.assertAllAlmostEqual(qfunc.var(0.5, 0.7), [0.5**2+0.5, 0.7**2], delta=self.tol)
+
+        # test array arguments
+        @qml.qnode(dev1)
+        def qfunc(x, y):
+            qml.ThermalState(x[0], wires=0)
+            qml.CoherentState(x[1], y, wires=1)
+            return qml.expval.MeanPhoton(0), qml.expval.MeanPhoton(1)
+
+        self.assertAllAlmostEqual(qfunc.var([0.5, 0.7], 0.2), [0.5**2+0.5, 0.7**2], delta=self.tol)
+
+        # test keyword arguments
+        @qml.qnode(dev1)
+        def qfunc(x, data=0):
+            qml.ThermalState(data, wires=0)
+            qml.CoherentState(x, 0, wires=1)
+            return qml.expval.MeanPhoton(0), qml.expval.MeanPhoton(1)
+
+        # make sure the circuit is already constructed
+        qfunc(0.7)
+        self.assertAllAlmostEqual(qfunc.var(0.7, data=0.5), [0.5**2+0.5, 0.7**2], delta=self.tol)
+
+
+    def test_variance_fail(self):
+        "Test that a DeviceError is raised if the device does not support variances"
+        self.logTestName()
+
+        dev1 = qml.device('default.qubit', wires=1)
+
+        # overwrite the device so that it has no variance implementation
+        def var(expectation, wires, par):
+            raise NotImplementedError
+        dev1.var = var
+
+        @qml.qnode(dev1)
+        def qf(x):
+            return qml.expval.PauliZ(0)
+
+        with self.assertRaisesRegex(DeviceError, "does not support expectation value variances"):
+            qf.var(0.5)
+
+
     def test_qnode_fail(self):
         "Tests that QNode initialization failures correctly raise exceptions."
         self.logTestName()
