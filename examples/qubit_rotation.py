@@ -26,13 +26,13 @@ def objective(variables):
 
 o = GradientDescentOptimizer(0.5)
 
-vars = np.array([0.011, 0.012])
-print('Initial rotation angles:'.format(vars))
-print('Initial cost: {: 0.7f}'.format(objective(vars)))
+var = np.array([0.011, 0.012])
+print('Initial rotation angles:'.format(var))
+print('Initial cost: {: 0.7f}'.format(objective(var)))
 
 for it in range(100):
-    vars = o.step(objective, vars)
+    var = o.step(objective, var)
     if it % 5 == 0:
-        print('Cost after step {:5d}: {: 0.7f}'.format(it+1, objective(vars)))
+        print('Cost after step {:5d}: {: 0.7f}'.format(it+1, objective(var)))
 
-print('Optimized rotation angles:'.format(vars))
+print('Optimized rotation angles:'.format(var))
