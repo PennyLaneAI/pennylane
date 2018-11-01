@@ -353,7 +353,7 @@ class BasicTest(BaseTest):
                     c = c[0]  # get a scalar
                 return c +0.5*array[0,0] +x -0.4*y
 
-            cost_grad = autograd.grad(cost, argnum=[0, 1, 2])
+            cost_grad = qml.grad(cost, argnum=[0, 1, 2])
             self.assertAllAlmostEqual(cost(*args), cost_target, delta=self.tol)
             self.assertAllAlmostEqual(cost_grad(*args), grad_target, delta=self.tol)
 
@@ -679,17 +679,17 @@ class GradientTest(BaseTest):
             return ansatz(*array)
 
         circuit1 = qml.QNode(circuit1, self.dev2)
-        grad1 = autograd.grad(circuit1, argnum=[0, 1, 2])
+        grad1 = qml.grad(circuit1, argnum=[0, 1, 2])
 
         positional_grad = circuit1.jacobian([a, b, c])
         positional_autograd = grad1(a, b, c)
         self.assertAllAlmostEqual(positional_grad, positional_autograd, delta=self.tol)
 
         circuit2 = qml.QNode(circuit2, self.dev2)
-        grad2 = autograd.grad(circuit2, argnum=[0, 1])
+        grad2 = qml.grad(circuit2, argnum=[0, 1])
 
         circuit3 = qml.QNode(circuit3, self.dev2)
-        grad3 = autograd.grad(circuit3)
+        grad3 = qml.grad(circuit3, argnum=0)
 
         array_grad = circuit3.jacobian([np.array([a, b, c])])
         array_autograd = grad3(np.array([a, b, c]))
@@ -731,9 +731,9 @@ class GradientTest(BaseTest):
 
         # compare our manual Jacobian computation to autograd
         # not sure if this is the intended usage of jacobian
-        jac0 = autograd.jacobian(circuit, 0)
-        jac1 = autograd.jacobian(circuit, 1)
-        jac2 = autograd.jacobian(circuit, 2)
+        jac0 = qml.jacobian(circuit, 0)
+        jac1 = qml.jacobian(circuit, 1)
+        jac2 = qml.jacobian(circuit, 2)
         res = np.stack([jac0(a,b,c), jac1(a,b,c), jac2(a,b,c)]).T
 
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
@@ -756,7 +756,7 @@ class GradientTest(BaseTest):
         res = circuit.jacobian([np.array([a, b, c])])
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
 
-        jac = autograd.jacobian(circuit, 0)
+        jac = qml.jacobian(circuit, 0)
         res = jac(np.array([a, b, c]))
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
 

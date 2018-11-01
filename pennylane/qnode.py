@@ -514,8 +514,14 @@ class QNode:
         Returns:
             array[float]: expectation values
         """
+        # temporarily store keyword arguments
+        keyword_values = {}
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()})
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in kwargs.items()})
+
         # temporarily store the free parameter values in the Variable class
         Variable.free_param_values = args
+        Variable.kwarg_values = keyword_values
 
         self.device.reset()
         ret = self.device.execute(self.queue, obs)
