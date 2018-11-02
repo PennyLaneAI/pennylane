@@ -86,8 +86,9 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    tutorials/qubit_rotation
-   tutorials/photon_redirection
-   tutorials/multiple_expectations
+   tutorials/gaussian_transformation
+   tutorials/hybrid_computation
+   tutorials/advanced_features
 
 
 .. toctree::
