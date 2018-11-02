@@ -78,7 +78,7 @@ and has the following format:
       [projectq.simulator]
       gate_fusion = true
 
-      [projectq.ibmbackend]
+      [projectq.ibm]
       user = "johnsmith"
       password = "secret123"
       use_hardware = true
