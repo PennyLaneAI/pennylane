@@ -1,7 +1,7 @@
 .. role:: html(raw)
    :format: html
 
-.. _photon_redirection:
+.. _plugins_hybrid:
 
 Plugins and Hybrid computation
 ==============================
