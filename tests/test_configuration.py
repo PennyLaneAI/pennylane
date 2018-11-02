@@ -112,7 +112,7 @@ class BasicTest(BaseTest):
         self.assertEqual(config['strawberryfields.fock'], {'cutoff_dim': 10})
 
         # get key that doesn't exist
-        self.assertEqual(config['projectq.ibm.cutoff'], {})
+        self.assertEqual(config['projectq.ibm.idonotexist'], {})
 
     def test_set_item(self):
         """Test setting items."""
