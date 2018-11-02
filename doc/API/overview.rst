@@ -31,7 +31,7 @@ When performing a hybrid computation using PennyLane, one of the first steps is 
     import pennylane as qml
     dev1 = qml.device(short_name)
 
-where ``short_name`` is a string which uniquely identifies the device provided. In general, the short name has the following form: ``pluginname.devicename``. Examples include ``default.qubit`` and ``default.gaussian`` which are provided as reference plugins by PennyLane, as well as ``strawberryfields.fock``, ``strawberryfields.gaussian``, ``projectq.ibm``, which are provided by the `StrawberryFields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_ PennyLane plugins respectively.
+where ``short_name`` is a string which uniquely identifies the device provided. In general, the short name has the following form: ``pluginname.devicename``. Examples include ``default.qubit`` and ``default.gaussian`` which are provided as reference plugins by PennyLane, as well as ``strawberryfields.fock``, ``strawberryfields.gaussian``, ``projectq.ibm``, which are provided by the PennyLane  `StrawberryFields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_ plugins respectively.
 
 Creating your device
 --------------------
