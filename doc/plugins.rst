@@ -32,7 +32,7 @@ Features
 PennyLane ProjectQ Plugin
 -------------------------
 
-`ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_ is an open-source quantum compilation framework. ProjectQ is capable of targeting various types of quantum hardware and a built-in high-performance quantum computer simulator with emulation capabilities, and various compiler plug-ins.
+`ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_ is an open-source quantum compilation framework. ProjectQ is capable of targeting various types of quantum hardware by decomposing quantum cirquits in terms of the available gate set (compiling) and has a built-in high-performance quantum computer simulator.
 
 The `PennyLane ProjectQ Plugin <https://pennylane-pq.readthedocs.io>`_ allows both the software and hardware backends of ProjectQ to be used as devices for PennyLane.
 
