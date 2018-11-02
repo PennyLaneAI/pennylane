@@ -1,7 +1,7 @@
 .. role:: html(raw)
    :format: html
 
-.. _photon_redirection:
+.. _gaussian_transformation:
 
 Basic tutorial: Gaussian transformation
 =======================================
