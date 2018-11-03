@@ -38,7 +38,7 @@ There are many schemes for inputting classical information into quantum systems,
 The quantum node abstraction
 ============================
 
-A quantum node is a computational encapsulation of a quantum function :math:`f(x;\bm{\theta})` which has different resolution for different computational devices. 
+A quantum node (:mod:`QNode <pennylane.qnode>`) is a computational encapsulation of a quantum function :math:`f(x;\bm{\theta})` which has different resolution for different computational devices. 
 
 - For a quantum computing device, a quantum node is an explicit circuit whose gates are parameterized by :math:`x` and :math:`\bm{\theta}` and whose measurement outcomes are averaged to produce an expectation value. 
 - For a classical computing device, a quantum node is a callable function, taking the arguments :math:`(x,\bm{\theta})` and returning the value :math:`f(x;\bm{\theta})`. The classical device cannot "zoom in" and see any intermediate state of the quantum circuit.
@@ -50,11 +50,11 @@ A quantum node is a computational encapsulation of a quantum function :math:`f(x
     :width: 70%
     :target: javascript:void(0);
 
-    Quantum nodes are seen differently depending on the computational device. A classical device merely sees a callable function which transforms quantum information. A quantum device sees a higher resolution version, with quantum gates and measurements.
+    Quantum nodes are seen differently depending on the computational device. A classical device merely sees a callable function which transforms classical information. A quantum device sees a higher resolution version, with quantum gates and measurements.
 
 :html:`<br>`
 
-So long as we provide some mechanism for evaluating quantum nodes (i.e., a quantum computing device or simulator), a classical computing device can treat it as it would any other callable function which manipulates classical data. We can thus connect quantum nodes with classical transformations to build complex multistage hybrid quantum-classical computations.
+So long as we provide some mechanism for evaluating quantum nodes (i.e., a quantum computing device or simulator), a classical computing device can treat it as it would any other callable function which manipulates classical data. We can thus connect quantum nodes with classical transformations to build complex multistage :ref:`hybrid quantum-classical computations <hybrid_computation>`.
 
 .. rubric:: Footnotes
 
