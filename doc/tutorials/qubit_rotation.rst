@@ -341,5 +341,5 @@ the qubit being rotated to the state :math:`\ket{1}`.
     Some optimizers, such as :class:`~.pennylane.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the
     optimizer instance. These can be reset using the ``reset()`` method.
 
-Continue on to the next tutorial, :ref:`photon_redirection`, to learn how to utilize the extensive plugin ecosystem of PennyLane,
+Continue on to the next tutorial, :ref:`gaussian_transformation`, to learn how to utilize the extensive plugin ecosystem of PennyLane,
 build continuous-variable (CV) quantum nodes, and to see an example of a hybrid qubit-CV-classical computation using PennyLane.
