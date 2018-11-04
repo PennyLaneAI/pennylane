@@ -1,7 +1,7 @@
 """Variational quantum eigensolver example.
 
 In this demo we optimize a variational circuit to lower
-the energy expectation of a user-defined Hamiltonian.
+the squared energy expectation of a user-defined Hamiltonian.
 
 We express the Hamiltonian as a sum of two Pauli operators.
 """
