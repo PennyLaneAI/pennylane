@@ -1,20 +1,17 @@
 .. role:: html(raw)
    :format: html
 
-.. _photon_redirection:
+.. _plugins_hybrid:
 
-Photon redirection and hybrid computation
-=========================================
+Plugins and Hybrid computation
+==============================
 
-This tutorial demonstrates the basic working principles of PennyLane for
-continuous-variable (CV) devices, introduces plugins, and finishes with a combined qubit-CV-classical hybrid computation.
-Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` tutorial before attempting this tutorial.
-For more details about CV quantum computing, the `Strawberry Fields documentation <https://strawberryfields.readthedocs.io/en/latest/>`_
-is a great starting point.
+This tutorial introduces the notion of hybrid computation by combining several PennyLane plugins. We first introduce PennyLane's `Strawberry Fields plugin <https://github.com/XanaduAI/pennylane-sf>`_ and use it to explore a non-Gaussian photonic circuit. We then combine this photonic circuit with a qubit circuit — along with some classical processing — to create and optimize a fully hybrid computation.
+Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` and :ref:`Gaussian transformation <gaussian_transformation>` tutorials before attempting this tutorial.
 
 .. note::
 
-    This tutorial requires the `PennyLane-SF plugin <https://github.com/XanaduAI/pennylane-sf>`_, in order to access the
+    To follow along with this tutorial on your own computer, you will require the `PennyLane-SF plugin <https://github.com/XanaduAI/pennylane-sf>`_, in order to access the
     `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`_ Fock backend using PennyLane. It can be installed via pip:
 
     .. code-block:: bash
@@ -22,11 +19,10 @@ is a great starting point.
         pip install pennylane-sf
 
 
+A non-Gaussian circuit
+----------------------
 
-The quantum circuit
--------------------
-
-In photon redirection, we have the following simple quantum circuit:
+We first consider a photonic circuit which is similar in spirit to the :ref:`qubit rotation <qubit_rotation>` circuit:
 
 :html:`<br>`
 
@@ -39,17 +35,16 @@ In photon redirection, we have the following simple quantum circuit:
 
 Breaking this down, step-by-step:
 
-1. **We start the computation with two subsystems (or qumodes)**. In PennyLane, we use the shorthand 'wires' to refer to subsystems,
-   whether they are qumodes, qubits, or any other kind of quantum register.
+1. **We start the computation with two qumode subsystems**. In PennyLane, we use the shorthand 'wires' to refer to quantum subsystems, whether they are qumodes, qubits, or any other kind of quantum register.
 
-2. **Prepare the state** :math:`\ket{1,0}`. That is, the first wire (wire 0) is prepared in a single photon state, while the second
-   wire (wire 1) is prepared in the vacuum state.
+2. **Prepare the state** :math:`\ket{1,0}`. That is, the first wire (wire 0) is prepared in a single-photon state, while the second
+   wire (wire 1) is prepared in the vacuum state. The former state is non-Gaussian, necessitating the use of the ``strawberryfields.fock`` backend device.
 
 3. **Both wires are then incident on a beamsplitter**, with free parameters :math:`\theta` and :math:`\phi`.
-   Here, we use the convention that the beamsplitter transmission amplitude is :math:`t=\cos\theta`, and the reflection amplitude is
+   Here, we have the convention that the beamsplitter transmission amplitude is :math:`t=\cos\theta`, and the reflection amplitude is
    :math:`r=e^{i\phi}\sin\theta`. See :ref:`operations` for a full list of operation conventions.
 
-4. **Finally, we measure the photon number expectation value** :math:`\braket{\hat{n}}` of the second wire, where
+4. **Finally, we measure the mean photon number** :math:`\braket{\hat{n}}` of the second wire, where
 
    .. math:: \hat{n} = \ad\a
 
@@ -57,8 +52,7 @@ Breaking this down, step-by-step:
 
 The aim of this tutorial is to optimize the beamsplitter parameters :math:`(\theta, \phi)` such that the expected photon number of
 the second wire is **maximized**. Since the beamsplitter is a passive optical element that preserves the total photon number, this
-corresponds to the output state :math:`\ket{0,1}` — the incident photon from the first wire has been 'redirected' to the second wire.
-This example has a very similar spirit to the previous :ref:`qubit rotation <qubit_rotation>` tutorial.
+corresponds to the output state :math:`\ket{0,1}` — i.e., when the incident photon from the first wire has been 'redirected' to the second wire.
 
 .. _photon_redirection_calc:
 
@@ -103,10 +97,10 @@ While PennyLane provides a basic qubit simulator (``'default.qubit'``) and a bas
 the true power of PennyLane comes from its :ref:`plugin ecosystem <plugins>`, allowing quantum computations to be run on a variety
 of quantum simulator and hardware devices.
 
-In this tutorial, we will be using the ``'strawberryfields.fock'`` device to construct a QNode. This allows the underlying quantum
+For this circuit, we will be using the ``'strawberryfields.fock'`` device to construct a QNode. This allows the underlying quantum
 computation to be performed using the `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`_ Fock backend.
 
-As before, we import PennyLane, as well as the wrapped version of NumPy provided by PennyLane:
+As usual, we begin by importing PennyLane and the wrapped version of NumPy provided by PennyLane:
 
 .. code-block:: python
 
@@ -118,7 +112,7 @@ Next, we create a device to run the quantum node. This is easy in PennyLane; as 
 
 .. code:: python
 
-    dev_fock = qml.device('strawberryfields.fock', wires=2, cutoff_dim=10)
+    dev_fock = qml.device('strawberryfields.fock', wires=2, cutoff_dim=2)
 
 Compared to the default devices provided with PennyLane, the ``'strawberryfields.fock'`` device requires the additional keyword argument:
 
@@ -134,7 +128,7 @@ Compared to the default devices provided with PennyLane, the ``'strawberryfields
 Constructing the QNode
 ----------------------
 
-Now that we have initialized the device, we can construct our quantum node. As before, we use the
+Now that we have initialized the device, we can construct our quantum node. Like the other tutorials, we use the 
 :mod:`qnode decorator <pennylane.decorator>` to convert our quantum function (encoded by the circuit above) into a quantum node
 running on Strawberry Fields.
 
@@ -146,14 +140,14 @@ running on Strawberry Fields.
         qml.Beamsplitter(params[0], params[1], wires=[0, 1])
         return qml.expval.MeanPhoton(1)
 
-The ``'strawberryfields.fock'`` device supports all CV operations provided by PennyLane; see :ref:`CV operations <cv_ops>`
+The ``'strawberryfields.fock'`` device supports all CV objects provided by PennyLane; see :ref:`CV operations <cv_ops>`
 and :ref:`CV expectations <cv_expval>`.
 
 
 Optimization
 ------------
 
-As in the :ref:`qubit rotation <qubit_rotation>` tutorial, let's now use one of the built-in PennyLane optimizers in order to
+Let's now use one of the built-in PennyLane optimizers in order to
 carry out photon redirection. Since we wish to maximize the mean photon number of the second wire, we can define our cost function
 to minimize the *negative* of the circuit output.
 
@@ -226,8 +220,8 @@ To really highlight the capabilities of PennyLane, let's now combine the qubit-r
 :ref:`qubit rotation tutorial <qubit_rotation>` with the CV photon-redirection QNode from above, as well as some classical processing,
 to produce a truly hybrid computational model.
 
-First, we define a computation consisting of three nodes: two quantum nodes (the qubit rotation and photon redirection circuits,
-running on the ``'default.qubit'`` and ``'strawberryfields.fock'`` devices, respectively), along with a classical node, that simply
+First, we define a computation consisting of three steps: two quantum nodes (the qubit rotation and photon redirection circuits,
+running on the ``'default.qubit'`` and ``'strawberryfields.fock'`` devices, respectively), along with a classical function, that simply
 returns the squared difference of its two inputs using NumPy:
 
 .. code-block:: python
@@ -256,7 +250,7 @@ returns the squared difference of its two inputs using NumPy:
         return np.abs(x-y)**2
 
 
-Now, we can define an objective function associated with the optimization, linking together our three nodes. Here, we wish to
+Now, we can define an objective function associated with the optimization, linking together our three subcomponents. Here, we wish to
 perform the following hybrid quantum-classical optimization:
 
 
@@ -332,3 +326,5 @@ Indeed, substituting this into the photon redirection QNode shows that it now pr
 0.8731983021146449
 >>> qubit_rotation(0.5, 0.1)
 0.8731983044562817
+
+This is just a simple example of the kind of hybrid computation that can be carried out in PennyLane. Quantum nodes (bound to different devices) and classical functions can be combined in many different and interesting ways. 

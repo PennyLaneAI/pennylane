@@ -72,6 +72,7 @@ Summary
     device
     expval
     grad
+    jacobian
     ~autograd.numpy
     ops
     optimize
@@ -95,6 +96,7 @@ from pkg_resources import iter_entry_points
 
 from autograd import numpy
 from autograd import grad as _grad
+from autograd import jacobian as _jacobian
 
 import pennylane.operation
 import pennylane.expval
@@ -226,6 +228,29 @@ def grad(func, argnum):
     """
     # pylint: disable=no-value-for-parameter
     return _grad(func, argnum)
+
+
+def jacobian(func, argnum):
+    """Returns the Jacobian (as a callable function) of vector-valued
+    functions accessible within PennyLane.
+
+    This is a wrapper around the :mod:`autograd.jacobian` function.
+
+    Args:
+        func (function): a vector-valued Python function or QNode that contains
+            a combination of quantum and classical nodes. The output of the computation
+            must consist of a single NumPy array (if classical) or a tuple of
+            expectation values (if a quantum node)
+        argnum (int): which argument to take the gradient
+            with respect to. If the argument is a NumPy array, then the Jacobian
+            corresponding to all input elements and all output elements is returned.
+
+    Returns:
+        function: the function that returns the Jacobian of the input
+        function with respect to the arguments in argnum
+    """
+    # pylint: disable=no-value-for-parameter
+    return _jacobian(func, argnum)
 
 
 def version():
