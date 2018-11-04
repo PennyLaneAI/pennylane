@@ -9,37 +9,48 @@ PennyLane is a Python library for building and training machine learning models 
 Features
 ========
 
-- **Follow the gradient**.
+- *Follow the gradient*.
   Built-in **automatic differentiation** of quantum circuits
 
-- **Best of both worlds**.
+- *Best of both worlds*.
   Support for **hybrid quantum and classical** models
 
-- **Batteries included**.
+- *Batteries included*.
   Provides **optimization and machine learning** tools
 
-- **Device independent**.
+- *Device independent*.
   The same quantum circuit model can be **run on different backends**
 
 - **Large plugin ecosystem**.
-  Install plugins to run your computational circuits on more devices, including `Strawberry Fields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_
+  Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
+
+
+Available plugins
+=================
+
+* `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`__: Supports integration with `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack Python library for simulating continuous variable (CV) quantum optical circuits.
+
+
+* `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`__: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
+
 
 Getting started
 ===============
 
+To get PennyLane installed and running on your system, begin at the :ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's :ref:`key concepts <introduction>` for machine learning on quantum circuits.
 
-To get PennyLane installed and running on your system, begin at the :ref:`download and installation guide <installation>`. Then, familiarize yourself with the :ref:`hybrid classical-quantum machine learning <introduction>` approach.
+For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to explore :ref:`hybrid quantum optimization <plugins_hybrid>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
 
-For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`photon redirection <photon_redirection>` hybrid quantum optimization tutorials. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
+Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid models — these include Strawberry Fields, provided by the `PennyLane-SF <https://github.com/XanaduAI/pennylane-pq>`_ plugin, and the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
 
-Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid optimizations — these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
-
-Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided, for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
+Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided. Look there for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
 
 How to cite
 ===========
 
 If you are doing research using PennyLane, please cite
+
+  [Placeholder for PennyLane paper]
 
 Support
 =======
@@ -87,7 +98,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    tutorials/qubit_rotation
    tutorials/gaussian_transformation
-   tutorials/hybrid_computation
+   tutorials/plugins_hybrid
    tutorials/advanced_features
 
 

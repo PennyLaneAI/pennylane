@@ -11,14 +11,14 @@ Automatic differentiation
 
 Derivatives and gradients are ubiquitous throughout science and engineering. In recent years, automatic differentiation has become a key feature in many numerical software libraries, in particular for machine learning (e.g., Theano_, Autograd_, Tensorflow_, or Pytorch_). 
 
-Generally speaking, automatic differentiation is the ability for a software library to compute the derivatives of arbitrary numerical code. If you write an algorithm to compute some function :math:`g(x)` (which may include mathematical expressions, but also control flow statements like :code:`if`, :code:`for`, etc.), then automatic differentiation provides an algorithm for :math:`\nabla g(x)` with the same degree of complexity as the original function.
+Generally speaking, automatic differentiation is the ability for a software library to compute the derivatives of arbitrary numerical code. If you write an algorithm to compute some function :math:`h(x)` (which may include mathematical expressions, but also control flow statements like :code:`if`, :code:`for`, etc.), then automatic differentiation provides an algorithm for :math:`\nabla h(x)` with the same degree of complexity as the original function.
 
-*Automatic* differentiation should be distinguished from other forms of differentiation. *Manual differentiation*, where an expression is differentiated by hand — often on paper — is extremely time-consuming and error-prone. In *numerical differentiation*, such as the finite-difference method familiar from high-school calculus, the derivative of a function is approximated by numerically evaluating the function at two infinitesimaly separated points. However, this method can sometimes be imprecise due to the constraints of classical floating-point arithmetic.
+*Automatic* differentiation should be distinguished from other forms of differentiation. *Manual differentiation*, where an expression is differentiated by hand — often on paper — is extremely time-consuming and error-prone. In *numerical differentiation*, such as the finite-difference method familiar from high-school calculus, the derivative of a function is approximated by numerically evaluating the function at two infinitesimally separated points. However, this method can sometimes be imprecise due to the constraints of classical floating-point arithmetic.
 
 Computing gradients of quantum functions
 ----------------------------------------
 
-:ref:`qfuncs` are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute gradients of a quantum function, we could use this information in an optimization or machine learning algorithm, tuning the quantum circuit to produce a desired output. While numerical differentiation is an option, PennyLane is the first software library to support **automatic differentiation of quantum circuits** [#]_.
+:ref:`qfuncs` (qfuncs) are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute the gradient of a quantum function, we could use this information in an optimization or machine learning algorithm, tuning the quantum circuit via `gradient descent <https://en.wikipedia.org/wiki/Gradient_descent>`_ to produce a desired output. While numerical differentiation is an option, PennyLane is the first software library to support **automatic differentiation of quantum circuits** [#]_.
 
 How is this accomplished? It turns out that the gradient of a quantum function :math:`f(x;\bm{\theta})` can in many cases be expressed as a linear combination of other quantum functions. In fact, these other quantum functions typically use the same circuit, differing only in a shift of the argument. 
 
@@ -44,8 +44,6 @@ Circuits in PennyLane are specified by a sequence of gates. The unitary transfor
 
 Each of these gates is unitary, and therefore must have the form :math:`U_{j}(\gamma_j)=\exp{(i\gamma_j H_j)}` where :math:`H_j` is a Hermitian operator which generates the gate and :math:`\gamma_j` is the gate parameter. 
 We have omitted which wire each unitary acts on, since it is not necessary for the following discussion.
-
-.. todo:: Verify the edge-cases of two-parameter gates and complex arguments...
 
 .. note:: In this example, we have used the input :math:`x` as the argument for gate :math:`U_0` and the parameters :math:`\bm{\theta}` for the remaining gates. This is not required. Inputs and parameters can be arbitrarily assigned to different gates. 
 
@@ -138,13 +136,13 @@ Gaussian gate example
 
 For quantum devices with continuous-valued operators, such as photonic quantum computers, it is convenient to employ the `Heisenberg picture <https://en.wikipedia.org/wiki/Heisenberg_picture>`_, i.e., to track how the gates :math:`U_i(\theta_i)` transform the final measurement operator :math:`\hat{B}`. 
 
-As an example, we consider the `squeeze gate <https://strawberryfields.readthedocs.io/en/latest/conventions/gates.html#squeezing>`_ :math:`S(z)`. In the Heisenberg picture, the squeeze gate causes the quadrature operators :math:`\hat{x}` and :math:`\hat{p}` to become rescaled:
+As an example, we consider the :class:`Squeezing gate <pennylane.ops.cv.Squeezing>`. In the Heisenberg picture, the Squeezing gate causes the quadrature operators :math:`\hat{x}` and :math:`\hat{p}` to become rescaled:
 
 .. math:: 
    :nowrap:
    
    \begin{align}
-       \mathcal{M}^S_z(\hat{x}) = & S^\dagger(z)\hat{x}S(z) \\
+       \mathcal{M}^S_r(\hat{x}) = & S^\dagger(r)\hat{x}S(r) \\
                                    = & e^{-r}\hat{x}
    \end{align}
    
@@ -154,7 +152,7 @@ and
    :nowrap:
    
    \begin{align}
-       \mathcal{M}^S_z(\hat{p}) = & S^\dagger(z)\hat{p}S(z) \\
+       \mathcal{M}^S_r(\hat{p}) = & S^\dagger(r)\hat{p}S(r) \\
                                    = & e^{r}\hat{p}.
    \end{align}
    
@@ -227,7 +225,7 @@ where :math:`s` is an arbitrary nonzero shift [#]_.
 As before, assume that an input :math:`y` has already been embedded into a quantum state :math:`|y\rangle = U_0(y)|0\rangle` before we apply the squeeze gate. If we measure the :math:`\hat{x}` operator, we will have the following qfunc:
 
 .. math::
-   f(y;r) = \langle y | \mathcal{M}^R_r (\hat{x}) | y \rangle.
+   f(y;r) = \langle y | \mathcal{M}^S_r (\hat{x}) | y \rangle.
    
 Finally, its gradient can be expressed as
 
@@ -236,11 +234,12 @@ Finally, its gradient can be expressed as
    
    \begin{align}
        \nabla_r f(y;r) = &  \frac{1}{2\sinh(s)} \left[
-                            \langle y | \mathcal{M}^R_{r+s} (\hat{x}) | y \rangle 
-                           -\langle y | \mathcal{M}^R_{r-s} (\hat{x}) | y \rangle \right] \\
+                            \langle y | \mathcal{M}^S_{r+s} (\hat{x}) | y \rangle 
+                           -\langle y | \mathcal{M}^S_{r-s} (\hat{x}) | y \rangle \right] \\
                        = & \frac{1}{2\sinh(s)}\left[f(y; r+s) - f(y; r-s)\right].
    \end{align}
 
+.. note:: For simplicity of the discussion, we have set the phase angle of the Squeezing gate to be zero. In the general case, Squeezing is a two-parameter gate, containing a squeezing magnitude and a squeezing angle. However, we can always decompose the two-parameter form into Squeezing gate like the one above, followed by a Rotation gate.
 
 .. _Theano: https://github.com/Theano/Theano
 .. _Autograd: https://github.com/HIPS/autograd
