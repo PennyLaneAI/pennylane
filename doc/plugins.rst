@@ -9,7 +9,7 @@ PennyLane comes with two reference plugins that are directly included in core Pe
    pennylane.plugins.default_qubit
    pennylane.plugins.default_gaussian
 
-In addition to that, the following plugins open up the possibility to use the features of PennyLane with other simulator and quantum hardware devices:
+In addition, the following installable plugins open up the possibility to use the features of PennyLane with other simulator and quantum hardware devices:
 
 
 PennyLane Strawberry Fields Plugin
@@ -26,13 +26,13 @@ Features
 
 * Supports all core PennyLane CV operations and expectation values.
 
-* Combines Strawberry Fields' optimized simulator suite with PennyLane's automatic differentiation and optimization.
+* Combines Strawberry Fields' polished simulator suite with PennyLane's automatic differentiation and optimization.
 
 
 PennyLane ProjectQ Plugin
 -------------------------
 
-`ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_ is an open-source quantum compilation framework. ProjectQ is capable of targeting various types of quantum hardware by decomposing quantum cirquits in terms of the available gate set (compiling) and has a built-in high-performance quantum computer simulator.
+`ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_ is an open-source quantum compilation framework. ProjectQ is capable of targeting various types of quantum hardware by decomposing quantum cirquits in terms of the available gate set (compiling), and has a built-in high-performance quantum computer simulator.
 
 The `PennyLane ProjectQ Plugin <https://pennylane-pq.readthedocs.io>`_ allows both the software and hardware backends of ProjectQ to be used as devices for PennyLane.
 

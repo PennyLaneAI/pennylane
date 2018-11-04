@@ -33,11 +33,8 @@ The circuit formulation of a qfunc contains three ingredients:
 Building the circuit
 --------------------
 
-Both the input :math:`x` and the function parameters :math:`\bm{\theta}` enter the quantum circuit in the same way: as arguments for circuit's gates. This allows us to convert *classical information* (the values of :math:`x` and :math:`\bm{\theta}`) into *quantum information* (the quantum state :math:`U(x;\bm{\theta})|0\rangle`).
+Both the input :math:`x` and the function parameters :math:`\bm{\theta}` enter the quantum circuit in the same way: as arguments for the circuit's gates. This allows us to convert *classical information* (the values of :math:`x` and :math:`\bm{\theta}`) into *quantum information* (the quantum state :math:`U(x;\bm{\theta})|0\rangle`).
 Quantum information is turned back into classical information by evaluating the expectation value of the observable :math:`\hat{B}`.
-
-.. todo:: double check whether or not we support parameters in the observables
-
 
 :html:`<br>`
 
@@ -50,9 +47,7 @@ Quantum information is turned back into classical information by evaluating the 
 
 :html:`<br>`
 
-Beyond the basic rule that the inputs and parameters :math:`(x;\bm{\theta})` are used as the arguments of gates, exactly how the circuit is constructed is arbitrary. The circuit can also include additional gates which have no free parameter associated with them. A number of general-purpose and special-purpose circuit ansatzes have been proposed in the quantum machine learning literature [schuld2018quantum]_ [killoran2018continuous]_. 
-
-.. todo:: add more citations for ansaetze
+Beyond the basic rule that the inputs and parameters :math:`(x;\bm{\theta})` are used as the arguments of gates, exactly how the gates are arranged is essentially arbitrary. The circuit can also include additional gates which have no free parameter associated with them. A number of general-purpose and special-purpose circuit ansatzes have been proposed in the quantum optimization and quantum machine learning literature [#]_.
 
 Data-embedding example
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -61,9 +56,9 @@ One straightforward embedding strategy is for the first few gates in the circuit
 
 As an example, consider a photonic quantum computer (similar examples can be constructed for qubits). For simplicity, we temporarily omit the parameters :math:`\bm{\theta}`. We take the initial state to be the *vacuum* state and the measured observable :math:`\hat{B}` to be the position operator :math:`x`. The vacuum state has expectation value :math:`\langle\hat{x}\rangle = \langle 0 | \hat{x} | 0 \rangle = 0`. 
 
-Suppose we have an input :math:`x`, which has :math:`N` dimensions. We can embed this into a quantum circuit with :math:`N` wires using the *displacement gate* :math:`D`. For every component :math:`x_i` of :math:`x`, we apply :math:`D(x_i)` to wire :math:`i`. 
+Suppose we have an input :math:`x`, which has :math:`N` dimensions. We can embed this into a quantum circuit with :math:`N` wires using the :class:`Displacement gate <pennylane.ops.cv.Displacement>`. For every component :math:`x_i` of :math:`x`, we apply :math:`D(x_i)` to wire :math:`i`. 
 
-Measurement of the position operator on each wire will then give the result 
+Measurement of the :class:`position expectation value <pennylane.expval.cv.X>` on each wire will then give the result 
 
 .. math:: (\langle \hat{x_1} \rangle, \cdots, \langle \hat{x_N} \rangle ) = (x_1, \dots, x_N).
 
@@ -74,13 +69,18 @@ Parameterized function example
 
 To complete our picture of a quantum function, we would like to further process the embedded data from the example above. As it stands, our example circuit currently represents the *identity qfunc* :math:`f(x)=x`, which has no free parameters. By introducing additional gates, with parameters :math:`\bm{\theta}`, we can start building up more complex functions.
 
-For clarity, we restrict to a one-dimensional input :math:`x` and add in a single *rotation gate*, with free parameter :math:`\theta`. After applying this gate, the qfunc evaluated by our circuit becomes
+For clarity, we restrict to a one-dimensional input :math:`x` and add in a single :class:`Rotation gate <pennylane.ops.cv.Rotation>`, with free parameter :math:`\theta`. After applying this gate, the qfunc evaluated by our circuit becomes
 
 .. math:: f(x;\theta) = x\cos(\theta).
 
-Thus, with only two quantum gates (displacement and rotation), we can evaluate quantum functions with the above form. 
+Thus, with only two quantum gates (Displacement and Rotation), we can evaluate quantum functions with the above form. 
 
 Extending to intractable quantum functions
 ------------------------------------------
 
 The above examples were kept very simple to illustrate the principles behind embedding data and parameters into quantum circuits. Indeed, the qfunc evaluated in the example is tractable classically. However, by increasing the number of subsystems and the circuit depth, the corresponding qfuncs can become progressively harder to evaluate classically, and a quantum device must be used.
+
+.. rubric:: Footnotes
+
+.. [#] For example, see the following non-exhaustive list: [farhi2014quantum]_ [romero2017quantum]_ [farhi2017quantum]_ [benedetti2018generative]_ [schuld2018quantum]_ [schuld2018circuit]_ [dallaire2018quantum]_ [killoran2018continuous]_ [steinbrecher2018quantum]_. 
+

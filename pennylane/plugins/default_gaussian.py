@@ -13,6 +13,7 @@
 # limitations under the License.
 # pylint: disable=inconsistent-return-statements
 """
+
 Default Gaussian plugin
 =======================
 
