@@ -128,7 +128,7 @@ Compared to the default devices provided with PennyLane, the ``'strawberryfields
 Constructing the QNode
 ----------------------
 
-Now that we have initialized the device, we can construct our quantum node. Like the other tutorials, we use the 
+Now that we have initialized the device, we can construct our quantum node. Like the other tutorials, we use the
 :mod:`qnode decorator <pennylane.decorator>` to convert our quantum function (encoded by the circuit above) into a quantum node
 running on Strawberry Fields.
 
@@ -327,4 +327,4 @@ Indeed, substituting this into the photon redirection QNode shows that it now pr
 >>> qubit_rotation(0.5, 0.1)
 0.8731983044562817
 
-This is just a simple example of the kind of hybrid computation that can be carried out in PennyLane. Quantum nodes (bound to different devices) and classical functions can be combined in many different and interesting ways. 
+This is just a simple example of the kind of hybrid computation that can be carried out in PennyLane. Quantum nodes (bound to different devices) and classical functions can be combined in many different and interesting ways.

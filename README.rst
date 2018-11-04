@@ -41,9 +41,16 @@ Features
 
 - **Device independent**. The same quantum circuit model can be **run on different backends**
 
-- **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including `Strawberry Fields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_
+- **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
 
 
+Available plugins
+=================
+
+* `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_: Supports integration with `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack Python library for simulating continuous variable (CV) quantum optical circuits.
+
+
+* `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
 
 Installation
 ============
@@ -58,7 +65,7 @@ PennyLane requires Python version 3.5 and above. Installation of PennyLane, as w
 Getting started
 ===============
 
-For getting started with PennyLane, check out our `qubit rotation <https://pennylane.readthedocs.io/en/latest/tutorials/qubit_rotation.html>`_, `photon redirection <https://pennylane.readthedocs.io/en/latest/tutorials/photon_redirection.html>`_, `quantum GAN <https://pennylane.readthedocs.io/en/latest/tutorials/quantum_gan.html>`_, and other machine learning tutorials.
+For getting started with PennyLane, check out our `qubit rotation <https://pennylane.readthedocs.io/en/latest/tutorials/qubit_rotation.html>`_, `Gaussian transformation<https://pennylane.readthedocs.io/en/latest/tutorials/gaussian_transformation.html>`_, `hybrid computation <https://pennylane.readthedocs.io/en/latest/tutorials/hybrid_computation.html>`_, and other machine learning tutorials.
 
 Our `documentation <https://pennylane.readthedocs.io>`_ is also a great starting point to familiarize yourself with the hybrid classical-quantum machine learning approach, and explore the available optimization tools provided by PennyLane. Play around with the numerous devices and plugins available for running your hybrid optimizations — these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
 
@@ -76,7 +83,6 @@ We also encourage bug reports, suggestions for new features and enhancements, an
 See our `contributions page <https://github.com/XanaduAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
 for more details.
 
-|
 
 Authors
 =======
