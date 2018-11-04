@@ -292,8 +292,8 @@ between :math:`[-1, 1]`, we can define our cost directly as the output of the QN
 
 .. code-block:: python
 
-    def cost(vars):
-        return circuit(vars)
+    def cost(var):
+        return circuit(var)
 
 To begin our optimization, let's choose small initial values of :math:`\phi_1` and :math:`\phi_2`:
 
