@@ -12,7 +12,7 @@ is a great starting point.
 The quantum circuit
 -------------------
 
-For this basic tutorial, we will consider a special subset of CV operations: the *Gaussian transformations*. We work with the following simple Gaussian circuit: 
+For this basic tutorial, we will consider a special subset of CV operations: the *Gaussian transformations*. We work with the following simple Gaussian circuit:
 
 :html:`<br>`
 
@@ -25,13 +25,13 @@ For this basic tutorial, we will consider a special subset of CV operations: the
 
 What is this circuit doing?
 
-1. **We begin with one wire (qumode) in the vacuum state**. Note that we use the same notation :math:`|0\rangle` for the initial state as the previous qubit tutorial. In a photonic CV system, this state is the *vacuum state*, i.e., the state with no photons in the wire. 
+1. **We begin with one wire (qumode) in the vacuum state**. Note that we use the same notation :math:`|0\rangle` for the initial state as the previous qubit tutorial. In a photonic CV system, this state is the *vacuum state*, i.e., the state with no photons in the wire.
 
-2. **We displace the qumode**. The displacement gate linearly shifts the state of the qumode in phase space. The vacuum state is centered at the origin in phase space, while the displaced state will be centered at the point :math:`\alpha`. 
+2. **We displace the qumode**. The displacement gate linearly shifts the state of the qumode in phase space. The vacuum state is centered at the origin in phase space, while the displaced state will be centered at the point :math:`\alpha`.
 
 3. **We rotate the qumode**. This is another linear transformation in phase space, albeit a rotation (by angle :math:`\phi`) instead of a displacement.
 
-4. **Finally, we measure the mean photon number** :math:`\langle\hat{n}\rangle = \langle\ad\a\rangle`. This quantity, which tells us the average amount of photons in the final state, is proportional to the energy of the photonic system. 
+4. **Finally, we measure the mean photon number** :math:`\langle\hat{n}\rangle = \langle\ad\a\rangle`. This quantity, which tells us the average amount of photons in the final state, is proportional to the energy of the photonic system.
 
 The aim of this tutorial is to optimize the circuit parameters :math:`(\alpha, \phi)` such that the mean photon number is equal to one. The rotation gate is actually a *passive transformation*, meaning that it does not change the energy of the system. The displacement gate is an *active transformation*, which modifies the energy of the photonic system.
 
@@ -61,8 +61,8 @@ After initializing the device, we can construct our quantum node. As before, we 
         qml.Displacement(mag_alpha, phase_alpha, wires=0)
         qml.Rotation(phi, wires=0)
         return qml.expval.MeanPhoton(0)
-        
-Notice that we have broken up the complex number :math:`\alpha` into two real numbers ``mag_alpha`` and ``phase_alpha``, which form a polar representation of :math:`\alpha`. This is so that the notion of a gradient is clear and well-defined. 
+
+Notice that we have broken up the complex number :math:`\alpha` into two real numbers ``mag_alpha`` and ``phase_alpha``, which form a polar representation of :math:`\alpha`. This is so that the notion of a gradient is clear and well-defined.
 
 
 Optimization
@@ -82,7 +82,7 @@ At the beginning of the optimization, we choose arbitrary small initial paramete
 >>> cost(init_params)
 0.9995500506249999
 
-When the gate parameters are near to zero, the gates are close to the identity transformation, which leaves the initial state largely unchanged. Since the initial state contains no photons, the mean photon number of the circuit output is approximately zero, and the cost is close to one. 
+When the gate parameters are near to zero, the gates are close to the identity transformation, which leaves the initial state largely unchanged. Since the initial state contains no photons, the mean photon number of the circuit output is approximately zero, and the cost is close to one.
 
 .. note:: We avoided initial parameters which are exactly zero because that corresponds to a critical point with zero gradient.
 
@@ -116,5 +116,7 @@ Try this yourself — the optimization should converge after about 20 steps to a
     Optimized phase_alpha: 0.020000
     Optimized phi: 0.00500000
 
-We observe that the two angular parameters ``phase_alpha`` and ``phi`` do not change during the optimization. Only the magnitude of the complex displacement :math:`|\alpha|` affects the mean photon number of the circuit. 
+We observe that the two angular parameters ``phase_alpha`` and ``phi`` do not change during the optimization. Only the magnitude of the complex displacement :math:`|\alpha|` affects the mean photon number of the circuit.
 
+Continue on to the next tutorial, :ref:`plugins_hybrid`, to learn how to utilize the extensive plugin ecosystem of PennyLane,
+build continuous-variable (CV) quantum nodes, and to see an example of a hybrid qubit-CV-classical computation using PennyLane.
