@@ -20,15 +20,15 @@ def layer(v):
     """
 
     # Bias
-    qml.Displacement(v[0], v[1], [0])
+    qml.Displacement(v[0], v[1], wires=[0])
 
     # Matrix multiplication of input layer
-    qml.Rotation(v[2], [0])
-    qml.Squeezing(v[3], v[4], [0])
-    qml.Rotation(v[5], [0])
+    qml.Rotation(v[2], wires=[0])
+    qml.Squeezing(v[3], v[4], wires=[0])
+    qml.Rotation(v[5], wires=[0])
 
     # Nonlinear transformation
-    qml.Kerr(v[6], [0])
+    qml.Kerr(v[6], wires=[0])
 
 
 @qml.qnode(dev)
@@ -44,7 +44,7 @@ def quantum_neural_net(var, x=None):
     """
 
     # Encode input x into quantum state
-    qml.Displacement(x, 0., [0])
+    qml.Displacement(x, 0., wires=[0])
 
     # execute "layers"
     for v in var:
@@ -92,7 +92,7 @@ def cost(var, X, Y):
 
 
 # load function data
-data = np.loadtxt("sine.txt")
+data = np.loadtxt("data/sine.txt")
 X = data[:, 0]
 Y = data[:, 1]
 

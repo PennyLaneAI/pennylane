@@ -1,7 +1,7 @@
 """Variational quantum eigensolver example.
 
 In this example we optimize a variational circuit to lower
-the energy expectation of a user-defined Hamiltonian.
+the squared energy expectation of a user-defined Hamiltonian.
 
 We express the Hamiltonian as a sum of two Pauli operators.
 """
@@ -19,7 +19,7 @@ def ansatz(var):
         var (list[float]): list of variables
     """
 
-    qml.Rot(0.3, 1.8, 5.4, [1])
+    qml.Rot(0.3, 1.8, 5.4, wires=[1])
     qml.RX(var[0], wires=[0])
     qml.RY(var[1], wires=[1])
     qml.CNOT([0, 1])

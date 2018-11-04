@@ -21,8 +21,8 @@ def circuit(var):
     Returns:
         mean photon number of Mode 0
     """
-    qml.FockState(1, [0])
-    qml.Beamsplitter(var[0], var[1], [0, 1])
+    qml.FockState(1, wires=[0])
+    qml.Beamsplitter(var[0], var[1], wires=[0, 1])
 
     return qml.expval.MeanPhoton(0)
 
