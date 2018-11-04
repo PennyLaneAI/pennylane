@@ -6,7 +6,7 @@
 Hybrid computation
 ==================
 
-In the previous section, we introduced the notion of :mod:`quantum nodes <quantum_nodes>`. This abstraction lets us combine quantum functions with classical functions as part of a larger hybrid quantum-classical computation. 
+In the previous section, we introduced the notion of :mod:`quantum nodes <pennylane.qnode>`. This abstraction lets us combine quantum functions with classical functions as part of a larger hybrid quantum-classical computation. 
 
 Hybrid computations have been considered in many existing proposals. However, the division of labour between the quantum and classical components is often very rigid. Typically, quantum devices are used to evaluate some circuit(s), and the resulting expectation values are combined in a single classical cost function. 
 
@@ -49,5 +49,15 @@ Because PennyLane provides a method for evaluating gradients of quantum function
 
 This means that **PennyLane can differentiate end-to-end through hybrid quantum-classical computations**. Quantum machine learning models can thus be trained in basically the same way that clasical deep learning models are trained.
 
-.. note:: PennyLane leverages the Python library `autograd <https://github.com/HIPS/autograd>`_, which wraps the regular NumPy mathematical library, providing automatic differentiation features. PennyLane can support any classical machine learning model which is supported by autograd, as well as any hybrid machine learning model supported by the available quantum devices.
+.. note:: 
+    PennyLane leverages the Python library `autograd <https://github.com/HIPS/autograd>`_,  
+    which wraps the regular NumPy mathematical library, providing automatic differentiation features.
+    PennyLane can support any classical machine learning model which is supported by autograd, as
+    well as any hybrid machine learning model supported by the available quantum devices. 
+
+    When building a quantum-classical hybrid model, make sure to import the wrapped version of NumPy 
+    which is provided by PennyLane, i.e., :code:`from pennylane import numpy as np`. This will allow
+    PennyLane to compute gradients of functions built with NumPy alongside the gradients of quantum 
+    circuits.
+
 
