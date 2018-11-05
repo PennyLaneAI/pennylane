@@ -21,7 +21,7 @@ Features
 - *Device independent*.
   The same quantum circuit model can be **run on different backends**
 
-- **Large plugin ecosystem**.
+- *Large plugin ecosystem*.
   Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
 
 
