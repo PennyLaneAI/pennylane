@@ -3,8 +3,8 @@
 
 .. _qfuncs:
 
-Quantum functions
-=================
+Variational circuits
+====================
 
 A quantum function (*qfunc*) is any parameterized function :math:`f(x;\bm{\theta})` which can be evaluated on a quantum circuit using the `Born rule <https://en.wikipedia.org/wiki/Born_rule>`_.
 
