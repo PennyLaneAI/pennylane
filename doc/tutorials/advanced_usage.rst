@@ -11,7 +11,7 @@ In the previous three introductory tutorials (:ref:`qubit rotation <qubit_rotati
 In this tutorial, we will highlight some of the more advanced features of Pennylane.
 
 Multiple expectation values
-***************************
+---------------------------
 
 All the previous examples we considered utilized quantum functions with only single expectation values. In fact, PennyLane supports the return of multiple expectation values, up to one per wire.
 
@@ -46,7 +46,7 @@ Notice that the output of the circuit is a NumPy array with ``shape=(2,)``, i.e.
 
 
 Grad and Jacobian
-=================
+-----------------
 
 How does automatic differentiation work in the case where the QNode returns multiple expectation values? If we were to naively try computing the gradient using the :func:`~.grad` function,
 
@@ -82,11 +82,11 @@ It has a full Jacobian with two rows and three columns:
 >>> array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
            [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
 
-.. warning:: Currently, ``qml.jacobian`` only the case supports when ``argnum`` is a single integer. For quantum functions with multiple arguments, use the above method to get the full Jacobian matrix.
+.. warning:: Currently, :func:`pennylane.jacobian` only the case supports when ``argnum`` is a single integer. For quantum functions with multiple arguments, use the above method to get the full Jacobian matrix.
 
 
 Keyword arguments
-=================
+-----------------
 
 While automatic differentiation is a handy feature, sometimes we want certain parts of our computational pipeline (e.g., the inputs :math:`x` to a parameterized quantum function :math:`f(x;\bf{\theta})` or the training data for a machine learning model) to not be differentiated.
 
