@@ -6,7 +6,9 @@
 Introduction
 ============
 
-The main principle underlying PennyLane is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. PennyLane employs a model where both classical and quantum computers are used in the same basic way: as computational **devices** which we program to evaluate mathematical functions.
+The main principle underlying PennyLane is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. 
+
+PennyLane employs a model where both classical and quantum computers are used in the same basic way: as computational **devices** which we program to evaluate mathematical functions.
 
 The core of PennyLane is designed around four main concepts:
 
@@ -28,7 +30,7 @@ The core of PennyLane is designed around four main concepts:
 
 .. figure:: ../_static/quantum_function.svg
     :align: center
-    :width: 70%
+    :width: 40%
     :target: javascript:void(0);
 
     A quantum function is a function which is evaluated by measurements of a programmable quantum computer circuit.
@@ -56,7 +58,7 @@ Evaluating qfuncs is inefficient on classical computers, so we might expect the 
 
 .. figure:: ../_static/quantum_gradient.svg
     :align: center
-    :width: 70%
+    :width: 40%
     :target: javascript:void(0);
 
     Decomposing the gradient of a qfunc as a linear combination of qfuncs.
@@ -80,7 +82,7 @@ This leads to the notion of a **quantum node**: a basic computational unit — p
 
 .. figure:: ../_static/quantum_node.svg
     :align: center
-    :width: 70%
+    :width: 40%
     :target: javascript:void(0);
 
     A quantum node encapsulates a quantum circuit. Quantum information cannot exist outside a quantum node.
@@ -102,7 +104,7 @@ In many proposed hybrid algorithms, quantum circuits are used to evaluate quantu
 
 .. figure:: ../_static/hybrid_graph.svg
     :align: center
-    :width: 70%
+    :width: 40%
     :target: javascript:void(0);
 
     An 'true hybrid' quantum-classical computational graph.

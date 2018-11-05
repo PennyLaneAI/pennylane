@@ -91,3 +91,27 @@ Keyword arguments
 While automatic differentiation is a handy feature, sometimes we want certain parts of our computational pipeline (e.g., the inputs :math:`x` to a parameterized quantum function :math:`f(x;\bf{\theta})` or the training data for a machine learning model) to not be differentiated. 
 
 PennyLane uses the pattern that *all positional arguments to quantum functions are available to be differentiated*, while *keyword arguments are never differentiated*. Thus, when using the gradient-descent-based :mod:`optimizers <pennylane.optimize>` included in PennyLane, all numerical parameters appearing in non-keyword arguments will be updated, while all numerical values included as keyword arguments will not be updated.
+
+When constructing the circuit, the keyword argument's default value can be set to `None`.
+
+.. code::
+
+    @qml.qnode(dev)
+    def circuit3(param, fixed=None):
+        qml.RX(fixed, wires=0)
+        qml.RX(param, wires=1)
+        qml.CNOT(wires=[0,1])
+        return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+Calling the circuit, we can feed values to the keyword argument `fixed`. 
+
+>>> circuit3(0.1, fixed=-0.2) 
+>>> 0.9800665778412417
+>>> circuit3(0.1, fixed=1.2) 
+>>> 0.36235775447667345
+
+Since keyword arguments do not get considered when computing gradients, the jacobian will still be a 2-dimensional vector.
+
+>>> j3 = qml.jacobian(circuit3, argnum=0)
+>>> j3(2.5, fixed=3.2)
+>>> [1.11022302e-16 5.97451615e-01]
