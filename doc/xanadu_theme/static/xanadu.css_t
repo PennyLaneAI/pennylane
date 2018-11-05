@@ -1060,7 +1060,7 @@ div.admonition p.last {
 
 .docstable th:first-child,
 .docstable td:first-child {
-  text-align: center;
+  text-align: center !important;
 }
 
 .docstable tr.row-even th,
@@ -1069,7 +1069,7 @@ div.admonition p.last {
   vertical-align: top;
   border-top: 1px solid #fff;
   border-right: 1px solid #fff;
-  text-align: center;
+  text-align: left;
   vertical-align: middle;
 }
 
@@ -1079,7 +1079,7 @@ div.admonition p.last {
   vertical-align: top;
   border-top: 1px solid #fff;
   border-right: 1px solid #eee;
-  text-align: center;
+  text-align: left;
   vertical-align: middle;
 }
 
@@ -1093,6 +1093,7 @@ div.admonition p.last {
   border-bottom: 2px solid #119a68 !important;
   border-right: 1px solid #edf7f4 !important;
   background-color: #edf7f4;
+  text-align: center !important;
 }
 
 .docstable tbody + tbody {
