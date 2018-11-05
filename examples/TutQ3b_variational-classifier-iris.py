@@ -24,41 +24,79 @@ def layer(W):
     qml.CNOT(wires=[0, 1])
 
 
-def get_betas(x):
-    """Computes angles for rotations in `statepreparation()`.
-    These can be interpreted as the features derived from the original data."""
-    beta0 = 2*np.arcsin(np.sqrt(x[1]**2) / np.sqrt(x[0]**2 + x[1]**2))
-    beta1 = 2*np.arcsin(np.sqrt(x[3]**2) / np.sqrt(x[2]**2 + x[3]**2))
-    beta2 = 2*np.arcsin(np.sqrt(x[2]**2 + x[3]**2) / np.sqrt(x[0]**2 + x[1]**2 + x[2]**2 + x[3]**2))
+def alphas(phases):
+    """Angles for z rotations in state preparation routine"""
 
-    return [-beta2, beta1/2, -beta1/2, beta0/2, -beta0/2]
+    alpha0 = (phases[1] - phases[0])
+    alpha1 = (phases[3] - phases[2])
+    alpha2 = 1/2*(phases[2] - phases[0] + phases[3] - phases[1])
+
+    return alpha0, alpha1, alpha2
 
 
-def statepreparation(betas):
+def betas(ax):
+    """Angles for y rotations in state preparation routine"""
+
+    beta0 = 2*np.arcsin(ax[1] / np.sqrt(ax[0]**2 + ax[1]**2))
+    beta1 = 2*np.arcsin(ax[3] / np.sqrt(ax[2]**2 + ax[3]**2))
+    beta2 = 2*np.arcsin(np.sqrt(ax[2]**2 + ax[3]**2) / np.sqrt(ax[0]**2 + ax[1]**2 + ax[2]**2 + ax[3]**2))
+
+    return beta0, beta1, beta2
+
+
+def angles(x):
+    """Compute coefficients needed to prepare a quantum state
+    whose ket vector is `x`"""
+
+    absvals = np.abs(x)
+    phases = [0 if np.sign(x_) == 1 else np.pi for x_ in x]
+
+    beta0, beta1, beta2 = betas(absvals)
+    alpha0, alpha1, alpha2 = alphas(phases)
+
+    return [beta2, -beta1/2, beta1/2, -beta0/2, beta0/2,
+            alpha2, alpha1/2, -alpha1/2, alpha0/2, -alpha0/2]
+
+
+def statepreparation(angls):
 
     """Quantum circuit for amplitude encoding in 2 qubits.
-    See Schuld and Petruccione [2018], Chapter 5.2.1.
+    See Mottoennen et al 2004.
 
-    *Note that the original recipe uses a different definition of the Ry gate than Openqml*
-
+    Args:
+        angls: feature vector of rotation angles
     """
+    qml.QubitStateVector(angls, [0, 1])
 
-    # rotation on first qubit
-    qml.RY(betas[0], [0])
-
-    # rotation of second qubit conditioned on first qubit in 1
-    qml.CNOT([0, 1])
-    qml.RY(betas[1], [1])
-    qml.CNOT([0, 1])
-    qml.RY(betas[2], [1])
-
-    # rotation of second qubit conditioned on first qubit in 0
-    qml.PauliX([0])
-    qml.CNOT([0, 1])
-    qml.RY(betas[3], [1])
-    qml.CNOT([0, 1])
-    qml.RY(betas[4], [1])
-    qml.PauliX([0])
+    # # encode absolute values
+    # qml.RY(angls[0], wires=[0])
+    #
+    # qml.CNOT(wires=[0, 1])
+    # qml.RY(angls[1], wires=[1])
+    # qml.CNOT(wires=[0, 1])
+    # qml.RY(angls[2], wires=[1])
+    #
+    # qml.PauliX(wires=[0])
+    # qml.CNOT(wires=[0, 1])
+    # qml.RY(angls[3], wires=[1])
+    # qml.CNOT(wires=[0, 1])
+    # qml.RY(angls[4], wires=[1])
+    # qml.PauliX(wires=[0])
+    #
+    # # encode signs up to global phase
+    # qml.RZ(angls[5], wires=[0])
+    #
+    # qml.RZ(angls[6], wires=[1])
+    # qml.CNOT(wires=[0, 1])
+    # qml.RZ(angls[7], wires=[1])
+    # qml.CNOT(wires=[0, 1])
+    #
+    # qml.PauliX(wires=[0])
+    # qml.RZ(angls[8], wires=[1])
+    # qml.CNOT(wires=[0, 1])
+    # qml.RZ(angls[9], wires=[1])
+    # qml.CNOT(wires=[0, 1])
+    # qml.PauliX(wires=[0])
 
 
 @qml.qnode(dev)
@@ -127,11 +165,11 @@ def cost(weights, features, labels):
 
 
 # load Iris data and normalise feature vectors
-data = np.loadtxt("data/iris_scaled.txt")
+data = np.loadtxt("data/iris_classes1and2_scaled.txt")
 X = data[:, :-1]
 normalization = np.sqrt(np.sum(X ** 2, -1))
 X = (X.T / normalization).T  # normalize each input
-features = np.array([get_betas(x) for x in X])  # angles for state preparation are new features
+features = X #np.array([angles(x) for x in X])  # angles for state preparation are new features
 
 Y = data[:, -1]
 labels = Y*2 - np.ones(len(Y))  # shift from {0, 1} to {-1, 1}
@@ -156,7 +194,7 @@ batch_size = 5
 
 # train the variational classifier
 var = var_init
-for iteration in range(200):
+for iteration in range(20):
 
     # Update the weights by one optimizer step
     batch_index = np.random.randint(0, num_train, (batch_size, ))
