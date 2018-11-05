@@ -77,7 +77,7 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         with self.assertLogs(level='WARNING') as l:
-            Configuration()
+            Configuration('noconfig')
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
             self.assertIn('No PennyLane configuration file found.', l.output[0])
@@ -146,7 +146,7 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         # test false if no config is loaded
-        config = Configuration()
+        config = Configuration('noconfig')
         self.assertFalse(config)
 
         # test true if config is loaded
