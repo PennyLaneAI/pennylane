@@ -84,7 +84,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    concepts/introduction
-   concepts/qfuncs
+   concepts/varcirc
    concepts/autograd_quantum
    concepts/quantum_nodes
    concepts/hybrid_computation

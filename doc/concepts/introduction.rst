@@ -12,7 +12,7 @@ PennyLane employs a model where both classical and quantum computers are used in
 
 The core of PennyLane is designed around four main concepts:
 
-1. **Quantum functions**: a class of functions that are naturally evaluated using quantum computer circuits
+1. **Variational circuits**: parametrized quantum circuits that define functions in which quantum  processing takes place
 
 2. **Quantum gradients**: the gradients of quantum functions, these are themselves built from quantum functions
 
@@ -20,11 +20,11 @@ The core of PennyLane is designed around four main concepts:
 
 4. **Hybrid computation**: a computing model which seamlessly integrates both classical and quantum nodes
 
-:html:`<h3>Quantum functions</h3>`
+:html:`<h3>Variational circuits</h3>`
 
 .. rst-class:: admonition see
 
-    See the main :ref:`qfuncs` page for more details.
+    See the main :ref:`varcirc` page for more details.
 
 :html:`<br>`
 
@@ -33,16 +33,16 @@ The core of PennyLane is designed around four main concepts:
     :width: 40%
     :target: javascript:void(0);
 
-    A quantum function is a function which is evaluated by measurements of a programmable quantum computer circuit.
+    A variational circuit - a parametrized quantum circuit - defines a function which is evaluated by measurements of a programmable quantum circuit.
 
 :html:`<br>`
 
-The primary motivation for building quantum computers is that they should be able to perform computations which are inefficient to run on classical computers. To this end, a parameterized function :math:`f(x;\bm{\theta})` is called a **quantum function** (or **qfunc**) if it can be evaluated using a quantum circuit. 
+The primary motivation for building quantum computers is that they should be able to perform computations which are inefficient to run on classical computers. 
 
 .. note:: For a function :math:`f(x; \bm{\theta})`, :math:`x` is considered to be the function's input and :math:`\bm{\theta}` are parameters which determine the exact form of :math:`f`.
 
 .. 
-    .. seealso:: See the main :ref:`qfuncs` page for more details.
+    .. seealso:: See the main :ref:`varcirc` page for more details.
 
 :html:`<h3>Quantum gradients</h3>`
 
