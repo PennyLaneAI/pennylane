@@ -128,7 +128,7 @@ phi = np.pi / 6
 theta = np.pi / 2
 omega = np.pi / 7
 # Initialize the other variables
-gen_weights = np.random.normal(size=[9])
+gen_weights = np.array([0] + [np.pi] + [0] * 7)
 disc_weights = np.random.normal(size=[9])
 
 opt = qml.GradientDescentOptimizer(0.1)
