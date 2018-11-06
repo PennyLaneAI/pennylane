@@ -362,7 +362,7 @@ div.sphinxsidebar .sidebar-toc a {
 
 .sidebar-toc ul li a:hover {
   /*background-color: #428bca;*/
-  background-color: #119a68;
+  background-color: #177150;
   color: #fff;
 }
 
@@ -521,7 +521,7 @@ div.sphinxsidebar input {
 .text-logo:hover {
   color: #333;
   /*background-color: #daf0e9;*/
-  background-color: #f0dae2;
+  background-color: #d5e6d5;
   text-decoration: none;
 }
 
