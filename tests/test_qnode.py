@@ -370,20 +370,21 @@ class BasicTest(BaseTest):
             qml.CNOT([0, 1])
             return qml.expval.PauliZ(0), qml.expval.PauliY(1)
 
+        @qml.qnode(self.dev2)
         def circuit1(x, y, z):
             return ansatz(x, y, z)
 
+        @qml.qnode(self.dev2)
         def circuit2(x, array):
             return ansatz(x, array[0], array[1])
 
+        @qml.qnode(self.dev2)
         def circuit3(array):
             return ansatz(*array)
 
-        circuit1 = qml.QNode(circuit1, self.dev2)
         positional_res = circuit1(a, b, c)
         positional_grad = circuit1.jacobian([a, b, c])
 
-        circuit2 = qml.QNode(circuit2, self.dev2)
         array_res = circuit2(a, np.array([b, c]))
         array_grad = circuit2.jacobian([a, np.array([b, c])])
 
@@ -393,7 +394,6 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
         self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
 
-        circuit3 = qml.QNode(circuit3, self.dev2)
         array_res = circuit3(np.array([a, b, c]))
         array_grad = circuit3.jacobian([np.array([a, b, c])])
 
