@@ -1,5 +1,17 @@
-PennyLane
-#########
+.. role:: html(raw)
+   :format: html
+
+:html:`<br>`
+
+
+.. image:: _static/pennylane_big.png
+    :align: center
+    :width: 500px
+    :target: javascript:void(0);
+    :alt: PennyLane
+
+-----------------------------------------------
+
 
 :Release: |release|
 :Date: |today|

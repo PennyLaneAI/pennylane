@@ -90,7 +90,7 @@ Keyword arguments
 
 While automatic differentiation is a handy feature, sometimes we want certain parts of our computational pipeline (e.g., the inputs :math:`x` to a parameterized quantum function :math:`f(x;\bf{\theta})` or the training data for a machine learning model) to not be differentiated.
 
-PennyLane uses the pattern that *all positional arguments to quantum functions are available to be differentiated*, while *keyword arguments are never differentiated*. Thus, when using the gradient-descent-based :mod:`optimizers <pennylane.optimize>` included in PennyLane, all numerical parameters appearing in non-keyword arguments will be updated, while all numerical values included as keyword arguments will not be updated.
+PennyLane uses the pattern that *all positional arguments to quantum functions are available to be differentiated*, while *keyword arguments are never differentiated*. Thus, when using the gradient-descent-based :ref:`optimizers <optimization_methods>` included in PennyLane, all numerical parameters appearing in non-keyword arguments will be updated, while all numerical values included as keyword arguments will not be updated.
 
 .. note:: When constructing the circuit, keyword arguments are defined by providing a **default value** in the function signature. If you would prefer that the keyword argument value be passed every time the quantum function is called, the default value can be set to ``None``.
 
