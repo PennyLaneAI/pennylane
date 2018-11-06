@@ -1,5 +1,7 @@
-PennyLane
-#########
+.. image:: doc/_static/pennylane_big.png
+    :alt: PennyLane
+    
+###################################
 
 .. image:: https://img.shields.io/travis/XanaduAI/pennylane/master.svg?style=for-the-badge
     :alt: Travis
