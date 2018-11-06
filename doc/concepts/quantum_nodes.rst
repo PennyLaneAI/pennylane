@@ -39,7 +39,7 @@ There are many schemes for inputting classical information into quantum systems,
 
    Measurements convert quantum information (the state of a quantum system) into classical information (the measurement value). Measurements often have a distribution of outcomes, with the pattern becoming clear only after a sufficient number of measurements are taken.
 
-   To simplify things, we will work with expectation values (i.e., averages) of measurement outcomes as our primary mechanism for obtaining classical information from quantum devices [#]_.
+   In PennyLane, we work with expectation values (i.e., averages) of measurement outcomes as our primary mechanism for obtaining classical information from quantum devices [#]_.
 
 The quantum node abstraction
 ============================
@@ -60,10 +60,12 @@ A quantum node (:mod:`QNode <pennylane.qnode>`) is a computational encapsulation
 
 :html:`<br>`
 
+.. note:: For a function :math:`f(x; \bm{\theta})`, :math:`x` is considered to be the function's input and :math:`\bm{\theta}` are parameters which determine the exact form of :math:`f`.
+
 So long as we provide some mechanism for evaluating quantum nodes (i.e., a quantum computing device or simulator), a classical computing device can treat it as it would any other callable function which manipulates classical data. We can thus connect quantum nodes with classical transformations to build complex multistage :ref:`hybrid quantum-classical computations <hybrid_computation>`.
 
 .. rubric:: Footnotes
 
-.. [#] This strategy can be though of as a *quantum embedding* or *quantum feature map* of classical information in a quantum Hilbert space :cite:`schuld2018quantum`.
+.. [#] This strategy can be thought of as a *quantum embedding* or *quantum feature map* of classical information in a quantum Hilbert space :cite:`schuld2018quantum`.
 
 .. [#] This averaging is also important to ensure that quantum functions are suitably well-defined, since single-shot measurements of the same circuit may not give the same value.

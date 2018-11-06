@@ -6,7 +6,7 @@
 Hybrid computation
 ==================
 
-In the previous section, we introduced the notion of :mod:`quantum nodes <pennylane.qnode>`. This abstraction lets us combine quantum functions with classical functions as part of a larger hybrid quantum-classical computation.
+In the introduction, we briefly introduced the notion of :mod:`quantum nodes <pennylane.qnode>`. This abstraction lets us combine quantum functions with classical functions as part of a larger hybrid quantum-classical computation.
 
 Hybrid computations have been considered in many existing proposals. However, the division of labour between the quantum and classical components is often very rigid. Typically, quantum devices are used to evaluate some circuit(s), and the resulting expectation values are combined in a single classical cost function.
 
@@ -38,14 +38,14 @@ Directed acyclic graphs
 
 :html:`<br>`
 
-PennyLane was designed with a much more expressive notion of hybrid computation in mind. Quantum and classical nodes can be combined into an arbitrary `directed acyclic graph <https://en.wikipedia.org/wiki/Directed_acyclic_graph>`_ (DAG). This means that information flows from each node to its successors (which may be QNodes or nodes implementing classical functions), and no cycles (loops) are created. Other than these basic rules, any configuration is supported. Every node in the graph can be either classical or quantum, and quantum nodes running on different devices (e.g., a qubit and a CV device) can be combined in the same computation.
+PennyLane was designed with a much more expressive notion of hybrid computation in mind. Quantum and classical nodes can be combined into an arbitrary `directed acyclic graph <https://en.wikipedia.org/wiki/Directed_acyclic_graph>`_ (DAG). This means that information flows from each node to its successors, and no cycles (loops) are created. Other than these basic rules, any configuration is supported. Each node in the graph can be either classical or quantum, and quantum nodes running on different devices (e.g., a qubit and a CV device) can be combined in the same computation.
 
 This DAG structure is similar to that appearing in modern deep learning models. In fact, PennyLane supports any machine learning model that can be coded using NumPy. Of course, PennyLane has the added benefit that it also supports quantum circuits seamlessly in the computational graph.
 
 Backpropagation through hybrid computations
 -------------------------------------------
 
-Because PennyLane provides a method for evaluating gradients of quantum functions, it is compatible with automatic differentiation techniques like the famous `backpropagation <https://en.wikipedia.org/wiki/Backpropagation>`_ algorithm (a.k.a., reverse mode automatic differentiation), the workhorse algorithm for training deep learning models.
+Because PennyLane provides a method for evaluating gradients of quantum functions, it is compatible with techniques like the famous `backpropagation <https://en.wikipedia.org/wiki/Backpropagation>`_ algorithm (a.k.a., reverse mode automatic differentiation), the workhorse algorithm for training deep learning models.
 
 This means that **PennyLane can differentiate end-to-end through hybrid quantum-classical computations**. Quantum machine learning models can thus be trained in basically the same way that clasical deep learning models are trained.
 
