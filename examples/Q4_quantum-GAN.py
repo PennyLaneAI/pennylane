@@ -3,6 +3,8 @@
 This demo constructs a General Adverserial Network (GAN)
 from a quantum circuit that serves as a generator and a second
 quantum circuit which takes the role of a discriminator.
+
+Inspired by Dallaire-Demers and Killoran 2018 (arXiv:1804.08641).
 """
 
 import pennylane as qml
