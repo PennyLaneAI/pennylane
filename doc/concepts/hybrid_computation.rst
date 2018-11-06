@@ -14,7 +14,7 @@ Hybrid computations have been considered in many existing proposals. However, th
 
 .. figure:: ../_static/simple_hybrid_graph.svg
     :align: center
-    :width: 30%
+    :width: 50%
     :target: javascript:void(0);
 
     The structure of hybrid quantum-classical computations has historically been limited to quantum circuits whose output is combined in a single classical cost function, e.g., the variational quantum eigensolver [peruzzo2014variational]_. 
