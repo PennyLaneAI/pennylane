@@ -33,6 +33,12 @@ learning and automatic differentiation of hybrid quantum-classical computations.
 Features
 ========
 
+
+.. raw:: html
+
+    <img src="https://i.imgur.com/SqlTUZ1.png" width="300px"  align="right">
+
+
 - **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
 
 - **Best of both worlds**. Support for **hybrid quantum & classical** models
