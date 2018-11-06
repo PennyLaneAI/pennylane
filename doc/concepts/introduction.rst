@@ -91,7 +91,7 @@ Variational circuits are quantum algorithms that depend on tunable parameters wh
 
 1. Preparation of a fixed **initial state** (e.g., the vacuum state or the zero state).
 
-2. A quantum circuit, **parameterized* by both the input :math:`x` and the function parameters :math:`\bm{\theta}`.
+2. A quantum circuit, **parameterized** by both the input :math:`x` and the function parameters :math:`\boldsymbol\theta`.
 
 3. **Measurement** of an observable :math:`\hat{B}` at the output. This observable may be made up from local observables for each wire in the circuit, or just a subset of wires.
 

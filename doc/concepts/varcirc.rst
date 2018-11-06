@@ -6,14 +6,14 @@
 Variational circuits
 ====================
 
-A variational circuit is a parameterized quantum circuit :math:`U(\bm{\gamma})` together with an observable :math:`\hat{O}` that is measured after applying the circuit to an initial state such as the ground or vacuum state :math:`| 0 \rangle`. 
+A variational circuit is a parameterized quantum circuit :math:`U(x, \bm{\theta})` together with an observable :math:`\hat{B}` that is measured after applying the circuit to an initial state such as the ground or vacuum state :math:`| 0 \rangle`. 
 
-The expectations :math:`\langle 0 | U(\gamma)^{\dagger} \hat{O} U(\gamma) | 0 \rangle` of one or more such circuits - possibly with some classical post-processing - defines a scalar cost for a given task. The parametrized circuit is optimised with respect to the objective (see Figure \ref{var_principle}).
+The expectations :math:`\langle 0 | U(x, \bm{\theta})^{\dagger} \hat{B} U(x, \bm{\theta}) | 0 \rangle` of one or more such circuits - possibly with some classical post-processing - defines a scalar cost for a given task. The parametrized circuit is optimised with respect to the objective (see Figure \ref{var_principle}).
 
 
 :html:`<br>`
 
-.. figure:: ../_static/variational_rough.svg
+.. figure:: ../_static/variational_rough.png
     :align: center
     :width: 40%
     :target: javascript:void(0);
@@ -22,54 +22,15 @@ The expectations :math:`\langle 0 | U(\gamma)^{\dagger} \hat{O} U(\gamma) | 0 \r
 
 :html:`<br>`
 
-Typically, variational circuits are trained by a classical optimization algorithm that makes queries to the quantum device. The optimization is an iterative scheme that searches better candidates for the parameters :math:`\gamma` with every step.
+Typically, variational circuits are trained by a classical optimization algorithm that makes queries to the quantum device. The optimization is an iterative scheme that searches better candidates for the parameters :math:`\theta` with every step.
 
+Variational circuits have been proposed for various near-term applications, such as optimization, quantum chemistry, machine learning, data compression and feature embeddings.
 
-Variational circuits have become popular as a way to think about quantum algorithms for near-term quantum devices. Such devices can only run short gate sequences, and have a high error. Usually, a quantum algorithm is decomposed into a set of standard elementary operations, which are in turn implemented by the quantum hardware. The intriguing idea of variational circuit for near-term devices is to merge this two-step procedure into a single step by "learning" the circuit on the noisy device for a given task. This way, the "natural" tunable gates of a device can be used to formulate the algorithm, without the detour via a fixed elementary gate set. Furthermore, systematic errors can automatically be corrected during optmization.
-
-Variational circuits have been proposed for various near-term applications, such as
-
-* optimization [Ref Farhi], 
-* quantum chemistry [...], 
-* variational autoencoders [Ref Jonny], 
-* variational classifiers [REF Schuld 2018], and
-* feature embeddings [REF]
-
-
-
-
-Interpreting a variational circuit as a quantum function
---------------------------------------------------------
-
-A quantum function (*qfunc*) is any parameterized function :math:`f(x;\bm{\theta})` which can be evaluated on a quantum circuit using the `Born rule <https://en.wikipedia.org/wiki/Born_rule>`_.
-
-.. math:: f(x; \bm{\theta}) = \langle \hat{B} \rangle = \langle 0 | U^\dagger(x;\bm{\theta})\hat{B}U(x;\bm{\theta}) | 0 \rangle.
-
-The circuit formulation of a qfunc contains three ingredients:
-
-1. Preparation of a fixed initial state (e.g., the vacuum state or the zero state).
-
-2. A quantum circuit, parameterized by both the input :math:`x` and the function parameters :math:`\bm{\theta}`.
-
-3. Measurement of an observable :math:`\hat{B}` at the output. This observable may be made up from local observables for each wire in the circuit, or just a subset of wires.
-
-:html:`<br>`
-
-.. figure:: ../_static/quantum_function.svg
-    :align: center
-    :width: 70%
-    :target: javascript:void(0);
-
-    *Quantum functions* are functions which can be evaluated from a quantum circuit using the Born rule. 
-
-:html:`<br>`
+.. note:: Variational circuits have become popular as a way to think about quantum algorithms for near-term quantum devices. Such devices can only run short gate sequences, and have a high error. Usually, a quantum algorithm is decomposed into a set of standard elementary operations, which are in turn implemented by the quantum hardware. The intriguing idea of variational circuit for near-term devices is to merge this two-step procedure into a single step by "learning" the circuit on the noisy device for a given task. This way, the "natural" tunable gates of a device can be used to formulate the algorithm, without the detour via a fixed elementary gate set. Furthermore, systematic errors can automatically be corrected during optmization.
 
 
 Building the circuit
 --------------------
-
-Both the input :math:`x` and the function parameters :math:`\bm{\theta}` enter the quantum circuit in the same way: as arguments for the circuit's gates. This allows us to convert *classical information* (the values of :math:`x` and :math:`\bm{\theta}`) into *quantum information* (the quantum state :math:`U(x;\bm{\theta})|0\rangle`).
-Quantum information is turned back into classical information by evaluating the expectation value of the observable :math:`\hat{B}`.
 
 :html:`<br>`
 
@@ -82,10 +43,23 @@ Quantum information is turned back into classical information by evaluating the 
 
 :html:`<br>`
 
-Beyond the basic rule that the inputs and parameters :math:`(x;\bm{\theta})` are used as the arguments of gates, exactly how the gates are arranged is essentially arbitrary. The circuit can also include additional gates which have no free parameter associated with them. A number of general-purpose and special-purpose circuit ansatzes have been proposed in the quantum optimization and quantum machine learning literature [#]_.
+Both the input :math:`x` and the function parameters :math:`\bm{\theta}` **enter the quantum circuit** in the same way: as arguments for the circuit's gates. This allows us to convert *classical information* (the values of :math:`x` and :math:`\bm{\theta}`) into *quantum information* (the quantum state :math:`U(x;\bm{\theta})|0\rangle`).
 
-Data-embedding example
-~~~~~~~~~~~~~~~~~~~~~~
+Quantum information is turned **back into classical information** by evaluating the expectation value of the observable :math:`\hat{B}`,
+
+.. math:: f(x; \bm{\theta}) = \langle \hat{B} \rangle = \langle 0 | U^\dagger(x;\bm{\theta})\hat{B}U(x;\bm{\theta}) | 0 \rangle.
+
+
+Beyond the basic rule that the inputs and parameters :math:`(x;\bm{\theta})` are used as the arguments of gates, exactly how the gates are arranged, the **circuit architecture**, is essentially arbitrary. 
+
+.. note:: As shown in the figure above, the circuit can also include additional gates which have no free parameter associated with them. 
+
+
+Example 
+-------
+
+Data-embedding 
+~~~~~~~~~~~~~~
 
 One straightforward embedding strategy is for the first few gates in the circuit to be responsible for embedding the input :math:`x` into a quantum state (which functions as a feature map [schuld2018quantum]_), while the subsequent gates have the parameters :math:`\bm{\theta}` as arguments. 
 
@@ -99,12 +73,12 @@ Measurement of the :class:`position expectation value <pennylane.expval.cv.X>` o
 
 Thus, the displacement gate — combined with vacuum input and position measurements — can be used to directly encode data into a photonic quantum computer.
 
-Parameterized function example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Data processing
+~~~~~~~~~~~~~~~
 
-To complete our picture of a quantum function, we would like to further process the embedded data from the example above. As it stands, our example circuit currently represents the *identity qfunc* :math:`f(x)=x`, which has no free parameters. By introducing additional gates, with parameters :math:`\bm{\theta}`, we can start building up more complex functions.
+To complete our picture of a quantum node, we would like to further process the embedded data from the example above. As it stands, our example circuit currently represents the *identity* :math:`f(x)=x`, which has no free parameters. By introducing additional gates, with parameters :math:`\bm{\theta}`, we can start building up more complex functions.
 
-For clarity, we restrict to a one-dimensional input :math:`x` and add in a single :class:`Rotation gate <pennylane.ops.cv.Rotation>`, with free parameter :math:`\theta`. After applying this gate, the qfunc evaluated by our circuit becomes
+For clarity, we restrict to a one-dimensional input :math:`x` and add in a single :class:`Rotation gate <pennylane.ops.cv.Rotation>`, with free parameter :math:`\theta`. After applying this gate, the quantum node evaluated by our circuit becomes
 
 .. math:: f(x;\theta) = x\cos(\theta).
 
@@ -115,18 +89,19 @@ The above examples were kept very simple to illustrate the principles behind emb
 
 Architectures
 -------------
-The core of a variational circuit is the \textit{architecture} or the fixed gate sequence that is the skeleton of the algorithm. The favourable properties of an architecture certainly vary from task to task, and -- for example in machine learning, where there is a trade-off of flexibily and regularization -- it is not always clear what makes a good ansatz. Investigations of the expressive power of different approaches have begun [REF new paper]. One goal of Penny Lane is to facilitate such studies across  platforms.
 
-To give a rough summary of variational architectures that have been proposed in the literature, let us distinguish three different types of architectures, *gate*, *alternating operator* and *tensor net-based architectures*.
+Beyond this simple example, many architectures have been proposed in the literature. The favourable properties of an architecture vary from task to task, and -- for example in machine learning, where there is a trade-off of flexibily and regularization -- it is not always clear what makes a good ansatz. Investigations of the expressive power of different approaches have begun [du2018expressive]_. One goal of Penny Lane is to facilitate such studies across  platforms.
 
-
-Gate-based architectures
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Gate-based architectures define a layer architecture. The number of repetitions of a layer forms a hyperparameter of the variational circuit. 
+To give a rough summary, let us distinguish three different types of architectures, namely **layered gate architectures**, **alternating operator architectures** and **tensor network architectures**.
 
 
-For qubit gates, we can often decompose a layer further into two blocks :math:`A` and :math:`B`. 
+Layered gate architectures
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A layer is a sequence of gates that is repeated in the variational circuit. The number of repetitions of a layer forms a hyperparameter of the variational circuit. 
+
+
+We can often decompose a layer further into two overall unitaries :math:`A` and :math:`B`. 
 
 :html:`<br>`
 
@@ -135,11 +110,9 @@ For qubit gates, we can often decompose a layer further into two blocks :math:`A
     :width: 40%
     :target: javascript:void(0);
 
-    TEXT. 
-
 :html:`<br>`
 
-Block :math:`A` contains single-qubit gates applied to every qubit. Block :math:`B` also consists of entangling two-qubit gates. 
+Block :math:`A` contains single-qubit gates applied to every subsystem. Block :math:`B` consists of single subsystem, as well as entangling gates. 
 
 :html:`<br>`
 
@@ -148,19 +121,20 @@ Block :math:`A` contains single-qubit gates applied to every qubit. Block :math:
     :width: 40%
     :target: javascript:void(0);
 
-    TEXT. 
-
 :html:`<br>`
 
-The architectures differ in two regards:
+The different versions of layered gate architectures differ in three regards:
 
 * Whether only :math:`A`, only :math:`B`, or both :math:`A` and :math:`B` are parametrized
+* Which types of gates are used in :math:`A` and :math:`B`
 * Whether the gates in Block :math:`B` are arranged randomly, fixed, or structured by a hyperparameter
+
+We demonstrate this with discrete and continuous-variable models.
 
 A parametrized, B fixed
 ***********************
 
-In the simplest case we can use SU(2) gates in Block :math:`A` and let :math:`B` be fixed,
+In the simplest case of qubit-based devices we can use general SU(2) gates or rotations :math:`R` in Block :math:`A` and let :math:`B` be fixed,
 
 :html:`<br>`
 
@@ -169,14 +143,12 @@ In the simplest case we can use SU(2) gates in Block :math:`A` and let :math:`B`
     :width: 40%
     :target: javascript:void(0);
 
-    TEXT. 
-
 :html:`<br>`
 
 A parametrized, B parametrized
 ******************************
 
-In [Jonny Autoencoder arxiv1612.02806, SCHULD CC] we have both :math:`A` and :math:`B` parametrized and the arrangements of the two-qubit gates depends on a hyperparameter defining the range of two-qubit gates.
+We can also have both :math:`A` and :math:`B` parametrized and the arrangements of the two-qubit gates depends on a hyperparameter defining the range of two-qubit gates. See also [romero2017quantum]_, [schuld2018circuit]_.
 
 :html:`<br>`
 
@@ -190,7 +162,7 @@ In [Jonny Autoencoder arxiv1612.02806, SCHULD CC] we have both :math:`A` and :ma
 :html:`<br>`
 
 
-An architecture specific to continuous-variable systems has been proposed in [Schuld Killoran]. The entangling layer is represented by an interferometer, a passive optical element made up of individual beam splitters and phase shifters. Block :math:`A` consists of single-mode gates which consecutively increase the order of the quadrature operator in the generator: While the displacement is an order-1 operator, the quadratic phase gate is order-2 and the cubic phase gate order-3. [Explain BETTER] 
+A fully parametrized architecture specific to continuous-variable systems has been proposed in [schuld2018quantum]_. 
 
 :html:`<br>`
 
@@ -203,10 +175,12 @@ An architecture specific to continuous-variable systems has been proposed in [Sc
 
 :html:`<br>`
 
+The entangling layer is represented by an interferometer, a passive optical element made up of individual beam splitters and phase shifters. Block :math:`A` consists of single-mode gates which consecutively increase the order of the quadrature operator in the generator: While the displacement :math:`D` is an order-1 operator, the quadratic phase gate :math:`Q` is order-2 and the cubic phase gate :math:`V` order-3 in the position operator. 
+
 A fixed, B parametrized
 ***********************
 
-[HAVELIC] use an IQP circuit where :math:`A` consists of Hadamards and :math:`B` is made up of parametrized diagonal one- and two-qubit gates. 
+An example for fixing the single qubit gates is a so-called *IQP* circuit, where :math:`A` consists of Hadamard gates and :math:`B` is made up of parametrized diagonal one- and two-qubit gates [havlicek2018supervised]_. 
 
 :html:`<br>`
 
@@ -214,8 +188,6 @@ A fixed, B parametrized
     :align: center
     :width: 40%
     :target: javascript:void(0);
-
-    TEXT. 
 
 :html:`<br>`
 
@@ -228,16 +200,14 @@ IQP circuits can also be constructed for continuous-variable systems.
     :width: 40%
     :target: javascript:void(0);
 
-    TEXT. 
-
 :html:`<br>`
 
-
+All gates used, :math:`T`, (controlled) :math:`Z` rotations and a fixed :math:`CZ` gate, are diagonal in the computational basis.
 
 Other structures
 ****************
 
-Transcending the simple two-block structure allows to build more complex layers, such as this layer of a photonic neural network which emulates how information is processed in classical neural nets [REF]. 
+Transcending the simple two-block structure allows to build more complex layers, such as this layer of a photonic neural network which emulates how information is processed in classical neural nets [killoran2018continuous]_ [steinbrecher2018quantum]_. 
 
 :html:`<br>`
 
@@ -246,17 +216,18 @@ Transcending the simple two-block structure allows to build more complex layers,
     :width: 40%
     :target: javascript:void(0);
 
-    TEXT. 
-
 :html:`<br>`
 
+Here we use squeezers :math:`S`, cubic phase gates :math:`V` and continuous-variable (controlled) :math:`Z` gates.
 
 
 Alternating operator architectures
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-The alternating operator structure was first introduced in Farhi and Goldstone's Quantum Approximate Optimization Algorithm (QAOA) [REF] and later used for machine learning [GUILLAUME PAPER] and optimization [MARK PAPER, others?]. The idea is based on adiabatic quantum computing, in which the sytem starts in a Hamiltonian :math:`A` and is slowly transformed to a target Hamiltonian :math:`B`. The system starts in the ground state of :math:`A` and adiabatically evolves to the ground state of  :math:`B`. Streptoscopic, or quickly alternating applications of  :math:`A` and  :math:`B` for very short times  :math:`\Delta t` can be used as a heuristic to approximate this evolution.
+The alternating operator architecture was first introduced in Farhi and Goldstone's *Quantum Approximate Optimization Algorithm* (QAOA) [farhi2014quantum]_ and later used for machine learning (for example [verdon2017quantum]_) and other domain-specific applications (i.e., [fingerhuth2018quantum]_). 
+
+Again, we use layers of two blocks. The difference is that this time the unitaries representing these blocks are defined via Hamiltonians :math:`A` and :math:`B` which are evolved for a short time :math:`\Delta t`.
 
 :html:`<br>`
 
@@ -265,15 +236,15 @@ The alternating operator structure was first introduced in Farhi and Goldstone's
     :width: 40%
     :target: javascript:void(0);
 
-    TEXT. 
-
 :html:`<br>`
 
 
-Fixed architectures
-~~~~~~~~~~~~~~~~~~~
+.. note:: The idea of this ansatz is based on adiabatic quantum computing, in which the sytem starts in a Hamiltonian :math:`A` and is slowly transformed to a target Hamiltonian :math:`B`. The system starts in the ground state of :math:`A` and adiabatically evolves to the ground state of  :math:`B`. Streptoscopic, or quickly alternating applications of  :math:`A` and  :math:`B` for very short times  :math:`\Delta t` can be used as a heuristic to approximate this evolution.
 
-Amongst the architectures that do not consist of layers, but a single fixed structure are gate sequences inspired by tensor networks. The simplest one is a tree architectures that consecutively entangle subsets of qubits:
+Tensor network architectures
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Amongst the architectures that do not consist of layers, but a single fixed structure, are gate sequences inspired by tensor networks [huggins2018towards]_ [du2018expressive]_. The simplest one is a tree architectures that consecutively entangle subsets of qubits:
 
 :html:`<br>`
 
@@ -282,12 +253,22 @@ Amongst the architectures that do not consist of layers, but a single fixed stru
     :width: 40%
     :target: javascript:void(0);
 
-    TEXT. 
+:html:`<br>`
+
+Another option is a *matrix product state*. The unitaries can be decomposed in different ways, and their size corresponds to the "bond dimension" of the matrix product state - the higher the bond dimension, the more complex the circuit ansatz.
 
 :html:`<br>`
 
+.. figure:: ../_static/vc_mps.svg
+    :align: center
+    :width: 40%
+    :target: javascript:void(0);
+
+:html:`<br>`
+
+.. note:: Tensor networks such as matrix product states were invented to simulate quantum systems efficiently on classical computers (even though the computation of expectation values can still be hard). Hence, tensor network architectures do not necessarily give rise to classically intractable quantum nodes. 
 
 .. rubric:: Footnotes
 
-.. [#] For example, see the following non-exhaustive list: [farhi2014quantum]_ [romero2017quantum]_ [farhi2017quantum]_ [benedetti2018generative]_ [schuld2018quantum]_ [schuld2018circuit]_ [dallaire2018quantum]_ [killoran2018continuous]_ [steinbrecher2018quantum]_. 
+.. [#] For example, see the following non-exhaustive list: [farhi2017quantum]_ [benedetti2018generative]_   [dallaire2018quantum]_  INTEGRATE!
 
