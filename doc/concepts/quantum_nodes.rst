@@ -24,7 +24,7 @@ On the other hand, **quantum information** will refer to the state of a complex-
 
 :html:`<br>`
 
-.. note:: Quantum information can be simulated on a classical computer, but this cannot be done efficiently. 
+.. note:: Quantum information can be simulated on a classical computer, but in general this cannot be done efficiently. 
 
 Interfacing the classical and quantum worlds
 ============================================
@@ -45,9 +45,9 @@ A quantum node (:mod:`QNode <pennylane.qnode>`) is a computational encapsulation
 
 :html:`<br>`
 
-.. figure:: ../_static/quantum_node.svg
+.. figure:: ../_static/quantumnode_detail.png
     :align: center
-    :width: 70%
+    :width: 60%
     :target: javascript:void(0);
 
     Quantum nodes are seen differently depending on the computational device. A classical device merely sees a callable function which transforms classical information. A quantum device sees a higher resolution version, with quantum gates and measurements.
