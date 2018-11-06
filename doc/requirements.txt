@@ -1,4 +1,7 @@
+autograd
+numpy
+scipy
+toml
+appdirs
 sphinxcontrib-bibtex
-ipykernel
-nbsphinx
 pygments-github-lexers

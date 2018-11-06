@@ -9,27 +9,43 @@ PennyLane is a Python library for building and training machine learning models 
 Features
 ========
 
+
+.. image:: _static/code.png
+    :align: right
+    :width: 320px
+    :target: javascript:void(0);
+
+
 - *Follow the gradient*.
   Built-in **automatic differentiation** of quantum circuits
+
+..
 
 - *Best of both worlds*.
   Support for **hybrid quantum and classical** models
 
+..
+
 - *Batteries included*.
   Provides **optimization and machine learning** tools
+
+..
 
 - *Device independent*.
   The same quantum circuit model can be **run on different backends**
 
-- **Large plugin ecosystem**.
+..
+
+- *Large plugin ecosystem*.
   Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
 
 
 Available plugins
-=================
+-----------------
 
 * `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`__: Supports integration with `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack Python library for simulating continuous variable (CV) quantum optical circuits.
 
+..
 
 * `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`__: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
 
