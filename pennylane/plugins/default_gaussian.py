@@ -310,7 +310,7 @@ def beamsplitter(theta, phi):
 
 
 def two_mode_squeezing(r, phi):
-    """two-mode squeezing
+    """Two-mode squeezing
 
     Args:
         r (float): squeezing magnitude.

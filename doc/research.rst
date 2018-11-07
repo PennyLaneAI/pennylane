@@ -10,7 +10,7 @@ If you are doing research using PennyLane, please cite the PennyLane paper:
 
   [Placeholder for PennyLane paper]
 
-We are always open for collaboration, and can be contacted at research@xanadu.ai.
+We are always open for collaboration; you can contact us at research@xanadu.ai.
 
 Support
 -------
