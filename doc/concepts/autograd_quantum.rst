@@ -64,9 +64,14 @@ The transformation :math:`\mathcal{M}_{\theta_i}` depends smoothly on the parame
 
 The key insight is that we can, in many cases of interest, express this gradient as a linear combination of the same transformation :math:`\mathcal{M}`, but with different parameters. Namely,
 
-.. math:: \nabla_{\theta_i}\mathcal{M}_{\theta_i}(\hat{B}) = c[\mathcal{M}_{\theta_i + \gamma}(\hat{B}) - \mathcal{M}_{\theta_i - \gamma}(\hat{B})],
+.. math:: \nabla_{\theta_i}\mathcal{M}_{\theta_i}(\hat{B}) = c[\mathcal{M}_{\theta_i + s}(\hat{B}) - \mathcal{M}_{\theta_i - s}(\hat{B})],
 
-where the multiplier :math:`c` and the shift :math:`\gamma` are determined completely by the type of transformation :math:`\mathcal{M}` and independent of the value of :math:`\theta_i`.
+where the multiplier :math:`c` and the shift :math:`s` are determined completely by the type of transformation :math:`\mathcal{M}` and independent of the value of :math:`\theta_i`.
+
+
+.. note::
+
+    While this construction bears some resemblance to the numerical finite-difference method for computing derivatives, here :math:`s` is finite rather than infinitesimal.
 
 Multiple parameterized gates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
