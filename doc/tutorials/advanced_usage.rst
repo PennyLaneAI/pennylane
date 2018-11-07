@@ -140,4 +140,3 @@ Since keyword arguments do not get considered when computing gradients, the Jaco
     --> 136         value = self.kwarg_values[self.name][self.idx] * self.mult
         137         return value
     TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
-
