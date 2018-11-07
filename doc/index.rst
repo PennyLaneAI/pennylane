@@ -135,6 +135,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    tutorials/gaussian_transformation
    tutorials/plugins_hybrid
    tutorials/advanced_usage
+   tutorials/notebooks
 
 
 .. toctree::
