@@ -1,6 +1,6 @@
-"""Quantum General Adverserial Network.
+"""Quantum Generative Adverserial Network.
 
-This demo constructs a General Adverserial Network (GAN)
+This demo constructs a Generative Adverserial Network (GAN)
 from a quantum circuit that serves as a generator and a second
 quantum circuit which takes the role of a discriminator.
 
