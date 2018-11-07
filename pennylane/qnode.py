@@ -21,7 +21,7 @@ The quantum node object
 .. currentmodule:: pennylane
 
 The :class:`~qnode.QNode` class is used to construct quantum nodes,
-encapsulating a :ref:`quantum function <qfuncs>` and the computational
+encapsulating a quantum function or :ref:`variational circuit <varcirc>` and the computational
 device it is executed on.
 
 The computational device is an instance of the :class:`~_device.Device`

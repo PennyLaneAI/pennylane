@@ -44,9 +44,9 @@ There are many schemes for inputting classical information into quantum systems,
 The quantum node abstraction
 ============================
 
-A quantum node (:mod:`QNode <pennylane.qnode>`) is a computational encapsulation of a quantum function :math:`f(x;\bm{\theta})` which has different resolution for different computational devices.
+A quantum node is a computational encapsulation of a quantum function :math:`f(x;\bm{\theta})` which has different resolution for different computational devices.
 
-- For a quantum computing device, a quantum node is an explicit circuit whose gates are parameterized by :math:`x` and :math:`\bm{\theta}` and whose measurement outcomes are averaged to produce an expectation value.
+- For a quantum computing device, a quantum node is a variational circuit whose gates are parameterized by :math:`x` and :math:`\bm{\theta}` and whose measurement outcomes are averaged to produce an expectation value.
 - For a classical computing device, a quantum node is a callable function, taking the arguments :math:`(x,\bm{\theta})` and returning the value :math:`f(x;\bm{\theta})`. The classical device cannot "zoom in" and see any intermediate state of the quantum circuit.
 
 :html:`<br>`

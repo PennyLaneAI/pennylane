@@ -6,6 +6,8 @@
 Introduction
 ============
 
+The main principle underlying PennyLane is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. Integrating both types of information processing gives rise to **hybrid computation**.
+
 :html:`<br>`
 
 .. figure:: ../_static/concepts.png
@@ -15,14 +17,11 @@ Introduction
 
 :html:`<br>`
 
-The main principle underlying PennyLane is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. Integrating both types of information processing gives rise to **hybrid computation**.
-
-In PennyLane both classical and quantum computers are used in the same basic way: as computational devices which we program to evaluate mathematical functions. We call such functions *nodes*, since they feed information into each other like nodes in a directed graph. **Quantum nodes** are abstract representations of quantum circuits which input and output classical information. 
+In PennyLane both classical and quantum computers are used in the same basic way: as computational devices which we program to evaluate mathematical functions. We call such functions *nodes*, since they feed information into each other like nodes in a directed graph. **Quantum nodes** are abstract representations of quantum circuits which input and output classical information.
 
 Each quantum node executes a **variational circuit** — a parametrized quantum computation — on a quantum device.
 
 In optimization and machine learning, models learn by computing gradients of trainable variables. A central feature of PennyLane is the ability to compute the gradients of quantum nodes, or **quantum gradients**. This enables the end-to-end differentiation of hybrid computations.
-
 
 
 These four concepts — **hybrid computation**, **quantum nodes**, **variational circuits** — and **quantum gradients**, are central to PennyLane.
@@ -65,7 +64,7 @@ In a **true hybrid** computational model, both the classical and the quantum dev
 
 Quantum information is fragile — especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations?
 
-This leads to the notion of a **quantum node**: a basic computational unit — programmed on a quantum circuit — which carries out a subroutine of quantum information processing. Only classical data can enter or exit a quantum node.
+This leads to the notion of a **quantum node** or **QNode**: a basic computational unit — programmed on a quantum circuit — which carries out a subroutine of quantum information processing. Only classical data can enter or exit a quantum node.
 
 To a classical device, a quantum node is a black box which can evaluate functions. A quantum device, however, resolves the finer details of the circuit.
 
@@ -93,7 +92,7 @@ Variational circuits are quantum algorithms that depend on tunable variables, an
 
 3. **Measurement** of an observable :math:`\hat{B}` at the output. This observable may be made up from local observables for each wire in the circuit, or just a subset of wires.
 
-Variational circuits provide the internal workings of a QNode, and can be evaluated by running a quantum hardware or simulator device. 
+Variational circuits provide the internal workings of a QNode, and can be evaluated by running a quantum hardware or simulator device.
 
 :html:`<h3>Quantum gradients</h3>`
 
@@ -114,6 +113,6 @@ Variational circuits provide the internal workings of a QNode, and can be evalua
 
 Evaluating quantum nodes is inefficient on classical computers, so we might expect the gradients of quantum nodes to be similarly intractable. Fortunately, we can often compute the gradient of a quantum node :math:`\nabla f(x;\bm{\theta})` exactly using a linear combination of two quantum nodes, where one variable is shifted.
 
-We can thus **use the same quantum device** to compute both quantum nodes and also gradients of quantum nodes. This is accomplished with minor assistance of a classical coprocessor, which combines the terms. 
+We can thus **use the same quantum device** to compute both quantum nodes and also gradients of quantum nodes. This is accomplished with minor assistance of a classical coprocessor, which combines the terms.
 
 
