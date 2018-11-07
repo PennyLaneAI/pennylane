@@ -69,7 +69,7 @@ One straightforward embedding strategy is for the first few gates in the circuit
 
 As an example, consider a photonic quantum computer (similar examples can be constructed for qubits). For simplicity, we temporarily omit the parameters :math:`\bm{\theta}`. We take the initial state to be the *vacuum* state and the measured observable :math:`\hat{B}` to be the position operator :math:`x`. The vacuum state has expectation value :math:`\langle\hat{x}\rangle = \langle 0 | \hat{x} | 0 \rangle = 0`.
 
-Suppose we have an input :math:`x`, which has :math:`N` dimensions. We can embed this into a quantum circuit with :math:`N` wires using the Displacement gate. For every component :math:`x_i` of :math:`x`, we apply :math:`D(x_i)` to wire :math:`i`.
+Suppose we have an input :math:`x`, which has :math:`N` dimensions. We can embed this into a quantum circuit with :math:`N` wires using the `displacement operator <https://en.wikipedia.org/wiki/Displacement_operator>`_. For every component :math:`x_i` of :math:`x`, we apply :math:`D(x_i)` to wire :math:`i`.
 
 Measurement of the expectation value of the :math:`\hat{x}` operator on each wire will then give the result
 
@@ -82,11 +82,11 @@ Data processing
 
 Having embedded our data into a quantum state, we would now like to perform some processing. As it stands, our example circuit currently represents the *identity* :math:`f(x)=x`, which has no free parameters. By introducing additional gates, with parameters :math:`\bm{\theta}`, we can start building up more complex functions.
 
-For clarity, we restrict to a one-dimensional input :math:`x` and add in a single :class:`Rotation gate <pennylane.ops.cv.Rotation>`, with free parameter :math:`\theta`. After applying this gate, the quantum node evaluated by our circuit becomes
+For clarity, we restrict to a one-dimensional input :math:`x` and add in a single rotation operator, with free parameter :math:`\theta`. After applying this gate, the quantum node evaluated by our circuit becomes
 
 .. math:: f(x;\theta) = x\cos(\theta).
 
-In summary, with only two quantum gates (Displacement and Rotation), we can evaluate functions of the above form using quantum circuits.
+In summary, with only two quantum gates (displacement and rotation), we can evaluate functions of the above form using quantum circuits.
 
 The above examples were kept very simple to illustrate the principles behind embedding data and parameters into quantum circuits. Indeed, the function evaluated in the example is tractable classically. However, by increasing the number of subsystems and the circuit depth, the corresponding functions can become progressively harder to evaluate classically, and a quantum device must be used.
 
