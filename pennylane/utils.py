@@ -19,7 +19,7 @@ Utilities
 
 .. currentmodule:: pennylane.utils
 
-This module contains utilities and auxillary functions, which are shared
+This module contains utilities and auxiliary functions, which are shared
 across the PennyLane submodules.
 
 
@@ -48,7 +48,7 @@ def _flatten(x):
     See also :func:`_unflatten`.
 
     Args:
-        x (array, Iterable, other): each element of the Iterable may be of the same types as x
+        x (array, Iterable, other): each element of the Iterable may itself be an iterable object
 
     Yields:
         other: elements of x in depth-first order

@@ -41,7 +41,7 @@ Qubit notebooks
 
 4. **Quantum generative adversarial network (QGAN)** (:download:`Q4_quantum-GAN.ipynb <../../examples/Q4_quantum-GAN.ipynb>`/|Q4|)
 
-   This demo constructs a quantum generative adversarial network (QGAN) :cite:`lloyd2018quantum,dallaire2018quantum` using two subcircuits, a generator and a discriminator. The generator attempts to generate synthetic quantum data to match a pattern of "real" data, while the discriminator, tries to discern real data from fake data. The gradient of the discriminator's output provides a training signal for the generator to improve its fake generated data.
+   This demo constructs a quantum generative adversarial network (QGAN) :cite:`lloyd2018quantum,dallaire2018quantum` using two subcircuits, a generator and a discriminator. The generator attempts to generate synthetic quantum data to match a pattern of "real" data, while the discriminator tries to discern real data from fake data. The gradient of the discriminator's output provides a training signal for the generator to improve its fake generated data.
 
 
 .. |Q1| raw:: html
@@ -71,7 +71,7 @@ Continuous-variable notebooks
 
 2. **Squeezing kernel** (:download:`CV2_squeezing_kernel.ipynb <../../examples/CV2_squeezing_kernel.ipynb>`/|CV2|)
 
-   Kernel methods in machine learning allow us to efficiently perform computations in an intractably large Hilbert space. By leveraging PennyLane, we can use a quantum device to estimate inner products of quantum states to compute a classically intractable kernel. In this notebook, we implement a squeezing feature map together with an implicit linear classifier :cite:`schuld2018quantum`.
+   Kernel methods in machine learning allow us to efficiently perform computations in an intractably large Hilbert space. By leveraging PennyLane, we can use a quantum device to estimate inner products of quantum states to compute a quantum kernel. In this notebook, we implement a squeezing feature map together with an implicit linear classifier :cite:`schuld2018quantum`.
 
 3. **Quantum neural networks** (:download:`CV3_quantum-neural-net.ipynb <../../examples/CV3_quantum-neural-net.ipynb>`/|CV3|)
 
