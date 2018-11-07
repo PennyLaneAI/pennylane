@@ -79,8 +79,8 @@ It has a full Jacobian with two rows and three columns:
 
 >>> j2 = qml.jacobian(circuit2, argnum=0)
 >>> j2(np.pi / 3, 0.25, np.pi / 2)
-array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
-       [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
+>>> array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
+           [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
 
 .. warning:: Currently, :func:`pennylane.jacobian` only the case supports when ``argnum`` is a single integer. For quantum functions with multiple arguments, use the above method to get the full Jacobian matrix.
 
@@ -90,7 +90,7 @@ Keyword arguments
 
 While automatic differentiation is a handy feature, sometimes we want certain parts of our computational pipeline (e.g., the inputs :math:`x` to a parameterized quantum function :math:`f(x;\bf{\theta})` or the training data for a machine learning model) to not be differentiated.
 
-PennyLane uses the pattern that *all positional arguments to quantum functions are available to be differentiated*, while *keyword arguments are never differentiated*. Thus, when using the gradient-descent-based :mod:`optimizers <pennylane.optimize>` included in PennyLane, all numerical parameters appearing in non-keyword arguments will be updated, while all numerical values included as keyword arguments will not be updated.
+PennyLane uses the pattern that *all positional arguments to quantum functions are available to be differentiated*, while *keyword arguments are never differentiated*. Thus, when using the gradient-descent-based :ref:`optimizers <optimization_methods>` included in PennyLane, all numerical parameters appearing in non-keyword arguments will be updated, while all numerical values included as keyword arguments will not be updated.
 
 .. note:: When constructing the circuit, keyword arguments are defined by providing a **default value** in the function signature. If you would prefer that the keyword argument value be passed every time the quantum function is called, the default value can be set to ``None``.
 
