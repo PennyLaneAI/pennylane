@@ -15,7 +15,7 @@ References
 Further reading
 ---------------
 
-.. todo:: The following references are *not cited* within the documentation. Looking through the list, some should probably be cited somewhere.
+.. todo:: The following references are not cited anywhere within the documentation. Looking through the list, some should probably be cited somewhere, or deleted.
 
 For more details and further information on quantum machine learning and quantum computation, please see the following:
 

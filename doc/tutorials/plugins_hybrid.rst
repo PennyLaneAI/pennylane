@@ -18,6 +18,8 @@ Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` 
 
         pip install pennylane-sf
 
+.. _photon_redirection:
+
 
 A non-Gaussian circuit
 ----------------------
