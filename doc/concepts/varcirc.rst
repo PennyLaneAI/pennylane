@@ -94,7 +94,7 @@ The above examples were kept very simple to illustrate the principles behind emb
 Architectures
 -------------
 
-Many variational circuit architectures have been proposed by the quantum computing community. The strength of an architecture varies depending on the desired use-case, and it is not always clear what makes a good ansatz. Investigations of the expressive power of different approaches are also ongoing :cite:`du2018expressive`. One goal of PennyLane is to facilitate such studies across various architectures and hardware platforms.
+Many variational circuit architectures have been proposed by the quantum computing community [#]_. The strength of an architecture varies depending on the desired use-case, and it is not always clear what makes a good ansatz. Investigations of the expressive power of different approaches are also ongoing :cite:`du2018expressive`. One goal of PennyLane is to facilitate such studies across various architectures and hardware platforms.
 
 To give a rough summary, we distinguish three different types of architectures, namely **layered gate architectures**, **alternating operator architectures** and **tensor network architectures**.
 

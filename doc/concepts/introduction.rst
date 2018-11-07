@@ -93,7 +93,7 @@ Variational circuits are quantum algorithms that depend on tunable variables, an
 
 3. **Measurement** of an observable :math:`\hat{B}` at the output. This observable may be made up from local observables for each wire in the circuit, or just a subset of wires.
 
-The expectation is estimated by repeated quantum measurements (i.e., on hardware) or computed by simulating the quantum hardware on a classical computer. It is the output of the quantum node :math:`f(x; \bm{\theta})`.
+Variational circuits provide the internal workings of a QNode, and can be evaluated by running a quantum hardware or simulator device. 
 
 :html:`<h3>Quantum gradients</h3>`
 
