@@ -115,9 +115,6 @@ from .decorator import qnode
 
 # overwrite module docstrings
 numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
-# expval.__doc__ = "Contains quantum expectations."
-# ops.__doc__ = "Contains quantum operations (these can also be imported directly from PennyLane)."
-# optimize.__doc__ = "Various nuclear optimizers (these can also be imported directly from PennyLane)."
 
 
 # set up logging
@@ -136,7 +133,7 @@ log.captureWarnings(True)
 
 
 # Look for an existing configuration file
-default_config = Configuration()
+default_config = Configuration('config.toml')
 
 
 # get list of installed plugin devices

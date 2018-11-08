@@ -1,7 +1,7 @@
 .. _installation:
 
-Installation and downloads
-#################################
+Installation
+############
 
 Dependencies
 ============

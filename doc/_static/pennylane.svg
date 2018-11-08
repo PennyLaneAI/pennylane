@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   id="svg2"
+   viewBox="0 0 189.02519 55.825475"
+   height="15.75519mm"
+   width="53.347092mm"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="pennylane.svg"
+   inkscape:export-filename="/home/josh/Dropbox/Work/Xanadu/pennylane/doc/_static/pennylane.svg.png"
+   inkscape:export-xdpi="534.69928"
+   inkscape:export-ydpi="534.69928">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1056"
+     id="namedview18"
+     showgrid="false"
+     inkscape:zoom="5.5723685"
+     inkscape:cx="100.89236"
+     inkscape:cy="24.618275"
+     inkscape:window-x="1920"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g4220" />
+  <defs
+     id="defs4" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <flowRoot
+     transform="translate(-209.13822,-217.065)"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:60px;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="flowRoot4136"
+     xml:space="preserve"><flowRegion
+       id="flowRegion4138"><rect
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:60px;font-family:'Averta Std';-inkscape-font-specification:'Averta Std'"
+         y="185.21935"
+         x="134.28572"
+         height="151.42857"
+         width="525.71429"
+         id="rect4140" /></flowRegion><flowPara
+       id="flowPara4142" /></flowRoot>  <flowRoot
+     transform="translate(-209.13822,-217.065)"
+     style="font-style:normal;font-weight:normal;font-size:13.75px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="flowRoot4144"
+     xml:space="preserve"><flowRegion
+       id="flowRegion4146"><rect
+         y="179.50507"
+         x="131.42857"
+         height="181.42857"
+         width="195.71428"
+         id="rect4148" /></flowRegion><flowPara
+       id="flowPara4150" /></flowRoot>  <text
+     id="text4152"
+     y="68.154358"
+     x="3.7189271"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:50px;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:0;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     xml:space="preserve"
+     sodipodi:linespacing="125%"><tspan
+       y="68.154358"
+       x="3.7189271"
+       id="tspan4154" /></text>
+  <path
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 145.87737,38.187072 6.27,0 0,-1.08625 -5.07375,0 0,-3.23125 3.91875,0 0,-1.08625 -3.91875,0 0,-3.2725 4.785,0 0,-1.08625 -5.98125,0 z"
+     id="path4214"
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229" />
+  <path
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 128.19421,38.187072 1.19625,0 0,-7.68625 0.0275,0 5.45875,7.68625 1.22375,0 0,-9.7625 -1.19625,0 0,7.76875 -0.0138,0 -5.51375,-7.76875 -1.1825,0 0,9.7625 z"
+     id="path4212"
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229" />
+  <g
+     id="g4220"
+     transform="translate(25.530706,-1.395848)"
+     style="fill:#405c4d;fill-opacity:1"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229">
+    <path
+       sodipodi:nodetypes="ccccccccc"
+       inkscape:connector-curvature="0"
+       id="path4210"
+       d="m 85.91535,39.58292 1.25125,0 0.86625,-2.37875 4.200131,-0.396548 1.038619,2.775298 1.25125,0 -3.7125,-9.7625 -1.19625,0 z"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       sodipodi:nodetypes="ccccc"
+       inkscape:connector-curvature="0"
+       id="path4208"
+       d="m 87.934195,37.451703 2.257405,-6.187533 0.0275,0 2.16818,5.94071 z"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+  </g>
+  <path
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 97.984151,38.187072 6.022509,0 0,-1.08625 -4.826259,0 0,-8.67625 -1.19625,0 z"
+     id="path4206"
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229" />
+  <path
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 83.422241,38.187072 1.19625,0 0,-4.35875 3.34125,-5.40375 -1.4025,0 -2.51625,4.19375 -0.0275,0 -2.53,-4.19375 -1.375,0 3.31375,5.40375 z"
+     id="path4204"
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229" />
+  <path
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 64.006581,38.187072 1.19625,0 0,-7.68625 0.0275,0 5.45875,7.68625 1.22375,0 0,-9.7625 -1.19625,0 0,7.76875 -0.0137,0 -5.51375,-7.76875 -1.1825,0 0,9.7625 z"
+     id="path4202"
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229" />
+  <path
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 47.959681,38.187072 1.19625,0 0,-7.68625 0.0275,0 5.45875,7.68625 1.22375,0 0,-9.7625 -1.19625,0 0,7.76875 -0.0137,0 -5.51375,-7.76875 -1.1825,0 0,9.7625 z"
+     id="path4200"
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229" />
+  <path
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 33.54902,38.187072 6.27,0 0,-1.08625 -5.07375,0 0,-3.23125 3.91875,0 0,-1.08625 -3.91875,0 0,-3.2725 4.785,0 0,-1.08625 -5.98125,0 z"
+     id="path4198"
+     inkscape:connector-curvature="0"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229" />
+  <g
+     id="g4216"
+     transform="translate(-16.369485,-1.395848)"
+     style="fill:#405c4d;fill-opacity:1"
+     inkscape:export-xdpi="331.88229"
+     inkscape:export-ydpi="331.88229">
+    <g
+       id="g4224">
+      <path
+         inkscape:connector-curvature="0"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#405c4d;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 33.50035,39.58292 1.19625,0 0,-3.72625 2.0075,0 c 2.035,0 3.4375,-0.94875 3.4375,-3.01125 0,-1.7325 -0.94875,-3.025 -3.23125,-3.025 l -3.41,0 z"
+         id="path4196" />
+      <path
+         inkscape:connector-curvature="0"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:125%;font-family:'Averta Std';-inkscape-font-specification:'Averta Std';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 34.6966,34.77042 0,-3.86375 2.09,0 c 1.30625,0 2.1175,0.66 2.1175,1.91125 0,1.1275 -0.6875,1.9525 -2.31,1.9525 z"
+         id="path4197" />
+    </g>
+  </g>
+  <text
+     y="193.25507"
+     x="131.42857"
+     transform="translate(-209.13822,-217.065)"
+     style="font-style:normal;font-weight:normal;font-size:13.75px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     id="text4174"
+     xml:space="preserve"><tspan
+       id="tspan4176"
+       sodipodi:role="line" /></text>
+</svg>
