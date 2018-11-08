@@ -25,7 +25,7 @@ Default Gaussian plugin
 The :code:`default.gaussian` plugin is meant to be used as a template for writing PennyLane
 device plugins for new CV backends.
 
-It implements all the :class:`~pennylane._device.Device` methods as well as all built-in
+It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>` and
 :mod:`expectations <pennylane.expval.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
