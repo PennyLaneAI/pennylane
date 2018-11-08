@@ -1,48 +1,95 @@
+.. role:: html(raw)
+   :format: html
+
+:html:`<br>`
+
+
+.. image:: _static/pennylane_big.png
+    :align: center
+    :width: 500px
+    :target: javascript:void(0);
+    :alt: PennyLane
+
+-----------------------------------------------
+
+
+.. raw:: html
+
+    <style>
+    h1 {
+        display: none;
+    }
+    </style>
+
+
 PennyLane
-#########
+=========
+
 
 :Release: |release|
 :Date: |today|
 
 PennyLane is a Python library for building and training machine learning models which include quantum computer circuits.
 
-Features
-========
 
-- **Follow the gradient**.
+:html:`<h2>Features</h2>`
+
+
+.. image:: _static/code.png
+    :align: right
+    :width: 320px
+    :target: javascript:void(0);
+
+
+- *Follow the gradient*.
   Built-in **automatic differentiation** of quantum circuits
 
-- **Best of both worlds**.
+..
+
+- *Best of both worlds*.
   Support for **hybrid quantum and classical** models
 
-- **Batteries included**.
+..
+
+- *Batteries included*.
   Provides **optimization and machine learning** tools
 
-- **Device independent**.
+..
+
+- *Device independent*.
   The same quantum circuit model can be **run on different backends**
 
-- **Large plugin ecosystem**.
-  Install plugins to run your computational circuits on more devices, including `Strawberry Fields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_
+..
 
-Getting started
-===============
+- *Large plugin ecosystem*.
+  Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
+
+:html:`<h4>Available plugins</h4>`
+
+* `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`__: Supports integration with `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack Python library for simulating continuous variable (CV) quantum optical circuits.
+
+..
+
+* `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`__: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
 
 
-To get PennyLane installed and running on your system, begin at the :ref:`download and installation guide <installation>`. Then, familiarize yourself with the :ref:`hybrid classical-quantum machine learning <introduction>` approach.
+:html:`<h2>Getting started</h2>`
 
-For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`photon redirection <photon_redirection>` hybrid quantum optimization tutorials. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
+To get PennyLane installed and running on your system, begin at the :ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's :ref:`key concepts <introduction>` for machine learning on quantum circuits.
 
-Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid optimizations — these include the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
+For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to explore :ref:`hybrid quantum optimization <plugins_hybrid>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
 
-Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided, for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
+Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid models — these include Strawberry Fields, provided by the `PennyLane-SF <https://github.com/XanaduAI/pennylane-pq>`_ plugin, and the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
 
-How to cite
-===========
+Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided. Look there for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
+
+:html:`<h2>How to cite</h2>`
 
 If you are doing research using PennyLane, please cite
 
-Support
-=======
+  [Placeholder for PennyLane paper]
+
+:html:`<h2>Support</h2>`
 
 - **Source Code:** https://github.com/XanaduAI/PennyLane
 - **Issue Tracker:** https://github.com/XanaduAI/PennyLane/issues
@@ -52,8 +99,7 @@ If you are having issues, please let us know by posting the issue on our Github 
 For more details on contributing or performing research with PennyLane, please see
 :ref:`research`.
 
-License
-=======
+:html:`<h2>License</h2>`
 
 PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.
 
@@ -73,11 +119,11 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    concepts/introduction
-   concepts/qfuncs
-   concepts/autograd_quantum
-   concepts/quantum_nodes
    concepts/hybrid_computation
-   references
+   concepts/quantum_nodes
+   concepts/varcirc
+   concepts/autograd_quantum
+   zreferences
 
 
 .. toctree::
@@ -86,8 +132,10 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    tutorials/qubit_rotation
-   tutorials/photon_redirection
-   tutorials/multiple_expectations
+   tutorials/gaussian_transformation
+   tutorials/plugins_hybrid
+   tutorials/advanced_usage
+   tutorials/notebooks
 
 
 .. toctree::
@@ -129,8 +177,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    plugins/default_gaussian
 
 
-Indices and tables
-==================
+:html:`<h2>Indices and tables</h2>`
 
 * :ref:`genindex`
 * :ref:`modindex`

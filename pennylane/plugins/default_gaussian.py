@@ -13,6 +13,7 @@
 # limitations under the License.
 # pylint: disable=inconsistent-return-statements
 """
+
 Default Gaussian plugin
 =======================
 
@@ -313,6 +314,7 @@ def beamsplitter(theta, phi):
 
 
 def two_mode_squeezing(r, phi):
+
     """Two-mode squeezing.
 
     Args:

@@ -309,7 +309,7 @@ Finally, we use an optimizer to update the circuit parameters for 100 steps. We 
 .. code-block:: python
 
     # initialise the optimizer
-    op = qml.GradientDescentOptimizer(stepsize=0.4)
+    opt = qml.GradientDescentOptimizer(stepsize=0.4)
 
     # set the number of steps
     steps = 100
@@ -318,7 +318,7 @@ Finally, we use an optimizer to update the circuit parameters for 100 steps. We 
 
     for i in range(steps):
         # update the circuit parameters
-        params = op.step(cost, params)
+        params = opt.step(cost, params)
 
         if (i+1) % 5 == 0:
             print('Cost after step {:5d}: {: .7f}'.format(i+1, cost(params)))
@@ -341,5 +341,4 @@ the qubit being rotated to the state :math:`\ket{1}`.
     Some optimizers, such as :class:`~.pennylane.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the
     optimizer instance. These can be reset using the ``reset()`` method.
 
-Continue on to the next tutorial, :ref:`photon_redirection`, to learn how to utilize the extensive plugin ecosystem of PennyLane,
-build continuous-variable (CV) quantum nodes, and to see an example of a hybrid qubit-CV-classical computation using PennyLane.
+Continue on to the next tutorial, :ref:`gaussian_transformation`, to see a similar example using  continuous-variable (CV) quantum nodes.

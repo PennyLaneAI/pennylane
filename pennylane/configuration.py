@@ -78,7 +78,7 @@ and has the following format:
       [projectq.simulator]
       gate_fusion = true
 
-      [projectq.ibmbackend]
+      [projectq.ibm]
       user = "johnsmith"
       password = "secret123"
       use_hardware = true
@@ -133,11 +133,11 @@ class Configuration:
     and plugin/device configurations.
 
     Args:
-        name (str): filename of the configuration file. Default ``'config.toml'``.
+        name (str): filename of the configuration file.
         This should be a valid TOML file. You may also pass an absolute
         or a relative file path to the configuration file.
     """
-    def __init__(self, name='config.toml'):
+    def __init__(self, name):
         # Look for an existing configuration file
         self._config = {}
         self._filepath = None
