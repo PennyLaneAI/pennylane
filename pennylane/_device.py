@@ -38,8 +38,6 @@ user interface:
 
 .. autosummary::
     short_name
-    operations
-    expectations
     capabilities
     supported
     execute
@@ -51,6 +49,8 @@ Abstract methods and attributes
 The following methods and attributes must be defined for all devices:
 
 .. autosummary::
+    operations
+    expectations
     apply
     expval
 
