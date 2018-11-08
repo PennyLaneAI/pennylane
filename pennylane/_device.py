@@ -19,11 +19,11 @@ Device base class
 
 .. currentmodule:: pennylane._device
 
-This module contains the :class:`Device` class. This is an abstract base class,
-which should be subclassed, and the appropriate class attributes and methods
-defined. As such, the :class:`Device` class should never be accessed or instantiated
-directly. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`
-or :class:`~.DefaultGaussian`.
+This module contains the :class:`Device` class. To write a plugin t abstract base class,
+must be subclassed, and the appropriate class attributes and methods
+implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
+:class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
+and `ProjectQ <https://pennylane-pq.readthedocs.io/>`_ plugins.
 
 .. autosummary::
     Device
