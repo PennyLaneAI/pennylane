@@ -82,7 +82,7 @@ It has a full Jacobian with two rows and three columns:
 >>> array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
            [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
 
-.. warning:: Currently, :func:`pennylane.jacobian` only the case supports when ``argnum`` is a single integer. For quantum functions with multiple arguments, use the above method to get the full Jacobian matrix.
+.. warning:: Currently, :func:`pennylane.jacobian` supports only the case where ``argnum`` is a single integer. For quantum functions with multiple arguments, use the above method to get the full Jacobian matrix.
 
 
 Keyword arguments

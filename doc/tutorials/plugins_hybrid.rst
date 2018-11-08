@@ -186,7 +186,7 @@ Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit p
 .. code-block:: python
 
     # initialise the optimizer
-    op = qml.GradientDescentOptimizer(stepsize=0.4)
+    opt = qml.GradientDescentOptimizer(stepsize=0.4)
 
     # set the number of steps
     steps = 100
@@ -195,7 +195,7 @@ Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit p
 
     for i in range(steps):
         # update the circuit parameters
-        params = op.step(cost, params)
+        params = opt.step(cost, params)
 
         if (i+1) % 5 == 0:
             print('Cost after step {:5d}: {: .7f}'.format(i+1, cost(params)) )
@@ -299,7 +299,7 @@ initial beamsplitter parameters of :math:`\theta=0.01`, :math:`\phi=0.01`.
 .. code-block:: python
 
     # initialise the optimizer
-    op = qml.GradientDescentOptimizer(stepsize=0.4)
+    opt = qml.GradientDescentOptimizer(stepsize=0.4)
 
     # set the number of steps
     steps = 100
@@ -308,7 +308,7 @@ initial beamsplitter parameters of :math:`\theta=0.01`, :math:`\phi=0.01`.
 
     for i in range(steps):
         # update the circuit parameters
-        params = op.step(cost, params)
+        params = opt.step(cost, params)
 
         if (i+1) % 5 == 0:
             print('Cost after step {:5d}: {: .7f}'.format(i+1, cost(params)))
