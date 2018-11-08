@@ -25,7 +25,7 @@ encapsulating a quantum function or :ref:`variational circuit <varcirc>` and the
 device it is executed on.
 
 The computational device is an instance of the :class:`~_device.Device`
-class, and can represent either a simulator or hardware device. They can
+class, and can represent either a simulator or hardware device. They can be
 instantiated using the :func:`~device` loader. PennyLane comes included with
 some basic devices; additional devices can be installed as plugins
 (see :ref:`plugins` for more details).
@@ -356,7 +356,7 @@ class QNode:
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
 
     def _op_successors(self, o_idx, only='G'):
-        """Successors of the given Operation in the quantum circuit.
+        """Successors of the given operation in the quantum circuit.
 
         Args:
             o_idx (int): index of the operation in the operation queue
@@ -458,7 +458,7 @@ class QNode:
         return 'F'
 
     def __call__(self, *args, **kwargs):
-        """Wrapper for :meth:`QNode.evaluate`."""
+        """Wrapper for :meth:`~.QNode.evaluate`."""
         # pylint: disable=no-member
         args = autograd.builtins.tuple(args)  # prevents autograd boxed arguments from going through to evaluate
         return self.evaluate(args, **kwargs)  # args as one tuple

@@ -91,7 +91,7 @@ Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit p
 .. code-block:: python
 
     # initialise the optimizer
-    op = qml.GradientDescentOptimizer(stepsize=0.1)
+    opt = qml.GradientDescentOptimizer(stepsize=0.1)
 
     # set the number of steps
     steps = 20
@@ -100,7 +100,7 @@ Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit p
 
     for i in range(steps):
         # update the circuit parameters
-        params = op.step(cost, params)
+        params = opt.step(cost, params)
 
         print('Cost after step {:5d}: {:8f}'.format(i+1, cost(params)) )
 
