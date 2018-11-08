@@ -22,33 +22,37 @@ Default qubit plugin
 .. currentmodule:: pennylane.plugins.default_qubit
 
 The default plugin is meant to be used as a template for writing PennyLane device
-plugins for new backends.
+plugins for new qubit-based backends.
 
-It implements all the :class:`~pennylane._device.Device` methods as well as all built-in
-discrete-variable operations and expectations, and provides a very simple pure state
+It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
+:mod:`qubit operations <pennylane.ops.qubit>` and
+:mod:`expectations <pennylane.expval.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
+
+The following is the technical documentation of the implementation of the plugin. You will
+not need to read and understand this to use this plugin.
 
 Functions
 ---------
 
 .. autosummary::
-   spectral_decomposition_qubit
-   Rphi
-   frx
-   fry
-   frz
-   fr3
-   unitary
-   hermitian
+    spectral_decomposition_qubit
+    Rphi
+    frx
+    fry
+    frz
+    fr3
+    unitary
+    hermitian
 
 Classes
 -------
 
 .. autosummary::
-   DefaultQubit
+    DefaultQubit
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 import logging as log
 import collections

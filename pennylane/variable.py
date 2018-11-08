@@ -32,9 +32,10 @@ and keyword arguments are wrapped in a `Variable` as follows:
   flattened to a single list, and each element wrapped as a Variable instance,
   indexed by its position in the list.
 
-  The list is then unflattened back to the original shape of ``*args``.
   This allows PennyLane to inspect the shape and type of arguments
-  the user wishes to pass.
+  the user wishes to pass. The list can then be unflattened back to the original
+  shape of ``*args``.
+
 
 * The same is done for each keyword argument in ``**kwargs``, the only
   difference being that the name of each contained Variable corresponds
@@ -49,12 +50,12 @@ free parameters stored as Variable instances.
     a natural location for data placeholders.
 
 .. important::
-    If the user defines a keyword argument, they then always have to pass the
+    If the user defines a keyword argument, then they always have to pass the
     corresponding variable as a keyword argument, otherwise it won't register.
 
-For each successive QNode execution, the user-provided arguments and keyword
-arguments are stored in the :attr:`Variable.free_param_values` and
-:attr:`Variable.kwarg_values` list and dictionaries respectively; these are
+For each successive QNode execution, the user-provided values for arguments and keyword
+arguments are stored in the :attr:`Variable.free_param_values` list and the
+:attr:`Variable.kwarg_values` dictionary respectively; these are
 then returned by :meth:`Variable.val`, using its ``idx`` value, and, for
 keyword arguments, its ``name``, to return the correct value to the operation.
 

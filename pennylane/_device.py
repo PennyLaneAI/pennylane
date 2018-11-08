@@ -19,11 +19,11 @@ Device base class
 
 .. currentmodule:: pennylane._device
 
-This module contains the :class:`Device` class. This is an abstract base class,
-which should be subclassed, and the appropriate class attributes and methods
-defined. As such, the :class:`Device` class should never be accessed or instantiated
-directly. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`
-or :class:`~.DefaultGaussian`.
+This module contains the :class:`Device` class. To write a plugin t abstract base class,
+must be subclassed, and the appropriate class attributes and methods
+implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
+:class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
+and `ProjectQ <https://pennylane-pq.readthedocs.io/>`_ plugins.
 
 .. autosummary::
     Device
@@ -174,15 +174,15 @@ class Device(abc.ABC):
         return cls._capabilities
 
     def execute(self, queue, expectation):
-        """Apply a queue of quantum operations to the device, and then measure the given expectation values.
+        """Execute a queue of quantum operations on the device and then measure the given expectation values.
 
-        Instead of overwriting this, consider implementing a suitable subset of
+        For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
         :meth:`pre_apply`, :meth:`apply`, :meth:`post_apply`, :meth:`pre_expval`,
         :meth:`expval`, :meth:`post_expval`, and :meth:`execution_context`.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects to apply on the device
-            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return
+            queue (Iterable[~.operation.Operation]): operations to execute on the device.
+            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return.
 
         Returns:
             array[float]: expectation value(s)
@@ -219,9 +219,11 @@ class Device(abc.ABC):
     def execution_context(self):
         """The device execution context used during calls to :meth:`execute`.
 
-        You can overwrite this function to return a suitable context manager;
+        You can overwrite this function to return a context manager in case your
+        quantum library requires that;
         all operations and method calls (including :meth:`apply` and :meth:`expval`)
-        are then evaluated within the context of this context manager.
+        are then evaluated within the context of this context manager (see the
+        source of :meth:`.Device.execute` for more details).
         """
         # pylint: disable=no-self-use
         class MockContext(object): # pylint: disable=too-few-public-methods
@@ -237,19 +239,19 @@ class Device(abc.ABC):
         """Checks if an operation or expectation is supported by this device.
 
         Args:
-            name (str): name of the operation or expectation
+            name (str): name of the operation or expectation.
 
         Returns:
-            bool: True iff it is supported
+            bool: True iff it is supported.
         """
         return name in self.operations.union(self.expectations)
 
     def check_validity(self, queue, expectations):
-        """Check whether the operations and expectations are supported by the device.
+        """Checks whether the operations and expectations in queue are all supported by the device.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device
-            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in device
+            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device.
+            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in device.
         """
         for o in queue:
             if not self.supported(o.name):
@@ -260,24 +262,28 @@ class Device(abc.ABC):
                 raise DeviceError("Expectation {} not supported on device {}".format(e.name, self.short_name))
 
     @abc.abstractmethod
-    def apply(self, op_name, wires, par):
+    def apply(self, operation, wires, par):
         """Apply a quantum operation.
 
+        For plugin developers: this function should apply the operation on the device.
+
         Args:
-            op_name (str): name of the operation
-            wires (Sequence[int]): subsystems the operation is applied on
-            par (tuple): parameters for the operation
+            operation (str): name of the operation.
+            wires (Sequence[int]): subsystems the operation is applied on.
+            par (tuple): parameters for the operation.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def expval(self, expectation, wires, par):
-        """Expectation value of an observable.
+        """Return the expectation value of an expectation.
+
+        For plugin developers: this function should return the expectation value of the given expectation on the device.
 
         Args:
-            expectation (str): name of the expectation to evaluate
-            wires (Sequence[int]): subsystems the expectation is measured on
-            par (tuple): parameters for the expectation
+            expectation (str): name of the expectation.
+            wires (Sequence[int]): subsystems the expectation value is to be measured on.
+            par (tuple): parameters for the observable.
 
         Returns:
             float: expectation value
