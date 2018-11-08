@@ -110,7 +110,7 @@ class Device(abc.ABC):
             in the exact expectation value being is returned. Default 0 if not specified.
     """
     name = ''          #: str: official device plugin name
-    api_version = ''   #: str: version of PennyLane for which the plugin was made
+    api_version = ''   #: str: version of the PennyLane plugin API for which the plugin was made
     version = ''       #: str: version of the device plugin itself
     author = ''        #: str: plugin author(s)
     _capabilities = {} #: dict[str->*]: plugin capabilities
