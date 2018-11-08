@@ -5,38 +5,44 @@ Overview of the developer API
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
+.. todo::
 
-.. note::
+   We need to decide on how to handle the device API version issue https://github.com/XanaduAI/pennylane/issues/117. I would suggest to decouple the API version from the PL version. This document would then be called "Overview of the developer API V1.0" and the API version would not increment with the PL version. I would also suggest to make all the class attributes (``name``, ``short_name``, ...) mandatory. When loading the device PL should check whether the api_version is among the ones supported by that PL version and possible treat the plugins slightly differently depending on their targeted API version.
+
+
+What a plugin provides
+----------------------
 
     A quick primer on terminology of PennyLane plugins in this section.
 
     * A plugin is an external Python package that provides additional quantum *devices* to PennyLane.
 
-    * Each plugin may provide one (or more) devices, that are accessible directly by PennyLane, as well as any additional private functions or classes.
+    * Each plugin may provide one (or more) devices, that are accessible directly through PennyLane, as well as any additional private functions or classes.
 
-    Once installed, these devices can be loaded directly from PennyLane without any additional steps required by the user — however, depending on the scope of the plugin, you may wish for the user to import additional (custom) quantum operations and expectations.
+    * Depending on the scope of the plugin, you may wish to provide additional (custom) quantum operations and expectations that the user can import module of your plugin.
 
 .. important::
 
     In your plugin module, **standard NumPy** (*not* the wrapped NumPy module provided by PennyLane) should be imported in all places (i.e., ``import numpy as np``).
 
 
-The device short name
----------------------
+Identifying a device via its short name
+---------------------------------------
 
-When performing a hybrid computation using PennyLane, one of the first steps is often to initialize the quantum devices which will be used by quantum nodes (:class:`~.QNode`). To do so, you load the device as follows:
+When performing a hybrid computation using PennyLane, one of the first steps is often to initialize the quantum device(s). PennyLane identifies the devices via their ``short_name``, which allows to initialize devices in the following way:
 
 .. code-block:: python
 
     import pennylane as qml
     dev1 = qml.device(short_name)
 
-where ``short_name`` is a string which uniquely identifies the device provided. In general, the short name has the following form: ``pluginname.devicename``. Examples include ``default.qubit`` and ``default.gaussian`` which are provided as reference plugins by PennyLane, as well as ``strawberryfields.fock``, ``strawberryfields.gaussian``, ``projectq.ibm``, which are provided by the `StrawberryFields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_ PennyLane plugins respectively.
+where ``short_name`` is a string that uniquely identifies the device. The ``short_name`` has the following form: ``pluginname.devicename``. Examples include ``default.qubit`` and ``default.gaussian`` which are provided as reference plugins by PennyLane, as well as ``strawberryfields.fock``, ``strawberryfields.gaussian``, ``projectq.simulator``, and ``projectq.ibm``, which are provided by the `PennyLane StrawberryFields <https://github.com/XanaduAI/pennylane-sf>`_ and `PennyLane ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_ plugins respectively.
+
 
 Creating your device
 --------------------
 
-The first step in creating your PennyLane plugin is creating your device class. This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
+The first step in creating your PennyLane plugin is to create your device class. This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
 
 .. code-block:: python
 
@@ -50,7 +56,7 @@ The first step in creating your PennyLane plugin is creating your device class. 
         version = '0.0.1'
         author = 'Ada Lovelace'
 
-Here, we have begun defining some important class attributes ('identifiers') that allow PennyLane to identify the device. These include:
+Here, we have begun defining some important class attributes that allow PennyLane to identify and use the device. These include:
 
 * :attr:`~.Device.name`: a string containing the official name of the device
 * :attr:`~.Device.short_name`: the string used to identify and load the device by users of PennyLane
@@ -59,6 +65,7 @@ Here, we have begun defining some important class attributes ('identifiers') tha
 * :attr:`~.Device.author`: the author of the device.
 
 Note that, apart from :attr:`~.Device.short_name`, these are all optional. :attr:`~.Device.short_name`, however, **must** be defined, so that it is accessible from the PennyLane interface.
+
 
 Supporting operators and expectations
 -------------------------------------
