@@ -51,8 +51,6 @@ Abstract methods and attributes
 The following methods and attributes must be defined for all devices:
 
 .. autosummary::
-    _operation_map
-    _expectation_map
     apply
     expval
 
@@ -146,23 +144,23 @@ class Device(abc.ABC):
         the corresponding expectation in the device."""
         raise NotImplementedError
 
-    @property
+    @abc.abstractproperty
     def operations(self):
         """Get the supported set of operations.
 
         Returns:
             set[str]: the set of PennyLane operation names the device supports
         """
-        return set(self._operation_map.keys())
+        raise NotImplementedError
 
-    @property
+    @abc.abstractproperty
     def expectations(self):
         """Get the supported set of expectations.
 
         Returns:
             set[str]: the set of PennyLane expectation names the device supports
         """
-        return set(self._expectation_map.keys())
+        raise NotImplementedError
 
     @classmethod
     def capabilities(cls):

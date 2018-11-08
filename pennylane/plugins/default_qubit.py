@@ -408,3 +408,21 @@ class DefaultQubit(Device):
         U = U.reshape(dim * 2).transpose(perm).reshape([temp, temp])
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
         return U
+
+    @property
+    def operations(self):
+        """Get the supported set of operations.
+
+        Returns:
+            set[str]: the set of PennyLane operation names the device supports
+        """
+        return set(self._operation_map.keys())
+
+    @property
+    def expectations(self):
+        """Get the supported set of expectations.
+
+        Returns:
+            set[str]: the set of PennyLane expectation names the device supports
+        """
+        return set(self._expectation_map.keys())
