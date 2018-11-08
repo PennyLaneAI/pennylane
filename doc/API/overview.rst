@@ -5,38 +5,31 @@ Overview of the developer API
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
+.. todo::
 
-.. note::
+   We need to decide on how to handle the device API version issue https://github.com/XanaduAI/pennylane/issues/117. I would suggest to decouple the API version from the PL version. This document would then be called "Overview of the developer API V1.0" and the API version would not increment with the PL version. I would also suggest to make all the class attributes (``name``, ``short_name``, ...) mandatory. When loading the device PL should check whether the api_version is among the ones supported by that PL version and possible treat the plugins slightly differently depending on their targeted API version.
+
+
+What a plugin provides
+----------------------
 
     A quick primer on terminology of PennyLane plugins in this section.
 
     * A plugin is an external Python package that provides additional quantum *devices* to PennyLane.
 
-    * Each plugin may provide one (or more) devices, that are accessible directly by PennyLane, as well as any additional private functions or classes.
+    * Each plugin may provide one (or more) devices, that are accessible directly through PennyLane, as well as any additional private functions or classes.
 
-    Once installed, these devices can be loaded directly from PennyLane without any additional steps required by the user — however, depending on the scope of the plugin, you may wish for the user to import additional (custom) quantum operations and expectations.
+    * Depending on the scope of the plugin, you may wish to provide additional (custom) quantum operations and expectations that the user can import module of your plugin.
 
 .. important::
 
     In your plugin module, **standard NumPy** (*not* the wrapped NumPy module provided by PennyLane) should be imported in all places (i.e., ``import numpy as np``).
 
 
-The device short name
----------------------
-
-When performing a hybrid computation using PennyLane, one of the first steps is often to initialize the quantum devices which will be used by quantum nodes (:class:`~.QNode`). To do so, you load the device as follows:
-
-.. code-block:: python
-
-    import pennylane as qml
-    dev1 = qml.device(short_name)
-
-where ``short_name`` is a string which uniquely identifies the device provided. In general, the short name has the following form: ``pluginname.devicename``. Examples include ``default.qubit`` and ``default.gaussian`` which are provided as reference plugins by PennyLane, as well as ``strawberryfields.fock``, ``strawberryfields.gaussian``, ``projectq.ibm``, which are provided by the PennyLane  `StrawberryFields <https://github.com/XanaduAI/pennylane-sf>`_ and `ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_ plugins respectively.
-
 Creating your device
 --------------------
 
-The first step in creating your PennyLane plugin is creating your device class. This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
+The first step in creating your PennyLane plugin is to create your device class. This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
 
 .. code-block:: python
 
@@ -50,7 +43,7 @@ The first step in creating your PennyLane plugin is creating your device class. 
         version = '0.0.1'
         author = 'Ada Lovelace'
 
-Here, we have begun defining some important class attributes ('identifiers') that allow PennyLane to identify the device. These include:
+Here, we have begun defining some important class attributes that allow PennyLane to identify and use the device. These include:
 
 * :attr:`~.Device.name`: a string containing the official name of the device
 * :attr:`~.Device.short_name`: the string used to identify and load the device by users of PennyLane
@@ -58,16 +51,17 @@ Here, we have begun defining some important class attributes ('identifiers') tha
 * :attr:`~.Device.version`: the version number of the device.
 * :attr:`~.Device.author`: the author of the device.
 
-Note that, apart from :attr:`~.Device.short_name`, these are all optional. :attr:`~.Device.short_name`, however, **must** be defined, so that it is accessible from the PennyLane interface.
+Defining all these attributes is mandatory.
+
 
 Supporting operators and expectations
 -------------------------------------
 
-There are also three private class attributes to be defined for your custom device:
+There three further private class attributes that must be defined in your custom device:
 
-* :attr:`~.Device._operation_map`: a dictionary mapping an PennyLane supported operation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.gates` and public method :meth:`~.Device.supported`.
+* :attr:`~.Device._operation_map`: a dictionary mapping every supported PennyLane operation (string) to the corresponding function/operation in the plugin. The keys of that dictionary are accessible to the user via the public method :meth:`~.Device.operations` and are used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
 
-* :attr:`~.Device._expectation_map`: a dictionary mapping an PennyLane supported expectation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public attribute :attr:`~.Device.expectations` and public method :meth:`~.Device.supported`.
+* :attr:`~.Device._expectation_map`: a dictionary mapping every supported PennyLane expectation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public method :meth:`~.Device.expectations` and are used to decide whether an expectation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`..
 
 * :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user — this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
 
@@ -81,12 +75,13 @@ where ``'CNOT'`` represents the built-in operation :class:`~.CNOT`, and ``'Pauli
 
 For a better idea of how the :attr:`~.Device._operation_map` and :attr:`~.Device._expectation_map` work, refer to the two reference plugins.
 
+
 Applying operations
 -------------------
 
 Once all the class attributes are defined, it is necessary to define some required class methods, to allow PennyLane to apply operations to your device.
 
-When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execute` method, which performs the following process:
+When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execute` method of your, which, by default performs the following process:
 
 .. code-block:: python
 
@@ -102,19 +97,20 @@ When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execut
 
         return np.array(expectations)
 
-In most cases, there are a minimum of two methods that need to be defined:
 
-* :meth:`~.Device.apply`: this accepts an operation name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the operation, and applies the resulting operation to the device.
+In most cases, there is hence a minimum of two methods that any device must implement:
 
-* :meth:`~.Device.expval`: this accepts an observable name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the expectation, returns the resulting expectation value from the device.
+* :meth:`~.Device.apply`: this accepts an operation name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the operation, and should apply the resulting operation to given wires of the device.
+
+* :meth:`~.Device.expval`: this accepts an observable name (as a string), the wires (subsystems) to measure, and the parameters for observable. It is expected to return the resulting expectation value from the device.
 
   .. note:: Currently, PennyLane only supports expectations that return a scalar value.
 
-However, additional flexibility is sometimes required for interfacing with more complicated frameworks. In such cases, the following (optional) methods may also be defined:
+However, additional flexibility is sometimes required for interfacing with more complicated frameworks. In such cases, the following (optional) methods may also be implemented:
 
-* :meth:`~.Device.__init__`: by default, receives the ``short_name`` of the device, number of wires (``self.num_wires``), and number of shots ``self.shots``. You may overwrite this if you need to add additional options that the user must pass to the device on initialization — however, ensure that you call ``super().__init__(self.short_name, wires, shots)`` at some point here.
+* :meth:`~.Device.__init__`: by default, receives the ``short_name`` of the device, number of wires (``self.num_wires``), and number of shots ``self.shots``. This is the right place to setup your device. You may add parameters while overwriting this method if you need to add additional options that the user must pass to the device on initialization. Make sure that you call ``super().__init__(self.short_name, wires, shots)`` at some point here.
 
-* :meth:`~.Device.execution_context`: this returns a context manager that may be required for applying operations and measuring expectation values from the device.
+* :meth:`~.Device.execution_context`: here you may returns a context manager for the circuit execution phase (see above). You can implement this method if the quantum library for which you are writing the device requires such an execution context while applying operations and measuring expectation values from the device.
 
 * :meth:`~.Device.pre_apply`: for any setup/code that must be executed before applying operations.
 
@@ -124,13 +120,22 @@ However, additional flexibility is sometimes required for interfacing with more 
 
 * :meth:`~.Device.post_expval`: for any setup/code that must be executed after measuring observables.
 
-.. warning:: In advanced cases, the :meth:`~.Device.execute` method may be overwritten, to provide complete flexibility for handling device execution. However, this may have unintended side-effects and is not recommended — if possible, try implementing a suitable subset of the methods provided above.
+.. warning:: In advanced cases, the :meth:`~.Device.execute` method may be overwritten directly. This provides full flexibility for handling the device execution yourself. However, this may have unintended side-effects and is not recommended - if possible, try implementing a suitable subset of the methods provided above.
 
 
-Installation
-------------
+Identifying and installing your device
+--------------------------------------
 
-PennyLane uses a ``setuptools`` ``entry_points`` approach to plugin integration. In order to make your plugin accessible from PennyLane, simply provide the following keyword argument to the ``setup()`` function in your ``setup.py`` file:
+When performing a hybrid computation using PennyLane, one of the first steps is often to initialize the quantum device(s). PennyLane identifies the devices via their ``short_name``, which allows to initialize devices in the following way:
+
+.. code-block:: python
+
+    import pennylane as qml
+    dev1 = qml.device(short_name)
+
+where ``short_name`` is a string that uniquely identifies the device. The ``short_name`` has the following form: ``pluginname.devicename``. Examples include ``default.qubit`` and ``default.gaussian`` which are provided as reference plugins by PennyLane, as well as ``strawberryfields.fock``, ``strawberryfields.gaussian``, ``projectq.simulator``, and ``projectq.ibm``, which are provided by the `PennyLane StrawberryFields <https://github.com/XanaduAI/pennylane-sf>`_ and `PennyLane ProjectQ <https://github.com/XanaduAI/pennylane-pq>`_ plugins respectively.
+
+PennyLane uses a ``setuptools`` ``entry_points`` approach to plugin discovery/integration. In order to make the devices of your plugin accessible to PennyLane, simply provide the following keyword argument to the ``setup()`` function in your ``setup.py`` file:
 
 .. code-block:: python
 
@@ -143,6 +148,7 @@ PennyLane uses a ``setuptools`` ``entry_points`` approach to plugin integration.
 where the ``devices_list`` is a list of devices you would like to register, ``example.mydevice1`` is the short name of the device, and ``MyModule.MySubModule`` is the path to your Device class, ``MyDevice1``.
 
 To ensure your device is working as expected, you can install it in developer mode using ``pip install -e .``. It will then be accessible via PennyLane.
+
 
 Testing
 -------
@@ -196,33 +202,37 @@ The user can then import this operation directly from your plugin, and use it wh
         Ising(phi, wires=0)
         return qml.expval.PauliZ(0)
 
-In this case, as the plugin is providing a custom operation not supported by PennyLane, it is recommended that the plugin unittests **do** provide tests to ensure that PennyLane returns the correct gradient for the custom operations.
+.. warning::
 
-.. note::
+    If you are providing custom operations not natively supported by PennyLane, it is recommended that the plugin unittests **do** provide tests to ensure that PennyLane returns the correct gradient for the custom operations.
 
-    If you are providing a custom/unsupported continuous-variable operation or expectation, you must subclass the :class:`~.CVOperation` or :class:`~.CVExpectation` classes instead.
 
-    In addition, for Gaussian CV operations, you may need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of the operator given its list of parameters:
+Supporting new CV operations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    .. code-block:: python
+If you are providing a custom/unsupported continuous-variable operation or expectation, you must subclass the :class:`~.CVOperation` or :class:`~.CVExpectation` classes instead.
 
-        class Custom(CVOperation):
-            """Custom gate"""
-            n_params = 2
-            n_wires = 1
-            par_domain = 'R'
-            grad_method = 'A'
-            grad_recipe = None
+In addition, for Gaussian CV operations, you may need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of the operator given its list of parameters:
 
-            @staticmethod
-            def _heisenberg_rep(params):
-                return function(params)
+.. code-block:: python
 
-    * This method should return the matrix of the linear transformation carried out by the gate for the given parameter values, and is used for calculating the gradient using the analytic method (``grad_method = 'A'``).
+    class Custom(CVOperation):
+        """Custom gate"""
+        n_params = 2
+        n_wires = 1
+        par_domain = 'R'
+        grad_method = 'A'
+        grad_recipe = None
 
-    * For observables, this method should return a real vector (first-order observables) or symmetric matrix (second-order observables) of coefficients of the quadrature operators :math:`\x` and :math:`\p`.
+        @staticmethod
+        def _heisenberg_rep(params):
+            return function(params)
 
-      - For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
-      - For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+* This method should return the matrix of the linear transformation carried out by the gate for the given parameter values, and is used for calculating the gradient using the analytic method (``grad_method = 'A'``).
 
-    Non-Gaussian CV operations and expectations are currently only supported via the finite difference method of gradient computation.
+* For observables, this method should return a real vector (first-order observables) or symmetric matrix (second-order observables) of coefficients of the quadrature operators :math:`\x` and :math:`\p`.
+
+  - For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
+  - For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+
+Non-Gaussian CV operations and expectations are currently only supported via the finite difference method of gradient computation.
