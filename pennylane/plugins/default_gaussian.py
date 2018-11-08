@@ -838,3 +838,21 @@ class DefaultGaussian(Device):
         cols = ind.reshape(1, -1)
 
         return self._state[0][ind], self._state[1][rows, cols]
+
+    @property
+    def operations(self):
+        """Get the supported set of operations.
+
+        Returns:
+            set[str]: the set of PennyLane operation names the device supports
+        """
+        return set(self._operation_map.keys())
+
+    @property
+    def expectations(self):
+        """Get the supported set of expectations.
+
+        Returns:
+            set[str]: the set of PennyLane expectation names the device supports
+        """
+        return set(self._expectation_map.keys())
