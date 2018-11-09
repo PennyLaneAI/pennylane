@@ -271,7 +271,7 @@ class Device(abc.ABC):
 
         Args:
             operation (str): name of the operation
-            wires (Sequence[int]): subsystems the operation is applied on.
+            wires (Sequence[int]): subsystems the operation is applied on
             par (tuple): parameters for the operation.
         """
         raise NotImplementedError
