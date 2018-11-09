@@ -63,7 +63,7 @@ array([-1., -1.])
 
 The output of :func:`~.jacobian` is a two-dimensional vector, with the first/second element being the partial derivative of the first/second expectation value with respect to the input parameter. The Jacobian function has the same signature as the gradient function, requiring the user to specify which argument should be differentiated.
 
-If you want to compute the Jacobian matrix for a function with multiple input parameters and multiple expectation values, the recommended way to do this is to combine the parameters into a single list/array and index into this inside your qfunc. Consider the following circuit:
+If you want to compute the Jacobian matrix for a function with multiple input parameters and multiple expectation values, the recommended way to do this is to combine the parameters into a single list/array and index into this inside your quantum circuit function. Consider the following circuit:
 
 .. code::
 

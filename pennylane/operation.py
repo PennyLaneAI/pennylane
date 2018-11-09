@@ -499,7 +499,6 @@ class CV:
         Returns:
             array[float]: :math:`\tilde{U}` or :math:`q`
         """
-        # TODO: check the note in the docstring.
         # pylint: disable=unused-argument
         return None
 
