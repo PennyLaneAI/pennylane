@@ -283,7 +283,7 @@ class Device(abc.ABC):
         For plugin developers: this function should return the expectation value of the given expectation on the device.
 
         Args:
-            expectation (str): name of the expectation.
+            expectation (str): name of the expectation
             wires (Sequence[int]): subsystems the expectation value is to be measured on.
             par (tuple): parameters for the observable.
 
