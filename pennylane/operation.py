@@ -89,7 +89,7 @@ the operation given its list of parameters, namely:
   or symmetric matrix (second-order observables) of coefficients of the quadrature
   operators :math:`\x` and :math:`\p`.
 
-PennyLane uses the convention :math:`\mathbf{r} = (\I, \x, \p)` single-mode operations and expectations
+PennyLane uses the convention :math:`\mathbf{r} = (\I, \x, \p)` for single-mode operations and expectations
 and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode operations and expectations.
 
 .. note::
@@ -105,7 +105,7 @@ Summary
    CVExpectation
 
 Code details
-------------
+^^^^^^^^^^^^
 """
 import abc
 import numbers

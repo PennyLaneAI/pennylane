@@ -183,8 +183,8 @@ class Device(abc.ABC):
         :meth:`expval`, :meth:`post_expval`, and :meth:`execution_context`.
 
         Args:
-            queue (Iterable[~.operation.Operation]): operations to execute on the device.
-            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return.
+            queue (Iterable[~.operation.Operation]): operations to execute on the device
+            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return
 
         Returns:
             array[float]: expectation value(s)
