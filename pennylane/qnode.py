@@ -30,26 +30,26 @@ instantiated using the :func:`~device` loader. PennyLane comes included with
 some basic devices; additional devices can be installed as plugins
 (see :ref:`plugins` for more details).
 
-Qfuncs
-------
+Quantum circuit functions
+-------------------------
 
-The quantum function (qfunc) encapsulated by the QNode must be of the following form:
+The quantum circuit function encapsulated by the QNode must be of the following form:
 
 .. code-block:: python
 
     def my_quantum_function(x, y):
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
-        qml.RY(-2*y, wires=1)
+        qml.RY(y, wires=1)
         return qml.expval.PauliZ(0)
 
-Qfuncs are a restricted subset of Python functions, adhering to the following
+Quantum circuit functions are a restricted subset of Python functions, adhering to the following
 constraints:
 
-* The body of the qfunc must consist of only supported PennyLane
+* The body of the function must consist of only supported PennyLane
   :mod:`operations <pennylane.ops>`, one per line.
 
-* The qfunc must always return either a single or a tuple of
+* The function must always return either a single or a tuple of
   :mod:`expectation values <pennylane.expval>`.
 
 * Classical processing of function arguments, either by arithmetic operations
@@ -58,30 +58,29 @@ constraints:
 
 .. note::
 
-    The quantum operations cannot be used outside of a qfunc, as the
-    :class:`~.Operation` requires a QNode to perform the queuing on initialization.
+    The quantum operations cannot be used outside of a quantum circuit function, as all
+    :class:`Operations <pennylane.operation.Operation>` require a QNode in order to perform queuing on initialization.
 
 .. note::
 
     Expectation values **must** come after all other operations at the end
-    of the qfunc as part of the return statement, and cannot appear in the middle.
+    of the circuit function as part of the return statement, and cannot appear in the middle.
 
-Once the device and qfunc are defined, the QNode can then be used
-to evaluate the quantum function on the particular device.
+After the device and quantum circuit function are defined, a :class:`~.QNode` object must be created
+which wraps this function and binds it to the device. Once created, the QNode can be used to evaluate the specified quantum circuit function on the particular device.
 
-For example,
+For example:
 
 .. code-block:: python
 
-    device = qml.device('default.qubit', wires=1)
-    qnode1 = QNode(my_quantum_function, device)
+    device = qml.device('default.qubit', wires=2)
+    qnode1 = qml.QNode(my_quantum_function, device)
     result = qnode1(np.pi/4, 0.7)
 
 .. note::
 
         The :func:`~pennylane.decorator.qnode` decorator is provided as a convenience
-        to automate the process of creating quantum nodes. Using this decorator,
-        the above example becomes:
+        to automate the process of creating quantum nodes. The decorator is used as follows:
 
         .. code-block:: python
 
@@ -89,10 +88,10 @@ For example,
             def my_quantum_function(x, y):
                 qml.RZ(x, wires=0)
                 qml.CNOT(wires=[0,1])
-                qml.RY(-2*y, wires=1)
+                qml.RY(y, wires=1)
                 return qml.expval.PauliZ(0)
 
-            result = my_quantum_function(np.pi/4)
+            result = my_quantum_function(np.pi/4, 0.7)
 
 
 .. currentmodule:: pennylane.qnode
@@ -199,22 +198,22 @@ class QNode:
     Args:
         func (callable): a Python function containing :class:`~.operation.Operation`
             constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
-        device (~pennylane._device.Device): device to execute the function on
+        device (:class:`~pennylane._device.Device`): device to execute the function on
     """
     # pylint: disable=too-many-instance-attributes
-    _current_context = None  #: QNode: for building Operation sequences by executing qfuncs
+    _current_context = None  #: QNode: for building Operation sequences by executing quantum circuit functions
 
     def __init__(self, func, device):
         self.func = func
         self.device = device
         self.num_wires = device.num_wires
         self.ops = []
-
+        
         self.variable_ops = {}
         """ dict[int->list[(int, int)]]: Mapping from free parameter index to the list of
-        Operations (in this circuit) that depend on it.
+        :class:`Operations <pennylane.operation.Operation>` (in this circuit) that depend on it.
 
-        The first element of the tuple is the index of Operation in the program queue,
+        The first element of the tuple is the index of the Operation in the program queue,
         the second the index of the parameter within the Operation.
         """
 
@@ -222,7 +221,7 @@ class QNode:
         """Appends a quantum operation into the circuit queue.
 
         Args:
-            op (Operation): quantum operation to be added to the circuit
+            op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
         # EVs go to their own, temporary queue
         if isinstance(op, pennylane.operation.Expectation):
@@ -249,9 +248,9 @@ class QNode:
 
         .. note::
 
-            Additional keyword arguments may be passed to the qfunc, however PennyLane
+            Additional keyword arguments may be passed to the quantum circuit function, however PennyLane
             does not support differentiating with respect to keyword arguments. Instead,
-            keyword arguments are useful for providing data or 'placeholders' to the qfunc.
+            keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
         """
         # pylint: disable=too-many-branches
         self.queue = []
@@ -284,7 +283,7 @@ class QNode:
             QNode._current_context = self
         else:
             raise QuantumFunctionError('QNode._current_context must not be modified outside this method.')
-        # generate the program queue by executing the qfunc
+        # generate the program queue by executing the quantum circuit function
         try:
             res = self.func(*variables, **kwarg_variables)
         finally:
@@ -294,7 +293,7 @@ class QNode:
         #----------------------------------------------------------
         # check the validity of the circuit
 
-        # qfunc return validation
+        # quantum circuit function return validation
         if isinstance(res, pennylane.operation.Expectation):
             self.output_type = float
             self.output_dim = 1

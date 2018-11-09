@@ -13,7 +13,7 @@ In this tutorial, we will highlight some of the more advanced features of Pennyl
 Multiple expectation values
 ---------------------------
 
-All the previous examples we considered utilized quantum functions with only single expectation values. In fact, PennyLane supports the return of multiple expectation values, up to one per wire.
+In all the previous examples, we considered quantum functions with only single expectation values. In fact, PennyLane supports the return of multiple expectation values, up to one per wire.
 
 As usual, we begin by importing PennyLane and the PennyLane-provided version of NumPy, and set up a 2-wire qubit device for computations:
 
@@ -55,7 +55,7 @@ How does automatic differentiation work in the case where the QNode returns mult
     g1 = qml.grad(circuit1, argnum=0)
     g1(np.pi/2)
 
-we would get an error message. The reason for this is that the `gradient <https://en.wikipedia.org/wiki/Gradient>`_ is only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode returns multiple expectation values, this is obviously not the case. The correct differential operator to use in that case is the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_. This can be accessed in PennyLane as :func:`~.jacobian`:
+we would get an error message. This is because the `gradient <https://en.wikipedia.org/wiki/Gradient>`_ is only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode returns multiple expectation values, the correct differential operator to use in that case is the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_. This can be accessed in PennyLane as :func:`~.jacobian`:
 
 >>> j1 = qml.jacobian(circuit1, argnum=0)
 >>> j1(np.pi/2)
@@ -92,7 +92,7 @@ While automatic differentiation is a handy feature, sometimes we want certain pa
 
 PennyLane uses the pattern that *all positional arguments to quantum functions are available to be differentiated*, while *keyword arguments are never differentiated*. Thus, when using the gradient-descent-based :ref:`optimizers <optimization_methods>` included in PennyLane, all numerical parameters appearing in non-keyword arguments will be updated, while all numerical values included as keyword arguments will not be updated.
 
-.. note:: When constructing the circuit, keyword arguments are defined by providing a **default value** in the function signature. If you would prefer that the keyword argument value be passed every time the quantum function is called, the default value can be set to ``None``.
+.. note:: When constructing the circuit, keyword arguments are defined by providing a **default value** in the function signature. If you would prefer that the keyword argument value be passed every time the quantum circuit function is called, the default value can be set to ``None``.
 
 For example, let's create a quantum node that accepts two arguments; a differentiable circuit parameter ``param``, and a fixed circuit parameter ``fixed``:
 

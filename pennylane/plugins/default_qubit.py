@@ -117,7 +117,7 @@ def Rphi(phi):
     Args:
         phi (float): phase shift angle
     Returns:
-        array: unitary 2x2 phase shift matrix.
+        array: unitary 2x2 phase shift matrix
     """
     return np.array([[1, 0], [0, np.exp(1j*phi)]])
 
@@ -174,10 +174,10 @@ def unitary(*args):
     r"""Input validation for an arbitary unitary operation.
 
     Args:
-        args (array): square unitary matrix.
+        args (array): square unitary matrix
 
     Returns:
-        array: square unitary matrix.
+        array: square unitary matrix
     """
     U = np.asarray(args[0])
 
@@ -194,10 +194,10 @@ def hermitian(*args):
     r"""Input validation for an arbitary Hermitian expectation.
 
     Args:
-        args (array): square hermitian matrix.
+        args (array): square hermitian matrix
 
     Returns:
-        array: square hermitian matrix.
+        array: square hermitian matrix
     """
     A = np.asarray(args[0])
 
@@ -219,8 +219,8 @@ class DefaultQubit(Device):
 
     Args:
         wires (int): the number of modes to initialize the device in
-        shots (int): How many times should the circuit be evaluated (or sampled) to estimate
-            the expectation values. 0 yields the exact result.
+        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. A value of 0 yields the exact result.
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'

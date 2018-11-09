@@ -106,8 +106,8 @@ class Device(abc.ABC):
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
         shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables. For simulator devices, 0 results
-            in the exact expectation value being is returned. Default 0 if not specified.
+            expectation values of observables. For simulator devices, a value of 0 results
+            in the exact expectation value being returned. Defaults to 0 if not specified.
     """
     name = ''          #: str: official device plugin name
     api_version = ''   #: str: version of the PennyLane plugin API for which the plugin was made
@@ -136,14 +136,12 @@ class Device(abc.ABC):
 
     @abc.abstractproperty
     def _operation_map(self):
-        """A dictionary {str: val} that maps PennyLane operation names to
-        the corresponding operation in the device."""
+        """A dictionary {str: val} that maps PennyLane operation names to the corresponding operation in the device."""
         raise NotImplementedError
 
     @abc.abstractproperty
     def _expectation_map(self):
-        """A dictionary {str: val} that maps PennyLane expectation names to
-        the corresponding expectation in the device."""
+        """A dictionary {str: val} that maps PennyLane expectation names to the corresponding expectation in the device."""
         raise NotImplementedError
 
     @property
@@ -252,8 +250,8 @@ class Device(abc.ABC):
         """Checks whether the operations and expectations in queue are all supported by the device.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device
-            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in device
+            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in the device
+            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in the device
         """
         for o in queue:
             if not self.supported(o.name):
