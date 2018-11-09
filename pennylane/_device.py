@@ -285,7 +285,7 @@ class Device(abc.ABC):
         Args:
             expectation (str): name of the expectation
             wires (Sequence[int]): subsystems the expectation value is to be measured on
-            par (tuple): parameters for the observable.
+            par (tuple): parameters for the observable
 
         Returns:
             float: expectation value
