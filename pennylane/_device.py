@@ -19,7 +19,7 @@ Device base class
 
 .. currentmodule:: pennylane._device
 
-This module contains the :class:`Device` class. To write a plugin t abstract base class,
+This module contains the :class:`Device` abstract base class. To write a plugin containing a PennyLane-compatible device, :class:`Device` 
 must be subclassed, and the appropriate class attributes and methods
 implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
 :class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
@@ -241,10 +241,10 @@ class Device(abc.ABC):
         """Checks if an operation or expectation is supported by this device.
 
         Args:
-            name (str): name of the operation or expectation.
+            name (str): name of the operation or expectation
 
         Returns:
-            bool: True iff it is supported.
+            bool: True iff it is supported
         """
         return name in self.operations.union(self.expectations)
 
@@ -252,8 +252,8 @@ class Device(abc.ABC):
         """Checks whether the operations and expectations in queue are all supported by the device.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device.
-            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in device.
+            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device
+            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in device
         """
         for o in queue:
             if not self.supported(o.name):
