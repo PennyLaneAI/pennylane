@@ -130,8 +130,28 @@ class Device(abc.ABC):
         return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.api_version, self.version, self.author)
 
     @abc.abstractproperty
+    def name(self):
+        """The full name of the device."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
     def short_name(self):
         """Returns the string used to load the device."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def api_version(self):
+        """The current API version that the device plugin was made for."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def version(self):
+        """The current version of the plugin."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def author(self):
+        """The author(s) of the plugin."""
         raise NotImplementedError
 
     @abc.abstractproperty
