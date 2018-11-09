@@ -721,27 +721,27 @@ class DefaultGaussian(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, op_name, wires, par):
-        if op_name == 'Displacement':
+    def apply(self, operation, wires, par):
+        if operation == 'Displacement':
             self._state = displacement(self._state, wires[0], par[0]*np.exp(1j*par[1]))
             return # we are done here
 
-        if op_name == 'GaussianState':
+        if operation == 'GaussianState':
             if wires != list(range(self.num_wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
-            self._state = self._operation_map[op_name](*par, hbar=self.hbar)
+            self._state = self._operation_map[operation](*par, hbar=self.hbar)
             return # we are done here
 
-        if 'State' in op_name:
+        if 'State' in operation:
             # set the new device state
-            mu, cov = self._operation_map[op_name](*par, hbar=self.hbar)
+            mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
             self._state = set_state(self._state, wires[0], mu, cov)
             return # we are done here
 
         # get the symplectic matrix
-        S = self._operation_map[op_name](*par)
+        S = self._operation_map[operation](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:

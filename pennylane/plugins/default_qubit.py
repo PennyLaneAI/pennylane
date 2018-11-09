@@ -264,15 +264,15 @@ class DefaultQubit(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, gate_name, wires, par):
-        if gate_name == 'QubitStateVector':
+    def apply(self, operation, wires, par):
+        if operation == 'QubitStateVector':
             state = np.asarray(par[0], dtype=np.float64)
             if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             return
-        elif gate_name == 'BasisState':
+        elif operation == 'BasisState':
             # get computational basis state number
             if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
                 raise ValueError("BasisState parameter must be an array of 0/1 integers.")
@@ -284,7 +284,7 @@ class DefaultQubit(Device):
             self._state[num] = 1.
             return
 
-        A = self._get_operator_matrix(gate_name, par)
+        A = self._get_operator_matrix(operation, par)
 
         # apply unitary operations
         if len(wires) == 1:
@@ -312,16 +312,16 @@ class DefaultQubit(Device):
 
         return ev
 
-    def _get_operator_matrix(self, op_name, par):
+    def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or expectation.
 
         Args:
-          op_name    (str): name of the operation/expectation
+          operation    (str): name of the operation/expectation
           par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        A = {**self._operation_map, **self._expectation_map}[op_name]
+        A = {**self._operation_map, **self._expectation_map}[operation]
         if not callable(A):
             return A
         return A(*par)
