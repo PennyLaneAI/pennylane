@@ -270,7 +270,7 @@ class Device(abc.ABC):
         For plugin developers: this function should apply the operation on the device.
 
         Args:
-            operation (str): name of the operation.
+            operation (str): name of the operation
             wires (Sequence[int]): subsystems the operation is applied on.
             par (tuple): parameters for the operation.
         """
