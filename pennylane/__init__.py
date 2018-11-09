@@ -106,7 +106,7 @@ from ._device import Device, DeviceError
 from .ops import *
 from .optimize import *
 from .qnode import QNode, QuantumFunctionError
-from ._version import __version__
+from ._version import __version__, __supported_plugin_api_versions__
 
 # NOTE: this has to be imported last,
 # otherwise it will clash with the .qnode import.
@@ -197,13 +197,13 @@ def device(name, *args, **kwargs):
         kwargs.pop("config", None)
         options.update(kwargs)
 
-        # load plugin device
-        p = plugin_devices[name].load()(*args, **options)
+        plugin_device_class = plugin_devices[name].load()
 
-        if p.api_version != __version__:
-            log.warning('Plugin API version %s does not match PennyLane version %s.', p.api_version, __version__)
+        if plugin_device_class.api_version not in __supported_plugin_api_versions__:
+            raise DeviceError('The plugin API version %s of %s is not supported by this PennyLane version %s.', plugin_device_class.api_version, name, __version__)
 
-        return p
+            # load plugin device
+        return plugin_device_class(*args, **options)
     else:
         raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
 

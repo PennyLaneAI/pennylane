@@ -17,3 +17,4 @@
 """
 
 __version__ = '0.1.0'
+__supported_plugin_api_versions__ = set(['0.1.0'])
