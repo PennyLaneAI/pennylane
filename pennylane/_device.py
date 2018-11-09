@@ -241,7 +241,7 @@ class Device(abc.ABC):
         """Checks if an operation or expectation is supported by this device.
 
         Args:
-            name (str): name of the operation or expectation.
+            name (str): name of the operation or expectation
 
         Returns:
             bool: True iff it is supported.
