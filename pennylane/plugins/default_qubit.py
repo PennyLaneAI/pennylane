@@ -52,7 +52,7 @@ Classes
     DefaultQubit
 
 Code details
-------------
+^^^^^^^^^^^^
 """
 import logging as log
 import collections

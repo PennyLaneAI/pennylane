@@ -85,7 +85,7 @@ Classes
     DefaultGaussian
 
 Code details
-------------
+^^^^^^^^^^^^
 """
 # pylint: disable=attribute-defined-outside-init
 import logging as log
@@ -446,7 +446,7 @@ def squeezed_state(r, phi, hbar=2.):
 
 
 def displaced_squeezed_state(a, r, phi, hbar=2.):
-    r"""Returns the squeezed coherent state
+    r"""Returns a squeezed coherent state
 
     Args:
         a (complex): the displacement.
@@ -464,7 +464,7 @@ def displaced_squeezed_state(a, r, phi, hbar=2.):
 
 
 def thermal_state(nbar, hbar=2.):
-    r"""Returns the thermal state.
+    r"""Returns a thermal state.
 
     Args:
         nbar (float): the mean photon number.
@@ -480,7 +480,7 @@ def thermal_state(nbar, hbar=2.):
 
 
 def gaussian_state(mu, cov, hbar=2.):
-    r"""Returns the Gaussian state.
+    r"""Returns a Gaussian state.
 
     This is simply a bare wrapper function,
     since the means vector and covariance matrix

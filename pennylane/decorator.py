@@ -30,7 +30,7 @@ function is no longer accessible (but is accessible via the
 :attr:`~.QNode.func` attribute).
 
 Example
--------
+=======
 
 .. code-block:: python
 

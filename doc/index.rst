@@ -62,7 +62,7 @@ PennyLane is a Python library for building and training machine learning models 
 ..
 
 - *Large plugin ecosystem*.
-  Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
+  Install plugins to run your computational circuits on more devices, including **Strawberry Fields** and **ProjectQ**
 
 :html:`<h4>Available plugins</h4>`
 
