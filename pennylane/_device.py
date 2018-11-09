@@ -244,7 +244,7 @@ class Device(abc.ABC):
             name (str): name of the operation or expectation
 
         Returns:
-            bool: True iff it is supported.
+            bool: True iff it is supported
         """
         return name in self.operations.union(self.expectations)
 
