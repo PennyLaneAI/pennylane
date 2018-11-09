@@ -78,7 +78,7 @@ and :class:`~.Expectation`.
 Differentiation
 ^^^^^^^^^^^^^^^
 
-To enabled gradient computation using the analytic method for Gaussian CV operations, in addition, you need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
+To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
 the operation given its list of parameters, namely:
 
 * For Gaussian CV Operations this method should return the matrix of the linear transformation carried out by the
