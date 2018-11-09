@@ -19,7 +19,7 @@ Device base class
 
 .. currentmodule:: pennylane._device
 
-This module contains the :class:`Device` class. To write a plugin t abstract base class,
+This module contains the :class:`Device` abstract base class. To write a plugin containing a PennyLane-compatible device, :class:`Device` 
 must be subclassed, and the appropriate class attributes and methods
 implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
 :class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
