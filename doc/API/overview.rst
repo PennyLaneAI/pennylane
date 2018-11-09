@@ -5,21 +5,17 @@ Overview of the developer API (version 0.1.0)
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
-.. todo::
-
-   We need to decide on how to handle the device API version issue https://github.com/XanaduAI/pennylane/issues/117. I would suggest to decouple the API version from the PL version. This document would then be called "Overview of the developer API V1.0" and the API version would not increment with the PL version. I would also suggest to make all the class attributes (``name``, ``short_name``, ...) mandatory. When loading the device PL should check whether the api_version is among the ones supported by that PL version and possible treat the plugins slightly differently depending on their targeted API version.
-
 
 What a plugin provides
 ----------------------
 
-    A quick primer on terminology of PennyLane plugins in this section.
+A quick primer on terminology of PennyLane plugins in this section.
 
-    * A plugin is an external Python package that provides additional quantum *devices* to PennyLane.
+* A plugin is an external Python package that provides additional quantum *devices* to PennyLane.
 
-    * Each plugin may provide one (or more) devices, that are accessible directly through PennyLane, as well as any additional private functions or classes.
+* Each plugin may provide one (or more) devices, that are accessible directly through PennyLane, as well as any additional private functions or classes.
 
-    * Depending on the scope of the plugin, you may wish to provide additional (custom) quantum operations and expectations that the user can import module of your plugin.
+* Depending on the scope of the plugin, you may wish to provide additional (custom) quantum operations and expectations that the user can import module of your plugin.
 
 .. important::
 
