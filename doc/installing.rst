@@ -14,9 +14,9 @@ PennyLane requires the following libraries be installed:
 
 as well as the following Python packages:
 
-* `NumPy <http://numpy.org/>`_  >=1.13.3
-* `SciPy <http://scipy.org/>`_  >=1.0.0
-* `Autograd <https://github.com/HIPS/autograd>`_
+* `numpy <http://numpy.org/>`_  >=1.13.3
+* `scipy <http://scipy.org/>`_  >=1.0.0
+* `autograd <https://github.com/HIPS/autograd>`_
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 
@@ -35,7 +35,7 @@ Installation of PennyLane, as well as all required Python packages mentioned abo
 
 Make sure you are using the Python 3 version of pip.
 
-Alternatively, you can install PennyLane from the source code by navigating to the top directory and running
+Alternatively, you can install PennyLane from the source code by navigating to the top-level directory and running
 ::
 
 	$ python setup.py install

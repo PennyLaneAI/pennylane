@@ -18,7 +18,7 @@ Generally speaking, automatic differentiation is the ability for a software libr
 Computing gradients of quantum functions
 ----------------------------------------
 
-Quantum functions (qfuncs) or :ref:`variational circuits <varcirc>` are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute the gradient of a quantum function, we could use this information in an optimization or machine learning algorithm, tuning the quantum circuit via `gradient descent <https://en.wikipedia.org/wiki/Gradient_descent>`_ to produce a desired output. While numerical differentiation is an option, PennyLane is the first software library to support **automatic differentiation of quantum circuits** [#]_.
+Quantum functions (qfuncs) or :ref:`variational circuits <varcirc>` are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute the gradient of a quantum function, we can then use this information in an optimization or machine learning algorithm, tuning the quantum circuit via `gradient descent <https://en.wikipedia.org/wiki/Gradient_descent>`_ to produce a desired output. While numerical differentiation is an option, PennyLane is the first software library to support **automatic differentiation of quantum circuits** [#]_.
 
 How is this accomplished? It turns out that the gradient of a quantum function :math:`f(x;\bm{\theta})` can in many cases be expressed as a linear combination of other quantum functions. In fact, these other quantum functions typically use the same circuit, differing only in a shift of the argument.
 
@@ -50,7 +50,7 @@ We have omitted which wire each unitary acts on, since it is not necessary for t
 A single parameterized gate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Let us single out a single parameter :math:`\theta_i` and its associated gate :math:`U(\theta_i)`. For simplicity, we remove all gates except :math:`U_i(\theta_i)` and :math:`U_0(x)` for the moment. In this case, we have a simplified qfunc
+Let us single out a single parameter :math:`\theta_i` and its associated gate :math:`U_i(\theta_i)`. For simplicity, we remove all gates except :math:`U_i(\theta_i)` and :math:`U_0(x)` for the moment. In this case, we have a simplified qfunc
 
 .. math:: f(x; \theta_i) = \langle 0 | U_0^\dagger(x)U_i^\dagger(\theta_i)\hat{B}U_i(\theta_i)U_0(x) | 0 \rangle = \langle x | U_i^\dagger(\theta_i)\hat{B}U_i(\theta_i) | x \rangle.
 
@@ -244,7 +244,7 @@ Finally, its gradient can be expressed as
                        = & \frac{1}{2\sinh(s)}\left[f(y; r+s) - f(y; r-s)\right].
    \end{align}
 
-.. note:: For simplicity of the discussion, we have set the phase angle of the Squeezing gate to be zero. In the general case, Squeezing is a two-parameter gate, containing a squeezing magnitude and a squeezing angle. However, we can always decompose the two-parameter form into Squeezing gate like the one above, followed by a Rotation gate.
+.. note:: For simplicity of the discussion, we have set the phase angle of the Squeezing gate to be zero. In the general case, Squeezing is a two-parameter gate, containing a squeezing magnitude and a squeezing angle. However, we can always decompose the two-parameter form into a Squeezing gate like the one above, followed by a Rotation gate.
 
 .. _Theano: https://github.com/Theano/Theano
 .. _Autograd: https://github.com/HIPS/autograd
