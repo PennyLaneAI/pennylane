@@ -252,7 +252,7 @@ class Device(abc.ABC):
         """Checks whether the operations and expectations in queue are all supported by the device.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device.
+            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device
             expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in device.
         """
         for o in queue:
