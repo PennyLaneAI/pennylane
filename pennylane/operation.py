@@ -27,22 +27,26 @@ This module contains the symbolic base class for performing quantum operations
 and measuring expectation values in PennyLane.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
-  for example a unitary quantum gate. Each instance of these subclasses then
+  for example a unitary quantum gate. Each instance of these subclasses
   represents an application of the operation with given parameter values to
   a given sequence of wires (subsystems).
 
 * Each  :class:`~.Expectation` subclass represents a type of expectation value,
-  for example the expectation value of an observable, such as an Hermitian operator.
+  for example the expectation value of an observable. Each instance of these
+  subclasses represents an instruction to evaluate and return the respective
+  expectation value for the given parameter values on a sequence of wires
+  (subsystems).
 
-In general, an operation is differentiable (at least using the finite difference method) iff
+Differentiation
+^^^^^^^^^^^^^^^
 
-* it has parameters, and
-* its parameter domain is continuous (i.e. the domain is not the natural numbers).
+In general, an :class:`Operation` is differentiable (at least using the finite difference method) with respect to a parameter iff
 
-For an operation to be differentiable with respect to a particular parameter
-using the analytic method of differentiation, it must satisfy an additional constraint:
+* the domain of that parameter is continuous.
 
-* its parameter domain must be real.
+For an :class:`Operation` to be differentiable with respect to a parameter using the analytic method of differentiation, it must satisfy an additional constraint:
+
+* the parameter domain must be real.
 
 .. note::
 
@@ -56,13 +60,13 @@ works as follows:
 
 .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
-
 Summary
 ^^^^^^^
 
 .. autosummary::
    Operation
    Expectation
+
 
 CV Operation base classes
 -------------------------
@@ -71,24 +75,22 @@ Due to additional requirements, continuous-variable (CV) operations must subclas
 :class:`~.CVOperation` or :class:`~.CVExpectation` classes instead of :class:`~.Operation`
 and :class:`~.Expectation`.
 
-In addition, for Gaussian CV operations, you may need to provide the static class
-method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
-the operator given its list of parameters:
+Differentiation
+^^^^^^^^^^^^^^^
 
-* This method should return the matrix of the linear transformation carried out by the
-  gate on the vector of quadrature operators :math:`\mathbf{r}` for the given parameter
+To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
+the operation given its list of parameters, namely:
+
+* For Gaussian CV Operations this method should return the matrix of the linear transformation carried out by the
+  operation on the vector of quadrature operators :math:`\mathbf{r}` for the given parameter
   values.
 
-* For observables, this method should return a real vector (first-order observables)
+* For Gaussian CV Expectations this method should return a real vector (first-order observables)
   or symmetric matrix (second-order observables) of coefficients of the quadrature
   operators :math:`\x` and :math:`\p`.
 
-In both cases, :meth:`~.CV._heisenberg_rep` is used for calculating the gradient
-using the analytic method.
-
-Note that for single-mode operations and expectations we use the basis
-:math:`\mathbf{r} = (\I, \x, \p)`, while for multi-mode operations and expectations
-we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+PennyLane uses the convention :math:`\mathbf{r} = (\I, \x, \p)` single-mode operations and expectations
+and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode operations and expectations.
 
 .. note::
     Non-Gaussian CV operations and expectations are currently only supported via
@@ -103,7 +105,7 @@ Summary
    CVExpectation
 
 Code details
-^^^^^^^^^^^^
+------------
 """
 import abc
 import numbers

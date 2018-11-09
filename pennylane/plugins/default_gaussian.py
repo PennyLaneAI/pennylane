@@ -23,12 +23,16 @@ Default Gaussian plugin
 
 .. currentmodule:: pennylane.plugins.default_gaussian
 
-The default plugin is meant to be used as a template for writing CV PennyLane
-device plugins for new backends.
+The :code:`default.gaussian` plugin is meant to be used as a template for writing PennyLane
+device plugins for new CV backends.
 
-It implements all the :class:`~pennylane._device.Device` methods as well as all built-in
-continuous-variable Gaussian operations and expectations, and provides
-a very simple simulation of a Gaussian-based quantum circuit architecture.
+It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
+:mod:`continuous-variable Gaussian operations <pennylane.ops.cv>` and
+:mod:`expectations <pennylane.expval.cv>`, and provides a very simple simulation of a
+Gaussian-based quantum circuit architecture.
+
+The following is the technical documentation of the implementation of the plugin. You will
+not need to read and understand this to use this plugin.
 
 Auxillary functions
 -------------------
@@ -78,10 +82,10 @@ Classes
 -------
 
 .. autosummary::
-   DefaultGaussian
+    DefaultGaussian
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 # pylint: disable=attribute-defined-outside-init
 import logging as log
@@ -239,7 +243,7 @@ def rotation(phi):
 
 
 def displacement(state, wire, alpha, hbar=2):
-    """Displacement in the phase space
+    """Displacement in the phase space.
 
     Args:
         state (tuple): contains means vector and covariance matrix.
@@ -256,7 +260,7 @@ def displacement(state, wire, alpha, hbar=2):
 
 
 def squeezing(r, phi):
-    """Squeezing in the phase space
+    """Squeezing in the phase space.
 
     Args:
         r (float): squeezing magnitude.
@@ -310,7 +314,8 @@ def beamsplitter(theta, phi):
 
 
 def two_mode_squeezing(r, phi):
-    """Two-mode squeezing
+
+    """Two-mode squeezing.
 
     Args:
         r (float): squeezing magnitude.
@@ -333,7 +338,7 @@ def two_mode_squeezing(r, phi):
 
 
 def controlled_addition(s):
-    """The CX gate.
+    """CX gate.
 
     Args:
         s (float): parameter.
@@ -350,7 +355,7 @@ def controlled_addition(s):
 
 
 def controlled_phase(s):
-    """The CZ gate.
+    """CZ gate.
 
     Args:
         s (float): parameter.
@@ -371,7 +376,7 @@ def controlled_phase(s):
 #========================================================
 
 def squeezed_cov(r, phi, hbar=2):
-    r"""Returns the squeezed covariance matrix of a squeezed state
+    r"""Returns the squeezed covariance matrix of a squeezed state.
 
     Args:
         r (float): the squeezing magnitude
@@ -390,7 +395,7 @@ def squeezed_cov(r, phi, hbar=2):
 
 
 def vacuum_state(wires, hbar=2.):
-    r""" Returns the vacuum state.
+    r"""Returns the vacuum state.
 
     Args:
         basis (str): Returns the vector of means and the covariance matrix.
@@ -406,7 +411,7 @@ def vacuum_state(wires, hbar=2.):
 
 
 def coherent_state(a, phi=0, hbar=2.):
-    r""" Returns the coherent state.
+    r"""Returns a coherent state.
 
     Args:
         a (complex) : the displacement
@@ -424,7 +429,7 @@ def coherent_state(a, phi=0, hbar=2.):
 
 
 def squeezed_state(r, phi, hbar=2.):
-    r""" Returns the squeezed state
+    r"""Returns a squeezed state.
 
     Args:
         r (float): the squeezing magnitude
@@ -441,7 +446,7 @@ def squeezed_state(r, phi, hbar=2.):
 
 
 def displaced_squeezed_state(a, r, phi, hbar=2.):
-    r""" Returns the squeezed coherent state
+    r"""Returns the squeezed coherent state
 
     Args:
         a (complex): the displacement.
@@ -459,7 +464,7 @@ def displaced_squeezed_state(a, r, phi, hbar=2.):
 
 
 def thermal_state(nbar, hbar=2.):
-    r""" Returns the thermal state.
+    r"""Returns the thermal state.
 
     Args:
         nbar (float): the mean photon number.
@@ -475,7 +480,7 @@ def thermal_state(nbar, hbar=2.):
 
 
 def gaussian_state(mu, cov, hbar=2.):
-    r""" Returns the Gaussian state.
+    r"""Returns the Gaussian state.
 
     This is simply a bare wrapper function,
     since the means vector and covariance matrix
@@ -716,27 +721,27 @@ class DefaultGaussian(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, op_name, wires, par):
-        if op_name == 'Displacement':
+    def apply(self, operation, wires, par):
+        if operation == 'Displacement':
             self._state = displacement(self._state, wires[0], par[0]*np.exp(1j*par[1]))
             return # we are done here
 
-        if op_name == 'GaussianState':
+        if operation == 'GaussianState':
             if wires != list(range(self.num_wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
-            self._state = self._operation_map[op_name](*par, hbar=self.hbar)
+            self._state = self._operation_map[operation](*par, hbar=self.hbar)
             return # we are done here
 
-        if 'State' in op_name:
+        if 'State' in operation:
             # set the new device state
-            mu, cov = self._operation_map[op_name](*par, hbar=self.hbar)
+            mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
             self._state = set_state(self._state, wires[0], mu, cov)
             return # we are done here
 
         # get the symplectic matrix
-        S = self._operation_map[op_name](*par)
+        S = self._operation_map[operation](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:
