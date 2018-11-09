@@ -32,9 +32,8 @@ as the conventions chosen for their implementation.
 
 .. note::
 
-    If writing a plugin device for PennyLane, make sure that your plugin
-    supports the required PennyLane built-in expectations defined here,
-    by including them in your device :attr:`~.Device._expectation_map`.
+    When writing a plugin device for PennyLane, make sure that your plugin
+    supports as many of the PennyLane built-in expectations defined here as possible.
 
     If the convention differs between the built-in PennyLane expectation
     and the corresponding expectation in the targeted framework, ensure that the
