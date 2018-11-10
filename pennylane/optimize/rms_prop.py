@@ -45,7 +45,17 @@ class RMSPropOptimizer(AdagradOptimizer):
         self.decay = decay
 
     def apply_grad(self, grad, x):
-        # docstring is inherited from AdagradOptimizer
+        r"""Update the variables x to take a single optimization step. Flattens and unflattens
+        the inputs to maintain nested iterables as the parameters of the optimization.
+
+        Args:
+            grad (array): The gradient of the objective
+                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
+            x (array): the current value of the variables :math:`x^{(t)}`
+
+        Returns:
+            array: the new values :math:`x^{(t+1)}`
+        """
 
         grad_flat = list(_flatten(grad))
         x_flat = _flatten(x)

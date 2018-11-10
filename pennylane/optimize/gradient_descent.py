@@ -18,9 +18,11 @@ from pennylane.utils import _flatten, unflatten
 
 
 class GradientDescentOptimizer(object):
-    r"""Base class for gradient-descent-based optimizers.
+    r"""Basic gradient-descent optimizer.
+    
+    Base class for other gradient-descent-based optimizers.
 
-    A step of the gradient descent optimizer computes the new weights via the rule
+    A step of the gradient descent optimizer computes the new values via the rule
 
     .. math::
 
@@ -39,13 +41,13 @@ class GradientDescentOptimizer(object):
 
         Args:
             objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the weights
+            x (array): NumPy array containing the current values of the variables to be updated
             grad_fn (function): Optional gradient function of the
-                objective function with respect to the weights ``x``.
+                objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
 
         Returns:
-            array: the new weights :math:`x^{(t+1)}`
+            array: the new variable values :math:`x^{(t+1)}`
         """
 
         g = self.compute_grad(objective_fn, x, grad_fn=grad_fn)
@@ -60,9 +62,9 @@ class GradientDescentOptimizer(object):
 
         Args:
             objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the weights
+            x (array): NumPy array containing the current values of the variables to be updated
             grad_fn (function): Optional gradient function of the
-                objective function with respect to the weights ``x``.
+                objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
 
         Returns:
@@ -76,16 +78,16 @@ class GradientDescentOptimizer(object):
         return g
 
     def apply_grad(self, grad, x):
-        r"""Update the weights x to take a single optimization step. Flattens and unflattens
+        r"""Update the variables x to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
             grad (array): The gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            x (array): the current value of the weights :math:`x^{(t)}`
+            x (array): the current value of the variables :math:`x^{(t)}`
 
         Returns:
-            array: the new weights :math:`x^{(t+1)}`
+            array: the new values :math:`x^{(t+1)}`
         """
 
         x_flat = _flatten(x)
