@@ -19,7 +19,7 @@ Device base class
 
 .. currentmodule:: pennylane._device
 
-This module contains the :class:`Device` abstract base class. To write a plugin containing a PennyLane-compatible device, :class:`Device` 
+This module contains the :class:`Device` abstract base class. To write a plugin containing a PennyLane-compatible device, :class:`Device`
 must be subclassed, and the appropriate class attributes and methods
 implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
 :class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
@@ -51,6 +51,11 @@ Abstract methods and attributes
 The following methods and attributes must be defined for all devices:
 
 .. autosummary::
+    name
+    short_name
+    api_version
+    version
+    author
     _operation_map
     _expectation_map
     apply
@@ -109,10 +114,6 @@ class Device(abc.ABC):
             expectation values of observables. For simulator devices, 0 results
             in the exact expectation value being is returned. Default 0 if not specified.
     """
-    name = ''          #: str: official device plugin name
-    api_version = ''   #: str: version of the PennyLane plugin API for which the plugin was made
-    version = ''       #: str: version of the device plugin itself
-    author = ''        #: str: plugin author(s)
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
