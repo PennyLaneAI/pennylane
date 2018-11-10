@@ -26,7 +26,8 @@ requirements = [
     "scipy",
     "autograd",
     "toml",
-    "appdirs"
+    "appdirs",
+    "semantic_version"
 ]
 
 info = {
