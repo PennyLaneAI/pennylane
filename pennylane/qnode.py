@@ -550,7 +550,7 @@ class QNode:
         .. note::
            The finite difference method is sensitive to statistical noise in the circuit output,
            since it compares the output at two points infinitesimally close to each other. Hence the
-           'F' method requires exact expectation values, i.e. `shots=0`.
+           'F' method requires exact expectation values, i.e., `shots=0`.
 
         Args:
             params (nested Sequence[Number], Number): point in parameter space at which
