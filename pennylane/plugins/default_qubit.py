@@ -24,7 +24,7 @@ Default qubit plugin
 The default plugin is meant to be used as a template for writing PennyLane device
 plugins for new qubit-based backends.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
+It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>` and
 :mod:`expectations <pennylane.expval.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
@@ -32,18 +32,38 @@ simulation of a qubit-based quantum circuit architecture.
 The following is the technical documentation of the implementation of the plugin. You will
 not need to read and understand this to use this plugin.
 
-Functions
----------
+Auxillary functions
+-------------------
 
 .. autosummary::
     spectral_decomposition_qubit
-    Rphi
-    frx
-    fry
-    frz
-    fr3
     unitary
     hermitian
+
+Gates and operations
+--------------------
+
+.. autosummary::
+    Rphi
+    Rotx
+    Roty
+    Rotz
+    Rot3
+    X
+    Y
+    Z
+    H
+    CNOT
+    SWAP
+    CZ
+
+Expectations
+------------
+
+.. autosummary::
+    X
+    Y
+    Z
 
 Classes
 -------
@@ -96,15 +116,15 @@ def spectral_decomposition_qubit(A):
 
 I = np.eye(2)
 # Pauli matrices
-X = np.array([[0, 1], [1, 0]])
-Y = np.array([[0, -1j], [1j, 0]])
-Z = np.array([[1, 0], [0, -1]])
-# Hadamard
-H = np.array([[1, 1], [1, -1]])/np.sqrt(2)
+X = np.array([[0, 1], [1, 0]]) #: Pauli-X matrix
+Y = np.array([[0, -1j], [1j, 0]]) #: Pauli-Y matrix
+Z = np.array([[1, 0], [0, -1]]) #: Pauli-Z matrix
+
+H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
 # Two qubit gates
-CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNOT gate
+SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
+CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
 
 
 #========================================================
@@ -122,7 +142,7 @@ def Rphi(phi):
     return np.array([[1, 0], [0, np.exp(1j*phi)]])
 
 
-def frx(theta):
+def Rotx(theta):
     r"""One-qubit rotation about the x axis.
 
     Args:
@@ -133,7 +153,7 @@ def frx(theta):
     return expm(-1j * theta/2 * X)
 
 
-def fry(theta):
+def Roty(theta):
     r"""One-qubit rotation about the y axis.
 
     Args:
@@ -144,7 +164,7 @@ def fry(theta):
     return expm(-1j * theta/2 * Y)
 
 
-def frz(theta):
+def Rotz(theta):
     r"""One-qubit rotation about the z axis.
 
     Args:
@@ -155,7 +175,7 @@ def frz(theta):
     return expm(-1j * theta/2 * Z)
 
 
-def fr3(a, b, c):
+def Rot3(a, b, c):
     r"""Arbitrary one-qubit rotation using three Euler angles.
 
     Args:
@@ -163,7 +183,7 @@ def fr3(a, b, c):
     Returns:
         array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
-    return frz(c) @ (fry(b) @ frz(a))
+    return Rotz(c) @ (Roty(b) @ Rotz(a))
 
 
 #========================================================
@@ -206,8 +226,8 @@ def hermitian(*args):
 
     if not np.allclose(A, A.conj().T):
         raise ValueError("Expectation must be Hermitian.")
-    return A
 
+    return A
 
 #========================================================
 #  device
@@ -243,10 +263,10 @@ class DefaultQubit(Device):
         'SWAP': SWAP,
         'CZ': CZ,
         'PhaseShift': Rphi,
-        'RX': frx,
-        'RY': fry,
-        'RZ': frz,
-        'Rot': fr3
+        'RX': Rotx,
+        'RY': Roty,
+        'RZ': Rotz,
+        'Rot': Rot3
     }
 
     _expectation_map = {
