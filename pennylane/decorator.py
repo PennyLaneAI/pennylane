@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
+.. _qnode_decorator:
+
 The QNode decorator
 ===================
 
@@ -29,8 +31,10 @@ function with a :mod:`QNode <pennylane.qnode>` of the same name - as such, the o
 function is no longer accessible (but is accessible via the
 :attr:`~.QNode.func` attribute).
 
-Example
-=======
+
+.. raw:: html
+
+    <h3>Example</h3>
 
 .. code-block:: python
 
@@ -79,8 +83,9 @@ build a hybrid computation. For example,
         qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)
 
-Code details
-^^^^^^^^^^^^
+.. raw:: html
+
+    <h3>Code details</h3>
 """
 # pylint: disable=redefined-outer-name
 import logging as log
