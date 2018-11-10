@@ -173,12 +173,13 @@ class InitDeviceTests(BaseTest):
         with self.assertRaisesRegex(qml.DeviceError, 'Device does not exist'):
             qml.device('None', wires=0)
 
-    @patch.object(qml, '__supported_plugin_api_versions__', return_value=set([]))
+    @patch.object(qml, 'version', return_value='0.0.1')
     def test_outdated_API(self, n):
         """Test exception raised if plugin that targets an old API is loaded"""
         self.logTestName()
 
-        self.assertRaises(qml._device.DeviceError, qml.device, 'default.qubit', wires=0)
+        with self.assertRaisesRegex(qml.DeviceError, 'plugin requires PennyLane versions'):
+            qml.device('default.qubit', wires=0)
 
 
 

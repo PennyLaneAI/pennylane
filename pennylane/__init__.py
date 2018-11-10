@@ -98,6 +98,8 @@ from autograd import numpy
 from autograd import grad as _grad
 from autograd import jacobian as _jacobian
 
+from semantic_version import Version, Spec
+
 import pennylane.operation
 import pennylane.expval
 
@@ -106,7 +108,7 @@ from ._device import Device, DeviceError
 from .ops import *
 from .optimize import *
 from .qnode import QNode, QuantumFunctionError
-from ._version import __version__, __supported_plugin_api_versions__
+from ._version import __version__
 
 # NOTE: this has to be imported last,
 # otherwise it will clash with the .qnode import.
@@ -197,15 +199,17 @@ def device(name, *args, **kwargs):
         kwargs.pop("config", None)
         options.update(kwargs)
 
+        # loads the plugin device class
         plugin_device_class = plugin_devices[name].load()
 
-        if plugin_device_class.api_version not in __supported_plugin_api_versions__:
-            raise DeviceError('The plugin API version %s of %s is not supported by this PennyLane version %s.', plugin_device_class.api_version, name, __version__)
+        if Version(version()) not in Spec(plugin_device_class.api_version):
+            raise DeviceError("The {} plugin requires PennyLane versions {}, however PennyLane "
+                              "version {} is installed.".format(name, plugin_device_class.api_version, __version__))
 
-            # load plugin device
+        # load plugin device
         return plugin_device_class(*args, **options)
-    else:
-        raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
+
+    raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
 
 
 def grad(func, argnum):
