@@ -17,7 +17,7 @@ The main principle underlying PennyLane is to make the interface between the qua
 
 :html:`<br>`
 
-In PennyLane both classical and quantum computers are used in the same basic way: as computational devices which we program to evaluate mathematical functions. We call such functions *nodes*, since they feed information into each other like nodes in a directed graph. **Quantum nodes** are abstract representations of quantum circuits which input and output classical information.
+In PennyLane both classical and quantum computers are used in the same basic way: as computational devices which we program to evaluate mathematical functions. We call such functions *nodes*, since they feed information into each other like nodes in a directed graph. **Quantum nodes** are abstract representations of quantum circuits which take classical information as their input and produce classical information as their output.
 
 Each quantum node executes a **variational circuit** — a parametrized quantum computation — on a quantum device.
 
@@ -64,7 +64,7 @@ In a **true hybrid** computational model, both the classical and the quantum dev
 
 Quantum information is fragile — especially in near-term devices. How can we integrate quantum devices seamlessly and scalably with classical computations?
 
-This leads to the notion of a **quantum node** or **QNode**: a basic computational unit — programmed on a quantum circuit — which carries out a subroutine of quantum information processing. Only classical data can enter or exit a quantum node.
+This question leads to the notion of a **quantum node** or **QNode**: a basic computational unit, programmed on a quantum circuit, which carries out a subroutine of quantum information processing. Only classical data can enter or exit a quantum node.
 
 To a classical device, a quantum node is a black box which can evaluate functions. A quantum device, however, resolves the finer details of the circuit.
 

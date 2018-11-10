@@ -61,8 +61,8 @@ keyword arguments, its ``name``, to return the correct value to the operation.
 
 .. note::
     The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
-    property automates the process of unpacking the Variable value -
-    :meth:`Variable.val` should not need to be accessed outside of advanced usage.
+    property automates the process of unpacking the Variable value.
+    The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
 
 
 Code details

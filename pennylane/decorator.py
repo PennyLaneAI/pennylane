@@ -17,20 +17,20 @@ The QNode decorator
 
 **Module name:** :mod:`pennylane.decorator`
 
-Decorator for converting a quantum function containing PennyLane quantum
+Decorator for converting a quantum circuit function containing PennyLane quantum
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
-This decorator is provided for convenience, and allows a qfunc to be
-converted to a QNode implicitly, avoiding the need to manually
+This decorator is provided for convenience, and allows a quantum circuit function to be
+converted to a :mod:`QNode <pennylane.qnode>` implicitly, avoiding the need to manually
 instantiate a :mod:`QNode <pennylane.qnode>` object.
 
 Note that the decorator completely replaces the Python-defined
-function with a QNode of the same name - as such, the original
+function with a :mod:`QNode <pennylane.qnode>` of the same name - as such, the original
 function is no longer accessible (but is accessible via the
 :attr:`~.QNode.func` attribute).
 
 Example
--------
+=======
 
 .. code-block:: python
 
@@ -95,7 +95,7 @@ def qnode(device):
     """QNode decorator.
 
     Args:
-        device (~pennylane._device.Device): an PennyLane-compatible device
+        device (~pennylane._device.Device): a PennyLane-compatible device
     """
     @lru_cache()
     def qfunc_decorator(func):

@@ -59,8 +59,8 @@ Beyond the basic rule that the inputs and parameters :math:`(x;\bm{\theta})` are
 .. note:: As shown in the figure above, the circuit can also include additional gates which have no free parameter associated with them.
 
 
-Example
--------
+Examples
+--------
 
 Data-embedding
 ~~~~~~~~~~~~~~
@@ -73,7 +73,7 @@ Suppose we have an input :math:`x`, which has :math:`N` dimensions. We can embed
 
 Measurement of the expectation value of the :math:`\hat{x}` operator on each wire will then give the result
 
-.. math:: (\langle \hat{x_1} \rangle, \cdots, \langle \hat{x_N} \rangle ) = (x_1, \dots, x_N).
+.. math:: (\langle \hat{x}_1 \rangle, \cdots, \langle \hat{x}_N \rangle ) = (x_1, \dots, x_N).
 
 Thus, the displacement gate — combined with vacuum input and position measurements — can be used to directly encode data into a photonic quantum computer.
 
@@ -133,7 +133,7 @@ Layered gate architectures can differ in three regards:
 * Which types of gates are used in :math:`A` and :math:`B`
 * Whether the gates in Block :math:`B` are arranged randomly, fixed, or determined by a hyperparameter
 
-Such layered architectures appear in both both discrete and continuous-variable quantum computing models.
+Such layered architectures appear in both discrete and continuous-variable quantum computing models.
 
 A parametrized, B fixed
 ***********************
@@ -174,12 +174,12 @@ A fully parametrized architecture specific to continuous-variable systems has be
 
 :html:`<br>`
 
-The entangling layer :math:`B` contains an interferometer, a passive optical circuit made up of individual beamsplitters and phase shifters. Block :math:`A` consists of single-mode gates which consecutively increase the order of the quadrature operator :math:`\hat{x}` in the generator: the displacement gate :math:`D` is an order-1 operator, the quadratic phase gate :math:`Q` is order-2, and the cubic phase gate :math:`V` is order-3 in the :math:`\hat{x}` operator.
+The entangling layer :math:`B` contains an interferometer, a passive optical circuit made up of individual beamsplitters and phase shifters. Block :math:`A` consists of single-mode gates with consecutively higher order for the quadrature operator :math:`\hat{x}` which generates the gate: the displacement gate :math:`D` is order-1, the quadratic phase gate :math:`Q` is order-2, and the cubic phase gate :math:`V` is order-3.
 
 A fixed, B parametrized
 ***********************
 
-An example where the single-qubit gates are fixed is is a so-called *Instantaneous Quantum Polynomial (IQP)* circuit, where :math:`A` consists of Hadamard gates and :math:`B` is made up of parametrized diagonal one- and two-qubit gates :cite:`shepherd2009temporally`:cite:`havlicek2018supervised`.
+An example where the single-qubit gates are fixed is a so-called *Instantaneous Quantum Polynomial (IQP)* circuit, where :math:`A` consists of Hadamard gates and :math:`B` is made up of parametrized diagonal one- and two-qubit gates :cite:`shepherd2009temporally`:cite:`havlicek2018supervised`.
 
 :html:`<br>`
 

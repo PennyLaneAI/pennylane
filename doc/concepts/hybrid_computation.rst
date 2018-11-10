@@ -45,9 +45,9 @@ This DAG structure is similar to that appearing in modern deep learning models. 
 Backpropagation through hybrid computations
 -------------------------------------------
 
-Because PennyLane provides a method for evaluating gradients of quantum functions, it is compatible with techniques like the famous `backpropagation <https://en.wikipedia.org/wiki/Backpropagation>`_ algorithm (a.k.a., reverse mode automatic differentiation), the workhorse algorithm for training deep learning models.
+Because PennyLane provides a method for evaluating gradients of quantum functions, it is compatible with techniques like the famous `backpropagation <https://en.wikipedia.org/wiki/Backpropagation>`_ algorithm (also known as *reverse-mode automatic differentiation*), the workhorse algorithm for training deep learning models.
 
-This means that **PennyLane can differentiate end-to-end through hybrid quantum-classical computations**. Quantum machine learning models can thus be trained in basically the same way that clasical deep learning models are trained.
+This means that **PennyLane can differentiate end-to-end through hybrid quantum-classical computations**. Quantum machine learning models can thus be trained in basically the same way that classical deep learning models are trained.
 
 .. note::
     PennyLane leverages the Python library `autograd <https://github.com/HIPS/autograd>`_,

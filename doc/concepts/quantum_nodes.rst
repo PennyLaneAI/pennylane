@@ -24,12 +24,12 @@ On the other hand, **quantum information** will refer to the state of a complex-
 
 :html:`<br>`
 
-.. note:: Quantum information can be simulated on a classical computer, but in general this cannot be done efficiently.
+.. note:: Quantum information processing can be simulated on a classical computer, but in general this cannot be done efficiently.
 
 Interfacing the classical and quantum worlds
 ============================================
 
-There are many schemes for inputting classical information into quantum systems, but these can often get quite complex. To connect between the classical and quantum worlds, PennyLane uses two straightforward methods:
+There are many schemes for loading classical information into quantum systems, but these can often get quite complex. To connect between the classical and quantum worlds, PennyLane uses two straightforward methods:
 
 1. **Gate parameters**
 
@@ -37,7 +37,7 @@ There are many schemes for inputting classical information into quantum systems,
 
 2. **Measurement of a quantum circuit**
 
-   Measurements convert quantum information (the state of a quantum system) into classical information (the measurement value). Measurements often have a distribution of outcomes, with the pattern becoming clear only after a sufficient number of measurements are taken.
+   Measurements convert quantum information (the state of a quantum system) into classical information (the measurement value). Measurements often have a probability distribution of outcomes, with the pattern becoming clear only after a sufficient number of measurements are taken.
 
    In PennyLane, we work with expectation values (i.e., averages) of measurement outcomes as our primary mechanism for obtaining classical information from quantum devices [#]_.
 
@@ -68,4 +68,4 @@ So long as we provide some mechanism for evaluating quantum nodes (i.e., a quant
 
 .. [#] This strategy can be thought of as a *quantum embedding* or *quantum feature map* of classical information in a quantum Hilbert space :cite:`schuld2018quantum`.
 
-.. [#] This averaging is also important to ensure that quantum functions are suitably well-defined, since single-shot measurements of the same circuit may not give the same value.
+.. [#] This averaging is also important to ensure that quantum functions are suitably well-defined, since individual measurements of the same circuit may not give the same value.

@@ -30,7 +30,7 @@ In the qubit rotation example, we wish to implement the following quantum circui
 
 Breaking this down step-by-step, we first start with a qubit in the ground state
 :math:`|0\rangle = \begin{bmatrix}1 & 0 \end{bmatrix}^T`,
-and rotate the qubit around the x-axis by applying the gate
+and rotate it around the x-axis by applying the gate
 
 .. math::
     R_x(\phi_1) = e^{-i \phi_1 \sigma_x /2} =
@@ -202,7 +202,7 @@ applying the :mod:`qnode decorator <pennylane.decorator>` **directly above** the
         qml.RY(params[1], wires=0)
         return qml.expval.PauliZ(0)
 
-Thus, our ``circuit()`` quantum function is now a ``QNode``, which will run on device ``dev1`` every time it is evaluated.
+Thus, our ``circuit()`` quantum function is now a :class:`~.QNode`, which will run on device ``dev1`` every time it is evaluated.
 To evaluate, we simply call the function with some appropriate numerical inputs:
 
 >>> circuit([0.54, 0.12])
@@ -231,8 +231,8 @@ We can then evaluate this gradient function at any point in the parameter space.
 
 .. note::
 
-    Quantum functions, being a restricted subset of Python functions, can also make use of multiple positional arguments and
-    keyword arguments. For example, we could have defined the above quantum function using two position arguments, instead of
+    Quantum circuit functions, being a restricted subset of Python functions, can also make use of multiple positional arguments and
+    keyword arguments. For example, we could have defined the above quantum circuit function using two positional arguments, instead of
     one array argument:
 
     .. code-block:: python
@@ -268,11 +268,11 @@ Optimization
 
 Next, let's make use of PennyLane's built-in optimizers to optimize the two circuit parameters :math:`\phi_1` and :math:`\phi_2` such
 that the qubit, originally in state :math:`\ket{0}`, is rotated to be in state :math:`\ket{1}`. This is equivalent to measuring a
-Pauli-Z expectation of :math:`-1`, since the state :math:`\ket{1}` is an eigenvector of the Pauli-Z matrix with eigenvalue
+Pauli-Z expectation value of :math:`-1`, since the state :math:`\ket{1}` is an eigenvector of the Pauli-Z matrix with eigenvalue
 :math:`\lambda=-1`.
 
 In other words, the optimization procedure will find the weights :math:`\phi_1` and :math:`\phi_2` that result in the following
-rotation in the Bloch sphere:
+rotation on the Bloch sphere:
 
 :html:`<br>`
 
@@ -339,6 +339,6 @@ the qubit being rotated to the state :math:`\ket{1}`.
 .. note::
 
     Some optimizers, such as :class:`~.pennylane.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the
-    optimizer instance. These can be reset using the ``reset()`` method.
+    optimizer instance. These can be reset using the :meth:`reset` method.
 
 Continue on to the next tutorial, :ref:`gaussian_transformation`, to see a similar example using  continuous-variable (CV) quantum nodes.
