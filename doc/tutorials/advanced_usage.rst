@@ -140,3 +140,21 @@ Since keyword arguments do not get considered when computing gradients, the Jaco
     --> 136         value = self.kwarg_values[self.name][self.idx] * self.mult
         137         return value
     TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+    
+Autograd
+--------
+
+PennyLane leverages the Python library `autograd <https://github.com/HIPS/autograd>`_ to enable automatic differentiation of NumPy code, and extends it to provide gradients of quantum circuit functions encapsulated in QNodes. In order to make NumPy code differentiable, Autograd provides a wrapped version of NumPy (exposed in PennyLane as :code:`pennylane.numpy`. As stated in other sections, any hybrid computation should be coded using the *wrapped version of NumPy* provided by PennyLane. If you accidentally import the vanilla version of NumPy, your code will not be automatically differentiable.
+
+Because of the way autograd wraps NumPy, PennyLane does not require users to learn a new mini-language for declaring classical computations, or invoke awkward language-dependent functions which replicate basic python control-flow statements (``if`` statements, loops, etc.). Users can continue using many of the standard numerical programming practices common in Python and NumPy. That being said, autograd's coverage of NumPy is not complete. It is best to consult the `autograd docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`_ for a more complete overview of supported and unsupported features. We highlight a few of the major 'gotchas' here.
+
+Do not use:
+
+- Assignment to arrays ``A[0,0]=x``
+
+- Implicit casting of lists to arrays ``A = np.sum([x, y])``, use ``A = np.sum(np.array([x, y]))`` instead.
+- ``A.dot(B)`` notation (use ``np.dot(A, B)`` instead)
+
+- In-place operations (such as ``a += b``, use ``a = a + b`` instead)
+
+- Some ``isinstance`` checks, like ``isinstance(x, np.ndarray)`` or ``isinstance(x, tuple)``, without first doing ``from autograd.builtins import isinstance, tuple``.
