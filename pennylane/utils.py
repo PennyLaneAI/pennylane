@@ -22,17 +22,18 @@ Utilities
 This module contains utilities and auxiliary functions, which are shared
 across the PennyLane submodules.
 
+.. raw:: html
 
-Summary
--------
+    <h3>Summary</h3>
 
 .. autosummary::
     _flatten
     _unflatten
     unflatten
 
-Code details
-~~~~~~~~~~~~
+.. raw:: html
+
+    <h3>Code details</h3>
 """
 import collections
 import numbers

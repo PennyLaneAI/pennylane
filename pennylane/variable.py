@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Quantum circuit parameters
-==========================
+Quantum circuit variables
+=========================
 
 **Module name:** :mod:`pennylane.variable`
 
@@ -65,8 +65,9 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
 
 
-Code details
-~~~~~~~~~~~~
+.. raw:: html
+
+    <h3>Code details</h3>
 """
 import logging
 import copy

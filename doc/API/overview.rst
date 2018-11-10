@@ -1,7 +1,7 @@
 .. _developer_overview:
 
-Overview of the developer API (version 0.1.0)
-=============================================
+Overview of the developer API
+=============================
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
@@ -43,7 +43,7 @@ Here, we have begun defining some important class attributes that allow PennyLan
 
 * :attr:`~.Device.name`: a string containing the official name of the device
 * :attr:`~.Device.short_name`: the string used to identify and load the device by users of PennyLane
-* :attr:`~.Device.api_version`: the PennyLane plugin API version this device was made for (0.1.0 for the API documented here)
+* :attr:`~.Device.api_version`: the PennyLane version this device supports. Note that this class attribute supports ``pip`` ``requirements.txt`` style version ranges, for example ``">=0.1.5,<0.6"``.
 * :attr:`~.Device.version`: the version number of the device
 * :attr:`~.Device.author`: the author of the device
 
