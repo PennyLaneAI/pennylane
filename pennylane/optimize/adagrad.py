@@ -29,7 +29,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
     .. math::
         x^{(t+1)}_i = x^{(t)}_i - \eta_i^{(t+1)} \partial_{w_i} f(x^{(t)}),
 
-    where the gradient was replaced by a (scalar) partial derivative.
+    where the gradient is replaced by a (scalar) partial derivative.
 
     The learning rate in step :math:`t` is given by
 
@@ -40,7 +40,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
     The shift :math:`\epsilon` avoids division by zero and is set to
     :math:`10^{-8}` by default.
 
-    :math:`\eta`: is the step size, a user defined parameter.
+    :math:`\eta` is the step size, a user defined parameter.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
@@ -50,7 +50,17 @@ class AdagradOptimizer(GradientDescentOptimizer):
         self.accumulation = None
 
     def apply_grad(self, grad, x):
-        # docstring is inherited from GradientDescentOptimizer
+        r"""Update the variables x to take a single optimization step. Flattens and unflattens
+        the inputs to maintain nested iterables as the parameters of the optimization.
+
+        Args:
+            grad (array): The gradient of the objective
+                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
+            x (array): the current value of the variables :math:`x^{(t)}`
+
+        Returns:
+            array: the new values :math:`x^{(t+1)}`
+        """
 
         x_flat = _flatten(x)
         grad_flat = list(_flatten(grad))

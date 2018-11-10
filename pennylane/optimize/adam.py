@@ -42,7 +42,7 @@ class AdamOptimizer(GradientDescentOptimizer):
 
     The shift :math:`\epsilon` avoids division by zero and is set to :math:`10^{-8}` in PennyLane.
 
-    For more details, see https://arxiv.org/pdf/1412.6980.pdf :cite:`kingma2014adam`.
+    For more details, see :cite:`kingma2014adam`.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
@@ -59,7 +59,17 @@ class AdamOptimizer(GradientDescentOptimizer):
         self.t = 0
 
     def apply_grad(self, grad, x):
-        # docstring is inherited from GradientDescentOptimizer
+        r"""Update the variables x to take a single optimization step. Flattens and unflattens
+        the inputs to maintain nested iterables as the parameters of the optimization.
+
+        Args:
+            grad (array): The gradient of the objective
+                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
+            x (array): the current value of the variables :math:`x^{(t)}`
+
+        Returns:
+            array: the new values :math:`x^{(t+1)}`
+        """
 
         self.t += 1
 

@@ -21,7 +21,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     r"""Gradient-descent optimizer with Nesterov momentum.
 
     Nesterov Momentum works like the :class:`Momentum optimizer <.pennylane.optimize.MomentumOptimizer>`,
-    but shifts the current input by the momentum term when computing the gradient of the cost:
+    but shifts the current input by the momentum term when computing the gradient of the objective function:
 
     .. math:: a^{(t+1)} = m a^{(t)} + \eta \nabla f(x^{(t)} - m a^{(t)}).
 
@@ -40,9 +40,9 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 
         Args:
             objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the weights
+            x (array): NumPy array containing the current values of the variables to be updated
             grad_fn (function): Optional gradient function of the
-                objective function with respect to the weights ``x``.
+                objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
 
         Returns:
