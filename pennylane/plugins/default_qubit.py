@@ -244,7 +244,7 @@ class DefaultQubit(Device):
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
-    api_version = '0.1.0'
+    pennylane_requires = '0.1.0'
     version = '0.1.0'
     author = 'Xanadu Inc.'
 
