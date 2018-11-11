@@ -19,6 +19,8 @@ CV quantum expectations
 
 .. currentmodule:: pennylane.expval.cv
 
+.. role:: html(raw)
+   :format: html
 
 **Module name:** :mod:`pennylane.expval.cv`
 
@@ -27,8 +29,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 
 .. note:: Currently, all expectation commands return scalars.
 
-Summary
--------
+:html:`<h3>Summary</h3>`
 
 .. autosummary::
     MeanPhoton
@@ -38,8 +39,7 @@ Summary
     PolyXP
     NumberState
 
-Code details
-~~~~~~~~~~~~
+:html:`<h3>Code details</h3>`
 """
 
 import numpy as np
