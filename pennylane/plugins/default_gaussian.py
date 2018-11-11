@@ -713,7 +713,7 @@ class DefaultGaussian(Device):
     _circuits = {}
 
     def __init__(self, wires, *, shots=0, hbar=2):
-        super().__init__(self.short_name, wires, shots)
+        super().__init__(wires, shots)
         self.eng = None
         self.hbar = hbar
         self.reset()
