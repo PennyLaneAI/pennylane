@@ -93,8 +93,7 @@ When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execut
 
         return np.array(expectations)
 
-
-In most cases, there is hence a minimum of two methods that any device must implement:
+where ``queue`` is a list of PennyLane :class:`~.Operation` instances to be applied, and ``expectation`` is a list of PennyLane :class:`~.Expectation` instances to be measured and returned. In most cases, there are therefore a minimum of two methods that any device **must** implement:
 
 * :meth:`~.Device.apply`: This accepts an operation name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the operation, and should apply the resulting operation to given wires of the device.
 

@@ -21,13 +21,15 @@ Qubit quantum expectations
 
 **Module name:** :mod:`pennylane.expval.qubit`
 
+.. role:: html(raw)
+   :format: html
+
 This section contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 
 .. note:: Currently, all expectation commands return scalars.
 
-Summary
--------
+:html:`<h3>Summary</h3>`
 
 .. autosummary::
     PauliX
@@ -36,8 +38,7 @@ Summary
     Hermitian
 
 
-Code details
-~~~~~~~~~~~~
+:html:`<h3>Code details</h3>`
 """
 
 from pennylane.operation import Expectation
