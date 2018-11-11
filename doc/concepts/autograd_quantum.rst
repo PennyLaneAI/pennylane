@@ -18,7 +18,7 @@ Generally speaking, automatic differentiation is the ability for a software libr
 Computing gradients of quantum functions
 ----------------------------------------
 
-Quantum functions (qfuncs) or :ref:`variational circuits <varcirc>` are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute the gradient of a quantum function, we could use this information in an optimization or machine learning algorithm, tuning the quantum circuit via `gradient descent <https://en.wikipedia.org/wiki/Gradient_descent>`_ to produce a desired output. While numerical differentiation is an option, PennyLane is the first software library to support **automatic differentiation of quantum circuits** [#]_.
+:ref:`Variational circuits <varcirc>` are parameterized functions :math:`f(x;\bm{\theta})` which can be evaluated by measuring a quantum circuit. If we can compute the gradient of a quantum function, we can then use this information in an optimization or machine learning algorithm, tuning the quantum circuit via `gradient descent <https://en.wikipedia.org/wiki/Gradient_descent>`_ to produce a desired output. While numerical differentiation is an option, PennyLane is the first software library to support **automatic differentiation of quantum circuits** [#]_.
 
 How is this accomplished? It turns out that the gradient of a quantum function :math:`f(x;\bm{\theta})` can in many cases be expressed as a linear combination of other quantum functions. In fact, these other quantum functions typically use the same circuit, differing only in a shift of the argument.
 
@@ -29,11 +29,12 @@ How is this accomplished? It turns out that the gradient of a quantum function :
     :width: 70%
     :target: javascript:void(0);
 
-    Decomposing the gradient of a qfunc as a linear combination of qfuncs.
+    Decomposing the gradient of a quantum circuit function as a linear combination of quantum circuit functions.
 
 :html:`<br>`
 
-Making a rough analogy to classically computable functions, this is similar to how the derivative of the function :math:`f(x)=\sin(x)` is identical to :math:`\frac{1}{2}\sin(x+\frac{\pi}{2}) - \frac{1}{2}\sin(x-\frac{\pi}{2})`. So the same underlying algorithm can be reused to compute both :math:`\sin(x)` and its derivative (by evaluating at :math:`x\pm\frac{\pi}{2}`). This intuition holds for many quantum functions of interest: *the same circuit can be used to compute both the qfunc and gradients of the qfunc* [#]_.
+Making a rough analogy to classically computable functions, this is similar to how the derivative of the function :math:`f(x)=\sin(x)` is identical to :math:`\frac{1}{2}\sin(x+\frac{\pi}{2}) - \frac{1}{2}\sin(x-\frac{\pi}{2})`. So the same underlying algorithm can be reused to compute both :math:`\sin(x)` and its derivative (by evaluating at :math:`x\pm\frac{\pi}{2}`).
+This intuition holds for many quantum functions of interest: *the same circuit can be used to compute both the quantum function and the gradient of the quantum function* [#]_.
 
 A more technical explanation
 ----------------------------
@@ -50,7 +51,7 @@ We have omitted which wire each unitary acts on, since it is not necessary for t
 A single parameterized gate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Let us single out a single parameter :math:`\theta_i` and its associated gate :math:`U(\theta_i)`. For simplicity, we remove all gates except :math:`U_i(\theta_i)` and :math:`U_0(x)` for the moment. In this case, we have a simplified qfunc
+Let us single out a single parameter :math:`\theta_i` and its associated gate :math:`U_i(\theta_i)`. For simplicity, we remove all gates except :math:`U_i(\theta_i)` and :math:`U_0(x)` for the moment. In this case, we have a simplified quantum circuit function
 
 .. math:: f(x; \theta_i) = \langle 0 | U_0^\dagger(x)U_i^\dagger(\theta_i)\hat{B}U_i(\theta_i)U_0(x) | 0 \rangle = \langle x | U_i^\dagger(\theta_i)\hat{B}U_i(\theta_i) | x \rangle.
 
@@ -80,7 +81,7 @@ To complete the story, we now go back to the case where there are many gates in 
 Similarly, any gates applied after gate :math:`i` are combined with the observable :math:`\hat{B}`:
 :math:`\hat{B}_{i+1} = U_{N}^\dagger(\theta_{N}) \cdots U_{i+1}^\dagger(\theta_{i+1}) \hat{B} U_{i+1}(\theta_{i+1}) \cdots U_{N}(\theta_{N})`.
 
-With this simplification, the qfunc becomes
+With this simplification, the quantum circuit function becomes
 
 .. math:: f(x; \bm{\theta}) = \langle \psi_{i-1} | U_i^\dagger(\theta_i) \hat{B}_{i+1} U_i(\theta_i) | \psi_{i-1} \rangle = \langle \psi_{i-1} | \mathcal{M}_{\theta_i} (\hat{B}_{i+1}) | \psi_{i-1} \rangle,
 
@@ -105,7 +106,7 @@ The gradient of this unitary is
 
 .. math:: \nabla_{\theta_i}U_i(\theta_i) = -\tfrac{i}{2}\hat{P}_i U_i(\theta_i) = -\tfrac{i}{2}U_i(\theta_i)\hat{P}_i .
 
-Substituting this into the qfunc :math:`f(x; \bm{\theta})`, we get
+Substituting this into the quantum circuit function :math:`f(x; \bm{\theta})`, we get
 
 .. math::
    :nowrap:
@@ -227,7 +228,7 @@ We notice that this can be rewritten this as a linear combination of squeeze ope
 
 where :math:`s` is an arbitrary nonzero shift [#]_.
 
-As before, assume that an input :math:`y` has already been embedded into a quantum state :math:`|y\rangle = U_0(y)|0\rangle` before we apply the squeeze gate. If we measure the :math:`\hat{x}` operator, we will have the following qfunc:
+As before, assume that an input :math:`y` has already been embedded into a quantum state :math:`|y\rangle = U_0(y)|0\rangle` before we apply the squeeze gate. If we measure the :math:`\hat{x}` operator, we will have the following quantum circuit function:
 
 .. math::
    f(y;r) = \langle y | \mathcal{M}^S_r (\hat{x}) | y \rangle.
@@ -244,7 +245,7 @@ Finally, its gradient can be expressed as
                        = & \frac{1}{2\sinh(s)}\left[f(y; r+s) - f(y; r-s)\right].
    \end{align}
 
-.. note:: For simplicity of the discussion, we have set the phase angle of the Squeezing gate to be zero. In the general case, Squeezing is a two-parameter gate, containing a squeezing magnitude and a squeezing angle. However, we can always decompose the two-parameter form into Squeezing gate like the one above, followed by a Rotation gate.
+.. note:: For simplicity of the discussion, we have set the phase angle of the Squeezing gate to be zero. In the general case, Squeezing is a two-parameter gate, containing a squeezing magnitude and a squeezing angle. However, we can always decompose the two-parameter form into a Squeezing gate like the one above, followed by a Rotation gate.
 
 .. _Theano: https://github.com/Theano/Theano
 .. _Autograd: https://github.com/HIPS/autograd

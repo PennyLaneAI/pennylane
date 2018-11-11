@@ -40,7 +40,7 @@ Breaking this down, step-by-step:
 1. **We start the computation with two qumode subsystems**. In PennyLane, we use the shorthand 'wires' to refer to quantum subsystems, whether they are qumodes, qubits, or any other kind of quantum register.
 
 2. **Prepare the state** :math:`\ket{1,0}`. That is, the first wire (wire 0) is prepared in a single-photon state, while the second
-   wire (wire 1) is prepared in the vacuum state. The former state is non-Gaussian, necessitating the use of the ``strawberryfields.fock`` backend device.
+   wire (wire 1) is prepared in the vacuum state. The former state is non-Gaussian, necessitating the use of the ``'strawberryfields.fock'`` backend device.
 
 3. **Both wires are then incident on a beamsplitter**, with free parameters :math:`\theta` and :math:`\phi`.
    Here, we have the convention that the beamsplitter transmission amplitude is :math:`t=\cos\theta`, and the reflection amplitude is
@@ -209,7 +209,7 @@ Try this yourself — the optimization should converge quickly, giving the follo
 
     Optimized rotation angles: [ 1.57079633  0.01      ]
 
-Comparing this to the :ref:`exact calculation <photon_redirection_calc>` above, this is close to the exact optimum value
+Comparing this to the :ref:`exact calculation <photon_redirection_calc>` above, this is close to the optimum value
 of :math:`\theta=\pi/2`, while the value of :math:`\phi` has not changed — consistent with the fact that :math:`\braket{\hat{n}_1}`
 is independent of :math:`\phi`.
 

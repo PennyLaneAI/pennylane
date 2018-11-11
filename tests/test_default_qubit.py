@@ -23,8 +23,8 @@ from pennylane import numpy as np
 
 from defaults import pennylane as qml, BaseTest
 from pennylane.plugins.default_qubit import (spectral_decomposition_qubit,
-                                     I, X, Z, CNOT, Rphi, frx, fry, frz, fr3,
-                                     unitary, hermitian, DefaultQubit)
+                                             I, X, Z, CNOT, Rphi, Rotx, Roty, Rotz, Rot3,
+                                             unitary, hermitian, DefaultQubit)
 
 log.getLogger('defaults')
 
@@ -79,51 +79,51 @@ class TestAuxillaryFunctions(BaseTest):
         self.logTestName()
 
         # test identity for theta=0
-        self.assertAllAlmostEqual(frx(0), np.identity(2), delta=self.tol)
+        self.assertAllAlmostEqual(Rotx(0), np.identity(2), delta=self.tol)
 
         # test identity for theta=pi/2
         expected = np.array([[1, -1j], [-1j, 1]])/np.sqrt(2)
-        self.assertAllAlmostEqual(frx(np.pi/2), expected, delta=self.tol)
+        self.assertAllAlmostEqual(Rotx(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
         expected = -1j*np.array([[0, 1], [1, 0]])
-        self.assertAllAlmostEqual(frx(np.pi), expected, delta=self.tol)
+        self.assertAllAlmostEqual(Rotx(np.pi), expected, delta=self.tol)
 
     def test_y_rotation(self):
         """Test y rotation is correct"""
         self.logTestName()
 
         # test identity for theta=0
-        self.assertAllAlmostEqual(fry(0), np.identity(2), delta=self.tol)
+        self.assertAllAlmostEqual(Roty(0), np.identity(2), delta=self.tol)
 
         # test identity for theta=pi/2
         expected = np.array([[1, -1], [1, 1]])/np.sqrt(2)
-        self.assertAllAlmostEqual(fry(np.pi/2), expected, delta=self.tol)
+        self.assertAllAlmostEqual(Roty(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
         expected = np.array([[0, -1], [1, 0]])
-        self.assertAllAlmostEqual(fry(np.pi), expected, delta=self.tol)
+        self.assertAllAlmostEqual(Roty(np.pi), expected, delta=self.tol)
 
     def test_z_rotation(self):
         """Test z rotation is correct"""
         self.logTestName()
 
         # test identity for theta=0
-        self.assertAllAlmostEqual(frz(0), np.identity(2), delta=self.tol)
+        self.assertAllAlmostEqual(Rotz(0), np.identity(2), delta=self.tol)
 
         # test identity for theta=pi/2
         expected = np.diag(np.exp([-1j*np.pi/4, 1j*np.pi/4]))
-        self.assertAllAlmostEqual(frz(np.pi/2), expected, delta=self.tol)
+        self.assertAllAlmostEqual(Rotz(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
-        self.assertAllAlmostEqual(frz(np.pi), -1j*Z, delta=self.tol)
+        self.assertAllAlmostEqual(Rotz(np.pi), -1j * Z, delta=self.tol)
 
     def test_arbitrary_rotation(self):
         """Test arbitrary single qubit rotation is correct"""
         self.logTestName()
 
         # test identity for theta=0
-        self.assertAllAlmostEqual(fr3(0, 0, 0), np.identity(2), delta=self.tol)
+        self.assertAllAlmostEqual(Rot3(0, 0, 0), np.identity(2), delta=self.tol)
 
         # expected result
         def arbitrary_rotation(x, y, z):
@@ -134,7 +134,7 @@ class TestAuxillaryFunctions(BaseTest):
                              [np.exp(-0.5j*(x-z))*s, np.exp(0.5j*(x+z))*c]])
 
         a, b, c = 0.432, -0.152, 0.9234
-        self.assertAllAlmostEqual(fr3(a, b, c), arbitrary_rotation(a, b, c), delta=self.tol)
+        self.assertAllAlmostEqual(Rot3(a, b, c), arbitrary_rotation(a, b, c), delta=self.tol)
 
 
 class TestStateFunctions(BaseTest):
@@ -638,7 +638,7 @@ class TestDefaultQubitIntegration(BaseTest):
                     O = qop
 
                 # calculate the expected output
-                out_state = np.kron(frx(a) @ np.array([1, 0]), np.array([1, 0]))
+                out_state = np.kron(Rotx(a) @ np.array([1, 0]), np.array([1, 0]))
                 expectation = out_state.conj() @ np.kron(O, np.identity(2)) @ out_state
                 return expectation
 

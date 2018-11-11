@@ -25,7 +25,7 @@ from autograd import numpy as np
 from defaults import pennylane as qml, BaseTest
 
 from pennylane.qnode import _flatten, unflatten, QNode, QuantumFunctionError
-from pennylane.plugins.default_qubit import CNOT, frx, fry, frz, I, Y, Z
+from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, Y, Z
 from pennylane._device import DeviceError
 
 
@@ -312,8 +312,8 @@ class BasicTest(BaseTest):
             for theta in thetas:
                 other_param = theta ** 2 / 11
                 y_eval = f(reused_param, other_param)
-                Rx = frx(reused_param)
-                Rz = frz(other_param)
+                Rx = Rotx(reused_param)
+                Rz = Rotz(other_param)
                 zero_state = np.array([1.,0.])
                 final_state = (Rx @ Rz @ Rx @ zero_state)
                 y_true = expZ(final_state)
@@ -421,8 +421,8 @@ class BasicTest(BaseTest):
 
         res = circuit(a, b, c)
 
-        out_state = np.kron(frx(c), I) @ np.kron(fry(b), I) @ CNOT \
-            @ np.kron(frz(b), I) @ np.kron(frx(a), I) @ np.array([1, 0, 0, 0])
+        out_state = np.kron(Rotx(c), I) @ np.kron(Roty(b), I) @ CNOT \
+            @ np.kron(Rotz(b), I) @ np.kron(Rotx(a), I) @ np.array([1, 0, 0, 0])
 
         ex0 = np.vdot(out_state, np.kron(Y, I) @ out_state)
         ex1 = np.vdot(out_state, np.kron(I, Z) @ out_state)

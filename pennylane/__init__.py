@@ -98,6 +98,8 @@ from autograd import numpy
 from autograd import grad as _grad
 from autograd import jacobian as _jacobian
 
+from semantic_version import Version, Spec
+
 import pennylane.operation
 import pennylane.expval
 
@@ -197,15 +199,17 @@ def device(name, *args, **kwargs):
         kwargs.pop("config", None)
         options.update(kwargs)
 
+        # loads the plugin device class
+        plugin_device_class = plugin_devices[name].load()
+
+        if Version(version()) not in Spec(plugin_device_class.api_version):
+            raise DeviceError("The {} plugin requires PennyLane versions {}, however PennyLane "
+                              "version {} is installed.".format(name, plugin_device_class.api_version, __version__))
+
         # load plugin device
-        p = plugin_devices[name].load()(*args, **options)
+        return plugin_device_class(*args, **options)
 
-        if p.api_version != __version__:
-            log.warning('Plugin API version %s does not match PennyLane version %s.', p.api_version, __version__)
-
-        return p
-    else:
-        raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
+    raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
 
 
 def grad(func, argnum):

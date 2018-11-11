@@ -29,7 +29,8 @@ PennyLane
 :Release: |release|
 :Date: |today|
 
-PennyLane is a Python library for building and training machine learning models which include quantum computer circuits.
+PennyLane is a cross-platform Python library for quantum machine learning,
+automatic differentiation, and optimization of hybrid quantum-classical computations.
 
 
 :html:`<h2>Features</h2>`
@@ -62,7 +63,7 @@ PennyLane is a Python library for building and training machine learning models 
 ..
 
 - *Large plugin ecosystem*.
-  Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
+  Install plugins to run your computational circuits on more devices, including **Strawberry Fields** and **ProjectQ**
 
 :html:`<h4>Available plugins</h4>`
 

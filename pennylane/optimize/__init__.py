@@ -22,8 +22,8 @@ This update depends in general on:
 * The function :math:`f(x)`, from which we calculate a gradient :math:`\nabla f(x)`.
   If :math:`x` is a vector, the gradient is also a vector whose entries are
   the partial derivatives of :math:`f` with respect to the elements of :math:`x`.
-* The current weights :math:`x`.
-* The (initial) step size :math:`\eta`.
+* the current weights :math:`x`
+* the (initial) step size :math:`\eta`
 
 The different optimizers can also depend on additional hyperparameters.
 
