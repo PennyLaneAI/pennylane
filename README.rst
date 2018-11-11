@@ -1,6 +1,6 @@
 .. image:: doc/_static/pennylane_big.png
     :alt: PennyLane
-    
+
 ###################################
 
 .. image:: https://img.shields.io/travis/XanaduAI/pennylane/master.svg?style=for-the-badge
@@ -27,8 +27,8 @@
     :alt: PyPI - Python Version
     :target: https://pypi.org/project/PennyLane
 
-`PennyLane <https://pennylane.readthedocs.io>`_ is a full-stack Python library for quantum machine
-learning and automatic differentiation of hybrid quantum-classical computations.
+`PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for quantum machine learning,
+automatic differentiation, and optimization of hybrid quantum-classical computations.
 
 
 

@@ -78,7 +78,7 @@ and :class:`~.Expectation`.
 Differentiation
 ^^^^^^^^^^^^^^^
 
-To enabled gradient computation using the analytic method for Gaussian CV operations, in addition, you need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
+To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
 the operation given its list of parameters, namely:
 
 * For Gaussian CV Operations this method should return the matrix of the linear transformation carried out by the
@@ -89,7 +89,7 @@ the operation given its list of parameters, namely:
   or symmetric matrix (second-order observables) of coefficients of the quadrature
   operators :math:`\x` and :math:`\p`.
 
-PennyLane uses the convention :math:`\mathbf{r} = (\I, \x, \p)` single-mode operations and expectations
+PennyLane uses the convention :math:`\mathbf{r} = (\I, \x, \p)` for single-mode operations and expectations
 and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode operations and expectations.
 
 .. note::
@@ -105,7 +105,7 @@ Summary
    CVExpectation
 
 Code details
-------------
+^^^^^^^^^^^^
 """
 import abc
 import numbers
@@ -499,7 +499,6 @@ class CV:
         Returns:
             array[float]: :math:`\tilde{U}` or :math:`q`
         """
-        # TODO: check the note in the docstring.
         # pylint: disable=unused-argument
         return None
 

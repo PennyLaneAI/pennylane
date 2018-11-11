@@ -43,7 +43,7 @@ loading the device.
 
 The user can access the initialized configuration via `pennylane.config`, view the
 loaded configuration filepath, print the configurations options, access and modify
-them via keys (i.e. ``pennylane.config['main.shots']``), and save/load new configuration files.
+them via keys (i.e., ``pennylane.config['main.shots']``), and save/load new configuration files.
 
 Configuration files
 -------------------

@@ -85,7 +85,7 @@ Classes
     DefaultGaussian
 
 Code details
-------------
+^^^^^^^^^^^^
 """
 # pylint: disable=attribute-defined-outside-init
 import logging as log
@@ -446,7 +446,7 @@ def squeezed_state(r, phi, hbar=2.):
 
 
 def displaced_squeezed_state(a, r, phi, hbar=2.):
-    r"""Returns the squeezed coherent state
+    r"""Returns a squeezed coherent state
 
     Args:
         a (complex): the displacement.
@@ -464,7 +464,7 @@ def displaced_squeezed_state(a, r, phi, hbar=2.):
 
 
 def thermal_state(nbar, hbar=2.):
-    r"""Returns the thermal state.
+    r"""Returns a thermal state.
 
     Args:
         nbar (float): the mean photon number.
@@ -480,7 +480,7 @@ def thermal_state(nbar, hbar=2.):
 
 
 def gaussian_state(mu, cov, hbar=2.):
-    r"""Returns the Gaussian state.
+    r"""Returns a Gaussian state.
 
     This is simply a bare wrapper function,
     since the means vector and covariance matrix
@@ -721,27 +721,27 @@ class DefaultGaussian(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, op_name, wires, par):
-        if op_name == 'Displacement':
+    def apply(self, operation, wires, par):
+        if operation == 'Displacement':
             self._state = displacement(self._state, wires[0], par[0]*np.exp(1j*par[1]))
             return # we are done here
 
-        if op_name == 'GaussianState':
+        if operation == 'GaussianState':
             if wires != list(range(self.num_wires)):
                 raise ValueError("GaussianState means vector or covariance matrix is "
                                  "the incorrect size for the number of subsystems.")
-            self._state = self._operation_map[op_name](*par, hbar=self.hbar)
+            self._state = self._operation_map[operation](*par, hbar=self.hbar)
             return # we are done here
 
-        if 'State' in op_name:
+        if 'State' in operation:
             # set the new device state
-            mu, cov = self._operation_map[op_name](*par, hbar=self.hbar)
+            mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
             self._state = set_state(self._state, wires[0], mu, cov)
             return # we are done here
 
         # get the symplectic matrix
-        S = self._operation_map[op_name](*par)
+        S = self._operation_map[operation](*par)
 
         # expand the symplectic to act on the proper subsystem
         if len(wires) == 1:
@@ -846,18 +846,8 @@ class DefaultGaussian(Device):
 
     @property
     def operations(self):
-        """Get the supported set of operations.
-
-        Returns:
-            set[str]: the set of PennyLane operation names the device supports
-        """
         return set(self._operation_map.keys())
 
     @property
     def expectations(self):
-        """Get the supported set of expectations.
-
-        Returns:
-            set[str]: the set of PennyLane expectation names the device supports
-        """
         return set(self._expectation_map.keys())

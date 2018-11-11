@@ -23,7 +23,7 @@ import autograd
 import autograd.numpy as np
 
 from defaults import pennylane as qml, BaseTest
-from pennylane.plugins.default_qubit import frx as Rx, fry as Ry, frz as Rz
+from pennylane.plugins.default_qubit import Rotx as Rx, Roty as Ry, Rotz as Rz
 
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2

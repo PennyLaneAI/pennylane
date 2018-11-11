@@ -19,7 +19,7 @@ Device base class
 
 .. currentmodule:: pennylane._device
 
-This module contains the :class:`Device` class. To write a plugin t abstract base class,
+This module contains the :class:`Device` abstract base class. To write a plugin containing a PennyLane-compatible device, :class:`Device`
 must be subclassed, and the appropriate class attributes and methods
 implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
 :class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
@@ -49,6 +49,11 @@ Abstract methods and attributes
 The following methods and attributes must be defined for all devices:
 
 .. autosummary::
+    name
+    short_name
+    api_version
+    version
+    author
     operations
     expectations
     apply
@@ -104,13 +109,9 @@ class Device(abc.ABC):
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
         shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables. For simulator devices, 0 results
-            in the exact expectation value being is returned. Default 0 if not specified.
+            expectation values of observables. For simulator devices, a value of 0 results
+            in the exact expectation value being returned. Defaults to 0 if not specified.
     """
-    name = ''          #: str: official device plugin name
-    api_version = ''   #: str: version of PennyLane for which the plugin was made
-    version = ''       #: str: version of the device plugin itself
-    author = ''        #: str: plugin author(s)
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
@@ -128,20 +129,28 @@ class Device(abc.ABC):
         return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.api_version, self.version, self.author)
 
     @abc.abstractproperty
+    def name(self):
+        """The full name of the device."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
     def short_name(self):
         """Returns the string used to load the device."""
         raise NotImplementedError
 
     @abc.abstractproperty
-    def _operation_map(self):
-        """A dictionary {str: val} that maps PennyLane operation names to
-        the corresponding operation in the device."""
+    def api_version(self):
+        """The current API version that the device plugin was made for."""
         raise NotImplementedError
 
     @abc.abstractproperty
-    def _expectation_map(self):
-        """A dictionary {str: val} that maps PennyLane expectation names to
-        the corresponding expectation in the device."""
+    def version(self):
+        """The current version of the plugin."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def author(self):
+        """The author(s) of the plugin."""
         raise NotImplementedError
 
     @abc.abstractproperty
@@ -181,8 +190,8 @@ class Device(abc.ABC):
         :meth:`expval`, :meth:`post_expval`, and :meth:`execution_context`.
 
         Args:
-            queue (Iterable[~.operation.Operation]): operations to execute on the device.
-            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return.
+            queue (Iterable[~.operation.Operation]): operations to execute on the device
+            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return
 
         Returns:
             array[float]: expectation value(s)
@@ -239,10 +248,10 @@ class Device(abc.ABC):
         """Checks if an operation or expectation is supported by this device.
 
         Args:
-            name (str): name of the operation or expectation.
+            name (str): name of the operation or expectation
 
         Returns:
-            bool: True iff it is supported.
+            bool: True iff it is supported
         """
         return name in self.operations.union(self.expectations)
 
@@ -250,8 +259,8 @@ class Device(abc.ABC):
         """Checks whether the operations and expectations in queue are all supported by the device.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in device.
-            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in device.
+            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in the device
+            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in the device
         """
         for o in queue:
             if not self.supported(o.name):
@@ -268,9 +277,9 @@ class Device(abc.ABC):
         For plugin developers: this function should apply the operation on the device.
 
         Args:
-            operation (str): name of the operation.
-            wires (Sequence[int]): subsystems the operation is applied on.
-            par (tuple): parameters for the operation.
+            operation (str): name of the operation
+            wires (Sequence[int]): subsystems the operation is applied on
+            par (tuple): parameters for the operation
         """
         raise NotImplementedError
 
@@ -281,9 +290,9 @@ class Device(abc.ABC):
         For plugin developers: this function should return the expectation value of the given expectation on the device.
 
         Args:
-            expectation (str): name of the expectation.
-            wires (Sequence[int]): subsystems the expectation value is to be measured on.
-            par (tuple): parameters for the observable.
+            expectation (str): name of the expectation
+            wires (Sequence[int]): subsystems the expectation value is to be measured on
+            par (tuple): parameters for the observable
 
         Returns:
             float: expectation value

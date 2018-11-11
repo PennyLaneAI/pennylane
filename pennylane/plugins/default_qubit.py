@@ -24,7 +24,7 @@ Default qubit plugin
 The default plugin is meant to be used as a template for writing PennyLane device
 plugins for new qubit-based backends.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
+It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>` and
 :mod:`expectations <pennylane.expval.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
@@ -32,18 +32,38 @@ simulation of a qubit-based quantum circuit architecture.
 The following is the technical documentation of the implementation of the plugin. You will
 not need to read and understand this to use this plugin.
 
-Functions
----------
+Auxillary functions
+-------------------
 
 .. autosummary::
     spectral_decomposition_qubit
-    Rphi
-    frx
-    fry
-    frz
-    fr3
     unitary
     hermitian
+
+Gates and operations
+--------------------
+
+.. autosummary::
+    Rphi
+    Rotx
+    Roty
+    Rotz
+    Rot3
+    X
+    Y
+    Z
+    H
+    CNOT
+    SWAP
+    CZ
+
+Expectations
+------------
+
+.. autosummary::
+    X
+    Y
+    Z
 
 Classes
 -------
@@ -52,7 +72,7 @@ Classes
     DefaultQubit
 
 Code details
-------------
+^^^^^^^^^^^^
 """
 import logging as log
 import collections
@@ -96,15 +116,15 @@ def spectral_decomposition_qubit(A):
 
 I = np.eye(2)
 # Pauli matrices
-X = np.array([[0, 1], [1, 0]])
-Y = np.array([[0, -1j], [1j, 0]])
-Z = np.array([[1, 0], [0, -1]])
-# Hadamard
-H = np.array([[1, 1], [1, -1]])/np.sqrt(2)
+X = np.array([[0, 1], [1, 0]]) #: Pauli-X matrix
+Y = np.array([[0, -1j], [1j, 0]]) #: Pauli-Y matrix
+Z = np.array([[1, 0], [0, -1]]) #: Pauli-Z matrix
+
+H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
 # Two qubit gates
-CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNOT gate
+SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
+CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
 
 
 #========================================================
@@ -117,12 +137,12 @@ def Rphi(phi):
     Args:
         phi (float): phase shift angle
     Returns:
-        array: unitary 2x2 phase shift matrix.
+        array: unitary 2x2 phase shift matrix
     """
     return np.array([[1, 0], [0, np.exp(1j*phi)]])
 
 
-def frx(theta):
+def Rotx(theta):
     r"""One-qubit rotation about the x axis.
 
     Args:
@@ -133,7 +153,7 @@ def frx(theta):
     return expm(-1j * theta/2 * X)
 
 
-def fry(theta):
+def Roty(theta):
     r"""One-qubit rotation about the y axis.
 
     Args:
@@ -144,7 +164,7 @@ def fry(theta):
     return expm(-1j * theta/2 * Y)
 
 
-def frz(theta):
+def Rotz(theta):
     r"""One-qubit rotation about the z axis.
 
     Args:
@@ -155,7 +175,7 @@ def frz(theta):
     return expm(-1j * theta/2 * Z)
 
 
-def fr3(a, b, c):
+def Rot3(a, b, c):
     r"""Arbitrary one-qubit rotation using three Euler angles.
 
     Args:
@@ -163,7 +183,7 @@ def fr3(a, b, c):
     Returns:
         array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
-    return frz(c) @ (fry(b) @ frz(a))
+    return Rotz(c) @ (Roty(b) @ Rotz(a))
 
 
 #========================================================
@@ -174,10 +194,10 @@ def unitary(*args):
     r"""Input validation for an arbitary unitary operation.
 
     Args:
-        args (array): square unitary matrix.
+        args (array): square unitary matrix
 
     Returns:
-        array: square unitary matrix.
+        array: square unitary matrix
     """
     U = np.asarray(args[0])
 
@@ -194,10 +214,10 @@ def hermitian(*args):
     r"""Input validation for an arbitary Hermitian expectation.
 
     Args:
-        args (array): square hermitian matrix.
+        args (array): square hermitian matrix
 
     Returns:
-        array: square hermitian matrix.
+        array: square hermitian matrix
     """
     A = np.asarray(args[0])
 
@@ -206,8 +226,8 @@ def hermitian(*args):
 
     if not np.allclose(A, A.conj().T):
         raise ValueError("Expectation must be Hermitian.")
-    return A
 
+    return A
 
 #========================================================
 #  device
@@ -219,8 +239,8 @@ class DefaultQubit(Device):
 
     Args:
         wires (int): the number of modes to initialize the device in
-        shots (int): How many times should the circuit be evaluated (or sampled) to estimate
-            the expectation values. 0 yields the exact result.
+        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values. A value of 0 yields the exact result.
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
@@ -243,10 +263,10 @@ class DefaultQubit(Device):
         'SWAP': SWAP,
         'CZ': CZ,
         'PhaseShift': Rphi,
-        'RX': frx,
-        'RY': fry,
-        'RZ': frz,
-        'Rot': fr3
+        'RX': Rotx,
+        'RY': Roty,
+        'RZ': Rotz,
+        'Rot': Rot3
     }
 
     _expectation_map = {
@@ -264,15 +284,15 @@ class DefaultQubit(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, gate_name, wires, par):
-        if gate_name == 'QubitStateVector':
+    def apply(self, operation, wires, par):
+        if operation == 'QubitStateVector':
             state = np.asarray(par[0], dtype=np.float64)
             if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             return
-        elif gate_name == 'BasisState':
+        elif operation == 'BasisState':
             # get computational basis state number
             if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
                 raise ValueError("BasisState parameter must be an array of 0/1 integers.")
@@ -284,7 +304,7 @@ class DefaultQubit(Device):
             self._state[num] = 1.
             return
 
-        A = self._get_operator_matrix(gate_name, par)
+        A = self._get_operator_matrix(operation, par)
 
         # apply unitary operations
         if len(wires) == 1:
@@ -312,16 +332,16 @@ class DefaultQubit(Device):
 
         return ev
 
-    def _get_operator_matrix(self, op_name, par):
+    def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or expectation.
 
         Args:
-          op_name    (str): name of the operation/expectation
+          operation    (str): name of the operation/expectation
           par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        A = {**self._operation_map, **self._expectation_map}[op_name]
+        A = {**self._operation_map, **self._expectation_map}[operation]
         if not callable(A):
             return A
         return A(*par)
@@ -415,18 +435,8 @@ class DefaultQubit(Device):
 
     @property
     def operations(self):
-        """Get the supported set of operations.
-
-        Returns:
-            set[str]: the set of PennyLane operation names the device supports
-        """
         return set(self._operation_map.keys())
 
     @property
     def expectations(self):
-        """Get the supported set of expectations.
-
-        Returns:
-            set[str]: the set of PennyLane expectation names the device supports
-        """
         return set(self._expectation_map.keys())
