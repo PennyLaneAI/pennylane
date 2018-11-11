@@ -45,10 +45,10 @@ Here, we have begun defining some important class attributes that allow PennyLan
 
 * :attr:`~.Device.short_name`: the string used to identify and load the device by users of PennyLane
 
-* :attr:`~.Device.api_version`: the PennyLane version this device supports. Note that this class attribute supports ``pip`` ``requirements.txt`` style version ranges, for example:
+* :attr:`~.Device.api_version`: the PennyLane version this device supports. Note that this class attribute supports pip *requirements.txt* style version ranges, for example:
 
-   - ``pennylane_requires = "2"`` to support PennyLane version 2.x.x
-   - ``pennylane_requires = ">=0.1.5,<0.6"`` to support a range of PennyLane versions
+  - ``pennylane_requires = "2"`` to support PennyLane version 2.x.x
+  - ``pennylane_requires = ">=0.1.5,<0.6"`` to support a range of PennyLane versions
 
 * :attr:`~.Device.version`: the version number of the device
 
@@ -60,7 +60,7 @@ Defining all these attributes is mandatory.
 Supporting operators and expectations
 -------------------------------------
 
-You must further tell PennyLane about the operations and expectations that your device supports as well as potentially further capabilities, by providing the following class attributes:
+You must further tell PennyLane about the operations and expectations that your device supports as well as potentially further capabilities, by providing the following class attributes/properties:
 
 * :attr:`~.Device.operations`: a set of the supported PennyLane operations as strings, e.g.,
 

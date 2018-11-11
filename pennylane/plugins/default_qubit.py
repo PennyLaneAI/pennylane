@@ -75,7 +75,6 @@ Code details
 ^^^^^^^^^^^^
 """
 import logging as log
-import collections
 
 import numpy as np
 from scipy.linalg import expm, eigh
@@ -277,7 +276,7 @@ class DefaultQubit(Device):
     }
 
     def __init__(self, wires, *, shots=0):
-        super().__init__(self.short_name, wires, shots)
+        super().__init__(wires, shots)
         self.eng = None
         self._state = None
 
