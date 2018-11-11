@@ -38,8 +38,6 @@ user interface:
 
 .. autosummary::
     short_name
-    operations
-    expectations
     capabilities
     supported
     execute
@@ -56,8 +54,8 @@ The following methods and attributes must be defined for all devices:
     pennylane_requires
     version
     author
-    _operation_map
-    _expectation_map
+    operations
+    expectations
     apply
     expval
 
@@ -107,7 +105,6 @@ class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
     Args:
-        name (str): name of the device.
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
         shots (int): number of circuit evaluations/random samples used to estimate
@@ -117,8 +114,7 @@ class Device(abc.ABC):
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, name, wires=1, shots=0):
-        self.name = name
+    def __init__(self, wires=1, shots=0):
         self.num_wires = wires
         self.shots = shots
 
@@ -156,32 +152,22 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractproperty
-    def _operation_map(self):
-        """A dictionary {str: val} that maps PennyLane operation names to the corresponding operation in the device."""
-        raise NotImplementedError
-
-    @abc.abstractproperty
-    def _expectation_map(self):
-        """A dictionary {str: val} that maps PennyLane expectation names to the corresponding expectation in the device."""
-        raise NotImplementedError
-
-    @property
     def operations(self):
         """Get the supported set of operations.
 
         Returns:
             set[str]: the set of PennyLane operation names the device supports
         """
-        return set(self._operation_map.keys())
+        raise NotImplementedError
 
-    @property
+    @abc.abstractproperty
     def expectations(self):
         """Get the supported set of expectations.
 
         Returns:
             set[str]: the set of PennyLane expectation names the device supports
         """
-        return set(self._expectation_map.keys())
+        raise NotImplementedError
 
     @classmethod
     def capabilities(cls):

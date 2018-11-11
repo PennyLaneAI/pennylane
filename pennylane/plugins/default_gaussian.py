@@ -713,7 +713,7 @@ class DefaultGaussian(Device):
     _circuits = {}
 
     def __init__(self, wires, *, shots=0, hbar=2):
-        super().__init__(self.short_name, wires, shots)
+        super().__init__(wires, shots)
         self.eng = None
         self.hbar = hbar
         self.reset()
@@ -843,3 +843,11 @@ class DefaultGaussian(Device):
         cols = ind.reshape(1, -1)
 
         return self._state[0][ind], self._state[1][rows, cols]
+
+    @property
+    def operations(self):
+        return set(self._operation_map.keys())
+
+    @property
+    def expectations(self):
+        return set(self._expectation_map.keys())

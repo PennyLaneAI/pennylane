@@ -133,7 +133,6 @@ Code details
 """
 import inspect
 import copy
-import collections
 
 import logging as log
 
@@ -208,7 +207,7 @@ class QNode:
         self.device = device
         self.num_wires = device.num_wires
         self.ops = []
-        
+
         self.variable_ops = {}
         """ dict[int->list[(int, int)]]: Mapping from free parameter index to the list of
         :class:`Operations <pennylane.operation.Operation>` (in this circuit) that depend on it.
@@ -747,7 +746,7 @@ class QNode:
                     B_inv = B_inv @ temp
                 Z = B @ Z @ B_inv  # conjugation
 
-                ev_successors = self._op_successors(o_idx, 'E')
+                # ev_successors = self._op_successors(o_idx, 'E')
 
                 def tr_obs(ex):
                     """Transform the observable"""
