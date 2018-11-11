@@ -42,9 +42,16 @@ The first step in creating your PennyLane plugin is to create your device class.
 Here, we have begun defining some important class attributes that allow PennyLane to identify and use the device. These include:
 
 * :attr:`~.Device.name`: a string containing the official name of the device
+
 * :attr:`~.Device.short_name`: the string used to identify and load the device by users of PennyLane
-* :attr:`~.Device.api_version`: the PennyLane version this device supports. Note that this class attribute supports ``pip`` ``requirements.txt`` style version ranges, for example ``">=0.1.5,<0.6"``.
+
+* :attr:`~.Device.api_version`: the PennyLane version this device supports. Note that this class attribute supports pip *requirements.txt* style version ranges, for example:
+
+  - ``pennylane_requires = "2"`` to support PennyLane version 2.x.x
+  - ``pennylane_requires = ">=0.1.5,<0.6"`` to support a range of PennyLane versions
+
 * :attr:`~.Device.version`: the version number of the device
+
 * :attr:`~.Device.author`: the author of the device
 
 Defining all these attributes is mandatory.
@@ -53,23 +60,27 @@ Defining all these attributes is mandatory.
 Supporting operators and expectations
 -------------------------------------
 
-There are three further private class attributes that must be defined in your custom device:
+You must further tell PennyLane about the operations and expectations that your device supports as well as potentially further capabilities, by providing the following class attributes/properties:
 
-* :attr:`~.Device._operation_map`: a dictionary mapping every supported PennyLane operation (string) to the corresponding function/operation in the plugin. The keys of that dictionary are accessible to the user via the public method :meth:`~.Device.operations` and are used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+* :attr:`~.Device.operations`: a set of the supported PennyLane operations as strings, e.g.,
 
-* :attr:`~.Device._expectation_map`: a dictionary mapping every supported PennyLane expectation (string) to the corresponding function/operation in the plugin. The keys are accessible to the user via the public method :meth:`~.Device.expectations` and are used to decide whether an expectation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+  .. code-block:: python
+
+    operations = {"CNOT", "PauliX"}
+
+  This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+
+* :attr:`~.Device.expectations`: set of the supported PennyLane expectations as strings, e.g.,
+
+  .. code-block:: python
+
+    expectations = {"Homodyne", "MeanPhoton", "X", "P"}
+
+  This is used to decide whether an expectation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
 
 * :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user — this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
 
-For example, a very basic operator map that supports only two gates might look like so:
-
-.. code-block:: python
-
-    _operation_map = {'CNOT': cnot_function, 'PauliX': X_function}
-
-where ``'CNOT'`` represents the built-in operation :class:`~.CNOT`, and ``'PauliX'`` represents the built-in operation :class:`~pennylane.ops.qubit.PauliX`. The functions in the dictionary can be of any form you like, and can exist in the plugin within the same file, separate files, or may even be imported from a different library. As long as the corresponding key representing the supported operator is there, PennyLane will allow that operation to be placed on the device.
-
-For a better idea of how the :attr:`~.Device._operation_map` and :attr:`~.Device._expectation_map` work, refer to the two reference plugins.
+For a better idea of how to best implement :attr:`~.Device.operations` and :attr:`~.Device.expectations`, refer to the two reference plugins.
 
 
 Applying operations
