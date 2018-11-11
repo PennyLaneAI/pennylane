@@ -75,7 +75,6 @@ Code details
 ^^^^^^^^^^^^
 """
 import logging as log
-import collections
 
 import numpy as np
 from scipy.linalg import expm, eigh
@@ -277,7 +276,7 @@ class DefaultQubit(Device):
     }
 
     def __init__(self, wires, *, shots=0):
-        super().__init__(self.short_name, wires, shots)
+        super().__init__(wires, shots)
         self.eng = None
         self._state = None
 
@@ -432,3 +431,11 @@ class DefaultQubit(Device):
         U = U.reshape(dim * 2).transpose(perm).reshape([temp, temp])
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
         return U
+
+    @property
+    def operations(self):
+        return set(self._operation_map.keys())
+
+    @property
+    def expectations(self):
+        return set(self._expectation_map.keys())

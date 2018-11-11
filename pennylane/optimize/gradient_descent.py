@@ -19,7 +19,7 @@ from pennylane.utils import _flatten, unflatten
 
 class GradientDescentOptimizer(object):
     r"""Basic gradient-descent optimizer.
-    
+
     Base class for other gradient-descent-based optimizers.
 
     A step of the gradient descent optimizer computes the new values via the rule
