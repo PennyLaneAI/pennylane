@@ -66,7 +66,7 @@ You must further tell PennyLane about the operations and expectations that your 
 
   .. code-block:: python
 
-    operations = {"CNOT", "PauliX"}
+    operations = set(["CNOT", "PauliX"])
 
   This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
 
@@ -74,7 +74,7 @@ You must further tell PennyLane about the operations and expectations that your 
 
   .. code-block:: python
 
-    expectations = {"Homodyne", "MeanPhoton", "X", "P"}
+    expectations = set(["Homodyne", "MeanPhoton", "X", "P"])
 
   This is used to decide whether an expectation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
 
