@@ -35,7 +35,7 @@ The first step in creating your PennyLane plugin is to create your device class.
         """MyDevice docstring"""
         name = 'My custom device'
         short_name = 'example.mydevice'
-        api_version = '0.1.0'
+        pennylane_requires = '0.1.0'
         version = '0.0.1'
         author = 'Ada Lovelace'
 
@@ -45,7 +45,7 @@ Here, we have begun defining some important class attributes that allow PennyLan
 
 * :attr:`~.Device.short_name`: the string used to identify and load the device by users of PennyLane
 
-* :attr:`~.Device.api_version`: the PennyLane version this device supports. Note that this class attribute supports pip *requirements.txt* style version ranges, for example:
+* :attr:`~.Device.pennylane_requires`: the PennyLane version this device supports. Note that this class attribute supports pip *requirements.txt* style version ranges, for example:
 
   - ``pennylane_requires = "2"`` to support PennyLane version 2.x.x
   - ``pennylane_requires = ">=0.1.5,<0.6"`` to support a range of PennyLane versions

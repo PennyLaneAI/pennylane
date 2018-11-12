@@ -51,7 +51,7 @@ The following methods and attributes must be defined for all devices:
 .. autosummary::
     name
     short_name
-    api_version
+    pennylane_requires
     version
     author
     operations
@@ -124,7 +124,7 @@ class Device(abc.ABC):
 
     def __str__(self):
         """Verbose string representation."""
-        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.api_version, self.version, self.author)
+        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.pennylane_requires, self.version, self.author)
 
     @abc.abstractproperty
     def name(self):
@@ -137,7 +137,7 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractproperty
-    def api_version(self):
+    def pennylane_requires(self):
         """The current API version that the device plugin was made for."""
         raise NotImplementedError
 
