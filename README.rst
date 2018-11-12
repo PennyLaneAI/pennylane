@@ -11,7 +11,7 @@
     :alt: Codecov coverage
     :target: https://codecov.io/gh/XanaduAI/pennylane
 
-.. image:: https://img.shields.io/codacy/grade/bd14437d17494f16ada064d8026498dd.svg?style=for-the-badge
+.. image:: https://img.shields.io/codacy/grade/83940d926ef5444798a46378e528249d.svg?style=for-the-badge
     :alt: Codacy grade
     :target: https://app.codacy.com/app/XanaduAI/pennylane?utm_source=github.com&utm_medium=referral&utm_content=XanaduAI/pennylane&utm_campaign=badger
 
