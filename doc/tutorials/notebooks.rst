@@ -69,11 +69,7 @@ Continuous-variable notebooks
 
    Starting with a photon in mode 0 of a variational quantum optical circuit, the goal is to use PennyLane to optimize a beamsplitter to redirect the photon to mode 1. This notebook follows the same process as the :ref:`photon redirection tutorial <photon_redirection>`, but with more emphasis on the optimization procedure, comparing the use of the gradient-descent optimizer with and without momentum.
 
-2. **Squeezing kernel** (:download:`CV2_squeezing_kernel.ipynb <../../examples/CV2_squeezing_kernel.ipynb>`/|CV2|)
-
-   Kernel methods in machine learning allow us to efficiently perform computations in an intractably large Hilbert space. By leveraging PennyLane, we can use a quantum device to estimate inner products of quantum states to compute a quantum kernel. In this notebook, we implement a squeezing feature map together with an implicit linear classifier :cite:`schuld2018quantum`.
-
-3. **Quantum neural networks** (:download:`CV3_quantum-neural-net.ipynb <../../examples/CV3_quantum-neural-net.ipynb>`/|CV3|)
+2. **Quantum neural networks** (:download:`CV2_quantum-neural-net.ipynb <../../examples/CV2_quantum-neural-net.ipynb>`/|CV2|)
 
    In this notebook, we show how a continuous-variable quantum neural network model :cite:`killoran2018continuous` can be used to learn a fit for a one-dimensional function when being trained with noisy samples from that function. In this case, the variational quantum circuit is trained to fit a one-dimensional sine function from noisy data.
 
@@ -84,8 +80,4 @@ Continuous-variable notebooks
 
 .. |CV2| raw:: html
 
-   <a href="https://github.com/XanaduAI/pennylane/blob/master/examples/CV2_squeezing_kernel.ipynb" target="_blank">View on GitHub</a>
-
-.. |CV3| raw:: html
-
-   <a href="https://github.com/XanaduAI/pennylane/blob/master/examples/CV3_quantum-neural-net.ipynb" target="_blank">View on GitHub</a>
+   <a href="https://github.com/XanaduAI/pennylane/blob/master/examples/CV2_quantum-neural-net.ipynb" target="_blank">View on GitHub</a>
