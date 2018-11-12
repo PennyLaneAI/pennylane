@@ -1,15 +1,14 @@
 """Simple qubit optimization example using the ProjectQ simulator backend.
 
-This "hello world" example for PennyLane optimizes a two rotations to
+This "Hello world!" example for PennyLane optimizes a two rotations to
 flip a qubit from state |0> to |1>.
 """
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.optimize import GradientDescentOptimizer
+from pennylane.optimize import GradientDescentOptimizer, AdagradOptimizer
 
 dev = qml.device('default.qubit', wires=1)
-
 
 @qml.qnode(dev)
 def circuit(var):
@@ -21,8 +20,8 @@ def circuit(var):
     Returns:
         expectation of Pauli-Z operator
     """
-    qml.RX(var[0], wires=[0])
-    qml.RY(var[1], wires=[0])
+    qml.RX(var[0], wires=0)
+    qml.RY(var[1], wires=0)
     return qml.expval.PauliZ(0)
 
 
@@ -33,20 +32,33 @@ def objective(var):
         var (array[float]): array of variables
 
     Returns:
-        float: result of variational circuit
+        float: output of variational circuit
     """
     return circuit(var)
 
 
-var_init = np.array([0.011, 0.012])
+var_init = np.array([-0.011, -0.012])
 
-o = GradientDescentOptimizer(0.5)
+gd = GradientDescentOptimizer(0.4)
 
 var = var_init
+var_gd = [var]
+
 for it in range(100):
-    var = o.step(objective, var)
+    var = gd.step(objective, var)
 
-    if (it+1) % 5 == 0:
-        print('Cost after step {:5d}: {: 0.7f}'.format(it+1, objective(var)))
+    if (it + 1) % 5 == 0:
+        var_gd.append(var)
+        print('Objective after step {:5d}: {: .7f} | Angles: {}'.format(it + 1, objective(var), var) )
+        
+ada = AdagradOptimizer(0.4)
 
-print('\nOptimized rotation angles: {}'.format(var))
+var = var_init
+var_ada = [var]
+
+for it in range(100):
+    var = ada.step(objective, var)
+    
+    if (it + 1) % 5 == 0:
+        var_ada.append(var)
+        print('Objective after step {:5d}: {: .7f} | Angles: {}'.format(it + 1, objective(var), var) )

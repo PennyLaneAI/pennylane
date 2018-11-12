@@ -9,7 +9,10 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.optimize import AdamOptimizer
 
-dev = qml.device('strawberryfields.fock', wires=1, cutoff_dim=10)
+try:
+    dev = qml.device('strawberryfields.fock', wires=1, cutoff_dim=10)    
+except:
+    print("To run this demo you need to install the strawberryfields plugin...")
 
 
 def layer(v):
@@ -18,17 +21,16 @@ def layer(v):
     Args:
         v (array[float]): array of variables for one layer
     """
+    # Matrix multiplication of input layer
+    qml.Rotation(v[0], wires=0)
+    qml.Squeezing(v[1], 0., wires=0)
+    qml.Rotation(v[2], wires=0)
 
     # Bias
-    qml.Displacement(v[0], v[1], wires=[0])
+    qml.Displacement(v[3], 0., wires=0)
 
-    # Matrix multiplication of input layer
-    qml.Rotation(v[2], wires=[0])
-    qml.Squeezing(v[3], v[4], wires=[0])
-    qml.Rotation(v[5], wires=[0])
-
-    # Nonlinear transformation
-    qml.Kerr(v[6], wires=[0])
+    # Element-wise nonlinear transformation
+    qml.Kerr(v[4], wires=0)
 
 
 @qml.qnode(dev)
@@ -42,11 +44,10 @@ def quantum_neural_net(var, x=None):
     Returns:
         float: expectation of Homodyne measurement on Mode 0
     """
-
     # Encode input x into quantum state
-    qml.Displacement(x, 0., wires=[0])
+    qml.Displacement(x, 0., wires=0)
 
-    # execute "layers"
+    # "layer" subcircuits
     for v in var:
         layer(v)
 
@@ -65,30 +66,27 @@ def square_loss(labels, predictions):
     """
     loss = 0
     for l, p in zip(labels, predictions):
-        loss += (l-p)**2
-    loss = loss/len(labels)
+        loss = loss + (l - p) ** 2
+    loss = loss / len(labels)
 
     return loss
 
 
-def cost(var, X, Y):
+def cost(var, features, labels):
     """Cost function to be minimized.
 
     Args:
         var (array[float]): array of variables
-        X (array[float]): 2-d array of input vectors
-        Y (array[float]): 1-d array of targets
+        features (array[float]): 2-d array of input vectors
+        labels (array[float]): 1-d array of targets
 
     Returns:
         float: loss
     """
-
     # Compute prediction for each input in data batch
-    preds = [quantum_neural_net(var, x=x) for x in X]
+    preds = [quantum_neural_net(var, x=x) for x in features]
 
-    loss = square_loss(Y, preds)
-
-    return loss
+    return square_loss(labels, preds)
 
 
 # load function data
@@ -97,15 +95,16 @@ X = data[:, 0]
 Y = data[:, 1]
 
 # initialize weights
+np.random.seed(0)
 num_layers = 4
-var_init = 0.05*np.random.randn(num_layers, 7)
+var_init = 0.05 * np.random.randn(num_layers, 7)
 
 # create optimizer
-o = AdamOptimizer(0.005, beta1=0.9, beta2=0.999)
+opt = AdamOptimizer(0.01, beta1=0.9, beta2=0.999)
 
 # train
 var = var_init
-for it in range(50):
-    var = o.step(lambda v: cost(v, X, Y), var)
-    print("Iter: {:5d} | Cost: {:0.7f}".format(it+1, cost(var, X, Y)))
-
+for it in range(500):
+    var = opt.step(lambda v: cost(v, X, Y), var)
+    
+    print("Iter: {:5d} | Cost: {:0.7f} ".format(it + 1, cost(var, X, Y)))
