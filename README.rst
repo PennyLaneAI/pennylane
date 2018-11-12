@@ -3,9 +3,9 @@
 
 ###################################
 
-.. image:: https://img.shields.io/travis/XanaduAI/pennylane/master.svg?style=for-the-badge
+.. image:: https://img.shields.io/travis/com/XanaduAI/pennylane.svg?style=for-the-badge
     :alt: Travis
-    :target: https://travis-ci.org/XanaduAI/pennylane
+    :target: https://travis-ci.com/XanaduAI/pennylane/
 
 .. image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?style=for-the-badge
     :alt: Codecov coverage
