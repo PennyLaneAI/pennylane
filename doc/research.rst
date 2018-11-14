@@ -8,7 +8,8 @@ Research
 
 If you are doing research using PennyLane, please cite the PennyLane paper:
 
-  [Placeholder for PennyLane paper]
+    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, and Nathan Killoran.
+    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018. `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
 
 We are always open for collaboration; you can contact us at research@xanadu.ai.
 

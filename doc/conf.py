@@ -65,7 +65,9 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'PennyLane'
-copyright = "Copyright 2018, Xanadu Inc."
+copyright = """Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, and Nathan Killoran. <br>
+PennyLane: Automatic differentiation of hybrid quantum-classical computations. arXiv:1811.04968, 2018.<br>
+&copy; Copyright 2018, Xanadu Quantum Technologies Inc."""
 author = 'Xanadu Inc.'
 
 add_module_names = False

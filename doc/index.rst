@@ -88,7 +88,8 @@ Finally, detailed documentation on the PennyLane :ref:`interface <library_overvi
 
 If you are doing research using PennyLane, please cite
 
-  [Placeholder for PennyLane paper]
+    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, and Nathan Killoran.
+    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018. `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
 
 :html:`<h2>Support</h2>`
 
