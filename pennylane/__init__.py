@@ -120,11 +120,11 @@ numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autog
 
 
 # set up logging
+numeric_level = 100 # info
 if "LOGGING" in os.environ:
     logLevel = os.environ["LOGGING"]
     numeric_level = getattr(log, logLevel.upper(), 10)
-else:
-    numeric_level = 100 # info
+
 
 log.basicConfig(
     level=numeric_level,
