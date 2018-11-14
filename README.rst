@@ -1,4 +1,4 @@
-.. image:: doc/_static/pennylane_big.png
+.. image:: doc/_static/pennylane_thin.png
     :alt: PennyLane
 
 ###################################

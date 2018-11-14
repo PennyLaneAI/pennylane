@@ -4,9 +4,9 @@
 :html:`<br>`
 
 
-.. image:: _static/pennylane_big.png
+.. image:: _static/pennylane_thin.png
     :align: center
-    :width: 500px
+    :width: 100%
     :target: javascript:void(0);
     :alt: PennyLane
 
