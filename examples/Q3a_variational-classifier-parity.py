@@ -147,7 +147,7 @@ for it in range(25):
     batch_index = np.random.randint(0, len(X), (batch_size, ))
     X_batch = X[batch_index]
     Y_batch = Y[batch_index]
-    var = opt.step(lambda v: cost(v, X, Y), var)
+    var = opt.step(lambda v: cost(v, X_batch, Y_batch), var)
 
     # Compute accuracy
     predictions = [np.sign(variational_classifier(var, x=x)) for x in X]
