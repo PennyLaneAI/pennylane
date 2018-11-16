@@ -3,29 +3,39 @@
 
 ###################################
 
-.. image:: https://img.shields.io/travis/com/XanaduAI/pennylane.svg?style=for-the-badge
+.. |CI| image:: https://img.shields.io/travis/com/XanaduAI/pennylane.svg?style=popout-square
     :alt: Travis
     :target: https://travis-ci.com/XanaduAI/pennylane/
 
-.. image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?style=for-the-badge
+.. |COV| image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?style=popout-square
     :alt: Codecov coverage
     :target: https://codecov.io/gh/XanaduAI/pennylane
 
-.. image:: https://img.shields.io/codacy/grade/83940d926ef5444798a46378e528249d.svg?style=for-the-badge
+.. |PEP| image:: https://img.shields.io/codacy/grade/83940d926ef5444798a46378e528249d.svg?style=popout-square
     :alt: Codacy grade
     :target: https://app.codacy.com/app/XanaduAI/pennylane?utm_source=github.com&utm_medium=referral&utm_content=XanaduAI/pennylane&utm_campaign=badger
 
-.. image:: https://img.shields.io/readthedocs/pennylane.svg?style=for-the-badge
+.. |DOC| image:: https://img.shields.io/readthedocs/pennylane.svg?style=popout-square
     :alt: Read the Docs
     :target: https://pennylane.readthedocs.io
 
-.. image:: https://img.shields.io/pypi/v/PennyLane.svg?style=for-the-badge
+.. |VERS| image:: https://img.shields.io/pypi/v/PennyLane.svg?style=popout-square
     :alt: PyPI
     :target: https://pypi.org/project/PennyLane
 
-.. image:: https://img.shields.io/pypi/pyversions/PennyLane.svg?style=for-the-badge
+.. |PY| image:: https://img.shields.io/pypi/pyversions/PennyLane.svg?style=popout-square
     :alt: PyPI - Python Version
     :target: https://pypi.org/project/PennyLane
+
+.. |FORUM| image:: https://img.shields.io/discourse/https/discuss.pennylane.ai/posts.svg?style=popout-square
+    :alt: Discourse posts
+    :target: https://discuss.pennylane.ai
+    
+.. |LIC| image:: https://img.shields.io/pypi/l/PennyLane.svg?style=popout-square
+    :alt: PyPI - License
+    :target: https://www.apache.org/licenses/LICENSE-2.0
+
+|CI|  |COV| |PEP| |DOC| |VERS| |PY| |FORUM|
 
 `PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for quantum machine learning,
 automatic differentiation, and optimization of hybrid quantum-classical computations.
@@ -110,6 +120,8 @@ Support
 - **Issue Tracker:** https://github.com/XanaduAI/pennylane/issues
 
 If you are having issues, please let us know by posting the issue on our Github issue tracker.
+
+We also have a `PennyLane discussion forum <https://discuss.pennylane.ai>`_ - come join the discussion and chat with our PennyLane team.
 
 
 License
