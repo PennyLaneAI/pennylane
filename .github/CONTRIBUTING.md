@@ -14,6 +14,17 @@ If you want to contribute but don't know where to start, start by checking out o
 [documentation](https://pennylane.readthedocs.io). Have a go working through some of the tutorials,
 and having a look at the PennyLane API and code documentation to see how things work under the hood.
 
+To chat directly with the team designing and building PennyLane, as well as members of our community -- ranging from quantum machine learning researchers, to students, to those just interested in being a part of a rapidly growing industry - you can join our [PennyLane discussion forum](https://discuss.pennylane.ai).
+
+Available categories include:
+
+* `PennyLane Feedback`: For general discussion regarding PennyLane, including feature requests, and theoretical questions
+* `PennyLane Help`: For help and advice using PennyLane
+* `PennyLane Development`: For discussion of PennyLane development
+* `PennyLane Plugins`: For discussion of the available PennyLane plugins, and plugin development
+* `Xanadu Software`: For discussion relating to other Xanadu software projects, including [StrawberryFields](https://github.com/xanaduai/strawberryfields), [QMLT](https://github.com/xanaduai/hafnian), [Hafnian](https://github.com/xanaduai/hafnian), and [OpenBoson](https://github.com/xanaduai/sfopenboson).
+
+Sometimes, it might take us a couple of hours to reply - please be patient!
 
 ## How can I contribute?
 
