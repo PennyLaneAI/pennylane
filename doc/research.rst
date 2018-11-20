@@ -21,7 +21,17 @@ Support
 
 If you are having issues, please let us know by posting the problem on our Github issue tracker.
 
+To chat directly with the team designing and building PennyLane, as well as members of our community — ranging from quantum machine learning researchers, to students, to those just interested in being a part of a rapidly growing industry — you can join our `PennyLane discussion forum <https://discuss.pennylane.ai>`_.
 
+Available categories include:
+
+* `PennyLane Feedback <https://discuss.pennylane.ai/c/pennylane-feedback>`_: For general discussion regarding PennyLane, including feature requests
+* `PennyLane Help <https://discuss.pennylane.ai/c/pennylane-help>`_: For help and advice using PennyLane
+* `PennyLane Development <https://discuss.pennylane.ai/c/pennylane-development>`_: For discussion of PennyLane development
+* `PennyLane Plugins <https://discuss.pennylane.ai/c/pennylane-plugins>`_: For discussion of the available PennyLane plugins, and plugin development
+* `Xanadu Software <https://discuss.pennylane.ai/c/xanadu-software>`_: For discussion relating to other Xanadu software projects, including `StrawberryFields <https://github.com/xanaduai/strawberryfields>`_, `QMLT <https://github.com/xanaduai/hafnian>`_, `Hafnian <https://github.com/xanaduai/hafnian>`_, and `OpenBoson <https://github.com/xanaduai/sfopenboson>`_.
+
+Sometimes, it might take us a couple of hours to reply - please be patient!
 
 Contribution
 ------------

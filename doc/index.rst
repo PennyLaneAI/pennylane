@@ -98,6 +98,8 @@ If you are doing research using PennyLane, please cite
 
 If you are having issues, please let us know by posting the issue on our Github issue tracker.
 
+We also have a `PennyLane discussion forum <https://discuss.pennylane.ai>`_ - come join the discussion and chat with our PennyLane team.
+
 For more details on contributing or performing research with PennyLane, please see
 :ref:`research`.
 
