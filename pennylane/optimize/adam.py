@@ -40,7 +40,7 @@ class AdamOptimizer(GradientDescentOptimizer):
     hyperparameters :math:`\beta_1` and :math:`\beta_2` can also be step-dependent.
     Initially, the first and second moment are zero.
 
-    The shift :math:`\epsilon` avoids division by zero and is set to :math:`10^{-8}` in PennyLane.
+    The shift :math:`\epsilon` avoids division by zero.
 
     For more details, see :cite:`kingma2014adam`.
 
@@ -48,6 +48,8 @@ class AdamOptimizer(GradientDescentOptimizer):
         stepsize (float): the user-defined hyperparameter :math:`\eta`
         beta1 (float): hyperparameter governing the update of the first and second moment
         beta2 (float): hyperparameter governing the update of the first and second moment
+        eps (float): offset :math:`\epsilon` added for numerical stability
+
     """
     def __init__(self, stepsize=0.01, beta1=0.9, beta2=0.99, eps=1e-8):
         super().__init__(stepsize)

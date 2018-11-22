@@ -37,13 +37,13 @@ class AdagradOptimizer(GradientDescentOptimizer):
         \eta_i^{(t+1)} = \frac{ \eta_{\mathrm{init}} }{ \sqrt{a_i^{(t+1)} + \epsilon } },
         ~~~ a_i^{(t+1)} = \sum_{k=1}^t (\partial_{x_i} f(x^{(k)}))^2.
 
-    The shift :math:`\epsilon` avoids division by zero and is set to
-    :math:`10^{-8}` by default.
+    The offset :math:`\epsilon` avoids division by zero.
 
     :math:`\eta` is the step size, a user defined parameter.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
+        eps (float): offset :math:`\epsilon` added for numerical stability
     """
     def __init__(self, stepsize=0.01, eps=1e-8):
         super().__init__(stepsize)
