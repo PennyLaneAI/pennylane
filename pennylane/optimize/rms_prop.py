@@ -38,11 +38,14 @@ class RMSPropOptimizer(AdagradOptimizer):
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
             used in the Adagrad optmization
-        gamma (float): the learning rate decay
+        decay (float): the learning rate decay :math:`\gamma`
+        eps (float): offset :math:`\epsilon` added for numerical stability (see :class:`Adagrad <pennylane.optmimize.AdagradOptimizer>`)
+
     """
-    def __init__(self, stepsize=0.01, decay=0.9):
+    def __init__(self, stepsize=0.01, decay=0.9, eps=1e-8):
         super().__init__(stepsize)
         self.decay = decay
+        self.eps = eps
 
     def apply_grad(self, grad, x):
         r"""Update the variables x to take a single optimization step. Flattens and unflattens
@@ -65,6 +68,6 @@ class RMSPropOptimizer(AdagradOptimizer):
         else:
             self.accumulation = [self.decay*a + (1-self.decay)*g*g for a, g in zip(self.accumulation, grad_flat)]
 
-        x_new_flat = [e - (self.stepsize / np.sqrt(a + 1e-8)) * g for a, g, e in zip(self.accumulation, grad_flat, x_flat)]
+        x_new_flat = [e - (self.stepsize / np.sqrt(a + self.eps)) * g for a, g, e in zip(self.accumulation, grad_flat, x_flat)]
 
         return unflatten(x_new_flat, x)
