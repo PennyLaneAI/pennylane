@@ -49,11 +49,12 @@ class AdamOptimizer(GradientDescentOptimizer):
         beta1 (float): hyperparameter governing the update of the first and second moment
         beta2 (float): hyperparameter governing the update of the first and second moment
     """
-    def __init__(self, stepsize=0.01, beta1=0.9, beta2=0.99):
+    def __init__(self, stepsize=0.01, beta1=0.9, beta2=0.99, eps=1e-8):
         super().__init__(stepsize)
+        self.stepsize = stepsize
         self.beta1 = beta1
         self.beta2 = beta2
-        self.stepsize = stepsize
+        self.eps = eps
         self.fm = None
         self.sm = None
         self.t = 0
@@ -91,7 +92,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         # Update step size (instead of correcting for bias)
         new_stepsize = self.stepsize*np.sqrt(1-self.beta2**self.t)/(1-self.beta1**self.t)
 
-        x_new_flat = [e - new_stepsize * f / (np.sqrt(s)+1e-8) for f, s, e in zip(self.fm, self.sm, x_flat)]
+        x_new_flat = [e - new_stepsize * f / (np.sqrt(s)+self.eps) for f, s, e in zip(self.fm, self.sm, x_flat)]
 
         return unflatten(x_new_flat, x)
 

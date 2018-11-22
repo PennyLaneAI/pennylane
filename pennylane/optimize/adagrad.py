@@ -45,8 +45,9 @@ class AdagradOptimizer(GradientDescentOptimizer):
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
     """
-    def __init__(self, stepsize=0.01):
+    def __init__(self, stepsize=0.01, eps=1e-8):
         super().__init__(stepsize)
+        self.eps = eps
         self.accumulation = None
 
     def apply_grad(self, grad, x):
@@ -70,7 +71,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
         else:
             self.accumulation = [a + g*g for a, g in zip(self.accumulation, grad_flat)]
 
-        x_new_flat = [e - (self.stepsize / np.sqrt(a + 1e-8)) * g for a, g, e in zip(self.accumulation, grad_flat, x_flat)]
+        x_new_flat = [e - (self.stepsize / np.sqrt(a + self.eps)) * g for a, g, e in zip(self.accumulation, grad_flat, x_flat)]
 
         return unflatten(x_new_flat, x)
 
