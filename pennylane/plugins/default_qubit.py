@@ -294,8 +294,8 @@ class DefaultQubit(Device):
         elif operation == 'BasisState':
             n = len(par[0])
             # get computational basis state number
-            if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}) or n != len(wires):
-                raise ValueError("BasisState parameter must be an array of len(wires) many 0/1 integers.")
+            if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}) or (wires != None and wires != [] and n != len(wires)):
+                raise ValueError("BasisState parameter must be an array of len(wires) many 0/1 integers."+str(n)+" "+str(wires))
 
             num = int(np.sum(np.array(par[0])*2**np.arange(n-1, -1, -1)))
 
