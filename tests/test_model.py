@@ -46,7 +46,7 @@ class TestModel(BaseTest):
                 np.random.seed(0)
                 weights=np.random.randn(num_layers, num_wires, 3)
                 outcomes.append(circuit(weights, x=np.array(np.random.randint(0,1,num_wires))))
-        self.assertAllAlmostEqual(outcomes, [-0.2924249613746693, -0.3005638739775734, -0.28908176874810054, 0.1339692149350618], delta=self.tol)
+        self.assertAllAlmostEqual(np.array(outcomes), np.array([-0.2924249613746693, -0.3005638739775734, -0.28908176874810054, 0.1339692149350618]), delta=self.tol)
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', pennylane.model.')
