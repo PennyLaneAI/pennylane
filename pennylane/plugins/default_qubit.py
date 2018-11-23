@@ -118,6 +118,7 @@ I = np.eye(2)
 X = np.array([[0, 1], [1, 0]]) #: Pauli-X matrix
 Y = np.array([[0, -1j], [1j, 0]]) #: Pauli-Y matrix
 Z = np.array([[1, 0], [0, -1]]) #: Pauli-Z matrix
+I = np.identity(2)
 
 H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
 # Two qubit gates
@@ -272,7 +273,8 @@ class DefaultQubit(Device):
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
-        'Hermitian': hermitian
+        'Hermitian': hermitian,
+        'Identity': I
     }
 
     def __init__(self, wires, *, shots=0):

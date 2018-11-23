@@ -36,7 +36,7 @@ quantum operations supported by PennyLane, as well as their conventions.
     PauliY
     PauliZ
     Hermitian
-
+    Identity
 
 :html:`<h3>Code details</h3>`
 """
@@ -46,7 +46,7 @@ from pennylane.operation import Expectation
 
 class PauliX(Expectation):
     r"""pennylane.expval.PauliX(wires)
-    Returns the Pauli-X expectation value.
+    Expectation value of Pauli-X.
 
     This expectation command returns the value
 
@@ -70,7 +70,7 @@ class PauliX(Expectation):
 
 class PauliY(Expectation):
     r"""pennylane.expval.PauliY(wires)
-    Returns the Pauli-Y expectation value.
+    Expectation value of Pauli-Y.
 
     This expectation command returns the value
 
@@ -94,7 +94,7 @@ class PauliY(Expectation):
 
 class PauliZ(Expectation):
     r"""pennylane.expval.PauliZ(wires)
-    Returns the Pauli-Z expectation value.
+    Expectation value of Pauli-Z.
 
     This expectation command returns the value
 
@@ -118,7 +118,7 @@ class PauliZ(Expectation):
 
 class Hermitian(Expectation):
     r"""pennylane.expval.Hermitian(A, wires)
-    Returns the expectation value of an arbitrary Hermitian observable.
+    Expectation value of an arbitrary Hermitian observable.
 
     For a Hermitian matrix :math:`A`, this expectation command returns the value
 
@@ -136,7 +136,28 @@ class Hermitian(Expectation):
     par_domain = 'A'
     grad_method = 'F'
 
+class Identity(Expectation):
+    r"""pennylane.expval.Identity(wires)
+    Expectation value of the identity observable :math:`\I`.
 
-all_ops = [PauliX, PauliY, PauliZ, Hermitian]
+    The expectation of this observable
+
+    .. math::
+        E[\I] = \text{Tr}(\I \rho) = 1
+
+    corresponds to the trace of the quantum state.
+
+    .. note::
+
+        Can be used to check normalization in approximate simulators.
+
+    """
+    num_wires = 0
+    num_params = 0
+    par_domain = 'A'
+    grad_method = 'F'
+
+
+all_ops = [PauliX, PauliY, PauliZ, Hermitian, Identity]
 
 __all__ = [cls.__name__ for cls in all_ops]
