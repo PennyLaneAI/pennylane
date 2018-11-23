@@ -38,6 +38,7 @@ quantum operations supported by PennyLane, as well as their conventions.
     Homodyne
     PolyXP
     NumberState
+    Identity
 
 :html:`<h3>Code details</h3>`
 """
@@ -262,7 +263,35 @@ class NumberState(CVExpectation):
     grad_method = None
     ev_order = None
 
+class Identity(CVExpectation):
+    r"""pennylane.expval.Identity(wires)
+    Expectation value of the identity observable :math:`\I`.
 
-all_ops = [Homodyne, MeanPhoton, P, X, PolyXP, NumberState]
+    The expectation of this observable
+
+    .. math::
+        E[\I] = \text{Tr}(\I \rho) = 1
+
+    corresponds to the trace of the quantum state.
+
+    .. note::
+
+        Can be used to check normalization in fock basis based simulators.
+
+    **Details:**
+
+    * Number of wires: None (applied to any subset of wires).
+    * Number of parameters: 0
+    * Expectation order: None (non-Gaussian)
+    """
+    num_wires = 0
+    num_params = 0
+    par_domain = 'A'
+
+    grad_method = None
+    ev_order = None
+
+
+all_ops = [Homodyne, MeanPhoton, P, X, PolyXP, NumberState, Identity]
 
 __all__ = [cls.__name__ for cls in all_ops]
