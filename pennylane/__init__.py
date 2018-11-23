@@ -102,6 +102,8 @@ from semantic_version import Version, Spec
 
 import pennylane.operation
 import pennylane.expval
+import pennylane.model
+
 
 from .configuration import Configuration
 from ._device import Device, DeviceError

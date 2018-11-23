@@ -16,9 +16,9 @@ r"""
 Models
 ======
 
-**Module name:** :mod:`pennylane.models`
+**Module name:** :mod:`pennylane.model`
 
-.. currentmodule:: pennylane.models
+.. currentmodule:: pennylane.model
 
 This module provides functions representing  circuits of common quantum
 machine learning architectures to make it easy to use them as building blocks
@@ -32,7 +32,6 @@ following way:
 
     import pennylane as qml
     from pennylane import numpy as np
-    from pennylane.models import variational_quantum_classifyer
 
     num_wires=4
     num_layers=3
@@ -41,7 +40,7 @@ following way:
     @qml.qnode(dev)
     def circuit(weights, x=None):
         qml.BasisState(x, wires=range(num_wires))
-        variational_quantum_classifyer(weights, True, wires=range(num_wires))
+        qml.model.VariationalClassifyer(weights, True, wires=range(num_wires))
         return qml.expval.PauliZ(0)
 
     weights=np.random.randn(num_layers, num_wires, 3)
@@ -71,7 +70,7 @@ log.getLogger()
 
 from pennylane.ops import *
 
-def variational_quantum_classifyer(weights, periodic=True, wires=None):
+def VariationalClassifyer(weights, periodic=True, wires=None):
     """A variational quantum classifier.
 
     Constructs the circuit of a variational quantum classifier with len(weights)
@@ -86,10 +85,10 @@ def variational_quantum_classifyer(weights, periodic=True, wires=None):
         wires (Sequence[int]): the wires the operation acts on
     """
     for layer_weights in weights:
-        _variational_quantum_classifyer_layer(layer_weights, periodic, wires)
+        _variational_classifyer_layer(layer_weights, periodic, wires)
 
 
-def _variational_quantum_classifyer_layer(weights, periodic=True, wires=None):
+def _variational_classifyer_layer(weights, periodic=True, wires=None):
     """A single layer of a variational quantum classifier.
 
     Args:
