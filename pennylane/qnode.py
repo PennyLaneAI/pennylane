@@ -131,6 +131,7 @@ QNode internal methods
 Code details
 ~~~~~~~~~~~~
 """
+import collections
 import inspect
 import copy
 
@@ -297,15 +298,16 @@ class QNode:
             self.output_type = float
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, tuple) and res and all(isinstance(x, pennylane.operation.Expectation) for x in res):
+        elif isinstance(res, collections.Sequence) and res and all(isinstance(x, pennylane.operation.Expectation) for x in res):
             # for multiple expectation values, we only support tuples.
             self.output_dim = len(res)
             self.output_type = np.asarray
+            res = tuple(res)
         else:
             raise QuantumFunctionError("A quantum function must return either a single expectation "
-                                       "value or a nonempty tuple of expectation values.")
+                                       "value or a nonempty sequence of expectation values.")
 
-        # check that all ev:s are returned, in the correct order
+        # check that all ev's are returned, in the correct order
         if res != tuple(self.ev):
             raise QuantumFunctionError("All measured expectation values must be returned in the "
                                        "order they are measured.")
