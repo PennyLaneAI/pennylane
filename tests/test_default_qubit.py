@@ -402,11 +402,15 @@ class TestDefaultQubitDevice(BaseTest):
                 # otherwise, the operation is simply an array.
                 O = fn
 
+            print("op.num_wires="+str(op.num_wires))
+
             # calculate the expected output
-            if op.num_wires == 1:
+            if op.num_wires == 1 or op.num_wires == 0:
                 expected_out = self.dev._state.conj() @ np.kron(O, I) @ self.dev._state
             elif op.num_wires == 2:
                 expected_out = self.dev._state.conj() @ O @ self.dev._state
+            else:
+                raise NotImplementedError("Test for operations with num_wires="+op.num_wires+" not implemented.")
 
             res = self.dev.ev(O, wires=[0])
 

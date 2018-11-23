@@ -38,7 +38,7 @@ quantum operations supported by PennyLane, as well as their conventions.
     Homodyne
     PolyXP
     NumberState
-    Identity
+    Trace
 
 :html:`<h3>Code details</h3>`
 """
@@ -263,8 +263,8 @@ class NumberState(CVExpectation):
     grad_method = None
     ev_order = None
 
-class Identity(CVExpectation):
-    r"""pennylane.expval.Identity(wires)
+class Trace(CVExpectation):
+    r"""pennylane.expval.Trace(wires)
     Expectation value of the identity observable :math:`\I`.
 
     The expectation of this observable
@@ -292,6 +292,6 @@ class Identity(CVExpectation):
     ev_order = None
 
 
-all_ops = [Homodyne, MeanPhoton, P, X, PolyXP, NumberState, Identity]
+all_ops = [Homodyne, MeanPhoton, P, X, PolyXP, NumberState, Trace]
 
 __all__ = [cls.__name__ for cls in all_ops]
