@@ -57,19 +57,10 @@ Summary
 Code details
 ^^^^^^^^^^^^
 """
-import abc
-import numbers
 import logging as log
-
-import autograd.numpy as np
-
-from .qnode import QNode, QuantumFunctionError
-from .utils import _flatten, _unflatten
-from .variable import Variable
+import pennylane as qml
 
 log.getLogger()
-
-from pennylane.ops import *
 
 def VariationalClassifyer(weights, periodic=True, wires=None):
     """A variational quantum classifier.
@@ -98,8 +89,8 @@ def _variational_classifyer_layer(weights, periodic=True, wires=None):
         wires:
     """
     for i, wire in enumerate(wires):
-        Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
+        qml.ops.Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
     num_wires = len(wires);
     for i in range(num_wires) if periodic else range(num_wires-1):
-        CNOT(wires=[wires[i], wires[(i+1) % num_wires]])
+        qml.ops.CNOT(wires=[wires[i], wires[(i+1) % num_wires]])
