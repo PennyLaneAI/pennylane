@@ -292,11 +292,11 @@ class DefaultQubit(Device):
                 raise ValueError('State vector must be of length 2**wires.')
             return
         elif operation == 'BasisState':
-            # get computational basis state number
-            if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
-                raise ValueError("BasisState parameter must be an array of 0/1 integers.")
-
             n = len(par[0])
+            # get computational basis state number
+            if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}) or n != len(wires):
+                raise ValueError("BasisState parameter must be an array of len(wires) many 0/1 integers.")
+
             num = int(np.sum(np.array(par[0])*2**np.arange(n-1, -1, -1)))
 
             self._state = np.zeros_like(self._state)

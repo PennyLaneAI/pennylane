@@ -43,8 +43,9 @@ following way:
         qml.model.VariationalClassifyer(weights, True, wires=range(num_wires))
         return qml.expval.PauliZ(0)
 
+    np.random.seed(0)
     weights=np.random.randn(num_layers, num_wires, 3)
-    print(circuit(weights, x=np.array([0,1,0,1])))
+    print(circuit(weights, x=np.array(np.random.randint(0,1,num_wires))))
 
 
 Summary
@@ -98,9 +99,7 @@ def _variational_classifyer_layer(weights, periodic=True, wires=None):
     """
     for i, wire in enumerate(wires):
         Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
-        print("Rot(..., wires="+str(wire)+")")
 
     num_wires = len(wires);
     for i in range(num_wires) if periodic else range(num_wires-1):
         CNOT(wires=[wires[i], wires[(i+1) % num_wires]])
-        print("CNOT(wires="+str([wires[i], wires[(i+1) % num_wires]])+")")
