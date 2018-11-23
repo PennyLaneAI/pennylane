@@ -91,6 +91,6 @@ def _variational_classifyer_layer(weights, periodic=True, wires=None):
     for i, wire in enumerate(wires):
         qml.ops.Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
-    num_wires = len(wires);
+    num_wires = len(wires)
     for i in range(num_wires) if periodic else range(num_wires-1):
         qml.ops.CNOT(wires=[wires[i], wires[(i+1) % num_wires]])
