@@ -53,7 +53,7 @@ class TestExpval(BaseTest):
         def circuit():
             return qml.expval.Identity(wires=0)
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'Unable to guess whether this device supports CV or qubit operations'):
+        with self.assertRaisesRegex(QuantumFunctionError, 'Unable to determine whether this device supports CV or qubit operations'):
             circuit()
 
 
