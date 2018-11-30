@@ -143,9 +143,10 @@ class Identity(Expectation):
     The expectation of this observable
 
     .. math::
-        E[\I] = \text{Tr}(\I \rho) = 1
+        E[\I] = \text{Tr}(\I \rho)
 
-    corresponds to the trace of the quantum state.
+    corresponds to the trace of the quantum state, which in exact
+    simulators should always be equal to 1.
 
     .. note::
 
@@ -155,9 +156,9 @@ class Identity(Expectation):
     num_wires = 0
     num_params = 0
     par_domain = 'A'
-    grad_method = 'F'
+    grad_method = None
 
 
-all_ops = [PauliX, PauliY, PauliZ, Hermitian, Identity]
+all_ops = [PauliX, PauliY, PauliZ, Hermitian]
 
 __all__ = [cls.__name__ for cls in all_ops]

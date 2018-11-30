@@ -50,5 +50,40 @@ as the conventions chosen for their implementation.
     expval/cv
 """
 
-from .qubit import *
-from .cv import *
+#from pennylane.operation import Expectation
+from pennylane.qnode import QNode, QuantumFunctionError
+
+from .qubit import * #pylint: disable=unused-import
+from .cv import * #pylint: disable=unused-import
+
+#class Identity(Expectation):
+class Identity(object):
+    r"""pennylane.expval.Identity(wires)
+    Expectation value of the identity observable :math:`\I`.
+
+    The expectation of this observable
+
+    .. math::
+        E[\I] = \text{Tr}(\I \rho)
+
+    corresponds to the trace of the quantum state, which in exact
+    simulators should always be equal to 1.
+
+    This is a placeholder for the Identity classes in expval.qubit and expval.cv and instantiates the Identity appropriate for the respective device.
+    """
+    def __new__(cls, *args, **kwargs):
+        if QNode._current_context is None:
+            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
+
+        supported_expectations = QNode._current_context.device.expectations
+        if supported_expectations.intersection([cls for cls in cv.__all__]):
+            return cv.Identity(*args, **kwargs)
+        elif supported_expectations.intersection([cls for cls in qubit.__all__]):
+            return qubit.Identity(*args, **kwargs)
+        else:
+            raise QuantumFunctionError("Unable to guess whether this device supports CV or qubit operations when constructing an Identity expectation.")
+
+    num_wires = 0
+    num_params = 0
+    par_domain = 'A'
+    grad_method = None
