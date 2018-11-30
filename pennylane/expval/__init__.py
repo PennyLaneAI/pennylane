@@ -58,7 +58,14 @@ from .cv import * #pylint: disable=unused-wildcard-import,wildcard-import
 from .cv import __all__ as _cv__all__
 from .qubit import __all__ as _qubit__all__
 
-class PlaceholderOperation:
+class PlaceholderExpectation():
+    r"""pennylane.expval.PlaceholderExpectation()
+    A generic base class for constructing placeholders for operations that
+    exist under the same name in CV and qubit based devices.
+
+    When instantiated inside a QNode context, returns an instance
+    of the respective class in expval.cv or expval.qubit.
+    """
     def __new__(cls, *args, **kwargs):
         if QNode._current_context is None:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
@@ -69,14 +76,14 @@ class PlaceholderOperation:
         elif supported_expectations.intersection([cls for cls in _qubit__all__]):
             return getattr(qubit, cls.__name__)(*args, **kwargs)
         else:
-            raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit operations when constructing this "+cls.__name__+" expectation.")
+            raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit Operations when constructing this "+cls.__name__+" Expectation.")
 
     num_wires = 0
     num_params = 0
     par_domain = 'A'
     grad_method = None
 
-class Identity(PlaceholderOperation): #pylint: disable=too-few-public-methods,function-redefined
+class Identity(PlaceholderExpectation): #pylint: disable=too-few-public-methods,function-redefined
     r"""pennylane.expval.Identity(wires)
     Expectation value of the identity observable :math:`\I`.
 
