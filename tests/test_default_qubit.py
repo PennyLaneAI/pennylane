@@ -201,7 +201,7 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that default qubit device supports all PennyLane discrete expectations."""
         self.logTestName()
 
-        self.assertEqual(set(qml.expval.qubit.__all__), set(self.dev._expectation_map))
+        self.assertEqual(set(qml.expval.qubit.__all__)|{'Identity'}, set(self.dev._expectation_map))
 
     def test_expand_one(self):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
@@ -486,7 +486,7 @@ class TestDefaultQubitIntegration(BaseTest):
         dev = qml.device('default.qubit', wires=2)
 
         obs = set(dev._expectation_map.keys())
-        all_obs = {m[0] for m in inspect.getmembers(qml.expval, inspect.isclass)}
+        all_obs = set(qml.expval.__all__)
 
         for g in all_obs - obs:
             op = getattr(qml.expval, g)
@@ -522,6 +522,21 @@ class TestDefaultQubitIntegration(BaseTest):
         # <0|RX(p)^\dagger.PauliY.RX(p)|0> = -sin(p)
         expected = -np.sin(p)
         self.assertAlmostEqual(circuit(p), expected, delta=self.tol)
+
+    def test_qubit_identity(self):
+        """Test that the default qubit plugin provides correct result for the Identiy expectation"""
+        self.logTestName()
+        dev = qml.device('default.qubit', wires=1)
+
+        p = 0.543
+
+        @qml.qnode(dev)
+        def circuit(x):
+            """Test quantum function"""
+            qml.RX(x, wires=0)
+            return qml.expval.Identity(0)
+
+        self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
     def test_nonzero_shots(self):
         """Test that the default qubit plugin provides correct result for high shot number"""
