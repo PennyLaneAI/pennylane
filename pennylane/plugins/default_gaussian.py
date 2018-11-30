@@ -714,7 +714,7 @@ class DefaultGaussian(Device):
         'Homodyne': homodyne(None),
         'PolyXP': poly_quad_expectations,
         'NumberState': fock_expectation,
-        'Trace': identity
+        'Identity': identity
     }
 
     _circuits = {}

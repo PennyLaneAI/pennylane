@@ -228,16 +228,12 @@ def hermitian(*args):
 
     return A
 
-def identity(*args):
+def identity(*par):
     """Identity matrix for expectations.
 
-    Args:
-        args (array): ???
-
     Returns:
-        array: square hermitian matrix
+        array: 2x2 identity matrix
     """
-    print("args"+str(args))
     return np.identity(2)
 
 #========================================================

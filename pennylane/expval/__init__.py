@@ -50,11 +50,13 @@ as the conventions chosen for their implementation.
     expval/cv
 """
 
-#from pennylane.operation import Expectation
 from pennylane.qnode import QNode, QuantumFunctionError
 
 from .qubit import * #pylint: disable=unused-import
 from .cv import * #pylint: disable=unused-import
+
+from .cv import __all__ as __cv_all__
+from .qubit import __all__ as __qubit_all__
 
 #class Identity(Expectation):
 class Identity(object):
@@ -87,3 +89,5 @@ class Identity(object):
     num_params = 0
     par_domain = 'A'
     grad_method = None
+
+__all__ = __cv_all__ + __qubit_all__ + ['Identity']
