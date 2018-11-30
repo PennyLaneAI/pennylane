@@ -263,6 +263,12 @@ class NumberState(CVExpectation):
     grad_method = None
     ev_order = None
 
+# As both the qubit and the CV case need an Identity Expectation,
+# and these need to reside in the same name space but have to have
+# different types, this Identity class is not imported into expval
+# directly (it is not put in __all__ below) and instead expval
+# contains a placeholder class Identity that returns appropriate
+# Identity instances via __new__() suitable for the respective device.
 class Identity(CVExpectation):
     r"""pennylane.expval.Identity(wires)
     Expectation value of the identity observable :math:`\I`.
