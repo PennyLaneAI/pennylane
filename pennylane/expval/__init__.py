@@ -58,7 +58,7 @@ from .cv import * #pylint: disable=unused-wildcard-import,wildcard-import
 from .cv import __all__ as _cv__all__
 from .qubit import __all__ as _qubit__all__
 
-class Identity(object): #pylint: disable=too-few-public-methods,function-redefined
+class Identity: #pylint: disable=too-few-public-methods,function-redefined
     r"""pennylane.expval.Identity(wires)
     Expectation value of the identity observable :math:`\I`.
 
