@@ -63,7 +63,7 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 ..
 
 - *Large plugin ecosystem*.
-  Install plugins to run your computational circuits on more devices, including **Strawberry Fields** and **ProjectQ**
+  Install plugins to run your computational circuits on more devices, including **Strawberry Fields**, **ProjectQ**, and **IBM Q**
 
 :html:`<h4>Available plugins</h4>`
 
@@ -73,6 +73,10 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 
 * `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`__: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
 
+..
+
+* `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`__: Supports integration with `Qiskit Terra <https://qiskit.org/terra>`__, an open-source quantum computation framework by IBM. Provides device support for the Qiskit Aer quantum simulators, and IBM QX hardware devices.
+
 
 :html:`<h2>Getting started</h2>`
 
@@ -80,7 +84,7 @@ To get PennyLane installed and running on your system, begin at the :ref:`downlo
 
 For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to explore :ref:`hybrid quantum optimization <plugins_hybrid>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
 
-Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid models — these include Strawberry Fields, provided by the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin, and the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ plugin.
+Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid models — these include Strawberry Fields, provided by the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin, and the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins.
 
 Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided. Look there for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
 
