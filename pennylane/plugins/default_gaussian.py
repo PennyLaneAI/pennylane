@@ -805,8 +805,8 @@ class DefaultGaussian(Device):
     def expval(self, expectation, wires, par):
         mu, cov = self.reduced_state(wires)
 
-        if expectation == 'PolyXP':
-            mu, cov = self._state
+        # if expectation == 'PolyXP':
+        #     mu, cov = self._state
 
         ev, var = self._expectation_map[expectation](mu, cov, wires, par, hbar=self.hbar)
 

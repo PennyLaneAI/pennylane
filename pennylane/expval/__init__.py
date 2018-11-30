@@ -58,10 +58,11 @@ from .cv import * #pylint: disable=unused-wildcard-import,wildcard-import
 from .cv import __all__ as _cv__all__
 from .qubit import __all__ as _qubit__all__
 
+
 class PlaceholderExpectation():
     r"""pennylane.expval.PlaceholderExpectation()
     A generic base class for constructing placeholders for operations that
-    exist under the same name in CV and qubit based devices.
+    exist under the same name in CV and qubit-based devices.
 
     When instantiated inside a QNode context, returns an instance
     of the respective class in expval.cv or expval.qubit.
@@ -76,12 +77,9 @@ class PlaceholderExpectation():
         elif supported_expectations.intersection([cls for cls in _qubit__all__]):
             return getattr(qubit, cls.__name__)(*args, **kwargs)
         else:
-            raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit Operations when constructing this "+cls.__name__+" Expectation.")
+            raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit "
+                                       "Operations when constructing this "+cls.__name__+" Expectation.")
 
-    num_wires = 0
-    num_params = 0
-    par_domain = 'A'
-    grad_method = None
 
 class Identity(PlaceholderExpectation): #pylint: disable=too-few-public-methods,function-redefined
     r"""pennylane.expval.Identity(wires)
@@ -98,6 +96,9 @@ class Identity(PlaceholderExpectation): #pylint: disable=too-few-public-methods,
     This is a placeholder for the Identity classes in expval.qubit and expval.cv
     and instantiates the Identity appropriate for the respective device.
     """
-    pass
+    num_wires = 0
+    num_params = 0
+    par_domain = 'A'
+
 
 __all__ = _cv__all__ + _qubit__all__ + [Identity.__name__]
