@@ -40,7 +40,7 @@ class TestModel(BaseTest):
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
                     qml.BasisState(x, wires=range(num_wires))
-                    qml.model.VariationalClassifyer(weights, True, wires=range(num_wires))
+                    qml.model.CircuitCentricClassifier(weights, True, wires=range(num_wires))
                     return qml.expval.PauliZ(0)
 
                 np.random.seed(0)

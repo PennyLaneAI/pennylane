@@ -20,9 +20,9 @@ Models
 
 .. currentmodule:: pennylane.model
 
-This module provides functions representing  circuits of common quantum
-machine learning architectures to make it easy to use them as building blocks
-for quantum machine learning models.
+This module provides a growing library of functions representing
+common circuit architectures that can be used to easily build more complex
+quantum machine learning models.
 
 For example, you can define and call a circuit-centric quantum classifier
 :cite:`schuld2018circuit` on an arbitrary number of wires and with an
@@ -102,3 +102,31 @@ def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=
     num_wires = len(wires)
     for i in range(num_wires) if periodic else range(num_wires-1):
         imprimitive_gate(wires=[wires[i], wires[(i+r) % num_wires]])
+
+def CVNeuralNet(weights, wires=None):
+    """A CV Quantum Neural Network
+
+    Implemented the CV Quantum Neural Network architecture from
+    :cite:`killoran2018continuous` for an arbitrary number of wires
+    and layers.
+
+    Args:
+         weights (array[float]): Array of weights for each layer of the CV
+                                 neural network
+        wires (Sequence[int]): Wires the model acts on
+    """
+    for layer_weights in weights:
+        CVNeuralNetLayer(layer_weights, wires=wires)
+
+def CVNeuralNetLayer(weights, wires=None):
+    PhaselessLinearInterferometer(weights[0], wires)
+    for wire in wires:
+        qml.Squeezing(weights[1], 0., wires=wire)
+    PhaselessLinearInterferometer(weights[2], wires)
+    for wire in wires:
+        qml.Displacement(weights[3], 0., wires=wire)
+    for wire in wires:
+        qml.Kerr(weights[4], wires=wire)
+
+def PhaselessLinearInterferometer(weights, wires=None):
+    raise NotImplementedError("PhaselessLinearInterferometer not yet implemented")
