@@ -663,7 +663,7 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
     var = ex - ex**2
     return ex, var
 
-def identity():
+def identity(mu, cov, wires, params, hbar=2.):
     """Returns 1
     """
     return 1, 0
@@ -803,9 +803,6 @@ class DefaultGaussian(Device):
         return S2
 
     def expval(self, expectation, wires, par):
-        if expectation == 'Identity':
-            return 1
-
         mu, cov = self.reduced_state(wires)
 
         if expectation == 'PolyXP':
