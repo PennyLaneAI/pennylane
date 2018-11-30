@@ -24,9 +24,9 @@ This module provides functions representing  circuits of common quantum
 machine learning architectures to make it easy to use them as building blocks
 for quantum machine learning models.
 
-For example, you can define and call a variational quantum classifier on an
-arbitrary number of wires and with an arbitrary number of layers in the
-following way:
+For example, you can define and call a circuit-centric quantum classifier
+:cite:`schuld2018circuit`on an arbitrary number of wires and with an arbitrary
+number of blocks in the following way:
 
 .. code-block:: python
 
@@ -34,17 +34,17 @@ following way:
     from pennylane import numpy as np
 
     num_wires=4
-    num_layers=3
+    num_blocks=3
     dev = qml.device('default.qubit', wires=num_wires)
 
     @qml.qnode(dev)
     def circuit(weights, x=None):
         qml.BasisState(x, wires=range(num_wires))
-        qml.model.VariationalClassifyer(weights, True, wires=range(num_wires))
+        qml.model.CircuitCentricClassifier(weights, periodic=True, wires=range(num_wires))
         return qml.expval.PauliZ(0)
 
     np.random.seed(0)
-    weights=np.random.randn(num_layers, num_wires, 3)
+    weights=np.random.randn(num_blocks, num_wires, 3)
     print(circuit(weights, x=np.array(np.random.randint(0,1,num_wires))))
 
 
@@ -62,35 +62,40 @@ import pennylane as qml
 
 log.getLogger()
 
-def VariationalClassifyer(weights, periodic=True, wires=None):
-    """A variational quantum classifier.
+def CircuitCentricClassifier(weights, periodic=True, ranges=None, wires=None):
+    """A circuit-centric classifier circuit.
 
-    Constructs the circuit of a variational quantum classifier with len(weights)
-    layers on the given wires with the provided weights. Each element of
-    weights must be a an array of size len(wires)*3.
+    Constructs a circuit-centric quantum classifier :cite:`schuld2018circuit`
+    with len(weights) blocks on the given wires with the provided weights.
+    Each element of weights must be a an array of size len(wires)*3.
 
     Args:
-        weights (array[float]): layers*len(wires)*3 array of weights
-        periodic (bool): whether to construct a periodic classifier circuit,
-                         i.e., whether to apply a CNOT operation also between the
-                         last and the first wire.
-        wires (Sequence[int]): the wires the operation acts on
+        weights (array[float]): number of blocks*len(wires)*3 array of weights
+        periodic (bool): whether to use periodic boundary conditions when
+                         applying controlled gates
+        ranges (Sequence[int]): the ranges of the controlled gates in the
+                                respective blocks
+        wires (Sequence[int]): the wires the model acts on
     """
-    for layer_weights in weights:
-        _variational_classifyer_layer(layer_weights, periodic, wires)
+    if ranges is None:
+        ranges = [1]*len(weights)
+    for block_weights, block_range in zip(weights, ranges):
+        CircuitCentricClassifierBlock(block_weights, block_range, periodic, wires)
 
 
-def _variational_classifyer_layer(weights, periodic=True, wires=None):
-    """A single layer of a variational quantum classifier.
+def CircuitCentricClassifierBlock(weights, periodic=True, r=1, wires=None):
+    """A block of a circuit-centric classifier circuit.
 
     Args:
-        weights:
-        periodic:
-        wires:
+        weights (array[float]): len(wires)*3 array of weights
+        periodic (bool): whether to use periodic boundary conditions when
+                         applying controlled gates
+        r (Sequence[int]): the ranges of the controlled gates of this block
+        wires (Sequence[int]): the wires the model acts on
     """
     for i, wire in enumerate(wires):
         qml.ops.Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
     num_wires = len(wires)
     for i in range(num_wires) if periodic else range(num_wires-1):
-        qml.ops.CNOT(wires=[wires[i], wires[(i+1) % num_wires]])
+        qml.ops.CNOT(wires=[wires[i], wires[(i+r) % num_wires]])
