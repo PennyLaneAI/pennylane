@@ -664,8 +664,20 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
     return ex, var
 
 def identity(mu, cov, wires, params, hbar=2.):
-    """Returns 1
+    r"""Returns 1.
+
+    Args:
+        mu (array): vector of means
+        cov (array): covariance matrix
+        wires (Sequence[int]): wires to calculate the expectation for
+        params (Sequence[int]): None.
+        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
+            relation :math:`[\x,\p]=i\hbar`
+
+    Returns:
+        tuple: the Fock state expectation and variance
     """
+    # pylint: disable=unused-argument
     return 1, 0
 
 
@@ -804,10 +816,6 @@ class DefaultGaussian(Device):
 
     def expval(self, expectation, wires, par):
         mu, cov = self.reduced_state(wires)
-
-        # if expectation == 'PolyXP':
-        #     mu, cov = self._state
-
         ev, var = self._expectation_map[expectation](mu, cov, wires, par, hbar=self.hbar)
 
         if self.shots != 0:

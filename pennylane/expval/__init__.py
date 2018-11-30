@@ -52,6 +52,9 @@ as the conventions chosen for their implementation.
 
 from pennylane.qnode import QNode, QuantumFunctionError
 
+from . import cv
+from . import qubit
+
 from .qubit import * #pylint: disable=unused-wildcard-import,wildcard-import
 from .cv import * #pylint: disable=unused-wildcard-import,wildcard-import
 
@@ -67,11 +70,17 @@ class PlaceholderExpectation():
     When instantiated inside a QNode context, returns an instance
     of the respective class in expval.cv or expval.qubit.
     """
+    # pylint: disable=too-few-public-methods
     def __new__(cls, *args, **kwargs):
+        # pylint: disable=protected-access
         if QNode._current_context is None:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         supported_expectations = QNode._current_context.device.expectations
+
+        # TODO: in the next breaking release, make it mandatory for plugins to declare
+        # whether they target qubit or CV operations, to avoid needing to
+        # inspect supported_expectation directly.
         if supported_expectations.intersection([cls for cls in _cv__all__]):
             return getattr(cv, cls.__name__)(*args, **kwargs)
         elif supported_expectations.intersection([cls for cls in _qubit__all__]):
