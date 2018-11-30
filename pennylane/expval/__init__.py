@@ -52,14 +52,13 @@ as the conventions chosen for their implementation.
 
 from pennylane.qnode import QNode, QuantumFunctionError
 
-from .qubit import * #pylint: disable=unused-import
-from .cv import * #pylint: disable=unused-import
+from .qubit import * #pylint: disable=unused-wildcard-import,wildcard-import
+from .cv import * #pylint: disable=unused-wildcard-import,wildcard-import
 
-from .cv import __all__ as __cv_all__
-from .qubit import __all__ as __qubit_all__
+from .cv import __all__ as _cv__all__
+from .qubit import __all__ as _qubit__all__
 
-#class Identity(Expectation):
-class Identity(object):
+class Identity(object): #pylint: disable=too-few-public-methods,function-redefined
     r"""pennylane.expval.Identity(wires)
     Expectation value of the identity observable :math:`\I`.
 
@@ -71,16 +70,17 @@ class Identity(object):
     corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
 
-    This is a placeholder for the Identity classes in expval.qubit and expval.cv and instantiates the Identity appropriate for the respective device.
+    This is a placeholder for the Identity classes in expval.qubit and expval.cv
+    and instantiates the Identity appropriate for the respective device.
     """
     def __new__(cls, *args, **kwargs):
         if QNode._current_context is None:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         supported_expectations = QNode._current_context.device.expectations
-        if supported_expectations.intersection([cls for cls in cv.__all__]):
+        if supported_expectations.intersection([cls for cls in _cv__all__]):
             return cv.Identity(*args, **kwargs)
-        elif supported_expectations.intersection([cls for cls in qubit.__all__]):
+        elif supported_expectations.intersection([cls for cls in _qubit__all__]):
             return qubit.Identity(*args, **kwargs)
         else:
             raise QuantumFunctionError("Unable to guess whether this device supports CV or qubit operations when constructing an Identity expectation.")
@@ -90,4 +90,4 @@ class Identity(object):
     par_domain = 'A'
     grad_method = None
 
-__all__ = __cv_all__ + __qubit_all__ + ['Identity']
+__all__ = _cv__all__ + _qubit__all__ + [Identity.__name__]
