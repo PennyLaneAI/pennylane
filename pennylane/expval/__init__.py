@@ -83,7 +83,7 @@ class Identity: #pylint: disable=too-few-public-methods,function-redefined
         elif supported_expectations.intersection([cls for cls in _qubit__all__]):
             return qubit.Identity(*args, **kwargs)
         else:
-            raise QuantumFunctionError("Unable to guess whether this device supports CV or qubit operations when constructing an Identity expectation.")
+            raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit operations when constructing an Identity expectation.")
 
     num_wires = 0
     num_params = 0
