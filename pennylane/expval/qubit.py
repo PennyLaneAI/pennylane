@@ -36,7 +36,7 @@ quantum operations supported by PennyLane, as well as their conventions.
     PauliY
     PauliZ
     Hermitian
-
+    Identity
 
 :html:`<h3>Code details</h3>`
 """
@@ -46,7 +46,7 @@ from pennylane.operation import Expectation
 
 class PauliX(Expectation):
     r"""pennylane.expval.PauliX(wires)
-    Returns the Pauli-X expectation value.
+    Expectation value of Pauli-X.
 
     This expectation command returns the value
 
@@ -70,7 +70,7 @@ class PauliX(Expectation):
 
 class PauliY(Expectation):
     r"""pennylane.expval.PauliY(wires)
-    Returns the Pauli-Y expectation value.
+    Expectation value of Pauli-Y.
 
     This expectation command returns the value
 
@@ -94,7 +94,7 @@ class PauliY(Expectation):
 
 class PauliZ(Expectation):
     r"""pennylane.expval.PauliZ(wires)
-    Returns the Pauli-Z expectation value.
+    Expectation value of Pauli-Z.
 
     This expectation command returns the value
 
@@ -118,7 +118,7 @@ class PauliZ(Expectation):
 
 class Hermitian(Expectation):
     r"""pennylane.expval.Hermitian(A, wires)
-    Returns the expectation value of an arbitrary Hermitian observable.
+    Expectation value of an arbitrary Hermitian observable.
 
     For a Hermitian matrix :math:`A`, this expectation command returns the value
 
@@ -135,6 +135,34 @@ class Hermitian(Expectation):
     num_params = 1
     par_domain = 'A'
     grad_method = 'F'
+
+# As both the qubit and the CV case need an Identity Expectation,
+# and these need to reside in the same name space but have to have
+# different types, this Identity class is not imported into expval
+# directly (it is not put in __all__ below) and instead expval
+# contains a placeholder class Identity that returns appropriate
+# Identity instances via __new__() suitable for the respective device.
+class Identity(Expectation):
+    r"""pennylane.expval.Identity(wires)
+    Expectation value of the identity observable :math:`\I`.
+
+    The expectation of this observable
+
+    .. math::
+        E[\I] = \text{Tr}(\I \rho)
+
+    corresponds to the trace of the quantum state, which in exact
+    simulators should always be equal to 1.
+
+    .. note::
+
+        Can be used to check normalization in approximate simulators.
+
+    """
+    num_wires = 0
+    num_params = 0
+    par_domain = 'A'
+    grad_method = None
 
 
 all_ops = [PauliX, PauliY, PauliZ, Hermitian]
