@@ -58,7 +58,25 @@ from .cv import * #pylint: disable=unused-wildcard-import,wildcard-import
 from .cv import __all__ as _cv__all__
 from .qubit import __all__ as _qubit__all__
 
-class Identity: #pylint: disable=too-few-public-methods,function-redefined
+class PlaceholderOperation:
+    def __new__(cls, *args, **kwargs):
+        if QNode._current_context is None:
+            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
+
+        supported_expectations = QNode._current_context.device.expectations
+        if supported_expectations.intersection([cls for cls in _cv__all__]):
+            return getattr(cv, cls.__name__)(*args, **kwargs)
+        elif supported_expectations.intersection([cls for cls in _qubit__all__]):
+            return getattr(qubit, cls.__name__)(*args, **kwargs)
+        else:
+            raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit operations when constructing this "+cls.__name__+" expectation.")
+
+    num_wires = 0
+    num_params = 0
+    par_domain = 'A'
+    grad_method = None
+
+class Identity(PlaceholderOperation): #pylint: disable=too-few-public-methods,function-redefined
     r"""pennylane.expval.Identity(wires)
     Expectation value of the identity observable :math:`\I`.
 
@@ -73,21 +91,6 @@ class Identity: #pylint: disable=too-few-public-methods,function-redefined
     This is a placeholder for the Identity classes in expval.qubit and expval.cv
     and instantiates the Identity appropriate for the respective device.
     """
-    def __new__(cls, *args, **kwargs):
-        if QNode._current_context is None:
-            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
-
-        supported_expectations = QNode._current_context.device.expectations
-        if supported_expectations.intersection([cls for cls in _cv__all__]):
-            return cv.Identity(*args, **kwargs)
-        elif supported_expectations.intersection([cls for cls in _qubit__all__]):
-            return qubit.Identity(*args, **kwargs)
-        else:
-            raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit operations when constructing an Identity expectation.")
-
-    num_wires = 0
-    num_params = 0
-    par_domain = 'A'
-    grad_method = None
+    pass
 
 __all__ = _cv__all__ + _qubit__all__ + [Identity.__name__]
