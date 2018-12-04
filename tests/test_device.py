@@ -137,7 +137,7 @@ class DeviceTest(BaseTest):
                         expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
 
             exps = dev.expectations
-            all_exps = {m[0] for m in inspect.getmembers(qml.expval, inspect.isclass)}
+            all_exps = set(qml.expval.__all__)
 
             for g in all_exps-exps:
                 op = qml.expval.__getattribute__(g)
