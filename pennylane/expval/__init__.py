@@ -107,7 +107,7 @@ class Identity(PlaceholderExpectation): #pylint: disable=too-few-public-methods,
     """
     num_wires = 0
     num_params = 0
-    par_domain = 'A'
+    par_domain = None
 
 
 __all__ = _cv__all__ + _qubit__all__ + [Identity.__name__]

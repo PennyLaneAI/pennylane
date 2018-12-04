@@ -294,7 +294,7 @@ class Identity(CVExpectation):
     """
     num_wires = 0
     num_params = 0
-    par_domain = 'A'
+    par_domain = None
 
     grad_method = None
     ev_order = None
