@@ -161,7 +161,7 @@ class Identity(Expectation):
     """
     num_wires = 0
     num_params = 0
-    par_domain = 'A'
+    par_domain = None
     grad_method = None
 
 
