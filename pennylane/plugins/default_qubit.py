@@ -228,6 +228,14 @@ def hermitian(*args):
 
     return A
 
+def identity(*par):
+    """Identity matrix for expectations.
+
+    Returns:
+        array: 2x2 identity matrix
+    """
+    return np.identity(2)
+
 #========================================================
 #  device
 #========================================================
@@ -272,7 +280,8 @@ class DefaultQubit(Device):
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
-        'Hermitian': hermitian
+        'Hermitian': hermitian,
+        'Identity': identity
     }
 
     def __init__(self, wires, *, shots=0):

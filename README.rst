@@ -59,7 +59,7 @@ Features
 
 - **Device independent**. The same quantum circuit model can be **run on different backends**
 
-- **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
+- **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including Strawberry Fields, ProjectQ, and Qiskit
 
 
 Available plugins
@@ -69,6 +69,10 @@ Available plugins
 
 
 * `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
+
+
+* `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_: Supports integration with `Qiskit Terra <https://qiskit.org/terra>`__, an open-source quantum computation framework by IBM. Provides device support for the Qiskit Aer quantum simulators, and IBM QX hardware devices.
+
 
 Installation
 ============
