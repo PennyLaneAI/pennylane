@@ -8,6 +8,13 @@ community - while we will continue working on adding new and exciting features t
 we invite you to join us and suggest improvements, research ideas, or even just to discuss how
 PennyLane fits into your workflow.
 
+**Update**: big announcement! We're excited to launch the Xanadu Quantum Software Competition, with prizes of up
+to $1000 on offer. Submissions close 30th August 2019 — so no excuse not to submit your PennyLane
+contribution, whether its an informative Jupyter notebook, PennyLane plugin, or a cool research result.
+
+See the [competition website](https://pennylane.ai/competition) or our
+[blog post](https://medium.com/xanaduai/announcing-the-xanadu-quantum-software-competition-bdcd3d6d53a9) for more.
+
 ## How can I get involved in the community?
 
 If you want to contribute but don't know where to start, start by checking out our
