@@ -97,7 +97,7 @@ Y = data[:, 1]
 # initialize weights
 np.random.seed(0)
 num_layers = 4
-var_init = 0.05 * np.random.randn(num_layers, 7)
+var_init = 0.05 * np.random.randn(num_layers, 5)
 
 # create optimizer
 opt = AdamOptimizer(0.01, beta1=0.9, beta2=0.999)
