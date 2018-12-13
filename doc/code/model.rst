@@ -1,3 +1,3 @@
-.. automodule:: pennylane.models
+.. automodule:: pennylane.model
    :members:
    :inherited-members:

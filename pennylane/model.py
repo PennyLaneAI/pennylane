@@ -13,8 +13,8 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-Models
-======
+QML Models
+==========
 
 **Module name:** :mod:`pennylane.model`
 
@@ -51,7 +51,11 @@ Summary
 ^^^^^^^
 
 .. autosummary::
-  variational_quantum_classifyer
+  CircuitCentricClassifier
+  CircuitCentricClassifierBlock
+  CVNeuralNet
+  CVNeuralNetLayer
+  Interferometer
 
 Code details
 ^^^^^^^^^^^^
@@ -65,7 +69,8 @@ from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Rotation, Be
 log.getLogger()
 
 def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
-    """A circuit-centric classifier circuit.
+    """pennylane.model.CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires)
+    A circuit-centric classifier circuit.
 
     Constructs a circuit-centric quantum classifier :cite:`schuld2018circuit`
     with len(weights) blocks on the given wires with the provided weights.
@@ -87,7 +92,8 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
 
 
 def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
-    """An individual block of a circuit-centric classifier circuit.
+    """pennylane.model.CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires)
+    An individual block of a circuit-centric classifier circuit.
 
     Args:
         weights (array[float]): len(wires)*3 array of weights
@@ -105,71 +111,112 @@ def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=
         imprimitive_gate(wires=[wires[i], wires[(i+r) % num_wires]])
 
 def CVNeuralNet(weights, wires=None):
-    """A CV Quantum Neural Network
+    """pennylane.model.CVNeuralNet(weights, wires)
+    A CV Quantum Neural Network
 
-    Implements the CV Quantum Neural Network (CVNN) architecture from
+    Implements the CV Quantum Neural Network (CVQNN) architecture from
     :cite:`killoran2018continuous` for an arbitrary number of wires
     and layers.
 
+    See :func:`CVNeuralNetLayer` for details of the expected format of
+    input parameters.
+
     Args:
-         weights (array[float]): Array of weights for each layer of the CV
+         weights (array[array]): Array of weights for each layer of the CV
                                  neural network
-        wires (Sequence[int]): Wires the CVNN should act on
+        wires (Sequence[int]): Wires the CVQNN should act on
     """
     for layer_weights in weights:
-        CVNeuralNetLayer(layer_weights, wires=wires)
+        CVNeuralNetLayer(*layer_weights, wires=wires)
 
-def CVNeuralNetLayer(weights, wires=None):
-    """A single layer of a CV Quantum Neural Network
+def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=None):
+    """pennylane.model.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires):
+    A single layer of a CV Quantum Neural Network
+
+    Implements a single layer from the the CV Quantum Neural Network (CVQNN)
+    architecture from :cite:`killoran2018continuous` for an arbitrary number
+    of wires and layers.
 
     Args:
-         weights (array[float]): Array of weights for this layer of the CV
-                                 neural network
+        theta1 (array[float]): len(wires)*(len(wires)-1)/2 array of transmittivity angles
+        phi1 (array[float]): len(wires)*(len(wires)-1)/2 array of phase angles
+        s (array[float]): len(wires) arrays of squeezing amounts for :class:`Squeezing` Operations
+        theta2 (array[float]): len(wires)*(len(wires)-1)/2 array of transmittivity angles
+        phi2 (array[float]): len(wires)*(len(wires)-1)/2 array of phase angles
+        r (array[float]): len(wires) arrays of displacement magnitudes for :class:`Displacement` Operations
+        k (array[float]): len(wires) arrays of kerr parameters for :class:`Kerr` Operations
+        tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the layer should act on
     """
-    PhaselessLinearInterferometer(weights[0], wires=wires)
-    for wire in wires:
-        Squeezing(weights[1], 0., wires=wire)
-    PhaselessLinearInterferometer(weights[2], wires=wires)
-    for wire in wires:
-        Displacement(weights[3], 0., wires=wire)
-    for wire in wires:
-        Kerr(weights[4], wires=wire)
-
-def PhaselessLinearInterferometer(weights, wires=None):
-    raise NotImplementedError("PhaselessLinearInterferometer not yet implemented")
+    Interferometer(theta=theta1, phi=phi1, wires=wires)
+    for i, wire in enumerate(wires):
+        Squeezing(s[i], 0., wires=wire)
+    Interferometer(theta=theta2, phi=phi2, wires=wires)
+    for i, wire in enumerate(wires):
+        Displacement(r[i], 0., wires=wire)
+    for i, wire in enumerate(wires):
+        Kerr(k[i], wires=wire)
 
 
-def Interferometer(U, tollerance=11, wires=None):
-    r"""Linear interferometer
+def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
+    r"""pennylane.model.Interferometer(*[theta, phi, U], [tollerance,] wires)
+    General linear interferometer
 
-    Implements a linear interferometer as sequence of beamsplitters and
-    rotation gates by means of the Clements decomposition.
+    The instance can be specified in two ways:
+
+    (i)  By providing len(wires)*(len(wires)-1)/2 many angles via theta and phi each.
+         In this case the interferometer is implemented with the scheme described in
+         :cite:`clements2016optimal` (Fig. 1a). Beam splitters are numbered per layer
+         from top to bottom and theta[i] and phi[i] are used as the parameters of the
+         ith beam splitter.
+
+    (ii) By providing a unitary matrix U. The interferometer is then implemented as
+         network of beam splitters and rotation gates determined from U by means of
+         algorithm described in :cite:`clements2016optimal`.
 
     Args:
+        theta (array): length len(wires)*(len(wires)-1)/2 array of transmittivity angles
+        phi (array): length len(wires)*(len(wires)-1)/2 array of phase angles
         U (array): A len(wires) by len(wires) complex unitary matrix
         tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained from the Clements decomposition is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the Interferometer should act on
     """
-    BS1, BS2, R = _clements(U)
 
-    for n, m, theta, phi, _ in BS1:
-        if np.round(phi, tollerance) != 0:
-            Rotation(phi, wires=[wires[n]])
-        if np.round(theta, tollerance) != 0:
-            Beamsplitter(theta, 0, wires=[wires[n], wires[m]])
+    if (theta is not None or phi is not None) and U is not None:
+        raise ValueError("You must only specify either theta and phi, or U")
+    elif theta is None and phi is None and U is None:
+        raise ValueError("You must specify either theta and phi, or U")
+    elif theta is None and phi is not None or theta is not None and phi is None:
+        raise ValueError("If you specify theta you must also specify phi and vice versa")
+    elif theta is not None and phi is not None:
+        #loop over layers
+        gate_num = 0
+        for l in range(len(wires)):
+            for n, (i, j) in enumerate(zip(wires[:-1], wires[1:])):
+                #skip even or odd pairs depending on layer
+                if (l+n)%2 == 1:
+                    continue
+                Beamsplitter(theta[gate_num], phi[gate_num], wires=[i, j])
+                gate_num += 1
 
-    for n, expphi in enumerate(R):
-        if np.round(expphi, tollerance) != 1.0:
-            q = np.log(expphi).imag
-            Rotation(q, wires=[wires[n]])
+    elif U is not None:
+        BS1, BS2, R = _clements(U)
+        for n, m, theta, phi, _ in BS1:
+            if np.round(phi, tollerance) != 0:
+                Rotation(phi, wires=[wires[n]])
+            if np.round(theta, tollerance) != 0:
+                Beamsplitter(theta, 0, wires=[wires[n], wires[m]])
 
-    for n, m, theta, phi, _ in reversed(BS2):
-        if np.round(theta, tollerance) != 0:
-            Beamsplitter(-theta, 0, wires=[wires[n], wires[m]])
-        if np.round(phi, tollerance) != 0:
-            Rotation(-phi, wires=wires[n])
+        for n, expphi in enumerate(R):
+            if np.round(expphi, tollerance) != 1.0:
+                q = np.log(expphi).imag
+                Rotation(q, wires=[wires[n]])
 
+        for n, m, theta, phi, _ in reversed(BS2):
+            if np.round(theta, tollerance) != 0:
+                Beamsplitter(-theta, 0, wires=[wires[n], wires[m]])
+            if np.round(phi, tollerance) != 0:
+                Rotation(-phi, wires=wires[n])
 
 
 def _clements(V):
