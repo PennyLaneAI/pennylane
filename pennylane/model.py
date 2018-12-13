@@ -57,9 +57,10 @@ Code details
 ^^^^^^^^^^^^
 """
 import logging as log
+import numpy as np
 import pennylane as qml
 
-from pennylane.ops import CNOT
+from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Rotation, Beamsplitter
 
 log.getLogger()
 
@@ -77,7 +78,7 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
         ranges (Sequence[int]): Ranges of the imprimitive gates in the
                                 respective blocks
         imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to CNOT
-        wires (Sequence[int]): Wires the model acts on
+        wires (Sequence[int]): Wires the model should act on
     """
     if ranges is None:
         ranges = [1]*len(weights)
@@ -85,8 +86,8 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
         CircuitCentricClassifierBlock(block_weights, r=block_range, periodic=periodic, imprimitive_gate=imprimitive_gate, wires=wires)
 
 
-def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=qml.ops.CNOT, wires=None):
-    """A block of a circuit-centric classifier circuit.
+def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
+    """An individual block of a circuit-centric classifier circuit.
 
     Args:
         weights (array[float]): len(wires)*3 array of weights
@@ -94,10 +95,10 @@ def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=
                          applying imprimitive gates
         r (Sequence[int]): Range of the imprimitive gates of this block
         imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to CNOT
-        wires (Sequence[int]): Wires the model acts on
+        wires (Sequence[int]): Wires the model should act on
     """
     for i, wire in enumerate(wires):
-        qml.ops.Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
+        Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
     num_wires = len(wires)
     for i in range(num_wires) if periodic else range(num_wires-1):
@@ -106,27 +107,145 @@ def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=
 def CVNeuralNet(weights, wires=None):
     """A CV Quantum Neural Network
 
-    Implemented the CV Quantum Neural Network architecture from
+    Implements the CV Quantum Neural Network (CVNN) architecture from
     :cite:`killoran2018continuous` for an arbitrary number of wires
     and layers.
 
     Args:
          weights (array[float]): Array of weights for each layer of the CV
                                  neural network
-        wires (Sequence[int]): Wires the model acts on
+        wires (Sequence[int]): Wires the CVNN should act on
     """
     for layer_weights in weights:
         CVNeuralNetLayer(layer_weights, wires=wires)
 
 def CVNeuralNetLayer(weights, wires=None):
-    PhaselessLinearInterferometer(weights[0], wires)
+    """A single layer of a CV Quantum Neural Network
+
+    Args:
+         weights (array[float]): Array of weights for this layer of the CV
+                                 neural network
+        wires (Sequence[int]): Wires the layer should act on
+    """
+    PhaselessLinearInterferometer(weights[0], wires=wires)
     for wire in wires:
-        qml.Squeezing(weights[1], 0., wires=wire)
-    PhaselessLinearInterferometer(weights[2], wires)
+        Squeezing(weights[1], 0., wires=wire)
+    PhaselessLinearInterferometer(weights[2], wires=wires)
     for wire in wires:
-        qml.Displacement(weights[3], 0., wires=wire)
+        Displacement(weights[3], 0., wires=wire)
     for wire in wires:
-        qml.Kerr(weights[4], wires=wire)
+        Kerr(weights[4], wires=wire)
 
 def PhaselessLinearInterferometer(weights, wires=None):
     raise NotImplementedError("PhaselessLinearInterferometer not yet implemented")
+
+
+def Interferometer(U, tollerance=11, wires=None):
+    r"""Linear interferometer
+
+    Implements a linear interferometer as sequence of beamsplitters and
+    rotation gates by means of the Clements decomposition.
+
+    Args:
+        U (array): A len(wires) by len(wires) complex unitary matrix
+        tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained from the Clements decomposition is so close to trivial that the gate is effectively an Identity and can be skipped.
+        wires (Sequence[int]): Wires the Interferometer should act on
+    """
+    BS1, BS2, R = _clements(U)
+
+    for n, m, theta, phi, _ in BS1:
+        if np.round(phi, tollerance) != 0:
+            Rotation(phi, wires=[wires[n]])
+        if np.round(theta, tollerance) != 0:
+            Beamsplitter(theta, 0, wires=[wires[n], wires[m]])
+
+    for n, expphi in enumerate(R):
+        if np.round(expphi, tollerance) != 1.0:
+            q = np.log(expphi).imag
+            Rotation(q, wires=[wires[n]])
+
+    for n, m, theta, phi, _ in reversed(BS2):
+        if np.round(theta, tollerance) != 0:
+            Beamsplitter(-theta, 0, wires=[wires[n], wires[m]])
+        if np.round(phi, tollerance) != 0:
+            Rotation(-phi, wires=wires[n])
+
+
+
+def _clements(V):
+    r"""Performs the Clements decomposition of a Unitary complex matrix.
+
+    See Clements et al. Optica 3, 1460 (2016) [10.1364/OPTICA.3.001460] for more details.
+
+    Args:
+        V (array): Unitary matrix of size n_size
+
+    Returns:
+        tuple[array]: returns a tuple of the form ``(tilist,tlist,np.diag(localV))``
+            where:
+
+            * ``tilist``: list containing ``[n,m,theta,phi,n_size]`` of the Ti unitaries needed
+            * ``tlist``: list containing ``[n,m,theta,phi,n_size]`` of the T unitaries needed
+            * ``localV``: Diagonal unitary sitting sandwhiched by Ti's and the T's
+    """
+    def T(m, n, theta, phi, nmax):
+        r"""The Clements T matrix"""
+        mat = np.identity(nmax, dtype=np.complex128)
+        mat[m, m] = np.exp(1j*phi)*np.cos(theta)
+        mat[m, n] = -np.sin(theta)
+        mat[n, m] = np.exp(1j*phi)*np.sin(theta)
+        mat[n, n] = np.cos(theta)
+        return mat
+
+    def Ti(m, n, theta, phi, nmax):
+        r"""The inverse Clements T matrix"""
+        return np.transpose(T(m, n, theta, -phi, nmax))
+
+    def nullTi(m, n, U):
+        r"""Nullifies element m,n of U using Ti"""
+        (nmax, mmax) = U.shape
+
+        if U[m, n+1] == 0:
+            thetar = np.pi/2
+            phir = 0
+        else:
+            r = U[m, n] / U[m, n+1]
+            thetar = np.arctan(np.abs(r))
+            phir = np.angle(r)
+
+        return [n, n+1, thetar, phir, nmax]
+
+    def nullT(n, m, U):
+        r"""Nullifies element n,m of U using T"""
+        (nmax, mmax) = U.shape
+
+        if U[n-1, m] == 0:
+            thetar = np.pi/2
+            phir = 0
+        else:
+            r = -U[n, m] / U[n-1, m]
+            thetar = np.arctan(np.abs(r))
+            phir = np.angle(r)
+
+        return [n-1, n, thetar, phir, nmax]
+
+
+    localV = V
+    (nsize, nsize2) = localV.shape
+
+    if nsize != nsize2:
+        raise ValueError("V must be a square unitary matrix")
+
+    tilist = []
+    tlist = []
+    for k, i in enumerate(range(nsize-2, -1, -1)):
+        if k%2 == 0:
+            for j in reversed(range(nsize-1-i)):
+                tilist.append(nullTi(i+j+1, j, localV))
+                localV = localV @ Ti(*tilist[-1])
+        else:
+            for j in range(nsize-1-i):
+                tlist.append(nullT(i+j+1, j, localV))
+                localV = T(*tlist[-1]) @ localV
+
+    return tilist, tlist, np.diag(localV)
