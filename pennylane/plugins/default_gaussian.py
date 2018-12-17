@@ -737,7 +737,7 @@ class DefaultGaussian(Device):
         self.hbar = hbar
         self.reset()
 
-    def pre_apply(self):
+    def pre_apply(self, **kwargs):
         self.reset()
 
     def apply(self, operation, wires, par):

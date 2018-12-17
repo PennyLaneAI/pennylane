@@ -196,18 +196,18 @@ class Device(abc.ABC):
         """
         self.check_validity(queue, expectation)
         with self.execution_context():
-            self.pre_apply()
+            self.pre_apply(queued=queue)
             for operation in queue:
                 self.apply(operation.name, operation.wires, operation.parameters)
             self.post_apply()
 
-            self.pre_expval()
+            self.pre_expval(queued=expectation)
             expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
             self.post_expval()
 
             return np.array(expectations)
 
-    def pre_apply(self):
+    def pre_apply(self, **kwargs):
         """Called during :meth:`execute` before the individual operations are executed."""
         pass
 
@@ -215,7 +215,7 @@ class Device(abc.ABC):
         """Called during :meth:`execute` after the individual operations have been executed."""
         pass
 
-    def pre_expval(self):
+    def pre_expval(self, **kwargs):
         """Called during :meth:`execute` before the individual expectations are executed."""
         pass
 
