@@ -35,6 +35,7 @@ quantum operations supported by PennyLane, as well as their conventions.
     PauliX
     PauliY
     PauliZ
+    Hadamard
     Hermitian
     Identity
 

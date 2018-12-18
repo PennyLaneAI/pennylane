@@ -280,6 +280,7 @@ class DefaultQubit(Device):
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
+        'Hadamard': H,
         'Hermitian': hermitian,
         'Identity': identity
     }
