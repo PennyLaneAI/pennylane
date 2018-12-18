@@ -47,6 +47,10 @@ arbitrary number of blocks in the following way:
     print(circuit(weights, x=np.array(np.random.randint(0,1,num_wires))))
 
 
+The handy :func:`Interferometer` function can be used to constructs arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation`, by means of the scheme from :cite:`clements2016optimal`, specified either via the unitary transformation on the bosonic operators or in terms of lists of beam splitter parameters.
+
+The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such models can now be easily constructed and trained with PennyLane.
+
 Summary
 ^^^^^^^
 
@@ -133,17 +137,21 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=N
     A single layer of a CV Quantum Neural Network
 
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
-    architecture from :cite:`killoran2018continuous` for an arbitrary number
+    architecture of :cite:`killoran2018continuous` for an arbitrary number
     of wires and layers.
+
+    .. note::
+
+       The CV neural network architecture includes :class:`~.Kerr` operations. Make sure to use a suitable device, such as the :code:`strawberryfields.fock` device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
         theta1 (array[float]): len(wires)*(len(wires)-1)/2 array of transmittivity angles
         phi1 (array[float]): len(wires)*(len(wires)-1)/2 array of phase angles
-        s (array[float]): len(wires) arrays of squeezing amounts for :class:`Squeezing` Operations
+        s (array[float]): len(wires) arrays of squeezing amounts for :class:`~.Squeezing` operations
         theta2 (array[float]): len(wires)*(len(wires)-1)/2 array of transmittivity angles
         phi2 (array[float]): len(wires)*(len(wires)-1)/2 array of phase angles
-        r (array[float]): len(wires) arrays of displacement magnitudes for :class:`Displacement` Operations
-        k (array[float]): len(wires) arrays of kerr parameters for :class:`Kerr` Operations
+        r (array[float]): len(wires) arrays of displacement magnitudes for :class:`~.Displacement` operations
+        k (array[float]): len(wires) arrays of kerr parameters for :class:`~.Kerr` operations
         tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the layer should act on
     """
@@ -173,12 +181,18 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
          network of beam splitters and rotation gates determined from U by means of
          algorithm described in :cite:`clements2016optimal`.
 
+    .. note::
+
+       While constructing interferometers via their defining unitary transformation is handy, for automatic differentiation, optimization, and variational learning you are strongly advised to use the parametrization in terms of beam splitter angles.
+
+
     Args:
         theta (array): length len(wires)*(len(wires)-1)/2 array of transmittivity angles
         phi (array): length len(wires)*(len(wires)-1)/2 array of phase angles
         U (array): A len(wires) by len(wires) complex unitary matrix
         tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained from the Clements decomposition is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the Interferometer should act on
+
     """
 
     if (theta is not None or phi is not None) and U is not None:
