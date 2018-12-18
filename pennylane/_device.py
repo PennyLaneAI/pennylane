@@ -118,6 +118,9 @@ class Device(abc.ABC):
         self.num_wires = wires
         self.shots = shots
 
+        self.op_queue = []
+        self.ev_queue = []
+
     def __repr__(self):
         """String representation."""
         return "{}.\nInstance: ".format(self.__module__, self.__class__.__name__, self.name)
@@ -195,19 +198,25 @@ class Device(abc.ABC):
             array[float]: expectation value(s)
         """
         self.check_validity(queue, expectation)
+        self.op_queue = queue
+        self.ev_queue = expectation
+
         with self.execution_context():
-            self.pre_apply(queued=queue)
+            self.pre_apply()
             for operation in queue:
                 self.apply(operation.name, operation.wires, operation.parameters)
             self.post_apply()
 
-            self.pre_expval(queued=expectation)
+            self.pre_expval()
             expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
             self.post_expval()
 
+            self.op_queue = []
+            self.ev_queue = []
+
             return np.array(expectations)
 
-    def pre_apply(self, **kwargs):
+    def pre_apply(self):
         """Called during :meth:`execute` before the individual operations are executed."""
         pass
 
@@ -215,7 +224,7 @@ class Device(abc.ABC):
         """Called during :meth:`execute` after the individual operations have been executed."""
         pass
 
-    def pre_expval(self, **kwargs):
+    def pre_expval(self):
         """Called during :meth:`execute` before the individual expectations are executed."""
         pass
 
