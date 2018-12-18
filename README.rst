@@ -3,7 +3,7 @@
 
 ###################################
 
-.. |CI| image:: https://img.shields.io/travis/com/XanaduAI/pennylane.svg?style=popout-square
+.. |CI| image:: https://img.shields.io/travis/com/XanaduAI/pennylane/master.svg?style=popout-square
     :alt: Travis
     :target: https://travis-ci.com/XanaduAI/pennylane/
 
