@@ -24,6 +24,7 @@ import autograd
 from autograd import numpy as np
 
 from defaults import pennylane as qml, BaseTest
+from pennylane.plugins import DefaultQubit
 
 
 class DeviceTest(BaseTest):
@@ -71,6 +72,52 @@ class DeviceTest(BaseTest):
         for dev in self.dev.values():
             caps = dev.capabilities()
             self.assertTrue(isinstance(caps, dict))
+
+    @patch.object(DefaultQubit, 'pre_expval', lambda self: log.info(self.op_queue))
+    def test_op_queue(self):
+        """Check that peaking at the operation queue works correctly"""
+        self.logTestName()
+
+        # queue some gates
+        queue = []
+        queue.append(qml.RX(0.543, wires=[0], do_queue=False))
+        queue.append(qml.CNOT(wires=[0, 1], do_queue=False))
+
+        dev = qml.device('default.qubit', wires=2)
+
+        # outside of an execution context, error will be raised
+        with self.assertRaisesRegex(ValueError, "Cannot access the operation queue outside of the execution context!"):
+            dev.op_queue
+
+        # inside of the execute method, it works
+        with self.assertLogs(level='INFO') as l:
+            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            self.assertEqual(len(l.output), 1)
+            self.assertEqual(len(l.records), 1)
+            self.assertIn('INFO:root:[<pennylane.ops.qubit.RX object', l.output[0])
+
+    @patch.object(DefaultQubit, 'pre_expval', lambda self: log.info(self.expval_queue))
+    def test_expval_queue(self):
+        """Check that peaking at the expval queue works correctly"""
+        self.logTestName()
+
+        # queue some gates
+        queue = []
+        queue.append(qml.RX(0.543, wires=[0], do_queue=False))
+        queue.append(qml.CNOT(wires=[0, 1], do_queue=False))
+
+        dev = qml.device('default.qubit', wires=2)
+
+        # outside of an execution context, error will be raised
+        with self.assertRaisesRegex(ValueError, "Cannot access the expectation value queue outside of the execution context!"):
+            dev.expval_queue
+
+        # inside of the execute method, it works
+        with self.assertLogs(level='INFO') as l:
+            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            self.assertEqual(len(l.output), 1)
+            self.assertEqual(len(l.records), 1)
+            self.assertIn('INFO:root:[<pennylane.expval.qubit.PauliX object', l.output[0])
 
     def test_execute(self):
         """check that execution works on supported operations/expectations"""
