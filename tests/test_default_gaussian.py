@@ -307,7 +307,7 @@ class TestDefaultGaussianDevice(BaseTest):
     def test_expectation_map(self):
         """Test that default Gaussian device supports all PennyLane Gaussian continuous expectations."""
         self.logTestName()
-        self.assertEqual(set(qml.expval.cv.__all__)-{'Heterodyne'},
+        self.assertEqual(set(qml.expval.cv.__all__)|{'Identity'}-{'Heterodyne'},
                          set(self.dev._expectation_map))
 
     def test_apply(self):
@@ -506,7 +506,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         dev = qml.device('default.gaussian', wires=2)
 
         obs = set(dev._expectation_map.keys())
-        all_obs = {m[0] for m in inspect.getmembers(qml.expval, inspect.isclass)}
+        all_obs = set(qml.expval.__all__)
 
         for g in all_obs - obs:
             op = getattr(qml.expval, g)
@@ -540,6 +540,21 @@ class TestDefaultGaussianIntegration(BaseTest):
             return qml.expval.X(0)
 
         self.assertAlmostEqual(circuit(p), p*np.sqrt(2*hbar), delta=self.tol)
+
+    def test_gaussian_identity(self):
+        """Test that the default gaussian plugin provides correct result for the identity expectation"""
+        self.logTestName()
+        dev = qml.device('default.gaussian', wires=1)
+
+        p = 0.543
+
+        @qml.qnode(dev)
+        def circuit(x):
+            """Test quantum function"""
+            qml.Displacement(x, 0, wires=0)
+            return qml.expval.Identity(0)
+
+        self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
     def test_nonzero_shots(self):
         """Test that the default gaussian plugin provides correct result for high shot number"""

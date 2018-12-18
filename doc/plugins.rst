@@ -47,25 +47,37 @@ Below, we maintain a list of the installable plugins available for PennyLane.
    :target: https://github.com/XanaduAI/pennylane-pq
 
 
+.. _(PennyLane-qiskit): https://github.com/carstenblank/pennylane-qiskit
+.. |qiskit| image:: _static/qiskit_logo.png
+   :width: 180px
+   :align: middle
+   :target: https://github.com/carstenblank/pennylane-qiskit
+
 
 .. rst-class:: docstable
 
-+--------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
-|       Plugin       |  Supported PennyLane Operations            |                                    Description                                      |
-+====================+============================================+=====================================================================================+
-|                    |                                            | * `Strawberry Fields <https://strawberryfields.readthedocs.io>`_ is a               |
-|                    |                                            |   Python library for simulating continuous variable quantum optical circuits.       |
-| |sf|               | * :ref:`CV operations <cv_ops>`            | * Combines Strawberry Fields' polished simulator suite                              |
-| :html:`<br/><br/>` | * :ref:`CV expectations <cv_expval>`       |   with PennyLane's automatic differentiation and optimization.                      |
-| `(PennyLane-SF)`_  |                                            | * Provides two devices to be used with PennyLane:                                   |
-|                    |                                            |   ``strawberryfields.fock`` and ``strawberryfields.gaussian``.                      |
-+--------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
-| |pq|               | * :ref:`Qubit operations <qubit_ops>`      | * `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_                      |
-| :html:`<br/><br/>` | * :ref:`Qubit expectations <qubit_expval>` |   is an open-source quantum compilation framework.                                  |
-| `(PennyLane-PQ)`_  |                                            | * Supported ProjectQ hardware backends include the IBM Quantum Experience.          |
-|                    |                                            | * Provides three devices to be used with PennyLane:                                 |
-|                    |                                            |   ``projectq.simulator``, ``projectq.ibm``, and ``projectq.classical``.             |
-+--------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
++------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
+|       Plugin           |  Supported PennyLane Operations            |                                    Description                                      |
++========================+============================================+=====================================================================================+
+|                        |                                            | * `Strawberry Fields <https://strawberryfields.readthedocs.io>`_ is a               |
+|                        |                                            |   Python library for simulating continuous variable quantum optical circuits.       |
+| |sf|                   | * :ref:`CV operations <cv_ops>`            | * Combines Strawberry Fields' polished simulator suite                              |
+| :html:`<br/><br/>`     | * :ref:`CV expectations <cv_expval>`       |   with PennyLane's automatic differentiation and optimization.                      |
+| `(PennyLane-SF)`_      |                                            | * Provides two devices to be used with PennyLane:                                   |
+|                        |                                            |   ``strawberryfields.fock`` and ``strawberryfields.gaussian``.                      |
++------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
+| |pq|                   | * :ref:`Qubit operations <qubit_ops>`      | * `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_                      |
+| :html:`<br/><br/>`     | * :ref:`Qubit expectations <qubit_expval>` |   is an open-source quantum compilation framework.                                  |
+| `(PennyLane-PQ)`_      |                                            | * Supported ProjectQ hardware backends include the IBM Quantum Experience.          |
+|                        |                                            | * Provides three devices to be used with PennyLane:                                 |
+|                        |                                            |   ``projectq.simulator``, ``projectq.ibm``, and ``projectq.classical``.             |
++------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
+| |qiskit|               | * :ref:`Qubit operations <qubit_ops>`      | * `Qiskit-Terra <https://qiskit.org/terra>`_                                        |
+| :html:`<br/><br/>`     | * :ref:`Qubit expectations <qubit_expval>` |   is an open-source quantum software framework designed by IBM.                     |
+| `(PennyLane-qiskit)`_  |                                            | * Supported hardware backends include the IBM Quantum Experience.                   |
+|                        |                                            | * Provides two devices to be used with PennyLane:                                   |
+|                        |                                            |   ``qiskit.aer`` simulator and ``qiskit.ibm`` hardware backend                      |
++------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
 
 
 For an introductory tutorial on using plugin devices in PennyLane, see :ref:`plugins_hybrid`. For more details on any of the external plugins, including the devices they provide, device-specific options, and supported quantum operations and expectation values, please

@@ -3,7 +3,7 @@
 
 ###################################
 
-.. |CI| image:: https://img.shields.io/travis/com/XanaduAI/pennylane.svg?style=popout-square
+.. |CI| image:: https://img.shields.io/travis/com/XanaduAI/pennylane/master.svg?style=popout-square
     :alt: Travis
     :target: https://travis-ci.com/XanaduAI/pennylane/
 
@@ -59,7 +59,7 @@ Features
 
 - **Device independent**. The same quantum circuit model can be **run on different backends**
 
-- **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including Strawberry Fields and ProjectQ
+- **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including Strawberry Fields, ProjectQ, and Qiskit
 
 
 Available plugins
@@ -69,6 +69,10 @@ Available plugins
 
 
 * `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
+
+
+* `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_: Supports integration with `Qiskit Terra <https://qiskit.org/terra>`__, an open-source quantum computation framework by IBM. Provides device support for the Qiskit Aer quantum simulators, and IBM QX hardware devices.
+
 
 Installation
 ============
@@ -97,6 +101,8 @@ We welcome contributions — simply fork the PennyLane repository, and then make
 `pull request <https://help.github.com/articles/about-pull-requests/>`_ containing your contribution.  All contributers to PennyLane will be listed as authors on the releases. All users who contribute significantly to the code (new plugins, new functionality, etc.) will be listed on the PennyLane arXiv paper.
 
 We also encourage bug reports, suggestions for new features and enhancements, and even links to cool projects or applications built on PennyLane.
+
+Don't forget to submit your PennyLane contribution to the `Xanadu Quantum Software Competition <https://pennylane.ai/competition>`_, with prizes of up CAD$1000 on offer.
 
 See our `contributions page <https://github.com/XanaduAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
 for more details.

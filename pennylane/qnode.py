@@ -337,7 +337,7 @@ class QNode:
         if all(temp):
             self.type = 'CV'
         elif not True in temp:
-            self.type = 'discrete'
+            self.type = 'qubit'
         else:
             raise QuantumFunctionError("Continuous and discrete operations are not "
                                        "allowed in the same quantum circuit.")
