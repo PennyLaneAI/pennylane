@@ -111,6 +111,7 @@ class Device(abc.ABC):
             expectation values of observables. For simulator devices, a value of 0 results
             in the exact expectation value being returned. Defaults to 0 if not specified.
     """
+    #pylint: disable=too-many-public-methods
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
@@ -118,8 +119,8 @@ class Device(abc.ABC):
         self.num_wires = wires
         self.shots = shots
 
-        self.op_queue = []
-        self.ev_queue = []
+        self._op_queue = None
+        self._expval_queue = None
 
     def __repr__(self):
         """String representation."""
@@ -198,8 +199,8 @@ class Device(abc.ABC):
             array[float]: expectation value(s)
         """
         self.check_validity(queue, expectation)
-        self.op_queue = queue
-        self.ev_queue = expectation
+        self._op_queue = queue
+        self._expval_queue = expectation
 
         with self.execution_context():
             self.pre_apply()
@@ -211,10 +212,40 @@ class Device(abc.ABC):
             expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
             self.post_expval()
 
-            self.op_queue = []
-            self.ev_queue = []
+            self._op_queue = None
+            self._expval_queue = None
 
             return np.array(expectations)
+
+    @property
+    def op_queue(self):
+        """The operation queue to be applied.
+
+        Note that this property can only be accessed within the execution context
+        of :meth:`~.execute`.
+
+        Returns:
+            list[~.operation.Operation]
+        """
+        if self._op_queue is None:
+            raise ValueError("Cannot access the operation queue outside of the execution context!")
+
+        return self._op_queue
+
+    @property
+    def expval_queue(self):
+        """The expectation values to be measured and returned.
+
+        Note that this property can only be accessed within the execution context
+        of :meth:`~.execute`.
+
+        Returns:
+            list[~.operation.Expectation]
+        """
+        if self._expval_queue is None:
+            raise ValueError("Cannot access the expectation value queue outside of the execution context!")
+
+        return self._expval_queue
 
     def pre_apply(self):
         """Called during :meth:`execute` before the individual operations are executed."""
