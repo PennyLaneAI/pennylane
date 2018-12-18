@@ -299,7 +299,7 @@ class QNode:
             self.output_dim = 1
             res = (res,)
         elif isinstance(res, collections.Sequence) and res and all(isinstance(x, pennylane.operation.Expectation) for x in res):
-            # for multiple expectation values, we only support tuples.
+            # for multiple expectation values, any valid Python sequence of expectation values (i.e., lists, tuples, etc) are supported in the QNode return statement.
             self.output_dim = len(res)
             self.output_type = np.asarray
             res = tuple(res)
