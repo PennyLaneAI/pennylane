@@ -62,7 +62,6 @@ Code details
 """
 import logging as log
 import numpy as np
-import pennylane as qml
 
 from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Rotation, Beamsplitter
 
@@ -129,7 +128,7 @@ def CVNeuralNet(weights, wires=None):
     for layer_weights in weights:
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
-def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=None):
+def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=None): #pylint: disable-msg=too-many-arguments
     """pennylane.model.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires):
     A single layer of a CV Quantum Neural Network
 
@@ -148,10 +147,10 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=N
         tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the layer should act on
     """
-    Interferometer(theta=theta1, phi=phi1, wires=wires)
+    Interferometer(theta=theta1, phi=phi1, tollerance=tollerance, wires=wires)
     for i, wire in enumerate(wires):
         Squeezing(s[i], 0., wires=wire)
-    Interferometer(theta=theta2, phi=phi2, wires=wires)
+    Interferometer(theta=theta2, phi=phi2, tollerance=tollerance, wires=wires)
     for i, wire in enumerate(wires):
         Displacement(r[i], 0., wires=wire)
     for i, wire in enumerate(wires):
@@ -201,9 +200,9 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
 
     elif U is not None:
         BS1, BS2, R = _clements(U)
-        for n, m, theta, phi, _ in BS1:
-            if np.round(phi, tollerance) != 0:
-                Rotation(phi, wires=[wires[n]])
+        for n, m, theta, phi1, _ in BS1:
+            if np.round(phi1, tollerance) != 0:
+                Rotation(phi1, wires=[wires[n]])
             if np.round(theta, tollerance) != 0:
                 Beamsplitter(theta, 0, wires=[wires[n], wires[m]])
 
@@ -212,11 +211,11 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
                 q = np.log(expphi).imag
                 Rotation(q, wires=[wires[n]])
 
-        for n, m, theta, phi, _ in reversed(BS2):
+        for n, m, theta, phi2, _ in reversed(BS2):
             if np.round(theta, tollerance) != 0:
                 Beamsplitter(-theta, 0, wires=[wires[n], wires[m]])
-            if np.round(phi, tollerance) != 0:
-                Rotation(-phi, wires=wires[n])
+            if np.round(phi2, tollerance) != 0:
+                Rotation(-phi2, wires=wires[n])
 
 
 def _clements(V):
@@ -250,7 +249,7 @@ def _clements(V):
 
     def nullTi(m, n, U):
         r"""Nullifies element m,n of U using Ti"""
-        (nmax, mmax) = U.shape
+        (nmax, _) = U.shape
 
         if U[m, n+1] == 0:
             thetar = np.pi/2
@@ -264,7 +263,7 @@ def _clements(V):
 
     def nullT(n, m, U):
         r"""Nullifies element n,m of U using T"""
-        (nmax, mmax) = U.shape
+        (nmax, _) = U.shape
 
         if U[n-1, m] == 0:
             thetar = np.pi/2
