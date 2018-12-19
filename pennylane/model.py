@@ -44,10 +44,10 @@ arbitrary number of blocks in the following way:
         return qml.expval.PauliZ(0)
 
     weights=np.random.randn(num_blocks, num_wires, 3)
-    print(circuit(weights, x=np.array(np.random.randint(0,1,num_wires))))
+    print(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
 
 
-The handy :func:`Interferometer` function can be used to constructs arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation`, by means of the scheme from :cite:`clements2016optimal`, specified either via the unitary transformation on the bosonic operators or in terms of lists of beam splitter parameters.
+ The handy :func:`Interferometer` function can be used to construct arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation` operations, by means of the scheme from :cite:`clements2016optimal`, specified either via the unitary transformation on the bosonic operators or in terms of lists of beamsplitter parameters.
 
 The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such models can now be easily constructed and trained with PennyLane.
 
@@ -77,8 +77,8 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
     A circuit-centric classifier circuit.
 
     Constructs a circuit-centric quantum classifier :cite:`schuld2018circuit`
-    with len(weights) blocks on the given wires with the provided weights.
-    Each element of weights must be a an array of size len(wires)*3.
+     with ``len(weights)`` blocks on the given wires with the provided weights.
+     Each element of weights must be a an array of size ``len(wires)*3``.
 
     Args:
         weights (array[float]): Number of blocks*len(wires)*3 array of weights
