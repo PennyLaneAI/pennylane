@@ -35,6 +35,7 @@ quantum operations supported by PennyLane, as well as their conventions.
     PauliX
     PauliY
     PauliZ
+    Hadamard
     Hermitian
     Identity
 
@@ -116,6 +117,30 @@ class PauliZ(Expectation):
     par_domain = None
 
 
+class Hadamard(Expectation):
+    r"""pennylane.expval.Hadamard(wires)
+    Expectation value of the Hadamard observable.
+
+    This expectation command returns the value
+
+    .. math::
+        \braket{H} = \braketT{\psi}{\cdots \otimes I\otimes H\otimes I\cdots}{\psi}
+
+    where :math:`H` acts on the requested wire.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+
+
 class Hermitian(Expectation):
     r"""pennylane.expval.Hermitian(A, wires)
     Expectation value of an arbitrary Hermitian observable.
@@ -165,6 +190,6 @@ class Identity(Expectation):
     grad_method = None
 
 
-all_ops = [PauliX, PauliY, PauliZ, Hermitian]
+all_ops = [PauliX, PauliY, PauliZ, Hadamard, Hermitian]
 
 __all__ = [cls.__name__ for cls in all_ops]
