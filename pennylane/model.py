@@ -60,6 +60,7 @@ Summary
   CVNeuralNet
   CVNeuralNetLayer
   Interferometer
+  clements
 
 Code details
 ^^^^^^^^^^^^
@@ -133,7 +134,7 @@ def CVNeuralNet(weights, wires=None):
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
 def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=None): #pylint: disable-msg=too-many-arguments
-    """pennylane.model.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires):
+    """pennylane.model.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires)
     A single layer of a CV Quantum Neural Network
 
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
@@ -166,7 +167,7 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=N
 
 
 def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
-    r"""pennylane.model.Interferometer(*[theta, phi, U], [tollerance,] wires)
+    r"""pennylane.model.Interferometer([theta, phi,| U,] tollerance=11, wires)
     General linear interferometer
 
     The instance can be specified in two ways:
@@ -213,7 +214,7 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
                 gate_num += 1
 
     elif U is not None:
-        BS1, BS2, R = _clements(U)
+        BS1, BS2, R = clements(U)
         for n, m, theta, phi1, _ in BS1:
             if np.round(phi1, tollerance) != 0:
                 Rotation(phi1, wires=[wires[n]])
@@ -232,13 +233,13 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
                 Rotation(-phi2, wires=wires[n])
 
 
-def _clements(V):
+def clements(V):
     r"""Performs the Clements decomposition of a Unitary complex matrix.
 
-    See Clements et al. Optica 3, 1460 (2016) [10.1364/OPTICA.3.001460] for more details.
+    See :cite:`clements2016optimal` for more details.
 
     Args:
-        V (array): Unitary matrix of size n_size
+        V (array): A len(wires) by len(wires) complex unitary matrix
 
     Returns:
         tuple[array]: returns a tuple of the form ``(tilist,tlist,np.diag(localV))``
