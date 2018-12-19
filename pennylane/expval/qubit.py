@@ -47,7 +47,7 @@ from pennylane.operation import Expectation
 
 class PauliX(Expectation):
     r"""pennylane.expval.PauliX(wires)
-    Expectation value of Pauli-X.
+    Expectation value of :class:`PauliX<pennylane.ops.qubit.PauliX>`.
 
     This expectation command returns the value
 
@@ -71,7 +71,7 @@ class PauliX(Expectation):
 
 class PauliY(Expectation):
     r"""pennylane.expval.PauliY(wires)
-    Expectation value of Pauli-Y.
+    Expectation value of :class:`PauliY<pennylane.ops.qubit.PauliY>`.
 
     This expectation command returns the value
 
@@ -95,7 +95,7 @@ class PauliY(Expectation):
 
 class PauliZ(Expectation):
     r"""pennylane.expval.PauliZ(wires)
-    Expectation value of Pauli-Z.
+    Expectation value of :class:`PauliZ<pennylane.ops.qubit.PauliZ>`.
 
     This expectation command returns the value
 
@@ -119,7 +119,7 @@ class PauliZ(Expectation):
 
 class Hadamard(Expectation):
     r"""pennylane.expval.Hadamard(wires)
-    Expectation value of the Hadamard observable.
+    Expectation value of the :class:`Hadamard<pennylane.ops.qubit.Hadamard>` observable.
 
     This expectation command returns the value
 
