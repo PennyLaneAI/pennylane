@@ -47,7 +47,7 @@ arbitrary number of blocks in the following way:
     print(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
 
 
- The handy :func:`Interferometer` function can be used to construct arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation` operations, by means of the scheme from :cite:`clements2016optimal`, specified either via the unitary transformation on the bosonic operators or in terms of lists of beamsplitter parameters.
+The handy :func:`Interferometer` function can be used to construct arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation` operations, by means of the scheme from :cite:`clements2016optimal`, specified either via the unitary transformation on the bosonic operators or in terms of lists of beamsplitter parameters.
 
 The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such models can now be easily constructed and trained with PennyLane.
 
@@ -81,12 +81,12 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
      Each element of weights must be a an array of size ``len(wires)*3``.
 
     Args:
-        weights (array[float]): Number of blocks*len(wires)*3 array of weights
+        weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
         periodic (bool): whether to use periodic boundary conditions when
                          applying imprimitive gates
         ranges (Sequence[int]): Ranges of the imprimitive gates in the
                                 respective blocks
-        imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to CNOT
+        imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
         wires (Sequence[int]): Wires the model should act on
     """
     if ranges is None:
@@ -100,11 +100,11 @@ def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=
     An individual block of a circuit-centric classifier circuit.
 
     Args:
-        weights (array[float]): len(wires)*3 array of weights
+        weights (array[float]): shape ``(len(wires), 3)`` array of weights
         periodic (bool): Whether to use periodic boundary conditions when
                          applying imprimitive gates
         r (Sequence[int]): Range of the imprimitive gates of this block
-        imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to CNOT
+        imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
         wires (Sequence[int]): Wires the model should act on
     """
     for i, wire in enumerate(wires):
@@ -126,8 +126,8 @@ def CVNeuralNet(weights, wires=None):
     input parameters.
 
     Args:
-         weights (array[array]): Array of weights for each layer of the CV
-                                 neural network
+        weights (array[array]): Array of weights for each layer of the CV
+                                neural network
         wires (Sequence[int]): Wires the CVQNN should act on
     """
     for layer_weights in weights:
@@ -146,13 +146,13 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=N
        The CV neural network architecture includes :class:`~.Kerr` operations. Make sure to use a suitable device, such as the :code:`strawberryfields.fock` device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
-        theta1 (array[float]): len(wires)*(len(wires)-1)/2 array of transmittivity angles
-        phi1 (array[float]): len(wires)*(len(wires)-1)/2 array of phase angles
-        s (array[float]): len(wires) arrays of squeezing amounts for :class:`~.Squeezing` operations
-        theta2 (array[float]): len(wires)*(len(wires)-1)/2 array of transmittivity angles
-        phi2 (array[float]): len(wires)*(len(wires)-1)/2 array of phase angles
-        r (array[float]): len(wires) arrays of displacement magnitudes for :class:`~.Displacement` operations
-        k (array[float]): len(wires) arrays of kerr parameters for :class:`~.Kerr` operations
+        theta1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
+        phi1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
+        s (array[float]): length ``len(wires)`` arrays of squeezing amounts for :class:`~.Squeezing` operations
+        theta2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
+        phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
+        r (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
+        k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
         tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the layer should act on
     """
@@ -172,14 +172,14 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
 
     The instance can be specified in two ways:
 
-    (i)  By providing len(wires)*(len(wires)-1)/2 many angles via theta and phi each.
+    (i)  By providing ``len(wires)*(len(wires)-1)/2`` many angles via theta and phi each.
          In this case the interferometer is implemented with the scheme described in
          :cite:`clements2016optimal` (Fig. 1a). Beam splitters are numbered per layer
-         from top to bottom and theta[i] and phi[i] are used as the parameters of the
+         from top to bottom and ``theta[i]`` and ``phi[i]`` are used as the parameters of the
          ith beam splitter.
 
-    (ii) By providing a unitary matrix U. The interferometer is then implemented as
-         network of beam splitters and rotation gates determined from U by means of
+    (ii) By providing a unitary matrix ``U``. The interferometer is then implemented as
+         network of beam splitters and rotation gates determined from ``U`` by means of
          algorithm described in :cite:`clements2016optimal`.
 
     .. note::
@@ -188,9 +188,9 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
 
 
     Args:
-        theta (array): length len(wires)*(len(wires)-1)/2 array of transmittivity angles
-        phi (array): length len(wires)*(len(wires)-1)/2 array of phase angles
-        U (array): A len(wires) by len(wires) complex unitary matrix
+        theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
+        phi (array): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
+        U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained from the Clements decomposition is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the Interferometer should act on
 
@@ -239,18 +239,18 @@ def clements(V):
     See :cite:`clements2016optimal` for more details.
 
     Args:
-        V (array): A len(wires) by len(wires) complex unitary matrix
+        V (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
 
     Returns:
-        tuple[array]: returns a tuple of the form ``(tilist,tlist,np.diag(localV))``
+        tuple[array]: returns a tuple of the form ``(tilist, tlist, np.diag(localV))``
             where:
 
-            * ``tilist``: list containing ``[n,m,theta,phi,n_size]`` of the Ti unitaries needed
-            * ``tlist``: list containing ``[n,m,theta,phi,n_size]`` of the T unitaries needed
+            * ``tilist``: list containing ``[n, m, theta, phi, n_size]`` of the Ti unitaries needed
+            * ``tlist``: list containing ``[n, m, theta, phi, n_size]`` of the T unitaries needed
             * ``localV``: Diagonal unitary sitting sandwhiched by Ti's and the T's
     """
     def T(m, n, theta, phi, nmax):
-        r"""The Clements T matrix"""
+        r"""The Clements ``T`` matrix"""
         mat = np.identity(nmax, dtype=np.complex128)
         mat[m, m] = np.exp(1j*phi)*np.cos(theta)
         mat[m, n] = -np.sin(theta)
@@ -259,11 +259,11 @@ def clements(V):
         return mat
 
     def Ti(m, n, theta, phi, nmax):
-        r"""The inverse Clements T matrix"""
+        r"""The inverse of the Clements ``T`` matrix"""
         return np.transpose(T(m, n, theta, -phi, nmax))
 
     def nullTi(m, n, U):
-        r"""Nullifies element m,n of U using Ti"""
+        r"""Nullifies element ``m, n`` of ``U`` using ``Ti``"""
         (nmax, _) = U.shape
 
         if U[m, n+1] == 0:
@@ -277,7 +277,7 @@ def clements(V):
         return [n, n+1, thetar, phir, nmax]
 
     def nullT(n, m, U):
-        r"""Nullifies element n,m of U using T"""
+        r"""Nullifies element ``n, m`` of ``U`` using ``T``"""
         (nmax, _) = U.shape
 
         if U[n-1, m] == 0:
