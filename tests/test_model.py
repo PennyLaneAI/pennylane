@@ -154,7 +154,7 @@ class TestInterferometer(BaseTest):
     def test_clements_non_square_error(self):
         V_non_square = np.random.randn(2, 3)
         with self.assertRaises(ValueError):
-            qml.model._clements(V_non_square)
+            qml.model.clements(V_non_square)
 
 class TestCVNeuralNet(BaseTest):
     """Tests for the CVNeuralNet and CVNeuralNetLayer from the pennylane.model module."""
