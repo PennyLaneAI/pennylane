@@ -166,7 +166,7 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=N
         Kerr(k[i], wires=wire)
 
 
-def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
+def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None): #pylint: disable=too-many-branches
     r"""pennylane.model.Interferometer([theta, phi,| U,] tollerance=11, wires)
     General linear interferometer
 
@@ -215,20 +215,20 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None):
 
     elif U is not None:
         BS1, BS2, R = clements(U)
-        for n, m, theta, phi1, _ in BS1:
+        for n, m, theta1, phi1, _ in BS1:
             if np.round(phi1, tollerance) != 0:
                 Rotation(phi1, wires=[wires[n]])
-            if np.round(theta, tollerance) != 0:
-                Beamsplitter(theta, 0, wires=[wires[n], wires[m]])
+            if np.round(theta1, tollerance) != 0:
+                Beamsplitter(theta1, 0, wires=[wires[n], wires[m]])
 
         for n, expphi in enumerate(R):
             if np.round(expphi, tollerance) != 1.0:
                 q = np.log(expphi).imag
                 Rotation(q, wires=[wires[n]])
 
-        for n, m, theta, phi2, _ in reversed(BS2):
-            if np.round(theta, tollerance) != 0:
-                Beamsplitter(-theta, 0, wires=[wires[n], wires[m]])
+        for n, m, theta2, phi2, _ in reversed(BS2):
+            if np.round(theta2, tollerance) != 0:
+                Beamsplitter(-theta2, 0, wires=[wires[n], wires[m]])
             if np.round(phi2, tollerance) != 0:
                 Rotation(-phi2, wires=wires[n])
 
