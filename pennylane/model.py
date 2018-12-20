@@ -73,7 +73,7 @@ from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Rotation, Be
 log.getLogger()
 
 def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
-    """pennylane.model.CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires)
+    """pennylane.model.CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
     A circuit-centric classifier circuit.
 
     Constructs a circuit-centric quantum classifier :cite:`schuld2018circuit`
@@ -96,7 +96,7 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
 
 
 def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
-    """pennylane.model.CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires)
+    """pennylane.model.CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=qml.CNOT, wires)
     An individual block of a circuit-centric classifier circuit.
 
     Args:
