@@ -13,16 +13,16 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-QML Models
+QML Templates
 ==========
 
-**Module name:** :mod:`pennylane.model`
+**Module name:** :mod:`pennylane.template`
 
-.. currentmodule:: pennylane.model
+.. currentmodule:: pennylane.template
 
-This module provides a growing library of functions representing
-common circuit architectures that can be used to easily build more complex
-quantum machine learning models.
+This module provides a growing library of templates of common quantum
+machine learning circuit architectures that can be used to easily build
+more complex quantum machine learning models.
 
 For example, you can define and call a circuit-centric quantum classifier
 :cite:`schuld2018circuit` on an arbitrary number of wires and with an
@@ -40,7 +40,7 @@ arbitrary number of blocks in the following way:
     @qml.qnode(dev)
     def circuit(weights, x=None):
         qml.BasisState(x, wires=range(num_wires))
-        qml.model.CircuitCentricClassifier(weights, periodic=True, wires=range(num_wires))
+        qml.template.CircuitCentricClassifier(weights, periodic=True, wires=range(num_wires))
         return qml.expval.PauliZ(0)
 
     weights=np.random.randn(num_blocks, num_wires, 3)
@@ -49,7 +49,7 @@ arbitrary number of blocks in the following way:
 
 The handy :func:`Interferometer` function can be used to construct arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation` operations, by means of the scheme from :cite:`clements2016optimal`, specified either via the unitary transformation on the bosonic operators or in terms of lists of beamsplitter parameters.
 
-The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such models can now be easily constructed and trained with PennyLane.
+The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such neural networks can now be easily constructed and trained with PennyLane.
 
 Summary
 ^^^^^^^
@@ -73,8 +73,8 @@ from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Rotation, Be
 log.getLogger()
 
 def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
-    """pennylane.model.CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
-    A circuit-centric classifier circuit.
+    """pennylane.template.CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
+    A circuit-centric classifier.
 
     Constructs a circuit-centric quantum classifier :cite:`schuld2018circuit`
      with ``len(weights)`` blocks on the given wires with the provided weights.
@@ -87,7 +87,7 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
         ranges (Sequence[int]): Ranges of the imprimitive gates in the
                                 respective blocks
         imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
-        wires (Sequence[int]): Wires the model should act on
+        wires (Sequence[int]): Wires the circuit-centric classifier should act on
     """
     if ranges is None:
         ranges = [1]*len(weights)
@@ -96,8 +96,8 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
 
 
 def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
-    """pennylane.model.CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=qml.CNOT, wires)
-    An individual block of a circuit-centric classifier circuit.
+    """pennylane.template.CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=qml.CNOT, wires)
+    An individual block of a circuit-centric classifier.
 
     Args:
         weights (array[float]): shape ``(len(wires), 3)`` array of weights
@@ -105,7 +105,7 @@ def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=
                          applying imprimitive gates
         r (Sequence[int]): Range of the imprimitive gates of this block
         imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
-        wires (Sequence[int]): Wires the model should act on
+        wires (Sequence[int]): Wires the block should act on
     """
     for i, wire in enumerate(wires):
         Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
@@ -115,7 +115,7 @@ def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=
         imprimitive_gate(wires=[wires[i], wires[(i+r) % num_wires]])
 
 def CVNeuralNet(weights, wires=None):
-    """pennylane.model.CVNeuralNet(weights, wires)
+    """pennylane.template.CVNeuralNet(weights, wires)
     A CV Quantum Neural Network
 
     Implements the CV Quantum Neural Network (CVQNN) architecture from
@@ -134,7 +134,7 @@ def CVNeuralNet(weights, wires=None):
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
 def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=None): #pylint: disable-msg=too-many-arguments
-    """pennylane.model.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires)
+    """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires)
     A single layer of a CV Quantum Neural Network
 
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
@@ -167,7 +167,7 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=N
 
 
 def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None): #pylint: disable=too-many-branches
-    r"""pennylane.model.Interferometer([theta, phi,| U,] tollerance=11, wires)
+    r"""pennylane.template.Interferometer([theta, phi,| U,] tollerance=11, wires)
     General linear interferometer
 
     The instance can be specified in two ways:
