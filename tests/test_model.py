@@ -168,16 +168,6 @@ class TestCVNeuralNet(BaseTest):
 
         dev = qml.device('default.gaussian', wires=self.num_wires)
 
-        # weights = np.array([np.array([
-        #     # np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)),
-        #     # np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)),
-        #     # np.random.uniform(0.1, 0.7, self.num_wires),
-        #     # np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)),
-        #     np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)),
-        #     np.random.uniform(0.1, 2.0, self.num_wires),
-        #     np.random.uniform(0.1, 0.3, self.num_wires)
-        # ]) for l in range(2)])
-
         weights = [[
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #transmittivity angles
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #phase angles
