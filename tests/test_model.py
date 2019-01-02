@@ -30,7 +30,7 @@ from pennylane.ops import Kerr
 log.getLogger('defaults')
 
 class TestInterferometer(BaseTest):
-    """Tests for the Interferometer from the pennylane.model module."""
+    """Tests for the Interferometer from the pennylane.template module."""
 
     num_subsystems = 4
 
@@ -71,8 +71,8 @@ class TestInterferometer(BaseTest):
             for wire in range(self.num_subsystems):
                 qml.Squeezing(squeezings[wire][0], squeezings[wire][1], wires=wire)
 
-            qml.model.Interferometer(U=self.u1, wires=range(self.num_subsystems))
-            qml.model.Interferometer(U=self.u2, wires=range(self.num_subsystems-1))#also apply a non-trivial Interferometer with different wire number parity
+            qml.template.Interferometer(U=self.u1, wires=range(self.num_subsystems))
+            qml.template.Interferometer(U=self.u2, wires=range(self.num_subsystems-1))#also apply a non-trivial Interferometer with different wire number parity
             return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
         self.assertAllAlmostEqual(circuit(), [0.40805773, 0.56736047, 0.7724671, 0.39767841], 0.00001)
@@ -86,7 +86,7 @@ class TestInterferometer(BaseTest):
             for wire in range(self.num_subsystems):
                 qml.Squeezing(squeezings[wire][0], squeezings[wire][1], wires=wire)
 
-            qml.model.Interferometer(theta=theta, phi=phi, wires=range(self.num_subsystems))
+            qml.template.Interferometer(theta=theta, phi=phi, wires=range(self.num_subsystems))
             return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
         self.assertAllAlmostEqual(circuit(), [0.39156747, 0.52844207, 0.82817202, 0.39738214], 0.00001)
@@ -101,8 +101,8 @@ class TestInterferometer(BaseTest):
         def circuit():
             for wire in range(self.num_subsystems):
                 qml.Displacement(displacements[wire], 0, wires=wire)
-            qml.model.Interferometer(U=np.identity(self.num_subsystems), wires=range(self.num_subsystems))
-            qml.model.Interferometer(U=np.identity(self.num_subsystems-1), wires=range(self.num_subsystems-1))#also apply a trivial Interferometer with different wire number parity
+            qml.template.Interferometer(U=np.identity(self.num_subsystems), wires=range(self.num_subsystems))
+            qml.template.Interferometer(U=np.identity(self.num_subsystems-1), wires=range(self.num_subsystems-1))#also apply a trivial Interferometer with different wire number parity
             return tuple(qml.expval.X(wires=wire) for wire in range(self.num_subsystems))
 
         self.assertAllAlmostEqual(circuit(), 2*displacements, 0.00001)
@@ -113,7 +113,7 @@ class TestInterferometer(BaseTest):
 
         @qml.qnode(dev)
         def circuit():
-            qml.model.Interferometer(wires=range(self.num_subsystems))
+            qml.template.Interferometer(wires=range(self.num_subsystems))
             return qml.expval.X(wires=0)
 
         with self.assertRaises(ValueError):
@@ -121,7 +121,7 @@ class TestInterferometer(BaseTest):
 
         @qml.qnode(dev)
         def circuit():
-            qml.model.Interferometer(U=np.identity(self.num_subsystems), theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
+            qml.template.Interferometer(U=np.identity(self.num_subsystems), theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
             return qml.expval.X(wires=0)
 
         with self.assertRaises(ValueError):
@@ -129,7 +129,7 @@ class TestInterferometer(BaseTest):
 
         @qml.qnode(dev)
         def circuit():
-            qml.model.Interferometer(U=np.identity(self.num_subsystems), phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
+            qml.template.Interferometer(U=np.identity(self.num_subsystems), phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
             return qml.expval.X(wires=0)
 
         with self.assertRaises(ValueError):
@@ -137,7 +137,7 @@ class TestInterferometer(BaseTest):
 
         @qml.qnode(dev)
         def circuit():
-            qml.model.Interferometer(phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
+            qml.template.Interferometer(phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
             return qml.expval.X(wires=0)
 
         with self.assertRaises(ValueError):
@@ -145,7 +145,7 @@ class TestInterferometer(BaseTest):
 
         @qml.qnode(dev)
         def circuit():
-            qml.model.Interferometer(theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
+            qml.template.Interferometer(theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
             return qml.expval.X(wires=0)
 
         with self.assertRaises(ValueError):
@@ -154,10 +154,10 @@ class TestInterferometer(BaseTest):
     def test_clements_non_square_error(self):
         V_non_square = np.random.randn(2, 3)
         with self.assertRaises(ValueError):
-            qml.model.clements(V_non_square)
+            qml.template.clements(V_non_square)
 
 class TestCVNeuralNet(BaseTest):
-    """Tests for the CVNeuralNet and CVNeuralNetLayer from the pennylane.model module."""
+    """Tests for the CVNeuralNet and CVNeuralNetLayer from the pennylane.template module."""
 
     def setUp(self):
         super().setUp()
@@ -191,13 +191,13 @@ class TestCVNeuralNet(BaseTest):
         with patch.object(Kerr, '__init__', return_value=None) as _: #todo: Kerr() does not work on any core device, so we have to mock it here with a trivial class
             @qml.qnode(dev)
             def circuit(weights):
-                qml.model.CVNeuralNet(weights, wires=range(self.num_wires))
+                qml.template.CVNeuralNet(weights, wires=range(self.num_wires))
                 return qml.expval.X(wires=0)
 
             circuit(weights)
 
 class TestVariationalClassifiyer(BaseTest):
-    """Tests for the VariationalClassifiyer from the pennylane.model module."""
+    """Tests for the VariationalClassifiyer from the pennylane.template module."""
 
     def setUp(self):
         super().setUp()
@@ -214,7 +214,7 @@ class TestVariationalClassifiyer(BaseTest):
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
                     qml.BasisState(x, wires=range(num_wires))
-                    qml.model.CircuitCentricClassifier(weights, True, wires=range(num_wires))
+                    qml.template.CircuitCentricClassifier(weights, True, wires=range(num_wires))
                     return qml.expval.PauliZ(0)
 
                 weights=np.random.randn(num_layers, num_wires, 3)
@@ -225,7 +225,7 @@ class TestVariationalClassifiyer(BaseTest):
 
 
 if __name__ == '__main__':
-    print('Testing PennyLane version ' + qml.version() + ', pennylane.model.')
+    print('Testing PennyLane version ' + qml.version() + ', pennylane.template.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (TestInterferometer, TestCVNeuralNet, TestVariationalClassifiyer):
