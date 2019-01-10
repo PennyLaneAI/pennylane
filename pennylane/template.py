@@ -14,7 +14,7 @@
 # pylint: disable=protected-access
 r"""
 QML Templates
-==========
+=============
 
 **Module name:** :mod:`pennylane.template`
 
