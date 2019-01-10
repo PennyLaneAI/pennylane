@@ -133,8 +133,8 @@ def CVNeuralNet(weights, wires=None):
     for layer_weights in weights:
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
-def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=None): #pylint: disable-msg=too-many-arguments
-    """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires)
+def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=None): #pylint: disable-msg=too-many-arguments
+    """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires)
     A single layer of a CV Quantum Neural Network
 
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
@@ -153,21 +153,21 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tollerance=11, wires=N
         phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         r (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
-        tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
+        tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the layer should act on
     """
-    Interferometer(theta=theta1, phi=phi1, tollerance=tollerance, wires=wires)
+    Interferometer(theta=theta1, phi=phi1, tolerance=tolerance, wires=wires)
     for i, wire in enumerate(wires):
         Squeezing(s[i], 0., wires=wire)
-    Interferometer(theta=theta2, phi=phi2, tollerance=tollerance, wires=wires)
+    Interferometer(theta=theta2, phi=phi2, tolerance=tolerance, wires=wires)
     for i, wire in enumerate(wires):
         Displacement(r[i], 0., wires=wire)
     for i, wire in enumerate(wires):
         Kerr(k[i], wires=wire)
 
 
-def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None): #pylint: disable=too-many-branches
-    r"""pennylane.template.Interferometer([theta, phi,| U,] tollerance=11, wires)
+def Interferometer(*, theta=None, phi=None, U=None, tolerance=11, wires=None): #pylint: disable=too-many-branches
+    r"""pennylane.template.Interferometer([theta, phi,| U,] tolerance=11, wires)
     General linear interferometer
 
     The instance can be specified in two ways:
@@ -191,7 +191,7 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None): 
         theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi (array): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
-        tollerance (int): The number of decimal places to use when determining whether a gate parameter obtained from the Clements decomposition is so close to trivial that the gate is effectively an Identity and can be skipped.
+        tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained from the Clements decomposition is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the Interferometer should act on
 
     """
@@ -216,20 +216,20 @@ def Interferometer(*, theta=None, phi=None, U=None, tollerance=11, wires=None): 
     elif U is not None:
         BS1, BS2, R = clements(U)
         for n, m, theta1, phi1, _ in BS1:
-            if np.round(phi1, tollerance) != 0:
+            if np.round(phi1, tolerance) != 0:
                 Rotation(phi1, wires=[wires[n]])
-            if np.round(theta1, tollerance) != 0:
+            if np.round(theta1, tolerance) != 0:
                 Beamsplitter(theta1, 0, wires=[wires[n], wires[m]])
 
         for n, expphi in enumerate(R):
-            if np.round(expphi, tollerance) != 1.0:
+            if np.round(expphi, tolerance) != 1.0:
                 q = np.log(expphi).imag
                 Rotation(q, wires=[wires[n]])
 
         for n, m, theta2, phi2, _ in reversed(BS2):
-            if np.round(theta2, tollerance) != 0:
+            if np.round(theta2, tolerance) != 0:
                 Beamsplitter(-theta2, 0, wires=[wires[n], wires[m]])
-            if np.round(phi2, tollerance) != 0:
+            if np.round(phi2, tolerance) != 0:
                 Rotation(-phi2, wires=wires[n])
 
 
