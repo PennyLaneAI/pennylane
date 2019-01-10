@@ -40,7 +40,7 @@ arbitrary number of blocks in the following way:
     @qml.qnode(dev)
     def circuit(weights, x=None):
         qml.BasisState(x, wires=range(num_wires))
-        qml.template.CircuitCentricClassifier(weights, periodic=True, wires=range(num_wires))
+        qml.template.CircuitCentric(weights, periodic=True, wires=range(num_wires))
         return qml.expval.PauliZ(0)
 
     weights=np.random.randn(num_blocks, num_wires, 3)
@@ -55,8 +55,8 @@ Summary
 ^^^^^^^
 
 .. autosummary::
-  CircuitCentricClassifier
-  CircuitCentricClassifierBlock
+  CircuitCentric
+  CircuitCentricBlock
   CVNeuralNet
   CVNeuralNetLayer
   Interferometer
@@ -72,8 +72,8 @@ from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Rotation, Be
 
 log.getLogger()
 
-def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
-    """pennylane.template.CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
+def CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
+    """pennylane.template.CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
     A circuit-centric classifier.
 
     Constructs a circuit-centric quantum classifier :cite:`schuld2018circuit`
@@ -92,11 +92,11 @@ def CircuitCentricClassifier(weights, periodic=True, ranges=None, imprimitive_ga
     if ranges is None:
         ranges = [1]*len(weights)
     for block_weights, block_range in zip(weights, ranges):
-        CircuitCentricClassifierBlock(block_weights, r=block_range, periodic=periodic, imprimitive_gate=imprimitive_gate, wires=wires)
+        CircuitCentricBlock(block_weights, r=block_range, periodic=periodic, imprimitive_gate=imprimitive_gate, wires=wires)
 
 
-def CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
-    """pennylane.template.CircuitCentricClassifierBlock(weights, periodic=True, r=1, imprimitive_gate=qml.CNOT, wires)
+def CircuitCentricBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
+    """pennylane.template.CircuitCentricBlock(weights, periodic=True, r=1, imprimitive_gate=qml.CNOT, wires)
     An individual block of a circuit-centric classifier.
 
     Args:

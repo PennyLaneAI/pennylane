@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
+Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` templates.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
@@ -47,7 +47,7 @@ class TestInterferometer(BaseTest):
             N (int): number of modes
 
         Returns:
-            array: random :math:`N\times N` unitary distributed with the Haar measure
+            array: random :math:`N\times N` unitary distributed according to the Haar measure
         """
         z = self.randnc(N, N)/np.sqrt(2.0)
         q, r = sp.linalg.qr(z)
@@ -178,7 +178,7 @@ class TestCVNeuralNet(BaseTest):
             np.random.uniform(0.1, 0.3, self.num_wires) #kerr parameters
         ] for l in range(2)]
 
-        with patch.object(Kerr, '__init__', return_value=None) as _: #todo: Kerr() does not work on any core device, so we have to mock it here with a trivial class
+        with patch.object(Kerr, '__init__', return_value=None) as _: #Kerr() does not work on any core device, so we have to mock it here with a trivial class
             @qml.qnode(dev)
             def circuit(weights):
                 qml.template.CVNeuralNet(weights, wires=range(self.num_wires))
@@ -204,7 +204,7 @@ class TestVariationalClassifiyer(BaseTest):
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
                     qml.BasisState(x, wires=range(num_wires))
-                    qml.template.CircuitCentricClassifier(weights, True, wires=range(num_wires))
+                    qml.template.CircuitCentric(weights, True, wires=range(num_wires))
                     return qml.expval.PauliZ(0)
 
                 weights=np.random.randn(num_layers, num_wires, 3)
