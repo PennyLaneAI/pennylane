@@ -19,6 +19,7 @@ import unittest
 import inspect
 import logging as log
 import scipy as sp
+from scipy.linalg import qr
 
 from pennylane import numpy as np
 
@@ -50,7 +51,7 @@ class TestInterferometer(BaseTest):
             array: random :math:`N\times N` unitary distributed according to the Haar measure
         """
         z = self.randnc(N, N)/np.sqrt(2.0)
-        q, r = sp.linalg.qr(z)
+        q, r = qr(z)
         d = sp.diagonal(r)
         ph = d/np.abs(d)
         U = np.multiply(q, ph, q)
@@ -75,22 +76,27 @@ class TestInterferometer(BaseTest):
             qml.template.Interferometer(U=self.u2, wires=range(self.num_subsystems-1))#also apply a non-trivial Interferometer with different wire number parity
             return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
-        self.assertAllAlmostEqual(circuit(), [0.40805773, 0.56736047, 0.7724671, 0.39767841], 0.00001)
+        self.assertAllAlmostEqual(circuit(), [0.40805773, 0.56736047, 0.7724671, 0.39767841], delta=self.tol)
 
         num_params = int(self.num_subsystems*(self.num_subsystems-1)/2)
         theta = np.random.uniform(0, 2*np.pi, num_params)
         phi = np.random.uniform(0, 2*np.pi, num_params)
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit(theta, phi):
             for wire in range(self.num_subsystems):
                 qml.Squeezing(squeezings[wire][0], squeezings[wire][1], wires=wire)
 
             qml.template.Interferometer(theta=theta, phi=phi, wires=range(self.num_subsystems))
             return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
-        self.assertAllAlmostEqual(circuit(), [0.39156747, 0.52844207, 0.82817202, 0.39738214], 0.00001)
+        self.assertAllAlmostEqual(circuit(theta, phi), [0.39156747, 0.52844207, 0.82817202, 0.39738214], delta=self.tol)
 
+        self.assertAllAlmostEqual(qml.jacobian(circuit, 0)(theta, phi),
+                                  np.array([[-0.10659132, -0.02098894, -0.00901991, -0.10545361,  0.        ,
+                                             0.        ], [ 0.09545662, -0.03175077,  0.02067336,  0.08433508, -0.02398334,
+                                                            -0.19680818], [ 0.0145659 , -0.27359094, -0.05225983,  0.02111853, -0.36534213,
+                                                                            0.19680818], [-0.0034312 ,  0.32633064,  0.04060638,  0.        ,  0.38932547, 0.        ]]), delta=self.tol)
 
     def test_identity_interferometer(self):
         dev = qml.device('default.gaussian', wires=self.num_subsystems)
@@ -105,7 +111,7 @@ class TestInterferometer(BaseTest):
             qml.template.Interferometer(U=np.identity(self.num_subsystems-1), wires=range(self.num_subsystems-1))#also apply a trivial Interferometer with different wire number parity
             return tuple(qml.expval.X(wires=wire) for wire in range(self.num_subsystems))
 
-        self.assertAllAlmostEqual(circuit(), 2*displacements, 0.00001)
+        self.assertAllAlmostEqual(circuit(), 2*displacements, delta=self.tol)
 
 
     def test_interferometer_argument_error (self):
@@ -187,14 +193,14 @@ class TestCVNeuralNet(BaseTest):
             circuit(weights)
 
 class TestVariationalClassifiyer(BaseTest):
-    """Tests for the VariationalClassifiyer from the pennylane.template module."""
+    """Tests for the CircuitCentric from the pennylane.template module."""
 
     def setUp(self):
         super().setUp()
         np.random.seed(0)
 
     def test_variational_classifyer(self):
-        """Tests the VariationalClassifyer for various parameters."""
+        """Tests the CircuitCentric for various parameters."""
         outcomes = []
         for num_wires in range(2,4):
             for num_layers in range(1,3):
