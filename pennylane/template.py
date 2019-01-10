@@ -184,7 +184,7 @@ def Interferometer(*, theta=None, phi=None, U=None, tolerance=11, wires=None): #
 
     .. note::
 
-       While constructing interferometers via their defining unitary transformation is handy, for automatic differentiation, optimization, and variational learning you are strongly advised to use the parametrization in terms of beam splitter angles.
+       While constructing interferometers via their defining unitary transformation is handy for the construction of circuits, for automatic differentiation, optimization, and variational learning you must use the parametrization in terms of beam splitter angles.
 
 
     Args:
