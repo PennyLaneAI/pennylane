@@ -70,49 +70,6 @@ class TestInterferometer(BaseTest):
                                             [ 3.81099656e-04, -4.79703149e-02,  5.78754312e-01,  0.00000000e+00, 3.38965962e-02,  0.00000000e+00]]
                                   ), delta=self.tol)
 
-    # def test_interferometer_argument_error (self):
-    #     dev = qml.device('default.gaussian', wires=self.num_subsystems)
-
-    #     @qml.qnode(dev)
-    #     def circuit():
-    #         qml.template.Interferometer(wires=range(self.num_subsystems))
-    #         return qml.expval.X(wires=0)
-
-    #     with self.assertRaises(ValueError):
-    #         circuit()
-
-    #     @qml.qnode(dev)
-    #     def circuit():
-    #         qml.template.Interferometer(U=np.identity(self.num_subsystems), theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
-    #         return qml.expval.X(wires=0)
-
-    #     with self.assertRaises(ValueError):
-    #         circuit()
-
-    #     @qml.qnode(dev)
-    #     def circuit():
-    #         qml.template.Interferometer(U=np.identity(self.num_subsystems), phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
-    #         return qml.expval.X(wires=0)
-
-    #     with self.assertRaises(ValueError):
-    #         circuit()
-
-    #     @qml.qnode(dev)
-    #     def circuit():
-    #         qml.template.Interferometer(phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
-    #         return qml.expval.X(wires=0)
-
-    #     with self.assertRaises(ValueError):
-    #         circuit()
-
-    #     @qml.qnode(dev)
-    #     def circuit():
-    #         qml.template.Interferometer(theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
-    #         return qml.expval.X(wires=0)
-
-    #     with self.assertRaises(ValueError):
-    #         circuit()
-
     def setUp(self):
         super().setUp()
         np.random.seed(8)
