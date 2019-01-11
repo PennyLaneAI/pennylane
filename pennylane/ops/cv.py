@@ -56,6 +56,7 @@ Gates
     Kerr
     CrossKerr
     CubicPhase
+    Interferometer
 
 
 State preparation
@@ -530,6 +531,36 @@ class CubicPhase(CVOperation):
     grad_method = 'F'
 
 
+class Interferometer(CVOperation):
+    r"""pennylane.Interferometer(U, wires)
+    A linear interferometer transforming the bosonic operators according to
+    the unitary matrix :math:`U`.
+
+    **Details:**
+
+    * None (applied to the entire subsystem)
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+    * Heisenberg representation:
+
+      .. math:: M = \begin{bmatrix}
+        1 & 0 & 0\\
+        0 & X &-Y\\
+        0 & Y & X
+        \end{bmatrix}
+
+    where :math:`X` and :math:`Y` are real matrices such that :math:`U=X+iY\in\mathbb{C}^{N\times N}`.
+
+    Args:
+        U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 1
+    num_wires = 0
+    par_domain = 'R'
+    grad_method = 'F'
+
+
 #=============================================================================
 # State preparation
 #=============================================================================
@@ -634,7 +665,7 @@ class GaussianState(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: None (applied to the entire subsystem)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -675,7 +706,7 @@ class FockStateVector(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: None (applied to the entire subsystem)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -695,7 +726,7 @@ class FockDensityMatrix(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: None (applied to the entire subsystem)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -750,6 +781,7 @@ all_ops = [
     Squeezing,
     TwoModeSqueezing,
     CubicPhase,
+    Interferometer,
     CatState,
     CoherentState,
     FockDensityMatrix,
