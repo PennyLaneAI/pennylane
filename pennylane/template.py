@@ -24,7 +24,8 @@ This module provides a growing library of templates of common quantum
 machine learning circuit architectures that can be used to easily build
 more complex quantum machine learning models.
 
-For example, you can define and call a circuit-centric quantum classifier
+For example, you can construct, evaluate, and train quantum circuit based
+on the circuit-centric quantum classifier architecture from
 :cite:`schuld2018circuit` on an arbitrary number of wires and with an
 arbitrary number of blocks in the following way:
 
@@ -98,11 +99,11 @@ log.getLogger()
 
 def CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
     """pennylane.template.CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
-    A circuit-centric classifier.
+    A circuit suitable for usage in a circuit-centric classifier.
 
-    Constructs a circuit-centric quantum classifier :cite:`schuld2018circuit`
-     with ``len(weights)`` blocks on the given wires with the provided weights.
-     Each element of weights must be a an array of size ``len(wires)*3``.
+    Constructs the circuit of a circuit-centric quantum classifier :cite:`schuld2018circuit`
+    with ``len(weights)`` blocks on the given wires with the provided weights.
+    Each element of weights must be a an array of size ``len(wires)*3``.
 
     Args:
         weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
@@ -111,7 +112,7 @@ def CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, w
         ranges (Sequence[int]): Ranges of the imprimitive gates in the
                                 respective blocks
         imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
-        wires (Sequence[int]): Wires the circuit-centric classifier should act on
+        wires (Sequence[int]): Wires the circuit-centric classifier circuit should act on
     """
     if ranges is None:
         ranges = [1]*len(weights)
@@ -121,7 +122,7 @@ def CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, w
 
 def CircuitCentricBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
     """pennylane.template.CircuitCentricBlock(weights, periodic=True, r=1, imprimitive_gate=qml.CNOT, wires)
-    An individual block of a circuit-centric classifier.
+    An individual block of a circuit-centric classifier circuit.
 
     Args:
         weights (array[float]): shape ``(len(wires), 3)`` array of weights
