@@ -507,8 +507,14 @@ class CV:
         """Returns True if the CV Operation has a defined :meth:`~.CV._heisenberg_rep`
         static method, indicating that analytic differentiation is supported.
         """
-        p = list(range(self.num_params))
-        return self._heisenberg_rep(p) is not None
+        n = self.num_params
+        if self.par_domain == 'A':
+            pars = [np.eye(2)] * n
+        elif self.par_domain == 'N':
+            pars = [0] * n
+        else:
+            pars = [0.0] * n
+        return self._heisenberg_rep(pars) is not None
 
 
 class CVOperation(CV, Operation):

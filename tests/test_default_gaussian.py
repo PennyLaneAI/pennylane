@@ -290,18 +290,19 @@ class TestDefaultGaussianDevice(BaseTest):
         self.dev = DefaultGaussian(wires=2, shots=0, hbar=hbar)
 
     def test_operation_map(self):
-        """Test that default Gaussian device supports all PennyLane Gaussian CV gates."""
+        """Test that default Gaussian device supports all PennyLane Gaussian CV gates, except Interferometer."""
         self.logTestName()
 
-        nonGaussian = {'FockDensityMatrix',
-                       'FockStateVector',
-                       'FockState',
-                       'CrossKerr',
-                       'CatState',
-                       'CubicPhase',
-                       'Kerr'}
+        non_supported = {'FockDensityMatrix',
+                         'FockStateVector',
+                         'FockState',
+                         'CrossKerr',
+                         'CatState',
+                         'CubicPhase',
+                         'Kerr',
+                         'Interferometer'}
 
-        self.assertEqual(set(qml.ops.cv.__all__) - nonGaussian,
+        self.assertEqual(set(qml.ops.cv.__all__) - non_supported,
                          set(self.dev._operation_map))
 
     def test_expectation_map(self):

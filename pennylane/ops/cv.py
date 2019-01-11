@@ -557,8 +557,24 @@ class Interferometer(CVOperation):
     """
     num_params = 1
     num_wires = 0
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = 'A'
+    grad_method = 'A'
+
+    #shift = 0.1 ???
+    #grad_recipe = [(0.5/np.sinh(shift), shift), None] ???
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        N = len(p[0])
+        X = p[0].real
+        Y = p[0].imag
+
+        M = np.eye(2*N+1)
+        M[1:N+1, 1:N+1] = X
+        M[N+1:2*N+1, N+1:2*N+1] = X
+        M[N+1:2*N+1, 1:N+1] = -Y
+        M[1:N+1, N+1:2*N+1] = Y
+        return M
 
 
 #=============================================================================
