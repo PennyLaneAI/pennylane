@@ -39,24 +39,6 @@ class TestInterferometer(BaseTest):
         """Normally distributed array of random complex numbers."""
         return np.random.randn(*arg) + 1j*np.random.randn(*arg)
 
-    def random_interferometer(self, N):
-        r"""Returns a random unitary matrix representing an interferometer.
-
-        For more details, see :cite:`mezzadri2006`.
-
-        Args:
-            N (int): number of modes
-
-        Returns:
-            array: random :math:`N\times N` unitary distributed according to the Haar measure
-        """
-        z = self.randnc(N, N)/np.sqrt(2.0)
-        q, r = qr(z)
-        d = sp.diagonal(r)
-        ph = d/np.abs(d)
-        U = np.multiply(q, ph, q)
-        return U
-
     def setUp(self):
         super().setUp()
         np.random.seed(35)
@@ -65,19 +47,8 @@ class TestInterferometer(BaseTest):
 
     def test_interferometer(self):
         dev = qml.device('default.gaussian', wires=self.num_subsystems)
+        np.random.seed(8)
         squeezings = np.random.rand(self.num_subsystems, 2)
-
-        @qml.qnode(dev)
-        def circuit():
-            for wire in range(self.num_subsystems):
-                qml.Squeezing(squeezings[wire][0], squeezings[wire][1], wires=wire)
-
-            qml.template.Interferometer(U=self.u1, wires=range(self.num_subsystems))
-            qml.template.Interferometer(U=self.u2, wires=range(self.num_subsystems-1))#also apply a non-trivial Interferometer with different wire number parity
-            return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
-
-        self.assertAllAlmostEqual(circuit(), [0.40805773, 0.56736047, 0.7724671, 0.39767841], delta=self.tol)
-
         num_params = int(self.num_subsystems*(self.num_subsystems-1)/2)
         theta = np.random.uniform(0, 2*np.pi, num_params)
         phi = np.random.uniform(0, 2*np.pi, num_params)
@@ -90,80 +61,57 @@ class TestInterferometer(BaseTest):
             qml.template.Interferometer(theta=theta, phi=phi, wires=range(self.num_subsystems))
             return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
-        self.assertAllAlmostEqual(circuit(theta, phi), [0.39156747, 0.52844207, 0.82817202, 0.39738214], delta=self.tol)
+        self.assertAllAlmostEqual(circuit(theta, phi), [0.96852694, 0.23878521, 0.82310606, 0.16547786], delta=self.tol)
 
         self.assertAllAlmostEqual(qml.jacobian(circuit, 0)(theta, phi),
-                                  np.array([[-0.10659132, -0.02098894, -0.00901991, -0.10545361,  0.        ,
-                                             0.        ], [ 0.09545662, -0.03175077,  0.02067336,  0.08433508, -0.02398334,
-                                                            -0.19680818], [ 0.0145659 , -0.27359094, -0.05225983,  0.02111853, -0.36534213,
-                                                                            0.19680818], [-0.0034312 ,  0.32633064,  0.04060638,  0.        ,  0.38932547, 0.        ]]), delta=self.tol)
+                                  np.array([[-6.18547621e-03, -3.20488416e-04, -4.20274088e-02, -6.21819677e-02, 0.00000000e+00,  0.00000000e+00],
+                                            [ 3.55439469e-04,  3.89820231e-02, -3.35281297e-03,  7.93009278e-04, 8.30347900e-02, -3.45150712e-01],
+                                            [ 5.44893709e-03,  9.30878023e-03, -5.33374090e-01,  6.13889584e-02,-1.16931386e-01,  3.45150712e-01],
+                                            [ 3.81099656e-04, -4.79703149e-02,  5.78754312e-01,  0.00000000e+00, 3.38965962e-02,  0.00000000e+00]]
+                                  ), delta=self.tol)
 
-    def test_identity_interferometer(self):
-        dev = qml.device('default.gaussian', wires=self.num_subsystems)
+    # def test_interferometer_argument_error (self):
+    #     dev = qml.device('default.gaussian', wires=self.num_subsystems)
 
-        displacements = np.random.randint(1, 3, self.num_subsystems)
+    #     @qml.qnode(dev)
+    #     def circuit():
+    #         qml.template.Interferometer(wires=range(self.num_subsystems))
+    #         return qml.expval.X(wires=0)
 
-        @qml.qnode(dev)
-        def circuit():
-            for wire in range(self.num_subsystems):
-                qml.Displacement(displacements[wire], 0, wires=wire)
-            qml.template.Interferometer(U=np.identity(self.num_subsystems), wires=range(self.num_subsystems))
-            qml.template.Interferometer(U=np.identity(self.num_subsystems-1), wires=range(self.num_subsystems-1))#also apply a trivial Interferometer with different wire number parity
-            return tuple(qml.expval.X(wires=wire) for wire in range(self.num_subsystems))
+    #     with self.assertRaises(ValueError):
+    #         circuit()
 
-        self.assertAllAlmostEqual(circuit(), 2*displacements, delta=self.tol)
+    #     @qml.qnode(dev)
+    #     def circuit():
+    #         qml.template.Interferometer(U=np.identity(self.num_subsystems), theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
+    #         return qml.expval.X(wires=0)
 
+    #     with self.assertRaises(ValueError):
+    #         circuit()
 
-    def test_interferometer_argument_error (self):
-        dev = qml.device('default.gaussian', wires=self.num_subsystems)
+    #     @qml.qnode(dev)
+    #     def circuit():
+    #         qml.template.Interferometer(U=np.identity(self.num_subsystems), phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
+    #         return qml.expval.X(wires=0)
 
-        @qml.qnode(dev)
-        def circuit():
-            qml.template.Interferometer(wires=range(self.num_subsystems))
-            return qml.expval.X(wires=0)
+    #     with self.assertRaises(ValueError):
+    #         circuit()
 
-        with self.assertRaises(ValueError):
-            circuit()
+    #     @qml.qnode(dev)
+    #     def circuit():
+    #         qml.template.Interferometer(phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
+    #         return qml.expval.X(wires=0)
 
-        @qml.qnode(dev)
-        def circuit():
-            qml.template.Interferometer(U=np.identity(self.num_subsystems), theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
-            return qml.expval.X(wires=0)
+    #     with self.assertRaises(ValueError):
+    #         circuit()
 
-        with self.assertRaises(ValueError):
-            circuit()
+    #     @qml.qnode(dev)
+    #     def circuit():
+    #         qml.template.Interferometer(theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
+    #         return qml.expval.X(wires=0)
 
-        @qml.qnode(dev)
-        def circuit():
-            qml.template.Interferometer(U=np.identity(self.num_subsystems), phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
-            return qml.expval.X(wires=0)
-
-        with self.assertRaises(ValueError):
-            circuit()
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.template.Interferometer(phi=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
-            return qml.expval.X(wires=0)
-
-        with self.assertRaises(ValueError):
-            circuit()
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.template.Interferometer(theta=np.zeros(int(self.num_subsystems*(self.num_subsystems-1)/2)), wires=range(self.num_subsystems))
-            return qml.expval.X(wires=0)
-
-        with self.assertRaises(ValueError):
-            circuit()
-
-    def test_clements_non_square_error(self):
-        V_non_square = np.random.randn(2, 3)
-        with self.assertRaises(ValueError):
-            qml.template.clements(V_non_square)
-
-class TestCVNeuralNet(BaseTest):
-    """Tests for the CVNeuralNet and CVNeuralNetLayer from the pennylane.template module."""
+    #     with self.assertRaises(ValueError):
+    #         circuit()
 
     def setUp(self):
         super().setUp()

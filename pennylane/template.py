@@ -156,157 +156,39 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=No
         tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the layer should act on
     """
-    Interferometer(theta=theta1, phi=phi1, tolerance=tolerance, wires=wires)
+    Interferometer(theta=theta1, phi=phi1, wires=wires)
     for i, wire in enumerate(wires):
         Squeezing(s[i], 0., wires=wire)
-    Interferometer(theta=theta2, phi=phi2, tolerance=tolerance, wires=wires)
+    Interferometer(theta=theta2, phi=phi2, wires=wires)
     for i, wire in enumerate(wires):
         Displacement(r[i], 0., wires=wire)
     for i, wire in enumerate(wires):
         Kerr(k[i], wires=wire)
 
 
-def Interferometer(*, theta=None, phi=None, U=None, tolerance=11, wires=None): #pylint: disable=too-many-branches
-    r"""pennylane.template.Interferometer([theta, phi,| U,] tolerance=11, wires)
+def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
+    r"""
     General linear interferometer
 
-    The instance can be specified in two ways:
-
-    (i)  By providing ``len(wires)*(len(wires)-1)/2`` many angles via theta and phi each.
-         In this case the interferometer is implemented with the scheme described in
-         :cite:`clements2016optimal` (Fig. 1a). Beam splitters are numbered per layer
-         from top to bottom and ``theta[i]`` and ``phi[i]`` are used as the parameters of the
-         ith beam splitter.
-
-    (ii) By providing a unitary matrix ``U``. The interferometer is then implemented as
-         network of beam splitters and rotation gates determined from ``U`` by means of
-         algorithm described in :cite:`clements2016optimal`.
-
-    .. note::
-
-       While constructing interferometers via their defining unitary transformation is handy for the construction of circuits, for automatic differentiation, optimization, and variational learning you must use the parametrization in terms of beam splitter angles.
-
+    An instance in specified by providing ``len(wires)*(len(wires)-1)/2`` many
+    angles via theta and phi each. The interferometer is then implemented with
+    the scheme described in :cite:`clements2016optimal` (Fig. 1a). Beam splitters
+    are numbered per layer from top to bottom and ``theta[i]`` and ``phi[i]`` are
+    used as the parameters of the i-th beam splitter.
 
     Args:
         theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi (array): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
-        U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
-        tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained from the Clements decomposition is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the Interferometer should act on
 
     """
 
-    if (theta is not None or phi is not None) and U is not None:
-        raise ValueError("You must only specify either theta and phi, or U")
-    elif theta is None and phi is None and U is None:
-        raise ValueError("You must specify either theta and phi, or U")
-    elif theta is None and phi is not None or theta is not None and phi is None:
-        raise ValueError("If you specify theta you must also specify phi and vice versa")
-    elif theta is not None and phi is not None:
-        #loop over layers
-        gate_num = 0
-        for l in range(len(wires)):
-            for n, (i, j) in enumerate(zip(wires[:-1], wires[1:])):
-                #skip even or odd pairs depending on layer
-                if (l+n)%2 == 1:
-                    continue
-                Beamsplitter(theta[gate_num], phi[gate_num], wires=[i, j])
-                gate_num += 1
-
-    elif U is not None:
-        BS1, BS2, R = clements(U)
-        for n, m, theta1, phi1, _ in BS1:
-            if np.round(phi1, tolerance) != 0:
-                Rotation(phi1, wires=[wires[n]])
-            if np.round(theta1, tolerance) != 0:
-                Beamsplitter(theta1, 0, wires=[wires[n], wires[m]])
-
-        for n, expphi in enumerate(R):
-            if np.round(expphi, tolerance) != 1.0:
-                q = np.log(expphi).imag
-                Rotation(q, wires=[wires[n]])
-
-        for n, m, theta2, phi2, _ in reversed(BS2):
-            if np.round(theta2, tolerance) != 0:
-                Beamsplitter(-theta2, 0, wires=[wires[n], wires[m]])
-            if np.round(phi2, tolerance) != 0:
-                Rotation(-phi2, wires=wires[n])
-
-
-def clements(V):
-    r"""Performs the Clements decomposition of a Unitary complex matrix.
-
-    See :cite:`clements2016optimal` for more details.
-
-    Args:
-        V (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
-
-    Returns:
-        tuple[array]: returns a tuple of the form ``(tilist, tlist, np.diag(localV))``
-            where:
-
-            * ``tilist``: list containing ``[n, m, theta, phi, n_size]`` of the Ti unitaries needed
-            * ``tlist``: list containing ``[n, m, theta, phi, n_size]`` of the T unitaries needed
-            * ``localV``: Diagonal unitary sitting sandwhiched by Ti's and the T's
-    """
-    def T(m, n, theta, phi, nmax):
-        r"""The Clements ``T`` matrix"""
-        mat = np.identity(nmax, dtype=np.complex128)
-        mat[m, m] = np.exp(1j*phi)*np.cos(theta)
-        mat[m, n] = -np.sin(theta)
-        mat[n, m] = np.exp(1j*phi)*np.sin(theta)
-        mat[n, n] = np.cos(theta)
-        return mat
-
-    def Ti(m, n, theta, phi, nmax):
-        r"""The inverse of the Clements ``T`` matrix"""
-        return np.transpose(T(m, n, theta, -phi, nmax))
-
-    def nullTi(m, n, U):
-        r"""Nullifies element ``m, n`` of ``U`` using ``Ti``"""
-        (nmax, _) = U.shape
-
-        if U[m, n+1] == 0:
-            thetar = np.pi/2
-            phir = 0
-        else:
-            r = U[m, n] / U[m, n+1]
-            thetar = np.arctan(np.abs(r))
-            phir = np.angle(r)
-
-        return [n, n+1, thetar, phir, nmax]
-
-    def nullT(n, m, U):
-        r"""Nullifies element ``n, m`` of ``U`` using ``T``"""
-        (nmax, _) = U.shape
-
-        if U[n-1, m] == 0:
-            thetar = np.pi/2
-            phir = 0
-        else:
-            r = -U[n, m] / U[n-1, m]
-            thetar = np.arctan(np.abs(r))
-            phir = np.angle(r)
-
-        return [n-1, n, thetar, phir, nmax]
-
-
-    localV = V
-    (nsize, nsize2) = localV.shape
-
-    if nsize != nsize2:
-        raise ValueError("V must be a square unitary matrix")
-
-    tilist = []
-    tlist = []
-    for k, i in enumerate(range(nsize-2, -1, -1)):
-        if k%2 == 0:
-            for j in reversed(range(nsize-1-i)):
-                tilist.append(nullTi(i+j+1, j, localV))
-                localV = localV @ Ti(*tilist[-1])
-        else:
-            for j in range(nsize-1-i):
-                tlist.append(nullT(i+j+1, j, localV))
-                localV = T(*tlist[-1]) @ localV
-
-    return tilist, tlist, np.diag(localV)
+    #loop over layers
+    gate_num = 0
+    for l in range(len(wires)):
+        for n, (i, j) in enumerate(zip(wires[:-1], wires[1:])):
+            #skip even or odd pairs depending on layer
+            if (l+n)%2 == 1:
+                continue
+            Beamsplitter(theta[gate_num], phi[gate_num], wires=[i, j])
+            gate_num += 1
