@@ -47,7 +47,32 @@ arbitrary number of blocks in the following way:
     print(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
 
 
-The handy :func:`Interferometer` function can be used to construct arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation` operations, by means of the scheme from :cite:`clements2016optimal`, specified either via the unitary transformation on the bosonic operators or in terms of lists of beamsplitter parameters.
+The handy :func:`Interferometer` function can be used to construct arbitrary
+interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation`
+operations, by giving a lists of beamsplitter parameters. PennyLane can then be used to
+easily differentiate and obviously also optimize these beam splitter angles:
+
+.. code-block:: python
+
+    import pennylane as qml
+    from pennylane import numpy as np
+
+    num_wires=4
+    dev = qml.device('default.gaussian', wires=num_wires)
+    squeezings = np.random.rand(num_wires, 2)
+    num_params = int(num_wires*(num_wires-1)/2)
+    theta = np.random.uniform(0, 2*np.pi, num_params)
+    phi = np.random.uniform(0, 2*np.pi, num_params)
+
+    @qml.qnode(dev)
+    def circuit(theta, phi):
+        for wire in range(num_wires):
+            qml.Squeezing(squeezings[wire][0], squeezings[wire][1], wires=wire)
+
+        qml.template.Interferometer(theta=theta, phi=phi, wires=range(num_wires))
+        return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(num_wires))
+
+    print(qml.jacobian(circuit, 0)(theta, phi))
 
 The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such neural networks can now be easily constructed and trained with PennyLane.
 
@@ -60,7 +85,6 @@ Summary
   CVNeuralNet
   CVNeuralNetLayer
   Interferometer
-  clements
 
 Code details
 ^^^^^^^^^^^^
@@ -167,7 +191,7 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=No
 
 
 def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
-    r"""
+    r"""pennylane.template.Interferometer(theta, phi, wires)
     General linear interferometer
 
     An instance in specified by providing ``len(wires)*(len(wires)-1)/2`` many
