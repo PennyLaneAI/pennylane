@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` templates.
+Unit tests for the :mod:`pennylane.template` module.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
