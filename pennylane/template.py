@@ -158,8 +158,8 @@ def CVNeuralNet(weights, wires=None):
     for layer_weights in weights:
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
-def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=None): #pylint: disable-msg=too-many-arguments
-    """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires)
+def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires=None): #pylint: disable-msg=too-many-arguments
+    """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires)
     A single layer of a CV Quantum Neural Network
 
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
@@ -178,7 +178,6 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=No
         phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         r (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
-        tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the layer should act on
     """
     Interferometer(theta=theta1, phi=phi1, wires=wires)
