@@ -34,7 +34,12 @@ class TestConainsOperation(BaseTest):
     def test_foo(self):
         """Tests the CircuitCentric for various parameters."""
         assert(dom.Complex() in dom.Scalars())
+        assert(dom.Reals() in dom.Scalars())
+        assert(dom.Reals() in dom.Complex())
+
         assert(dom.Complex() not in dom.Reals())
+        assert(dom.Complex() == dom.Complex())
+        assert(dom.Complex() != dom.Reals())
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', pennylane.domain.')
