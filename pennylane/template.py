@@ -75,7 +75,8 @@ easily differentiate and obviously also optimize these beam splitter angles:
 
     print(qml.jacobian(circuit, 0)(theta, phi))
 
-The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such neural networks can now be easily constructed and trained with PennyLane.
+The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`.
+Provided with a suitable array of weights, such neural networks can now be easily constructed and trained with PennyLane.
 
 Summary
 ^^^^^^^
@@ -95,7 +96,9 @@ import numpy as np
 
 from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Rotation, Beamsplitter
 
+
 log.getLogger()
+
 
 def CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
     """pennylane.template.CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
@@ -139,6 +142,7 @@ def CircuitCentricBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wire
     for i in range(num_wires) if periodic else range(num_wires-1):
         imprimitive_gate(wires=[wires[i], wires[(i+r) % num_wires]])
 
+
 def CVNeuralNet(weights, wires=None):
     """pennylane.template.CVNeuralNet(weights, wires)
     A CV Quantum Neural Network
@@ -158,6 +162,7 @@ def CVNeuralNet(weights, wires=None):
     for layer_weights in weights:
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
+
 def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=None): #pylint: disable-msg=too-many-arguments
     """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires)
     A single layer of a CV Quantum Neural Network
@@ -168,7 +173,8 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=No
 
     .. note::
 
-       The CV neural network architecture includes :class:`~.Kerr` operations. Make sure to use a suitable device, such as the :code:`strawberryfields.fock` device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
+       The CV neural network architecture includes :class:`~.Kerr` operations. Make sure to use a suitable device,
+       such as the :code:`strawberryfields.fock` device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
         theta1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
@@ -178,15 +184,19 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=No
         phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         r (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
-        tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close to trivial that the gate is effectively an Identity and can be skipped.
+        tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close
+                         to trivial that the gate is effectively an Identity and can be skipped.
         wires (Sequence[int]): Wires the layer should act on
     """
     Interferometer(theta=theta1, phi=phi1, wires=wires)
     for i, wire in enumerate(wires):
         Squeezing(s[i], 0., wires=wire)
+
     Interferometer(theta=theta2, phi=phi2, wires=wires)
+
     for i, wire in enumerate(wires):
         Displacement(r[i], 0., wires=wire)
+
     for i, wire in enumerate(wires):
         Kerr(k[i], wires=wire)
 
@@ -205,7 +215,6 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
         theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi (array): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         wires (Sequence[int]): Wires the Interferometer should act on
-
     """
 
     #loop over layers
