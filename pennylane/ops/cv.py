@@ -560,6 +560,7 @@ class Interferometer(CVOperation):
     par_domain = 'A'
     grad_method = 'F'
 
+    #todo: we probably don't need shift and grad_recipe
     #shift = 0.1 ???
     #grad_recipe = [(0.5/np.sinh(shift), shift), None] ???
 
