@@ -91,12 +91,7 @@ Summary
 Code details
 ^^^^^^^^^^^^
 """
-import logging as log
-
 from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Beamsplitter
-
-
-log.getLogger()
 
 
 def CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
