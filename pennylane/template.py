@@ -49,7 +49,7 @@ arbitrary number of blocks in the following way:
 
 
 The handy :func:`Interferometer` function can be used to construct arbitrary
-interferometers in terms of elementary :class:`~.Beamsplitter` and :class:`~.Rotation`
+interferometers in terms of elementary :class:`~.Beamsplitter` Operations.
 operations, by giving a lists of beamsplitter parameters. PennyLane can then be used to
 easily differentiate and obviously also optimize these beam splitter angles:
 
@@ -91,9 +91,8 @@ Code details
 ^^^^^^^^^^^^
 """
 import logging as log
-import numpy as np
 
-from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Rotation, Beamsplitter
+from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Beamsplitter
 
 log.getLogger()
 
