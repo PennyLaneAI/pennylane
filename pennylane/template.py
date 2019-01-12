@@ -161,14 +161,9 @@ def CVNeuralNet(weights, wires=None):
     for layer_weights in weights:
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
-<<<<<<< HEAD
+
 def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires=None): #pylint: disable-msg=too-many-arguments
     """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires)
-=======
-
-def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires=None): #pylint: disable-msg=too-many-arguments
-    """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, tolerance=11, wires)
->>>>>>> ef7ee29cf4c06c091a9ae6d1c2d26f0ddf459c9c
     A single layer of a CV Quantum Neural Network
 
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
