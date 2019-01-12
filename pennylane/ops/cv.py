@@ -558,7 +558,7 @@ class Interferometer(CVOperation):
     num_params = 1
     num_wires = 0
     par_domain = 'A'
-    grad_method = 'A'
+    grad_method = 'F'
 
     #shift = 0.1 ???
     #grad_recipe = [(0.5/np.sinh(shift), shift), None] ???
