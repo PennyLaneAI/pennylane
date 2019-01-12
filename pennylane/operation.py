@@ -575,7 +575,7 @@ class CVOperation(CV, Operation):
         if self._heisenberg_rep(p) is None:
             raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
 
-        if inverse:
+        if inverse: #todo: this must be changed if par_domain = 'A'
             p[0] = -p[0]  # negate first parameter
         U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
 
