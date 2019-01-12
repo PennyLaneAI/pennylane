@@ -42,7 +42,7 @@ class BasicTest(BaseTest):
             if cls.par_domain == 'A':
                 par = [nr.randn(1,1)] * cls.num_params
             else:
-                par = list(nr.randn(cls.num_params))
+                par = list(nr.randn(cls.num_params)) #todo: this assumesa that all par_domain = 'A' gates want a vector, but this is not true for Interfermeter....
             ww = list(range(cls.num_wires))
             op = cls(*par, wires=ww, do_queue=False)
 
@@ -53,15 +53,14 @@ class BasicTest(BaseTest):
                 return
 
             # not an Expectation
-            # all gaussian ops use the 'A' method
-            self.assertEqual(cls.grad_method, 'A')
-            U = op.heisenberg_tr(2)
+
+            U = op.heisenberg_tr(num_wires=2)
             I = np.eye(*U.shape)
             # first row is always (1,0,0...)
             self.assertAllEqual(U[0,:], I[:,0])
 
             # check the inverse transform
-            V = op.heisenberg_tr(2, inverse=True)
+            V = op.heisenberg_tr(num_wires=2, inverse=True)
             self.assertAlmostEqual(np.linalg.norm(U @ V -I), 0, delta=self.tol)
             self.assertAlmostEqual(np.linalg.norm(V @ U -I), 0, delta=self.tol)
 
