@@ -4,7 +4,7 @@ class Domain():
 
     #using this for comparison allows to write something like: if cls.par_domain in qml.domain.Reals(): ...
     def __contains__(self, other):
-        return issubclass(type(self), other)
+        return issubclass(type(other), self.__class__)
 
     def __eq__():
         raise NotImplementedError
@@ -12,18 +12,18 @@ class Domain():
 
 class Scalars(Domain):
     def __init__(self):
-        raise NotImplementedError
+        pass
 
 class Complex(Scalars):
-    def __init__(self, non_negative=false):
-        raise NotImplementedError
+    def __init__(self, non_negative=False):
+        pass
 
 class Reals(Scalars):
-    def __init__(self, non_negative=false):
-        raise NotImplementedError
+    def __init__(self, non_negative=False):
+        pass
 
 class Ints(Reals):
-    def __init__(self, non_negative=false):
+    def __init__(self, non_negative=False):
         raise NotImplementedError
 
 class Interval(Reals):
@@ -35,11 +35,23 @@ class Matrices(Domain):
         raise NotImplementedError
 
 class Unitaries(Matrices):
-    def __init__(self, shape, non_negative=false):
+    def __init__(self, shape, non_negative=False):
         raise NotImplementedError
 
 class Hermitians(Matrices):
-    def __init__(self, shape, non_negative=false):
+    def __init__(self, shape, non_negative=False):
         pass
 
-__all__ = [cls.__name__ for cls in all_ops]
+all_domains = [
+    Domain,
+    Scalars,
+    Complex,
+    Reals,
+    Ints,
+    Interval,
+    Matrices,
+    Unitaries,
+    Hermitians
+]
+
+__all__ = [cls.__name__ for cls in all_domains]

@@ -23,7 +23,7 @@ from scipy.linalg import qr
 
 from pennylane import numpy as np
 
-from defaults import pennylane, BaseTest
+from defaults import pennylane as qml, BaseTest
 import pennylane.domain as dom
 
 log.getLogger('defaults')
@@ -33,7 +33,8 @@ class TestConainsOperation(BaseTest):
 
     def test_foo(self):
         """Tests the CircuitCentric for various parameters."""
-        assert(qml.domain.Complex() in qml.domain.Scalars())
+        assert(dom.Complex() in dom.Scalars())
+        assert(dom.Complex() not in dom.Reals())
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', pennylane.domain.')
