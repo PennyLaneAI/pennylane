@@ -19,20 +19,21 @@ import unittest
 import inspect
 import logging as log
 
-from pennylane import numpy as np
 from scipy.special import factorial as fac
 from scipy.linalg import block_diag
 
 from defaults import pennylane as qml, BaseTest
 
+from pennylane import numpy as np
+
 from pennylane.plugins.default_gaussian import fock_prob
 
 from pennylane.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
-                                              beamsplitter, two_mode_squeezing,
-                                              controlled_addition, controlled_phase)
+                                                beamsplitter, two_mode_squeezing,
+                                                controlled_addition, controlled_phase)
 from pennylane.plugins.default_gaussian import (vacuum_state, coherent_state,
-                                              squeezed_state, displaced_squeezed_state,
-                                              thermal_state)
+                                                squeezed_state, displaced_squeezed_state,
+                                                thermal_state)
 
 from pennylane.plugins.default_gaussian import DefaultGaussian
 
