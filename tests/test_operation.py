@@ -103,7 +103,7 @@ class BasicTest(BaseTest):
                 op.heisenberg_expand(U_high_order, len(op.wires))
 
         for cls in pennylane.ops.cv.all_ops + pennylane.expval.cv.all_ops:
-            if cls.supports_analytic:  # only test gaussian operations
+            if cls.supports_heisenberg:  # only test gaussian operations
                 h_test(cls)
 
     def test_ops(self):

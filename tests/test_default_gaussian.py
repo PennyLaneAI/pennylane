@@ -389,6 +389,15 @@ class TestDefaultGaussianDevice(BaseTest):
             p = [thermal_state(0.5)]
             self.dev.apply('GaussianState', wires=[0], par=[p])
 
+        with self.assertRaisesRegex(ValueError, 'incorrect number of subsystems'):
+            p = U
+            self.dev.apply('Interferometer', wires=[0], par=[p])
+
+        with self.assertRaisesRegex(ValueError, 'Only 2 mode interferometers are currently supported.'):
+            p = U2
+            dev = DefaultGaussian(wires=4, shots=0, hbar=hbar)
+            self.dev.apply('Interferometer', wires=[0, 1, 2, 3], par=[p])
+
     def test_expectation(self):
         """Test that expectation values are calculated correctly"""
         self.logTestName()

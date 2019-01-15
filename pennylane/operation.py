@@ -512,6 +512,15 @@ class CV:
         if self.grad_method != 'A':
             return False
 
+        return self.supports_heisenberg
+
+    @classproperty
+    def supports_heisenberg(self):
+        """Returns True if the CV Operation has
+        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
+        that analytic differentiation is supported if this operation
+        succeeds a gate to be differentiated analytically.
+        """
         n = self.num_params
         if self.par_domain == 'A':
             pars = [np.eye(2)] * n
