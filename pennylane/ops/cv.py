@@ -739,7 +739,7 @@ class CatState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 2
+    num_params = 3
     par_domain = 'R'
     grad_method = 'F'
 
