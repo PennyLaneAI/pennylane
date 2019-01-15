@@ -445,21 +445,23 @@ def squeezed_state(r, phi, hbar=2.):
     return state
 
 
-def displaced_squeezed_state(a, r, phi, hbar=2.):
+def displaced_squeezed_state(a, phi_a, r, phi_r, hbar=2.):
     r"""Returns a squeezed coherent state
 
     Args:
-        a (complex): the displacement.
+        a (real): the displacement magnitude.
+        phi_a (real): the displacement phase.
         r (float): the squeezing magnitude
-        phi (float): the squeezing phase :math:`\phi`
+        phi_r (float): the squeezing phase :math:`\phi_r`
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`.
 
     Returns:
         array: the squeezed coherent state
     """
-    means = np.array([a.real, a.imag]) * np.sqrt(2*hbar)
-    state = [means, squeezed_cov(r, phi, hbar)]
+    alpha = a * np.exp(1j*phi_a)
+    means = np.array([alpha.real, alpha.imag]) * np.sqrt(2*hbar)
+    state = [means, squeezed_cov(r, phi_r, hbar)]
     return state
 
 
