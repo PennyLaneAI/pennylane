@@ -82,11 +82,11 @@ Summary
 ^^^^^^^
 
 .. autosummary::
-  CircuitCentric
-  CircuitCentricBlock
-  CVNeuralNet
-  CVNeuralNetLayer
-  Interferometer
+    CircuitCentric
+    CircuitCentricBlock
+    CVNeuralNet
+    CVNeuralNetLayer
+    Interferometer
 
 Code details
 ^^^^^^^^^^^^
@@ -178,11 +178,6 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires=None): #pylint: 
         phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         r (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
-<<<<<<< HEAD
-=======
-        tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close
-                         to trivial that the gate is effectively an Identity and can be skipped.
->>>>>>> ef7ee29cf4c06c091a9ae6d1c2d26f0ddf459c9c
         wires (Sequence[int]): Wires the layer should act on
     """
     Interferometer(theta=theta1, phi=phi1, wires=wires)

@@ -78,7 +78,8 @@ and :class:`~.Expectation`.
 Differentiation
 ^^^^^^^^^^^^^^^
 
-To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
+To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to
+provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
 the operation given its list of parameters, namely:
 
 * For Gaussian CV Operations this method should return the matrix of the linear transformation carried out by the
@@ -504,9 +505,13 @@ class CV:
 
     @classproperty
     def supports_analytic(self):
-        """Returns True if the CV Operation has a defined :meth:`~.CV._heisenberg_rep`
-        static method, indicating that analytic differentiation is supported.
+        """Returns True if the CV Operation has ``grad_method='A'`` and
+        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
+        that analytic differentiation is supported.
         """
+        if self.grad_method != 'A':
+            return False
+
         n = self.num_params
         if self.par_domain == 'A':
             pars = [np.eye(2)] * n
@@ -575,8 +580,12 @@ class CVOperation(CV, Operation):
         if self._heisenberg_rep(p) is None:
             raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
 
-        if inverse: #todo: this must be changed if par_domain = 'A'
-            p[0] = -p[0]  # negate first parameter
+        if inverse:
+            if self.par_domain == 'A':
+                # TODO: expand this for the new par domain class, for non-unitary matrices.
+                p[0] = np.linalg.inv(p[0])
+            else:
+                p[0] = -p[0]  # negate first parameter
         U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
 
         return self.heisenberg_expand(U, num_wires)

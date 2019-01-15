@@ -536,6 +536,17 @@ class Interferometer(CVOperation):
     A linear interferometer transforming the bosonic operators according to
     the unitary matrix :math:`U`.
 
+    .. note::
+
+        This operation implements a **fixed** linear interferometer given a known
+        unitary matrix.
+
+        If you instead wish to parameterize the interferometer,
+        and calculate the gradient/optimize with respect to these parameters,
+        consider instead the :func:`pennylane.template.Interferomer` template,
+        which constructs an interferomer from a combination of beamsplitters
+        and rotation gates.
+
     **Details:**
 
     * None (applied to the entire subsystem)
@@ -544,12 +555,11 @@ class Interferometer(CVOperation):
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
-        1 & 0 & 0\\
-        0 & X &-Y\\
-        0 & Y & X
+        1 & 0\\
+        0 & S\\
         \end{bmatrix}
 
-    where :math:`X` and :math:`Y` are real matrices such that :math:`U=X+iY\in\mathbb{C}^{N\times N}`.
+    where :math:`S` is the Gaussian symplectic transformation representing the interferometer.
 
     Args:
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
@@ -558,11 +568,8 @@ class Interferometer(CVOperation):
     num_params = 1
     num_wires = 0
     par_domain = 'A'
-    grad_method = 'F'
-
-    #todo: we probably don't need shift and grad_recipe
-    #shift = 0.1 ???
-    #grad_recipe = [(0.5/np.sinh(shift), shift), None] ???
+    grad_method = None
+    grad_recipe = None
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -570,11 +577,12 @@ class Interferometer(CVOperation):
         X = p[0].real
         Y = p[0].imag
 
+        rows = np.arange(2*N).reshape(2, -1).T.flatten()
+        S = np.vstack([np.hstack([X, -Y]),
+                       np.hstack([Y, X])])[:, rows][rows]
+
         M = np.eye(2*N+1)
-        M[1:N+1, 1:N+1] = X
-        M[N+1:2*N+1, N+1:2*N+1] = X
-        M[N+1:2*N+1, 1:N+1] = -Y
-        M[1:N+1, N+1:2*N+1] = Y
+        M[1:2*N+1, 1:2*N+1] = S
         return M
 
 

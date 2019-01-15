@@ -2,7 +2,7 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code
-extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,semantic_version
+extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,autograd.numpy.linalg,semantic_version
 
 [TYPECHECK]
 
@@ -10,12 +10,12 @@ extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,semantic_version
+ignored-modules=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,autograd.numpy.linalg,semantic_version
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set). This supports can work
 # with qualified names.
-ignored-classes=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,semantic_version
+ignored-classes=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,autograd.numpy.linalg,semantic_version
 
 [MESSAGES CONTROL]
 

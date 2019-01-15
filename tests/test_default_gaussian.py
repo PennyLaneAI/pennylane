@@ -299,8 +299,7 @@ class TestDefaultGaussianDevice(BaseTest):
                          'CrossKerr',
                          'CatState',
                          'CubicPhase',
-                         'Kerr',
-                         'Interferometer'}
+                         'Kerr'}
 
         self.assertEqual(set(qml.ops.cv.__all__) - non_supported,
                          set(self.dev._operation_map))
@@ -339,6 +338,11 @@ class TestDefaultGaussianDevice(BaseTest):
                     p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
                     w = list(range(2))
                     expected_out = p
+                elif gate_name == 'Interferometer':
+                    w = list(range(2))
+                    p = [U]
+                    S = fn(*p)
+                    expected_out = S @ self.dev._state[0], S @ self.dev._state[1] @ S.T
             else:
                 # the parameter is a float
                 p = [0.432423, -0.12312, 0.324][:op.num_params]
@@ -627,6 +631,8 @@ class TestDefaultGaussianIntegration(BaseTest):
 
             if g == 'GaussianState':
                 p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
+            elif g == 'Interferometer':
+                p = [np.array(U)]
             else:
                 p = [0.432423, -0.12312, 0.324][:op.num_params]
 
