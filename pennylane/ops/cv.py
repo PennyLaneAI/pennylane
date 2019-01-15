@@ -189,10 +189,12 @@ class Displacement(CVOperation):
     Phase space displacement.
 
     .. math::
-       D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
+       D(r,\phi) = D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
        = \exp\left(-i\sqrt{\frac{2}{\hbar}}(\re(\alpha) \hat{p} -\im(\alpha) \hat{x})/\right).
 
     where :math:`\alpha = r e^{i\phi}` has magnitude :math:`r\geq 0` and phase :math:`\phi`.
+    The result of applying a displacement to the vacuum is a coherent state
+    :math:`D(\alpha)\ket{0} = \ket{\alpha}`.
 
     **Details:**
 
@@ -579,7 +581,7 @@ class SqueezedState(CVOperation):
 
 
 class DisplacedSqueezedState(CVOperation):
-    r"""pennylane.DisplacedSqueezedState(a, r, phi, wires)
+    r"""pennylane.DisplacedSqueezedState(a, phi_a, r, phi_r, wires)
     Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
@@ -588,7 +590,7 @@ class DisplacedSqueezedState(CVOperation):
     .. math::
        \ket{\alpha,z} = D(\alpha)\ket{0,z} = D(\alpha)S(z)\ket{0},
 
-    where the squeezing parameter :math:`z=re^{i\phi}`.
+    with the displacement parameter :math:`\alpha=ae^{i\phi_a}` and the squeezing parameter :math:`z=re^{i\phi_r}`.
 
     **Details:**
 
@@ -597,13 +599,14 @@ class DisplacedSqueezedState(CVOperation):
     * Gradient recipe: None (uses finite difference)
 
     Args:
-        alpha (complex): displacement parameter
-        r (float): squeezing magnitude
-        phi (float): squeezing angle :math:`\phi`
+        a (float): displacement magnitude :math:`a=|\alpha|`
+        phi_a (float): displacement angle :math:`\phi_a`
+        r (float): squeezing magnitude :math:`r=|z|`
+        phi_r (float): squeezing angle :math:`\phi_r`
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 3
+    num_params = 4
     par_domain = 'R'
     grad_method = 'F'
 
@@ -710,26 +713,29 @@ class FockDensityMatrix(CVOperation):
 
 
 class CatState(CVOperation):
-    r"""pennylane.CatState(alpha, p, wires)
+    r"""pennylane.CatState(a, phi, p, wires)
     Prepares a cat state.
 
     A cat state is the coherent superposition of two coherent states,
 
     .. math::
-       \ket{\text{cat}(\alpha)} = \frac{1}{N} (\ket{\alpha} +e^{i\phi} \ket{-\alpha}),
+       \ket{\text{cat}(\alpha)} = \frac{1}{N} (\ket{\alpha} +e^{ip\pi} \ket{-\alpha}),
 
-    where :math:`N = \sqrt{2 (1+\cos(\phi)e^{-2|\alpha|^2})}` is the normalization factor.
+    where :math:`\ket{\pm\alpha} = D(\pm\alpha)\ket{0}` are a coherent states with displacement
+    parameters :math:`\pm\alpha=\pm ae^{i\phi}` and
+    :math:`N = \sqrt{2 (1+\cos(p\pi)e^{-2|\alpha|^2})}` is the normalization factor.
 
     **Details:**
 
     * Number of wires: 1
-    * Number of parameters: 2
+    * Number of parameters: 3
     * Gradient recipe: None (uses finite difference)
 
     Args:
-        alpha (complex): displacement parameter
-        p (float): parity, where :math:`\phi=p\pi`. ``p=0`` corresponds to an even
-            cat state, and ``p=1`` an odd cat state.
+        a (float): displacement magnitude :math:`a=|\alpha|`
+        phi (float): displacement angle :math:`\phi`
+        p (float): parity, where :math:`p=0` corresponds to an even
+            cat state, and :math:`p=1` an odd cat state.
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
