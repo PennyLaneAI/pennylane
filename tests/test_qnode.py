@@ -460,6 +460,20 @@ class BasicTest(BaseTest):
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
 
 
+    def test_keywordargs_for_wires(self):
+        "Tests that wires use keyword arguments."
+        self.logTestName()
+
+        def circuit(x, q=None):
+            qml.RX(x, [q])
+            return qml.expval.PauliZ(q)
+
+        circuit = qml.QNode(circuit, self.dev1)
+
+        c = circuit(np.pi, q=0)
+        self.assertAlmostEqual(c, -1., delta=self.tol)
+
+
     def test_keywordargs_used(self):
         "Tests that qnodes use keyword arguments."
         self.logTestName()
