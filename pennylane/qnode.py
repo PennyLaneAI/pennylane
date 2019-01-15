@@ -285,6 +285,7 @@ class QNode:
             raise QuantumFunctionError('QNode._current_context must not be modified outside this method.')
         # generate the program queue by executing the quantum circuit function
         try:
+            Variable.kwarg_values = keyword_values
             res = self.func(*variables, **kwarg_variables)
         finally:
             # remove the context
@@ -320,6 +321,7 @@ class QNode:
             raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
         self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
+
 
         def check_op(op):
             """Make sure only existing wires are referenced."""

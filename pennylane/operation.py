@@ -109,6 +109,7 @@ Code details
 """
 import abc
 import numbers
+from collections.abc import Sequence
 import logging as log
 
 import autograd.numpy as np
@@ -285,7 +286,7 @@ class Operation(abc.ABC):
             assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
 
         # apply the operation on the given wires
-        if isinstance(wires, int):
+        if not isinstance(wires, Sequence):
             wires = [wires]
 
         if self.num_wires != 0 and len(wires) != self.num_wires:
@@ -295,7 +296,7 @@ class Operation(abc.ABC):
         if len(set(wires)) != len(wires):
             raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
 
-        self.wires = wires  #: Sequence[int]: subsystems the operation acts on
+        self.wires = [i.val if isinstance(i, Variable) else i for i in wires]  #: Sequence[int]: subsystems the operation acts on
         if do_queue:
             self.queue()
 
