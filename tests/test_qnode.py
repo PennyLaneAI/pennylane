@@ -465,13 +465,20 @@ class BasicTest(BaseTest):
         "Tests that wires can be passed as keyword arguments."
         self.logTestName()
 
-        def circuit(x, q=None):
+        default_q = 0
+
+        def circuit(x, q=default_q):
             qml.RX(x, [q])
             return qml.expval.PauliZ(q)
 
-        circuit = qml.QNode(circuit, self.dev1)
+        circuit = qml.QNode(circuit, self.dev2)
 
-        c = circuit(np.pi, q=0)
+        c = circuit(np.pi, q=1)
+        self.assertEqual(circuit.queue[0].wires, [1])
+        self.assertAlmostEqual(c, -1., delta=self.tol)
+
+        c = circuit(np.pi)
+        self.assertEqual(circuit.queue[0].wires, [default_q])
         self.assertAlmostEqual(c, -1., delta=self.tol)
 
 
