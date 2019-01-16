@@ -19,20 +19,21 @@ import unittest
 import inspect
 import logging as log
 
-from pennylane import numpy as np
 from scipy.special import factorial as fac
 from scipy.linalg import block_diag
 
 from defaults import pennylane as qml, BaseTest
 
+from pennylane import numpy as np
+
 from pennylane.plugins.default_gaussian import fock_prob
 
 from pennylane.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
-                                              beamsplitter, two_mode_squeezing,
-                                              controlled_addition, controlled_phase)
+                                                beamsplitter, two_mode_squeezing,
+                                                controlled_addition, controlled_phase)
 from pennylane.plugins.default_gaussian import (vacuum_state, coherent_state,
-                                              squeezed_state, displaced_squeezed_state,
-                                              thermal_state)
+                                                squeezed_state, displaced_squeezed_state,
+                                                thermal_state)
 
 from pennylane.plugins.default_gaussian import DefaultGaussian
 
@@ -259,15 +260,17 @@ class TestStates(BaseTest):
     def test_displaced_squeezed_state(self):
         """Test the displaced squeezed state is correct."""
         self.logTestName()
-        a = 0.541+0.109j
+        alpha = 0.541+0.109j
+        a = abs(alpha)
+        phi_a = np.angle(alpha)
         r = 0.432
-        phi = 0.123
-        means, cov = displaced_squeezed_state(a, r, phi, hbar=hbar)
+        phi_r = 0.123
+        means, cov = displaced_squeezed_state(a, phi_a, r, phi_r, hbar=hbar)
 
         # test vector of means is correct
-        self.assertAllAlmostEqual(means, np.array([a.real, a.imag])*np.sqrt(2*hbar), delta=self.tol)
+        self.assertAllAlmostEqual(means, np.array([alpha.real, alpha.imag])*np.sqrt(2*hbar), delta=self.tol)
 
-        R = rotation(phi/2)
+        R = rotation(phi_r/2)
         expected = R @ np.array([[np.exp(-2*r), 0],
                                  [0, np.exp(2*r)]]) * hbar/2 @ R.T
         # test covariance matrix is correct
@@ -320,12 +323,14 @@ class TestDefaultGaussianDevice(BaseTest):
             self.dev.reset()
 
             # start in the displaced squeezed state
-            a = 0.542+0.123j
+            alpha = 0.542+0.123j
+            a = abs(alpha)
+            phi_a = np.angle(alpha)
             r = 0.652
-            phi = -0.124
+            phi_r = -0.124
 
-            self.dev.apply('DisplacedSqueezedState', wires=[0], par=[a, r, phi])
-            self.dev.apply('DisplacedSqueezedState', wires=[1], par=[a, r, phi])
+            self.dev.apply('DisplacedSqueezedState', wires=[0], par=[a, phi_a, r, phi_r])
+            self.dev.apply('DisplacedSqueezedState', wires=[1], par=[a, phi_a, r, phi_r])
 
             # get the equivalent pennylane operation class
             op = qml.ops.__getattribute__(gate_name)
@@ -345,7 +350,7 @@ class TestDefaultGaussianDevice(BaseTest):
                     expected_out = S @ self.dev._state[0], S @ self.dev._state[1] @ S.T
             else:
                 # the parameter is a float
-                p = [0.432423, -0.12312, 0.324][:op.num_params]
+                p = [0.432423, -0.12312, 0.324, 0.751][:op.num_params]
 
                 if gate_name == 'Displacement':
                     alpha = p[0]*np.exp(1j*p[1])
@@ -643,7 +648,7 @@ class TestDefaultGaussianIntegration(BaseTest):
             elif g == 'Interferometer':
                 p = [np.array(U)]
             else:
-                p = [0.432423, -0.12312, 0.324][:op.num_params]
+                p = [0.432423, -0.12312, 0.324, 0.763][:op.num_params]
 
             self.assertAllEqual(circuit(*p), reference(*p))
 

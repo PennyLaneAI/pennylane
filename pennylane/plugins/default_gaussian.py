@@ -234,10 +234,10 @@ def rotation(phi):
     """Rotation in the phase space.
 
     Args:
-        phi (float): rotation parameter.
+        phi (float): rotation parameter
 
     Returns:
-        array: symplectic transformation matrix.
+        array: symplectic transformation matrix
     """
     return np.array([[np.cos(phi), -np.sin(phi)],
                      [np.sin(phi), np.cos(phi)]])
@@ -247,12 +247,12 @@ def displacement(state, wire, alpha, hbar=2):
     """Displacement in the phase space.
 
     Args:
-        state (tuple): contains means vector and covariance matrix.
-        wire (int): wire that the displacement acts on.
-        alpha (float): complex displacement.
+        state (tuple): contains means vector and covariance matrix
+        wire (int): wire that the displacement acts on
+        alpha (float): complex displacement
 
     Returns:
-        tuple: contains the vector of means and covariance matrix.
+        tuple: contains the vector of means and covariance matrix
     """
     mu = state[0]
     mu[wire] += alpha.real*np.sqrt(2*hbar)
@@ -264,11 +264,11 @@ def squeezing(r, phi):
     """Squeezing in the phase space.
 
     Args:
-        r (float): squeezing magnitude.
-        phi (float): rotation parameter.
+        r (float): squeezing magnitude
+        phi (float): rotation parameter
 
     Returns:
-        array: symplectic transformation matrix.
+        array: symplectic transformation matrix
     """
     cp = np.cos(phi)
     sp = np.sin(phi)
@@ -282,10 +282,10 @@ def quadratic_phase(s):
     """Quadratic phase shift.
 
     Args:
-        s (float): parameter.
+        s (float): gate parameter
 
     Returns:
-        array: symplectic transformation matrix.
+        array: symplectic transformation matrix
     """
     return np.array([[1, 0],
                      [s, 1]])
@@ -295,11 +295,11 @@ def beamsplitter(theta, phi):
     r"""Beamsplitter.
 
     Args:
-        theta (float): transmittivity angle (:math:`t=\cos\theta`).
-        phi (float): phase angle (:math:`r=e^{i\phi}\sin\theta`).
+        theta (float): transmittivity angle (:math:`t=\cos\theta`)
+        phi (float): phase angle (:math:`r=e^{i\phi}\sin\theta`)
 
     Returns:
-        array: symplectic transformation matrix.
+        array: symplectic transformation matrix
     """
     cp = np.cos(phi)
     sp = np.sin(phi)
@@ -319,11 +319,11 @@ def two_mode_squeezing(r, phi):
     """Two-mode squeezing.
 
     Args:
-        r (float): squeezing magnitude.
-        phi (float): rotation parameter.
+        r (float): squeezing magnitude
+        phi (float): rotation parameter
 
     Returns:
-        array: symplectic transformation matrix.
+        array: symplectic transformation matrix
     """
     cp = np.cos(phi)
     sp = np.sin(phi)
@@ -342,10 +342,10 @@ def controlled_addition(s):
     """CX gate.
 
     Args:
-        s (float): parameter.
+        s (float): gate parameter
 
     Returns:
-        array: symplectic transformation matrix.
+        array: symplectic transformation matrix
     """
     S = np.array([[1, 0, 0, 0],
                   [s, 1, 0, 0],
@@ -359,10 +359,10 @@ def controlled_phase(s):
     """CZ gate.
 
     Args:
-        s (float): parameter.
+        s (float): gate parameter
 
     Returns:
-        array: symplectic transformation matrix.
+        array: symplectic transformation matrix
     """
     S = np.array([[1, 0, 0, 0],
                   [0, 1, 0, 0],
@@ -401,7 +401,7 @@ def squeezed_cov(r, phi, hbar=2):
         r (float): the squeezing magnitude
         p (float): the squeezing phase :math:`\phi`
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
     Returns:
         array: the squeezed state
     """
@@ -417,9 +417,9 @@ def vacuum_state(wires, hbar=2.):
     r"""Returns the vacuum state.
 
     Args:
-        basis (str): Returns the vector of means and the covariance matrix.
+        basis (str): Returns the vector of means and the covariance matrix
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
     Returns:
         array: the vacuum state
     """
@@ -436,7 +436,7 @@ def coherent_state(a, phi=0, hbar=2.):
         a (complex) : the displacement
         phi (float): the phase
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
     Returns:
         array: the coherent state
     """
@@ -454,7 +454,7 @@ def squeezed_state(r, phi, hbar=2.):
         r (float): the squeezing magnitude
         phi (float): the squeezing phase :math:`\phi`
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
         array: the squeezed state
@@ -464,21 +464,23 @@ def squeezed_state(r, phi, hbar=2.):
     return state
 
 
-def displaced_squeezed_state(a, r, phi, hbar=2.):
+def displaced_squeezed_state(a, phi_a, r, phi_r, hbar=2.):
     r"""Returns a squeezed coherent state
 
     Args:
-        a (complex): the displacement.
+        a (real): the displacement magnitude
+        phi_a (real): the displacement phase
         r (float): the squeezing magnitude
-        phi (float): the squeezing phase :math:`\phi`
+        phi_r (float): the squeezing phase :math:`\phi_r`
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
         array: the squeezed coherent state
     """
-    means = np.array([a.real, a.imag]) * np.sqrt(2*hbar)
-    state = [means, squeezed_cov(r, phi, hbar)]
+    alpha = a * np.exp(1j*phi_a)
+    means = np.array([alpha.real, alpha.imag]) * np.sqrt(2*hbar)
+    state = [means, squeezed_cov(r, phi_r, hbar)]
     return state
 
 
@@ -486,9 +488,9 @@ def thermal_state(nbar, hbar=2.):
     r"""Returns a thermal state.
 
     Args:
-        nbar (float): the mean photon number.
+        nbar (float): the mean photon number
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
         array: the thermal state
@@ -511,11 +513,11 @@ def gaussian_state(mu, cov, hbar=2.):
 
     Args:
         mu (array): vector means. Must be length-:math:`2N`,
-            where N is the number of modes.
+            where N is the number of modes
         cov (array): covariance matrix. Must be dimension :math:`2N\times 2N`,
-            where N is the number of modes.
+            where N is the number of modes
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
         array: the thermal state
@@ -530,10 +532,10 @@ def set_state(state, wire, mu, cov):
 
     Args:
         state (tuple): contains means vector
-            and covariance matrix of existing state.
-        wire (int): wire corresponding to the new Gaussian state.
-        mu (array): vector of means to insert.
-        cov (array): covariance matrix to insert.
+            and covariance matrix of existing state
+        wire (int): wire corresponding to the new Gaussian state
+        mu (array): vector of means to insert
+        cov (array): covariance matrix to insert
 
     Returns:
         tuple: contains the vector of means and covariance matrix.
@@ -563,15 +565,15 @@ def photon_number(mu, cov, wires, params, hbar=2.):
     r"""Calculates the mean photon number for a given one-mode state.
 
     Args:
-        mu (array): length-2 vector of means.
-        cov (array): :math:`2\times 2` covariance matrix.
-        wires (Sequence[int]): wires to calculate the expectation for.
-        params (None): no parameters are used for this expectation value.
+        mu (array): length-2 vector of means
+        cov (array): :math:`2\times 2` covariance matrix
+        wires (Sequence[int]): wires to calculate the expectation for
+        params (None): no parameters are used for this expectation value
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
-        tuple: contains the photon number expectation and variance.
+        tuple: contains the photon number expectation and variance
     """
     # pylint: disable=unused-argument
     ex = (np.trace(cov) + mu.T @ mu)/(2*hbar) - 1/2
@@ -583,7 +585,7 @@ def homodyne(phi=None):
     """Function factory that returns the Homodyne expectation of a one mode state.
 
     Args:
-        phi (float): the default phase space axis to perform the Homodyne measurement.
+        phi (float): the default phase space axis to perform the Homodyne measurement
 
     Returns:
         function: A function that accepts a single mode means vector, covariance matrix,
@@ -615,14 +617,14 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
     polynomial of quadrature operators.
 
     Args:
-        mu (array): length-2 vector of means.
-        cov (array): :math:`2\times 2` covariance matrix.
-        wires (Sequence[int]): wires to calculate the expectation for.
+        mu (array): length-2 vector of means
+        cov (array): :math:`2\times 2` covariance matrix
+        wires (Sequence[int]): wires to calculate the expectation for
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
             and quadratic coefficients of the quadrature operators
-            :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`.
+            :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
         tuple: the mean and variance of the quadrature-polynomial observable
@@ -714,7 +716,7 @@ class DefaultGaussian(Device):
         shots (int): How many times should the circuit be evaluated (or sampled) to estimate
             the expectation values. 0 yields the exact result.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`.
+            relation :math:`[\x,\p]=i\hbar`
     """
     name = 'Default Gaussian PennyLane plugin'
     short_name = 'default.gaussian'
@@ -806,11 +808,11 @@ class DefaultGaussian(Device):
         r"""Expands a one-mode Symplectic matrix S to act on the entire subsystem.
 
         Args:
-            S (array): :math:`2\times 2` Symplectic matrix.
-            wire (int): the wire S acts on.
+            S (array): :math:`2\times 2` Symplectic matrix
+            wire (int): the wire S acts on
 
         Returns:
-            array: the resulting :math:`2N\times 2N` Symplectic matrix.
+            array: the resulting :math:`2N\times 2N` Symplectic matrix
         """
         S2 = np.identity(2*self.num_wires)
 
@@ -825,11 +827,11 @@ class DefaultGaussian(Device):
         r"""Expands a two-mode Symplectic matrix S to act on the entire subsystem.
 
         Args:
-            S (array): :math:`4\times 4` Symplectic matrix.
-            wires (Sequence[int]): the list of two wires S acts on.
+            S (array): :math:`4\times 4` Symplectic matrix
+            wires (Sequence[int]): the list of two wires S acts on
 
         Returns:
-            array: the resulting :math:`2N\times 2N` Symplectic matrix.
+            array: the resulting :math:`2N\times 2N` Symplectic matrix
         """
         S2 = np.identity(2*self.num_wires)
         w = np.array(wires)
@@ -866,8 +868,8 @@ class DefaultGaussian(Device):
             wires (int of Sequence[int]): indices of the requested wires
 
         Returns:
-            tuple (means, cov): where means is an array containing the vector of means,
-            and cov is a square array containing the covariance matrix.
+            tuple (means, cov): means is an array containing the vector of means,
+            and cov is a square array containing the covariance matrix
         """
         if wires == list(range(self.num_wires)):
             # reduced state is full state
