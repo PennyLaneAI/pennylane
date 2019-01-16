@@ -202,9 +202,10 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
     r"""pennylane.template.Interferometer(theta, phi, wires)
     General linear interferometer
 
-    An instance in specified by providing ``len(wires)*(len(wires)-1)/2`` many
-    angles via theta and phi each. The interferometer is then implemented with
-    the scheme described in :cite:`clements2016optimal` (Fig. 1a). Beam splitters
+    An instance is specified by providing ``len(wires)*(len(wires)-1)/2`` many
+    transmittivity angles and the same number of phase angles. The interferometer
+    is then implemented with
+    the scheme described in :cite:`clements2016optimal` (Fig. 1a). Beamsplitters
     are numbered per layer from top to bottom and ``theta[i]`` and ``phi[i]`` are
     used as the parameters of the i-th beam splitter.
 
