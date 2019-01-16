@@ -147,7 +147,7 @@ class Squeezing(CVOperation):
     Phase space squeezing.
 
     .. math::
-        S(z) = \exp\left(\frac{1}{2}(z^* a^2 -z {a^\dagger}^2)\right).
+        S(z) = \exp\left(\frac{1}{2}(z^* \a^2 -z {\a^\dagger}^2)\right).
 
     where :math:`z = r e^{i\phi}`.
 
@@ -189,8 +189,8 @@ class Displacement(CVOperation):
     Phase space displacement.
 
     .. math::
-       D(a,\phi) = D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
-       = \exp\left(-i\sqrt{\frac{2}{\hbar}}(\re(\alpha) \hat{p} -\im(\alpha) \hat{x})/\right).
+       D(a,\phi) = D(\alpha) = \exp(\alpha \ad -\alpha^* \a)
+       = \exp\left(-i\sqrt{\frac{2}{\hbar}}(\re(\alpha) \hat{p} -\im(\alpha) \hat{x})\right).
 
     where :math:`\alpha = ae^{i\phi}` has magnitude :math:`a\geq 0` and phase :math:`\phi`.
     The result of applying a displacement to the vacuum is a coherent state
@@ -232,7 +232,7 @@ class Beamsplitter(CVOperation):
     Beamsplitter interaction.
 
     .. math::
-        B(\theta,\phi) = \exp\left(\theta (e^{i \phi} a b^\dagger -e^{-i \phi}a^\dagger b) \right).
+        B(\theta,\phi) = \exp\left(\theta (e^{i \phi} \a \hat{b}^\dagger -e^{-i \phi}\ad \hat{b}) \right).
 
     **Details:**
 
@@ -281,8 +281,8 @@ class TwoModeSqueezing(CVOperation):
     Phase space two-mode squeezing.
 
     .. math::
-        S_2(z) = \exp\left(z^* ab -z a^\dagger b^\dagger \right)
-        = \exp\left(r (e^{-i\phi} ab -e^{i\phi} a^\dagger b^\dagger \right).
+        S_2(z) = \exp\left(z^* \a \hat{b} -z \ad \hat{b}^\dagger \right)
+        = \exp\left(r (e^{-i\phi} \a\hat{b} -e^{i\phi} \ad \hat{b}^\dagger \right).
 
     where :math:`z = r e^{i\phi}`.
 
