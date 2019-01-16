@@ -185,14 +185,14 @@ class Squeezing(CVOperation):
 
 
 class Displacement(CVOperation):
-    r"""pennylane.Displacement(r, phi, wires)
+    r"""pennylane.Displacement(a, phi, wires)
     Phase space displacement.
 
     .. math::
-       D(r,\phi) = D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
+       D(a,\phi) = D(\alpha) = \exp(\alpha a^\dagger -\alpha^* a)
        = \exp\left(-i\sqrt{\frac{2}{\hbar}}(\re(\alpha) \hat{p} -\im(\alpha) \hat{x})/\right).
 
-    where :math:`\alpha = r e^{i\phi}` has magnitude :math:`r\geq 0` and phase :math:`\phi`.
+    where :math:`\alpha = ae^{i\phi}` has magnitude :math:`a\geq 0` and phase :math:`\phi`.
     The result of applying a displacement to the vacuum is a coherent state
     :math:`D(\alpha)\ket{0} = \ket{\alpha}`.
 
@@ -200,14 +200,14 @@ class Displacement(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}D(r,\phi) = \frac{1}{2s} \left[D(r+s, \phi) - D(r-s, \phi)\right]`,
+    * Gradient recipe: :math:`\frac{d}{dr}D(a,\phi) = \frac{1}{2s} \left[D(a+s, \phi) - D(a-s, \phi)\right]`,
       where :math:`s` is an arbitrary real number (:math:`0.1` by default)
     * Heisenberg representation:
 
-      .. math:: M = \begin{bmatrix} 1 & 0 & 0 \\ 2r\cos\phi & 1 & 0 \\ 2r\sin\phi & 0 & 1\end{bmatrix}
+      .. math:: M = \begin{bmatrix} 1 & 0 & 0 \\ 2a\cos\phi & 1 & 0 \\ 2a\sin\phi & 0 & 1\end{bmatrix}
 
     Args:
-        r (float): displacement magnitude :math:`r=|\alpha|`
+        a (float): displacement magnitude :math:`a=|\alpha|`
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
