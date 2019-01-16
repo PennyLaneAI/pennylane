@@ -462,7 +462,7 @@ class BasicTest(BaseTest):
 
 
     def test_keywordargs_for_wires(self):
-        "Tests that wires use keyword arguments."
+        "Tests that wires can be passed as keyword arguments."
         self.logTestName()
 
         def circuit(x, q=None):
