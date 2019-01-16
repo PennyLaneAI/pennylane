@@ -158,7 +158,7 @@ def CVNeuralNet(weights, wires=None):
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
 
-def CVNeuralNetLayer(theta1, phi1, r, theta2, phi2, a, phi_a, k, wires=None): #pylint: disable-msg=too-many-arguments
+def CVNeuralNetLayer(theta1, phi1, r, phi_r, theta2, phi2, a, phi_a, k, wires=None): #pylint: disable-msg=too-many-arguments
     """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires)
     A single layer of a CV Quantum Neural Network
 
@@ -175,6 +175,7 @@ def CVNeuralNetLayer(theta1, phi1, r, theta2, phi2, a, phi_a, k, wires=None): #p
         theta1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         r (array[float]): length ``len(wires)`` arrays of squeezing amounts for :class:`~.Squeezing` operations
+        phi_r (array[float]): length ``len(wires)`` arrays of squeezing angles for :class:`~.Squeezing` operations
         theta2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         a (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
@@ -184,7 +185,7 @@ def CVNeuralNetLayer(theta1, phi1, r, theta2, phi2, a, phi_a, k, wires=None): #p
     """
     Interferometer(theta=theta1, phi=phi1, wires=wires)
     for i, wire in enumerate(wires):
-        Squeezing(r[i], 0., wires=wire)
+        Squeezing(r[i], phi_r[i], wires=wire)
 
     Interferometer(theta=theta2, phi=phi2, wires=wires)
 
