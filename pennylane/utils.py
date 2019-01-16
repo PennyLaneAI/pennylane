@@ -35,7 +35,7 @@ across the PennyLane submodules.
 
     <h3>Code details</h3>
 """
-import collections
+from collections.abc import Iterable
 import numbers
 
 import autograd.numpy as np
@@ -56,7 +56,7 @@ def _flatten(x):
     """
     if isinstance(x, np.ndarray):
         yield from _flatten(x.flat)  # should we allow object arrays? or just "yield from x.flat"?
-    elif isinstance(x, collections.Iterable) and not isinstance(x, (str, bytes)):
+    elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
         for item in x:
             yield from _flatten(item)
     else:
@@ -80,7 +80,7 @@ def _unflatten(flat, model):
         idx = model.size
         res = np.array(flat)[:idx].reshape(model.shape)
         return res, flat[idx:]
-    elif isinstance(model, collections.Iterable):
+    elif isinstance(model, Iterable):
         res = []
         for x in model:
             val, flat = _unflatten(flat, x)
