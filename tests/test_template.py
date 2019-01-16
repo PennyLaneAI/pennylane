@@ -97,7 +97,7 @@ class TestInterferometer(BaseTest):
 
             circuit(weights)
 
-class TestVariationalClassifiyer(BaseTest):
+class TestVariationalClassifier(BaseTest):
     """Tests for the CircuitCentric from the pennylane.template module."""
 
     def setUp(self):
