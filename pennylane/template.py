@@ -211,7 +211,7 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
     Args:
         theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi (array): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
-        wires (Sequence[int]): Wires the Interferometer should act on
+        wires (Sequence[int]): wires the Interferometer should act on
     """
 
     #loop over layers
