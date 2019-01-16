@@ -110,6 +110,7 @@ Code details
 """
 import abc
 import numbers
+from collections.abc import Sequence
 import logging as log
 
 import autograd.numpy as np
@@ -286,9 +287,33 @@ class Operation(abc.ABC):
             assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
 
         # apply the operation on the given wires
-        if isinstance(wires, int):
-            wires = [wires]
+        if not isinstance(wires, Sequence):
+            self._wires = [wires]
+        else:
+            self._wires = wires
 
+        if all([isinstance(w, int) for w in self._wires]):
+            # If all wires are integers (i.e., not Variable), check
+            # that they are valid for the given operation
+            self.check_wires(self._wires)
+
+        if do_queue:
+            self.queue()
+
+    def __str__(self):
+        """Print the operation name and some information."""
+        return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
+
+    def check_wires(self, wires):
+        """Check the validity of the operation wires.
+
+        Args:
+            wires (Sequence[int, Variable]): wires to check
+        Raises:
+            TypeError: list of wires is invalid
+        Returns:
+            Number, array, Variable: p
+        """
         if self.num_wires != 0 and len(wires) != self.num_wires:
             raise ValueError("{}: wrong number of wires. "
                              "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
@@ -296,13 +321,7 @@ class Operation(abc.ABC):
         if len(set(wires)) != len(wires):
             raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
 
-        self.wires = wires  #: Sequence[int]: subsystems the operation acts on
-        if do_queue:
-            self.queue()
-
-    def __str__(self):
-        """Print the operation name and some information."""
-        return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
+        return wires
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -341,6 +360,21 @@ class Operation(abc.ABC):
         else:
             raise ValueError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
         return p
+
+    @property
+    def wires(self):
+        """Current wire values.
+
+        Fixed wires are returned as is, free wires represented by
+        :class:`~.variable.Variable` instances are replaced by their
+        current numerical value.
+
+        Returns:
+            list[int]: wire values
+        """
+        w = [i.val if isinstance(i, Variable) else i for i in self._wires]
+        self.check_wires(w)
+        return w
 
     @property
     def parameters(self):
