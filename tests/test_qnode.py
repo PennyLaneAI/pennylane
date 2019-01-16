@@ -200,7 +200,7 @@ class BasicTest(BaseTest):
             qml.RX(x, [0])
             qml.CNOT([0, 2])
             return qml.expval.PauliZ(0)
-        with self.assertRaisesRegex(QuantumFunctionError, 'device only has'):
+        with self.assertRaisesRegex(QuantumFunctionError, 'applied to invalid wire'):
             qf(par)
 
         # CV and discrete ops must not be mixed
