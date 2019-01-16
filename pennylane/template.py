@@ -51,7 +51,7 @@ arbitrary number of blocks in the following way:
 The handy :func:`Interferometer` function can be used to construct arbitrary
 interferometers in terms of elementary :class:`~.Beamsplitter` Operations.
 operations, by giving a lists of beamsplitter parameters. PennyLane can then be used to
-easily differentiate and obviously also optimize these beam splitter angles:
+easily differentiate and also optimize these beamsplitter angles:
 
 .. code-block:: python
 
