@@ -129,7 +129,7 @@ if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', pennylane.template.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestInterferometer, TestCVNeuralNet, TestVariationalClassifiyer):
+    for t in (TestInterferometer, TestCVNeuralNet, TestVariationalClassifier):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
