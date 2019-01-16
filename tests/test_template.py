@@ -104,7 +104,7 @@ class TestVariationalClassifier(BaseTest):
         super().setUp()
         np.random.seed(0)
 
-    def test_variational_classifyer(self):
+    def test_variational_classifier(self):
         """Tests the CircuitCentric for various parameters."""
         outcomes = []
         for num_wires in range(2,4):
