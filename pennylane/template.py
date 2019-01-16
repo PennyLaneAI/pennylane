@@ -76,7 +76,7 @@ easily differentiate and also optimize these beamsplitter angles:
     print(qml.jacobian(circuit, 0)(theta, phi))
 
 The function :func:`CVNeuralNet` implements the continuous-variable neural network architecture from :cite:`killoran2018continuous`.
-Provided with a suitable array of weights, such neural networks can now be easily constructed and trained with PennyLane.
+Provided with a suitable array of weights, such neural networks can be easily constructed and trained with PennyLane.
 
 Summary
 ^^^^^^^
