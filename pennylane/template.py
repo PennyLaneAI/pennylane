@@ -195,7 +195,7 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires=None): #pylint: 
 
 def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
     r"""pennylane.template.Interferometer(theta, phi, wires)
-    General linear interferometer
+    General linear interferometer.
 
 
     An instance is specified by providing ``len(wires)*(len(wires)-1)/2`` many
