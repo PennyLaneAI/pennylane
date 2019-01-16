@@ -150,15 +150,15 @@ def CVNeuralNet(weights, wires=None):
     input parameters.
 
     Args:
-        weights (array[array]): Array of weights for each layer of the CV
-                                neural network
+        weights (array[array]): Array of arrays of weights for each
+                                layer of the CV neural network
         wires (Sequence[int]): Wires the CVQNN should act on
     """
     for layer_weights in weights:
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
 
-def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires=None): #pylint: disable-msg=too-many-arguments
+def CVNeuralNetLayer(theta1, phi1, r, theta2, phi2, a, phi_a, k, wires=None): #pylint: disable-msg=too-many-arguments
     """pennylane.template.CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires)
     A single layer of a CV Quantum Neural Network
 
@@ -174,21 +174,22 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires=None): #pylint: 
     Args:
         theta1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
-        s (array[float]): length ``len(wires)`` arrays of squeezing amounts for :class:`~.Squeezing` operations
+        r (array[float]): length ``len(wires)`` arrays of squeezing amounts for :class:`~.Squeezing` operations
         theta2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
-        r (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
+        a (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
+        phi_a (array[float]): length ``len(wires)`` arrays of displacement angles for :class:`~.Displacement` operations
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
         wires (Sequence[int]): Wires the layer should act on
     """
     Interferometer(theta=theta1, phi=phi1, wires=wires)
     for i, wire in enumerate(wires):
-        Squeezing(s[i], 0., wires=wire)
+        Squeezing(r[i], 0., wires=wire)
 
     Interferometer(theta=theta2, phi=phi2, wires=wires)
 
     for i, wire in enumerate(wires):
-        Displacement(r[i], 0., wires=wire)
+        Displacement(a[i], phi_a[i], wires=wire)
 
     for i, wire in enumerate(wires):
         Kerr(k[i], wires=wire)
