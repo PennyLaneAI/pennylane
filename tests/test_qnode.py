@@ -49,6 +49,7 @@ a_shapes = [(64,),
 b = np.linspace(-1., 1., 8)
 b_shapes = [(8,), (8,1), (4,2), (2,2,2), (2,1,2,1,2)]
 
+
 class BasicTest(BaseTest):
     """Qnode basic tests.
     """
