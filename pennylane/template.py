@@ -178,11 +178,6 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires=None): #pylint: 
         phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
         r (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
-<<<<<<< HEAD
-=======
-        tolerance (int): The number of decimal places to use when determining whether a gate parameter obtained is so close
-                         to trivial that the gate is effectively an Identity and can be skipped.
->>>>>>> ef7ee29cf4c06c091a9ae6d1c2d26f0ddf459c9c
         wires (Sequence[int]): Wires the layer should act on
     """
     Interferometer(theta=theta1, phi=phi1, wires=wires)
@@ -202,6 +197,7 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
     r"""pennylane.template.Interferometer(theta, phi, wires)
     General linear interferometer
 
+
     An instance is specified by providing ``len(wires)*(len(wires)-1)/2`` many
     transmittivity angles and the same number of phase angles. The interferometer
     is then implemented with
@@ -212,7 +208,7 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
     Args:
         theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi (array): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
-        wires (Sequence[int]): Wires the Interferometer should act on
+        wires (Sequence[int]): wires the Interferometer should act on
     """
 
     #loop over layers
