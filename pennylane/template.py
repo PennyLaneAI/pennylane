@@ -173,12 +173,12 @@ def CVNeuralNetLayer(theta1, phi1, s, theta2, phi2, r, k, wires=None): #pylint: 
     Args:
         theta1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
-        s (array[float]): length ``len(wires)`` arrays of squeezing amounts for :class:`~.Squeezing` operations
+        s (array[float]): length ``len(wires)`` array of squeezing amounts for :class:`~.Squeezing` operations
         theta2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
         phi2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
-        r (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
-        k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
-        wires (Sequence[int]): Wires the layer should act on
+        r (array[float]): length ``len(wires)`` array of displacement magnitudes for :class:`~.Displacement` operations
+        k (array[float]): length ``len(wires)`` array of kerr parameters for :class:`~.Kerr` operations
+        wires (Sequence[int]): wires the layer should act on
     """
     Interferometer(theta=theta1, phi=phi1, wires=wires)
     for i, wire in enumerate(wires):
