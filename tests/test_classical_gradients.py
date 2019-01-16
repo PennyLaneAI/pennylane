@@ -39,21 +39,21 @@ class BasicTest(BaseTest):
                              lambda x: 2 * x]
         self.multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
                                    lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-                                   lambda x: np.sum(x_ ** 2 for x_ in x)]
+                                   lambda x: np.sum([x_ ** 2 for x_ in x])]
         self.grad_multi_funcs = [lambda x: np.array([np.cos(x[0]), -np.sin(x[1])]),
                                  lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
                                                      np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
                                  lambda x: np.array([2 * x_ for x_ in x])]
         self.mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]),
                                 lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[1, 0]),
-                                lambda x: np.sum(x_[0] ** 2 for x_ in x)]
+                                lambda x: np.sum([x_[0] ** 2 for x_ in x])]
         self.grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]]),
                                      lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[1, 0])],
                                                          [np.exp(x[0, 0] / 3) * (1 - np.tanh(x[1, 0]) ** 2)]]),
                                      lambda x: np.array([[2 * x_[0]] for x_ in x])]
         self.margs_fns = [lambda x,y: np.sin(x) + np.cos(y),
                           lambda x,y: np.exp(x / 3) * np.tanh(y),
-                          lambda x,y: np.sum(x_ ** 2 for x_ in [x,y])]
+                          lambda x,y: np.sum([x_ ** 2 for x_ in [x,y]])]
         self.grad_margs_funcs = [lambda x,y: (np.cos(x), -np.sin(y)),
                                  lambda x,y: (np.exp(x / 3) / 3 * np.tanh(y),
                                               np.exp(x / 3) * (1 - np.tanh(y) ** 2)),

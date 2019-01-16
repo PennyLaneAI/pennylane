@@ -124,14 +124,14 @@ class BasicTest(BaseTest):
                              lambda x: 2 * x]
         self.multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
                                    lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-                                   lambda x: np.sum(x_ ** 2 for x_ in x)]
+                                   lambda x: np.sum([x_ ** 2 for x_ in x])]
         self.grad_multi_funcs = [lambda x: np.array([np.cos(x[0]), -np.sin(x[1])]),
                                  lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
                                                      np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
                                  lambda x: np.array([2 * x_ for x_ in x])]
         self.mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
                                 lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
-                                lambda x: np.sum(x_[0] ** 2 for x_ in x)]
+                                lambda x: np.sum([x_[0] ** 2 for x_ in x])]
         self.grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
                                                          [-np.sin(x[1, 0]), 1.              ]]),
                                      lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),

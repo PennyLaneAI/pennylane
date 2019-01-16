@@ -14,7 +14,7 @@ env:
   - LOGGING=info
 install:
 - pip install -r requirements.txt
-- pip install wheel pytest pytest-cov codecov
+- pip install wheel pytest pytest-cov codecov --upgrade
 - python3 setup.py bdist_wheel
 - pip install dist/PennyLane*.whl
 script:
