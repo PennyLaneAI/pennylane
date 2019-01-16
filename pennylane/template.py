@@ -76,8 +76,8 @@ beamsplitter angles:
 
     print(qml.jacobian(circuit, 0)(theta, phi))
 
-The function :func:`CVNeuralNet` implements the continuous variable neural network architecture from :cite:`killoran2018continuous`.
-Provided with a suitable array of weights, such neural networks can now be easily constructed and trained with PennyLane.
+The function :func:`CVNeuralNet` implements the continuous-variable neural network architecture from :cite:`killoran2018continuous`.
+Provided with a suitable array of weights, such neural networks can be easily constructed and trained with PennyLane.
 
 Summary
 ^^^^^^^
@@ -124,9 +124,9 @@ def CircuitCentricBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wire
 
     Args:
         weights (array[float]): shape ``(len(wires), 3)`` array of weights
-        periodic (bool): Whether to use periodic boundary conditions when
+        periodic (bool): whether to use periodic boundary conditions when
                          applying imprimitive gates
-        r (Sequence[int]): Range of the imprimitive gates of this block
+        r (Sequence[int]): range of the imprimitive gates of this block
         imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
         wires (Sequence[int]): Wires the block should act on
     """
@@ -150,9 +150,9 @@ def CVNeuralNet(weights, wires=None):
     input parameters.
 
     Args:
-        weights (array[array]): Array of arrays of weights for each
+        weights (array[array]): array of arrays of weights for each
                                 layer of the CV neural network
-        wires (Sequence[int]): Wires the CVQNN should act on
+        wires (Sequence[int]): wires the CVQNN should act on
     """
     for layer_weights in weights:
         CVNeuralNetLayer(*layer_weights, wires=wires)

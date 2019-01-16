@@ -97,14 +97,14 @@ class TestInterferometer(BaseTest):
 
             circuit(weights)
 
-class TestVariationalClassifiyer(BaseTest):
+class TestVariationalClassifier(BaseTest):
     """Tests for the CircuitCentric from the pennylane.template module."""
 
     def setUp(self):
         super().setUp()
         np.random.seed(0)
 
-    def test_variational_classifyer(self):
+    def test_variational_classifier(self):
         """Tests the CircuitCentric for various parameters."""
         outcomes = []
         for num_wires in range(2,4):
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', pennylane.template.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestInterferometer, TestCVNeuralNet, TestVariationalClassifiyer):
+    for t in (TestInterferometer, TestCVNeuralNet, TestVariationalClassifier):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
