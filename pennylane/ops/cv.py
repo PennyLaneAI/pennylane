@@ -721,7 +721,7 @@ class CatState(CVOperation):
     .. math::
        \ket{\text{cat}(\alpha)} = \frac{1}{N} (\ket{\alpha} +e^{ip\pi} \ket{-\alpha}),
 
-    where :math:`\ket{\pm\alpha} = D(\pm\alpha)\ket{0}` are a coherent states with displacement
+    where :math:`\ket{\pm\alpha} = D(\pm\alpha)\ket{0}` are coherent states with displacement
     parameters :math:`\pm\alpha=\pm ae^{i\phi}` and
     :math:`N = \sqrt{2 (1+\cos(p\pi)e^{-2|\alpha|^2})}` is the normalization factor.
 
