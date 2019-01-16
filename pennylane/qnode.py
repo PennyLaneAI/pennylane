@@ -313,24 +313,7 @@ class QNode:
                                        "order they are measured.")
 
         self.ev = res  #: tuple[Expectation]: returned expectation values
-
-        # check that no wires are measured more than once
-        m_wires = list(w for ex in self.ev for w in ex.wires)
-        if len(m_wires) != len(set(m_wires)):
-            raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
-
         self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
-
-        def check_op(op):
-            """Make sure only existing wires are referenced."""
-            for w in op.wires:
-                if w < 0 or w >= self.num_wires:
-                    raise QuantumFunctionError("Operation {} applied to wire {}, "
-                                               "device only has {}.".format(op.name, w, self.num_wires))
-
-        # check every gate/preparation and ev measurement
-        for op in self.ops:
-            check_op(op)
 
         # classify the circuit contents
         temp = [isinstance(op, pennylane.operation.CV) for op in self.ops]
@@ -499,6 +482,23 @@ class QNode:
         Variable.kwarg_values = keyword_values
 
         self.device.reset()
+
+        # check that no wires are measured more than once
+        m_wires = list(w for ex in self.ev for w in ex.wires)
+        if len(m_wires) != len(set(m_wires)):
+            raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
+
+        def check_op(op):
+            """Make sure only existing wires are referenced."""
+            for w in op.wires:
+                if w < 0 or w >= self.num_wires:
+                    raise QuantumFunctionError("Operation {} applied to invalid wire {} "
+                                               "on device with {} wires.".format(op.name, w, self.num_wires))
+
+        # check every gate/preparation and ev measurement
+        for op in self.ops:
+            check_op(op)
+
         ret = self.device.execute(self.queue, self.ev)
         return self.output_type(ret)
 

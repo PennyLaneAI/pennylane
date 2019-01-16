@@ -49,6 +49,7 @@ a_shapes = [(64,),
 b = np.linspace(-1., 1., 8)
 b_shapes = [(8,), (8,1), (4,2), (2,2,2), (2,1,2,1,2)]
 
+
 class BasicTest(BaseTest):
     """Qnode basic tests.
     """
@@ -199,7 +200,7 @@ class BasicTest(BaseTest):
             qml.RX(x, [0])
             qml.CNOT([0, 2])
             return qml.expval.PauliZ(0)
-        with self.assertRaisesRegex(QuantumFunctionError, 'device only has'):
+        with self.assertRaisesRegex(QuantumFunctionError, 'applied to invalid wire'):
             qf(par)
 
         # CV and discrete ops must not be mixed
@@ -458,6 +459,27 @@ class BasicTest(BaseTest):
 
         c = circuit(1., x=[np.pi, np.pi])
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
+
+
+    def test_keywordargs_for_wires(self):
+        "Tests that wires can be passed as keyword arguments."
+        self.logTestName()
+
+        default_q = 0
+
+        def circuit(x, q=default_q):
+            qml.RX(x, [q])
+            return qml.expval.PauliZ(q)
+
+        circuit = qml.QNode(circuit, self.dev2)
+
+        c = circuit(np.pi, q=1)
+        self.assertEqual(circuit.queue[0].wires, [1])
+        self.assertAlmostEqual(c, -1., delta=self.tol)
+
+        c = circuit(np.pi)
+        self.assertEqual(circuit.queue[0].wires, [default_q])
+        self.assertAlmostEqual(c, -1., delta=self.tol)
 
 
     def test_keywordargs_used(self):

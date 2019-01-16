@@ -70,7 +70,10 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     <h3>Code details</h3>
 """
 import logging
+from collections.abc import Sequence
 import copy
+
+import numpy as np
 
 logging.getLogger()
 
@@ -131,9 +134,10 @@ class Variable:
         # pylint: disable=unsubscriptable-object
         if self.name is None:
             # The variable is a placeholder for a positional argument
-            value = self.free_param_values[self.idx] * self.mult
-            return value
+            return self.free_param_values[self.idx] * self.mult
 
         # The variable is a placeholder for a keyword argument
-        value = self.kwarg_values[self.name][self.idx] * self.mult
-        return value
+        if isinstance(self.kwarg_values[self.name], (Sequence, np.ndarray)):
+            return self.kwarg_values[self.name][self.idx] * self.mult
+
+        return self.kwarg_values[self.name] * self.mult
