@@ -493,7 +493,7 @@ class Operation(abc.ABC):
         """Invert the operation"""
         # First, remove the operation from the queue
         if not self.supports_inverse:
-            raise QuantumOperationError("Operation {} does not support inversion".format(self.name))
+            raise QuantumOperationError("{} {} does not support inversion".format(self.__class__.__bases__[0].__name__, self.name))
 
         self._inv = True
         return self
@@ -534,7 +534,7 @@ class Expectation(Operation):
             there is some reason to run an Expectation outside of a QNode context.
     """
     # pylint: disable=abstract-method
-    pass
+    _supports_inverse = False
 
 
 #=============================================================================
