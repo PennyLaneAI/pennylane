@@ -496,10 +496,6 @@ class Operation(abc.ABC):
             raise QuantumOperationError("Operation {} does not support inversion".format(self.name))
 
         self._inv = True
-
-        if QNode._current_context:
-            QNode._current_context.queue[-1]._inv = True
-
         return self
 
 
