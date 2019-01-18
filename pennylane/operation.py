@@ -196,6 +196,7 @@ class Operation(abc.ABC):
             This flag is useful if there is some reason to run an Operation
             outside of a QNode context.
     """
+    #pylint: disable=too-many-instance-attributes
     _grad_recipe = None
     _supports_inverse = True
     _no_param_self_inverse = True
@@ -480,7 +481,8 @@ class Operation(abc.ABC):
 
         ptmp = p[:]
         if self.par_domain == 'A':
-            ptmp[0] = np.linalg.inv(p[0]) # should this be p[0].conj().T by default?
+            # should this be p[0].conj().T by default?
+            ptmp[0] = np.linalg.inv(p[0]) #pylint: disable=no-member
             return ptmp
 
         ptmp[0] = -p[0]
