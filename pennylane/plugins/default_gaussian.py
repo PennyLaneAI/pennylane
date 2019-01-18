@@ -742,7 +742,7 @@ class DefaultGaussian(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, operation, wires, par):
+    def apply(self, operation, wires, par, apply_inverse=False):
         if operation == 'Displacement':
             self._state = displacement(self._state, wires[0], par[0]*np.exp(1j*par[1]))
             return # we are done here

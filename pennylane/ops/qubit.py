@@ -339,6 +339,9 @@ class Rot(Operation):
     par_domain = 'R'
     grad_method = 'A'
 
+    def inverse_parameters(self, p):
+        return [-i for i in p[::-1]]
+
 
 #=============================================================================
 # Arbitrary operations
@@ -390,6 +393,7 @@ class BasisState(Operation):
     num_wires = 0
     par_domain = 'A'
     grad_method = None
+    supports_inverse = False
 
 
 class QubitStateVector(Operation):
@@ -410,6 +414,7 @@ class QubitStateVector(Operation):
     num_wires = 0
     par_domain = 'A'
     grad_method = 'F'
+    supports_inverse = False
 
 
 all_ops = [

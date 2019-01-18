@@ -293,7 +293,7 @@ class DefaultQubit(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, operation, wires, par):
+    def apply(self, operation, wires, par, apply_inverse=False):
         if operation == 'QubitStateVector':
             state = np.asarray(par[0], dtype=np.float64)
             if state.ndim == 1 and state.shape[0] == 2**self.num_wires:

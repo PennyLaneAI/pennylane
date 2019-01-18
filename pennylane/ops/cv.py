@@ -557,6 +557,7 @@ class CoherentState(CVOperation):
     num_params = 2
     par_domain = 'R'
     grad_method = 'F'
+    supports_inverse = False
 
 
 class SqueezedState(CVOperation):
@@ -578,6 +579,7 @@ class SqueezedState(CVOperation):
     num_params = 2
     par_domain = 'R'
     grad_method = 'F'
+    supports_inverse = False
 
 
 class DisplacedSqueezedState(CVOperation):
@@ -609,6 +611,7 @@ class DisplacedSqueezedState(CVOperation):
     num_params = 4
     par_domain = 'R'
     grad_method = 'F'
+    supports_inverse = False
 
 
 class ThermalState(CVOperation):
@@ -629,6 +632,7 @@ class ThermalState(CVOperation):
     num_params = 1
     par_domain = 'R'
     grad_method = 'F'
+    supports_inverse = False
 
 
 class GaussianState(CVOperation):
@@ -650,6 +654,7 @@ class GaussianState(CVOperation):
     num_params = 2
     par_domain = 'A'
     grad_method = 'F'
+    supports_inverse = False
 
 
 class FockState(CVOperation):
@@ -670,6 +675,7 @@ class FockState(CVOperation):
     num_params = 1
     par_domain = 'N'
     grad_method = None
+    supports_inverse = False
 
 
 class FockStateVector(CVOperation):
@@ -690,6 +696,7 @@ class FockStateVector(CVOperation):
     num_params = 1
     par_domain = 'A'
     grad_method = 'F'
+    supports_inverse = False
 
 
 class FockDensityMatrix(CVOperation):
@@ -710,6 +717,7 @@ class FockDensityMatrix(CVOperation):
     num_params = 1
     par_domain = 'A'
     grad_method = 'F'
+    supports_inverse = False
 
 
 class CatState(CVOperation):
@@ -742,6 +750,7 @@ class CatState(CVOperation):
     num_params = 3
     par_domain = 'R'
     grad_method = 'F'
+    supports_inverse = False
 
 
 all_ops = [

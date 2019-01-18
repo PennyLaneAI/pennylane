@@ -159,6 +159,11 @@ def classproperty(func):
     return ClassPropertyDescriptor(func)
 
 
+class QuantumOperationError(Exception):
+    """Base exception to be used for quantum operation exceptions"""
+    pass
+
+
 #=============================================================================
 # Base Operation class
 #=============================================================================
@@ -192,6 +197,7 @@ class Operation(abc.ABC):
             outside of a QNode context.
     """
     _grad_recipe = None
+    _supports_inverse = True
 
     @abc.abstractproperty
     def num_params(self):
@@ -249,9 +255,39 @@ class Operation(abc.ABC):
         """Setter for the grad_recipe property"""
         self._grad_recipe = value
 
+    @property
+    def supports_inverse(self):
+        r"""Whether or not the operations supports the inverse property :attr:`inv`.
+
+        By default, this is set to ``True``, but it can be set to ``False`` on a
+        case-by-case basis.
+
+        If ``True``, by default PennyLane calculates the inverse in the following way:
+
+        * If ``par_domain = 'A'``, then the matrix inverse of the first parameter is returned.
+
+        * Otherwise, the the first parameter is negated.
+
+        This default can be overwritten by defining the :meth:`inverse_parameters` method in your
+        custom operation. This method accepts ``self`` and the list of parameters ``p``, and transforms
+        them such that the operation is inverted. For an example, see :class:`~.ops.qubit.Rot`.
+
+        .. note::
+
+            If the operation is fixed and not parameterised, the :attr:`inv` method is
+            still supported, but it is up to the plugin device to invert the operation on application.
+        """
+        return self._supports_inverse
+
+    @supports_inverse.setter
+    def supports_inverse(self, value):
+        """Setter for the supports_inverse property"""
+        self._supports_inverse = value
+
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
+        self._inv = False
 
         # extract the arguments
         if wires is not None:
@@ -388,7 +424,12 @@ class Operation(abc.ABC):
         """
         temp = list(_flatten(self.params))
         temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
-        return _unflatten(temp_val, self.params)[0]
+        params = _unflatten(temp_val, self.params)[0]
+
+        if self._inv:
+            params = self.inverse_parameters(params)
+
+        return params
 
     def queue(self):
         """Append the operation to a QNode queue."""
@@ -397,6 +438,32 @@ class Operation(abc.ABC):
         else:
             QNode._current_context._append_op(self)
         return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
+
+    def inverse_parameters(self, p):
+        """Function that acts on the parameters of the operation, inverting the operations action.
+
+        Args:
+            p (list): list of the operation parameters
+
+        Returns:
+            list: list containing the transformed parameters,
+            such that the operation implemented is now the inverse
+        """
+        ptmp = p[:]
+        if self.par_domain == 'A':
+            ptmp[0] = np.linalg.inv(p[0])
+            return p
+
+        ptmp[0] = -p[0]
+        return ptmp
+
+    @property
+    def inv(self):
+        """Invert the operation"""
+        # First, remove the operation from the queue
+        if not self.supports_inverse:
+            raise QuantumOperationError("Operation {} does not support inversion".format(self.name))
+        QNode._current_context.queue[-1]._inv = True
 
 
 #=============================================================================

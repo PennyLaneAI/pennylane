@@ -205,7 +205,10 @@ class Device(abc.ABC):
         with self.execution_context():
             self.pre_apply()
             for operation in queue:
-                self.apply(operation.name, operation.wires, operation.parameters)
+                apply_inverse = False
+                if operation.num_params == 0 and operation._inv:
+                    apply_inverse = True
+                self.apply(operation.name, operation.wires, operation.parameters, apply_inverse)
             self.post_apply()
 
             self.pre_expval()
@@ -309,7 +312,7 @@ class Device(abc.ABC):
                 raise DeviceError("Expectation {} not supported on device {}".format(e.name, self.short_name))
 
     @abc.abstractmethod
-    def apply(self, operation, wires, par):
+    def apply(self, operation, wires, par, apply_inverse=False):
         """Apply a quantum operation.
 
         For plugin developers: this function should apply the operation on the device.
@@ -318,6 +321,8 @@ class Device(abc.ABC):
             operation (str): name of the operation
             wires (Sequence[int]): subsystems the operation is applied on
             par (tuple): parameters for the operation
+            apply_inverse (bool): if ``True``, the device should calculate and apply
+                the *inverse* of the operation provided
         """
         raise NotImplementedError
 
