@@ -101,6 +101,7 @@ from autograd import jacobian as _jacobian
 from semantic_version import Version, Spec
 
 import pennylane.operation
+from pennylane.operation import QuantumOperationError
 import pennylane.expval
 
 from .configuration import Configuration

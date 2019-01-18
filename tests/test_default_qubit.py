@@ -402,8 +402,6 @@ class TestDefaultQubitDevice(BaseTest):
                 # otherwise, the operation is simply an array.
                 O = fn
 
-            print("op.num_wires="+str(op.num_wires))
-
             # calculate the expected output
             if op.num_wires == 1 or op.num_wires == 0:
                 expected_out = self.dev._state.conj() @ np.kron(O, I) @ self.dev._state
@@ -665,6 +663,41 @@ class TestDefaultQubitIntegration(BaseTest):
                 self.assertAllEqual(circuit(), reference())
             elif g == 'Hermitian':
                 self.assertAllEqual(circuit(H), reference(H))
+
+    def test_inverse_gate(self):
+        """Test that the inverse rotation gate acts as expected"""
+        self.logTestName()
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            qml.Rot(x, y, z, wires=0).inv
+            return qml.expval.PauliX(0)
+
+        x = 0.4
+        y = 0.6
+        z = 0.1
+
+        res = circuit(x, y, z)
+        expected = -np.sin(y)*np.cos(x)
+        self.assertAlmostEqual(res, expected, delta=self.tol)
+
+    def test_inverse_array_gate(self):
+        """Test that the inverse arbitrary unitary gate acts as expected"""
+        self.logTestName()
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QubitUnitary(U, wires=0).inv
+            return qml.expval.PauliX(0)
+
+        res = circuit()
+        state = U.conj().T @ np.array([1, 0])
+        expected = state.conj() @ X @ state
+        self.assertAlmostEqual(res, expected, delta=self.tol)
 
 
 if __name__ == '__main__':

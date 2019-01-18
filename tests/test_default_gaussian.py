@@ -636,6 +636,23 @@ class TestDefaultGaussianIntegration(BaseTest):
 
             self.assertAllEqual(circuit(*p), reference(*p))
 
+    def test_inverse_gate(self):
+        """Test that the inverse displacement gate acts as expected"""
+        self.logTestName()
+
+        dev = qml.device('default.gaussian', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Displacement(x, 0, wires=0).inv
+            return qml.expval.X(0)
+
+        x = 0.4
+
+        res = circuit(x)
+        expected = -2*x
+        self.assertAlmostEqual(res, expected, delta=self.tol)
+
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', default.gaussian plugin.')

@@ -29,8 +29,95 @@ import pennylane.variable as ov
 dev = pennylane.device('default.qubit', wires=2)
 
 
+U = np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
+              [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])
+
+
 class BasicTest(BaseTest):
     """Utility class tests."""
+
+    def test_parameter_inverse(self):
+        """Test that the inverse of a operation with parameters negates the parameter."""
+        self.logTestName()
+
+        p = [0.5, 0]
+        op = pennylane.Displacement(*p, wires=0, do_queue=False).inv
+        res = op.parameters
+        expected = [-p[0], p[1]]
+        self.assertAllEqual(res, expected)
+
+    def test_array_parameter_inverse(self):
+        """Test that the inverse of a operation with an array parameter inverts the parameter."""
+        self.logTestName()
+
+        p = [U]
+        op = pennylane.QubitUnitary(*p, wires=0, do_queue=False).inv
+        res = op.parameters
+        expected = [np.linalg.inv(U)]
+        self.assertAllEqual(res[0], expected[0])
+
+    def test_no_support_inverse(self):
+        """Test that an exception is raised if the operation does not support inverses"""
+        self.logTestName()
+
+        p = [0.5, 0]
+        with self.assertRaisesRegex(pennylane.QuantumOperationError, "does not support inversion"):
+            op = pennylane.CoherentState(*p, wires=0, do_queue=False).inv
+
+    def test_self_inverse(self):
+        """Test that an operation with no parameters is marked as self-inverse"""
+        self.logTestName()
+        op = pennylane.Hadamard(wires=0, do_queue=False)
+        self.assertTrue(op.self_inverse)
+
+        op = pennylane.Hadamard(wires=0, do_queue=False).inv
+        self.assertEqual(op.parameters, [])
+
+    def test_set_inverse_in_qnode(self):
+        """Test the using inv in a QNode sets the inverse attribute"""
+        self.logTestName()
+
+        def circuit():
+            pennylane.Displacement(0.5, 0, wires=0).inv
+            return pennylane.expval.X(0)
+
+        dev = pennylane.device('default.gaussian', wires=2)
+        node = pennylane.QNode(circuit, dev)
+        node()
+
+        self.assertTrue(node.queue[0]._inv)
+
+    def test_manual_inverse(self):
+        """Test that an operation with no parameters and not its self-inverse is marked as manual inverse"""
+        self.logTestName()
+
+        class DummyOp0(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 0
+            par_domain = 'R'
+            grad_method = 'A'
+
+        op = DummyOp0(wires=0, do_queue=False)
+        op.self_inverse = False
+        self.assertTrue(op.manual_inverse)
+
+        op.self_inverse = True
+        op.supports_inverse = False
+        self.assertFalse(op.manual_inverse)
+
+        class DummyOp1(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+            grad_method = 'A'
+            self_inverse = False
+
+        op = DummyOp1(0.5, wires=0, do_queue=False)
+        self.assertFalse(op.manual_inverse)
+
+
     def test_heisenberg(self):
         "Heisenberg picture adjoint actions of CV Operations."
         self.logTestName()

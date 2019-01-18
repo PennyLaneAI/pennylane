@@ -206,7 +206,7 @@ class Device(abc.ABC):
             self.pre_apply()
             for operation in queue:
                 apply_inverse = False
-                if operation.num_params == 0 and operation._inv:
+                if operation.manual_inverse == 0:
                     apply_inverse = True
                 self.apply(operation.name, operation.wires, operation.parameters, apply_inverse)
             self.post_apply()

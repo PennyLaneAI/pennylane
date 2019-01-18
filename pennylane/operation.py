@@ -198,6 +198,7 @@ class Operation(abc.ABC):
     """
     _grad_recipe = None
     _supports_inverse = True
+    _no_param_self_inverse = True
 
     @abc.abstractproperty
     def num_params(self):
@@ -283,6 +284,31 @@ class Operation(abc.ABC):
     def supports_inverse(self, value):
         """Setter for the supports_inverse property"""
         self._supports_inverse = value
+
+    @property
+    def self_inverse(self):
+        r"""Indicates that a no-parameter operation is its own inverse; :math:`O^{-1} = O`.
+
+        By default, this is set to ``True``, but it can be set to ``False`` on a
+        case-by-case basis. Note that this class property only affects operations
+        that have both ``num_params = 0`` and ``supports_inverse = True``.
+
+        Set this property to ``False`` in your custom operation if you would like the plugin
+        device to manually invert the operation. PennyLane will then pass the ``apply_inverse=True``
+        keyword argument to the :meth:`~.Device.apply` method.
+        """
+        return self._no_param_self_inverse and (self.num_params == 0) and self.supports_inverse
+
+    @self_inverse.setter
+    def self_inverse(self, value):
+        """Setter for the supports_inverse property"""
+        self._no_param_self_inverse = value
+
+    @property
+    def manual_inverse(self):
+        """Returns ``True`` if the operation supports inverses, the number of params is 0,
+        and it is not its own  self inverse."""
+        return self.supports_inverse and (self.num_params == 0) and (not self.self_inverse)
 
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
@@ -449,10 +475,13 @@ class Operation(abc.ABC):
             list: list containing the transformed parameters,
             such that the operation implemented is now the inverse
         """
+        if not p:
+            return p
+
         ptmp = p[:]
         if self.par_domain == 'A':
-            ptmp[0] = np.linalg.inv(p[0])
-            return p
+            ptmp[0] = np.linalg.inv(p[0]) # should this be p[0].conj().T by default?
+            return ptmp
 
         ptmp[0] = -p[0]
         return ptmp
@@ -463,7 +492,13 @@ class Operation(abc.ABC):
         # First, remove the operation from the queue
         if not self.supports_inverse:
             raise QuantumOperationError("Operation {} does not support inversion".format(self.name))
-        QNode._current_context.queue[-1]._inv = True
+
+        self._inv = True
+
+        if QNode._current_context:
+            QNode._current_context.queue[-1]._inv = True
+
+        return self
 
 
 #=============================================================================
