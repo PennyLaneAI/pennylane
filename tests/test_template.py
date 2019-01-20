@@ -20,6 +20,7 @@ import inspect
 import logging as log
 import scipy as sp
 from scipy.linalg import qr
+from types import MethodType
 
 from pennylane import numpy as np
 
@@ -35,7 +36,35 @@ class TestInterferometer(BaseTest):
 
     num_subsystems = 4
 
-    def test_interferometer(self):
+    def test_integration(self):
+        """integration test for the Interferomerter."""
+        dev = qml.device('default.gaussian', wires=self.num_subsystems)
+        np.random.seed(88)
+        num_params = int(self.num_subsystems*(self.num_subsystems-1)/2)
+        theta = np.random.uniform(0, 2*np.pi, num_params)
+        phi = np.random.uniform(0, 2*np.pi, num_params)
+
+        # to test whether the correct circuit is produces we inspect the
+        # Device._op_queue by patching post_apply() of the device
+        test = self
+        def new_post_apply(self):
+            print([ op.parameters for op in  self._op_queue])
+            print([ [t, p] for t, p in zip(theta, phi)])
+
+            test.assertAllEqual([[t, p] for t, p in zip(theta, phi)], [op.parameters for op in self._op_queue])
+            test.assertAllEqual([qml.Beamsplitter]*len(theta), [type(op) for op in self._op_queue])
+
+        dev.post_apply = MethodType(new_post_apply, dev)
+
+        @qml.qnode(dev)
+        def circuit(theta, phi):
+            qml.template.Interferometer(theta=theta, phi=phi, wires=range(self.num_subsystems))
+            return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
+
+        circuit(theta, phi)
+
+    def test_execution(self):
+        """execution test for the Interferomerter."""
         dev = qml.device('default.gaussian', wires=self.num_subsystems)
         np.random.seed(8)
         squeezings = np.random.rand(self.num_subsystems, 2)
@@ -60,13 +89,18 @@ class TestInterferometer(BaseTest):
                                             [ 3.81099656e-04, -4.79703149e-02,  5.78754312e-01,  0.00000000e+00, 3.38965962e-02,  0.00000000e+00]]
                                   ), delta=self.tol)
 
+class TestCVNeuralNet(BaseTest):
+    """Tests for the Interferometer from the pennylane.template module."""
+
+    num_subsystems = 4
+
     def setUp(self):
         super().setUp()
         np.random.seed(8)
         self.num_wires = 4
 
     def test_cvqnn(self):
-
+        """An execution test for the CVNeuralNet"""
         dev = qml.device('default.gaussian', wires=self.num_wires)
 
         weights = [[
@@ -89,14 +123,17 @@ class TestInterferometer(BaseTest):
 
             circuit(weights)
 
-class TestVariationalClassifier(BaseTest):
+        # No assert because values are anyway not correct because Kerr had to be mocked
+
+
+class TestStronglyEntanglingCircuit(BaseTest):
     """Tests for the StronglyEntanglingCircuit from the pennylane.template module."""
 
     def setUp(self):
         super().setUp()
         np.random.seed(0)
 
-    def test_variational_classifier(self):
+    def test_execution(self):
         """Tests the StronglyEntanglingCircuit for various parameters."""
         outcomes = []
         for num_wires in range(2,4):
@@ -121,7 +158,7 @@ if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', pennylane.template.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestInterferometer, TestCVNeuralNet, TestVariationalClassifier):
+    for t in (TestInterferometer, TestCVNeuralNet, TestStronglyEntanglingCircuit):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
