@@ -48,9 +48,6 @@ class TestInterferometer(BaseTest):
         # Device._op_queue by patching post_apply() of the device
         test = self
         def new_post_apply(self):
-            print([ op.parameters for op in  self._op_queue])
-            print([ [t, p] for t, p in zip(theta, phi)])
-
             test.assertAllEqual([[t, p] for t, p in zip(theta, phi)], [op.parameters for op in self._op_queue])
             test.assertAllEqual([qml.Beamsplitter]*len(theta), [type(op) for op in self._op_queue])
 
@@ -98,12 +95,7 @@ class TestCVNeuralNet(BaseTest):
         super().setUp()
         np.random.seed(8)
         self.num_wires = 4
-
-    def test_cvqnn(self):
-        """An execution test for the CVNeuralNet"""
-        dev = qml.device('default.gaussian', wires=self.num_wires)
-
-        weights = [[
+        self.weights = [[
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #transmittivity angles
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #phase angles
             np.random.uniform(0.1, 0.7, self.num_wires), #squeezing amounts
@@ -115,13 +107,53 @@ class TestCVNeuralNet(BaseTest):
             np.random.uniform(0.1, 0.3, self.num_wires) #kerr parameters
         ] for l in range(2)]
 
+    def test_integration(self):
+        """integration test for the Interferomerter."""
+        dev = qml.device('default.gaussian', wires=self.num_subsystems)
+
+        # to test whether the correct circuit is produces we inspect the
+        # Device._op_queue by patching execute() of the device
+        test = self
+        test_weights = self.weights
+        def new_execute(self, queue, expectation):
+            test.assertAllEqual([type(op) for op in queue], [qml.Beamsplitter]*6+[qml.Squeezing]*4+[qml.Beamsplitter]*6+[qml.Displacement]*4+[qml.Kerr]*4+[qml.Beamsplitter]*6+[qml.Squeezing]*4+[qml.Beamsplitter]*6+[qml.Displacement]*4+[qml.Kerr]*4)
+
+            split_queue = np.split(queue, np.cumsum([6,4,6,4,4,6,4,6,4]))
+
+            test.assertAllEqual([op. parameters for op in split_queue[0]], [[theta1, phi1] for theta1, phi1 in zip(test_weights[0][0],test_weights[0][1])])
+            test.assertAllEqual([op. parameters for op in split_queue[1]], [[r, phi_r] for r, phi_r in zip(test_weights[0][2],test_weights[0][3])])
+            test.assertAllEqual([op. parameters for op in split_queue[2]], [[theta2, phi2] for theta2, phi2 in zip(test_weights[0][4],test_weights[0][5])])
+            test.assertAllEqual([op. parameters for op in split_queue[3]], [[a, phi_a] for a, phi_a in zip(test_weights[0][6],test_weights[0][7])])
+            test.assertAllEqual([op. parameters for op in split_queue[4]], [[k] for k in test_weights[0][8]])
+
+            test.assertAllEqual([op. parameters for op in split_queue[5]], [[theta1, phi1] for theta1, phi1 in zip(test_weights[1][0],test_weights[1][1])])
+            test.assertAllEqual([op. parameters for op in split_queue[6]], [[r, phi_r] for r, phi_r in zip(test_weights[1][2],test_weights[1][3])])
+            test.assertAllEqual([op. parameters for op in split_queue[7]], [[theta2, phi2] for theta2, phi2 in zip(test_weights[1][4],test_weights[1][5])])
+            test.assertAllEqual([op. parameters for op in split_queue[8]], [[a, phi_a] for a, phi_a in zip(test_weights[1][6],test_weights[1][7])])
+            test.assertAllEqual([op. parameters for op in split_queue[9]], [[k] for k in test_weights[1][8]])
+            return np.array([0.5])
+
+        dev.execute = MethodType(new_execute, dev)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.template.CVNeuralNet(weights, wires=range(self.num_wires))
+            return qml.expval.X(wires=0)
+
+        circuit(self.weights)
+
+
+    def test_execution(self):
+        """An execution test for the CVNeuralNet"""
+        dev = qml.device('default.gaussian', wires=self.num_wires)
+
         with patch.object(Kerr, '__init__', return_value=None) as _: #Kerr() does not work on any core device, so we have to mock it here with a trivial class
             @qml.qnode(dev)
             def circuit(weights):
                 qml.template.CVNeuralNet(weights, wires=range(self.num_wires))
                 return qml.expval.X(wires=0)
 
-            circuit(weights)
+            circuit(self.weights)
 
         # No assert because values are anyway not correct because Kerr had to be mocked
 
