@@ -120,15 +120,15 @@ class TestCVNeuralNet(BaseTest):
 
             split_queue = np.split(queue, np.cumsum([6,4,6,4,4,6,4,6,4]))
 
-            test.assertAllEqual([op. parameters for op in split_queue[0]], [[theta1, phi1] for theta1, phi1 in zip(test_weights[0][0],test_weights[0][1])])
+            test.assertAllEqual([op. parameters for op in split_queue[0]], [[theta_1, phi_1] for theta_1, phi_1 in zip(test_weights[0][0],test_weights[0][1])])
             test.assertAllEqual([op. parameters for op in split_queue[1]], [[r, phi_r] for r, phi_r in zip(test_weights[0][2],test_weights[0][3])])
-            test.assertAllEqual([op. parameters for op in split_queue[2]], [[theta2, phi2] for theta2, phi2 in zip(test_weights[0][4],test_weights[0][5])])
+            test.assertAllEqual([op. parameters for op in split_queue[2]], [[theta_2, phi_2] for theta_2, phi_2 in zip(test_weights[0][4],test_weights[0][5])])
             test.assertAllEqual([op. parameters for op in split_queue[3]], [[a, phi_a] for a, phi_a in zip(test_weights[0][6],test_weights[0][7])])
             test.assertAllEqual([op. parameters for op in split_queue[4]], [[k] for k in test_weights[0][8]])
 
-            test.assertAllEqual([op. parameters for op in split_queue[5]], [[theta1, phi1] for theta1, phi1 in zip(test_weights[1][0],test_weights[1][1])])
+            test.assertAllEqual([op. parameters for op in split_queue[5]], [[theta_1, phi_1] for theta_1, phi_1 in zip(test_weights[1][0],test_weights[1][1])])
             test.assertAllEqual([op. parameters for op in split_queue[6]], [[r, phi_r] for r, phi_r in zip(test_weights[1][2],test_weights[1][3])])
-            test.assertAllEqual([op. parameters for op in split_queue[7]], [[theta2, phi2] for theta2, phi2 in zip(test_weights[1][4],test_weights[1][5])])
+            test.assertAllEqual([op. parameters for op in split_queue[7]], [[theta_2, phi_2] for theta_2, phi_2 in zip(test_weights[1][4],test_weights[1][5])])
             test.assertAllEqual([op. parameters for op in split_queue[8]], [[a, phi_a] for a, phi_a in zip(test_weights[1][6],test_weights[1][7])])
             test.assertAllEqual([op. parameters for op in split_queue[9]], [[k] for k in test_weights[1][8]])
             return np.array([0.5])
