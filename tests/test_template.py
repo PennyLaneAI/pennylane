@@ -45,13 +45,13 @@ class TestInterferometer(BaseTest):
         phi = np.random.uniform(0, 2*np.pi, num_params)
 
         # to test whether the correct circuit is produces we inspect the
-        # Device._op_queue by patching post_apply() of the device
+        # Device._op_queue by patching Device.execute()
         test = self
-        def new_post_apply(self):
-            test.assertAllEqual([[t, p] for t, p in zip(theta, phi)], [op.parameters for op in self._op_queue])
-            test.assertAllEqual([qml.Beamsplitter]*len(theta), [type(op) for op in self._op_queue])
+        def new_execute(self, queue, expectation):
+            test.assertAllEqual([[t, p] for t, p in zip(theta, phi)], [op.parameters for op in queue])
+            test.assertAllEqual([qml.Beamsplitter]*len(theta), [type(op) for op in queue])
 
-        dev.post_apply = MethodType(new_post_apply, dev)
+        dev.execute_apply = MethodType(new_execute, dev)
 
         @qml.qnode(dev)
         def circuit(theta, phi):
@@ -112,7 +112,7 @@ class TestCVNeuralNet(BaseTest):
         dev = qml.device('default.gaussian', wires=self.num_subsystems)
 
         # to test whether the correct circuit is produces we inspect the
-        # Device._op_queue by patching execute() of the device
+        # Device._op_queue by patching Device.execute()
         test = self
         test_weights = self.weights
         def new_execute(self, queue, expectation):
