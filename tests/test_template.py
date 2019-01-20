@@ -100,14 +100,14 @@ class TestInterferometer(BaseTest):
             circuit(weights)
 
 class TestVariationalClassifier(BaseTest):
-    """Tests for the CircuitCentric from the pennylane.template module."""
+    """Tests for the StronglyEntanglingCircuit from the pennylane.template module."""
 
     def setUp(self):
         super().setUp()
         np.random.seed(0)
 
     def test_variational_classifier(self):
-        """Tests the CircuitCentric for various parameters."""
+        """Tests the StronglyEntanglingCircuit for various parameters."""
         outcomes = []
         for num_wires in range(2,4):
             for num_layers in range(1,3):
@@ -117,7 +117,7 @@ class TestVariationalClassifier(BaseTest):
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
                     qml.BasisState(x, wires=range(num_wires))
-                    qml.template.CircuitCentric(weights, True, wires=range(num_wires))
+                    qml.template.StronglyEntanglingCircuit(weights, True, wires=range(num_wires))
                     return qml.expval.PauliZ(0)
 
                 weights=np.random.randn(num_layers, num_wires, 3)

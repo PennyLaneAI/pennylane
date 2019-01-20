@@ -24,10 +24,10 @@ This module provides a growing library of templates of common quantum
 machine learning circuit architectures that can be used to easily build
 more complex quantum machine learning models.
 
-For example, you can construct, evaluate, and train quantum circuit based
-on the circuit-centric quantum classifier architecture from
-:cite:`schuld2018circuit` on an arbitrary number of wires and with an
-arbitrary number of blocks in the following way:
+For example, you can construct, evaluate, and train a circuit-centric quantum
+classifier with the architecture from :cite:`schuld2018circuit` on an arbitrary
+number of wires and with an arbitrary number of blocks by using the
+template :class:`StronglyEntanglingCircuit` in the following way:
 
 .. code-block:: python
 
@@ -41,7 +41,7 @@ arbitrary number of blocks in the following way:
     @qml.qnode(dev)
     def circuit(weights, x=None):
         qml.BasisState(x, wires=range(num_wires))
-        qml.template.CircuitCentric(weights, periodic=True, wires=range(num_wires))
+        qml.template.StronglyEntanglingCircuit(weights, periodic=True, wires=range(num_wires))
         return qml.expval.PauliZ(0)
 
     weights=np.random.randn(num_blocks, num_wires, 3)
@@ -83,8 +83,8 @@ Summary
 ^^^^^^^
 
 .. autosummary::
-  CircuitCentric
-  CircuitCentricBlock
+  StronglyEntanglingCircuit
+  StronglyEntanglingCircuitBlock
   CVNeuralNet
   CVNeuralNetLayer
   Interferometer
@@ -95,11 +95,12 @@ Code details
 from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Beamsplitter
 
 
-def CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
-    """pennylane.template.CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
-    A circuit suitable for usage in a circuit-centric classifier.
+def StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
+    """pennylane.template.StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
+    A strongly entangling circuit.
 
-    Constructs the circuit of a circuit-centric quantum classifier :cite:`schuld2018circuit`
+    Constructs the strongly entangling circuit used in the circuit-centric quantum
+    classifier :cite:`schuld2018circuit`
     with ``len(weights)`` blocks on the given wires with the provided weights.
     Each element of weights must be a an array of size ``len(wires)*3``.
 
@@ -110,17 +111,17 @@ def CircuitCentric(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, w
         ranges (Sequence[int]): Ranges of the imprimitive gates in the
                                 respective blocks
         imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
-        wires (Sequence[int]): Wires the circuit-centric classifier circuit should act on
+        wires (Sequence[int]): Wires the strongly entangling circuit should act on
     """
     if ranges is None:
         ranges = [1]*len(weights)
     for block_weights, block_range in zip(weights, ranges):
-        CircuitCentricBlock(block_weights, r=block_range, periodic=periodic, imprimitive_gate=imprimitive_gate, wires=wires)
+        StronglyEntanglingCircuitBlock(block_weights, r=block_range, periodic=periodic, imprimitive_gate=imprimitive_gate, wires=wires)
 
 
-def CircuitCentricBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
-    """pennylane.template.CircuitCentricBlock(weights, periodic=True, r=1, imprimitive_gate=qml.CNOT, wires)
-    An individual block of a circuit-centric classifier circuit.
+def StronglyEntanglingCircuitBlock(weights, periodic=True, r=1, imprimitive_gate=CNOT, wires=None):
+    """pennylane.template.StronglyEntanglingCircuitBlock(weights, periodic=True, r=1, imprimitive_gate=qml.CNOT, wires)
+    An individual block of a strongly entangling circuit.
 
     Args:
         weights (array[float]): shape ``(len(wires), 3)`` array of weights
