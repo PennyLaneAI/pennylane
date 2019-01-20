@@ -201,7 +201,6 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
     r"""pennylane.template.Interferometer(theta, phi, wires)
     General linear interferometer.
 
-
     An instance is specified by providing ``len(wires)*(len(wires)-1)/2`` many
     transmittivity angles and the same number of phase angles. The interferometer
     is then implemented with
