@@ -50,8 +50,9 @@ class TestInterferometer(BaseTest):
         def new_execute(self, queue, expectation):
             test.assertAllEqual([[t, p] for t, p in zip(theta, phi)], [op.parameters for op in queue])
             test.assertAllEqual([qml.Beamsplitter]*len(theta), [type(op) for op in queue])
+            return np.array([0.5])
 
-        dev.execute_apply = MethodType(new_execute, dev)
+        dev.execute = MethodType(new_execute, dev)
 
         @qml.qnode(dev)
         def circuit(theta, phi):
@@ -120,17 +121,17 @@ class TestCVNeuralNet(BaseTest):
 
             split_queue = np.split(queue, np.cumsum([6,4,6,4,4,6,4,6,4]))
 
-            test.assertAllEqual([op. parameters for op in split_queue[0]], [[theta_1, phi_1] for theta_1, phi_1 in zip(test_weights[0][0],test_weights[0][1])])
-            test.assertAllEqual([op. parameters for op in split_queue[1]], [[r, phi_r] for r, phi_r in zip(test_weights[0][2],test_weights[0][3])])
-            test.assertAllEqual([op. parameters for op in split_queue[2]], [[theta_2, phi_2] for theta_2, phi_2 in zip(test_weights[0][4],test_weights[0][5])])
-            test.assertAllEqual([op. parameters for op in split_queue[3]], [[a, phi_a] for a, phi_a in zip(test_weights[0][6],test_weights[0][7])])
-            test.assertAllEqual([op. parameters for op in split_queue[4]], [[k] for k in test_weights[0][8]])
+            test.assertAllEqual([op.parameters for op in split_queue[0]], [[theta_1, phi_1] for theta_1, phi_1 in zip(test_weights[0][0],test_weights[0][1])])
+            test.assertAllEqual([op.parameters for op in split_queue[1]], [[r, phi_r] for r, phi_r in zip(test_weights[0][2],test_weights[0][3])])
+            test.assertAllEqual([op.parameters for op in split_queue[2]], [[theta_2, phi_2] for theta_2, phi_2 in zip(test_weights[0][4],test_weights[0][5])])
+            test.assertAllEqual([op.parameters for op in split_queue[3]], [[a, phi_a] for a, phi_a in zip(test_weights[0][6],test_weights[0][7])])
+            test.assertAllEqual([op.parameters for op in split_queue[4]], [[k] for k in test_weights[0][8]])
 
-            test.assertAllEqual([op. parameters for op in split_queue[5]], [[theta_1, phi_1] for theta_1, phi_1 in zip(test_weights[1][0],test_weights[1][1])])
-            test.assertAllEqual([op. parameters for op in split_queue[6]], [[r, phi_r] for r, phi_r in zip(test_weights[1][2],test_weights[1][3])])
-            test.assertAllEqual([op. parameters for op in split_queue[7]], [[theta_2, phi_2] for theta_2, phi_2 in zip(test_weights[1][4],test_weights[1][5])])
-            test.assertAllEqual([op. parameters for op in split_queue[8]], [[a, phi_a] for a, phi_a in zip(test_weights[1][6],test_weights[1][7])])
-            test.assertAllEqual([op. parameters for op in split_queue[9]], [[k] for k in test_weights[1][8]])
+            test.assertAllEqual([op.parameters for op in split_queue[5]], [[theta_1, phi_1] for theta_1, phi_1 in zip(test_weights[1][0],test_weights[1][1])])
+            test.assertAllEqual([op.parameters for op in split_queue[6]], [[r, phi_r] for r, phi_r in zip(test_weights[1][2],test_weights[1][3])])
+            test.assertAllEqual([op.parameters for op in split_queue[7]], [[theta_2, phi_2] for theta_2, phi_2 in zip(test_weights[1][4],test_weights[1][5])])
+            test.assertAllEqual([op.parameters for op in split_queue[8]], [[a, phi_a] for a, phi_a in zip(test_weights[1][6],test_weights[1][7])])
+            test.assertAllEqual([op.parameters for op in split_queue[9]], [[k] for k in test_weights[1][8]])
             return np.array([0.5])
 
         dev.execute = MethodType(new_execute, dev)
@@ -161,17 +162,46 @@ class TestCVNeuralNet(BaseTest):
 class TestStronglyEntanglingCircuit(BaseTest):
     """Tests for the StronglyEntanglingCircuit from the pennylane.template module."""
 
-    def setUp(self):
-        super().setUp()
-        np.random.seed(0)
+    def test_integration(self):
+        """integration test for the StronglyEntanglingCircuit."""
+        np.random.seed(12)
+        num_layers = 2
+        for num_wires in range(2,4):
+
+            dev = qml.device('default.qubit', wires=num_wires)
+            weights=np.random.randn(num_layers, num_wires, 3)
+
+            # to test whether the correct circuit is produces we inspect the
+            # Device._op_queue by patching Device.execute()
+            test = self
+            test_weights = weights
+            def new_execute(self, queue, expectation):
+                test.assertAllEqual([type(op) for op in queue], ([qml.Rot]*num_wires+[qml.CNOT]*num_wires)*num_layers)
+
+                split_queue = np.split(queue, np.cumsum([num_wires,num_wires]*num_layers))
+                test.assertAllEqual(test_weights[0], np.array([op.parameters for op in split_queue[0]]))
+                test.assertAllEqual(test_weights[1], np.array([op.parameters for op in split_queue[2]]))
+
+                return np.array([0.5])
+
+            dev.execute = MethodType(new_execute, dev)
+
+            @qml.qnode(dev)
+            def circuit(weights):
+                qml.template.StronglyEntanglingCircuit(weights, True, wires=range(num_wires))
+                return qml.expval.PauliZ(0)
+
+            circuit(weights)
 
     def test_execution(self):
         """Tests the StronglyEntanglingCircuit for various parameters."""
+        np.random.seed(0)
         outcomes = []
         for num_wires in range(2,4):
             for num_layers in range(1,3):
 
                 dev = qml.device('default.qubit', wires=num_wires)
+                weights=np.random.randn(num_layers, num_wires, 3)
 
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
@@ -179,8 +209,8 @@ class TestStronglyEntanglingCircuit(BaseTest):
                     qml.template.StronglyEntanglingCircuit(weights, True, wires=range(num_wires))
                     return qml.expval.PauliZ(0)
 
-                weights=np.random.randn(num_layers, num_wires, 3)
                 outcomes.append(circuit(weights, x=np.array(np.random.randint(0,1,num_wires))))
+
         self.assertAllAlmostEqual(np.array(outcomes), np.array([-0.29242496,  0.22129055,  0.07540091, -0.77626557]), delta=self.tol)
 
 
