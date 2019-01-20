@@ -35,16 +35,6 @@ class TestInterferometer(BaseTest):
 
     num_subsystems = 4
 
-    def randnc(self, *arg):
-        """Normally distributed array of random complex numbers."""
-        return np.random.randn(*arg) + 1j*np.random.randn(*arg)
-
-    def setUp(self):
-        super().setUp()
-        np.random.seed(35)
-        self.u1 = self.random_interferometer(self.num_subsystems)
-        self.u2 = self.random_interferometer(self.num_subsystems-1)
-
     def test_interferometer(self):
         dev = qml.device('default.gaussian', wires=self.num_subsystems)
         np.random.seed(8)

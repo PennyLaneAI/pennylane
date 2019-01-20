@@ -21,10 +21,10 @@ QML Templates
 .. currentmodule:: pennylane.template
 
 This module provides a growing library of templates of common quantum
-machine learning circuit architectures that can be used to easily build
-more complex quantum machine learning models.
+machine learning circuit architectures that can be used to easily build,
+evaluate, and train more complex quantum machine learning models.
 
-For example, you can construct, evaluate, and train a circuit-centric quantum
+For example, you can construct a circuit-centric quantum
 classifier with the architecture from :cite:`schuld2018circuit` on an arbitrary
 number of wires and with an arbitrary number of blocks by using the
 template :class:`StronglyEntanglingCircuit` in the following way:
@@ -49,10 +49,10 @@ template :class:`StronglyEntanglingCircuit` in the following way:
 
 
 The handy :func:`Interferometer` function can be used to construct arbitrary
-interferometers in terms of elementary :class:`~.Beamsplitter` Operations.
-operations, by giving two lists of beamsplitter parameters. PennyLane can
-then be used to easily differentiate and obviously also optimize these
-beamsplitter angles:
+interferometers in terms of elementary :class:`~.Beamsplitter` Operations,
+by providing lists of transmittivity and phase angles. PennyLane can
+then be used to easily differentiate - and obviously also optimize - these
+parameters:
 
 .. code-block:: python
 
