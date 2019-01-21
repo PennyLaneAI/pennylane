@@ -337,7 +337,7 @@ class Device(abc.ABC):
             operation (str): name of the operation
             wires (Sequence[int]): subsystems the operation is applied on
             par (tuple): parameters for the operation
-            apply_inverse (bool): if ``True``, the device should calculate and apply
+            apply_inverse (bool): if ``True``, the device should apply
                 the *inverse* of the operation provided
         """
         raise NotImplementedError
