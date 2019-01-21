@@ -173,16 +173,16 @@ def CVNeuralNetLayer(theta_1, phi_1, r, phi_r, theta_2, phi_2, a, phi_a, k, wire
        such as the :code:`strawberryfields.fock` device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
-        theta_1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
-        phi_1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
+        theta_1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles for first interferometer
+        phi_1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles for first interferometer
         r (array[float]): length ``len(wires)`` arrays of squeezing amounts for :class:`~.Squeezing` operations
         phi_r (array[float]): length ``len(wires)`` arrays of squeezing angles for :class:`~.Squeezing` operations
-        theta_2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
-        phi_2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
+        theta_2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles for second interferometer
+        phi_2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles for second interferometer
         a (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
         phi_a (array[float]): length ``len(wires)`` arrays of displacement angles for :class:`~.Displacement` operations
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
-        wires (Sequence[int]): Wires the layer should act on
+        wires (Sequence[int]): wires the layer should act on
     """
     Interferometer(theta=theta_1, phi=phi_1, wires=wires)
     for i, wire in enumerate(wires):
