@@ -51,7 +51,7 @@ template :class:`StronglyEntanglingCircuit` in the following way:
 The handy :func:`Interferometer` function can be used to construct arbitrary
 interferometers in terms of elementary :class:`~.Beamsplitter` Operations,
 by providing lists of transmittivity and phase angles. PennyLane can
-then be used to easily differentiate - and obviously also optimize - these
+then be used to easily differentiate and optimize these
 parameters:
 
 .. code-block:: python
