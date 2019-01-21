@@ -108,10 +108,10 @@ def StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive_g
         weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
         periodic (bool): whether to use periodic boundary conditions when
                          applying imprimitive gates
-        ranges (Sequence[int]): Ranges of the imprimitive gates in the
+        ranges (Sequence[int]): ranges of the imprimitive gates in the
                                 respective blocks
-        imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
-        wires (Sequence[int]): Wires the strongly entangling circuit should act on
+        imprimitive_gate (pennylane.ops.Operation): imprimitive gate to use, defaults to :class:`~.CNOT`
+        wires (Sequence[int]): wires the strongly entangling circuit should act on
     """
     if ranges is None:
         ranges = [1]*len(weights)
