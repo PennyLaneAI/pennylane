@@ -644,7 +644,7 @@ class TestDefaultGaussianIntegration(BaseTest):
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.Displacement(x, 0, wires=0).inv
+            qml.Displacement(x, 0, wires=0).H
             return qml.expval.X(0)
 
         x = 0.4

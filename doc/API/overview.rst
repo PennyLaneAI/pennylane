@@ -212,6 +212,42 @@ The user can then import this operation directly from your plugin, and use it wh
 
     If you are providing custom operations not natively supported by PennyLane, it is recommended that the plugin unittests **do** provide tests to ensure that PennyLane returns the correct gradient for the custom operations.
 
+Inverse operations
+~~~~~~~~~~~~~~~~~~
+
+PennyLane provides a method for users to specify an *inverse* operation; the syntax is
+
+>>> Operation(parameters, wires=[0, 1]).H
+
+By default, PennyLane attempts to pre-process the inversion automatically for operations
+with parameters. It makes the following assumptions:
+
+* If ``par_domain = 'A'``, it applies the matrix inverse to the first parameter
+* Otherwise, the first parameter is negated.
+
+This approach applies to a large number of quantum operations, however you may wish to overwrite
+this behavior. This can be done by specifying the :meth:`~.Operation.inverse_parameters` static method, which determines how the parameters of the operation transform to give the inverse operation.
+
+For example, this is required for the :class:`~pennylane.ops.qubit.Rot` operation:
+
+.. code-block:: python
+
+    class Rot(Operation):
+        num_params = 3
+        num_wires = 1
+        par_domain = 'R'
+        grad_method = 'A'
+
+        def inverse_parameters(self, p):
+            return [-i for i in p[::-1]]
+
+If the operation has no parameters, it may be hermitian, in which case it is its own inverse. You can specify this behavior by setting the :attr:`~.Operation.self_inverse` property to ``True``.
+
+Other operations might not support inversion at all, such as state preparations. Support for inversion can be turned off by setting the :attr:`~.Operation.supports_inverse` property to ``False``.
+
+If PennyLane processes an operation it does not know how to invert, it will query the plugin device to manually invert the operation via the ``apply_inverse`` keyword argument to :meth:`~.Device.apply`.
+
+Finally, you may wish to have your plugin device handle all operation inversion, as there may be a more efficient method provided by your targetted device. You can do this by setting the class property ``_preprocess_inverse`` to ``False`` in your plugin device.
 
 Supporting new CV operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -68,6 +68,7 @@ class Hadamard(Operation):
 
     * Number of wires: 1
     * Number of parameters: 0
+    * Self-inverse
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
@@ -75,6 +76,7 @@ class Hadamard(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    self_inverse = True
 
 
 class PauliX(Operation):
@@ -87,6 +89,7 @@ class PauliX(Operation):
 
     * Number of wires: 1
     * Number of parameters: 0
+    * Self-inverse
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
@@ -94,6 +97,7 @@ class PauliX(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    self_inverse = True
 
 
 class PauliY(Operation):
@@ -106,6 +110,7 @@ class PauliY(Operation):
 
     * Number of wires: 1
     * Number of parameters: 0
+    * Self-inverse
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
@@ -113,6 +118,7 @@ class PauliY(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    self_inverse = True
 
 
 class PauliZ(Operation):
@@ -125,6 +131,7 @@ class PauliZ(Operation):
 
     * Number of wires: 1
     * Number of parameters: 0
+    * Self-inverse
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
@@ -132,6 +139,7 @@ class PauliZ(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    self_inverse = True
 
 
 class CNOT(Operation):
@@ -151,6 +159,7 @@ class CNOT(Operation):
 
     * Number of wires: 2
     * Number of parameters: 0
+    * Self-inverse
 
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
@@ -158,6 +167,7 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    self_inverse = True
 
 
 class CZ(Operation):
@@ -177,6 +187,7 @@ class CZ(Operation):
 
     * Number of wires: 2
     * Number of parameters: 0
+    * Self-inverse
 
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
@@ -184,6 +195,7 @@ class CZ(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    self_inverse = True
 
 
 class SWAP(Operation):
@@ -203,6 +215,7 @@ class SWAP(Operation):
 
     * Number of wires: 2
     * Number of parameters: 0
+    * Self-inverse
 
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
@@ -210,6 +223,7 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    self_inverse = True
 
 
 class RX(Operation):
@@ -382,6 +396,7 @@ class BasisState(Operation):
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
     * Gradient recipe: None (integer parameters not supported)
+    * Supports inversion: False
 
     Args:
         n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
@@ -405,6 +420,7 @@ class QubitStateVector(Operation):
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
+    * Supports inversion: False
 
     Args:
         state (array[complex]): a state vector of size 2**len(wires)

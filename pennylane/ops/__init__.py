@@ -23,6 +23,11 @@ computation.
 Here, we summarize the built-in operations supported by PennyLane, as well
 as the conventions chosen for their implementation.
 
+If an operation supports inversion, you may request the inverse operation via
+the following syntax:
+
+>>> Operation(parameters, wires=1).H
+
 .. note::
 
     When writing a plugin device for PennyLane, make sure that your plugin

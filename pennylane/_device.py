@@ -54,6 +54,7 @@ The following methods and attributes must be defined for all devices:
     pennylane_requires
     version
     author
+    preprocess_inverse
     operations
     expectations
     apply
@@ -114,6 +115,7 @@ class Device(abc.ABC):
     #pylint: disable=too-many-public-methods
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
+    _preprocess_inverse = True
 
     def __init__(self, wires=1, shots=0):
         self.num_wires = wires
@@ -184,6 +186,19 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
+    @classmethod
+    def preprocess_inverse(cls):
+        """Whether PennyLane should pre-process operation
+        inversion before calling the device.
+
+        Returns the result of the ``_preprocess_inverse`` class attribute.
+        If set to True, the device will be responsible for all operation inversions.
+
+        Returns:
+            bool: whether the device requires inversion pre-processing
+        """
+        return cls._preprocess_inverse
+
     def execute(self, queue, expectation):
         """Execute a queue of quantum operations on the device and then measure the given expectation values.
 
@@ -198,6 +213,7 @@ class Device(abc.ABC):
         Returns:
             array[float]: expectation value(s)
         """
+        # pylint: disable=protected-access
         self.check_validity(queue, expectation)
         self._op_queue = queue
         self._expval_queue = expectation
@@ -205,10 +221,10 @@ class Device(abc.ABC):
         with self.execution_context():
             self.pre_apply()
             for operation in queue:
-                apply_inverse = False
-                if operation.manual_inverse == 0:
-                    apply_inverse = True
-                self.apply(operation.name, operation.wires, operation.parameters, apply_inverse)
+                if self.preprocess_inverse():
+                    self.apply(operation.name, operation.wires, operation.parameters, operation.manual_inverse)
+                else:
+                    self.apply(operation.name, operation.wires, operation.parameters, operation._inv)
             self.post_apply()
 
             self.pre_expval()

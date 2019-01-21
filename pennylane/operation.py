@@ -178,12 +178,29 @@ class Operation(abc.ABC):
     * :attr:`~.Operation.num_wires`
     * :attr:`~.Operation.par_domain`
 
+    **Gradients**
+
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
     differentiation.
 
     * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
+
+    **Inversion**
+
+    The following optional class attributes help determine how PennyLane
+    transforms operations in which the :attr:`~.Operation.inv` is called.
+
+    * :attr:`~.Operation.supports_inverse` (default ``True``)
+    * :attr:`~.Operation.self_inverse` (default ``False``)
+    * :attr:`~.Operation.inverse_parameters`
+
+    .. note::
+
+        If the device turns off inverse pre-processing, then the
+        above properties will be ignored, and the device will be responsible
+        for implementing all operation inversions.
 
     Args:
         args (tuple[float, int, array, Variable]): operation parameters
@@ -199,7 +216,7 @@ class Operation(abc.ABC):
     #pylint: disable=too-many-instance-attributes
     _grad_recipe = None
     _supports_inverse = True
-    _no_param_self_inverse = True
+    _no_param_self_inverse = False
 
     @abc.abstractproperty
     def num_params(self):
@@ -290,11 +307,11 @@ class Operation(abc.ABC):
     def self_inverse(self):
         r"""Indicates that a no-parameter operation is its own inverse; :math:`O^{-1} = O`.
 
-        By default, this is set to ``True``, but it can be set to ``False`` on a
-        case-by-case basis. Note that this class property only affects operations
+        By default, this is set to ``False``.
+        Note that this class property only affects operations
         that have both ``num_params = 0`` and ``supports_inverse = True``.
 
-        Set this property to ``False`` in your custom operation if you would like the plugin
+        Leave this property as ``False`` in your custom operation if you would like the plugin
         device to manually invert the operation. PennyLane will then pass the ``apply_inverse=True``
         keyword argument to the :meth:`~.Device.apply` method.
         """
@@ -497,6 +514,9 @@ class Operation(abc.ABC):
 
         self._inv = True
         return self
+
+    # an alias for .inv
+    H = inv
 
 
 #=============================================================================

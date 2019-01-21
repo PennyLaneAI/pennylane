@@ -52,6 +52,52 @@ class DeviceTest(BaseTest):
         for name, dev in self.dev.items():
             self.assertEqual(dev.short_name, name)
 
+    @patch.object(DefaultQubit, 'apply', lambda self, o, w, p, inv: log.info("{}, {}".format(o, inv)))
+    def test_no_preprocess_inverse(self):
+        """test turning off inverse preprocessing"""
+        self.logTestName()
+
+        class DummyDevice(qml.plugins.DefaultQubit):
+            _preprocess_inverse = False
+
+        dev = DummyDevice(wires=2)
+        self.assertFalse(dev.preprocess_inverse())
+
+        # queue some gates
+        queue = []
+        queue.append(qml.RX(0.543, wires=[0], do_queue=False).inv)
+        queue.append(qml.CNOT(wires=[0, 1], do_queue=False).inv)
+
+        with self.assertLogs(level='INFO') as l:
+            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            self.assertEqual(len(l.output), 2)
+            self.assertEqual(len(l.records), 2)
+
+            for entry in l.output:
+                self.assertIn('True', entry)
+
+    @patch.object(DefaultQubit, 'apply', lambda self, o, w, p, inv: log.info("{}, {}".format(p, inv)))
+    def test_preprocess_inverse(self):
+        """test inverse preprocessing"""
+        self.logTestName()
+
+        dev = qml.device('default.qubit', wires=2)
+        self.assertTrue(dev.preprocess_inverse())
+
+        # queue some gates
+        queue = []
+        queue.append(qml.RX(0.543, wires=[0], do_queue=False).inv)
+        queue.append(qml.CNOT(wires=[0, 1], do_queue=False).inv)
+
+        with self.assertLogs(level='INFO') as l:
+            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            self.assertEqual(len(l.output), 2)
+            self.assertEqual(len(l.records), 2)
+
+            self.assertIn('False', l.output[0])
+            self.assertIn('-0.543', l.output[0])
+            self.assertIn('False', l.output[1])
+
     def test_supported(self):
         """check that a nonempty set of operations/expectations are supported"""
         self.logTestName()
