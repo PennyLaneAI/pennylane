@@ -92,7 +92,7 @@ Summary
 Code details
 ^^^^^^^^^^^^
 """
-from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Beamsplitter
+from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Beamsplitter, Rotation
 
 
 def StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
@@ -203,10 +203,19 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
 
     An instance is specified by providing ``len(wires)*(len(wires)-1)/2`` many
     transmittivity angles and the same number of phase angles. The interferometer
-    is then implemented with
-    the scheme described in :cite:`clements2016optimal` (Fig. 1a). Beamsplitters
-    are numbered per layer from top to bottom and ``theta[i]`` and ``phi[i]`` are
-    used as the parameters of the i-th beam splitter.
+    is then implemented following the the scheme described in
+    :cite:`clements2016optimal` (Fig. 1a).
+    Beamsplitters are numbered per layer from top to bottom and ``theta[i]``
+    and ``phi[i]`` are used as the parameters of the i-th beam splitter.
+
+    .. note::
+
+       As the notion of a beamsplitter :math:`T_{m,n}(\theta,\phi)` in Eq. (1)
+       of :cite:`clements2016optimal` differs from the convention used in the
+       :class:`~.Beamsplitter` class of PennyLane, the Interferometer consists
+       not only of :class:`~.Beamsplitter` Operations, but each of these is
+       followed by a :class:`~.Rotation` Operation on the first of the two
+       wires.
 
     Args:
         theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
@@ -222,4 +231,5 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
             if (l+n)%2 == 1:
                 continue
             Beamsplitter(theta[gate_num], phi[gate_num], wires=[i, j])
+            Rotation(phi[gate_num], wires=[i])
             gate_num += 1
