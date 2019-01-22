@@ -205,17 +205,16 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
     transmittivity angles and the same number of phase angles. The interferometer
     is then implemented following the the scheme described in
     :cite:`clements2016optimal` (Fig. 1a).
-    Beamsplitters are numbered per layer from top to bottom and ``theta[i]``
-    and ``phi[i]`` are used as the parameters of the i-th beam splitter.
+    Beamsplitters are numbered per layer from top to bottom and ``theta[n]``
+    and ``phi[n]`` are used as the parameters of the n-th beam splitter.
 
     .. note::
 
        As the notion of a beamsplitter :math:`T_{m,n}(\theta,\phi)` in Eq. (1)
        of :cite:`clements2016optimal` differs from the convention used in the
        :class:`~.Beamsplitter` class of PennyLane, the Interferometer consists
-       not only of :class:`~.Beamsplitter` Operations, but each of these is
-       followed by a :class:`~.Rotation` Operation on the first of the two
-       wires.
+       not only of :class:`Beamsplitter(theta[n], phi[n], wires=[i,j]) <~.Beamsplitter>` Operations, but each of these is
+       followed by a :class:`Rotation(phi[n], wires=[i]) <~.Rotation>` Operation.
 
     Args:
         theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
@@ -224,12 +223,12 @@ def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
     """
 
     #loop over layers
-    gate_num = 0
+    n = 0
     for l in range(len(wires)):
-        for n, (i, j) in enumerate(zip(wires[:-1], wires[1:])):
+        for k, (i, j) in enumerate(zip(wires[:-1], wires[1:])):
             #skip even or odd pairs depending on layer
-            if (l+n)%2 == 1:
+            if (l+k)%2 == 1:
                 continue
-            Beamsplitter(theta[gate_num], phi[gate_num], wires=[i, j])
-            Rotation(phi[gate_num], wires=[i])
-            gate_num += 1
+            Beamsplitter(theta[n], phi[n], wires=[i, j])
+            Rotation(phi[n], wires=[i])
+            n += 1
