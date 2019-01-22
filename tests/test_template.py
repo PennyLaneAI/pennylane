@@ -45,7 +45,7 @@ class TestInterferometer(BaseTest):
         theta = np.random.uniform(0, 2*np.pi, num_params)
         phi = np.random.uniform(0, 2*np.pi, num_params)
 
-        # to test whether the correct circuit is produces we inspect the
+        # to test whether the correct circuit is produced we inspect the
         # Device._op_queue by patching Device.execute()
         test = self
         def new_execute(self, queue, expectation):
@@ -90,7 +90,7 @@ class TestInterferometer(BaseTest):
                                   ), delta=self.tol)
 
 class TestCVNeuralNet(BaseTest):
-    """Tests for the Interferometer from the pennylane.template module."""
+    """Tests for the CVNeuralNet from the pennylane.template module."""
 
     num_subsystems = 4
 
@@ -115,7 +115,7 @@ class TestCVNeuralNet(BaseTest):
         """integration test for the CVNeuralNet."""
         dev = qml.device('default.gaussian', wires=self.num_subsystems)
 
-        # to test whether the correct circuit is produces we inspect the
+        # to test whether the correct circuit is produced we inspect the
         # Device._op_queue by patching Device.execute()
         test = self
         test_weights = self.weights

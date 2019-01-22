@@ -51,7 +51,7 @@ template :class:`StronglyEntanglingCircuit` in the following way:
 The handy :func:`Interferometer` function can be used to construct arbitrary
 interferometers in terms of elementary :class:`~.Beamsplitter` Operations,
 by providing lists of transmittivity and phase angles. PennyLane can
-then be used to easily differentiate - and obviously also optimize - these
+then be used to easily differentiate and optimize these
 parameters:
 
 .. code-block:: python
@@ -108,10 +108,10 @@ def StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive_g
         weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
         periodic (bool): whether to use periodic boundary conditions when
                          applying imprimitive gates
-        ranges (Sequence[int]): Ranges of the imprimitive gates in the
+        ranges (Sequence[int]): ranges of the imprimitive gates in the
                                 respective blocks
-        imprimitive_gate (pennylane.ops.Operation): Imprimitive gate to use, defaults to :class:`~.CNOT`
-        wires (Sequence[int]): Wires the strongly entangling circuit should act on
+        imprimitive_gate (pennylane.ops.Operation): imprimitive gate to use, defaults to :class:`~.CNOT`
+        wires (Sequence[int]): wires the strongly entangling circuit should act on
     """
     if ranges is None:
         ranges = [1]*len(weights)
@@ -173,16 +173,16 @@ def CVNeuralNetLayer(theta_1, phi_1, r, phi_r, theta_2, phi_2, a, phi_a, k, wire
        such as the :code:`strawberryfields.fock` device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
-        theta_1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
-        phi_1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
+        theta_1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles for first interferometer
+        phi_1 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles for first interferometer
         r (array[float]): length ``len(wires)`` arrays of squeezing amounts for :class:`~.Squeezing` operations
         phi_r (array[float]): length ``len(wires)`` arrays of squeezing angles for :class:`~.Squeezing` operations
-        theta_2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
-        phi_2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
+        theta_2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles for second interferometer
+        phi_2 (array[float]): length ``len(wires)*(len(wires)-1)/2`` array of phase angles for second interferometer
         a (array[float]): length ``len(wires)`` arrays of displacement magnitudes for :class:`~.Displacement` operations
         phi_a (array[float]): length ``len(wires)`` arrays of displacement angles for :class:`~.Displacement` operations
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
-        wires (Sequence[int]): Wires the layer should act on
+        wires (Sequence[int]): wires the layer should act on
     """
     Interferometer(theta=theta_1, phi=phi_1, wires=wires)
     for i, wire in enumerate(wires):
