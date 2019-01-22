@@ -293,7 +293,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.dev = DefaultGaussian(wires=2, shots=0, hbar=hbar)
 
     def test_operation_map(self):
-        """Test that default Gaussian device supports all PennyLane Gaussian CV gates, except Interferometer."""
+        """Test that default Gaussian device supports all PennyLane Gaussian CV gates."""
         self.logTestName()
 
         non_supported = {'FockDensityMatrix',
