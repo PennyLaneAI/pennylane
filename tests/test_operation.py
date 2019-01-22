@@ -48,9 +48,9 @@ class BasicTest(BaseTest):
                     par = [np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
                                      [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])]
                 else:
-                    par = [nr.randn(1,1)] * cls.num_params
+                    par = [np.array([[-1.82624687]])] * cls.num_params
             else:
-                par = list(nr.randn(cls.num_params))
+                par = [-0.069125, 0.51778, 0.91133, 0.95904][:cls.num_params]
 
             op = cls(*par, wires=ww, do_queue=False)
 
