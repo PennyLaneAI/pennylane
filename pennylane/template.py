@@ -197,38 +197,103 @@ def CVNeuralNetLayer(theta_1, phi_1, r, phi_r, theta_2, phi_2, a, phi_a, k, wire
         Kerr(k[i], wires=wire)
 
 
-def Interferometer(theta, phi, wires=None): #pylint: disable=too-many-branches
+def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', clements_convention=False): #pylint: disable=too-many-branches
     r"""pennylane.template.Interferometer(theta, phi, wires)
     General linear interferometer.
 
-    An instance is specified by providing ``len(wires)*(len(wires)-1)/2`` many
-    transmittivity angles and the same number of phase angles. The interferometer
-    is then implemented following the the scheme described in
-    :cite:`clements2016optimal` (Fig. 1a).
-    Beamsplitters are numbered per layer from top to bottom and ``theta[n]``
-    and ``phi[n]`` are used as the parameters of the n-th beam splitter.
+    For :math:`N` wires, the general interferometer is specified by
+    providing :math:`N(N-1)` transmittivity angles :math:`\theta` and the same number of
+    phase angles :math:`\phi` as well as either :math:`N-1` or :math:`N` additional rotation
+    parameters :math:`\varphi`. :math:`N-1` such rotation parameters are sufficient for the
+    parametrization of an interferometer that is universal. If :math:`N` rotation
+    parameters are given, the interferometer is over parametrized, but the resulting
+    circuit is more symmetric, which can be advantageous.
+
+    By specifying the keyword argument ``mesh``, the scheme used to implement the interferometer
+    may be adjusted:
+
+    * ``mesh='rectangular'`` (default): uses the scheme described in
+      :cite:`clements2016optimal` Eq. (5), resulting in a *rectangular* array of
+      :math:`N(N-1)/2` beamsplitters aranged in :math:`N` layers and numbered from left
+      to right and top to bottom.
+
+    * ``mesh='triangular'``: uses the scheme described in :cite:`reck1994experimental`,
+      resulting in a *triangular* array of :math:`N(N-1)/2` beamsplitters arranged in
+      :math:`2N-3` layers and numbered from left to right and top to bottom.
+
+    In both schemes, the network of :class:`~.Beamsplitter` Operations is followed by
+    :math:`N` (or :math:`N-1`) local :class:`Rotation` Operations. In the latter case, the
+    rotation on the last wire is left out.
+
+    The rectangular decomposition is generally advantageous, as it has a lower
+    circuit depth than the triangular decomposition (:math:`N` vs :math:`2N-3`),
+    resulting in reduced optical loss.
 
     .. note::
 
-       As the notion of a beamsplitter :math:`T_{m,n}(\theta,\phi)` in Eq. (1)
-       of :cite:`clements2016optimal` differs from the convention used in the
-       :class:`~.Beamsplitter` class of PennyLane, the Interferometer consists
-       not only of :class:`Beamsplitter(theta[n], phi[n], wires=[i,j]) <~.Beamsplitter>` Operations, but each of these is
-       followed by a :class:`Rotation(phi[n], wires=[i]) <~.Rotation>` Operation.
+        The decomposition as formulated by Clements :cite:`clements2016optimal` uses a different
+        convention for a beamsplitter :math:`T(\theta, \phi)` than PennyLane, namely:
+
+        .. math:: T(\theta, \phi) = BS(\theta, 0) R(\phi)
+
+        For the universality of the decomposition, the used convention is irrelevant, but
+        for a given set of angles the resulting interferometers will be different. If an
+        interferometer consistent with the convention from :cite:`clements2016optimal`
+        is needed, the optimal parameter `clements_convention=True` can be specified. This
+        will result in each :class:`~.Beamsplitter` being replaced by a :class:`~.Beamsplitter`
+        preceded by a :class:`Rotation` and thus increase the number of elementary operations
+        in the circuit.
 
     Args:
-        theta (array): length ``len(wires)*(len(wires)-1)/2`` array of transmittivity angles
-        phi (array): length ``len(wires)*(len(wires)-1)/2`` array of phase angles
-        wires (Sequence[int]): wires the Interferometer should act on
+        theta (array): length-:math:`N(N-1)/2` array of transmittivity angles :math:`\theta`
+        phi (array): length-:math:`N(N-1)/2` array of phase angles :math:`\phi`
+        varphi (array): length-:math:`N` or :math:`N-1` array of rotation angles :math:`\varphi`
+        wires (Sequence[int]): wires the interferometer should act on
+        clements_convention (boolean): Defaults to False, if True, the beamsplitter convention from
+          :cite:`clements2016optimal` is used (see the note above).
     """
+    N = len(wires)
 
-    #loop over layers
+    # if N == 1:
+    #     # the interferometer is a single rotation
+    #     Rotation(varphi[0], wires=wires[0])
+    #     return
+
+    # if N == 2:
+    #     # the interferometer is a single beamsplitter and rotation
+    #     Beamsplitter(theta[0], phi[0], wires=wires)
+    #     Rotation(varphi[0], wires=wires[0])
+    #     return
+
+    # keep track of free parameters
     n = 0
-    for l in range(len(wires)):
-        for k, (i, j) in enumerate(zip(wires[:-1], wires[1:])):
-            #skip even or odd pairs depending on layer
-            if (l+k)%2 == 1:
-                continue
-            Beamsplitter(theta[n], phi[n], wires=[i, j])
-            Rotation(phi[n], wires=[i])
-            n += 1
+
+    if mesh == 'rectangular':
+        # Apply the Clements beamsplitter array
+        # The array depth is N
+        for l in range(N):
+            for k, (w1, w2) in enumerate(zip(wires[:-1], wires[1:])):
+                #skip even or odd pairs depending on layer
+                if (l+k)%2 != 1:
+                    if clements_convention:
+                        Rotation(phi[n], wires=[w1])
+                        Beamsplitter(theta[n], 0, wires=[w1, w2])
+                    else:
+                        Beamsplitter(theta[n], phi[n], wires=[w1, w2])
+                    n += 1
+
+    elif mesh == 'triangular':
+        # apply the Reck beamsplitter array
+        # The array depth is 2*N-3
+        for l in range(N-1):
+            for k in range(N-1, l, -1):
+                if clements_convention:
+                    Rotation(phi[n], wires=[wires[k]])
+                    Beamsplitter(theta[n], 0, wires=[wires[k], wires[k+1]])
+                else:
+                    Beamsplitter(theta[n], phi[n], wires=[wires[k], wires[k+1]])
+                n += 1
+
+    # apply the final local phase shifts to all modes
+    for i, p in enumerate(varphi):
+        Rotation(p, wires=[wires[i]])
