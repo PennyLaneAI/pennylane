@@ -159,7 +159,7 @@ def CVNeuralNet(weights, wires=None):
         CVNeuralNetLayer(*layer_weights, wires=wires)
 
 
-def CVNeuralNetLayer(theta_1, phi_1, r, phi_r, theta_2, phi_2, a, phi_a, k, wires=None): #pylint: disable-msg=too-many-arguments
+def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None): #pylint: disable-msg=too-many-arguments
     """pennylane.template.CVNeuralNetLayer(theta_1, phi_1, s, theta_2, phi_2, r, k, wires)
     A single layer of a CV Quantum Neural Network
 
@@ -184,11 +184,11 @@ def CVNeuralNetLayer(theta_1, phi_1, r, phi_r, theta_2, phi_2, a, phi_a, k, wire
         k (array[float]): length ``len(wires)`` arrays of kerr parameters for :class:`~.Kerr` operations
         wires (Sequence[int]): wires the layer should act on
     """
-    Interferometer(theta=theta_1, phi=phi_1, wires=wires)
+    Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
     for i, wire in enumerate(wires):
         Squeezing(r[i], phi_r[i], wires=wire)
 
-    Interferometer(theta=theta_2, phi=phi_2, wires=wires)
+    Interferometer(theta=theta_2, phi=phi_2, varphi=varphi_2, wires=wires)
 
     for i, wire in enumerate(wires):
         Displacement(a[i], phi_a[i], wires=wire)
@@ -288,10 +288,10 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', clements_
         for l in range(N-1):
             for k in range(N-1, l, -1):
                 if clements_convention:
-                    Rotation(phi[n], wires=[wires[k]])
-                    Beamsplitter(theta[n], 0, wires=[wires[k], wires[k+1]])
+                    Rotation(phi[n], wires=[wires[k-1]])
+                    Beamsplitter(theta[n], 0, wires=[wires[k-1], wires[k]])
                 else:
-                    Beamsplitter(theta[n], phi[n], wires=[wires[k], wires[k+1]])
+                    Beamsplitter(theta[n], phi[n], wires=[wires[k-1], wires[k]])
                 n += 1
 
     # apply the final local phase shifts to all modes

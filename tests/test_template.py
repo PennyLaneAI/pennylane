@@ -39,23 +39,25 @@ class TestInterferometer(BaseTest):
         num_params = int(self.num_subsystems*(self.num_subsystems-1)/2)
         theta = np.random.uniform(0, 2*np.pi, num_params)
         phi = np.random.uniform(0, 2*np.pi, num_params)
+        varphi = np.random.uniform(0, 2*np.pi, self.num_subsystems)
 
         test = self
         def new_execute(_, queue, *__):
             """to test whether the correct circuit is produced we inspect the
             Device._op_queue by patching Device.execute() with this function"""
-            test.assertAllEqual([elem for t, p in zip(theta, phi) for elem in [[t, p], [p]]], [op.parameters for op in queue])
-            test.assertAllEqual([qml.Beamsplitter, qml.Rotation]*len(theta), [type(op) for op in queue])
+            test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+            #test.assertAllEqual([elem for t, p in zip(theta, phi) for elem in [[t, p], [p]]], [op.parameters for op in queue])
+            test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
             return np.array([0.5])
 
         dev.execute = MethodType(new_execute, dev)
 
         @qml.qnode(dev)
-        def circuit(theta, phi):
-            qml.template.Interferometer(theta=theta, phi=phi, wires=range(self.num_subsystems))
+        def circuit(theta, phi, varphi):
+            qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(self.num_subsystems))
             return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
-        circuit(theta, phi)
+        circuit(theta, phi, varphi)
 
     def test_execution(self):
         """execution test for the Interferomerter."""
@@ -65,24 +67,40 @@ class TestInterferometer(BaseTest):
         num_params = int(self.num_subsystems*(self.num_subsystems-1)/2)
         theta = np.random.uniform(0, 2*np.pi, num_params)
         phi = np.random.uniform(0, 2*np.pi, num_params)
+        varphi = np.random.uniform(0, 2*np.pi, self.num_subsystems)
 
         @qml.qnode(dev)
-        def circuit(theta, phi):
+        def circuit(theta, phi, varphi):
             for wire in range(self.num_subsystems):
                 qml.Squeezing(squeezings[wire][0], squeezings[wire][1], wires=wire)
 
-            qml.template.Interferometer(theta=theta, phi=phi, wires=range(self.num_subsystems))
+            qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(self.num_subsystems))
             return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
-        self.assertAllAlmostEqual(circuit(theta, phi), np.array([0.96869596, 0.23959637, 0.82539481, 0.16220893]), delta=self.tol)
+        self.assertAllAlmostEqual(circuit(theta, phi, varphi), np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786]), delta=self.tol)
+        #self.assertAllAlmostEqual(circuit(theta, phi, varphi[:-1]), np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786]), delta=self.tol)
 
-        self.assertAllAlmostEqual(qml.jacobian(circuit, 0)(theta, phi),
+        print("jacobean="+str(qml.jacobian(circuit, 0)(theta, phi, varphi)))
+        self.assertAllAlmostEqual(qml.jacobian(circuit, 0)(theta, phi, varphi),
                                   np.array(
-                                      [[-5.03137764e-03, -3.20488416e-04, -4.20886887e-02, -6.16246214e-02, 0.00000000e+00, 0.00000000e+00],
-                                       [3.09578135e-04, 2.34020030e-02, -1.02412671e-02, 1.40942058e-03, 1.08395609e-01, -3.34712643e-01],
-                                       [4.34069985e-03, 1.40617349e-03, -5.27609524e-01, 6.02152008e-02, -9.48406160e-02, 3.34712643e-01],
-                                       [3.81099656e-04, -2.44876881e-02, 5.79939479e-01, 0.00000000e+00, -1.35549930e-02, 0.00000000e+00]]
+                                      [[-6.18547621e-03, -3.20488416e-04, -4.20274088e-02, -6.21819677e-02,
+                                        0.00000000e+00,  0.00000000e+00],
+                                       [ 3.55439469e-04,  3.89820231e-02, -3.35281297e-03,  7.93009278e-04,
+                                         8.30347900e-02, -3.45150712e-01],
+                                       [ 5.44893709e-03,  9.30878023e-03, -5.33374090e-01,  6.13889584e-02,
+                                         -1.16931386e-01,  3.45150712e-01],
+                                       [ 3.81099656e-04, -4.79703149e-02,  5.78754312e-01,  0.00000000e+00,
+                                         3.38965962e-02,  0.00000000e+00]]
                                   ), delta=self.tol)
+
+        # self.assertAllAlmostEqual(qml.jacobian(circuit, 0)(theta, phi, varphi[:-1]),
+        #                           np.array(
+        #                               [[-5.03137764e-03, -3.20488416e-04, -4.20886887e-02, -6.16246214e-02, 0.00000000e+00, 0.00000000e+00],
+        #                                [3.09578135e-04, 2.34020030e-02, -1.02412671e-02, 1.40942058e-03, 1.08395609e-01, -3.34712643e-01],
+        #                                [4.34069985e-03, 1.40617349e-03, -5.27609524e-01, 6.02152008e-02, -9.48406160e-02, 3.34712643e-01],
+        #                                [3.81099656e-04, -2.44876881e-02, 5.79939479e-01, 0.00000000e+00, -1.35549930e-02, 0.00000000e+00]]
+        #                           ), delta=self.tol)
+
 
 class TestCVNeuralNet(BaseTest):
     """Tests for the CVNeuralNet from the pennylane.template module."""
@@ -97,10 +115,12 @@ class TestCVNeuralNet(BaseTest):
         self.weights = [[
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #transmittivity angles
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #phase angles
+            np.random.uniform(0, 2*np.pi, self.num_wires), #rotation angles
             np.random.uniform(0.1, 0.7, self.num_wires), #squeezing amounts
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #squeezing angles
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #transmittivity angles
             np.random.uniform(0, 2*np.pi, int(self.num_wires*(self.num_wires-1)/2)), #phase angles
+            np.random.uniform(0, 2*np.pi, self.num_wires), #rotation angles
             np.random.uniform(0.1, 2.0, self.num_wires), #displacement magnitudes
             np.random.uniform(0.1, 2*np.pi, self.num_wires), #displacement angles
             np.random.uniform(0.1, 0.3, self.num_wires) #kerr parameters
@@ -119,20 +139,20 @@ class TestCVNeuralNet(BaseTest):
             """to test whether the correct circuit is produced we inspect the
             Device._op_queue by patching Device.execute() with this function"""
             test.assertAllEqual([type(op) for op in queue],
-                                list(it.chain.from_iterable([list(it.chain.from_iterable(map(list, zip([qml.Beamsplitter]*6, [qml.Rotation]*6))))+[qml.Squeezing]*4+list(it.chain.from_iterable(map(list, zip([qml.Beamsplitter]*6, [qml.Rotation]*6))))+[qml.Displacement]*4+[qml.Kerr]*4]*test_num_layers)),
+                                list(it.chain.from_iterable([[qml.Beamsplitter]*6+[qml.Rotation]*4+[qml.Squeezing]*4+[qml.Beamsplitter]*6+[qml.Rotation]*4+[qml.Displacement]*4+[qml.Kerr]*4]*test_num_layers)),
                                 "Did not find the expected operations in the right order in the queue")
 
-            split_queue = np.delete(np.array(np.split(queue, np.cumsum([6*2, 4, 6*2, 4, 4]*test_num_layers))), -1)
+            split_queue = np.delete(np.array(np.split(queue, np.cumsum([6, 4, 4, 6, 4, 4, 4]*test_num_layers))), -1)
             split_queue = np.split(split_queue, test_num_layers)
 
             for l in range(test_num_layers):
-                test.assertAllEqual([op.parameters for op in split_queue[l][0][::2]], [[theta_1, phi_1] for theta_1, phi_1 in zip(test_weights[l][0], test_weights[l][1])])
-                test.assertAllEqual([op.parameters for op in split_queue[l][0][1::2]], [phi_1 for phi_1 in test_weights[l][1]])
-                test.assertAllEqual([op.parameters for op in split_queue[l][1]], [[r, phi_r] for r, phi_r in zip(test_weights[l][2], test_weights[l][3])])
-                test.assertAllEqual([op.parameters for op in split_queue[l][2][::2]], [[theta_2, phi_2] for theta_2, phi_2 in zip(test_weights[l][4], test_weights[l][5])])
-                test.assertAllEqual([op.parameters for op in split_queue[l][2][1::2]], [phi_2 for phi_2 in test_weights[l][5]])
-                test.assertAllEqual([op.parameters for op in split_queue[l][3]], [[a, phi_a] for a, phi_a in zip(test_weights[l][6], test_weights[l][7])])
-                test.assertAllEqual([op.parameters for op in split_queue[l][4]], [[k] for k in test_weights[l][8]])
+                test.assertAllEqual([op.parameters for op in split_queue[l][0]], [[theta_1, phi_1] for theta_1, phi_1 in zip(test_weights[l][0], test_weights[l][1])])
+                test.assertAllEqual([op.parameters for op in split_queue[l][1]], [varphi_1 for varphi_1 in test_weights[l][2]])
+                test.assertAllEqual([op.parameters for op in split_queue[l][2]], [[r, phi_r] for r, phi_r in zip(test_weights[l][3], test_weights[l][4])])
+                test.assertAllEqual([op.parameters for op in split_queue[l][3]], [[theta_2, phi_2] for theta_2, phi_2 in zip(test_weights[l][5], test_weights[l][6])])
+                test.assertAllEqual([op.parameters for op in split_queue[l][4]], [varphi_2 for varphi_2 in test_weights[l][7]])
+                test.assertAllEqual([op.parameters for op in split_queue[l][5]], [[a, phi_a] for a, phi_a in zip(test_weights[l][8], test_weights[l][9])])
+                test.assertAllEqual([op.parameters for op in split_queue[l][6]], [[k] for k in test_weights[l][10]])
 
             return np.array([0.5])
 
