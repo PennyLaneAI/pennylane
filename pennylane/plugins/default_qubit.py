@@ -228,7 +228,7 @@ def hermitian(*args):
 
     return A
 
-def identity(*par): #pylint: disable=unused-argument
+def identity(*_):
     """Identity matrix for expectations.
 
     Returns:

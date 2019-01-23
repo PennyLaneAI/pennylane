@@ -685,21 +685,12 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
     return ex, var
 
 
-def identity(mu, cov, wires, params, hbar=2.):
+def identity(*_, **__):
     r"""Returns 1.
-
-    Args:
-        mu (array): vector of means
-        cov (array): covariance matrix
-        wires (Sequence[int]): wires to calculate the expectation for
-        params (Sequence[int]): None.
-        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`
 
     Returns:
         tuple: the Fock state expectation and variance
     """
-    # pylint: disable=unused-argument
     return 1, 0
 
 
