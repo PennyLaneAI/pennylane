@@ -538,22 +538,22 @@ class CV:
         return None
 
     @classproperty
-    def supports_analytic(cls):
+    def supports_analytic(self):
         """Returns True if the CV Operation has ``grad_method='A'`` and
         a defined :meth:`~.CV._heisenberg_rep` static method, indicating
         that analytic differentiation is supported.
         """
-        return cls.grad_method == 'A' and cls.supports_heisenberg
+        return self.grad_method == 'A' and self.supports_heisenberg
 
     @classproperty
-    def supports_heisenberg(cls):
+    def supports_heisenberg(self):
         """Returns True if the CV Operation has
         a overwritten the :meth:`~.CV._heisenberg_rep` static method
         defined in :class:`CV`, thereby indicating
         that analytic differentiation is supported if this operation
         succeeds the gate to be differentiated analytically.
         """
-        return CV._heisenberg_rep != cls._heisenberg_rep
+        return CV._heisenberg_rep != self._heisenberg_rep
 
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""
