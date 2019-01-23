@@ -543,7 +543,7 @@ class CV:
         a defined :meth:`~.CV._heisenberg_rep` static method, indicating
         that analytic differentiation is supported.
         """
-        return self.grad_method == 'A' and self.supports_heisenberg
+        return cls.grad_method == 'A' and cls.supports_heisenberg
 
     @classproperty
     def supports_heisenberg(cls):
