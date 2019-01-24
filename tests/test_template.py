@@ -45,23 +45,26 @@ class TestInterferometer(BaseTest):
         def new_execute(_, queue, *__):
             """to test whether the correct circuit is produced we inspect the
             Device._op_queue by patching Device.execute() with this function"""
+
+            if test.clements_convention:
+                test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([qml.Rotation]*len(theta), [qml.Beamsplitter]*len(theta)))))+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+                test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([[p] for p in phi], [[t, 0.0] for t in theta]))))+[ [p] for p in varphi], [op.parameters for op in queue])
+            else:
+                test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+                test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
+
             if test.mesh == 'rectangular':
                 if test.clements_convention:
-                    test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([qml.Rotation]*len(theta), [qml.Beamsplitter]*len(theta)))))+[qml.Rotation]*len(varphi), [type(op) for op in queue])
-                    test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([[p] for p in phi], [[t, 0.0] for t in theta]))))+[ [p] for p in varphi], [op.parameters for op in queue])
+                    test.assertAllEqual(list(map(list, [[0], [0, 1], [2], [2, 3], [1], [1, 2]]*int(len(theta)/3)))+[[n] for n in range(len(varphi))], [op.wires for op in queue])
                 else:
-                    test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
-                    test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
+                    test.assertAllEqual(list(map(list, [[0, 1], [2, 3], [1, 2]]*int(len(theta)/3)))+[[n] for n in range(len(varphi))], [op.wires for op in queue])
             elif test.mesh == 'triangular':
                 if test.clements_convention:
-                    test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([qml.Rotation]*len(theta), [qml.Beamsplitter]*len(theta)))))+[qml.Rotation]*len(varphi), [type(op) for op in queue])
-                    test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([[p] for p in phi], [[t, 0.0] for t in theta]))))+[ [p] for p in varphi], [op.parameters for op in queue])
+                    test.assertAllEqual(list(it.chain.from_iterable([[[k], [k,k+1]] for l in range(2*self.num_subsystems-3) for k in range(abs(l+1-(self.num_subsystems-1)), self.num_subsystems-1, 2)]))+[[i] for i in range(len(varphi))], [op.wires for op in queue])
                 else:
-                    test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
-                    test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
+                    test.assertAllEqual([[k,k+1] for l in range(2*self.num_subsystems-3) for k in range(abs(l+1-(self.num_subsystems-1)), self.num_subsystems-1, 2)]+[[i] for i in range(len(varphi))], [op.wires for op in queue])
             else:
                 raise Exception("Unsupported value for mesh={}, please add a test for that".format(test.mesh))
-
 
             return np.array([0.5])
 
@@ -71,7 +74,7 @@ class TestInterferometer(BaseTest):
             for test.mesh in ['rectangular', 'triangular']:
                 @qml.qnode(dev)
                 def circuit(theta, phi, varphi):
-                    qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, clements_convention=test.clements_convention, wires=range(self.num_subsystems))
+                    qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, clements_convention=test.clements_convention, mesh=test.mesh, wires=range(self.num_subsystems))
                     return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
                 circuit(theta, phi, varphi)
@@ -96,7 +99,6 @@ class TestInterferometer(BaseTest):
 
         self.assertAllAlmostEqual(circuit(theta, phi, varphi), np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786]), delta=self.tol)
 
-        print("jacobean="+str(qml.jacobian(circuit, 0)(theta, phi, varphi)))
         self.assertAllAlmostEqual(qml.jacobian(circuit, 0)(theta, phi, varphi),
                                   np.array(
                                       [[-6.18547621e-03, -3.20488416e-04, -4.20274088e-02, -6.21819677e-02,

@@ -65,7 +65,7 @@ class BaseTest(unittest.TestCase):
         else:
             if np.all(first == second):
                 return
-            if np.all(np.abs(np.array(first) - np.array(second)) <= delta):
+            if np.all(np.abs(first - second) <= delta):
                 return
         standardMsg = '{} != {} within {} delta'.format(first, second, delta)
         msg = self._formatMessage(msg, standardMsg)
