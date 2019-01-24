@@ -212,8 +212,8 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', clements_
     For :math:`N` wires, the general interferometer is specified by
     providing :math:`N(N-1)` transmittivity angles :math:`\theta` and the same number of
     phase angles :math:`\phi` as well as either :math:`N-1` or :math:`N` additional rotation
-    parameters :math:`\varphi`. :math:`N-1` such rotation parameters are sufficient for the
-    parametrization of an interferometer that is universal. If :math:`N` rotation
+    parameters :math:`\varphi`. For the parametrization of a universal interferometer
+    :math:`N-1` such rotation parameters are sufficient. If :math:`N` rotation
     parameters are given, the interferometer is over parametrized, but the resulting
     circuit is more symmetric, which can be advantageous.
 
@@ -221,28 +221,30 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', clements_
     may be adjusted:
 
     * ``mesh='rectangular'`` (default): uses the scheme described in
-      :cite:`clements2016optimal` Eq. (5), resulting in a *rectangular* array of
+      :cite:`clements2016optimal` (see Eq. (5) and Fig. 1.b), resulting in a *rectangular* array of
       :math:`N(N-1)/2` beamsplitters arranged in :math:`N` layers and numbered from left
       to right and top to bottom in each layer. The first beamsplitters acts on
       wires :math:`0` and :math:`1`.
 
     * ``mesh='triangular'``: uses the scheme described in :cite:`reck1994experimental`,
-      resulting in a *triangular* array of :math:`N(N-1)/2` beamsplitters arranged in
+      (see also Fig. 1.a from :cite:`clements2016optimal`) resulting in a *triangular*
+      array of :math:`N(N-1)/2` beamsplitters arranged in
       :math:`2N-3` layers and numbered from left to right and top to bottom. The
       first and forth beamsplitters act on wires :math:`N-1` and :math:`N`, the second
-      on :math:`N-2` and :math:`N-1`, and the third on :math:`N-3` and :math:`N-2`.
+      on :math:`N-2` and :math:`N-1`, and the third on :math:`N-3` and :math:`N-2`, and
+      so on.
 
     In both schemes, the network of :class:`~.Beamsplitter` Operations is followed by
     :math:`N` (or :math:`N-1`) local :class:`Rotation` Operations. In the latter case, the
     rotation on the last wire is left out.
 
     The rectangular decomposition is generally advantageous, as it has a lower
-    circuit depth than the triangular decomposition (:math:`N` vs :math:`2N-3`),
-    resulting in reduced optical loss.
+    circuit depth (:math:`N` vs :math:`2N-3`) and optical depth than the triangular
+    decomposition, resulting in reduced optical loss.
 
     .. note::
 
-        The decomposition as formulated by Clements :cite:`clements2016optimal` uses a different
+        The decomposition as formulated in :cite:`clements2016optimal` uses a different
         convention for a beamsplitter :math:`T(\theta, \phi)` than PennyLane, namely:
 
         .. math:: T(\theta, \phi) = BS(\theta, 0) R(\phi)
@@ -261,9 +263,9 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', clements_
         varphi (array): length-:math:`N` or :math:`N-1` array of rotation angles :math:`\varphi`
 
     Keyword Args:
+        mesh (string): the type of mesh to use (default `'rectangular'`, see above for details)
         clements_convention (boolean): if True, the beamsplitter convention from
           :cite:`clements2016optimal` is used (see the note above) (default `False`).
-        mesh (string): the type of mesh to use (default `'rectangular'`)
         wires (Sequence[int]): wires the interferometer should act on
     """
     N = len(wires)
