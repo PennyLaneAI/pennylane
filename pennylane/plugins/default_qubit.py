@@ -303,10 +303,12 @@ class DefaultQubit(Device):
             return
         elif operation == 'BasisState':
             # get computational basis state number
-            if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
-                raise ValueError("BasisState parameter must be an array of 0/1 integers.")
-
+            if len(par[0]) > self.num_wires or not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
+                raise ValueError("BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(self.num_wires))
             n = len(par[0])
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError("The default.qubit plugin can apply BasisState only to all of the {} wires.".format(self.num_wires))
+
             num = int(np.sum(np.array(par[0])*2**np.arange(n-1, -1, -1)))
 
             self._state = np.zeros_like(self._state)

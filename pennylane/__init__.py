@@ -103,6 +103,8 @@ from semantic_version import Version, Spec
 import pennylane.operation
 from pennylane.operation import QuantumOperationError
 import pennylane.expval
+import pennylane.template
+
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
