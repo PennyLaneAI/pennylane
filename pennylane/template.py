@@ -94,6 +94,8 @@ Code details
 """
 from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Beamsplitter, Rotation
 
+from pennylane.variable import Variable
+from pennylane.qnode import QuantumFunctionError
 
 def StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive_gate=CNOT, wires=None):
     """pennylane.template.StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive_gate=qml.CNOT, wires)
@@ -268,13 +270,17 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', clements_
           :cite:`clements2016optimal` is used (see the note above) (default `False`).
         wires (Sequence[int]): wires the interferometer should act on
     """
+    if isinstance(clements_convention, Variable):
+        raise QuantumFunctionError("The boolean parameter clements_convention influences the circuit architecture and can thus not be passed as a Variable.")
+    if isinstance(mesh, Variable):
+        raise QuantumFunctionError("The string parameter mesh influences the circuit architecture and can thus not be passed as a Variable.")
+
     N = len(wires)
 
     if N == 1:
         # the interferometer is a single rotation
         Rotation(varphi[0], wires=wires[0])
         return
-
 
     n = 0 # keep track of free parameters
 

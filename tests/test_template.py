@@ -23,6 +23,7 @@ from types import MethodType
 
 from pennylane import numpy as np
 from pennylane.ops import Kerr
+from pennylane.qnode import QuantumFunctionError
 from defaults import pennylane as qml, BaseTest
 
 log.getLogger('defaults')
@@ -98,6 +99,25 @@ class TestInterferometer(BaseTest):
             return qml.expval.MeanPhoton(wires=[0])
 
         circuit(theta, phi, [varphi[0]])
+
+    def test_exceptions(self):
+        dev = qml.device('default.gaussian', wires=1)
+
+        with self.assertRaisesRegex(QuantumFunctionError, "The boolean parameter clements_convention influences the circuit architecture and can thus not be passed as a Variable."):
+            @qml.qnode(dev)
+            def circuit(theta, phi, varphi, clements_convention):
+                qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, clements_convention=clements_convention, wires=[0])
+                return qml.expval.MeanPhoton(wires=[0])
+
+            circuit(np.array([0.1]), np.array([0.1]), np.array([0.1]), True)
+
+        with self.assertRaisesRegex(QuantumFunctionError, "The string parameter mesh influences the circuit architecture and can thus not be passed as a Variable."):
+            @qml.qnode(dev)
+            def circuit(theta, phi, varphi, mesh):
+                qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, mesh=mesh, wires=[0])
+                return qml.expval.MeanPhoton(wires=[0])
+
+            circuit(np.array([0.1]), np.array([0.1]), np.array([0.1]), "foo")
 
 
     def test_execution(self):
