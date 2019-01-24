@@ -241,7 +241,7 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
     may be adjusted:
 
     * ``mesh='rectangular'`` (default): uses the scheme described in
-      :cite:`clements2016optimal` (see Eq. (5) and Fig. 1.b), resulting in a *rectangular* array of
+      :cite:`clements2016optimal`, resulting in a *rectangular* array of
       :math:`N(N-1)/2` beamsplitters arranged in :math:`N` layers and numbered from left
       to right and top to bottom in each layer. The first beamsplitters acts on
       wires :math:`0` and :math:`1`.
@@ -254,8 +254,7 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
       :html:`<br>`
 
     * ``mesh='triangular'``: uses the scheme described in :cite:`reck1994experimental`,
-      (see also Fig. 1.a from :cite:`clements2016optimal`) resulting in a *triangular*
-      array of :math:`N(N-1)/2` beamsplitters arranged in
+      resulting in a *triangular* array of :math:`N(N-1)/2` beamsplitters arranged in
       :math:`2N-3` layers and numbered from left to right and top to bottom. The
       first and forth beamsplitters act on wires :math:`N-1` and :math:`N`, the second
       on :math:`N-2` and :math:`N-1`, and the third on :math:`N-3` and :math:`N-2`, and
@@ -266,7 +265,7 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
           :width: 30%
           :target: javascript:void(0);
 
-    In both schemes, the network of :class:`~.Beamsplitter` Operations is followed by
+    In both schemes, the network of :class:`~.Beamsplitter` operations is followed by
     :math:`N` (or :math:`N-1`) local :class:`Rotation` Operations. In the latter case, the
     rotation on the last wire is left out.
 
