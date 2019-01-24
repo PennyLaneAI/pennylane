@@ -366,8 +366,11 @@ class TestDefaultQubitDevice(BaseTest):
             p = [np.array([1, 0, 1, 1, 1])/np.sqrt(3)]
             self.dev.apply('QubitStateVector', wires=[0, 1], par=[p])
 
-        with self.assertRaisesRegex(ValueError, "BasisState parameter must be an array of 0/1 integers"):
-            self.dev.apply('BasisState', wires=[0, 1], par=[np.array([0, 1, 4.2])])
+        with self.assertRaisesRegex(ValueError, "BasisState parameter must be an array of 0 or 1 integers of length at most 2."):
+            self.dev.apply('BasisState', wires=[0, 1], par=[np.array([-0.2, 4.2])])
+
+        with self.assertRaisesRegex(ValueError, "The default.qubit plugin can apply BasisState only to all of the 2 wires."):
+            self.dev.apply('BasisState', wires=[0, 1, 2], par=[np.array([0, 1])])
 
         with self.assertRaisesRegex(ValueError, "This plugin supports only one- and two-qubit gates."):
             self.dev.apply('QubitUnitary', wires=[0, 1, 2], par=[U2])
@@ -574,7 +577,10 @@ class TestDefaultQubitIntegration(BaseTest):
 
             op = getattr(qml.ops, g)
             if op.num_wires == 0:
-                wires = [0]
+                if g == 'BasisState':
+                    wires = [0,1]
+                else:
+                    wires = [0]
             else:
                 wires = list(range(op.num_wires))
 
