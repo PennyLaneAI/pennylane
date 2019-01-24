@@ -45,25 +45,36 @@ class TestInterferometer(BaseTest):
         def new_execute(_, queue, *__):
             """to test whether the correct circuit is produced we inspect the
             Device._op_queue by patching Device.execute() with this function"""
-
-            if test.clements_convention:
-                test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([qml.Rotation]*len(theta), [qml.Beamsplitter]*len(theta)))))+[qml.Rotation]*len(varphi), [type(op) for op in queue])
-                test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([[p] for p in phi], [[t, 0.0] for t in theta]))))+[ [p] for p in varphi], [op.parameters for op in queue])
+            if test.mesh == 'rectangular':
+                if test.clements_convention:
+                    test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([qml.Rotation]*len(theta), [qml.Beamsplitter]*len(theta)))))+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+                    test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([[p] for p in phi], [[t, 0.0] for t in theta]))))+[ [p] for p in varphi], [op.parameters for op in queue])
+                else:
+                    test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+                    test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
+            elif test.mesh == 'triangular':
+                if test.clements_convention:
+                    test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([qml.Rotation]*len(theta), [qml.Beamsplitter]*len(theta)))))+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+                    test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([[p] for p in phi], [[t, 0.0] for t in theta]))))+[ [p] for p in varphi], [op.parameters for op in queue])
+                else:
+                    test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+                    test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
             else:
-                test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
-                test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
+                raise Exception("Unsupported value for mesh={}, please add a test for that".format(test.mesh))
+
+
             return np.array([0.5])
 
         dev.execute = MethodType(new_execute, dev)
 
         for test.clements_convention in [False, True]:
+            for test.mesh in ['rectangular', 'triangular']:
+                @qml.qnode(dev)
+                def circuit(theta, phi, varphi):
+                    qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, clements_convention=test.clements_convention, wires=range(self.num_subsystems))
+                    return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
-            @qml.qnode(dev)
-            def circuit(theta, phi, varphi):
-                qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, clements_convention=test.clements_convention, wires=range(self.num_subsystems))
-                return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
-
-            circuit(theta, phi, varphi)
+                circuit(theta, phi, varphi)
 
     def test_execution(self):
         """execution test for the Interferomerter."""
