@@ -24,6 +24,16 @@ machine learning circuit architectures that can be used to easily build,
 evaluate, and train more complex quantum machine learning models.
 
 
+.. note::
+
+    The templates below are constructed out of **structured combinations**
+    of the :mod:`quantum operations <pennylane.ops>` provided by PennyLane.
+
+    As a result, you should follow all the rules of quantum operations
+    when you use templates. For example **template functions can only be
+    used within a valid** :mod:`pennylane.qnode`.
+
+
 Examples
 --------
 
