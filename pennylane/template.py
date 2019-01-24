@@ -43,7 +43,6 @@ classifier with the architecture from :cite:`schuld2018circuit` on an arbitrary
 number of wires and with an arbitrary number of blocks by using the
 template :class:`StronglyEntanglingCircuit` in the following way:
 
-
 .. code-block:: python
 
     import pennylane as qml
