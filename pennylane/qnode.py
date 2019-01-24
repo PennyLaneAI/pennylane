@@ -416,7 +416,7 @@ class QNode:
                 # isn't succeeded by any observables?
                 successors = self._op_successors(o_idx, 'G')
 
-                if all(x.grad_method == 'A' or x.grad_method is None for x in successors):
+                if all(x.supports_heisenberg for x in successors):
                     # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
                     ev_successors = self._op_successors(o_idx, 'E')
                     for x in ev_successors:
