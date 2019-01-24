@@ -79,6 +79,27 @@ class TestInterferometer(BaseTest):
 
                 circuit(theta, phi, varphi)
 
+
+        #test special case N=1
+        dev = qml.device('default.gaussian', wires=1)
+        def new_execute(_, queue, *__):
+            """to test whether the correct circuit is produced we inspect the
+            Device._op_queue by patching Device.execute() with this function"""
+            test.assertAllEqual([qml.Rotation], [type(op) for op in queue])
+            test.assertAllEqual([[0]], [op.wires for op in queue])
+            test.assertAllEqual([[varphi[0]]], [op.parameters for op in queue])
+            return np.array([0.5])
+
+        dev.execute = MethodType(new_execute, dev)
+
+        @qml.qnode(dev)
+        def circuit(theta, phi, varphi):
+            qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, clements_convention=test.clements_convention, mesh=test.mesh, wires=[0])
+            return qml.expval.MeanPhoton(wires=[0])
+
+        circuit(theta, phi, [varphi[0]])
+
+
     def test_execution(self):
         """execution test for the Interferomerter."""
         dev = qml.device('default.gaussian', wires=self.num_subsystems)
