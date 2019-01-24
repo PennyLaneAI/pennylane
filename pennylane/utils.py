@@ -76,7 +76,9 @@ def _unflatten(flat, model):
         (other, array): first elements of flat arranged into the nested
         structure of model, unused elements of flat
     """
-    if isinstance(model, np.ndarray):
+    if isinstance(model, (numbers.Number, Variable, str)):
+        return flat[0], flat[1:]
+    elif isinstance(model, np.ndarray):
         idx = model.size
         res = np.array(flat)[:idx].reshape(model.shape)
         return res, flat[idx:]
@@ -86,8 +88,6 @@ def _unflatten(flat, model):
             val, flat = _unflatten(flat, x)
             res.append(val)
         return res, flat
-    elif isinstance(model, (numbers.Number, Variable)):
-        return flat[0], flat[1:]
     else:
         raise TypeError('Unsupported type in the model: {}'.format(type(model)))
 
