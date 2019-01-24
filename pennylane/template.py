@@ -207,7 +207,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
         Kerr(k[i], wires=wire)
 
 
-def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', clements_convention=False): #pylint: disable=too-many-branches
+def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', clements_convention=False): #pylint: disable=too-many-branches,too-many-arguments
     r"""pennylane.template.Interferometer(theta, phi, wires)
     General linear interferometer.
 
