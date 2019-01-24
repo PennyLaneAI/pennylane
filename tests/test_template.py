@@ -45,19 +45,25 @@ class TestInterferometer(BaseTest):
         def new_execute(_, queue, *__):
             """to test whether the correct circuit is produced we inspect the
             Device._op_queue by patching Device.execute() with this function"""
-            test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
-            #test.assertAllEqual([elem for t, p in zip(theta, phi) for elem in [[t, p], [p]]], [op.parameters for op in queue])
-            test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
+
+            if test.clements_convention:
+                test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([qml.Rotation]*len(theta), [qml.Beamsplitter]*len(theta)))))+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+                test.assertAllEqual(list(it.chain.from_iterable(map(list, zip([[p] for p in phi], [[t, 0.0] for t in theta]))))+[ [p] for p in varphi], [op.parameters for op in queue])
+            else:
+                test.assertAllEqual([qml.Beamsplitter]*len(theta)+[qml.Rotation]*len(varphi), [type(op) for op in queue])
+                test.assertAllEqual([[t, p] for t, p in zip(theta, phi)]+[ [p] for p in varphi], [op.parameters for op in queue])
             return np.array([0.5])
 
         dev.execute = MethodType(new_execute, dev)
 
-        @qml.qnode(dev)
-        def circuit(theta, phi, varphi):
-            qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(self.num_subsystems))
-            return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
+        for test.clements_convention in [False, True]:
 
-        circuit(theta, phi, varphi)
+            @qml.qnode(dev)
+            def circuit(theta, phi, varphi):
+                qml.template.Interferometer(theta=theta, phi=phi, varphi=varphi, clements_convention=test.clements_convention, wires=range(self.num_subsystems))
+                return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
+
+            circuit(theta, phi, varphi)
 
     def test_execution(self):
         """execution test for the Interferomerter."""
@@ -78,7 +84,6 @@ class TestInterferometer(BaseTest):
             return tuple(qml.expval.MeanPhoton(wires=wires) for wires in range(self.num_subsystems))
 
         self.assertAllAlmostEqual(circuit(theta, phi, varphi), np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786]), delta=self.tol)
-        #self.assertAllAlmostEqual(circuit(theta, phi, varphi[:-1]), np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786]), delta=self.tol)
 
         print("jacobean="+str(qml.jacobian(circuit, 0)(theta, phi, varphi)))
         self.assertAllAlmostEqual(qml.jacobian(circuit, 0)(theta, phi, varphi),
@@ -92,14 +97,6 @@ class TestInterferometer(BaseTest):
                                        [ 3.81099656e-04, -4.79703149e-02,  5.78754312e-01,  0.00000000e+00,
                                          3.38965962e-02,  0.00000000e+00]]
                                   ), delta=self.tol)
-
-        # self.assertAllAlmostEqual(qml.jacobian(circuit, 0)(theta, phi, varphi[:-1]),
-        #                           np.array(
-        #                               [[-5.03137764e-03, -3.20488416e-04, -4.20886887e-02, -6.16246214e-02, 0.00000000e+00, 0.00000000e+00],
-        #                                [3.09578135e-04, 2.34020030e-02, -1.02412671e-02, 1.40942058e-03, 1.08395609e-01, -3.34712643e-01],
-        #                                [4.34069985e-03, 1.40617349e-03, -5.27609524e-01, 6.02152008e-02, -9.48406160e-02, 3.34712643e-01],
-        #                                [3.81099656e-04, -2.44876881e-02, 5.79939479e-01, 0.00000000e+00, -1.35549930e-02, 0.00000000e+00]]
-        #                           ), delta=self.tol)
 
 
 class TestCVNeuralNet(BaseTest):
