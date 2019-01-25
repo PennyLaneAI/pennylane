@@ -8,7 +8,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.optimize import AdagradOptimizer
 
-dev = qml.device('strawberryfields.fock', wires=2, cutoff_dim=13)
+dev = qml.device('strawberryfields.fock', wires=2, cutoff_dim=10)
 
 
 def featuremap(x):
@@ -18,8 +18,8 @@ def featuremap(x):
         x (array[float]): single input vector
     """
 
-    qml.Squeezing(0.5, x[0], wires=[0])
-    qml.Squeezing(0.5, x[1], wires=[1])
+    qml.Squeezing(0.6, x[0], wires=[0])
+    qml.Squeezing(0.6, x[1], wires=[1])
 
 
 def layer(v):
