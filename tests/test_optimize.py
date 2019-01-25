@@ -504,6 +504,18 @@ class BasicTest(BaseTest):
                     x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
                     self.assertAllAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
 
+    def test_update_stepsize(self):
+        """Tests that the stepsize correctly updates"""
+        self.logTestName()
+
+        eta = 0.5
+        opt = AdamOptimizer(eta)
+        self.assertAlmostEqual(opt._stepsize, eta)
+
+        eta2 = 0.1
+        opt.update_stepsize(eta2)
+        self.assertAlmostEqual(opt._stepsize, eta2)
+
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', basic optimizers.')

@@ -68,6 +68,6 @@ class RMSPropOptimizer(AdagradOptimizer):
         else:
             self.accumulation = [self.decay*a + (1-self.decay)*g*g for a, g in zip(self.accumulation, grad_flat)]
 
-        x_new_flat = [e - (self.stepsize / np.sqrt(a + self.eps)) * g for a, g, e in zip(self.accumulation, grad_flat, x_flat)]
+        x_new_flat = [e - (self._stepsize / np.sqrt(a + self.eps)) * g for a, g, e in zip(self.accumulation, grad_flat, x_flat)]
 
         return unflatten(x_new_flat, x)
