@@ -34,7 +34,17 @@ class GradientDescentOptimizer(object):
         stepsize (float): the user-defined hyperparameter :math:`\eta`
     """
     def __init__(self, stepsize=0.01):
-        self.stepsize = stepsize
+        self._stepsize = stepsize
+
+    def update_stepsize(self, stepsize):
+        r"""Update the initialized stepsize value :math:`\eta`.
+
+        This allows for techniques such as learning rate scheduling.
+
+        Args:
+            stepsize (float): the user-defined hyperparameter :math:`\eta`
+        """
+        self._stepsize = stepsize
 
     def step(self, objective_fn, x, grad_fn=None):
         """Update x with one step of the optimizer.
@@ -93,6 +103,6 @@ class GradientDescentOptimizer(object):
         x_flat = _flatten(x)
         grad_flat = _flatten(grad)
 
-        x_new_flat = [e - self.stepsize * g for g, e in zip(grad_flat, x_flat)]
+        x_new_flat = [e - self._stepsize * g for g, e in zip(grad_flat, x_flat)]
 
         return unflatten(x_new_flat, x)
