@@ -770,7 +770,7 @@ class DefaultGaussian(Device):
                 raise ValueError("Interferomer unitary matrix applied to the incorrect "
                                  "number of subsystems.")
             if len(wires) > 2:
-                raise ValueError("Only 2 mode interferometers are currently supported.")
+                raise ValueError("Only 2-mode interferometers are currently supported.")
 
         if 'State' in operation:
             # set the new device state
