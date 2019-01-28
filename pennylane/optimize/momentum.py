@@ -59,9 +59,9 @@ class MomentumOptimizer(GradientDescentOptimizer):
         x_flat = _flatten(x)
 
         if self.accumulation is None:
-            self.accumulation = [self.stepsize * g for g in grad_flat]
+            self.accumulation = [self._stepsize * g for g in grad_flat]
         else:
-            self.accumulation = [self.momentum * a + self.stepsize * g for a, g in zip(self.accumulation, grad_flat)]
+            self.accumulation = [self.momentum * a + self._stepsize * g for a, g in zip(self.accumulation, grad_flat)]
 
         x_new_flat = [e-a for a, e in zip(self.accumulation, x_flat)]
 
