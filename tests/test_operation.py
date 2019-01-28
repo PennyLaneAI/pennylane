@@ -38,12 +38,20 @@ class BasicTest(BaseTest):
         def h_test(cls):
             "Test a gaussian CV operation."
             log.debug('\tTesting: cls.{}'.format(cls.__name__))
+
+            ww = list(range(cls.num_wires))
+
             # fixed parameter values
             if cls.par_domain == 'A':
-                par = [nr.randn(1,1)] * cls.num_params
+                if cls.__name__ == "Interferometer":
+                    ww = list(range(2))
+                    par = [np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
+                                     [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])]
+                else:
+                    par = [np.array([[-1.82624687]])] * cls.num_params
             else:
-                par = list(nr.randn(cls.num_params))
-            ww = list(range(cls.num_wires))
+                par = [-0.069125, 0.51778, 0.91133, 0.95904][:cls.num_params]
+
             op = cls(*par, wires=ww, do_queue=False)
 
             if issubclass(cls, oo.Expectation):
@@ -53,29 +61,29 @@ class BasicTest(BaseTest):
                 return
 
             # not an Expectation
-            # all gaussian ops use the 'A' method
-            self.assertEqual(cls.grad_method, 'A')
-            U = op.heisenberg_tr(2)
+
+            U = op.heisenberg_tr(num_wires=2)
             I = np.eye(*U.shape)
             # first row is always (1,0,0...)
             self.assertAllEqual(U[0,:], I[:,0])
 
             # check the inverse transform
-            V = op.heisenberg_tr(2, inverse=True)
+            V = op.heisenberg_tr(num_wires=2, inverse=True)
             self.assertAlmostEqual(np.linalg.norm(U @ V -I), 0, delta=self.tol)
             self.assertAlmostEqual(np.linalg.norm(V @ U -I), 0, delta=self.tol)
 
-            # compare gradient recipe to numerical gradient
-            h = 1e-7
-            U = op.heisenberg_tr(0)
-            for k in range(cls.num_params):
-                D = op.heisenberg_pd(k)  # using the recipe
-                # using finite difference
-                op.params[k] += h
-                Up = op.heisenberg_tr(0)
-                op.params = par
-                G = (Up-U) / h
-                self.assertAllAlmostEqual(D, G, delta=self.tol)
+            if op.grad_recipe is not None:
+                # compare gradient recipe to numerical gradient
+                h = 1e-7
+                U = op.heisenberg_tr(0)
+                for k in range(cls.num_params):
+                    D = op.heisenberg_pd(k)  # using the recipe
+                    # using finite difference
+                    op.params[k] += h
+                    Up = op.heisenberg_tr(0)
+                    op.params = par
+                    G = (Up-U) / h
+                    self.assertAllAlmostEqual(D, G, delta=self.tol)
 
             # make sure that `heisenberg_expand` method receives enough wires to actually expand
             # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
@@ -95,7 +103,7 @@ class BasicTest(BaseTest):
                 op.heisenberg_expand(U_high_order, len(op.wires))
 
         for cls in pennylane.ops.cv.all_ops + pennylane.expval.cv.all_ops:
-            if cls.supports_analytic:  # only test gaussian operations
+            if cls.supports_heisenberg:  # only test gaussian operations
                 h_test(cls)
 
     def test_ops(self):

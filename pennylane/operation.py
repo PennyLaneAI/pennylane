@@ -78,7 +78,8 @@ and :class:`~.Expectation`.
 Differentiation
 ^^^^^^^^^^^^^^^
 
-To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
+To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to
+provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
 the operation given its list of parameters, namely:
 
 * For Gaussian CV Operations this method should return the matrix of the linear transformation carried out by the
@@ -538,12 +539,21 @@ class CV:
 
     @classproperty
     def supports_analytic(self):
-        """Returns True if the CV Operation has a defined :meth:`~.CV._heisenberg_rep`
-        static method, indicating that analytic differentiation is supported.
+        """Returns True if the CV Operation has ``grad_method='A'`` and
+        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
+        that analytic differentiation is supported.
         """
-        p = list(range(self.num_params))
-        return self._heisenberg_rep(p) is not None
+        return self.grad_method == 'A' and self.supports_heisenberg
 
+    @classproperty
+    def supports_heisenberg(self):
+        """Returns True if the CV Operation has
+        overwritten the :meth:`~.CV._heisenberg_rep` static method
+        defined in :class:`CV`, thereby indicating
+        that analytic differentiation is supported if this operation
+        succeeds the gate to be differentiated analytically.
+        """
+        return CV._heisenberg_rep != self._heisenberg_rep
 
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""
@@ -604,7 +614,11 @@ class CVOperation(CV, Operation):
             raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
 
         if inverse:
-            p[0] = -p[0]  # negate first parameter
+            if self.par_domain == 'A':
+                # TODO: expand this for the new par domain class, for non-unitary matrices.
+                p[0] = np.linalg.inv(p[0])
+            else:
+                p[0] = -p[0]  # negate first parameter
         U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
 
         return self.heisenberg_expand(U, num_wires)

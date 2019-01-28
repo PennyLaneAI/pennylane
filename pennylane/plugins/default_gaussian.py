@@ -53,6 +53,7 @@ Gates and operations
     two_mode_squeezing
     controlled_addition
     controlled_phase
+    interferometer
 
 State preparation
 -----------------
@@ -371,6 +372,24 @@ def controlled_phase(s):
     return S
 
 
+def interferometer(U):
+    """Interferometer
+
+    Args:
+        U (array): unitary matrix
+
+    Returns:
+        array: symplectic transformation matrix
+    """
+    N = 2*len(U)
+    X = U.real
+    Y = U.imag
+    rows = np.arange(N).reshape(2, -1).T.flatten()
+    S = np.vstack([np.hstack([X, -Y]),
+                   np.hstack([Y, X])])[:, rows][rows]
+
+    return S
+
 #========================================================
 #  Arbitrary states and operators
 #========================================================
@@ -665,23 +684,14 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
     var = ex - ex**2
     return ex, var
 
-def identity(mu, cov, wires, params, hbar=2.):
-    r"""Returns 1.
 
-    Args:
-        mu (array): vector of means
-        cov (array): covariance matrix
-        wires (Sequence[int]): wires to calculate the expectation for
-        params (Sequence[int]): None.
-        hbar (float): (default 2) the value of :math:`\hbar` in the commutation
-            relation :math:`[\x,\p]=i\hbar`
+def identity(*_, **__):
+    r"""Returns 1.
 
     Returns:
         tuple: the Fock state expectation and variance
     """
-    # pylint: disable=unused-argument
     return 1, 0
-
 
 
 #========================================================
@@ -718,7 +728,8 @@ class DefaultGaussian(Device):
         'DisplacedSqueezedState': displaced_squeezed_state,
         'SqueezedState': squeezed_state,
         'ThermalState': thermal_state,
-        'GaussianState': gaussian_state
+        'GaussianState': gaussian_state,
+        'Interferometer': interferometer
     }
 
     _expectation_map = {
@@ -753,6 +764,13 @@ class DefaultGaussian(Device):
                                  "the incorrect size for the number of subsystems.")
             self._state = self._operation_map[operation](*par, hbar=self.hbar)
             return # we are done here
+
+        if operation == 'Interferometer':
+            if par[0].shape[0] != len(wires):
+                raise ValueError("Interferomer unitary matrix applied to the incorrect "
+                                 "number of subsystems.")
+            if len(wires) > 2:
+                raise ValueError("Only 2-mode interferometers are currently supported.")
 
         if 'State' in operation:
             # set the new device state

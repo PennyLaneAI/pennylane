@@ -56,6 +56,7 @@ Gates
     Kerr
     CrossKerr
     CubicPhase
+    Interferometer
 
 
 State preparation
@@ -532,6 +533,61 @@ class CubicPhase(CVOperation):
     grad_method = 'F'
 
 
+class Interferometer(CVOperation):
+    r"""pennylane.Interferometer(U, wires)
+    A linear interferometer transforming the bosonic operators according to
+    the unitary matrix :math:`U`.
+
+    .. note::
+
+        This operation implements a **fixed** linear interferometer given a known
+        unitary matrix.
+
+        If you instead wish to parameterize the interferometer,
+        and calculate the gradient/optimize with respect to these parameters,
+        consider instead the :func:`pennylane.template.Interferomer` template,
+        which constructs an interferometer from a combination of beamsplitters
+        and rotation gates.
+
+    **Details:**
+
+    * None (applied to the entire subsystem)
+    * Number of parameters: 1
+    * Gradient recipe: None (uses finite difference)
+    * Heisenberg representation:
+
+      .. math:: M = \begin{bmatrix}
+        1 & 0\\
+        0 & S\\
+        \end{bmatrix}
+
+    where :math:`S` is the Gaussian symplectic transformation representing the interferometer.
+
+    Args:
+        U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 1
+    num_wires = 0
+    par_domain = 'A'
+    grad_method = None
+    grad_recipe = None
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        N = len(p[0])
+        X = p[0].real
+        Y = p[0].imag
+
+        rows = np.arange(2*N).reshape(2, -1).T.flatten()
+        S = np.vstack([np.hstack([X, -Y]),
+                       np.hstack([Y, X])])[:, rows][rows]
+
+        M = np.eye(2*N+1)
+        M[1:2*N+1, 1:2*N+1] = S
+        return M
+
+
 #=============================================================================
 # State preparation
 #=============================================================================
@@ -637,7 +693,7 @@ class GaussianState(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: None (applied to the entire subsystem)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -678,7 +734,7 @@ class FockStateVector(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: None (applied to the entire subsystem)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -698,7 +754,7 @@ class FockDensityMatrix(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: None (applied to the entire subsystem)
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -756,6 +812,7 @@ all_ops = [
     Squeezing,
     TwoModeSqueezing,
     CubicPhase,
+    Interferometer,
     CatState,
     CoherentState,
     FockDensityMatrix,

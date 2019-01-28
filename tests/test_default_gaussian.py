@@ -296,15 +296,15 @@ class TestDefaultGaussianDevice(BaseTest):
         """Test that default Gaussian device supports all PennyLane Gaussian CV gates."""
         self.logTestName()
 
-        nonGaussian = {'FockDensityMatrix',
-                       'FockStateVector',
-                       'FockState',
-                       'CrossKerr',
-                       'CatState',
-                       'CubicPhase',
-                       'Kerr'}
+        non_supported = {'FockDensityMatrix',
+                         'FockStateVector',
+                         'FockState',
+                         'CrossKerr',
+                         'CatState',
+                         'CubicPhase',
+                         'Kerr'}
 
-        self.assertEqual(set(qml.ops.cv.__all__) - nonGaussian,
+        self.assertEqual(set(qml.ops.cv.__all__) - non_supported,
                          set(self.dev._operation_map))
 
     def test_expectation_map(self):
@@ -343,6 +343,11 @@ class TestDefaultGaussianDevice(BaseTest):
                     p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
                     w = list(range(2))
                     expected_out = p
+                elif gate_name == 'Interferometer':
+                    w = list(range(2))
+                    p = [U]
+                    S = fn(*p)
+                    expected_out = S @ self.dev._state[0], S @ self.dev._state[1] @ S.T
             else:
                 # the parameter is a float
                 p = [0.432423, -0.12312, 0.324, 0.751][:op.num_params]
@@ -388,6 +393,15 @@ class TestDefaultGaussianDevice(BaseTest):
         with self.assertRaisesRegex(ValueError, 'incorrect size for the number of subsystems'):
             p = [thermal_state(0.5)]
             self.dev.apply('GaussianState', wires=[0], par=[p])
+
+        with self.assertRaisesRegex(ValueError, 'incorrect number of subsystems'):
+            p = U
+            self.dev.apply('Interferometer', wires=[0], par=[p])
+
+        with self.assertRaisesRegex(ValueError, 'Only 2-mode interferometers are currently supported.'):
+            p = U2
+            dev = DefaultGaussian(wires=4, shots=0, hbar=hbar)
+            self.dev.apply('Interferometer', wires=[0, 1, 2, 3], par=[p])
 
     def test_expectation(self):
         """Test that expectation values are calculated correctly"""
@@ -631,6 +645,8 @@ class TestDefaultGaussianIntegration(BaseTest):
 
             if g == 'GaussianState':
                 p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
+            elif g == 'Interferometer':
+                p = [np.array(U)]
             else:
                 p = [0.432423, -0.12312, 0.324, 0.763][:op.num_params]
 

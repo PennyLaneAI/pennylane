@@ -338,7 +338,6 @@ class TestCVNeuralNet(BaseTest):
 
     def setUp(self):
         super().setUp()
-        np.random.seed(8)
         self.N = 4
         self.depth = 2
         self.weights = [

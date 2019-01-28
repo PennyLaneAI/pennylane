@@ -228,7 +228,7 @@ def hermitian(*args):
 
     return A
 
-def identity(*par):
+def identity(*_):
     """Identity matrix for expectations.
 
     Returns:
@@ -302,6 +302,7 @@ class DefaultQubit(Device):
                 raise ValueError('State vector must be of length 2**wires.')
             return
         elif operation == 'BasisState':
+            n = len(par[0])
             # get computational basis state number
             if len(par[0]) > self.num_wires or not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
                 raise ValueError("BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(self.num_wires))

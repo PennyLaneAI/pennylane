@@ -281,6 +281,48 @@ class CVGradientTest(BaseTest):
         self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
         self.assertAllAlmostEqual(grad_A2, grad_F, delta=self.tol)
 
+    def test_CVOperation_with_heisenberg_and_no_params(self):
+        """An integration test for CV gates that support analytic differentiation
+        if succeeding the gate to be differentiated, but cannot be differentiated
+        themselves (for example, they may be Gaussian but accept no parameters).
+
+        This ensures that, assuming their _heisenberg_rep is defined, the quantum
+        gradient analytic method can still be used, and returns the correct result."""
+        self.logTestName()
+
+        for cls in qml.ops.cv.all_ops:
+            if cls.supports_heisenberg and (not cls.supports_analytic):
+                dev = qml.device('default.gaussian', wires=2)
+
+                U = np.array([[0.51310276+0.81702166j, 0.13649626+0.22487759j],
+                              [0.26300233+0.00556194j, -0.96414101-0.03508489j]])
+
+                if cls.num_wires == 0:
+                    w = list(range(2))
+                else:
+                    w = list(range(cls.num_wires))
+
+                def circuit(x):
+                    qml.Displacement(x, 0, wires=0)
+
+                    if cls.par_domain == 'A':
+                        cls(U, wires=w)
+                    else:
+                        cls(wires=w)
+                    return qml.expval.X(0)
+
+                qnode = qml.QNode(circuit, dev)
+                grad_F = qnode.jacobian(0.5, method='F')
+                grad_A = qnode.jacobian(0.5, method='A')
+                grad_A2 = qnode.jacobian(0.5, method='A', force_order2=True)
+
+                # par[0] can use the 'A' method
+                self.assertTrue(qnode.grad_method_for_par == {0: 'A'})
+
+                # the different methods agree
+                self.assertAllAlmostEqual(grad_A, grad_F, delta=self.tol)
+                self.assertAllAlmostEqual(grad_A2, grad_F, delta=self.tol)
+
 
 class QubitGradientTest(BaseTest):
     """Tests of the automatic gradient method for qubit gates.

@@ -372,6 +372,7 @@ class TestDefaultQubitDevice(BaseTest):
         with self.assertRaisesRegex(ValueError, "The default.qubit plugin can apply BasisState only to all of the 2 wires."):
             self.dev.apply('BasisState', wires=[0, 1, 2], par=[np.array([0, 1])])
 
+
         with self.assertRaisesRegex(ValueError, "This plugin supports only one- and two-qubit gates."):
             self.dev.apply('QubitUnitary', wires=[0, 1, 2], par=[U2])
 
