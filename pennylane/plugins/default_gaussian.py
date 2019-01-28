@@ -376,10 +376,10 @@ def interferometer(U):
     """Interferometer
 
     Args:
-        U (array): unitary matrix.
+        U (array): unitary matrix
 
     Returns:
-        array: symplectic transformation matrix.
+        array: symplectic transformation matrix
     """
     N = 2*len(U)
     X = U.real

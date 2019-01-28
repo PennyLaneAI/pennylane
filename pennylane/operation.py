@@ -548,7 +548,7 @@ class CV:
     @classproperty
     def supports_heisenberg(self):
         """Returns True if the CV Operation has
-        a overwritten the :meth:`~.CV._heisenberg_rep` static method
+        overwritten the :meth:`~.CV._heisenberg_rep` static method
         defined in :class:`CV`, thereby indicating
         that analytic differentiation is supported if this operation
         succeeds the gate to be differentiated analytically.
