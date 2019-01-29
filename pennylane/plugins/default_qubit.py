@@ -304,9 +304,8 @@ class DefaultQubit(Device):
         elif operation == 'BasisState':
             n = len(par[0])
             # get computational basis state number
-            if len(par[0]) > self.num_wires or not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
+            if n > self.num_wires or not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
                 raise ValueError("BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(self.num_wires))
-            n = len(par[0])
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
                 raise ValueError("The default.qubit plugin can apply BasisState only to all of the {} wires.".format(self.num_wires))
 
