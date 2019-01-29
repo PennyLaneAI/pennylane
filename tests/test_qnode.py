@@ -760,6 +760,9 @@ class GradientTest(BaseTest):
 
         self.assertAllAlmostEqual(self.expected_jacobian(a, b, c), res, delta=self.tol)
 
+        #compare with what we get if argnum is a list
+        res2 = qml.jacobian(circuit, argnum=[0, 1, 2])(a, b, c)
+        self.assertAllAlmostEqual(res, res2, delta=self.tol)
 
     def test_multiple_expectation_jacobian_array(self):
         "Tests that qnodes using an array argument return correct gradients for multiple expectation values."

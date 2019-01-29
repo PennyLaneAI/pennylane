@@ -246,7 +246,7 @@ def jacobian(func, argnum):
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
         argnum (int or Sequence[int]): which argument to take the gradient
-            with respect to. If a list is given then the Jacobian
+            with respect to. If a sequence is given, the Jacobian matrix
             corresponding to all input elements and all output elements is returned.
 
     Returns:
@@ -257,7 +257,7 @@ def jacobian(func, argnum):
     if isinstance(argnum, int):
         return _jacobian(func, argnum)
     else:
-        return lambda *args, **kwargs: numpy.array([_jacobian(func, arg)(*args, **kwargs) for arg in argnum])
+        return lambda *args, **kwargs: numpy.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
 
 
 
