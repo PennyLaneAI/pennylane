@@ -256,8 +256,7 @@ def jacobian(func, argnum):
     # pylint: disable=no-value-for-parameter
     if isinstance(argnum, int):
         return _jacobian(func, argnum)
-    else:
-        return lambda *args, **kwargs: numpy.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
+    return lambda *args, **kwargs: numpy.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
 
 
 
