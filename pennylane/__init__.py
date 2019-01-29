@@ -92,6 +92,7 @@ Code details
 """
 import os
 import logging as log
+import collections
 from pkg_resources import iter_entry_points
 
 from autograd import numpy
@@ -244,8 +245,8 @@ def jacobian(func, argnum):
             a combination of quantum and classical nodes. The output of the computation
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
-        argnum (int): which argument to take the gradient
-            with respect to. If the argument is a NumPy array, then the Jacobian
+        argnum (int or Sequence[int]): which argument to take the gradient
+            with respect to. If a list is given then the Jacobian
             corresponding to all input elements and all output elements is returned.
 
     Returns:
@@ -253,7 +254,11 @@ def jacobian(func, argnum):
         function with respect to the arguments in argnum
     """
     # pylint: disable=no-value-for-parameter
-    return _jacobian(func, argnum)
+    if isinstance(argnum, int):
+        return _jacobian(func, argnum)
+    else:
+        return lambda *args, **kwargs: numpy.array([_jacobian(func, arg)(*args, **kwargs) for arg in argnum])
+
 
 
 def version():
