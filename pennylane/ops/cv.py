@@ -545,7 +545,7 @@ class Interferometer(CVOperation):
 
         If you instead wish to parameterize the interferometer,
         and calculate the gradient/optimize with respect to these parameters,
-        consider instead the :func:`pennylane.template.Interferomer` template,
+        consider instead the :func:`pennylane.template.Interferometer` template,
         which constructs an interferometer from a combination of beamsplitters
         and rotation gates.
 
