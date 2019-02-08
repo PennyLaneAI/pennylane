@@ -75,11 +75,9 @@ using different classical interfaces:
         return qml.expval.PauliZ(0), qml.expval.Hadamard(1)
 
     qnode1 = qml.QNode(circuit, dev1)
-    qnode2 = qml.QNode(circuit, dev2, interface='numpy')
+    qnode2 = qml.QNode(circuit, dev2)
 
-As with the QNode decorator, if we want to explicitly create a NumPy interfacing
-QNode, we simply pass the ``interface`` keyword argument; this is also the default
-if not provided.
+By default, all QNodes created this way are NumPy interfacing QNodes.
 
 
 Quantum gradients

@@ -31,7 +31,8 @@ requirements = [
 ]
 
 extra_requirements = {
-    'pytorch':  ["torch", "torchvision"]
+    'pytorch':  ["torch", "torchvision"],
+    'tf':  ["tensorflow>=1.12"],
 }
 
 info = {

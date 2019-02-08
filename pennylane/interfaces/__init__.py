@@ -20,7 +20,11 @@ Classical interfaces overview
 .. currentmodule:: pennylane.interfaces
 
 PennyLane now provides experimental support for additional classical
-automatic differentiation interfaces, beginning with PyTorch.
+automatic differentiation interfaces, beginning with PyTorch and TensorFlow eager execution mode.
+
+Depending on the interface/classical machine learning library chosen,
+you may be able to offload the classical portion of your hybrid model
+onto an accelerator, such as a GPU or TPU.
 
 Background
 ----------
@@ -53,7 +57,7 @@ the QNode is modified such that
    learning library during backprogation.
 
 To that end, we will begin supporting additional classical interfaces in PennyLane,
-beginning with PyTorch.
+beginning with PyTorch and TensorFlow eager execution mode.
 
 .. rst-class:: contents local topic
 
@@ -62,4 +66,5 @@ beginning with PyTorch.
 
     interfaces/numpy
     interfaces/torch
+    interfaces/tfe
 """

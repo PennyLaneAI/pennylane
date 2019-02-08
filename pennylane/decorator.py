@@ -112,7 +112,6 @@ import logging as log
 from functools import wraps, lru_cache
 
 from .qnode import QNode
-from .utils import unflatten
 
 log.getLogger()
 
@@ -131,6 +130,9 @@ def qnode(device, interface='numpy'):
               and returns NumPy arrays.
 
             * ``interface='torch'``: The QNode accepts and returns Torch tensors.
+
+            * ``interface='tfe'``: The QNode accepts and returns eager execution
+              TensorFlow ``tfe.Variable`` objects.
     """
     @lru_cache()
     def qfunc_decorator(func):
@@ -140,6 +142,9 @@ def qnode(device, interface='numpy'):
 
         if interface == 'torch':
             return qnode.to_torch()
+
+        if interface == 'tfe':
+            return qnode.to_tfe()
 
         @wraps(func)
         def wrapper(*args, **kwargs):

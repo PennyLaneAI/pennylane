@@ -151,6 +151,12 @@ try:
 except ImportError as e: # pragma: no cover
     torch_support = False
 
+try:
+    from .interfaces.tfe import TFEQNode
+    tfe_support = True
+except ImportError as e: # pragma: no cover
+    tfe_support = False
+
 from .variable  import Variable
 from .utils import _flatten, unflatten
 
@@ -206,20 +212,11 @@ class QNode:
         func (callable): a Python function containing :class:`~.operation.Operation`
             constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
         device (:class:`~pennylane._device.Device`): device to execute the function on
-        interface (str): the interface that will be used for automatic
-            differentiation of *classical* processing. This affects
-            the types of objects passed to/returned from the QNode:
-
-            * ``interface='numpy'``: The QNode accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
-              and returns NumPy arrays.
-
-            * ``interface='torch'``: The QNode accepts and returns Torch tensors.
     """
     # pylint: disable=too-many-instance-attributes
     _current_context = None  #: QNode: for building Operation sequences by executing quantum circuit functions
 
-    def __init__(self, func, device, interface='numpy'):
+    def __init__(self, func, device):
         self.func = func
         self.device = device
         self.num_wires = device.num_wires
@@ -801,6 +798,15 @@ class QNode:
                                        "PyTorch to enable the experimental TorchQNode feature.")
 
         return TorchQNode(self)
+
+    def to_tfe(self):
+        """Convert the standard PennyLane QNode into a :func:`~.TFEQNode`.
+        """
+        if not tfe_support: # pragma: no cover
+            raise QuantumFunctionError("TensorFlow with eager execution mode not found. Please install "
+                                       "the latest version of TensorFlow to enable the experimental TFEQNode feature.")
+
+        return TFEQNode(self)
 
 
 #def QNode_vjp(ans, self, params, *args, **kwargs):
