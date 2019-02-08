@@ -17,9 +17,9 @@
 PyTorch interface
 =================
 
-**Module name:** :mod:`pennylane.torch`
+**Module name:** :mod:`pennylane.interfaces.torch`
 
-.. currentmodule:: pennylane.torch
+.. currentmodule:: pennylane.interfaces.torch
 
 .. warning:: This interface is **experimental**
 
@@ -179,7 +179,7 @@ Code details
 import numpy as np
 import torch
 
-from .utils import unflatten
+from pennylane.utils import unflatten
 
 
 def TorchQNode(qnode):

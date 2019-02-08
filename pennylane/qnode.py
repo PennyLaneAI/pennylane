@@ -146,7 +146,7 @@ import autograd.builtins
 import pennylane.operation
 
 try:
-    from .torch import TorchQNode
+    from .interfaces.torch import TorchQNode
     torch_support = True
 except ImportError as e:
     torch_support = False
