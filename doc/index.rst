@@ -163,7 +163,9 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Classical interfaces
    :hidden:
 
-   code/torch
+   code/interfaces
+   code/interfaces/numpy
+   code/interfaces/torch
 
 .. toctree::
    :maxdepth: 1

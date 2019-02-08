@@ -15,49 +15,13 @@
 .. _torch_qnode:
 
 PyTorch interface
-=================
+*****************
 
 **Module name:** :mod:`pennylane.interfaces.torch`
 
 .. currentmodule:: pennylane.interfaces.torch
 
 .. warning:: This interface is **experimental**
-
-PennyLane now provides experimental support for additional classical
-automatic differentiation interfaces, beginning with PyTorch.
-
-Background
-----------
-
-By default, when constructing a :ref:`QNode <qnode_decorator>`, PennyLane allows
-the underlying quantum function to accept any default Python types (for example,
-floats, ints, lists) as well as NumPy array arguments, and will always return
-NumPy arrays representing the returned expectation values. To enable the QNode
-to then be used in arbitrary hybrid classical-quantum computation, you can then
-make use of the patched version of NumPy provided by PennyLane
-(via `autograd <https://github.com/HIPS/autograd>`_):
-
-.. code-block:: python
-
-    from pennylane import numpy as np
-
-Any classical computation in the model can then make use of arbitrary NumPy
-functions, while retaining support for automatic differentiation. For an example,
-see the :ref:`hybrid computation tutorial <plugins_hybrid>`.
-
-However, there is no reason why PennyLane's quantum nodes cannot be used in conjunction
-with other classical machine learning libraries; all that is required is that
-the QNode is modified such that
-
-1. It accepts and returns the correct object types expected by the classical
-   machine learning library (i.e., Python default types and NumPy array for
-   the PennyLane-provided wrapped NumPy, and ``torch.tensor`` for PyTorch), and
-
-2. It correctly passes the quantum analytic gradient to the classical machine
-   learning library during backprogation.
-
-To that end, we will begin supporting additional classical interfaces in PennyLane,
-beginning with PyTorch.
 
 
 Using the PyTorch interface
@@ -170,6 +134,69 @@ Now, performing the backpropagation and accumulating the gradients:
 tensor([-0.4794,  0.0000])
 >>> theta.grad
 tensor(-5.5511e-17)
+
+.. _pytorch_optimize:
+
+Optimization using PyTorch
+--------------------------
+
+To optimize your hybrid classical-quantum model using the Torch interface,
+you **must** make use of the `PyTorch provided optimizers <https://pytorch.org/docs/stable/optim.html>`_,
+or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <optimization_methods>`
+**cannot be used with the Torch interface, only the** :ref:`numpy_qnode`.
+
+For example, to optimize a Torch-interfacing QNode (below) such that the weights ``x``
+result in an expectation value of 0.5:
+
+.. code-block:: python
+
+    import torch
+    from torch.autograd import Variable
+    import pennylane as qml
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev, interface='torch')
+    def circuit(phi, theta):
+        qml.RX(phi[0], wires=0)
+        qml.RZ(phi[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(theta, wires=0)
+        return qml.expval.PauliZ(0)
+
+    def cost(phi, theta):
+        return torch.abs(circuit(phi, theta) - 0.5)**2
+
+    phi = Variable(torch.tensor([0.011, 0.012]), requires_grad=True)
+    theta = Variable(torch.tensor(0.05), requires_grad=True)
+
+    opt = torch.optim.Adam([phi, theta], lr = 0.1)
+
+    steps = 200
+
+    def closure():
+        opt.zero_grad()
+        loss = cost(phi, theta)
+        loss.backward()
+        return loss
+
+    for i in range(steps):
+        opt.step(closure)
+
+The final weights and circuit value:
+
+>>> phi_final, theta_final = opt.param_groups[0]['params']
+>>> phi_final, theta_final
+(tensor([0.7345, 0.0120], requires_grad=True), tensor(0.8316, requires_grad=True))
+>>> circuit(phi_final, theta_final)
+tensor(0.5000, dtype=torch.float64, grad_fn=<_TorchQNodeBackward>)
+
+.. note::
+
+    For more advanced PyTorch models, Torch-interfacing QNodes can be used to construct
+    layers in custom PyTorch modules (``torch.nn.Module``).
+
+    See https://pytorch.org/docs/stable/notes/extending.html#adding-a-module for more details.
 
 
 Code details
