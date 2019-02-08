@@ -284,7 +284,8 @@ def TorchQNode(qnode):
             for i, j in zip(temp, ctx.saved_tensors):
                 res = torch.as_tensor(torch.from_numpy(i), dtype=j.dtype)
                 if j.is_cuda:
-                    res.cuda()
+                    cuda_device = j.get_device()
+                    res = torch.as_tensor(res, device=cuda_device)
                 grad_input.append(res)
 
             return tuple(grad_input)
