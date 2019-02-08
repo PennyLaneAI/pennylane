@@ -58,7 +58,7 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 ..
 
 - *Device independent*.
-  The same quantum circuit model can be **run on different backends**
+  The same quantum circuit model can be **run on different interfaces**
 
 ..
 
@@ -157,6 +157,13 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/optimize
    code/configuration
    code/utils
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Classical interfaces
+   :hidden:
+
+   code/torch
 
 .. toctree::
    :maxdepth: 1

@@ -144,6 +144,13 @@ import autograd.extend as ae
 import autograd.builtins
 
 import pennylane.operation
+
+try:
+    from .torch import TorchQNode
+    torch_support = True
+except ImportError as e:
+    torch_support = False
+
 from .variable  import Variable
 from .utils import _flatten, unflatten
 
@@ -199,11 +206,20 @@ class QNode:
         func (callable): a Python function containing :class:`~.operation.Operation`
             constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
         device (:class:`~pennylane._device.Device`): device to execute the function on
+        interface (str): the interface that will be used for automatic
+            differentiation of *classical* processing. This affects
+            the types of objects passed to/returned from the QNode:
+
+            * ``interface='numpy'``: The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays.
+
+            * ``interface='torch'``: The QNode accepts and returns Torch tensors.
     """
     # pylint: disable=too-many-instance-attributes
     _current_context = None  #: QNode: for building Operation sequences by executing quantum circuit functions
 
-    def __init__(self, func, device):
+    def __init__(self, func, device, interface='numpy'):
         self.func = func
         self.device = device
         self.num_wires = device.num_wires
@@ -566,7 +582,7 @@ class QNode:
             h (float): finite difference method step size
             order (int): finite difference method order, 1 or 2
             shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-                the expectation values. For simulator backends, 0 yields the exact result.
+                the expectation values. For simulator interfaces, 0 yields the exact result.
 
         Returns:
             array[float]: Jacobian matrix, with shape ``(n_out, len(which))``, where ``len(which)`` is the
@@ -776,6 +792,15 @@ class QNode:
             op.params[p_idx] = orig
 
         return pd
+
+    def to_torch(self):
+        """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
+        """
+        if not torch_support:
+            raise QuantumFunctionError("PyTorch not found. Please install "
+                                       "PyTorch to enable the experimental TorchQNode feature.")
+
+        return TorchQNode(self)
 
 
 #def QNode_vjp(ans, self, params, *args, **kwargs):
