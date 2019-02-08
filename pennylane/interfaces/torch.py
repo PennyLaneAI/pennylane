@@ -63,6 +63,11 @@ it can now be used like any other PyTorch function:
 >>> circuit(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
+.. warning::
+
+    Torch-interface QNodes currently do not support keyword arguments, just positional
+    arguments.
+
 Via the QNode class
 ^^^^^^^^^^^^^^^^^^^
 
@@ -224,9 +229,9 @@ def TorchQNode(qnode):
         @staticmethod
         def forward(ctx, *input_):
             # detach all input tensors, convert to NumPy array
-            args = [i.detach().numpy() for i in input_]
+            args = [i.detach().numpy() if isinstance(i, torch.Tensor) else i for i in input_]
             # if NumPy array is scalar, convert to a Python float
-            args = [i.tolist() if not i.shape else i for i in args]
+            args = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in args]
 
             # evaluate the QNode
             res = qnode(*args)
@@ -241,7 +246,7 @@ def TorchQNode(qnode):
         @staticmethod
         def backward(ctx, grad_output):
             # detach all saved input tensors, convert to NumPy array
-            args = [i.detach().numpy() for i in ctx.saved_tensors]
+            args = [i.detach().numpy() if isinstance(i, torch.Tensor) else i for i in ctx.saved_tensors]
             # evaluate the Jacobian matrix of the QNode
             jacobian = qnode.jacobian(args)
 

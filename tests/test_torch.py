@@ -261,12 +261,98 @@ class TorchQNodeTests(BaseTest):
         ex = np.array([ex0, ex1])
         self.assertAllAlmostEqual(ex, res.numpy(), delta=self.tol)
 
+    def test_mixture_numpy_tensors(self):
+        "Tests that qnodes work with python types and tensors."
+        self.logTestName()
+
+        @qml.qnode(self.dev2, interface='torch')
+        def circuit(w, x, y):
+            qml.RX(x, [0])
+            qml.RX(y, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        c = circuit(torch.tensor(1.), np.pi, np.pi).detach().numpy()
+        self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
+
+
+class IntegrationTests(BaseTest):
+    """Integration tests to ensure the Torch QNode agrees with the NumPy QNode"""
+
+    def test_qnode_evaluation_agrees(self):
+        "Tests that simple example is consistent."
+        self.logTestName()
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='autograd')
+        def circuit(phi, theta):
+            qml.RX(phi[0], wires=0)
+            qml.RY(phi[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta[0], wires=0)
+            return qml.expval.PauliZ(0)
+
+        @qml.qnode(dev, interface='torch')
+        def circuit_torch(phi, theta):
+            qml.RX(phi[0], wires=0)
+            qml.RY(phi[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta[0], wires=0)
+            return qml.expval.PauliZ(0)
+
+        phi = [0.5, 0.1]
+        theta = [0.2]
+
+        phi_t = torch.tensor(phi)
+        theta_t = torch.tensor(theta)
+
+        autograd_eval = circuit(phi, theta)
+        torch_eval = circuit_torch(phi_t, theta_t)
+        self.assertAllAlmostEqual(autograd_eval, torch_eval.detach().numpy(), delta=self.tol)
+
+    def test_qnode_gradient_agrees(self):
+        "Tests that simple gradient example is consistent."
+        self.logTestName()
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='autograd')
+        def circuit(phi, theta):
+            qml.RX(phi[0], wires=0)
+            qml.RY(phi[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta[0], wires=0)
+            return qml.expval.PauliZ(0)
+
+        @qml.qnode(dev, interface='torch')
+        def circuit_torch(phi, theta):
+            qml.RX(phi[0], wires=0)
+            qml.RY(phi[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta[0], wires=0)
+            return qml.expval.PauliZ(0)
+
+        phi = [0.5, 0.1]
+        theta = [0.2]
+
+        phi_t = torch.autograd.Variable(torch.tensor(phi), requires_grad=True)
+        theta_t = torch.autograd.Variable(torch.tensor(theta), requires_grad=True)
+
+        dcircuit = qml.grad(circuit, [0, 1])
+        autograd_grad = dcircuit(phi, theta)
+
+        torch_eval = circuit_torch(phi_t, theta_t)
+        torch_eval.backward()
+
+        self.assertAllAlmostEqual(autograd_grad[0], phi_t.grad.detach().numpy(), delta=self.tol)
+        self.assertAllAlmostEqual(autograd_grad[1], theta_t.grad.detach().numpy(), delta=self.tol)
+
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', QNode Torch interface.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TorchQNodeTests,):
+    for t in (TorchQNodeTests, IntegrationTests):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 
