@@ -60,5 +60,6 @@ beginning with PyTorch.
 .. toctree::
     :maxdepth: 2
 
+    interfaces/numpy
     interfaces/torch
 """

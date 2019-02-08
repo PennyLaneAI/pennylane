@@ -148,7 +148,7 @@ import pennylane.operation
 try:
     from .interfaces.torch import TorchQNode
     torch_support = True
-except ImportError as e:
+except ImportError as e: # pragma: no cover
     torch_support = False
 
 from .variable  import Variable
@@ -796,7 +796,7 @@ class QNode:
     def to_torch(self):
         """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
         """
-        if not torch_support:
+        if not torch_support: # pragma: no cover
             raise QuantumFunctionError("PyTorch not found. Please install "
                                        "PyTorch to enable the experimental TorchQNode feature.")
 
