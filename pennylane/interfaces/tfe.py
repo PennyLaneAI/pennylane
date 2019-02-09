@@ -14,8 +14,8 @@
 """
 .. _tf_qnode:
 
-TensorFlow eager execution interface
-************************************
+TensorFlow eager interface
+**************************
 
 **Module name:** :mod:`pennylane.interfaces.tfe`
 
@@ -131,9 +131,9 @@ For example:
 
 Now, printing the gradients:
 
->>> phi.grad
+>>> phi_grad
 array([-0.47942549,  0.        ])
->>> theta.grad
+>>> theta_grad
 -5.5511151231257827e-17
 
 .. _pytf_optimize:
@@ -166,7 +166,7 @@ def TFEQNode(qnode):
     @tf.custom_gradient
     def _TFEQNode(*input_):
         # detach all input Tensors, convert to NumPy array
-        args = [i.numpy() if isinstance(i, tf.Variable) else i for i in input_]
+        args = [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in input_]
         # if NumPy array is scalar, convert to a Python float
         args = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in args]
 

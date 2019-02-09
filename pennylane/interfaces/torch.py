@@ -230,7 +230,7 @@ def TorchQNode(qnode):
 
             for i in input_:
                 if isinstance(i, torch.Tensor):
-                    if i.is_cuda:
+                    if i.is_cuda: # pragma: no cover
                         args.append(i.cpu().detach().numpy())
                     else:
                         args.append(i.detach().numpy())
@@ -257,7 +257,7 @@ def TorchQNode(qnode):
 
             for i in ctx.saved_tensors:
                 if isinstance(i, torch.Tensor):
-                    if i.is_cuda:
+                    if i.is_cuda: # pragma: no cover
                         args.append(i.cpu().detach().numpy())
                     else:
                         args.append(i.detach().numpy())
@@ -283,7 +283,7 @@ def TorchQNode(qnode):
             grad_input = []
             for i, j in zip(temp, ctx.saved_tensors):
                 res = torch.as_tensor(torch.from_numpy(i), dtype=j.dtype)
-                if j.is_cuda:
+                if j.is_cuda: # pragma: no cover
                     cuda_device = j.get_device()
                     res = torch.as_tensor(res, device=cuda_device)
                 grad_input.append(res)

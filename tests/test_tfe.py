@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.interface.torch` QNode interface.
+Unit tests for the :mod:`pennylane.interface.tfe` QNode interface.
 """
 
 import unittest
@@ -21,8 +21,10 @@ log.getLogger('defaults')
 
 import numpy as np
 
-import torch
-from torch.autograd import Variable
+import tensorflow as tf
+import tensorflow.contrib.eager as tfe
+
+tf.enable_eager_execution()
 
 from defaults import pennylane as qml, BaseTest
 
@@ -44,13 +46,13 @@ class TorchQNodeTests(BaseTest):
     def test_qnode_fail(self):
         """Tests that QNode initialization failures correctly raise exceptions."""
         self.logTestName()
-        par = torch.tensor(0.5)
+        par = tfe.Variable(0.5)
 
         #---------------------------------------------------------
         ## faulty quantum functions
 
         # qfunc must return only Expectations
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def qf(x):
             qml.RX(x, [0])
             return qml.expval.PauliZ(0), 0.3
@@ -59,7 +61,7 @@ class TorchQNodeTests(BaseTest):
             qf(par)
 
         # all EVs must be returned...
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def qf(x):
             qml.RX(x, [0])
             ex = qml.expval.PauliZ(1)
@@ -69,7 +71,7 @@ class TorchQNodeTests(BaseTest):
             qf(par)
 
         # ...in the correct order
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def qf(x):
             qml.RX(x, [0])
             ex = qml.expval.PauliZ(1)
@@ -79,7 +81,7 @@ class TorchQNodeTests(BaseTest):
             qf(par)
 
         # gates must precede EVs
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def qf(x):
             qml.RX(x, [0])
             ev = qml.expval.PauliZ(1)
@@ -90,7 +92,7 @@ class TorchQNodeTests(BaseTest):
             qf(par)
 
         # a wire cannot be measured more than once
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def qf(x):
             qml.RX(x, [0])
             qml.CNOT([0, 1])
@@ -100,7 +102,7 @@ class TorchQNodeTests(BaseTest):
             qf(par)
 
         # device must have enough wires for the qfunc
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def qf(x):
             qml.RX(x, [0])
             qml.CNOT([0, 2])
@@ -110,7 +112,7 @@ class TorchQNodeTests(BaseTest):
             qf(par)
 
         # CV and discrete ops must not be mixed
-        @qml.qnode(self.dev1, interface='torch')
+        @qml.qnode(self.dev1, interface='tfe')
         def qf(x):
             qml.RX(x, [0])
             qml.Displacement(0.5, 0, [0])
@@ -120,7 +122,7 @@ class TorchQNodeTests(BaseTest):
             qf(par)
 
         # default plugin cannot execute CV operations, neither gates...
-        @qml.qnode(self.dev1, interface='torch')
+        @qml.qnode(self.dev1, interface='tfe')
         def qf(x):
             qml.Displacement(0.5, 0, [0])
             return qml.expval.X(0)
@@ -129,7 +131,7 @@ class TorchQNodeTests(BaseTest):
             qf(par)
 
         # ...nor observables
-        @qml.qnode(self.dev1, interface='torch')
+        @qml.qnode(self.dev1, interface='tfe')
         def qf(x):
             return qml.expval.X(0)
 
@@ -140,14 +142,14 @@ class TorchQNodeTests(BaseTest):
         """Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."""
         self.logTestName()
 
-        @qml.qnode(self.dev1, interface='torch')
+        @qml.qnode(self.dev1, interface='tfe')
         def circuit(reused_param, other_param):
             qml.RX(reused_param, [0])
             qml.RZ(other_param, [0])
             qml.RX(reused_param, [0])
             return qml.expval.PauliZ(0)
 
-        thetas = torch.linspace(-2*np.pi, 2*np.pi, 7)
+        thetas = tf.linspace(-2*np.pi, 2*np.pi, 7)
 
         for reused_param in thetas:
             for theta in thetas:
@@ -164,19 +166,19 @@ class TorchQNodeTests(BaseTest):
         "Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch."
         self.logTestName()
 
-        @qml.qnode(self.dev1, interface='torch')
+        @qml.qnode(self.dev1, interface='tfe')
         def circuit_n1s(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], 0)
             qml.RY(-0.5 * array[1,1], 0)
             return qml.expval.PauliX(0)  # returns a scalar
 
-        @qml.qnode(self.dev1, interface='torch')
+        @qml.qnode(self.dev1, interface='tfe')
         def circuit_n1v(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], 0)
             qml.RY(-0.5 * array[1,1], 0)
             return qml.expval.PauliX(0),  # note the comma, returns a 1-vector
 
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def circuit_nn(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], 0)
             qml.RY(-0.5 * array[1,1], 0)
@@ -188,29 +190,26 @@ class TorchQNodeTests(BaseTest):
 
         for circuit in [circuit_n1s, circuit_n1v, circuit_nn]:
 
-            args = (torch.tensor(0.46), torch.tensor([[2., 3., 0.3], [7., 4., 2.1]]), torch.tensor(-0.13))
-            for i in args:
-                i.requires_grad = True
+            args = (tfe.Variable(0.46), tfe.Variable([[2., 3., 0.3], [7., 4., 2.1]]), tfe.Variable(-0.13))
 
             def cost(x, array, y):
-                c = torch.as_tensor(circuit(torch.tensor(0.111), array, torch.tensor(4.5)), dtype=torch.float32)
-                if c.shape:
+                c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
+                if c.shape != tf.TensorShape([]):
                     c = c[0]  # get a scalar
                 return c +0.5*array[0,0] +x -0.4*y
 
-            cost_res = cost(*args)
-            cost_res.backward()
+            with tf.GradientTape() as tape:
+                cost_res = cost(*args)
+                grad_res = np.array([i.numpy() for i in tape.gradient(cost_res, [args[0], args[2]])])
 
-            self.assertAllAlmostEqual(cost_res.detach().numpy(), cost_target, delta=self.tol)
-
-            for i in range(3):
-                self.assertAllAlmostEqual(args[i].grad.detach().numpy(), grad_target[i], delta=self.tol)
+            self.assertAllAlmostEqual(cost_res.numpy(), cost_target, delta=self.tol)
+            self.assertAllAlmostEqual(grad_res, np.fromiter(grad_target[::2], dtype=np.float32), delta=self.tol)
 
     def test_array_parameters_evaluate(self):
         "Test that array parameters gives same result as positional arguments."
         self.logTestName()
 
-        a, b, c = torch.tensor(0.5), torch.tensor(0.54), torch.tensor(0.3)
+        a, b, c = tf.constant(0.5), tf.constant(0.54), tf.constant(0.3)
 
         def ansatz(x, y, z):
             qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
@@ -218,21 +217,21 @@ class TorchQNodeTests(BaseTest):
             qml.CNOT([0, 1])
             return qml.expval.PauliZ(0), qml.expval.PauliY(1)
 
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def circuit1(x, y, z):
             return ansatz(x, y, z)
 
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def circuit2(x, array):
             return ansatz(x, array[0], array[1])
 
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def circuit3(array):
             return ansatz(*array)
 
         positional_res = circuit1(a, b, c)
-        array_res1 = circuit2(a, torch.tensor([b, c]))
-        array_res2 = circuit3(torch.tensor([a, b, c]))
+        array_res1 = circuit2(a, tfe.Variable([b, c]))
+        array_res2 = circuit3(tfe.Variable([a, b, c]))
         self.assertAllAlmostEqual(positional_res, array_res1, delta=self.tol)
         self.assertAllAlmostEqual(positional_res, array_res2, delta=self.tol)
 
@@ -240,9 +239,9 @@ class TorchQNodeTests(BaseTest):
         "Tests that qnodes return multiple expectation values."
         self.logTestName()
 
-        a, b, c = torch.tensor(0.5), torch.tensor(0.54), torch.tensor(0.3)
+        a, b, c = tf.constant(0.5), tf.constant(0.54), tf.constant(0.3)
 
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def circuit(x, y, z):
             qml.RX(x, [0])
             qml.RZ(y, [0])
@@ -265,13 +264,13 @@ class TorchQNodeTests(BaseTest):
         "Tests that qnodes work with python types and tensors."
         self.logTestName()
 
-        @qml.qnode(self.dev2, interface='torch')
+        @qml.qnode(self.dev2, interface='tfe')
         def circuit(w, x, y):
             qml.RX(x, [0])
             qml.RX(y, [1])
             return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
-        c = circuit(torch.tensor(1.), np.pi, np.pi).detach().numpy()
+        c = circuit(tf.constant(1.), np.pi, np.pi).numpy()
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
 
 
@@ -292,8 +291,8 @@ class IntegrationTests(BaseTest):
             qml.PhaseShift(theta[0], wires=0)
             return qml.expval.PauliZ(0)
 
-        @qml.qnode(dev, interface='torch')
-        def circuit_torch(phi, theta):
+        @qml.qnode(dev, interface='tfe')
+        def circuit_tfe(phi, theta):
             qml.RX(phi[0], wires=0)
             qml.RY(phi[1], wires=1)
             qml.CNOT(wires=[0, 1])
@@ -303,12 +302,12 @@ class IntegrationTests(BaseTest):
         phi = [0.5, 0.1]
         theta = [0.2]
 
-        phi_t = torch.tensor(phi)
-        theta_t = torch.tensor(theta)
+        phi_t = tfe.Variable(phi)
+        theta_t = tfe.Variable(theta)
 
         autograd_eval = circuit(phi, theta)
-        torch_eval = circuit_torch(phi_t, theta_t)
-        self.assertAllAlmostEqual(autograd_eval, torch_eval.detach().numpy(), delta=self.tol)
+        tfe_eval = circuit_tfe(phi_t, theta_t)
+        self.assertAllAlmostEqual(autograd_eval, tfe_eval.numpy(), delta=self.tol)
 
     def test_qnode_gradient_agrees(self):
         "Tests that simple gradient example is consistent."
@@ -324,8 +323,8 @@ class IntegrationTests(BaseTest):
             qml.PhaseShift(theta[0], wires=0)
             return qml.expval.PauliZ(0)
 
-        @qml.qnode(dev, interface='torch')
-        def circuit_torch(phi, theta):
+        @qml.qnode(dev, interface='tfe')
+        def circuit_tfe(phi, theta):
             qml.RX(phi[0], wires=0)
             qml.RY(phi[1], wires=1)
             qml.CNOT(wires=[0, 1])
@@ -335,21 +334,21 @@ class IntegrationTests(BaseTest):
         phi = [0.5, 0.1]
         theta = [0.2]
 
-        phi_t = torch.autograd.Variable(torch.tensor(phi), requires_grad=True)
-        theta_t = torch.autograd.Variable(torch.tensor(theta), requires_grad=True)
+        phi_t = tfe.Variable(phi)
+        theta_t = tfe.Variable(theta)
 
         dcircuit = qml.grad(circuit, [0, 1])
         autograd_grad = dcircuit(phi, theta)
 
-        torch_eval = circuit_torch(phi_t, theta_t)
-        torch_eval.backward()
+        dcircuit = tfe.gradients_function(circuit_tfe)
+        tfe_grad = dcircuit(phi_t, theta_t)
 
-        self.assertAllAlmostEqual(autograd_grad[0], phi_t.grad.detach().numpy(), delta=self.tol)
-        self.assertAllAlmostEqual(autograd_grad[1], theta_t.grad.detach().numpy(), delta=self.tol)
+        self.assertAllAlmostEqual(autograd_grad[0], tfe_grad[0], delta=self.tol)
+        self.assertAllAlmostEqual(autograd_grad[1], tfe_grad[1], delta=self.tol)
 
 
 if __name__ == '__main__':
-    print('Testing PennyLane version ' + qml.version() + ', QNode Torch interface.')
+    print('Testing PennyLane version ' + qml.version() + ', QNode TFE interface.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (TorchQNodeTests, IntegrationTests):
