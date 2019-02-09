@@ -93,7 +93,7 @@ using different classical interfaces:
     qnode2 = qml.QNode(circuit, dev2)
 
 We can convert the default NumPy-interfacing QNode to a TensorFlow-interfacing QNode by
-using the :meth:`~.QNode.to_tf` method:
+using the :meth:`~.QNode.to_tfe` method:
 
 >>> qnode1 = qnode1.to_tfe()
 >>> qnode1
@@ -141,6 +141,54 @@ array([-0.47942549,  0.        ])
 Optimization using TensorFlow
 -----------------------------
 
+To optimize your hybrid classical-quantum model using the TensorFlow eager interface,
+you **must** make use of the TensorFlow provided optimizers provided in the ``tf.train`` module,
+or your own custom TensorFlow optimizer. **The** :ref:`PennyLane optimizers <optimization_methods>`
+**cannot be used with the TensorFlow interface, only the** :ref:`numpy_qnode`.
+
+For example, to optimize a TFE-interfacing QNode (below) such that the weights ``x``
+result in an expectation value of 0.5:
+
+.. code-block:: python
+
+    import tensorflow as tf
+    import tensorflow.contrib.eager as tfe
+    tf.enable_eager_execution()
+
+    import pennylane as qml
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev, interface='tfe')
+    def circuit(phi, theta):
+        qml.RX(phi[0], wires=0)
+        qml.RY(phi[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(theta, wires=0)
+        return qml.expval.PauliZ(0)
+
+    phi = tfe.Variable([0.5, 0.1], dtype=tf.float64)
+    theta = tfe.Variable(0.2, dtype=tf.float64)
+
+    opt = tf.train.GradientDescentOptimizer(learning_rate=0.1)
+    steps = 200
+
+    for i in range(steps):
+        with tf.GradientTape() as tape:
+            loss = tf.abs(circuit(phi, theta) - 0.5)**2
+            grads = tape.gradient(loss, [phi, theta])
+
+        opt.apply_gradients(zip(grads, [phi, theta]), global_step=tf.train.get_or_create_global_step())
+
+
+The final weights and circuit value:
+
+>>> phi
+<tf.Variable 'Variable:0' shape=(2,) dtype=float64, numpy=array([ 1.04719755,  0.1       ])>
+>>> theta
+<tf.Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
+>>> circuit(phi, theta)
+<tf.Tensor: id=106269, shape=(), dtype=float64, numpy=0.5000000000000091>
 
 
 Code details

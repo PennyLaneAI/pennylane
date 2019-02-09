@@ -21,7 +21,10 @@ PyTorch interface
 
 .. currentmodule:: pennylane.interfaces.torch
 
-.. warning:: This interface is **experimental**
+.. warning::
+
+    This interface is **experimental**. If you find any bugs, please report them
+    on our GitHub issues page: https://github.com/XanaduAI/pennylane
 
 
 Using the PyTorch interface
@@ -191,7 +194,7 @@ The final weights and circuit value:
 >>> phi_final, theta_final
 (tensor([0.7345, 0.0120], device='cuda:0', requires_grad=True), tensor(0.8316, device='cuda:0', requires_grad=True))
 >>> circuit(phi_final, theta_final)
-tensor(0.5000, dtype=torch.float64, grad_fn=<_TorchQNodeBackward>)
+tensor(0.5000, device='cuda:0', dtype=torch.float64, grad_fn=<_TorchQNodeBackward>)
 
 .. note::
 
@@ -274,7 +277,6 @@ def TorchQNode(qnode):
 
             # evaluate the Jacobian matrix of the QNode
             jacobian = qnode.jacobian(args)
-
 
             if grad_output.is_cuda: # pragma: no cover
                 grad_output_np = grad_output.cpu().detach().numpy()
