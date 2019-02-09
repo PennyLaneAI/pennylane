@@ -275,7 +275,11 @@ def TorchQNode(qnode):
             # evaluate the Jacobian matrix of the QNode
             jacobian = qnode.jacobian(args)
 
-            grad_output_np = grad_output.detach().numpy()
+
+            if grad_output.is_cuda: # pragma: no cover
+                grad_output_np = grad_output.cpu().detach().numpy()
+            else:
+                grad_output_np = grad_output.detach().numpy()
 
             # perform the vector-Jacobian product
             if not grad_output_np.shape:
