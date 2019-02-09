@@ -148,7 +148,7 @@ or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <optimi
 **cannot be used with the Torch interface, only the** :ref:`numpy_qnode`.
 
 For example, to optimize a Torch-interfacing QNode (below) such that the weights ``x``
-result in an expectation value of 0.5:
+result in an expectation value of 0.5, with the classical nodes processed on a GPU:
 
 .. code-block:: python
 
@@ -169,8 +169,8 @@ result in an expectation value of 0.5:
     def cost(phi, theta):
         return torch.abs(circuit(phi, theta) - 0.5)**2
 
-    phi = Variable(torch.tensor([0.011, 0.012]), requires_grad=True)
-    theta = Variable(torch.tensor(0.05), requires_grad=True)
+    phi = Variable(torch.tensor([0.011, 0.012], device='cuda'), requires_grad=True)
+    theta = Variable(torch.tensor(0.05, device='cuda'), requires_grad=True)
 
     opt = torch.optim.Adam([phi, theta], lr = 0.1)
 
@@ -189,7 +189,7 @@ The final weights and circuit value:
 
 >>> phi_final, theta_final = opt.param_groups[0]['params']
 >>> phi_final, theta_final
-(tensor([0.7345, 0.0120], requires_grad=True), tensor(0.8316, requires_grad=True))
+(tensor([0.7345, 0.0120], device='cuda:0', requires_grad=True), tensor(0.8316, device='cuda:0', requires_grad=True))
 >>> circuit(phi_final, theta_final)
 tensor(0.5000, dtype=torch.float64, grad_fn=<_TorchQNodeBackward>)
 
@@ -248,6 +248,14 @@ def TorchQNode(qnode):
                 res = np.array(res)
 
             ctx.save_for_backward(*input_)
+
+            # if an input tensor uses the GPU, the output should as well
+            for i in input_:
+                if isinstance(i, torch.Tensor):
+                    if i.is_cuda: # pragma: no cover
+                        cuda_device = i.get_device()
+                        return torch.as_tensor(torch.from_numpy(res), device=cuda_device)
+
             return torch.from_numpy(res)
 
         @staticmethod
