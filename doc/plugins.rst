@@ -53,6 +53,12 @@ Below, we maintain a list of the installable plugins available for PennyLane.
    :align: middle
    :target: https://github.com/carstenblank/pennylane-qiskit
 
+.. _(PennyLane-Forest): https://github.com/rigetti/pennylane-forest
+.. |forest| image:: _static/forest.png
+   :width: 180px
+   :align: middle
+   :target: https://github.com/rigetti/pennylane-forest
+
 
 .. rst-class:: docstable
 
@@ -66,11 +72,13 @@ Below, we maintain a list of the installable plugins available for PennyLane.
 | `(PennyLane-SF)`_      |                                            | * Provides two devices to be used with PennyLane:                                   |
 |                        |                                            |   ``strawberryfields.fock`` and ``strawberryfields.gaussian``.                      |
 +------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
-| |pq|                   | * :ref:`Qubit operations <qubit_ops>`      | * `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_                      |
-| :html:`<br/><br/>`     | * :ref:`Qubit expectations <qubit_expval>` |   is an open-source quantum compilation framework.                                  |
-| `(PennyLane-PQ)`_      |                                            | * Supported ProjectQ hardware backends include the IBM Quantum Experience.          |
+| |forest|               | * :ref:`Qubit operations <qubit_ops>`      | * `pyQuil <https://pyquil.readthedocs.io>`_ and the                                 |
+| :html:`<br/><br/>`     | * :ref:`Qubit expectations <qubit_expval>` |   `Forest SDK <https://rigetti.com/forest>`_ are an open-source quantum software    |
+| `(PennyLane-forest)`_  |                                            |   framework designed by Rigetti.                                                    |
+|                        |                                            | * Supported hardware backends include the Rigetti Aspen-1 QPU.                      |
 |                        |                                            | * Provides three devices to be used with PennyLane:                                 |
-|                        |                                            |   ``projectq.simulator``, ``projectq.ibm``, and ``projectq.classical``.             |
+|                        |                                            |   ``forest.wavefunction`` and ``forest.qvm`` simulators, and the                    |
+|                        |                                            |   ``forest.qpu`` hardware backend.                                                  |
 +------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
 | |qiskit|               | * :ref:`Qubit operations <qubit_ops>`      | * `Qiskit-Terra <https://qiskit.org/terra>`_                                        |
 | :html:`<br/><br/>`     | * :ref:`Qubit expectations <qubit_expval>` |   is an open-source quantum software framework designed by IBM.                     |
@@ -78,9 +86,16 @@ Below, we maintain a list of the installable plugins available for PennyLane.
 |                        |                                            | * Provides two devices to be used with PennyLane:                                   |
 |                        |                                            |   ``qiskit.aer`` simulator and ``qiskit.ibm`` hardware backend                      |
 +------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
+| |pq|                   | * :ref:`Qubit operations <qubit_ops>`      | * `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_                      |
+| :html:`<br/><br/>`     | * :ref:`Qubit expectations <qubit_expval>` |   is an open-source quantum compilation framework.                                  |
+| `(PennyLane-PQ)`_      |                                            | * Supported ProjectQ hardware backends include the IBM Quantum Experience.          |
+|                        |                                            | * Provides three devices to be used with PennyLane:                                 |
+|                        |                                            |   ``projectq.simulator``, ``projectq.ibm``, and ``projectq.classical``.             |
++------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
 
 
-For an introductory tutorial on using plugin devices in PennyLane, see :ref:`plugins_hybrid`. For more details on any of the external plugins, including the devices they provide, device-specific options, and supported quantum operations and expectation values, please
+For an introductory tutorial on using plugin devices in PennyLane, see :ref:`plugins_hybrid`. For more details on any of the external plugins, including the
+devices they provide, device-specific options, and supported quantum operations and expectation values, please
 see the plugin documentation.
 
 If you have written a PennyLane-compatible plugin and would like it to be listed in the table above, please send us an email at support@xanadu.ai.
@@ -89,5 +104,7 @@ If you have written a PennyLane-compatible plugin and would like it to be listed
 Developing a plugin
 -------------------
 
-To write your own PennyLane-compatible plugin, the best place to start is our :ref:`overview of the developer API <developer_overview>`, as well as exploring the source code of the provided reference plugin modules :mod:`pennylane.plugins.default_qubit` and :mod:`pennylane.plugins.default_gaussian` (providing the ``default.qubit`` and ``default.gaussian`` devices respectively).
+To write your own PennyLane-compatible plugin, the best place to start is our :ref:`overview of the developer API <developer_overview>`, as well as exploring
+the source code of the provided reference plugin modules :mod:`pennylane.plugins.default_qubit` and :mod:`pennylane.plugins.default_gaussian`
+(providing the ``default.qubit`` and ``default.gaussian`` devices respectively).
 
