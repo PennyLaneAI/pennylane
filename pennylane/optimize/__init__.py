@@ -19,9 +19,10 @@ r"""Submodule containing PennyLane optimizers.
 
   The built in optimizers only support the default NumPy-interfacing QNode.
 
-  If using the experimental :ref:`PennyLane PyTorch interface <torch_qnode>`,
-  `PyTorch provided optimizers <https://pytorch.org/docs/stable/optim.html>`_
-  should be used instead. See :ref:`pytorch_optimize` for more details.
+  If using the experimental :ref:`PennyLane PyTorch interface <torch_qnode>`
+  or the experimental :ref:`PennyLane TensorFlow interface <tf_qnode>` interfaces,
+  `PyTorch optimizers <https://pytorch.org/docs/stable/optim.html>`_ and
+  TensorFlow optimizers (available in ``tf.train``) should be used respectively.
 
 In PennyLane, an optimizer is a procedure that executes one weight
 update step along (some function of) the negative gradient of the cost.

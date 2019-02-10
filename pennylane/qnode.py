@@ -579,7 +579,7 @@ class QNode:
             h (float): finite difference method step size
             order (int): finite difference method order, 1 or 2
             shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-                the expectation values. For simulator interfaces, 0 yields the exact result.
+                the expectation values. For simulator backends, 0 yields the exact result.
 
         Returns:
             array[float]: Jacobian matrix, with shape ``(n_out, len(which))``, where ``len(which)`` is the

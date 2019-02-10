@@ -58,7 +58,13 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 ..
 
 - *Device independent*.
-  The same quantum circuit model can be **run on different interfaces**
+  The same quantum circuit model can be **run on different backends**
+
+..
+
+- *Compatible with existing machine learning libraries*.
+  Quantum circuits can be set up to interface with either **NumPy**, **PyTorch**, or **TensorFlow**,
+  allowing hybrid CPU-GPU-QPU computations.
 
 ..
 

@@ -93,6 +93,7 @@ you can specify the ``interface`` keyword argument when using the QNode decorato
 Current experimental classical interfaces include:
 
 * :ref:`PyTorch <torch_qnode>`: ``interface='torch'``
+* :ref:`TensorFlow eager execution <tf_qnode>`: ``interface='tfe'``
 
 If not specified, the standard PennyLane autograd classical interface,
 
@@ -100,8 +101,8 @@ If not specified, the standard PennyLane autograd classical interface,
 
     from pennylane import numpy as np
 
-is used, which enhances standard NumPy functions with automatic differentiation.
-
+is used, which enhances standard NumPy functions with automatic differentiation
+via the `Autograd <https://github.com/HIPS/autograd>`_ package.
 
 .. raw:: html
 
