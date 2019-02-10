@@ -61,6 +61,8 @@ Features
 
 - **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including Strawberry Fields, Rigetti Forest, ProjectQ, and Qiskit
 
+- **Compatible with existing machine learning libraries**. Quantum circuits can be set up to interface with either NumPy, PyTorch, or TensorFlow, allowing hybrid CPU-GPU-QPU computations.
+
 
 Available plugins
 =================
