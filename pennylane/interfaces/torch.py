@@ -214,6 +214,58 @@ import torch
 from pennylane.utils import unflatten
 
 
+def args_to_numpy(args):
+    """Converts all Torch tensors in a list to NumPy arrays
+
+    Args:
+        args (list): list containing QNode arguments, including Torch tensors
+
+    Returns:
+        list: returns the same list, with all Torch tensors converted to NumPy arrays
+    """
+    res = []
+
+    for i in args:
+        if isinstance(i, torch.Tensor):
+            if i.is_cuda: # pragma: no cover
+                res.append(i.cpu().detach().numpy())
+            else:
+                res.append(i.detach().numpy())
+        else:
+            res.append(i)
+
+    # if NumPy array is scalar, convert to a Python float
+    res = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in res]
+
+    return res
+
+
+def kwargs_to_numpy(kwargs):
+    """Converts all Torch tensors in a dictionary to NumPy arrays
+
+    Args:
+        args (dict): dictionary containing QNode keyword arguments, including Torch tensors
+
+    Returns:
+        dict: returns the same dictionary, with all Torch tensors converted to NumPy arrays
+    """
+    res = {}
+
+    for key, val in kwargs.items():
+        if isinstance(val, torch.Tensor):
+            if val.is_cuda: # pragma: no cover
+                res[key] = val.cpu().detach().numpy()
+            else:
+                res[key] = val.detach().numpy()
+        else:
+            res[key] = val
+
+    # if NumPy array is scalar, convert to a Python float
+    res = {k:v.tolist() if (isinstance(v, np.ndarray) and not v.shape) else v for k, v in res.items()}
+
+    return res
+
+
 def TorchQNode(qnode):
     """Function that accepts a :class:`~.QNode`, and returns a PyTorch-compatible QNode.
 
@@ -223,34 +275,23 @@ def TorchQNode(qnode):
     Returns:
         torch.autograd.Function: the QNode as a PyTorch autograd function
     """
-
     class _TorchQNode(torch.autograd.Function):
+        """The TorchQNode wrapper class"""
 
         @staticmethod
-        def forward(ctx, *input_):
+        def forward(ctx, *input_, **input_kwargs):
+            """Implements the forward pass QNode evaluation"""
             # detach all input tensors, convert to NumPy array
-            args = []
-
-            for i in input_:
-                if isinstance(i, torch.Tensor):
-                    if i.is_cuda: # pragma: no cover
-                        args.append(i.cpu().detach().numpy())
-                    else:
-                        args.append(i.detach().numpy())
-                else:
-                    args.append(i)
-
-            # if NumPy array is scalar, convert to a Python float
-            args = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in args]
+            ctx.args = args_to_numpy(input_)
+            ctx.kwargs = kwargs_to_numpy(input_kwargs)
+            ctx.save_for_backward(*input_)
 
             # evaluate the QNode
-            res = qnode(*args)
+            res = qnode(*ctx.args, **ctx.kwargs)
 
             if not isinstance(res, np.ndarray):
                 # scalar result, cast to NumPy scalar
                 res = np.array(res)
-
-            ctx.save_for_backward(*input_)
 
             # if an input tensor uses the GPU, the output should as well
             for i in input_:
@@ -263,20 +304,9 @@ def TorchQNode(qnode):
 
         @staticmethod
         def backward(ctx, grad_output):
-            # detach all saved input tensors, convert to NumPy array
-            args = []
-
-            for i in ctx.saved_tensors:
-                if isinstance(i, torch.Tensor):
-                    if i.is_cuda: # pragma: no cover
-                        args.append(i.cpu().detach().numpy())
-                    else:
-                        args.append(i.detach().numpy())
-                else:
-                    args.append(i)
-
+            """Implements the backwards pass QNode vector-Jacobian product"""
             # evaluate the Jacobian matrix of the QNode
-            jacobian = qnode.jacobian(args)
+            jacobian = qnode.jacobian(ctx.args, **ctx.kwargs)
 
             if grad_output.is_cuda: # pragma: no cover
                 grad_output_np = grad_output.cpu().detach().numpy()
@@ -290,7 +320,7 @@ def TorchQNode(qnode):
                 temp = grad_output_np.T @ jacobian
 
             # restore the nested structure of the input args
-            temp = unflatten(temp.flat, args)
+            temp = [np.array(i) if not isinstance(i, np.ndarray) else i for i in unflatten(temp.flat, ctx.args)]
 
             # convert the result to torch tensors, matching
             # the type of the input tensors
@@ -302,6 +332,6 @@ def TorchQNode(qnode):
                     res = torch.as_tensor(res, device=cuda_device)
                 grad_input.append(res)
 
-            return tuple(grad_input)
+            return tuple(grad_input) + tuple([None]*len(ctx.kwargs))
 
     return _TorchQNode.apply

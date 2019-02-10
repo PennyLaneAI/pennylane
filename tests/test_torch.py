@@ -261,6 +261,19 @@ class TorchQNodeTests(BaseTest):
         ex = np.array([ex0, ex1])
         self.assertAllAlmostEqual(ex, res.numpy(), delta=self.tol)
 
+    def test_multiple_keywordargs_used(self):
+        "Tests that qnodes use multiple keyword arguments."
+        self.logTestName()
+
+        @qml.qnode(self.dev2, interface='torch')
+        def circuit(w, x=np.pi, y=np.pi):
+            qml.RX(x, [0])
+            qml.RX(y, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        c = circuit(torch.tensor(1.))
+        self.assertAllAlmostEqual(c.numpy(), [-1., -1.], delta=self.tol)
+
     def test_mixture_numpy_tensors(self):
         "Tests that qnodes work with python types and tensors."
         self.logTestName()

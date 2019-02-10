@@ -260,6 +260,65 @@ class TorchQNodeTests(BaseTest):
         ex = np.array([ex0, ex1])
         self.assertAllAlmostEqual(ex, res.numpy(), delta=self.tol)
 
+    def test_multiple_keywordargs_used(self):
+        "Tests that qnodes use multiple keyword arguments."
+        self.logTestName()
+
+        def circuit(w, x=None, y=None):
+            qml.RX(x, [0])
+            qml.RX(y, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+
+        c = circuit(tf.constant(1.), x=np.pi, y=np.pi)
+        self.assertAllAlmostEqual(c.numpy(), [-1., -1.], delta=self.tol)
+
+    def test_multidimensional_keywordargs_used(self):
+        "Tests that qnodes use multi-dimensional keyword arguments."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qml.RX(x[0], [0])
+            qml.RX(x[1], [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+
+        c = circuit(tf.constant(1.), x=[np.pi, np.pi])
+        self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
+
+    def test_keywordargs_for_wires(self):
+        "Tests that wires can be passed as keyword arguments."
+        self.logTestName()
+
+        default_q = 0
+
+        def circuit(x, q=default_q):
+            qml.RY(x, wires=0)
+            return qml.expval.PauliZ(q)
+
+        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+
+        c = circuit(tf.constant(np.pi), q=1)
+        self.assertAlmostEqual(c, 1., delta=self.tol)
+
+        c = circuit(tf.constant(np.pi))
+        self.assertAlmostEqual(c, -1., delta=self.tol)
+
+    def test_keywordargs_used(self):
+        "Tests that qnodes use keyword arguments."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qml.RX(x, [0])
+            return qml.expval.PauliZ(0)
+
+        circuit = qml.QNode(circuit, self.dev1).to_tfe()
+
+        c = circuit(tf.constant(1.), x=np.pi)
+        self.assertAlmostEqual(c, -1., delta=self.tol)
+
     def test_mixture_numpy_tensors(self):
         "Tests that qnodes work with python types and tensors."
         self.logTestName()
@@ -272,6 +331,38 @@ class TorchQNodeTests(BaseTest):
 
         c = circuit(tf.constant(1.), np.pi, np.pi).numpy()
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
+
+    def test_keywordarg_updated_in_multiple_calls(self):
+        "Tests that qnodes update keyword arguments in consecutive calls."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qml.RX(w, [0])
+            qml.RX(x, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+
+        c1 = circuit(tf.constant(0.1), x=tf.constant(0.))
+        c2 = circuit(tf.constant(0.1), x=np.pi)
+        self.assertTrue(c1[1] != c2[1])
+
+    def test_keywordarg_passes_through_classicalnode(self):
+        "Tests that qnodes' keyword arguments pass through classical nodes."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qml.RX(w, [0])
+            qml.RX(x, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+
+        def classnode(w, x=None):
+            return circuit(w, x=x)
+
+        c = classnode(tf.constant(0.), x=np.pi)
+        self.assertAllAlmostEqual(c, [1., -1.], delta=self.tol)
 
 
 class IntegrationTests(BaseTest):

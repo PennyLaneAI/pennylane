@@ -21,8 +21,10 @@ TensorFlow eager interface
 
 .. currentmodule:: pennylane.interfaces.tfe
 
-.. warning:: This interface is **experimental**
+.. warning::
 
+    This interface is **experimental**. If you find any bugs, please report them
+    on our GitHub issues page: https://github.com/XanaduAI/pennylane
 
 Using the TensorFlow interface
 ------------------------------
@@ -212,14 +214,17 @@ def TFEQNode(qnode):
         function: the QNode as a TensorFlow function
     """
     @tf.custom_gradient
-    def _TFEQNode(*input_):
+    def _TFEQNode(*input_, **input_kwargs):
         # detach all input Tensors, convert to NumPy array
         args = [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in input_]
+        kwargs = {k:v.numpy() if isinstance(v, (tf.Variable, tf.Tensor)) else v for k, v in input_kwargs.items()}
+
         # if NumPy array is scalar, convert to a Python float
         args = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in args]
+        kwargs = {k:v.tolist() if (isinstance(v, np.ndarray) and not v.shape) else v for k, v in kwargs.items()}
 
         # evaluate the QNode
-        res = qnode(*args)
+        res = qnode(*args, **kwargs)
 
         if not isinstance(res, np.ndarray):
             # scalar result, cast to NumPy scalar
