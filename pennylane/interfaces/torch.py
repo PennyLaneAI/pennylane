@@ -91,9 +91,9 @@ using different classical interfaces:
 We can convert the default NumPy-interfacing QNode to a PyTorch-interfacing QNode by
 using the :meth:`~.QNode.to_torch` method:
 
->>> qnode1 = qnode1.to_torch()
->>> qnode1
-<function TorchQNode.<locals>._TorchQNode.apply>
+>>> qnode1_torch = qnode1.to_torch()
+>>> qnode1_torch
+<QNode: device='default.qubit', func=circuit, wires=2, interface=PyTorch>
 
 Internally, the :meth:`~.QNode.to_torch` method uses the :func:`~.TorchQNode` function
 to do the conversion.
@@ -205,6 +205,7 @@ Code details
 """
 # pylint: disable=redefined-outer-name,arguments-differ
 import inspect
+from functools import partial
 
 import numpy as np
 import torch
@@ -292,7 +293,7 @@ def TorchQNode(qnode):
         torch.autograd.Function: the QNode as a PyTorch autograd function
     """
     class _TorchQNode(torch.autograd.Function):
-        """The TorchQNode wrapper class"""
+        """The TorchQNode"""
 
         @staticmethod
         def forward(ctx, input_kwargs, *input_):
@@ -309,7 +310,7 @@ def TorchQNode(qnode):
                 # scalar result, cast to NumPy scalar
                 res = np.array(res)
 
-            # if an input tensor uses the GPU, the output should as well
+            # if any input tensor uses the GPU, the output should as well
             for i in input_:
                 if isinstance(i, torch.Tensor):
                     if i.is_cuda: # pragma: no cover
@@ -350,6 +351,19 @@ def TorchQNode(qnode):
 
             return (None,) + tuple(grad_input)
 
+    class qnode_str(partial):
+        """Torch QNode"""
+
+        def __str__(self):
+            """String representation"""
+            detail = "<QNode: device='{}', func={}, wires={}, interface=PyTorch>"
+            return detail.format(qnode.device.short_name, qnode.func.__name__, qnode.num_wires)
+
+        def __repr__(self):
+            """REPL representation"""
+            return self.__str__()
+
+    @qnode_str
     def custom_apply(*args, **kwargs):
         """Custom apply wrapper, to allow passing kwargs to the TorchQNode"""
 

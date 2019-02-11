@@ -230,6 +230,15 @@ class QNode:
         the second the index of the parameter within the Operation.
         """
 
+    def __str__(self):
+        """String representation"""
+        detail = "<QNode: device='{}', func={}, wires={}, interface=NumPy/Autograd>"
+        return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
+
+    def __repr__(self):
+        """REPL representation"""
+        return self.__str__()
+
     def _append_op(self, op):
         """Appends a quantum operation into the circuit queue.
 

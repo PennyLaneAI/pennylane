@@ -33,7 +33,7 @@ By default, when constructing a :ref:`QNode <qnode_decorator>`, PennyLane allows
 the underlying quantum function to accept any default Python types (for example,
 floats, ints, lists) as well as NumPy array arguments, and will always return
 NumPy arrays representing the returned expectation values. To enable the QNode
-to then be used in arbitrary hybrid classical-quantum computation, you can 
+to then be used in arbitrary hybrid classical-quantum computation, you can
 make use of the wrapped version of NumPy provided by PennyLane
 (via `autograd <https://github.com/HIPS/autograd>`_):
 
@@ -51,7 +51,8 @@ the QNode is modified such that
 
 1. It accepts and returns the correct object types expected by the classical
    machine learning library (i.e., Python default types and NumPy array for
-   the PennyLane-provided wrapped NumPy, and ``torch.tensor`` for PyTorch), and
+   the PennyLane-provided wrapped NumPy, ``torch.tensor`` for PyTorch, and
+   ``tf.Tensor`` or ``tfe.Variable`` for TensorFlow), and
 
 2. It correctly passes the quantum analytic gradient to the classical machine
    learning library during backpropagation.

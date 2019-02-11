@@ -86,7 +86,7 @@ Quantum gradients
 To calculate the gradient of a NumPy-QNode, we can simply use the provided
 :func:`~.grad` function.
 
-For example:
+For example, consider the following QNode:
 
 .. code-block:: python
 
@@ -100,14 +100,14 @@ For example:
         qml.PhaseShift(theta, wires=0)
         return qml.expval.PauliZ(0)
 
-Using :func:`~.grad` to create a QNode *gradient function*,
+We can now use :func:`~.grad` to create a QNode *gradient function*,
 with respect to both QNode parameters ``phi`` and ``theta``:
 
 >>> phi = np.array([0.5, 0.1])
 >>> theta = 0.2
 >>> dcircuit = qml.grad(circuit, argnum=[0, 1])
 
-we can now evaluate this gradient function at specific parameter values:
+Evaluating this gradient function at specific parameter values:
 
 >>> dcircuit(phi, theta)
 (array([ -4.79425539e-01,   1.11022302e-16]), array(0.0))
@@ -118,7 +118,7 @@ Optimization
 ------------
 
 To optimize your hybrid classical-quantum model using the NumPy interface,
-you may write your own optimization method, or use the provided :ref:`PennyLane optimizers <optimization_methods>`.
+use the provided :ref:`PennyLane optimizers <optimization_methods>`.
 
 For example, we can optimize a NumPy-interfacing QNode (below) such that the weights ``x``
 lead to a final expectation value of 0.5:

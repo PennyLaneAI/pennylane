@@ -99,7 +99,7 @@ using the :meth:`~.QNode.to_tfe` method:
 
 >>> qnode1 = qnode1.to_tfe()
 >>> qnode1
-<function pennylane.interfaces.tfe.custom_gradient.<locals>.decorated(*input_)>
+<QNode: device='default.qubit', func=circuit, wires=2, interface=TensorFlow>
 
 Internally, the :meth:`~.QNode.to_tfe` method uses the :func:`~.TFEQNode` function
 to do the conversion.
@@ -197,6 +197,8 @@ Code details
 ^^^^^^^^^^^^
 """
 # pylint: disable=redefined-outer-name
+from functools import partial
+
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
@@ -213,6 +215,19 @@ def TFEQNode(qnode):
     Returns:
         function: the QNode as a TensorFlow function
     """
+    class qnode_str(partial):
+        """TensorFlow QNode"""
+
+        def __str__(self):
+            """String representation"""
+            detail = "<QNode: device='{}', func={}, wires={}, interface=TensorFlow>"
+            return detail.format(qnode.device.short_name, qnode.func.__name__, qnode.num_wires)
+
+        def __repr__(self):
+            """REPL representation"""
+            return self.__str__()
+
+    @qnode_str
     @tf.custom_gradient
     def _TFEQNode(*input_, **input_kwargs):
         # detach all input Tensors, convert to NumPy array
