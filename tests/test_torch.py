@@ -240,8 +240,8 @@ class TorchQNodeTests(BaseTest):
         positional_res = circuit1(a, b, c)
         array_res1 = circuit2(a, torch.tensor([b, c]))
         array_res2 = circuit3(torch.tensor([a, b, c]))
-        self.assertAllAlmostEqual(positional_res, array_res1, delta=self.tol)
-        self.assertAllAlmostEqual(positional_res, array_res2, delta=self.tol)
+        self.assertAllAlmostEqual(positional_res.numpy(), array_res1.numpy(), delta=self.tol)
+        self.assertAllAlmostEqual(positional_res.numpy(), array_res2.numpy(), delta=self.tol)
 
     def test_multiple_expectation_different_wires(self):
         "Tests that qnodes return multiple expectation values."
