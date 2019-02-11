@@ -21,10 +21,14 @@ log.getLogger('defaults')
 
 import numpy as np
 
-import tensorflow as tf
-import tensorflow.contrib.eager as tfe
+try:
+    import tensorflow as tf
+    import tensorflow.contrib.eager as tfe
+    tf.enable_eager_execution()
+    tf_support = True
+except ImportError as e:
+    tf_support = False
 
-tf.enable_eager_execution()
 
 from defaults import pennylane as qml, BaseTest
 
@@ -40,6 +44,9 @@ def expZ(state):
 class TorchQNodeTests(BaseTest):
     """TorchQNode basic tests."""
     def setUp(self):
+        if not tf_support:
+            self.skipTest('TFE interface not tested')
+
         self.dev1 = qml.device('default.qubit', wires=1)
         self.dev2 = qml.device('default.qubit', wires=2)
 
@@ -364,9 +371,53 @@ class TorchQNodeTests(BaseTest):
         c = classnode(tf.constant(0.), x=np.pi)
         self.assertAllAlmostEqual(c, [1., -1.], delta=self.tol)
 
+    def test_keywordarg_gradient(self):
+        "Tests that qnodes' keyword arguments work with gradients"
+        self.logTestName()
+
+        def circuit(x, y, input_state=np.array([0, 0])):
+            qml.BasisState(input_state, wires=[0, 1])
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[0])
+            return qml.expval.PauliZ(0)
+
+        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+
+        x = 0.543
+        y = 0.45632
+        expected_grad = np.array([np.sin(x)*np.cos(y), np.sin(y)*np.cos(x)])
+
+        x_t = tfe.Variable(x)
+        y_t = tfe.Variable(y)
+
+        # test first basis state against analytic result
+        with tf.GradientTape() as tape:
+            c = circuit(x_t, y_t, input_state=np.array([0, 0]))
+            grads = np.array(tape.gradient(c, [x_t, y_t]))
+
+        self.assertAllAlmostEqual(grads, -expected_grad, delta=self.tol)
+
+        # test third basis state against analytic result
+        with tf.GradientTape() as tape:
+            c = circuit(x_t, y_t, input_state=np.array([1, 0]))
+            grads = np.array(tape.gradient(c, [x_t, y_t]))
+
+        self.assertAllAlmostEqual(grads, expected_grad, delta=self.tol)
+
+        # test first basis state via the default keyword argument against analytic result
+        with tf.GradientTape() as tape:
+            c = circuit(x_t, y_t)
+            grads = np.array(tape.gradient(c, [x_t, y_t]))
+
+        self.assertAllAlmostEqual(grads, -expected_grad, delta=self.tol)
+
 
 class IntegrationTests(BaseTest):
     """Integration tests to ensure the Torch QNode agrees with the NumPy QNode"""
+
+    def setUp(self):
+        if not tf_support:
+            self.skipTest('TFE interface not tested')
 
     def test_qnode_evaluation_agrees(self):
         "Tests that simple example is consistent."

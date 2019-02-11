@@ -233,7 +233,7 @@ def TFEQNode(qnode):
         def grad(grad_output):
             """Returns the vector-Jacobian product"""
             # evaluate the Jacobian matrix of the QNode
-            jacobian = qnode.jacobian(args)
+            jacobian = qnode.jacobian(args, **kwargs)
 
             grad_output_np = grad_output.numpy()
 

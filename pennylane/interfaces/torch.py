@@ -66,11 +66,6 @@ it can now be used like any other PyTorch function:
 >>> circuit(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
-.. warning::
-
-    Torch-interface QNodes currently do not support keyword arguments, just positional
-    arguments.
-
 Via the QNode class
 ^^^^^^^^^^^^^^^^^^^
 
@@ -208,10 +203,30 @@ Code details
 ^^^^^^^^^^^^
 """
 # pylint: disable=redefined-outer-name,arguments-differ
+import inspect
+
 import numpy as np
 import torch
 
 from pennylane.utils import unflatten
+
+
+def _get_default_args(func):
+    """Get the default arguments of a function.
+
+    Args:
+        func (function): a valid Python function
+
+    Returns:
+        dict: dictionary containing the argument name and tuple
+        (positional idx, default value)
+    """
+    signature = inspect.signature(func)
+    return {
+        k: (idx, v.default)
+        for idx, (k, v) in enumerate(signature.parameters.items())
+        if v.default is not inspect.Parameter.empty
+    }
 
 
 def args_to_numpy(args):
@@ -279,7 +294,7 @@ def TorchQNode(qnode):
         """The TorchQNode wrapper class"""
 
         @staticmethod
-        def forward(ctx, *input_, **input_kwargs):
+        def forward(ctx, input_kwargs, *input_):
             """Implements the forward pass QNode evaluation"""
             # detach all input tensors, convert to NumPy array
             ctx.args = args_to_numpy(input_)
@@ -332,6 +347,25 @@ def TorchQNode(qnode):
                     res = torch.as_tensor(res, device=cuda_device)
                 grad_input.append(res)
 
-            return tuple(grad_input) + tuple([None]*len(ctx.kwargs))
+            return (None,) + tuple(grad_input)
 
-    return _TorchQNode.apply
+    def custom_apply(*args, **kwargs):
+        """Custom apply wrapper, to allow passing kwargs to the TorchQNode"""
+
+        # get default kwargs that weren't passed
+        keyword_sig = _get_default_args(qnode.func)
+        keyword_defaults = {k: v[1] for k, v in keyword_sig.items()}
+        # keyword_positions = {v[0]: k for k, v in keyword_sig.items()}
+
+        # create a keyword_values dict, that contains defaults
+        # and any user passed kwargs
+        keyword_values = {}
+        keyword_values.update(keyword_defaults)
+        keyword_values.update(kwargs)
+
+        # sort keyword values into a list of args, using their position
+        # [keyword_values[k] for k in sorted(keyword_positions, key=keyword_positions.get)]
+
+        return _TorchQNode.apply(keyword_values, *args)
+
+    return custom_apply

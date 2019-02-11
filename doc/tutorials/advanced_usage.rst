@@ -101,8 +101,3 @@ Since keyword arguments do not get considered when computing gradients, the Jaco
         137         return value
     TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
 
-.. warning::
-
-    If using the experimental :ref:`tf_qnode`, keyword arguments are supported as above.
-
-    However, they are currently *not* supported for the :ref:`torch_qnode`.

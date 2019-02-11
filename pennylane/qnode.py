@@ -145,13 +145,13 @@ import autograd.builtins
 
 import pennylane.operation
 
-try:
+try: # pragma: no cover
     from .interfaces.torch import TorchQNode
     torch_support = True
 except ImportError as e: # pragma: no cover
     torch_support = False
 
-try:
+try: # pragma: no cover
     from .interfaces.tfe import TFEQNode
     tfe_support = True
 except ImportError as e: # pragma: no cover

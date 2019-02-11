@@ -21,8 +21,12 @@ log.getLogger('defaults')
 
 import numpy as np
 
-import torch
-from torch.autograd import Variable
+try:
+    import torch
+    from torch.autograd import Variable
+    torch_support = True
+except ImportError as e:
+    torch_support = False
 
 from defaults import pennylane as qml, BaseTest
 
@@ -38,6 +42,9 @@ def expZ(state):
 class TorchQNodeTests(BaseTest):
     """TorchQNode basic tests."""
     def setUp(self):
+        if not torch_support:
+            self.skipTest('Torch interface not tested')
+
         self.dev1 = qml.device('default.qubit', wires=1)
         self.dev2 = qml.device('default.qubit', wires=2)
 
@@ -266,13 +273,58 @@ class TorchQNodeTests(BaseTest):
         self.logTestName()
 
         @qml.qnode(self.dev2, interface='torch')
-        def circuit(w, x=np.pi, y=np.pi):
+        def circuit(w, x=None, y=None):
             qml.RX(x, [0])
             qml.RX(y, [1])
             return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
-        c = circuit(torch.tensor(1.))
+        c = circuit(torch.tensor(1.), x=np.pi, y=np.pi)
         self.assertAllAlmostEqual(c.numpy(), [-1., -1.], delta=self.tol)
+
+    def test_multidimensional_keywordargs_used(self):
+        "Tests that qnodes use multi-dimensional keyword arguments."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qml.RX(x[0], [0])
+            qml.RX(x[1], [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        circuit = qml.QNode(circuit, self.dev2).to_torch()
+
+        c = circuit(torch.tensor(1.), x=[np.pi, np.pi])
+        self.assertAllAlmostEqual(c.numpy(), [-1., -1.], delta=self.tol)
+
+    def test_keywordargs_for_wires(self):
+        "Tests that wires can be passed as keyword arguments."
+        self.logTestName()
+
+        default_q = 0
+
+        def circuit(x, q=default_q):
+            qml.RY(x, wires=0)
+            return qml.expval.PauliZ(q)
+
+        circuit = qml.QNode(circuit, self.dev2).to_torch()
+
+        c = circuit(torch.tensor(np.pi), q=1)
+        self.assertAlmostEqual(c, 1., delta=self.tol)
+
+        c = circuit(torch.tensor(np.pi))
+        self.assertAlmostEqual(c.numpy(), -1., delta=self.tol)
+
+    def test_keywordargs_used(self):
+        "Tests that qnodes use keyword arguments."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qml.RX(x, [0])
+            return qml.expval.PauliZ(0)
+
+        circuit = qml.QNode(circuit, self.dev1).to_torch()
+
+        c = circuit(torch.tensor(1.), x=np.pi)
+        self.assertAlmostEqual(c.numpy(), -1., delta=self.tol)
 
     def test_mixture_numpy_tensors(self):
         "Tests that qnodes work with python types and tensors."
@@ -287,9 +339,80 @@ class TorchQNodeTests(BaseTest):
         c = circuit(torch.tensor(1.), np.pi, np.pi).detach().numpy()
         self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
 
+    def test_keywordarg_updated_in_multiple_calls(self):
+        "Tests that qnodes update keyword arguments in consecutive calls."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qml.RX(w, [0])
+            qml.RX(x, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        circuit = qml.QNode(circuit, self.dev2).to_torch()
+
+        c1 = circuit(torch.tensor(0.1), x=torch.tensor(0.))
+        c2 = circuit(torch.tensor(0.1), x=np.pi)
+        self.assertTrue(c1[1] != c2[1])
+
+    def test_keywordarg_passes_through_classicalnode(self):
+        "Tests that qnodes' keyword arguments pass through classical nodes."
+        self.logTestName()
+
+        def circuit(w, x=None):
+            qml.RX(w, [0])
+            qml.RX(x, [1])
+            return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
+        circuit = qml.QNode(circuit, self.dev2).to_torch()
+
+        def classnode(w, x=None):
+            return circuit(w, x=x)
+
+        c = classnode(torch.tensor(0.), x=np.pi)
+        self.assertAllAlmostEqual(c.numpy(), [1., -1.], delta=self.tol)
+
+    def test_keywordarg_gradient(self):
+        "Tests that qnodes' keyword arguments work with gradients"
+        self.logTestName()
+
+        def circuit(x, y, input_state=np.array([0, 0])):
+            qml.BasisState(input_state, wires=[0, 1])
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[0])
+            return qml.expval.PauliZ(0)
+
+        circuit = qml.QNode(circuit, self.dev2).to_torch()
+
+        x = 0.543
+        y = 0.45632
+
+        x_t = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
+        y_t = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
+        c = circuit(x_t, y_t, input_state=np.array([0, 0]))
+        c.backward()
+        self.assertAllAlmostEqual(x_t.grad.numpy(), [-np.sin(x)*np.cos(y)], delta=self.tol)
+        self.assertAllAlmostEqual(y_t.grad.numpy(), [-np.sin(y)*np.cos(x)], delta=self.tol)
+
+        x_t = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
+        y_t = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
+        c = circuit(x_t, y_t, input_state=np.array([1, 0]))
+        c.backward()
+        self.assertAllAlmostEqual(x_t.grad.numpy(), [np.sin(x)*np.cos(y)], delta=self.tol)
+        self.assertAllAlmostEqual(y_t.grad.numpy(), [np.sin(y)*np.cos(x)], delta=self.tol)
+
+        x_t = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
+        y_t = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
+        c = circuit(x_t, y_t)
+        c.backward()
+        self.assertAllAlmostEqual(x_t.grad.numpy(), [-np.sin(x)*np.cos(y)], delta=self.tol)
+        self.assertAllAlmostEqual(y_t.grad.numpy(), [-np.sin(y)*np.cos(x)], delta=self.tol)
+
 
 class IntegrationTests(BaseTest):
     """Integration tests to ensure the Torch QNode agrees with the NumPy QNode"""
+    def setUp(self):
+        if not torch_support:
+            self.skipTest('Torch interface not tested')
 
     def test_qnode_evaluation_agrees(self):
         "Tests that simple example is consistent."
