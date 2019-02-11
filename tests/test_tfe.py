@@ -41,8 +41,8 @@ def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
 
-class TorchQNodeTests(BaseTest):
-    """TorchQNode basic tests."""
+class TFEQNodeTests(BaseTest):
+    """TFEQNode basic tests."""
     def setUp(self):
         if not tf_support:
             self.skipTest('TFE interface not tested')
@@ -170,7 +170,7 @@ class TorchQNodeTests(BaseTest):
                 self.assertAlmostEqual(y_eval, y_true, delta=self.tol)
 
     def test_qnode_array_parameters(self):
-        "Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch."
+        "Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow."
         self.logTestName()
 
         @qml.qnode(self.dev1, interface='tfe')
@@ -413,7 +413,7 @@ class TorchQNodeTests(BaseTest):
 
 
 class IntegrationTests(BaseTest):
-    """Integration tests to ensure the Torch QNode agrees with the NumPy QNode"""
+    """Integration tests to ensure the TensorFlow QNode agrees with the NumPy QNode"""
 
     def setUp(self):
         if not tf_support:
@@ -493,7 +493,7 @@ if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', QNode TFE interface.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TorchQNodeTests, IntegrationTests):
+    for t in (TFEQNodeTests, IntegrationTests):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
 

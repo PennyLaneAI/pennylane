@@ -45,9 +45,8 @@ Any classical computation in the model can then make use of arbitrary NumPy
 functions, while retaining support for automatic differentiation. For an example,
 see the :ref:`hybrid computation tutorial <plugins_hybrid>`.
 
-However, there is no reason why PennyLane's quantum nodes cannot be used in conjunction
-with other classical machine learning libraries; all that is required is that
-the QNode is modified such that
+However, PennyLane has the ability to contruct quantum nodes can also be used in conjunction
+with other classical machine learning libraries; in such a case, the QNode is modified such that
 
 1. It accepts and returns the correct object types expected by the classical
    machine learning library (i.e., Python default types and NumPy array for
@@ -57,7 +56,7 @@ the QNode is modified such that
 2. It correctly passes the quantum analytic gradient to the classical machine
    learning library during backpropagation.
 
-To that end, we will begin supporting additional classical interfaces in PennyLane,
+We now support additional classical interfaces in PennyLane,
 beginning with PyTorch and TensorFlow eager execution mode.
 
 .. rst-class:: contents local topic
