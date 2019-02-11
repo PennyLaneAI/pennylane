@@ -19,8 +19,8 @@ r"""Submodule containing PennyLane optimizers.
 
   The built-in optimizers only support the default NumPy-interfacing QNode.
 
-  If using the experimental :ref:`PennyLane PyTorch <torch_qnode>`
-  or the experimental :ref:`PennyLane TensorFlow <tf_qnode>` interfaces,
+  If using the :ref:`PennyLane PyTorch <torch_qnode>`
+  or the :ref:`PennyLane TensorFlow <tf_qnode>` interfaces,
   `PyTorch optimizers <https://pytorch.org/docs/stable/optim.html>`_ and
   TensorFlow optimizers (available in ``tf.train``) should be used respectively.
 
