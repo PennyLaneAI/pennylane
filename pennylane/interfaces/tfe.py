@@ -131,7 +131,7 @@ For example:
     grad_fn = tfe.implicit_value_and_gradients(circuit)
     result, [(phi_grad, phi_var), (theta_grad, theta_var)] = grad_fn(phi, theta)
 
-Now, printing the gradients:
+Now, printing the gradients, we get:
 
 >>> phi_grad
 array([-0.47942549,  0.        ])
@@ -144,12 +144,12 @@ Optimization using TensorFlow
 -----------------------------
 
 To optimize your hybrid classical-quantum model using the TensorFlow eager interface,
-you **must** make use of the TensorFlow provided optimizers provided in the ``tf.train`` module,
+you **must** make use of the TensorFlow optimizers provided in the ``tf.train`` module,
 or your own custom TensorFlow optimizer. **The** :ref:`PennyLane optimizers <optimization_methods>`
 **cannot be used with the TensorFlow interface, only the** :ref:`numpy_qnode`.
 
 For example, to optimize a TFE-interfacing QNode (below) such that the weights ``x``
-result in an expectation value of 0.5:
+result in an expectation value of 0.5, we can do the following:
 
 .. code-block:: python
 
@@ -183,7 +183,7 @@ result in an expectation value of 0.5:
         opt.apply_gradients(zip(grads, [phi, theta]), global_step=tf.train.get_or_create_global_step())
 
 
-The final weights and circuit value:
+The final weights and circuit value are:
 
 >>> phi
 <tf.Variable 'Variable:0' shape=(2,) dtype=float64, numpy=array([ 1.04719755,  0.1       ])>
@@ -205,7 +205,7 @@ from pennylane.utils import unflatten
 
 
 def TFEQNode(qnode):
-    """Function that accepts a :class:`~.QNode`, and returns a TensorFlow eager execution-compatible QNode.
+    """Function that accepts a :class:`~.QNode`, and returns a TensorFlow eager-execution-compatible QNode.
 
     Args:
         qnode (~pennylane.qnode.QNode): a PennyLane QNode

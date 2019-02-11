@@ -795,7 +795,7 @@ class QNode:
         """
         if not torch_support: # pragma: no cover
             raise QuantumFunctionError("PyTorch not found. Please install "
-                                       "PyTorch to enable the experimental TorchQNode feature.")
+                                       "PyTorch to enable the TorchQNode interface.")
 
         return TorchQNode(self)
 
@@ -804,7 +804,7 @@ class QNode:
         """
         if not tfe_support: # pragma: no cover
             raise QuantumFunctionError("TensorFlow with eager execution mode not found. Please install "
-                                       "the latest version of TensorFlow to enable the experimental TFEQNode feature.")
+                                       "the latest version of TensorFlow to enable the TFEQNode interface.")
 
         return TFEQNode(self)
 

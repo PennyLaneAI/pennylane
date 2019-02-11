@@ -85,17 +85,17 @@ build a hybrid computation. For example,
 
 .. raw:: html
 
-    <h3>Experimental classical interface support</h3>
+    <h3>Classical interface support (experimental)</h3>
 
-To try one of the new experimental classical automatic differentiation interfaces,
+To try one of the new classical machine learning interfaces,
 you can specify the ``interface`` keyword argument when using the QNode decorator.
 
-Current experimental classical interfaces include:
+Current classical interfaces include:
 
 * :ref:`PyTorch <torch_qnode>`: ``interface='torch'``
 * :ref:`TensorFlow eager execution <tf_qnode>`: ``interface='tfe'``
 
-If not specified, the standard PennyLane autograd classical interface,
+If not specified, the standard NumPy/autograd classical interface,
 
 .. code-block:: python
 
@@ -123,8 +123,8 @@ def qnode(device, interface='numpy'):
     Args:
         device (~pennylane._device.Device): a PennyLane-compatible device
         interface (str): the interface that will be used for automatic
-            differentiation of *classical* processing. This affects
-            the types of objects passed to/returned from the QNode:
+            differentiation and classical processing. This affects
+            the types of objects that can be passed to/returned from the QNode:
 
             * ``interface='numpy'``: The QNode accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,

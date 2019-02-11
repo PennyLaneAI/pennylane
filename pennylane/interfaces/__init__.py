@@ -20,9 +20,9 @@ Classical interfaces overview
 .. currentmodule:: pennylane.interfaces
 
 PennyLane now provides experimental support for additional classical
-automatic differentiation interfaces, beginning with PyTorch and TensorFlow eager execution mode.
+machine learning interfaces, specifically PyTorch and TensorFlow eager execution mode.
 
-Depending on the interface/classical machine learning library chosen,
+Depending on the classical machine learning interface chosen,
 you may be able to offload the classical portion of your hybrid model
 onto an accelerator, such as a GPU or TPU.
 
@@ -33,8 +33,8 @@ By default, when constructing a :ref:`QNode <qnode_decorator>`, PennyLane allows
 the underlying quantum function to accept any default Python types (for example,
 floats, ints, lists) as well as NumPy array arguments, and will always return
 NumPy arrays representing the returned expectation values. To enable the QNode
-to then be used in arbitrary hybrid classical-quantum computation, you can then
-make use of the patched version of NumPy provided by PennyLane
+to then be used in arbitrary hybrid classical-quantum computation, you can 
+make use of the wrapped version of NumPy provided by PennyLane
 (via `autograd <https://github.com/HIPS/autograd>`_):
 
 .. code-block:: python
@@ -54,7 +54,7 @@ the QNode is modified such that
    the PennyLane-provided wrapped NumPy, and ``torch.tensor`` for PyTorch), and
 
 2. It correctly passes the quantum analytic gradient to the classical machine
-   learning library during backprogation.
+   learning library during backpropagation.
 
 To that end, we will begin supporting additional classical interfaces in PennyLane,
 beginning with PyTorch and TensorFlow eager execution mode.

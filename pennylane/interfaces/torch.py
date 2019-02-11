@@ -146,7 +146,8 @@ or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <optimi
 **cannot be used with the Torch interface, only the** :ref:`numpy_qnode`.
 
 For example, to optimize a Torch-interfacing QNode (below) such that the weights ``x``
-result in an expectation value of 0.5, with the classical nodes processed on a GPU:
+result in an expectation value of 0.5, with the classical nodes processed on a GPU, 
+we can do the following:
 
 .. code-block:: python
 
@@ -183,7 +184,7 @@ result in an expectation value of 0.5, with the classical nodes processed on a G
     for i in range(steps):
         opt.step(closure)
 
-The final weights and circuit value:
+The final weights and circuit value are:
 
 >>> phi_final, theta_final = opt.param_groups[0]['params']
 >>> phi_final, theta_final
@@ -358,7 +359,7 @@ def TorchQNode(qnode):
         # keyword_positions = {v[0]: k for k, v in keyword_sig.items()}
 
         # create a keyword_values dict, that contains defaults
-        # and any user passed kwargs
+        # and any user-passed kwargs
         keyword_values = {}
         keyword_values.update(keyword_defaults)
         keyword_values.update(kwargs)
