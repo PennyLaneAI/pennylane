@@ -146,7 +146,7 @@ or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <optimi
 **cannot be used with the Torch interface, only the** :ref:`numpy_qnode`.
 
 For example, to optimize a Torch-interfacing QNode (below) such that the weights ``x``
-result in an expectation value of 0.5, with the classical nodes processed on a GPU, 
+result in an expectation value of 0.5, with the classical nodes processed on a GPU,
 we can do the following:
 
 .. code-block:: python
@@ -320,8 +320,13 @@ def TorchQNode(qnode):
             return torch.from_numpy(res)
 
         @staticmethod
-        def backward(ctx, grad_output):
+        def backward(ctx, grad_output): #pragma: no cover
             """Implements the backwards pass QNode vector-Jacobian product"""
+            # NOTE: This method is definitely tested by the `test_torch.py` test suite,
+            # however does not show up in the coverage. This is likely due to
+            # subtleties in the torch.autograd.FunctionMeta metaclass, specifically
+            # the way in which the backward class is created on the fly
+
             # evaluate the Jacobian matrix of the QNode
             jacobian = qnode.jacobian(ctx.args, **ctx.kwargs)
 
@@ -353,6 +358,7 @@ def TorchQNode(qnode):
 
     class qnode_str(partial):
         """Torch QNode"""
+        # pylint: disable=too-few-public-methods
 
         def __str__(self):
             """String representation"""

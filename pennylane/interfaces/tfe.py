@@ -217,6 +217,7 @@ def TFEQNode(qnode):
     """
     class qnode_str(partial):
         """TensorFlow QNode"""
+        # pylint: disable=too-few-public-methods
 
         def __str__(self):
             """String representation"""
