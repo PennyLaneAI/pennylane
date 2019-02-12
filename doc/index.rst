@@ -92,7 +92,7 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 
 To get PennyLane installed and running on your system, begin at the :ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's :ref:`key concepts <introduction>` for machine learning on quantum circuits.
 
-For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to explore :ref:`hybrid quantum optimization <plugins_hybrid>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
+For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to explore :ref:`hybrid quantum optimization <plugins_hybrid>`, and :ref:`hybrid GPU-QPU optimization via PyTorch <pytorch_noise>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
 
 Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid models — these include Strawberry Fields, provided by the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin, the Rigetti Aspen-1 QPU, provided by the `PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_ plugin, and the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins.
 
@@ -102,7 +102,7 @@ Finally, detailed documentation on the PennyLane :ref:`interface <library_overvi
 
 If you are doing research using PennyLane, please cite
 
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, and Nathan Killoran.
+    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, Carsten Blank, Keri McKiernan, and Nathan Killoran.
     *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018. `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
 
 :html:`<h2>Support</h2>`
@@ -152,6 +152,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    tutorials/qubit_rotation
    tutorials/gaussian_transformation
    tutorials/plugins_hybrid
+   tutorials/pytorch_noise
    tutorials/advanced_usage
    tutorials/notebooks
 

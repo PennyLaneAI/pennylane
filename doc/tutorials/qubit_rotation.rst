@@ -259,7 +259,7 @@ Optimization
 .. admonition:: Definition
     :class: defn
 
-    PennyLane provides a collection of optimizers based on gradient descent. These optimizers accept a cost function and initial parameters,
+    If using the default NumPy/Autograd interface, PennyLane provides a collection of optimizers based on gradient descent. These optimizers accept a cost function and initial parameters,
     and utilize PennyLane's automatic differentiation to perform gradient descent.
 
 .. tip::
