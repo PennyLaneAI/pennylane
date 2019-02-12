@@ -251,8 +251,8 @@ class DefaultQubit(Device):
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
-    pennylane_requires = '0.2.0'
-    version = '0.2.0'
+    pennylane_requires = '0.3.0'
+    version = '0.3.0'
     author = 'Xanadu Inc.'
 
     # Note: BasisState and QubitStateVector don't

@@ -793,7 +793,7 @@ class QNode:
         # Placing slow imports here, in case the user does not use the Torch interface
         try: # pragma: no cover
             from .interfaces.torch import TorchQNode
-        except ImportError as e: # pragma: no cover
+        except ImportError: # pragma: no cover
             raise QuantumFunctionError("PyTorch not found. Please install "
                                        "PyTorch to enable the TorchQNode interface.") from None
 
@@ -805,7 +805,7 @@ class QNode:
         # Placing slow imports here, in case the user does not use the TF interface
         try: # pragma: no cover
             from .interfaces.tfe import TFEQNode
-        except ImportError as e: # pragma: no cover
+        except ImportError: # pragma: no cover
             raise QuantumFunctionError("TensorFlow with eager execution mode not found. Please install "
                                        "the latest version of TensorFlow to enable the TFEQNode interface.") from None
 
