@@ -30,6 +30,11 @@ requirements = [
     "semantic_version"
 ]
 
+extra_requirements = {
+    'pytorch':  ["torch", "torchvision"],
+    'tf':  ["tensorflow>=1.12"],
+}
+
 info = {
     'name': 'PennyLane',
     'version': version,
@@ -54,7 +59,7 @@ info = {
     'long_description': open('README.rst').read(),
     'provides': ["pennylane"],
     'install_requires': requirements,
-    # 'extras_require': extra_requirements,
+    'extras_require': extra_requirements,
     'command_options': {
         'build_sphinx': {
             'version': ('setup.py', version),

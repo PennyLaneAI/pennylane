@@ -45,46 +45,6 @@ Notice that the output of the circuit is a NumPy array with ``shape=(2,)``, i.e.
     It is important to emphasize that the expectation values in ``circuit`` are both **local**, i.e., this circuit is evaluating :math:`\braket{\sigma_z}_0` and :math:`\braket{\sigma_z}_1`, not :math:`\braket{\sigma_z\otimes \sigma_z}_{01}` (where the subscript denotes which wires the observable is located on).
 
 
-Grad and Jacobian
------------------
-
-How does automatic differentiation work in the case where the QNode returns multiple expectation values? If we were to naively try computing the gradient using the :func:`~.grad` function,
-
-.. code::
-
-    g1 = qml.grad(circuit1, argnum=0)
-    g1(np.pi/2)
-
-we would get an error message. This is because the `gradient <https://en.wikipedia.org/wiki/Gradient>`_ is only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode returns multiple expectation values, the correct differential operator to use in that case is the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_. This can be accessed in PennyLane as :func:`~.jacobian`:
-
->>> j1 = qml.jacobian(circuit1, argnum=0)
->>> j1(np.pi/2)
-array([-1., -1.])
-
-The output of :func:`~.jacobian` is a two-dimensional vector, with the first/second element being the partial derivative of the first/second expectation value with respect to the input parameter. The Jacobian function has the same signature as the gradient function, requiring the user to specify which argument should be differentiated.
-
-If you want to compute the Jacobian matrix for a function with multiple input parameters and multiple expectation values, the recommended way to do this is to combine the parameters into a single list/array and index into this inside your quantum circuit function. Consider the following circuit:
-
-.. code::
-
-    @qml.qnode(dev)
-    def circuit2(params):
-        qml.RX(params[0], wires=0)
-        qml.RZ(params[1], wires=0)
-        qml.RX(params[2], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
-
-It has a full Jacobian with two rows and three columns:
-
->>> j2 = qml.jacobian(circuit2, argnum=0)
->>> j2(np.pi / 3, 0.25, np.pi / 2)
->>> array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
-           [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
-
-.. warning:: Currently, :func:`pennylane.jacobian` supports only the case where ``argnum`` is a single integer. For quantum functions with multiple arguments, use the above method to get the full Jacobian matrix.
-
-
 Keyword arguments
 -----------------
 
@@ -141,36 +101,3 @@ Since keyword arguments do not get considered when computing gradients, the Jaco
         137         return value
     TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
 
-Autograd
---------
-
-PennyLane leverages the Python library `autograd <https://github.com/HIPS/autograd>`_ to enable automatic differentiation of NumPy code, and extends it to provide gradients of quantum circuit functions encapsulated in QNodes. In order to make NumPy code differentiable, Autograd provides a wrapped version of NumPy (exposed in PennyLane as :code:`pennylane.numpy`.
-
-As stated in other sections, any hybrid computation should be coded using the wrapped version of NumPy provided by PennyLane. **If you accidentally import the vanilla version of NumPy, your code will not be automatically differentiable.**
-
-Because of the way autograd wraps NumPy, PennyLane does not require users to learn a new mini-language for declaring classical computations, or invoke awkward language-dependent functions which replicate basic python control-flow statements (``if`` statements, loops, etc.). Users can continue using many of the standard numerical programming practices common in Python and NumPy.
-
-That being said, autograd's coverage of NumPy is not complete. It is best to consult the `autograd docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`_ for a more complete overview of supported and unsupported features. We highlight a few of the major 'gotchas' here.
-
-**Do not use:**
-
-- Assignment to arrays, such as ``A[0, 0] = x``.
-
-..
-
-- Implicit casting of lists to arrays, for example ``A = np.sum([x, y])``.
-  Make sure to explicitly cast to a NumPy array first, i.e., ``A = np.sum(np.array([x, y]))`` instead.
-
-..
-
-- ``A.dot(B)`` notation.
-  Use ``np.dot(A, B)`` or ``A @ B`` instead.
-
-..
-
-- In-place operations such as ``a += b``.
-  Use ``a = a + b`` instead.
-
-..
-
-- Some ``isinstance`` checks, like ``isinstance(x, np.ndarray)`` or ``isinstance(x, tuple)``, without first doing ``from autograd.builtins import isinstance, tuple``.

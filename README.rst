@@ -61,6 +61,8 @@ Features
 
 - **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including Strawberry Fields, Rigetti Forest, ProjectQ, and Qiskit
 
+- **Compatible with existing machine learning libraries**. Quantum circuits can interface with PyTorch, Tensorflow, or NumPy (via autograd), allowing hybrid CPU-GPU-QPU computations.
+
 
 Available plugins
 =================
@@ -119,7 +121,7 @@ Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, and Nathan Killoran
 
 If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/1811.04968>`_:
 
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, and Nathan Killoran.
+    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, Carsten Blank, Keri McKiernan, and Nathan Killoran.
     *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018. arXiv:1811.04968
 
 
