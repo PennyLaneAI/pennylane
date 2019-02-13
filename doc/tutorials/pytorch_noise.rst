@@ -6,7 +6,7 @@
 PyTorch and noisy devices
 =========================
 
-Let's revisit the original :ref:`qubit rotation <qubit_rotation>` tutorial, but instead of using the default NumPy/Autograd QNode interface, we'll use the :ref:`torch_qnode`. We'll also replace the ``default.qubit`` device with a noisy ``forest.qvm`` device, to see how the optimization responds to noisy qubits.
+Let's revisit the original :ref:`qubit rotation <qubit_rotation>` tutorial, but instead of using the default NumPy/autograd QNode interface, we'll use the :ref:`torch_qnode`. We'll also replace the ``default.qubit`` device with a noisy ``forest.qvm`` device, to see how the optimization responds to noisy qubits.
 
 
 .. note::
@@ -20,7 +20,7 @@ Let's revisit the original :ref:`qubit rotation <qubit_rotation>` tutorial, but 
 
           pip install pennylane-forest
 
-    * `PyTorch <https://pytorch.org/get-started/locally/>`_ in order to access the PyTorch QNode interface. Follow the link for instructions on the best way to installed PyTorch for your system.
+    * `PyTorch <https://pytorch.org/get-started/locally/>`_, in order to access the PyTorch QNode interface. Follow the link for instructions on the best way to install PyTorch for your system.
 
 
 Setting up the device
@@ -36,7 +36,7 @@ To start with, we import PennyLane, and, as we are using the PyTorch interface, 
     import torch
     from torch.autograd import Variable
 
-Note that we do not need to import the wrapped version of NumPy provided by PennyLane, as we are not using the QNode NumPy interface. If NumPy is needed, it is fine to import vanilla NumPy for use with PyTorch and TensorFlow.
+Note that we do not need to import the wrapped version of NumPy provided by PennyLane, as we are not using the default QNode NumPy interface. If NumPy is needed, it is fine to import vanilla NumPy for use with PyTorch and TensorFlow.
 
 Next, we will create our device:
 
