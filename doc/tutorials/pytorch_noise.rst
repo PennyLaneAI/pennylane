@@ -44,7 +44,7 @@ Next, we will create our device:
 
     dev = qml.device('forest.qvm', device='2q', noisy=True)
 
-Here, we create a noisy two-qubit system, simulated via the QVM. If we wish, we could also simulate the system on a physical device, such as the ``Aspen-1`` QPU.
+Here, we create a noisy two-qubit system, simulated via the QVM. If we wish, we could also build the model on a physical device, such as the ``Aspen-1`` QPU.
 
 
 
@@ -65,7 +65,7 @@ running on the QVM.
 
 .. note::
 
-    To enable the QNode to be 'PyTorch aware', we need to specify that the QNode interfaces
+    To make the QNode 'PyTorch aware', we need to specify that the QNode interfaces
     with PyTorch. This is done by passing the ``interface='torch'`` keyword argument.
 
     As a result, this QNode will be set up to accept and return PyTorch tensors, and will
@@ -94,7 +94,7 @@ Now that the cost function is defined, we can begin the PyTorch optimization. We
 
 .. note::
 
-    As we are using the PyTorch interface, we must use PyTorch optimizers, *not* the built-in optimizers provided by PennyLane. The built-in optimizers only apply to the default NumPy/Autograd interface.
+    As we are using the PyTorch interface, we must use PyTorch optimizers, *not* the built-in optimizers provided by PennyLane. The built-in optimizers only apply to the default NumPy/autograd interface.
 
 Optimizing the system for 400 steps:
 
@@ -106,7 +106,7 @@ Optimizing the system for 400 steps:
         loss.backward()
         opt.step()
 
-We can now verify the final values of the parameters, as well as the final circuit output and cost function:
+We can now check the final values of the parameters, as well as the final circuit output and cost function:
 
 >>> phi
 tensor(-0.7055, requires_grad=True)
@@ -128,7 +128,7 @@ As the cost function is step-dependent, this does not provide enough detail to d
 
 :html:`<br>`
 
-Here, the red-cross is the target state of the variational circuit, and the arrow the variational circuit output state. As the target state changes, the circuit learns to produce the new target state!
+Here, the red x is the target state of the variational circuit, and the arrow is the variational circuit output state. As the target state changes, the circuit learns to produce the new target state!
 
 
 Hybrid GPU-QPU optimization
@@ -164,6 +164,6 @@ As PyTorch natively supports GPU-accelerated classical processing, and Forest pr
         loss.backward()
         opt.step()
 
-When using a classical QNode interface that supports GPUs, the QNode will automatically copy any tensors arguments to the CPU, before applying them on the specified quantum device. Once done, it will return a tensor containing the QNode result, and automatically copy it back to the GPU for additional classical processing.
+When using a classical interface that supports GPUs, the QNode will automatically copy any tensor arguments to the CPU, before applying them on the specified quantum device. Once done, it will return a tensor containing the QNode result, and automatically copy it back to the GPU for any further classical processing.
 
 .. note:: For more details on the PyTorch interface, see :ref:`torch_qnode`.
