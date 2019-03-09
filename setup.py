@@ -47,7 +47,8 @@ info = {
                     'pennylane.ops',
                     'pennylane.expval',
                     'pennylane.plugins',
-                    'pennylane.optimize'
+                    'pennylane.optimize',
+                    'pennylane.interfaces'
                 ],
     'entry_points': {
         'pennylane.plugins': [
