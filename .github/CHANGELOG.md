@@ -1,3 +1,9 @@
+# Release 0.3.1
+
+### Bug fixes
+
+* Fixed a bug where the interfaces submodule was not correctly being packaged via setup.py
+
 # Release 0.3.0
 
 ### New features since last release
