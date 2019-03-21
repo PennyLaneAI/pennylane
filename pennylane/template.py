@@ -181,7 +181,7 @@ def CVNeuralNet(weights, wires=None):
 
     The weights parameter is nested list. Its first dimension is equal to the number of layers. Each entry is again a
     list that contains the parameters feeding into :func:`CVNeuralNetLayer`.
-    
+
     Args:
         weights (array[array]): array of arrays of weights for each
             layer of the CV neural network
@@ -194,7 +194,7 @@ def CVNeuralNet(weights, wires=None):
 
 
 def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
-    """pennylane.template.CVNeuralNetLayer(theta_1, phi_1, s, theta_2, phi_2, r, k, wires)
+    """pennylane.template.CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires)
     A single layer of a CV Quantum Neural Network
 
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
