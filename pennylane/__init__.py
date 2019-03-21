@@ -102,7 +102,7 @@ from semantic_version import Version, Spec
 
 import pennylane.operation
 import pennylane.expval
-import pennylane.template
+import pennylane.templates.layers
 
 
 from .configuration import Configuration

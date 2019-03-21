@@ -12,100 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-QML Templates
-=============
 
-**Module name:** :mod:`pennylane.template`
-
-.. currentmodule:: pennylane.template
-
-This module provides a growing library of templates of common quantum
-machine learning circuit architectures that can be used to easily build,
-evaluate, and train more complex quantum machine learning models.
-
-
-.. note::
-
-    The templates below are constructed out of **structured combinations**
-    of the :mod:`quantum operations <pennylane.ops>` provided by PennyLane.
-
-    As a result, you should follow all the rules of quantum operations
-    when you use templates. For example **template functions can only be
-    used within a valid** :mod:`pennylane.qnode`.
-
-
-Examples
---------
-
-
-For example, you can construct a circuit-centric quantum
-classifier with the architecture from :cite:`schuld2018circuit` on an arbitrary
-number of wires and with an arbitrary number of blocks by using the
-template :class:`StronglyEntanglingCircuit` in the following way:
-
-.. code-block:: python
-
-    import pennylane as qml
-    from pennylane.template import StronglyEntanglingCircuit
-    from pennylane import numpy as np
-
-    num_wires = 4
-    num_blocks = 3
-    dev = qml.device('default.qubit', wires=num_wires)
-
-    @qml.qnode(dev)
-    def circuit(weights, x=None):
-        qml.BasisState(x, wires=range(num_wires))
-        StronglyEntanglingCircuit(weights, periodic=True, wires=range(num_wires))
-        return qml.expval.PauliZ(0)
-
-    weights = np.random.randn(num_blocks, num_wires, 3)
-    print(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
-
-
-The handy :func:`Interferometer` function can be used to construct arbitrary
-interferometers in terms of elementary :class:`~.Beamsplitter` operations,
-by providing lists of transmittivity and phase angles. PennyLane can
-then be used to easily differentiate and optimize these
-parameters:
-
-.. code-block:: python
-
-    import pennylane as qml
-    from pennylane.template import Interferometer
-    from pennylane import numpy as np
-
-    num_wires = 4
-    dev = qml.device('default.gaussian', wires=num_wires)
-    num_params = int(num_wires*(num_wires-1)/2)
-
-    # initial parameters
-    r = np.random.rand(num_wires, 2)
-    theta = np.random.uniform(0, 2*np.pi, num_params)
-    phi = np.random.uniform(0, 2*np.pi, num_params)
-
-    @qml.qnode(dev)
-    def circuit(theta, phi):
-        for w in range(num_wires):
-            qml.Squeezing(r[w][0], r[w][1], wires=w)
-
-        Interferometer(theta=theta, phi=phi, wires=range(num_wires))
-        return [qml.expval.MeanPhoton(wires=w) for w in range(num_wires)]
-
-    print(qml.jacobian(circuit, 0)(theta, phi))
-
-The function :func:`CVNeuralNet` implements the continuous-variable neural network architecture
-from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such neural
-networks can be easily constructed and trained with PennyLane.
 
 Provided templates
 ------------------
 
 .. autosummary::
 
-    StronglyEntanglingCircuit
-    StronglyEntanglingCircuitBlock
-    CVNeuralNet
+    StronglyEntanglingLayers
+    StronglyEntanglingLayer
+    CVNeuralNetLayers
     CVNeuralNetLayer
     Interferometer
 
@@ -120,8 +36,8 @@ from pennylane.qnode import QuantumFunctionError
 from pennylane.variable import Variable
 
 
-def StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive=CNOT, wires=None):
-    """pennylane.template.StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive=qml.CNOT, wires)
+def StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=CNOT, wires=None):
+    """pennylane.template.StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=qml.CNOT, wires)
     A strongly entangling circuit.
 
     Constructs the strongly entangling circuit used in the circuit-centric quantum
@@ -141,16 +57,17 @@ def StronglyEntanglingCircuit(weights, periodic=True, ranges=None, imprimitive=C
     Keyword Args:
         wires (Sequence[int]): wires the strongly entangling circuit should act on
     """
+
     if ranges is None:
         ranges = [1]*len(weights)
 
     for block_weights, block_range in zip(weights, ranges):
-        StronglyEntanglingCircuitBlock(block_weights, r=block_range, periodic=periodic, imprimitive=imprimitive, wires=wires)
+        StronglyEntanglingLayer(block_weights, r=block_range, periodic=periodic, imprimitive=imprimitive, wires=wires)
 
 
-def StronglyEntanglingCircuitBlock(weights, periodic=True, r=1, imprimitive=CNOT, wires=None):
-    """pennylane.template.StronglyEntanglingCircuitBlock(weights, periodic=True, r=1, imprimitive=qml.CNOT, wires)
-    An individual block of a strongly entangling circuit.
+def StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=CNOT, wires=None):
+    """pennylane.template.StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=qml.CNOT, wires)
+    An individual block or layer of a strongly entangling circuit.
 
     Args:
         weights (array[float]): shape ``(len(wires), 3)`` array of weights
@@ -171,8 +88,8 @@ def StronglyEntanglingCircuitBlock(weights, periodic=True, r=1, imprimitive=CNOT
         imprimitive(wires=[wires[i], wires[(i+r) % num_wires]])
 
 
-def CVNeuralNetCircuit(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
-    """pennylane.template.CVNeuralNet(weights, wires)
+def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
+    """pennylane.template.CVNeuralNetLayers(weights, wires)
     A CV Quantum Neural Network
 
     Implements the CV Quantum Neural Network (CVQNN) architecture from

@@ -201,7 +201,6 @@ from functools import partial
 
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
 
 from pennylane.utils import unflatten
 
