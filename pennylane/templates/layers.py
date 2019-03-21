@@ -14,8 +14,8 @@
 r"""
 
 
-Provided templates
-------------------
+Provided layers templates
+-------------------------
 
 .. autosummary::
 
