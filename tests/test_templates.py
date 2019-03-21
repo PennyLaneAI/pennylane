@@ -44,7 +44,7 @@ class TestInterferometer(BaseTest):
 
         @qml.qnode(dev)
         def circuit(varphi, mesh):
-            qml.template.Interferometer(theta=None, phi=None, varphi=varphi, mesh=mesh, wires=0)
+            qml.templates.layers.Interferometer(theta=None, phi=None, varphi=varphi, mesh=mesh, wires=0)
             return qml.expval.MeanPhoton(0)
 
         with self.assertRaisesRegex(QuantumFunctionError, "The mesh parameter influences the "
@@ -53,7 +53,7 @@ class TestInterferometer(BaseTest):
 
         @qml.qnode(dev)
         def circuit(varphi, bs):
-            qml.template.Interferometer(theta=None, phi=None, varphi=varphi, beamsplitter=bs, wires=0)
+            qml.templates.layers.Interferometer(theta=None, phi=None, varphi=varphi, beamsplitter=bs, wires=0)
             return qml.expval.MeanPhoton(0)
 
         with self.assertRaisesRegex(QuantumFunctionError, "The beamsplitter parameter influences the "
@@ -71,11 +71,11 @@ class TestInterferometer(BaseTest):
         varphi = [0.42342]
 
         def circuit_rect(varphi):
-            qml.template.Interferometer(theta, phi, varphi, mesh='rectangular', beamsplitter='clements', wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, mesh='rectangular', beamsplitter='clements', wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         def circuit_tria(varphi):
-            qml.template.Interferometer(theta, phi, varphi, mesh='triangular', beamsplitter='clements', wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, mesh='triangular', beamsplitter='clements', wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         for c in [circuit_rect, circuit_tria]:
@@ -100,7 +100,7 @@ class TestInterferometer(BaseTest):
         varphi = [0.42342]
 
         def circuit(varphi):
-            qml.template.Interferometer(theta=None, phi=None, varphi=varphi, wires=0)
+            qml.templates.layers.Interferometer(theta=None, phi=None, varphi=varphi, wires=0)
             return qml.expval.MeanPhoton(0)
 
         qnode = qml.QNode(circuit, dev)
@@ -123,7 +123,7 @@ class TestInterferometer(BaseTest):
         varphi = [0.42342]
 
         def circuit(varphi):
-            qml.template.Interferometer(theta, phi, varphi, wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         qnode = qml.QNode(circuit, dev)
@@ -150,7 +150,7 @@ class TestInterferometer(BaseTest):
         varphi = [0.42342]
 
         def circuit(varphi):
-            qml.template.Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         qnode = qml.QNode(circuit, dev)
@@ -177,7 +177,7 @@ class TestInterferometer(BaseTest):
         varphi = [0.42342, 0.543]
 
         def circuit(varphi):
-            qml.template.Interferometer(theta, phi, varphi, wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         qnode = qml.QNode(circuit, dev)
@@ -206,11 +206,11 @@ class TestInterferometer(BaseTest):
         varphi = [0.42342, 0.234]
 
         def circuit_rect(varphi):
-            qml.template.Interferometer(theta, phi, varphi, wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         def circuit_tria(varphi):
-            qml.template.Interferometer(theta, phi, varphi, wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         for c in [circuit_rect, circuit_tria]:
@@ -244,7 +244,7 @@ class TestInterferometer(BaseTest):
         varphi = [0.42342, 0.234, 0.4523]
 
         def circuit_rect(varphi):
-            qml.template.Interferometer(theta, phi, varphi, wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         qnode = qml.QNode(circuit_rect, dev)
@@ -276,7 +276,7 @@ class TestInterferometer(BaseTest):
         varphi = [0.42342, 0.234, 0.4523]
 
         def circuit_tria(varphi):
-            qml.template.Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         qnode = qml.QNode(circuit_tria, dev)
@@ -317,7 +317,7 @@ class TestInterferometer(BaseTest):
             for w in wires:
                 qml.Squeezing(sq[w][0], sq[w][1], wires=w)
 
-            qml.template.Interferometer(theta, phi, varphi, wires=wires)
+            qml.templates.layers.Interferometer(theta, phi, varphi, wires=wires)
             return [qml.expval.MeanPhoton(w) for w in wires]
 
         res = circuit(theta, phi, varphi)
@@ -341,39 +341,36 @@ class TestCVNeuralNet(BaseTest):
         self.N = 4
         self.depth = 2
         self.weights = [
-            [
-                np.array([ 5.48791879, 6.08552046, 5.46131036, 3.33546468, 1.46227521, 0.0716208 ]),
-                np.array([ 2.70471535, 2.52804815, 3.28406182, 3.0058243 , 3.48940764, 3.41419504]),
-                np.array([ 4.7808479 , 4.47598146, 3.89357744, 2.67721355]),
-                np.array([ 0.27344502, 0.68431314, 0.30026443, 0.23128064]),
-                np.array([ 0.4134863 , 6.17555778, 0.80334114, 2.02400747, 0.44574704, 1.41227118]),
-                np.array([ 2.47328111, 5.63064513, 2.17059932, 6.1873632 , 0.18052879, 2.20970037]),
-                np.array([ 2.3936353 , 4.80135971, 5.89867895, 2.00867023, 2.71732643, 1.69737575]),
-                np.array([ 5.03318258, 4.01017269, 0.43159284, 3.7928101 ]),
-                np.array([ 1.61159166, 0.1608155 , 0.96535086, 1.60132783]),
-                np.array([ 6.21267547, 3.71076099, 0.34060195, 2.86031556]),
-                np.array([ 0.1376345 , 0.22541113, 0.14306356, 0.13019402])
-            ],
-            [
-                np.array([ 3.36869403, 0.63074883, 4.59400392, 5.9040016 , 5.92704296, 2.35455147]),
-                np.array([ 3.74320919, 4.15936005, 3.20807161, 2.95870535, 0.05574621, 0.42660569]),
-                np.array([ 2.73203094, 2.71115444, 1.16794164, 3.32823666]),
-                np.array([ 0.45945175, 0.53255468, 0.28383751, 0.34263728]),
-                np.array([ 5.16969442, 3.6890488 , 4.43916808, 3.20808287, 5.21543123, 4.52815349]),
-                np.array([ 5.44288268, 1.27806129, 1.87574979, 2.98956484, 3.10140853, 3.81814174]),
-                np.array([ 5.14552399, 3.31578667, 5.90119363, 4.54515204, 1.12316345, 3.89384963]),
-                np.array([ 3.5329307 , 4.79661266, 5.0683084 , 1.87631749]),
-                np.array([ 0.36293094, 1.30725604, 0.11578591, 1.5983082 ]),
-                np.array([ 3.20443756, 6.26536946, 6.18450567, 1.50406923]),
-                np.array([ 0.26999146, 0.26256351, 0.14722687, 0.23137066])]
+                np.array([[ 5.48791879, 6.08552046, 5.46131036, 3.33546468, 1.46227521, 0.0716208 ],
+                          [ 3.36869403, 0.63074883, 4.59400392, 5.9040016 , 5.92704296, 2.35455147]]),
+                np.array([[ 2.70471535, 2.52804815, 3.28406182, 3.0058243 , 3.48940764, 3.41419504],
+                         [ 3.74320919, 4.15936005, 3.20807161, 2.95870535, 0.05574621, 0.42660569]]),
+                np.array([[ 4.7808479 , 4.47598146, 3.89357744, 2.67721355],
+                         [ 2.73203094, 2.71115444, 1.16794164, 3.32823666]]),
+                np.array([[ 0.27344502, 0.68431314, 0.30026443, 0.23128064],
+                         [ 0.45945175, 0.53255468, 0.28383751, 0.34263728]]),
+                np.array([[ 0.4134863 , 6.17555778, 0.80334114, 2.02400747, 0.44574704, 1.41227118],
+                         [ 5.16969442, 3.6890488 , 4.43916808, 3.20808287, 5.21543123, 4.52815349]]),
+                np.array([[ 2.47328111, 5.63064513, 2.17059932, 6.1873632 , 0.18052879, 2.20970037],
+                         [ 5.44288268, 1.27806129, 1.87574979, 2.98956484, 3.10140853, 3.81814174]]),
+                np.array([[ 2.3936353 , 4.80135971, 5.89867895, 2.00867023, 2.71732643, 1.69737575],
+                         [ 5.14552399, 3.31578667, 5.90119363, 4.54515204, 1.12316345, 3.89384963]]),
+                np.array([[ 5.03318258, 4.01017269, 0.43159284, 3.7928101 ],
+                         [ 3.5329307 , 4.79661266, 5.0683084 , 1.87631749]]),
+                np.array([[ 1.61159166, 0.1608155 , 0.96535086, 1.60132783],
+                         [ 0.36293094, 1.30725604, 0.11578591, 1.5983082 ]]),
+                np.array([[ 6.21267547, 3.71076099, 0.34060195, 2.86031556],
+                         [ 3.20443756, 6.26536946, 6.18450567, 1.50406923]]),
+                np.array([[ 0.1376345 , 0.22541113, 0.14306356, 0.13019402],
+                         [ 0.26999146, 0.26256351, 0.14722687, 0.23137066]])
             ]
 
     def test_CVNeuralNet_integration(self):
-        """integration test for the CVNeuralNet."""
+        """integration test for the CVNeuralNetLayers method."""
         dev = DummyDevice(wires=self.num_subsystems)
 
         def circuit(weights):
-            qml.template.CVNeuralNet(weights, wires=range(self.N))
+            qml.templates.layers.CVNeuralNetLayers(*weights, wires=range(self.N))
             return qml.expval.X(wires=0)
 
         qnode = qml.QNode(circuit, dev)
@@ -405,31 +402,31 @@ class TestCVNeuralNet(BaseTest):
 
                     if idx == 0:
                         # first BS
-                        exp_params = [self.weights[l][0][opidx], self.weights[l][1][opidx]]
+                        exp_params = [self.weights[0][l][opidx], self.weights[1][l][opidx]]
                     elif idx == 1:
                         # first rot
-                        exp_params = [self.weights[l][2][opidx]]
+                        exp_params = [self.weights[2][l][opidx]]
                     elif idx == 2:
                         # squeezing
-                        exp_params = [self.weights[l][3][opidx], self.weights[l][4][opidx]]
+                        exp_params = [self.weights[3][l][opidx], self.weights[4][l][opidx]]
                     elif idx == 3:
                         # second BS
-                        exp_params = [self.weights[l][5][opidx], self.weights[l][6][opidx]]
+                        exp_params = [self.weights[5][l][opidx], self.weights[6][l][opidx]]
                     elif idx == 4:
                         # second rot
-                        exp_params = [self.weights[l][7][opidx]]
+                        exp_params = [self.weights[7][l][opidx]]
                     elif idx == 5:
                         # displacement
-                        exp_params = [self.weights[l][8][opidx], self.weights[l][9][opidx]]
+                        exp_params = [self.weights[8][l][opidx], self.weights[9][l][opidx]]
 
                     self.assertEqual(res_params, exp_params)
 
 
-class TestStronglyEntanglingCircuit(BaseTest):
-    """Tests for the StronglyEntanglingCircuit from the pennylane.template module."""
+class TestStronglyEntangling(BaseTest):
+    """Tests for the StronglyEntanglingLayers method from the pennylane.template module."""
 
     def test_integration(self):
-        """integration test for the StronglyEntanglingCircuit."""
+        """integration test for the StronglyEntanglingLayers."""
         np.random.seed(12)
         num_layers = 2
 
@@ -437,7 +434,7 @@ class TestStronglyEntanglingCircuit(BaseTest):
             dev = qml.device('default.qubit', wires=num_wires)
             weights = np.random.randn(num_layers, num_wires, 3)
             def circuit(weights):
-                qml.template.StronglyEntanglingCircuit(weights, True, wires=range(num_wires))
+                qml.templates.layers.StronglyEntanglingLayers(weights, True, wires=range(num_wires))
                 return qml.expval.PauliZ(0)
 
             qnode = qml.QNode(circuit, dev)
@@ -463,7 +460,7 @@ class TestStronglyEntanglingCircuit(BaseTest):
                     self.assertAllEqual(res_params, exp_params)
 
     def test_execution(self):
-        """Tests the StronglyEntanglingCircuit for various parameters."""
+        """Tests the StronglyEntanglingLayers for various parameters."""
         np.random.seed(0)
         outcomes = []
 
@@ -476,7 +473,7 @@ class TestStronglyEntanglingCircuit(BaseTest):
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
                     qml.BasisState(x, wires=range(num_wires))
-                    qml.template.StronglyEntanglingCircuit(weights, True, wires=range(num_wires))
+                    qml.templates.layers.StronglyEntanglingLayers(weights, True, wires=range(num_wires))
                     return qml.expval.PauliZ(0)
 
                 outcomes.append(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
@@ -490,7 +487,7 @@ if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', pennylane.template.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestInterferometer, TestCVNeuralNet, TestStronglyEntanglingCircuit):
+    for t in (TestInterferometer, TestCVNeuralNet, TestStronglyEntangling):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
