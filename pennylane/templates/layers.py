@@ -118,7 +118,7 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
         wires (Sequence[int]): wires the CVQNN should act on
     """
 
-    n_layers = theta_1[0]
+    n_layers = len(theta_1)
     for l in range(n_layers):
         CVNeuralNetLayer(theta_1[l], phi_1[l], varphi_1[l], r[l], phi_r[l],
                          theta_2[l], phi_2[l], varphi_2[l], a[l], phi_a[l], k[l], wires=wires)
