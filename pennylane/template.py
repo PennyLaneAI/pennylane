@@ -171,7 +171,7 @@ def StronglyEntanglingCircuitBlock(weights, periodic=True, r=1, imprimitive=CNOT
         imprimitive(wires=[wires[i], wires[(i+r) % num_wires]])
 
 
-def CVNeuralNet(weights, wires=None):
+def CVNeuralNetCircuit(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
     """pennylane.template.CVNeuralNet(weights, wires)
     A CV Quantum Neural Network
 
@@ -179,18 +179,32 @@ def CVNeuralNet(weights, wires=None):
     :cite:`killoran2018continuous` for an arbitrary number of wires
     and layers.
 
-    See :func:`CVNeuralNetLayer` for details of the expected format of
-    input parameters.
+    The input parameters address each gate type separately, so the user has control over which parts of the architectures
+    are made trainable. The number of parameters for each of the :math:`L` layers is either :math:`M` (the number of
+    modes) or :math:`K = M(M-1)/2`, depending on the gate type.
+    Use the utils function XXX to automatically generate a random array of parameters that can be fed into `CVNeuralNet`.
 
     Args:
-        weights (array[array]): array of arrays of weights for each
-            layer of the CV neural network
+        theta_1 (array[float]): length :math:`(L, K)` array of transmittivity angles for first interferometer
+        phi_1 (array[float]): length :math:`(L, K)` array of phase angles for first interferometer
+        varphi_1 (array[float]): length :math:`(L, M)` array of rotation angles to apply after first interferometer
+        r (array[float]): length :math:`(L, M)` array of squeezing amounts for :class:`~.Squeezing` operations
+        phi_r (array[float]): length :math:`(L, M)` array of squeezing angles for :class:`~.Squeezing` operations
+        theta_2 (array[float]): length :math:`(L, K)` array of transmittivity angles for second interferometer
+        phi_2 (array[float]): length :math:`(L, K)` array of phase angles for second interferometer
+        varphi_2 (array[float]): length :math:`(L, M)` array of rotation angles to apply after second interferometer
+        a (array[float]): length :math:`(L, M)` array of displacement magnitudes for :class:`~.Displacement` operations
+        phi_a (array[float]): length :math:`(L, M)` array of displacement angles for :class:`~.Displacement` operations
+        k (array[float]): length :math:`(L, M)` array of kerr parameters for :class:`~.Kerr` operations
 
     Keyword Args:
         wires (Sequence[int]): wires the CVQNN should act on
     """
-    for layer_weights in weights:
-        CVNeuralNetLayer(*layer_weights, wires=wires)
+
+    n_layers = theta_1[0]
+    for l in range(n_layers):
+        CVNeuralNetLayer(theta_1[l], phi_1[l], varphi_1[l], r[l], phi_r[l],
+                         theta_2[l], phi_2[l], varphi_2[l], a[l], phi_a[l], k[l], wires=wires)
 
 
 def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
@@ -200,6 +214,11 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
     architecture of :cite:`killoran2018continuous` over :math:`N` wires.
 
+    The input parameters address each gate type separately, so the user has control over which parts of the architectures
+    are made trainable. The number of parameters for each gate type is either :math:`M` (the number of
+    modes) or :math:`K = M(M-1)/2`.
+    Use the utils function XXX to automatically generate a random array of parameters that can be fed into `CVNeuralNet`.
+
     .. note::
 
        The CV neural network architecture includes :class:`~.Kerr` operations.
@@ -207,15 +226,17 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
        device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
-        theta_1 (array[float]): length :math:`N(N-1)/2` array of transmittivity angles for first interferometer
-        phi_1 (array[float]): length :math:`N(N-1)/2` array of phase angles for first interferometer
-        r (array[float]): length :math:`N` arrays of squeezing amounts for :class:`~.Squeezing` operations
-        phi_r (array[float]): length :math:`N` arrays of squeezing angles for :class:`~.Squeezing` operations
-        theta_2 (array[float]): length :math:`N(N-1)/2` array of transmittivity angles for second interferometer
-        phi_2 (array[float]): length :math:`N(N-1)/2` array of phase angles for second interferometer
-        a (array[float]): length :math:`N` arrays of displacement magnitudes for :class:`~.Displacement` operations
-        phi_a (array[float]): length :math:`N` arrays of displacement angles for :class:`~.Displacement` operations
-        k (array[float]): length :math:`N` arrays of kerr parameters for :class:`~.Kerr` operations
+        theta_1 (array[float]): length :math:`(K, )` array of transmittivity angles for first interferometer
+        phi_1 (array[float]): length :math:`(K, )` array of phase angles for first interferometer
+        varphi_1 (array[float]): length :math:`(M, )` array of rotation angles to apply after first interferometer
+        r (array[float]): length :math:`(M, )` array of squeezing amounts for :class:`~.Squeezing` operations
+        phi_r (array[float]): length :math:`(M, )` array of squeezing angles for :class:`~.Squeezing` operations
+        theta_2 (array[float]): length :math:`(K, )` array of transmittivity angles for second interferometer
+        phi_2 (array[float]): length :math:`(K, )` array of phase angles for second interferometer
+        varphi_2 (array[float]): length :math:`(M, )` array of rotation angles to apply after second interferometer
+        a (array[float]): length :math:`(M, )` array of displacement magnitudes for :class:`~.Displacement` operations
+        phi_a (array[float]): length :math:`(M, )` array of displacement angles for :class:`~.Displacement` operations
+        k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~.Kerr` operations
 
     Keyword Args:
         wires (Sequence[int]): wires the layer should act on
