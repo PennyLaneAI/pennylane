@@ -88,6 +88,51 @@ def StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=CNOT, wires
         imprimitive(wires=[wires[i], wires[(i+r) % num_wires]])
 
 
+
+def RandomLayers(weights, n_layers, ratio_imprim=0.3, imprimitive=CNOT, rotations=['X'], wires=None):
+    """pennylane.template.RandomLayers(weights, n_layers, ratio_imprim=0.3, imprimitive=CNOT, wires=None)
+    A circuit of layers that are randomly populated with single qubit Rotations and an imprimitive gate type,
+    with a ratio of `ratio_imprim` between the two options.
+
+    Args:
+        weights (array[float]): shape ``(n_layers, k)`` array of weights, where k is the number of random rotations
+        n_layers (int): Number of layers
+
+    Keyword Args:
+        imprimitive (pennylane.ops.Operation): imprimitive gate to use,
+            defaults to :class:`~.CNOT`
+        ratio_imprim (float): Ratio of n_rotations/n_imprimitive
+        rotations (list[str]): List of 'X', 'Y', 'Z', which determine the frequency with which a rotation type is used.
+        wires (Sequence[int]): wires the strongly entangling circuit should act on
+    """
+
+    for layer_weights in weights:
+        RandomLayer(layer_weights, ratio_imprim=0.3, imprimitive=CNOT, wires=None)
+
+
+def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=['X'], wires=None):
+    """pennylane.template.RandomLayer(ratio_imprim=0.3, imprimitive=CNOT, wires=None)
+    A circuit of layers that are randomly populated with single qubit Rotations and an imprimitive gate type,
+    with a ratio of `ratio_imprim` between the two options.
+
+    Args:
+        weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
+
+    Keyword Args:
+        imprimitive (pennylane.ops.Operation): imprimitive gate to use,
+            defaults to :class:`~.CNOT`
+        ratio_imprim (float): Ratio of n_rotations/n_imprimitive
+        wires (Sequence[int]): wires the strongly entangling circuit should act on
+
+    """
+
+    for w in weights:
+        if np.random.random() > ratio_imprim:
+            # Choose rotation type and apply
+        else:
+            # apply cnot
+
+
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
     """pennylane.template.CVNeuralNetLayers(weights, wires)
     A CV Quantum Neural Network

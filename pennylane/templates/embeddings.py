@@ -28,25 +28,28 @@ Provided embeddings
 
 .. autosummary::
 
-    cosine_encoding
-    amplitude_encoding
-    basis_encoding
-    angle_encoding
-    squeezing_encoding
+    cosine_embedding
+    amplitude_embedding
+    basis_embedding
+    angle_embedding
+    squeezing_embedding
 
 Code details
 ^^^^^^^^^^^^
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import RX, RY, RZ
+from pennylane import RX, RY, RZ, BasisState
 
 
-def cosine_encoding(features, n_qubits, rotation='X'):
+def CosineEmbedding(features, n_qubits, rotation='X'):
     """
     Rotates each qubit of the circuit by subsequent entries of x.
 
     The `rotation` parameter defines whether an x-rotation (`rotation = 'X'`), a y- rotation (`rotation = 'Y'`),
-    or a z-rotation (`rotation = 'Z'`) is used. For `rotation = 'XYZ', the circuit iterates throug `x` and uses the
+    or a z-rotation (`rotation = 'Z'`) is used.
+    For `rotation = 'XY', the circuit iterates through `x` and uses the first `n_qubits` entries in x-rotations and
+    the next `n_qubit` entries in y-rotations
+    For `rotation = 'XYZ', the circuit iterates through `x` and uses the
     first `n_qubits` entries in x-rotations, the next `n_qubit` entries in y-rotations, and the last `n_qubit` entries
     in z-rotations.
 
@@ -69,6 +72,16 @@ def cosine_encoding(features, n_qubits, rotation='X'):
                 RY(features[op], wires=op)
             else:
                 RZ(features[op], wires=op)
+
+    if rotation == 'XY':
+        n_ops = min(len(features), 3*n_qubits)
+
+        for op in range(n_ops):
+            if op < n_qubits:
+                RX(features[op], wires=op)
+            else:
+                RY(features[op], wires=op)
+
     else:
         n_ops = min(len(features), n_qubits)
 
@@ -85,7 +98,7 @@ def cosine_encoding(features, n_qubits, rotation='X'):
                 RZ(features[op], wires=op)
 
 
-def amplitude_encoding(features, n_qubits, execution='hack'):
+def AmplitudeEmbedding(features, n_qubits, execution='hack'):
     """
     Prepares a quantum state whose amplitude vector is given by `features`.
 
@@ -100,3 +113,11 @@ def amplitude_encoding(features, n_qubits, execution='hack'):
         rotation (str): Mode of operation
 
     """
+
+    if 2**n_qubits != len(features):
+        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**n_qubits, got {}.".format(len(features)))
+
+    if execution == 'hack':
+        BasisState(features, wires=range(n_qubits))
+
+
