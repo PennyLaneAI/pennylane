@@ -31,9 +31,10 @@ Code details
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Sequence
 
-from pennylane.ops import CNOT, Rot, Squeezing, Displacement, Kerr, Beamsplitter, Rotation
+from pennylane.ops import CNOT, RX, RY, RZ, Rot, Squeezing, Displacement, Kerr, Beamsplitter, Rotation
 from pennylane.qnode import QuantumFunctionError
 from pennylane.variable import Variable
+import numpy as np
 
 
 def StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=CNOT, wires=None):
@@ -43,7 +44,8 @@ def StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=CN
     Constructs the strongly entangling circuit used in the circuit-centric quantum
     classifier :cite:`schuld2018circuit`
     with ``len(weights)`` blocks on the :math:`N` wires with the provided weights.
-    Each element of weights must be a an array of size :math:`3N`.
+    Each element of weights must be a an array of size :math:`3N`. The number of layers is inferred from the first
+    dimension of `weights`.
 
     Args:
         weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
@@ -88,15 +90,15 @@ def StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=CNOT, wires
         imprimitive(wires=[wires[i], wires[(i+r) % num_wires]])
 
 
-
-def RandomLayers(weights, n_layers, ratio_imprim=0.3, imprimitive=CNOT, rotations=['X'], wires=None):
+def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY], wires=None):
     """pennylane.template.RandomLayers(weights, n_layers, ratio_imprim=0.3, imprimitive=CNOT, wires=None)
     A circuit of layers that are randomly populated with single qubit Rotations and an imprimitive gate type,
-    with a ratio of `ratio_imprim` between the two options.
+    with a ratio of `ratio_imprim` between the two options. The number of layers is inferred from the first
+    dimension of `weights`.
 
     Args:
         weights (array[float]): shape ``(n_layers, k)`` array of weights, where k is the number of random rotations
-        n_layers (int): Number of layers
+        ratio_imprim (float): value between 0 and 1 that determines the ration imprimitive/rotation gates
 
     Keyword Args:
         imprimitive (pennylane.ops.Operation): imprimitive gate to use,
@@ -107,10 +109,10 @@ def RandomLayers(weights, n_layers, ratio_imprim=0.3, imprimitive=CNOT, rotation
     """
 
     for layer_weights in weights:
-        RandomLayer(layer_weights, ratio_imprim=0.3, imprimitive=CNOT, wires=None)
+        RandomLayer(layer_weights, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations, wires=wires)
 
 
-def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=['X'], wires=None):
+def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY], wires=None):
     """pennylane.template.RandomLayer(ratio_imprim=0.3, imprimitive=CNOT, wires=None)
     A circuit of layers that are randomly populated with single qubit Rotations and an imprimitive gate type,
     with a ratio of `ratio_imprim` between the two options.
@@ -128,9 +130,13 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=['X'], wi
 
     for w in weights:
         if np.random.random() > ratio_imprim:
-            # Choose rotation type and apply
+            gate = np.random.choice(rotations)
+            wire = np.random.choice(wires)
+            gate(w, wires=wire)
         else:
-            # apply cnot
+            on_wires = np.random.permutation(wires)[:2]
+            on_wires = list(on_wires)
+            imprimitive(wires=on_wires)
 
 
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):

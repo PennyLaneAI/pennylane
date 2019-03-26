@@ -166,3 +166,63 @@ def parameters_stronglyentangling_layer(n_qubits, uniform_min=0, uniform_max=2 *
 
     interval = uniform_max - uniform_min
     return np.random.random(size=(n_qubits, 3)) * interval + uniform_min
+
+
+def parameters_random_layers(n_layers, n_qubits, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
+    r"""
+    Create a list of randomly initialised parameter arrays for :fun:`pennylane.templates.layers.RandomLayers`.
+
+    The number of parameter array is (n_layers, K) and each parameter is drawn uniformly at random
+    from between uniform_min and uniform_max. The parameters define the rotation angles in randomly
+     positioned rotations applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_qubits (int): number of qubits
+        n_rots (int): number of rotations, if None, n_rots = n_qubits
+        uniform_min (float): minimum value of non-angle gate parameters
+        uniform_max (float): maximum value of non-angle gate parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+         array of parameters
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_rots is None:
+        n_rots = n_qubits
+
+    interval = uniform_max - uniform_min
+
+    params = np.random.random(size=(n_layers, n_rots)) * interval + uniform_min
+
+    return params
+
+
+def parameters_random_layer(n_qubits, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
+    r"""
+    Create a list of randomly initialised parameter arrays for :fun:`pennylane.templates.layers.StronglyEntanglingLayers`.
+
+    The number of parameter array is (n_qubits, 3) and each parameter is drawn uniformly at random
+    from between uniform_min and uniform_max. The parameters define the rotation angles in RX, RY and RZ rotations
+    applied to each layer.
+
+    Args:
+        n_qubits (int): number of qubits
+        n_rots (int): number of rotations, if None, n_rots = n_qubits
+        uniform_min (float): minimum value of non-angle gate parameters
+        uniform_max (float): maximum value of non-angle gate parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+         array of parameters
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_rots is None:
+        n_rots = n_qubits
+
+    interval = uniform_max - uniform_min
+    return np.random.random(size=(n_qubits, n_rots)) * interval + uniform_min
