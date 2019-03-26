@@ -214,7 +214,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
         phi_r (array[float]): length :math:`N` arrays of squeezing angles for :class:`~.Squeezing` operations
         theta_2 (array[float]): length :math:`N(N-1)/2` array of transmittivity angles for second interferometer
         phi_2 (array[float]): length :math:`N(N-1)/2` array of phase angles for second interferometer
-        varphi_2 (array[float]): length :math:`N` array of rotation angles for second interferometer
+        varphi_2 (array[float]): length :math:`N` array of final rotation angles for second interferometer
         a (array[float]): length :math:`N` arrays of displacement magnitudes for :class:`~.Displacement` operations
         phi_a (array[float]): length :math:`N` arrays of displacement angles for :class:`~.Displacement` operations
         k (array[float]): length :math:`N` arrays of kerr parameters for :class:`~.Kerr` operations
