@@ -179,7 +179,7 @@ def CVNeuralNet(weights, wires=None):
     :cite:`killoran2018continuous` for an arbitrary number of wires
     and layers.
 
-    The weights parameter is nested list. Its first dimension is equal to the number of layers. Each entry is again a
+    The weights parameter is a nested list. Its first dimension is equal to the number of layers. Each entry is again a
     list that contains the parameters feeding into :func:`CVNeuralNetLayer`.
 
     Args:
