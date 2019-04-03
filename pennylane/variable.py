@@ -123,7 +123,7 @@ class Variable:
         return temp
 
     def __truediv__(self, scalar):
-        """Right division by scalars."""
+        """Right division by scalars. Left division is not allowed."""
         temp = copy.copy(self)
         temp.mult /= scalar
         return temp
