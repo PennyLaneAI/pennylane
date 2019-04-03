@@ -122,6 +122,12 @@ class Variable:
         temp.mult *= scalar
         return temp
 
+    def __truediv__(self, scalar):
+        """Right division by scalars."""
+        temp = copy.copy(self)
+        temp.mult /= scalar
+        return temp
+
     __rmul__ = __mul__ # """Left multiplication by scalars."""
 
     @property
