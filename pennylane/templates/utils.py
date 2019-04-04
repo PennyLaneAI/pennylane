@@ -61,22 +61,22 @@ def parameters_cvqnn_layers(n_layers, n_modes, uniform_min=0, uniform_max=2 * pi
     n_if = n_modes*(n_modes-1)//2
     interval = uniform_max-uniform_min
 
-    theta_1 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_if))
-    phi_1 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_if))
-    varphi_1 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_modes))
-    r = np.random.random(size=(n_layers, n_modes))*interval + uniform_min
-    phi_r = np.random.normal(loc=mean, scale=std, size=(n_layers, n_modes))
-    theta_2 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_if))
-    phi_2 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_if))
-    varphi_2 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_modes))
-    a = np.random.random(size=(n_layers, n_modes))*interval + uniform_min
-    phi_a = np.random.normal(loc=mean, scale=std, size=(n_layers, n_modes))
-    k = np.random.random(size=(n_layers, n_modes))*interval + uniform_min
+    theta_1 = np.random.random(size=(n_layers, n_if)) * interval + uniform_min
+    phi_1 = np.random.random(size=(n_layers, n_if)) * interval + uniform_min
+    varphi_1 = np.random.random(size=(n_layers, n_modes)) * interval + uniform_min
+    r = np.random.normal(loc=mean, scale=std, size=(n_layers, n_modes))
+    phi_r = np.random.random(size=(n_layers, n_modes)) * interval + uniform_min
+    theta_2 = np.random.random(size=(n_layers, n_if)) * interval + uniform_min
+    phi_2 = np.random.random(size=(n_layers, n_if)) * interval + uniform_min
+    varphi_2 = np.random.random(size=(n_layers, n_modes)) * interval + uniform_min
+    a = np.random.normal(loc=mean, scale=std, size=(n_layers, n_modes))
+    phi_a = np.random.random(size=(n_layers, n_modes)) * interval + uniform_min
+    k = np.random.normal(loc=mean, scale=std, size=(n_layers, n_modes))
 
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
-def parameters_cvqnn_layer(n_modes, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
+def parameters_cvqnn_layer(n_modes, uniform_min=0, uniform_max=2*pi, mean=0, std=0.1, seed=None):
     r"""
     Create a list of randomly initialised parameter arrays for :fun:`pennylane.templates.layers.CVNeuralNetLayer`.
 
@@ -101,17 +101,17 @@ def parameters_cvqnn_layer(n_modes, uniform_min=0, uniform_max=2 * pi, mean=0, s
     n_if = n_modes * (n_modes - 1) // 2
     interval = uniform_max - uniform_min
 
-    theta_1 = np.random.normal(loc=mean, scale=std, size=(n_if))
-    phi_1 = np.random.normal(loc=mean, scale=std, size=(n_if,))
-    varphi_1 = np.random.normal(loc=mean, scale=std, size=(n_modes, ))
-    r = np.random.random(size=(n_modes, )) * interval + uniform_min
-    phi_r = np.random.normal(loc=mean, scale=std, size=(n_modes, ))
-    theta_2 = np.random.normal(loc=mean, scale=std, size=(n_if, ))
-    phi_2 = np.random.normal(loc=mean, scale=std, size=(n_if, ))
-    varphi_2 = np.random.normal(loc=mean, scale=std, size=(n_modes, ))
-    a = np.random.random(size=(n_modes, )) * interval + uniform_min
-    phi_a = np.random.normal(loc=mean, scale=std, size=(n_modes, ))
-    k = np.random.random(size=(n_modes, )) * interval + uniform_min
+    theta_1 = np.random.random(size=(n_if, )) * interval + uniform_min
+    phi_1 = np.random.random(size=(n_if, )) * interval + uniform_min
+    varphi_1 = np.random.random(size=(n_modes, )) * interval + uniform_min
+    r = np.random.normal(loc=mean, scale=std, size=(n_modes,))
+    phi_r = np.random.random(size=(n_modes, )) * interval + uniform_min
+    theta_2 = np.random.random(size=(n_if, )) * interval + uniform_min
+    phi_2 = np.random.random(size=(n_if, )) * interval + uniform_min
+    varphi_2 = np.random.random(size=(n_modes, )) * interval + uniform_min
+    a = np.random.normal(loc=mean, scale=std, size=(n_modes,))
+    phi_a = np.random.random(size=(n_modes, )) * interval + uniform_min
+    k = np.random.normal(loc=mean, scale=std, size=(n_modes,))
 
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
