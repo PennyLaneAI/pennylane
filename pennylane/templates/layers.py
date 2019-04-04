@@ -176,7 +176,7 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
 
 
 def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
-    """pennylane.template.CVNeuralNetLayer(theta_1, phi_1, s, theta_2, phi_2, r, k, wires)
+    """pennylane.template.CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires)
     A single layer of a CV Quantum Neural Network
 
     Implements a single layer from the the CV Quantum Neural Network (CVQNN)
@@ -205,6 +205,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
         a (array[float]): length :math:`(M, )` array of displacement magnitudes for :class:`~.Displacement` operations
         phi_a (array[float]): length :math:`(M, )` array of displacement angles for :class:`~.Displacement` operations
         k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~.Kerr` operations
+
 
     Keyword Args:
         wires (Sequence[int]): wires the layer should act on
