@@ -85,6 +85,27 @@ build a hybrid computation. For example,
 
 .. raw:: html
 
+    <h3>Classical interface support (experimental)</h3>
+
+To try one of the new classical machine learning interfaces,
+you can specify the ``interface`` keyword argument when using the QNode decorator.
+
+Current classical interfaces include:
+
+* :ref:`PyTorch <torch_qnode>`: ``interface='torch'``
+* :ref:`TensorFlow eager execution <tf_qnode>`: ``interface='tfe'``
+
+If not specified, the standard NumPy/autograd classical interface,
+
+.. code-block:: python
+
+    from pennylane import numpy as np
+
+is used, which enhances standard NumPy functions with automatic differentiation
+via the `Autograd <https://github.com/HIPS/autograd>`_ package.
+
+.. raw:: html
+
     <h3>Code details</h3>
 """
 # pylint: disable=redefined-outer-name
@@ -96,17 +117,35 @@ from .qnode import QNode
 log.getLogger()
 
 
-def qnode(device):
+def qnode(device, interface='numpy'):
     """QNode decorator.
 
     Args:
         device (~pennylane._device.Device): a PennyLane-compatible device
+        interface (str): the interface that will be used for automatic
+            differentiation and classical processing. This affects
+            the types of objects that can be passed to/returned from the QNode:
+
+            * ``interface='numpy'``: The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays.
+
+            * ``interface='torch'``: The QNode accepts and returns Torch tensors.
+
+            * ``interface='tfe'``: The QNode accepts and returns eager execution
+              TensorFlow ``tfe.Variable`` objects.
     """
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
 
         qnode = QNode(func, device)
+
+        if interface == 'torch':
+            return qnode.to_torch()
+
+        if interface == 'tfe':
+            return qnode.to_tfe()
 
         @wraps(func)
         def wrapper(*args, **kwargs):

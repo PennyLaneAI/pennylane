@@ -144,6 +144,7 @@ import autograd.extend as ae
 import autograd.builtins
 
 import pennylane.operation
+
 from .variable  import Variable
 from .utils import _flatten, unflatten
 
@@ -216,6 +217,15 @@ class QNode:
         The first element of the tuple is the index of the Operation in the program queue,
         the second the index of the parameter within the Operation.
         """
+
+    def __str__(self):
+        """String representation"""
+        detail = "<QNode: device='{}', func={}, wires={}, interface=NumPy/Autograd>"
+        return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
+
+    def __repr__(self):
+        """REPL representation"""
+        return self.__str__()
 
     def _append_op(self, op):
         """Appends a quantum operation into the circuit queue.
@@ -776,6 +786,30 @@ class QNode:
             op.params[p_idx] = orig
 
         return pd
+
+    def to_torch(self):
+        """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
+        """
+        # Placing slow imports here, in case the user does not use the Torch interface
+        try: # pragma: no cover
+            from .interfaces.torch import TorchQNode
+        except ImportError: # pragma: no cover
+            raise QuantumFunctionError("PyTorch not found. Please install "
+                                       "PyTorch to enable the TorchQNode interface.") from None
+
+        return TorchQNode(self)
+
+    def to_tfe(self):
+        """Convert the standard PennyLane QNode into a :func:`~.TFEQNode`.
+        """
+        # Placing slow imports here, in case the user does not use the TF interface
+        try: # pragma: no cover
+            from .interfaces.tfe import TFEQNode
+        except ImportError: # pragma: no cover
+            raise QuantumFunctionError("TensorFlow with eager execution mode not found. Please install "
+                                       "the latest version of TensorFlow to enable the TFEQNode interface.") from None
+
+        return TFEQNode(self)
 
 
 #def QNode_vjp(ans, self, params, *args, **kwargs):
