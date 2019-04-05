@@ -43,6 +43,7 @@ class BasicTest(BaseTest):
         self.assertEqual(str(p), "Variable 0: name = None, ")
         self.assertEqual(str(-p), "Variable 0: name = None,  * -1")
         self.assertEqual(str(1.2*p*0.4), "Variable 0: name = None,  * 0.48")
+        self.assertEqual(str(1.2*p/2.5), "Variable 0: name = None,  * 0.48")
 
         def check(par, res):
             "Apply the parameter mapping, compare with the expected result."
@@ -77,6 +78,7 @@ class BasicTest(BaseTest):
         self.assertEqual(str(p), "Variable 0: name = kw1, ")
         self.assertEqual(str(-p), "Variable 0: name = kw1,  * -1")
         self.assertEqual(str(1.2*p*0.4), "Variable 0: name = kw1,  * 0.48")
+        self.assertEqual(str(1.2*p/2.5), "Variable 0: name = kw1,  * 0.48")
 
         def check(par, res):
             "Apply the parameter mapping, compare with the expected result."
