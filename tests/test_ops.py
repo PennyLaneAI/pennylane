@@ -35,7 +35,7 @@ def test_rotation_heisenberg(phi):
     true_matrix = np.array([[1, 0, 0],
                             [0, np.cos(phi), -np.sin(phi)],
                             [0, np.sin(phi), np.cos(phi)]])
-    np.allclose(matrix, true_matrix)
+    assert np.allclose(matrix, true_matrix)
 
 
 @pytest.mark.parametrize("phi", phis)
@@ -53,7 +53,7 @@ def test_squeezing_heisenberg(phi, mag):
                                                       np.sinh(r), np.cosh(r) +
                                                       np.cos(phi) *
                                                       np.sinh(r)]])
-    np.allclose(matrix, true_matrix)
+    assert np.allclose(matrix, true_matrix)
 
 
 @pytest.mark.parametrize("phi", phis)
@@ -66,7 +66,7 @@ def test_displacement_heisenberg(phi, mag):
     true_matrix = np.array([[1, 0, 0],
                             [np.sqrt(2 * hbar) * r * np.cos(phi), 1, 0],
                             [np.sqrt(2 * hbar) * r * np.sin(phi), 0, 1]])
-    np.allclose(matrix, true_matrix)
+    assert np.allclose(matrix, true_matrix)
 
 
 @pytest.mark.parametrize("phi", phis)
@@ -83,7 +83,7 @@ def test_beamsplitter_heisenberg(phi, theta):
                             -np.sin(phi) * np.sin(theta), np.cos(theta), 0],
                             [0, np.sin(phi) * np.sin(theta),
                             np.cos(phi) * np.sin(theta), 0, np.cos(theta)]])
-    np.allclose(matrix, true_matrix)
+    assert np.allclose(matrix, true_matrix)
 
 
 @pytest.mark.parametrize("phi", phis)
@@ -101,7 +101,7 @@ def test_two_mode_squeezing_heisenberg(phi, mag):
                              np.sin(phi) * np.sinh(r), np.cosh(r), 0],
                             [0, np.sin(phi) * np.sinh(r),
                              -np.cos(phi) * np.sinh(r), 0, np.cosh(r)]])
-    np.allclose(matrix, true_matrix)
+    assert np.allclose(matrix, true_matrix)
 
 
 @pytest.mark.parametrize("s", s_vals)
@@ -111,7 +111,7 @@ def test_quadratic_phase_heisenberg(s):
     true_matrix = np.array([[1, 0, 0],
                             [0, 1, 0],
                             [0, s, 1]])
-    np.allclose(matrix, true_matrix)
+    assert np.allclose(matrix, true_matrix)
 
 
 @pytest.mark.parametrize("s", s_vals)
@@ -124,7 +124,7 @@ def test_controlled_addition_heisenberg(s):
                             [0, 0, 1, 0, -s],
                             [0, s, 0, 1, 0],
                             [0, 0, 0, 0, 1]])
-    np.allclose(matrix, true_matrix)
+    assert np.allclose(matrix, true_matrix)
 
 
 @pytest.mark.parametrize("s", s_vals)
@@ -136,7 +136,7 @@ def test_controlled_phase_heisenberg(s):
                             [0, 0, 1, s, 0],
                             [0, 0, 0, 1, 0],
                             [0, s, 0, 0, 1]])
-    np.allclose(matrix, true_matrix)
+    assert np.allclose(matrix, true_matrix)
 
 
 class TestNonGaussian:
@@ -153,7 +153,7 @@ class TestNonGaussian:
         """ops: Tests that proper exceptions are raised if we try to call the
         Heisenberg transformation of non-Gaussian gates."""
         op = cv.Kerr
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError, match=r"not a Gaussian operation"):
             op_ = op(
                 *[0.1] * op.num_params,
                 [0] * op.num_wires,
