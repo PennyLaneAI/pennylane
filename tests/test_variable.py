@@ -14,7 +14,6 @@
 """
 Unit tests for the :mod:`pennylane` utility classes :class:`ParRef`, :class:`Command`.
 """
-import unittest
 import logging as log
 from string import ascii_lowercase
 
@@ -24,85 +23,71 @@ import numpy.random as nr
 from defaults import pennylane, BaseTest
 from pennylane.variable import Variable
 
-log.getLogger('defaults')
 
-class BasicTest(BaseTest):
-    """Variable class tests."""
-    def test_variable(self):
-        """Positional Variable reference tests."""
-        self.logTestName()
+def test_variable_str():
+    """variable: Tests the positional variable reference string."""
+    n = 10
+    m = nr.randn(n)  # parameter multipliers
+    par_fixed = nr.randn(n)  # fixed parameter values
+    par_free = nr.randn(n)  # free parameter values
+    Variable.free_param_values = par_free
 
-        n = 10
-        m = nr.randn(n)  # parameter multipliers
-        par_fixed = nr.randn(n)  # fixed parameter values
-        par_free  = nr.randn(n)  # free parameter values
-        Variable.free_param_values = par_free
+    # test __str__()
+    p = Variable(0)
+    assert str(p) == "Variable 0: name = None, "
+    assert str(-p) == "Variable 0: name = None,  * -1"
+    assert str(1.2 * p * 0.4) == "Variable 0: name = None,  * 0.48"
+    assert str(1.2 * p / 2.5) == "Variable 0: name = None,  * 0.48"
 
-        # test __str__()
-        p = Variable(0)
-        self.assertEqual(str(p), "Variable 0: name = None, ")
-        self.assertEqual(str(-p), "Variable 0: name = None,  * -1")
-        self.assertEqual(str(1.2*p*0.4), "Variable 0: name = None,  * 0.48")
-        self.assertEqual(str(1.2*p/2.5), "Variable 0: name = None,  * 0.48")
 
-        def check(par, res):
-            "Apply the parameter mapping, compare with the expected result."
-            temp = np.array([p.val if isinstance(p, Variable) else p for p in par])
-            self.assertAllAlmostEqual(temp, res, self.tol)
+def test_variable_val():
+    """variable: Tests the positional variable values.
+    """
+    # mapping function must yield the correct parameter values
+    n = 10
+    m = nr.randn(n)  # parameter multipliers
+    par_fixed = nr.randn(n)  # fixed parameter values
+    par_free = nr.randn(n)  # free parameter values
+    Variable.free_param_values = par_free
+    assert [(par_free[k] == m[k] * Variable(k)) for k in range(n)]
+    assert [(par_free[k] == Variable(k) * m[k]) for k in range(n)]
+    assert [(-par_free[k] * m ** 2) == m[k] * (-Variable(k)) * m[k] for k in range(n)]
+    assert [(par_fixed[k] == par_fixed[k]) for k in range(n)]
 
-        # mapping function must yield the correct parameter values
-        par = [m[k] * Variable(k) for k in range(n)]
-        check(par, par_free * m)
-        par = [Variable(k) * m[k] for k in range(n)]
-        check(par, par_free * m)
-        par = [-Variable(k) for k in range(n)]
-        check(par, -par_free)
-        par = [m[k] * -Variable(k) * m[k] for k in range(n)]
-        check(par, -par_free * m**2)
 
-        # fixed values remain constant
-        check(par_fixed, par_fixed)
+def test_keyword_variable():
+    """
+    variable: Keyword Variable reference tests.\
+    """
+    n = 10
+    m = nr.randn(n)  # parameter multipliers
+    par_fixed = nr.randn(n)  # fixed parameter values
+    par_free = nr.randn(n)  # free parameter values
+    Variable.kwarg_values = {k: v for k, v in zip(ascii_lowercase, par_free)}
 
-    def test_keyword_variable(self):
-        """Keyword Variable reference tests."""
-        self.logTestName()
+    # test __str__()
+    p = Variable(0, name="kw1")
+    assert str(p) == "Variable 0: name = kw1, "
+    assert str(-p) == "Variable 0: name = kw1,  * -1"
+    assert str(1.2 * p * 0.4) == "Variable 0: name = kw1,  * 0.48"
+    assert str(1.2 * p / 2.5) == "Variable 0: name = kw1,  * 0.48"
 
-        n = 10
-        m = nr.randn(n)  # parameter multipliers
-        par_fixed = nr.randn(n)  # fixed parameter values
-        par_free  = nr.randn(n)  # free parameter values
-        Variable.kwarg_values = {k: v for k, v in zip(ascii_lowercase, par_free)}
-
-        # test __str__()
-        p = Variable(0, name='kw1')
-        self.assertEqual(str(p), "Variable 0: name = kw1, ")
-        self.assertEqual(str(-p), "Variable 0: name = kw1,  * -1")
-        self.assertEqual(str(1.2*p*0.4), "Variable 0: name = kw1,  * 0.48")
-        self.assertEqual(str(1.2*p/2.5), "Variable 0: name = kw1,  * 0.48")
-
-        def check(par, res):
-            "Apply the parameter mapping, compare with the expected result."
-            temp = np.array([p.val if isinstance(p, Variable) else p for p in par]).flatten()
-            self.assertAllAlmostEqual(temp, res, self.tol)
-
-        # mapping function must yield the correct parameter values
-        par = [m[k] * Variable(name=n) for k,n in zip(range(n), ascii_lowercase)]
-        check(par, par_free * m)
-        par = [Variable(name=n) * m[k] for k,n in zip(range(n), ascii_lowercase)]
-        check(par, par_free * m)
-        par = [-Variable(name=n) for k,n in zip(range(n), ascii_lowercase)]
-        check(par, -par_free)
-        par = [m[k] * -Variable(name=n) * m[k] for k,n in zip(range(n), ascii_lowercase)]
-        check(par, -par_free * m**2)
-
-        # fixed values remain constant
-        check(par_fixed, par_fixed)
-
-if __name__ == '__main__':
-    print('Testing PennyLane version ' + pennylane.version() + ', Variable class.')
-    # run the tests in this file
-    suite = unittest.TestSuite()
-    for t in (BasicTest,):
-        ttt = unittest.TestLoader().loadTestsFromTestCase(t)
-        suite.addTests(ttt)
-    unittest.TextTestRunner().run(suite)
+    # mapping function must yield the correct parameter values
+    assert (
+        (par_free[k] * m[k]) == (m[k] * Variable(name=n))
+        for (k, n) in zip(range(n), ascii_lowercase)
+    )
+    assert (
+        (par_free[k] * m[k]) == (Variable(name=n) * m[k])
+        for (k, n) in zip(range(n), ascii_lowercase)
+    )
+    assert (
+        (-par_free[k] * m[k]) == (-Variable(name=n))
+        for (k, n) in zip(range(n), ascii_lowercase)
+    )
+    assert (
+        (-par_free[k] * m[k] ** 2) == (m[k] * -Variable(name=n) * m[k])
+        for (k, n) in zip(range(n), ascii_lowercase)
+    )
+    # fixed values remain constant
+    assert [(par_fixed[k] == par_fixed[k]) for k in range(n)]
