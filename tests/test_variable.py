@@ -50,8 +50,15 @@ def test_variable_val():
     par_free = nr.randn(n)  # free parameter values
     Variable.free_param_values = par_free
     assert [(par_free[k] == m[k] * Variable(k)) for k in range(n)]
+    assert [(par_free[k] == (m[k] * Variable(k)).val) for k in range(n)]
+
     assert [(par_free[k] == Variable(k) * m[k]) for k in range(n)]
+    assert [(par_free[k] == (Variable(k) * m[k]).val) for k in range(n)]
+
     assert [(-par_free[k] * m ** 2) == m[k] * (-Variable(k)) * m[k] for k in range(n)]
+    assert [
+        (-par_free[k] * m ** 2) == (m[k] * (-Variable(k)) * m[k]).val for k in range(n)
+    ]
     assert [(par_fixed[k] == par_fixed[k]) for k in range(n)]
 
 
