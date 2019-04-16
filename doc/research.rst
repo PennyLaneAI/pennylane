@@ -29,7 +29,7 @@ Available categories include:
 * `PennyLane Help <https://discuss.pennylane.ai/c/pennylane-help>`_: For help and advice using PennyLane
 * `PennyLane Development <https://discuss.pennylane.ai/c/pennylane-development>`_: For discussion of PennyLane development
 * `PennyLane Plugins <https://discuss.pennylane.ai/c/pennylane-plugins>`_: For discussion of the available PennyLane plugins, and plugin development
-* `Xanadu Software <https://discuss.pennylane.ai/c/xanadu-software>`_: For discussion relating to other Xanadu software projects, including `StrawberryFields <https://github.com/xanaduai/strawberryfields>`_, `QMLT <https://github.com/xanaduai/hafnian>`_, `Hafnian <https://github.com/xanaduai/hafnian>`_, and `OpenBoson <https://github.com/xanaduai/sfopenboson>`_.
+* `Xanadu Software <https://discuss.pennylane.ai/c/xanadu-software>`_: For discussion relating to other Xanadu software projects, including `StrawberryFields <https://github.com/xanaduai/strawberryfields>`_, `QMLT <https://github.com/xanaduai/QMLT>`_, `Hafnian <https://github.com/xanaduai/hafnian>`_, and `OpenBoson <https://github.com/xanaduai/sfopenboson>`_.
 
 Sometimes, it might take us a couple of hours to reply - please be patient!
 
