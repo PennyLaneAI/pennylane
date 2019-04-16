@@ -250,16 +250,12 @@ class Operation(abc.ABC):
         """Setter for the grad_recipe property"""
         self._grad_recipe = value
 
-    def __init__(self, *args, wires=None, do_queue=True):
+    def __init__(self, *args, wires=0, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
 
         # extract the arguments
-        if wires is not None:
-            params = args
-        else:
-            params = args[:-1]
-            wires = args[-1]
+        params = args
 
         if len(params) != self.num_params:
             raise ValueError("{}: wrong number of parameters. "
