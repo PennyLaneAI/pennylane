@@ -394,8 +394,8 @@ class Operation(abc.ABC):
         """Append the operation to a QNode queue."""
         if QNode._current_context is None:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
-        else:
-            QNode._current_context._append_op(self)
+
+        QNode._current_context._append_op(self)
         return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
 
 
