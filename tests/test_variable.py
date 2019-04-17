@@ -24,6 +24,10 @@ from defaults import pennylane, BaseTest
 from pennylane.variable import Variable
 
 
+# make test deterministic
+nr.seed(42)
+
+
 def test_variable_str():
     """variable: Tests the positional variable reference string."""
     n = 10
