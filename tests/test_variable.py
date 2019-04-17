@@ -96,5 +96,10 @@ def test_keyword_variable():
         (-par_free[k] * m[k] ** 2) == (m[k] * -Variable(name=n) * m[k])
         for (k, n) in zip(range(n), ascii_lowercase)
     )
+
+    # Check for a single kwarg_value
+    Variable.kwarg_values = {"kw1": 1.0}
+    assert Variable(name="kw1").val == 1.0
+
     # fixed values remain constant
     assert [(par_fixed[k] == par_fixed[k]) for k in range(n)]
