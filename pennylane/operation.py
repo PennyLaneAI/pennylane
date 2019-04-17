@@ -250,9 +250,12 @@ class Operation(abc.ABC):
         """Setter for the grad_recipe property"""
         self._grad_recipe = value
 
-    def __init__(self, *args, wires=0, do_queue=True):
+    def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
+
+        if wires is None:
+            raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
         # extract the arguments
         params = args
@@ -432,9 +435,6 @@ class Expectation(Operation):
     """
     # pylint: disable=abstract-method
     def __init__(self, *args, wires=None, do_queue=True):
-        # pylint: disable=too-many-branches
-        self.name = self.__class__.__name__   #: str: name of the operation
-
         # extract the arguments
         if wires is not None:
             params = args
@@ -442,44 +442,7 @@ class Expectation(Operation):
             params = args[:-1]
             wires = args[-1]
 
-        if len(params) != self.num_params:
-            raise ValueError("{}: wrong number of parameters. "
-                             "{} parameters passed, {} expected.".format(self.name, params, self.num_params))
-
-        # check the validity of the params
-        for p in params:
-            self.check_domain(p)
-        self.params = list(params)
-
-        # check the grad_method validity
-        if self.par_domain == 'N':
-            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters.'
-        elif self.par_domain == 'A':
-            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method.'
-
-        # check the grad_recipe validity
-        if self.grad_method == 'A':
-            if self.grad_recipe is None:
-                # default recipe for every parameter
-                self.grad_recipe = [None] * self.num_params
-            else:
-                assert len(self.grad_recipe) == self.num_params, 'Gradient recipe must have one entry for each parameter!'
-        else:
-            assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
-
-        # apply the operation on the given wires
-        if not isinstance(wires, Sequence):
-            self._wires = [wires]
-        else:
-            self._wires = wires
-
-        if all([isinstance(w, int) for w in self._wires]):
-            # If all wires are integers (i.e., not Variable), check
-            # that they are valid for the given operation
-            self.check_wires(self._wires)
-
-        if do_queue:
-            self.queue()
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
 

@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
+from unittest.mock import patch
 import inspect
 import logging as log
 
@@ -27,6 +28,7 @@ from scipy.linalg import block_diag
 from defaults import pennylane as qml, BaseTest
 from pennylane.expval import Identity
 from pennylane.qnode import QuantumFunctionError
+from pennylane.plugins import DefaultQubit
 
 log.getLogger('defaults')
 
@@ -55,19 +57,24 @@ class TestExpval(BaseTest):
 
         with self.assertRaisesRegex(QuantumFunctionError, 'Unable to determine whether this device supports CV or qubit'):
             circuit()
-    
+
+    @patch.object(DefaultQubit, 'pre_expval', lambda self: log.info(self.expval_queue))
     def test_pass_positional_wires_to_expval(self):
-        """Tests whether the ability to pass wires as positional argument 
+        """Tests whether the ability to pass wires as positional argument
         is retained"""
         self.logTestName()
+
+        dev = qml.device('default.qubit', wires=1)
 
         @qml.qnode(dev)
         def circuit():
             return qml.expval.Identity(0)
 
-        with self.assertTrue(True, msg='Unable to pass wires to expval as positional argument'):
+        with self.assertLogs(level='INFO') as l:
             circuit()
-    
+            self.assertEqual(len(l.output), 1)
+            self.assertEqual(len(l.records), 1)
+            self.assertIn('pennylane.expval.qubit.Identity object', l.output[0])
 
 
 if __name__ == '__main__':
