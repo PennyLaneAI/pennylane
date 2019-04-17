@@ -55,26 +55,31 @@ class TestExpval(BaseTest):
 
         with self.assertRaisesRegex(QuantumFunctionError, 'Unable to determine whether this device supports CV or qubit'):
             circuit()
-    
+
     def test_pass_positional_wires_to_expval(self):
         """Tests whether the ability to pass wires as positional argument 
         is retained"""
         self.logTestName()
 
+        dev = qml.device('default.qubit', wires=1)
+        dev._expectation_map = {}
+
         @qml.qnode(dev)
         def circuit():
             return qml.expval.Identity(0)
 
-        with self.assertTrue(True, msg='Unable to pass wires to expval as positional argument'):
-            circuit()
-    
+        with self.assertRaisesRegex(QuantumFunctionError, 'Unable to determine whether this device supports CV or qubit'):
+            test_expval = circuit()
+            self.assertIsNotNone(test_expval)
+
+
 
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', expval.')
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestExpval):
+    for t in ([TestExpval]):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
