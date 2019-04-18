@@ -47,8 +47,8 @@ class CVGradientTest(BaseTest):
 
         @qml.qnode(self.gaussian_dev)
         def circuit(y):
-            qml.Displacement(alpha, 0., [0])
-            qml.Rotation(y, [0])
+            qml.Displacement(alpha, 0., wires=[0])
+            qml.Rotation(y, wires=[0])
             return qml.expval.X(0)
 
         grad_fn = autograd.grad(circuit)
@@ -68,8 +68,8 @@ class CVGradientTest(BaseTest):
 
         @qml.qnode(self.gaussian_dev)
         def circuit(y):
-            qml.Displacement(alpha, 0., [0])
-            qml.Beamsplitter(y, 0, [0, 1])
+            qml.Displacement(alpha, 0., wires=[0])
+            qml.Beamsplitter(y, 0, wires=[0, 1])
             return qml.expval.X(0)
 
         grad_fn = autograd.grad(circuit)
@@ -87,7 +87,7 @@ class CVGradientTest(BaseTest):
 
         @qml.qnode(self.gaussian_dev)
         def circuit(r, phi):
-            qml.Displacement(r, phi, [0])
+            qml.Displacement(r, phi, wires=[0])
             return qml.expval.X(0)
 
         grad_fn = autograd.grad(circuit)
@@ -109,8 +109,8 @@ class CVGradientTest(BaseTest):
 
         @qml.qnode(self.gaussian_dev)
         def circuit(y, r=0.5):
-            qml.Displacement(r, 0., [0])
-            qml.Squeezing(y, 0., [0])
+            qml.Displacement(r, 0., wires=[0])
+            qml.Squeezing(y, 0., wires=[0])
             return qml.expval.X(0)
 
         grad_fn = autograd.grad(circuit, 0)
@@ -127,7 +127,7 @@ class CVGradientTest(BaseTest):
 
         @qml.qnode(self.gaussian_dev)
         def circuit(y):
-            qml.Squeezing(y, 0., [0])
+            qml.Squeezing(y, 0., wires=[0])
             return qml.expval.NumberState(np.array([2, 0]), wires=[0, 1])
 
         grad_fn = autograd.grad(circuit, 0)
@@ -194,9 +194,9 @@ class CVGradientTest(BaseTest):
         par = [0.4, -0.3, -0.7]
 
         def qf(x, y, z):
-            qml.Displacement(x, 0.2, [0])
-            qml.Squeezing(y, z, [0])
-            qml.Rotation(-0.2, [0])
+            qml.Displacement(x, 0.2, wires=[0])
+            qml.Squeezing(y, z, wires=[0])
+            qml.Rotation(-0.2, wires=[0])
             return qml.expval.X(0)
 
         q = qml.QNode(qf, self.gaussian_dev)
@@ -217,8 +217,8 @@ class CVGradientTest(BaseTest):
         par = [0.2, 0.3]
 
         def qf(x, y):
-            qml.Displacement(x, 0, [0])
-            qml.Squeezing(y, -1.3*y, [0])
+            qml.Displacement(x, 0, wires=[0])
+            qml.Squeezing(y, -1.3*y, wires=[0])
             return qml.expval.X(0)
 
         q = qml.QNode(qf, self.gaussian_dev)
@@ -239,8 +239,8 @@ class CVGradientTest(BaseTest):
         par = [0.4, 1.3]
 
         def qf(x, y):
-            qml.Displacement(0.5, 0, [0])
-            qml.Squeezing(x, 0, [0])
+            qml.Displacement(0.5, 0, wires=[0])
+            qml.Squeezing(x, 0, wires=[0])
             M = np.zeros((5, 5), dtype=object)
             M[1,1] = y
             M[1,2] = 1.0
@@ -265,9 +265,9 @@ class CVGradientTest(BaseTest):
         par = [0.5, 1.3]
 
         def circuit(x, y):
-            qml.Displacement(x, 0, [0])
-            qml.Rotation(y, [0])
-            qml.Displacement(0, x, [0])
+            qml.Displacement(x, 0, wires=[0])
+            qml.Rotation(y, wires=[0])
+            qml.Displacement(0, x, wires=[0])
             return qml.expval.X(0)
 
         q = qml.QNode(circuit, self.gaussian_dev)
@@ -337,7 +337,7 @@ class QubitGradientTest(BaseTest):
 
         @qml.qnode(self.qubit_dev1)
         def circuit(x):
-            qml.RX(x, [0])
+            qml.RX(x, wires=[0])
             return qml.expval.PauliZ(0)
 
         grad_fn = autograd.grad(circuit)
@@ -353,7 +353,7 @@ class QubitGradientTest(BaseTest):
 
         @qml.qnode(self.qubit_dev1)
         def circuit(x):
-            qml.RY(x, [0])
+            qml.RY(x, wires=[0])
             return qml.expval.PauliZ(0)
 
         grad_fn = autograd.grad(circuit)
@@ -369,7 +369,7 @@ class QubitGradientTest(BaseTest):
 
         @qml.qnode(self.qubit_dev1)
         def circuit(x):
-            qml.RZ(x, [0])
+            qml.RZ(x, wires=[0])
             return qml.expval.PauliZ(0)
 
         grad_fn = autograd.grad(circuit)
@@ -385,7 +385,7 @@ class QubitGradientTest(BaseTest):
 
         @qml.qnode(self.qubit_dev1)
         def circuit(x,y,z):
-            qml.Rot(x,y,z, [0])
+            qml.Rot(x,y,z, wires=[0])
             return qml.expval.PauliZ(0)
 
         grad_fn = autograd.grad(circuit, argnum=[0,1,2])
@@ -404,13 +404,13 @@ class QubitGradientTest(BaseTest):
         self.logTestName()
 
         def circuit(x, y, z):
-            qml.RX(x, [0])
-            qml.CNOT([0, 1])
-            qml.RY(-1.6, [0])
-            qml.RY(y, [1])
-            qml.CNOT([1, 0])
-            qml.RX(z, [0])
-            qml.CNOT([0, 1])
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(-1.6, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[1, 0])
+            qml.RX(z, wires=[0])
+            qml.CNOT(wires=[0, 1])
             return qml.expval.PauliZ(0)
 
         qnode = qml.QNode(circuit, self.qubit_dev2)
@@ -436,13 +436,13 @@ class QubitGradientTest(BaseTest):
 
         # input data is the first parameter
         def classifier_circuit(in_data, x):
-            qml.RX(in_data, [0])
-            qml.CNOT([0, 1])
-            qml.RY(-1.6, [0])
-            qml.RY(in_data, [1])
-            qml.CNOT([1, 0])
-            qml.RX(x, [0])
-            qml.CNOT([0, 1])
+            qml.RX(in_data, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(-1.6, wires=[0])
+            qml.RY(in_data, wires=[1])
+            qml.CNOT(wires=[1, 0])
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
             return qml.expval.PauliZ(0)
 
         classifier = qml.QNode(classifier_circuit, self.qubit_dev2)
@@ -487,10 +487,10 @@ class QubitGradientTest(BaseTest):
 
         extra_param = 0.31
         def circuit(reused_param, other_param):
-            qml.RX(extra_param, [0])
-            qml.RY(reused_param, [0])
-            qml.RZ(other_param, [0])
-            qml.RX(reused_param, [0])
+            qml.RX(extra_param, wires=[0])
+            qml.RY(reused_param, wires=[0])
+            qml.RZ(other_param, wires=[0])
+            qml.RX(reused_param, wires=[0])
             return qml.expval.PauliZ(0)
 
         f = qml.QNode(circuit, self.qubit_dev1)
