@@ -15,53 +15,35 @@
 Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
-import unittest
-import inspect
-import logging as log
-
-import pennylane as qml
-
 from pennylane import numpy as np
 from scipy.linalg import block_diag
 
-from defaults import pennylane as qml, BaseTest
+from defaults import pennylane as qml
 from pennylane.expval import Identity
 from pennylane.qnode import QuantumFunctionError
 
-log.getLogger('defaults')
-
-class TestExpval(BaseTest):
-    """Tests that the Expectations in expval work propperly."""
-
-    def test_identiy_raises_exception_if_outside_qnode(self):
-        """Tests that proper exceptions are raised if we try to call Idenity
-        outside a QNode."""
-        self.logTestName()
-
-        with self.assertRaisesRegex(QuantumFunctionError, 'can only be used inside a qfunc'):
-            Identity(wires=0)
-
-    def test_identiy_raises_exception_if_cannot_guess_device_type(self):
-        """Tests that proper exceptions are raised if Identity fails to guess
-        whether on a device is CV or qubit."""
-        self.logTestName()
-
-        dev = qml.device('default.qubit', wires=1)
-        dev._expectation_map = {}
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.expval.Identity(wires=0)
-
-        with self.assertRaisesRegex(QuantumFunctionError, 'Unable to determine whether this device supports CV or qubit'):
-            circuit()
+import pytest
 
 
-if __name__ == '__main__':
-    print('Testing PennyLane version ' + qml.version() + ', expval.')
-    # run the tests in this file
-    suite = unittest.TestSuite()
-    for t in (TestExpval):
-        ttt = unittest.TestLoader().loadTestsFromTestCase(t)
-        suite.addTests(ttt)
-    unittest.TextTestRunner().run(suite)
+def test_identiy_raises_exception_if_outside_qnode():
+    """expval: Tests that proper exceptions are raised if we try to call
+    Idenity outside a QNode."""
+    with pytest.raises(QuantumFunctionError, match="can only be used inside a qfunc"):
+        Identity(wires=0)
+
+
+def test_identiy_raises_exception_if_cannot_guess_device_type():
+    """expval: Tests that proper exceptions are raised if Identity fails to guess
+    whether on a device is CV or qubit."""
+    dev = qml.device("default.qubit", wires=1)
+    dev._expectation_map = {}
+
+    @qml.qnode(dev)
+    def circuit():
+        return qml.expval.Identity(wires=0)
+
+    with pytest.raises(
+        QuantumFunctionError,
+        match="Unable to determine whether this device supports CV or qubit",
+    ):
+        circuit()
