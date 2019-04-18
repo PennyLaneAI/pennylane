@@ -403,6 +403,20 @@ class DeveloperTests(BaseTest):
         with self.assertRaisesRegex(ValueError, "Must specify the wires"):
             DummyOp(0.54, do_queue=False)
 
+    def test_wire_passed_positionally(self):
+        """Test exception raised if no wires are passed"""
+        self.logTestName()
+
+        class DummyOp(oo.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'N'
+            grad_method = None
+
+        with self.assertRaisesRegex(ValueError, "Must specify the wires"):
+            DummyOp(0.54, 0, do_queue=False)
+
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + pennylane.version() + ', Operation class.')
