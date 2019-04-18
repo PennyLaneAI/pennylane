@@ -404,7 +404,7 @@ class DeveloperTests(BaseTest):
             DummyOp(0.54, do_queue=False)
 
     def test_wire_passed_positionally(self):
-        """Test exception raised if no wires are passed"""
+        """Test exception raised if wire is passed as a positional arg"""
         self.logTestName()
 
         class DummyOp(oo.Operation):
