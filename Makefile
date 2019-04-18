@@ -2,7 +2,7 @@ PYTHON3 := $(shell which python3 2>/dev/null)
 
 PYTHON := python3
 COVERAGE := --cov=pennylane --cov-report term-missing --cov-report=html:coverage_html_report
-TESTRUNNER := -m pytest tests
+TESTRUNNER := -m pytest tests --tb=native
 
 .PHONY: help
 help:
