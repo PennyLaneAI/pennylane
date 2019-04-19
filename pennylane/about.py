@@ -43,9 +43,8 @@ Code details
 
 """
 import sys
-import os
 import platform
-import inspect
+from pip import _internal
 from pkg_resources import iter_entry_points
 import numpy
 import scipy
@@ -56,20 +55,11 @@ def about():
     """
     Prints the information for pennylane installation.
     """
-    pennylane_install_path = os.path.dirname(inspect.getsourcefile(pennylane))
     plugin_devices = [entry.name for entry in iter_entry_points("pennylane.plugins")]
-
-    print("PennyLane is a cross-platform Python library for")
-    print("quantum machine learning, automatic differentiation, and")
-    print("optimization of hybrid quantum-classical computations.")
-    print("")
-    print("Copyright 2019 Xanadu Quantum Technologies Inc.")
-    print("")
-    print("PennyLane Version:       {}".format(pennylane.__version__))
+    _internal.main(["show", "pennylane"])
     print("Python Version:          {0}.{1}.{2}".format(*sys.version_info[0:3]))
     print("Platform Info:           {}{}".format(platform.system(), platform.machine()))
     print("Installed plugins:       {}".format(plugin_devices))
-    print("Installation path:       {}".format(pennylane_install_path))
     print("Numpy Version:           {}".format(numpy.__version__))
     print("Scipy Version:           {}".format(scipy.__version__))
 
