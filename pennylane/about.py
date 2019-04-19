@@ -48,7 +48,6 @@ from pip import _internal
 from pkg_resources import iter_entry_points
 import numpy
 import scipy
-import pennylane
 
 
 def about():
