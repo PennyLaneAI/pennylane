@@ -19,7 +19,7 @@ About
 
 .. currentmodule:: pennylane.about
 
-A simple module to display all the details of the `pennylane` installation, 
+A simple module to display all the details of the `pennylane` installation,
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 
 Behaviour
@@ -45,11 +45,11 @@ Code details
 import sys
 import os
 import platform
+import inspect
+from pkg_resources import iter_entry_points
 import numpy
 import scipy
-import inspect
 import pennylane
-from pkg_resources import iter_entry_points
 
 
 def about():

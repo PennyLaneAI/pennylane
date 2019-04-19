@@ -103,6 +103,7 @@ from semantic_version import Version, Spec
 import pennylane.operation
 import pennylane.expval
 import pennylane.template
+from pennylane.about import about
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
@@ -110,7 +111,6 @@ from .ops import *
 from .optimize import *
 from .qnode import QNode, QuantumFunctionError
 from ._version import __version__
-from pennylane.about import about
 
 # NOTE: this has to be imported last,
 # otherwise it will clash with the .qnode import.
