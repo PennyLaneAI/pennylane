@@ -254,12 +254,11 @@ class Operation(abc.ABC):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
 
+        if wires is None:
+            raise ValueError("Must specify the wires that {} acts on".format(self.name))
+
         # extract the arguments
-        if wires is not None:
-            params = args
-        else:
-            params = args[:-1]
-            wires = args[-1]
+        params = args
 
         if len(params) != self.num_params:
             raise ValueError("{}: wrong number of parameters. "
@@ -395,8 +394,8 @@ class Operation(abc.ABC):
         """Append the operation to a QNode queue."""
         if QNode._current_context is None:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
-        else:
-            QNode._current_context._append_op(self)
+
+        QNode._current_context._append_op(self)
         return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
 
 
@@ -435,7 +434,16 @@ class Expectation(Operation):
             there is some reason to run an Expectation outside of a QNode context.
     """
     # pylint: disable=abstract-method
-    pass
+    def __init__(self, *args, wires=None, do_queue=True):
+        # extract the arguments
+        if wires is not None:
+            params = args
+        else:
+            params = args[:-1]
+            wires = args[-1]
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
 
 
 #=============================================================================
