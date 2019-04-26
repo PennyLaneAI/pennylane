@@ -529,6 +529,32 @@ class BasicTest(BaseTest):
         c = classnode(0., x=np.pi)
         self.assertAllAlmostEqual(c, [1., -1.], delta=self.tol)
 
+    def test_multiwire_broadcast(self):
+        "Tests broadcasting of expectations to multiple wires."
+        self.logTestName()
+
+        # Check for single wire first
+        def circuit():
+            qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=[0, 1])
+            qml.Hadamard(wires=[0])
+            qml.Hadamard(wires=[1])
+            return qml.expval.PauliX(0), qml.expval.PauliX(1)
+
+        circuit = qml.QNode(circuit, self.dev2)
+        exp_vals = circuit()
+        self.assertAllAlmostEqual(exp_vals, [1., 1.], delta=self.tol)
+
+        # Test for multiwire
+        def circuit():
+            qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=[0, 1])
+            qml.Hadamard(wires=[0])
+            qml.Hadamard(wires=[1])
+            return qml.expval.PauliX(wires=[0, 1])
+
+        circuit = qml.QNode(circuit, self.dev2)
+        exp_vals = circuit()
+        self.assertAllAlmostEqual(exp_vals, [1., 1.], delta=self.tol)
+
 
 class GradientTest(BaseTest):
     """Qnode gradient tests.
