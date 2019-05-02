@@ -59,6 +59,12 @@ Below, we maintain a list of the installable plugins available for PennyLane.
    :align: middle
    :target: https://github.com/rigetti/pennylane-forest
 
+.. _(PennyLane-Q#): https://github.com/XanaduAI/pennylane-qsharp
+.. |qsharp| image:: _static/microsoft.png
+   :width: 180px
+   :align: middle
+   :target: https://github.com/XanaduAI/pennylane-qsharp
+
 
 .. rst-class:: docstable
 
@@ -91,6 +97,12 @@ Below, we maintain a list of the installable plugins available for PennyLane.
 | `(PennyLane-PQ)`_      |                                            | * Supported ProjectQ hardware backends include the IBM Quantum Experience.          |
 |                        |                                            | * Provides three devices to be used with PennyLane:                                 |
 |                        |                                            |   ``projectq.simulator``, ``projectq.ibm``, and ``projectq.classical``.             |
++------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
+| |qsharp|               | * :ref:`Qubit operations <qubit_ops>`      | * `Microsoft QDK <https://www.microsoft.com/en-us/quantum/development-kit>`_        |
+| :html:`<br/><br/>`     | * :ref:`Qubit expectations <qubit_expval>` |   is a library for quantum programming using the .NET Q# quantum programming        |
+| `(PennyLane-Q#)`_      |                                            |   language.                                                                         |
+|                        |                                            | * Provides access to the QDK full state simulator ``microsoft.QuantumSimulator``    |
+|                        |                                            |   to be used with PennyLane.                                                        |
 +------------------------+--------------------------------------------+-------------------------------------------------------------------------------------+
 
 
