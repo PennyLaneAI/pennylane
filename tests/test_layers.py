@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.template` module.
+Unit tests for the :mod:`pennylane.template.layers` module.
 """
 # pylint: disable=protected-access,cell-var-from-loop
-import unittest
-from unittest.mock import patch
-import logging as log
-import itertools as it
+import pytest
 
+import logging as log
 from pennylane import numpy as np
 from pennylane.qnode import QuantumFunctionError
 from pennylane.plugins import DefaultGaussian
@@ -27,15 +25,14 @@ from defaults import pennylane as qml, BaseTest
 
 log.getLogger('defaults')
 
-
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
     _operation_map = DefaultGaussian._operation_map.copy()
     _operation_map['Kerr'] = lambda *x, **y: np.identity(2)
 
 
-class TestInterferometer(BaseTest):
-    """Tests for the Interferometer from the pennylane.template module."""
+class TestInterferometer:
+    """Tests for the Interferometer from the pennylane.template.layers module."""
 
     def test_exceptions(self):
         """test that exceptions are correctly raised"""
@@ -544,12 +541,6 @@ class TestRandomLayers(BaseTest):
     #     self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
 
-class TestCosineEmbedding(BaseTest):
-    """Tests for the CosineEmbedding method from the pennylane.templates.embeddings module."""
-
-    def test_result(self):
-        for num_wires in range(2, 4):
-             for num_layers in range(1, 3):
 
 
 if __name__ == '__main__':
