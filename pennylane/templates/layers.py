@@ -17,10 +17,21 @@ r"""
 Provided layers templates
 -------------------------
 
+For qubit architectures
+***********************
+
 .. autosummary::
 
     StronglyEntanglingLayers
     StronglyEntanglingLayer
+    RandomLayers
+    RandomLayer
+
+For continuous-variable architectures
+*************************************
+
+.. autosummary::
+
     CVNeuralNetLayers
     CVNeuralNetLayer
     Interferometer
