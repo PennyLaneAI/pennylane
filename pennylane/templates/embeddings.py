@@ -12,78 +12,89 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-QML Embeddings
-==============
+Embeddings
+==========
 
-**Module name:** :mod:`pennylane.embeddings`
+**Module name:** :mod:`pennylane.templates.embeddings`
 
-.. currentmodule:: pennylane.embeddings
+.. currentmodule:: pennylane.templates.embeddings
 
 This module provides quantum circuit architectures that can serve as an embedding of inputs
-(represented by the gate parameters) into a quantum state, according to Schuld & Killoran 2019
-:cite:`schuld2019`.
+(represented by the gate parameters) into a quantum state (see also Schuld & Killoran 2019
+:cite:`schuld2019`).
 
 Provided embeddings
--------------------
+--------------------
+
+For qubit architectures:
+************************
 
 .. autosummary::
 
-    cosine_embedding
-    amplitude_embedding
-    basis_embedding
-    angle_embedding
-    squeezing_embedding
+    AngleEmbedding
+    AmplitudeEmbedding
+    BasisEmbedding
+
+For continuous-variable architectures:
+**************************************
+
+.. autosummary::
+
+    SqueezingEmbedding
+    DisplacementEmbedding
 
 Code details
 ^^^^^^^^^^^^
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import RX, RY, RZ, BasisState
+from pennylane import RX, RY, RZ, BasisState, PauliX, Squeezing, Displacement
 
 
-def CosineEmbedding(features, n_qubits, rotation='X'):
+def AngleEmbedding(features, n_wires, rotation='X'):
     """
-    Rotates each qubit of the circuit by subsequent entries of x.
+    Uses the entries of `features` as rotation angles of qubits.
 
-    The `rotation` parameter defines whether an x-rotation (`rotation = 'X'`), a y- rotation (`rotation = 'Y'`),
-    or a z-rotation (`rotation = 'Z'`) is used.
-    For `rotation = 'XY', the circuit iterates through `x` and uses the first `n_qubits` entries in x-rotations and
-    the next `n_qubit` entries in y-rotations
-    For `rotation = 'XYZ', the circuit iterates through `x` and uses the
-    first `n_qubits` entries in x-rotations, the next `n_qubit` entries in y-rotations, and the last `n_qubit` entries
-    in z-rotations.
+    The details of the strategy are defined by the `rotation` parameter:
+     * `rotation = 'X'` uses the features to chronologically apply Pauli-X rotations to qubits
+     * `rotation = 'Y'` uses the features to chronologically apply Pauli-Y rotations to qubits
+     * `rotation = 'Z'` uses the features to chronologically apply Pauli-Z rotations to qubits
+     * `rotation = 'XY'` performs the 'X' strategy using the first `n_wires` features, and the 'Y' strategy using the
+        remaining qubits
+     * `rotation = 'XY'` performs the 'X' strategy using the first `n_wires` features, the 'Y' strategy using the
+        next `n_wires` features, and the 'Z' strategy using the remaining features
 
-    If there are fewer entries in `x` than rotations available, the circuit does not apply the remaining rotation gates.
-    If there are fewer rotations than entries in `x`, the circuit will not use the remaining entries.
+    If there are fewer entries in `features` than rotations prescribed by the strategy, the circuit does not apply the
+    remaining rotation gates.
+    If there are fewer rotations than entries in `features`, the circuit will not use the remaining features.
 
     Args:
         features (array): Input array of shape (N, ), where N is the number of input features to embed
-        n_qubits (int): Number of qubits in the circuit
-        rotation (str): Mode of operation
+        n_wires (int): Number of qubits in the circuit
+        rotation (str): Strategy of embedding
 
     """
     if rotation == 'XYZ':
-        n_ops = min(len(features), 3*n_qubits)
+        n_ops = min(len(features), 3 * n_wires)
 
         for op in range(n_ops):
-            if op < n_qubits:
+            if op < n_wires:
                 RX(features[op], wires=op)
-            elif op < 2*n_qubits:
+            elif op < 2*n_wires:
                 RY(features[op], wires=op)
             else:
                 RZ(features[op], wires=op)
 
     if rotation == 'XY':
-        n_ops = min(len(features), 3*n_qubits)
+        n_ops = min(len(features), 2 * n_wires)
 
         for op in range(n_ops):
-            if op < n_qubits:
+            if op < n_wires:
                 RX(features[op], wires=op)
             else:
                 RY(features[op], wires=op)
 
     else:
-        n_ops = min(len(features), n_qubits)
+        n_ops = min(len(features), n_wires)
 
         if rotation == 'X':
             for op in range(n_ops):
@@ -98,26 +109,116 @@ def CosineEmbedding(features, n_qubits, rotation='X'):
                 RZ(features[op], wires=op)
 
 
-def AmplitudeEmbedding(features, n_qubits, execution='hack'):
+def AmplitudeEmbedding(features, n_wires, execution='hack'):
     """
     Prepares a quantum state whose amplitude vector is given by `features`.
 
-    `features` is a 1-d vector of unit length and with 2**n_qubits entries.
+    `features` has to be an array representing a 1-d vector of unit length and with 2**`n_qubits` entries.
 
     .. note::
-        At the moment only the execution mode 'hack' is implemented, where
+        At this point only `execution='hack'` is implemented, which uses the `BasisState` method available
+        to some simulator backends.
 
     Args:
         features (array): Input array of shape (N, ), where N is the number of input features to embed
-        n_qubits (int): Number of qubits in the circuit
-        rotation (str): Mode of operation
+        n_wires (int): Number of qubits in the circuit
+        execution (str): Strategy of implementation.
 
     """
 
-    if 2**n_qubits != len(features):
-        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**n_qubits, got {}.".format(len(features)))
+    if 2**n_wires != len(features):
+        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**n_wires, got {}.".format(len(features)))
 
     if execution == 'hack':
-        BasisState(features, wires=range(n_qubits))
+        BasisState(features, wires=range(n_wires))
+
+    # Todo: Implement circuit which prepares amplitude vector using gates
 
 
+def BasisEmbedding(features, n_wires):
+    """
+    Prepares a quantum basis state equivalent to the binary string `features`.
+
+    `features` has to be an array of `n_qubits` binary entries.
+
+    Args:
+        features (array): Binary sequence to encode
+        n_wires (int): Number of qubits in the circuit
+    """
+
+    if n_wires != len(features):
+        raise ValueError("BasisEmbedding requires a feature vector of size n_wires, got {}.".format(len(features)))
+
+    entrytypes = sorted(set(features))
+    if len(entrytypes) > 2:
+        raise ValueError("BasisEmbedding requires a feature vector containing only two kinds of entries, got {}.".format(features))
+
+    for i in range(n_wires):
+        if features[i] == entrytypes[1]:
+            PauliX(wires=i)
+
+
+def SqueezingEmbedding(features, n_wires, execution='amplitude'):
+    """
+    Encodes the entries of `features` into the squeezing phases :math:`\phi` or amplitudes :math:`r` of the modes of
+    a continuous-variable quantum state.
+
+    The mathematical definition of the squeezing gate is given by the operator
+
+    ..math::
+            S(z) = \exp\left(\frac{r}{2}\left(e^{-i\phi}\a^2 -e^{i\phi}{\ad}^{2} \right) \right),
+
+    where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
+
+    `features` has to be an array of `n_wires` floats.
+
+    Args:
+        features (array): Binary sequence to encode
+        n_wires (int): Number of qubits in the circuit
+        execution (str): 'phase' encodes the input into the phase of single-mode squeezing, while
+                         'amplitude' uses the amplitude.
+    """
+
+    if n_wires != len(features):
+        raise ValueError("Squeezing Embedding requires a feature vector of size n_wires, got {}.".format(len(features)))
+
+    for i in range(n_wires):
+        if execution == 'amplitude':
+            Squeezing(r=features[i], phi=0, wires=i)
+        elif execution == 'phase':
+            Squeezing(r=0, phi=features[i], wires=i)
+        else:
+            raise ValueError("Execution strategy {} not known. Has to be 'phase' or 'amplitude'.".format(execution))
+
+
+def DisplacementEmbedding(features, n_wires, execution='amplitude'):
+    """
+    Encodes the entries of `features` into the displacement phases :math:`\phi` or amplitudes :math:`r` of the modes of
+    a continuous-variable quantum state.
+
+    The mathematical definition of the displacement gate is given by the operator
+
+    ..math::
+            D(\alpha) = \exp(r (e^{i\phi}\ad -e^{-i\phi}\a)),
+
+    where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
+
+    `features` has to be an array of `n_wires` floats.
+
+    Args:
+        features (array): Binary sequence to encode
+        n_wires (int): Number of qubits in the circuit
+        execution (str): 'phase' encodes the input into the phase of single-mode squeezing, while
+                         'amplitude' uses the amplitude.
+    """
+
+    if n_wires != len(features):
+        raise ValueError("Squeezing Embedding requires a feature vector of size n_wires, got {}.".format(len(features)))
+
+    for i in range(n_wires):
+        if execution == 'amplitude':
+            Displacement(a=features[i], phi=0, wires=i)
+        elif execution == 'phase':
+            Displacement(a=0, phi=features[i], wires=i)
+        else:
+            raise ValueError("Execution strategy {} not known. Has to be 'phase' or 'amplitude'.".format(execution))

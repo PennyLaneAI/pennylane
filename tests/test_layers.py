@@ -423,7 +423,7 @@ class TestCVNeuralNet(BaseTest):
 
 
 class TestStronglyEntangling(BaseTest):
-    """Tests for the StronglyEntanglingLayers method from the pennylane.template module."""
+    """Tests for the StronglyEntanglingLayers method from the pennylane.templates.layers module."""
 
     def test_integration(self):
         """integration test for the StronglyEntanglingLayers."""
@@ -481,6 +481,75 @@ class TestStronglyEntangling(BaseTest):
         res = np.array(outcomes)
         expected = np.array([-0.29242496, 0.22129055, 0.07540091, -0.77626557])
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
+
+
+class TestRandomLayers(BaseTest):
+    """Tests for the RandomLayers method from the pennylane.templates.layers module."""
+
+    def test_integration(self):
+        """integration test for the RandomLayers."""
+    #     np.random.seed(12)
+    #     num_layers = 2
+    #
+    #     for num_wires in range(2, 4):
+    #         dev = qml.device('default.qubit', wires=num_wires)
+    #         weights = np.random.randn(num_layers, num_wires, 3)
+    #         def circuit(weights):
+    #             qml.templates.layers.StronglyEntanglingLayers(weights, True, wires=range(num_wires))
+    #             return qml.expval.PauliZ(0)
+    #
+    #         qnode = qml.QNode(circuit, dev)
+    #         qnode(weights)
+    #         queue = qnode.queue
+    #
+    #         # Test that gates appear in the right order
+    #         exp_gates = [qml.Rot]*num_wires + [qml.CNOT]*num_wires
+    #         exp_gates *= num_layers
+    #         res_gates = [op for op in queue]
+    #
+    #         for op1, op2 in zip(res_gates, exp_gates):
+    #             self.assertTrue(isinstance(op1, op2))
+    #
+    #         # test the device parameters
+    #         for l in range(num_layers):
+    #             layer_ops = queue[2*l*num_wires:2*(l+1)*num_wires]
+    #
+    #             # check each rotation gate parameter
+    #             for n in range(num_wires):
+    #                 res_params = layer_ops[n].parameters
+    #                 exp_params = weights[l, n, :]
+    #                 self.assertAllEqual(res_params, exp_params)
+    #
+    # def test_execution(self):
+    #     """Tests the StronglyEntanglingLayers for various parameters."""
+    #     np.random.seed(0)
+    #     outcomes = []
+    #
+    #     for num_wires in range(2, 4):
+    #         for num_layers in range(1, 3):
+    #
+    #             dev = qml.device('default.qubit', wires=num_wires)
+    #             weights = np.random.randn(num_layers, num_wires, 3)
+    #
+    #             @qml.qnode(dev)
+    #             def circuit(weights, x=None):
+    #                 qml.BasisState(x, wires=range(num_wires))
+    #                 qml.templates.layers.StronglyEntanglingLayers(weights, True, wires=range(num_wires))
+    #                 return qml.expval.PauliZ(0)
+    #
+    #             outcomes.append(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
+    #
+    #     res = np.array(outcomes)
+    #     expected = np.array([-0.29242496, 0.22129055, 0.07540091, -0.77626557])
+    #     self.assertAllAlmostEqual(res, expected, delta=self.tol)
+
+
+class TestCosineEmbedding(BaseTest):
+    """Tests for the CosineEmbedding method from the pennylane.templates.embeddings module."""
+
+    def test_result(self):
+        for num_wires in range(2, 4):
+             for num_layers in range(1, 3):
 
 
 if __name__ == '__main__':
