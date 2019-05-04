@@ -683,6 +683,25 @@ class TestDefaultQubitIntegration(BaseTest):
             elif g == 'Hermitian':
                 self.assertAllEqual(circuit(H), reference(H))
 
+    def test_two_qubit_observable(self):
+        """Tests expval for two-qubit observables """
+        self.logTestName()
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, target_observable=None):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.RZ(x[2], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval.Hermitian(target_observable, wires=[0, 1])
+
+        target_state = 1/np.sqrt(2) * np.array([1,0,0,1])
+        target_herm_op = np.outer(target_state.conj(), target_state)
+        weights = np.array([0.5, 0.1, 0.2])
+        expval = circuit(weights, target_observable=target_herm_op)
+        assert(np.allclose(expval,0.590556))
+
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', default.qubit plugin.')
