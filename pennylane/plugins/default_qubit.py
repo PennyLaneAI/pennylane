@@ -372,7 +372,9 @@ class DefaultQubit(Device):
         elif A.shape == (4, 4):
             A = self.expand_two(A, wires)
         else:
-            A = self.expand_multi(A, wires)
+            raise ValueError('Only one and two-qubit expectation is supported.')
+            # A muti-qubit expansion function extends this.
+            # A = self.expand_multi(A, wires)
         
         expectation = np.vdot(self._state, A @ self._state)
 
@@ -457,24 +459,7 @@ class DefaultQubit(Device):
         Returns:
           array: :math:`2^N\times 2^N` matrix. The full system operator.
         """
-        if U.shape != (2**wires, 2**wires):
-            raise ValueError('Incorrect number of wires or operator shape.')
-
-        wires = np.asarray(wires)
-        if np.any(wires < 0) or np.any(wires >= self.num_wires) or wires[0] == wires[1]:
-            raise ValueError('Bad target subsystems.')
-
-        a = np.min(wires)
-        b = np.max(wires)
-        n_between = b-a-1  # number of qubits between a and b
-        # dimensions of the untouched subsystems
-        before = 2**a
-        after = 2**(self.num_wires-b-1)
-        between = 2**n_between
-
-        U = np.kron(U, np.eye(between))
-        # how U should be reordered
-        return U
+        raise NotImplementedError
 
     @property
     def operations(self):
