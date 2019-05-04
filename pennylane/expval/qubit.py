@@ -156,7 +156,7 @@ class Hermitian(Expectation):
         A (array): square hermitian matrix.
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_wires = 1
+    num_wires = 0
     num_params = 1
     par_domain = 'A'
     grad_method = 'F'

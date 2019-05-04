@@ -271,6 +271,11 @@ class TestDefaultQubitDevice(BaseTest):
         with self.assertRaisesRegex(ValueError, "Bad target subsystems."):
             dev.expand_two(U2, [-1, 5])
 
+    def test_expand_multi(self):
+        """Test that any arbitrary qubit gate correctly expands to the full
+        system."""
+        pass
+
     def test_get_operator_matrix(self):
         """Test the the correct matrix is returned given an operation name"""
         self.logTestName()

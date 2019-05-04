@@ -367,10 +367,13 @@ class DefaultQubit(Device):
         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        if A.shape != (2, 2):
-            raise ValueError('2x2 matrix required.')
-
-        A = self.expand_one(A, wires)
+        if A.shape == (2, 2):
+            A = self.expand_one(A, wires)
+        elif A.shape == (4, 4):
+            A = self.expand_two(A, wires)
+        else:
+            A = self.expand_multi(A, wires)
+        
         expectation = np.vdot(self._state, A @ self._state)
 
         if np.abs(expectation.imag) > tolerance:
@@ -442,6 +445,35 @@ class DefaultQubit(Device):
         temp = np.prod(dim)
         U = U.reshape(dim * 2).transpose(perm).reshape([temp, temp])
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
+        return U
+
+    def expand_multi(self, U, wires):
+        r"""Expand a multi-qubit operator into a full system operator.
+
+        Args:
+          U (array): :math:`2^n \times 2^n` matrix where n = wires.
+          wires (Sequence[int]): Target subsystems (order matters!)
+
+        Returns:
+          array: :math:`2^N\times 2^N` matrix. The full system operator.
+        """
+        if U.shape != (2**wires, 2**wires):
+            raise ValueError('Incorrect number of wires or operator shape.')
+
+        wires = np.asarray(wires)
+        if np.any(wires < 0) or np.any(wires >= self.num_wires) or wires[0] == wires[1]:
+            raise ValueError('Bad target subsystems.')
+
+        a = np.min(wires)
+        b = np.max(wires)
+        n_between = b-a-1  # number of qubits between a and b
+        # dimensions of the untouched subsystems
+        before = 2**a
+        after = 2**(self.num_wires-b-1)
+        between = 2**n_between
+
+        U = np.kron(U, np.eye(between))
+        # how U should be reordered
         return U
 
     @property
