@@ -39,6 +39,10 @@ U2 = np.array([[-0.07843244-3.57825948e-01j, 0.71447295-5.38069384e-02j, 0.20949
                [-0.09686189-3.15085273e-01j, -0.53241387-1.99491763e-01j, 0.56928622+3.97704398e-01j, -0.28671074-6.01574497e-02j]])
 
 
+U_toffoli = np.diag([1 for i in range(8)])
+U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+
+
 H = np.array([[1.02789352, 1.61296440-0.3498192j],
               [1.61296440+0.3498192j, 1.23920938+0j]])
 
@@ -388,6 +392,7 @@ class TestDefaultQubitDevice(BaseTest):
 
         # loop through all supported observables
         for name, fn in self.dev._expectation_map.items():
+            print(name)
             log.debug("\tTesting %s observable...", name)
 
             # start in the state |00>
@@ -426,9 +431,9 @@ class TestDefaultQubitDevice(BaseTest):
             # verify the device is now in the expected state
             self.assertAllAlmostEqual(res, expected_out, delta=self.tol)
 
-            # text exception raised if matrix is not 2x2
-            with self.assertRaisesRegex(ValueError, "2x2 matrix required"):
-                self.dev.ev(U2, [0])
+            # text exception raised if matrix is not 2x2 or 4x4
+            with self.assertRaisesRegex(ValueError, "Only one and two-qubit expectation is supported."):
+                self.dev.ev(U_toffoli, [0])
 
             # text warning raised if matrix is complex
             with self.assertLogs(level='WARNING') as l:
