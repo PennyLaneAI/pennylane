@@ -67,6 +67,9 @@ def AngleEmbedding(features, n_wires, rotation='X'):
     remaining rotation gates.
     If there are fewer rotations than entries in `features`, the circuit will not use the remaining features.
 
+    This embedding method can also be used to encode a binary sequence into a basis state. Choose rotation='X'
+    and features that contain an angle of :math:`\pi /2` where a qubit has to be prepared in state 1.
+
     Args:
         features (array): Input array of shape (N, ), where N is the number of input features to embed
         n_wires (int): Number of qubits in the circuit
@@ -74,9 +77,11 @@ def AngleEmbedding(features, n_wires, rotation='X'):
 
     """
     if rotation == 'XYZ':
-        n_ops = min(len(features), 3 * n_wires)
+        if len(features) > 3 * n_wires:
+            raise ValueError("Number of features to embed cannot be larger than 3*num_wires, "
+                             "but is {}.".format(len(features)))
 
-        for op in range(n_ops):
+        for op in range( len(features)):
             if op < n_wires:
                 RX(features[op], wires=op)
             elif op < 2*n_wires:
@@ -85,27 +90,30 @@ def AngleEmbedding(features, n_wires, rotation='X'):
                 RZ(features[op], wires=op)
 
     if rotation == 'XY':
-        n_ops = min(len(features), 2 * n_wires)
+        if len(features) > 2 * n_wires:
+            raise ValueError("Number of features to embed cannot be larger than 2*num_wires, "
+                             "but is {}.".format(len(features)))
 
-        for op in range(n_ops):
+        for op in range(len(features)):
             if op < n_wires:
                 RX(features[op], wires=op)
             else:
                 RY(features[op], wires=op)
 
     else:
-        n_ops = min(len(features), n_wires)
-
+        if len(features) > n_wires:
+            raise ValueError("Number of features to embed cannot be larger than num_wires, "
+                             "but is {}.".format(len(features)))
         if rotation == 'X':
-            for op in range(n_ops):
+            for op in range(len(features)):
                 RX(features[op], wires=op)
 
         elif rotation == 'Y':
-            for op in range(n_ops):
+            for op in range(len(features)):
                 RY(features[op], wires=op)
 
         elif rotation == 'Z':
-            for op in range(n_ops):
+            for op in range(len(features)):
                 RZ(features[op], wires=op)
 
 
@@ -133,29 +141,6 @@ def AmplitudeEmbedding(features, n_wires, execution='hack'):
         BasisState(features, wires=range(n_wires))
 
     # Todo: Implement circuit which prepares amplitude vector using gates
-
-
-def BasisEmbedding(features, n_wires):
-    """
-    Prepares a quantum basis state equivalent to the binary string `features`.
-
-    `features` has to be an array of `n_qubits` binary entries.
-
-    Args:
-        features (array): Binary sequence to encode
-        n_wires (int): Number of qubits in the circuit
-    """
-
-    if n_wires != len(features):
-        raise ValueError("BasisEmbedding requires a feature vector of size n_wires, got {}.".format(len(features)))
-
-    entrytypes = sorted(set(features))
-    if len(entrytypes) > 2:
-        raise ValueError("BasisEmbedding requires a feature vector containing only two kinds of entries, got {}.".format(features))
-
-    for i in range(n_wires):
-        if features[i] == entrytypes[1]:
-            PauliX(wires=i)
 
 
 def SqueezingEmbedding(features, n_wires, execution='amplitude'):
