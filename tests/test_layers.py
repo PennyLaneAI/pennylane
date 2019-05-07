@@ -25,6 +25,7 @@ from defaults import pennylane as qml, BaseTest
 
 log.getLogger('defaults')
 
+
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
     _operation_map = DefaultGaussian._operation_map.copy()
