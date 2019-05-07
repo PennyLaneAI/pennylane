@@ -225,4 +225,4 @@ def parameters_random_layer(n_qubits, n_rots=None, uniform_min=0, uniform_max=2 
         n_rots = n_qubits
 
     interval = uniform_max - uniform_min
-    return np.random.random(size=(n_qubits, n_rots)) * interval + uniform_min
+    return np.random.random(size=(n_rots,)) * interval + uniform_min
