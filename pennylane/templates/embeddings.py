@@ -47,7 +47,7 @@ Code details
 ^^^^^^^^^^^^
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import RX, RY, RZ, BasisState, PauliX, Squeezing, Displacement
+from pennylane import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 
 
 def AngleEmbedding(features, n_wires, rotation='X'):
@@ -81,7 +81,7 @@ def AngleEmbedding(features, n_wires, rotation='X'):
             raise ValueError("Number of features to embed cannot be larger than 3*num_wires, "
                              "but is {}.".format(len(features)))
 
-        for op in range( len(features)):
+        for op in range(len(features)):
             if op < n_wires:
                 RX(features[op], wires=op)
             elif op < 2*n_wires:
@@ -117,33 +117,46 @@ def AngleEmbedding(features, n_wires, rotation='X'):
                 RZ(features[op], wires=op)
 
 
-def AmplitudeEmbedding(features, n_wires, execution='hack'):
+def BasisEmbedding(basis_state, n_qubits):
+    """
+    Prepares a quantum state in the state `basis_state'.
+
+    For example, for `basis_state' = [0, 1, 0], the quantum system will be prepared in state :math:`|010 \rangle `.
+
+    .. note:: BasisEmbedding uses PennyLane's :fun:`BasisState()` and only works in conjunction with
+              devices that implement this function.
+    Args:
+        features (array): Input array of shape (N, ), where N is the number of input features to embed
+        n_qubits (int): Number of qubits in the circuit
+    """
+    if n_qubits != len(basis_state):
+        raise ValueError("BasisEmbedding requires a feature vector of size n_qubits which is {}, "
+                         "got {}.".format(n_qubits, len(basis_state)))
+    BasisState(basis_state, wires=range(n_qubits))
+
+
+def AmplitudeEmbedding(features, n_qubits):
     """
     Prepares a quantum state whose amplitude vector is given by `features`.
 
     `features` has to be an array representing a 1-d vector of unit length and with 2**`n_qubits` entries.
 
-    .. note::
-        At this point only `execution='hack'` is implemented, which uses the `BasisState` method available
-        to some simulator backends.
+    .. note:: AmplitudeEmbedding uses PennyLane's :fun:`QubitStateVector()` and only works in conjunction with
+              devices that implement this function.
 
     Args:
         features (array): Input array of shape (N, ), where N is the number of input features to embed
-        n_wires (int): Number of qubits in the circuit
-        execution (str): Strategy of implementation.
-
+        n_qubits (int): Number of qubits in the circuit
     """
 
-    if 2**n_wires != len(features):
-        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**n_wires, got {}.".format(len(features)))
+    if 2**n_qubits != len(features):
+        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**n_qubits which is {}, "
+                         "got {}.".format(2**n_qubits, len(features)))
 
-    if execution == 'hack':
-        BasisState(features, wires=range(n_wires))
-
-    # Todo: Implement circuit which prepares amplitude vector using gates
+    QubitStateVector(features, wires=range(n_qubits))
 
 
-def SqueezingEmbedding(features, n_wires, execution='amplitude'):
+def SqueezingEmbedding(features, n_wires, execution='amplitude', c=0.1):
     """
     Encodes the entries of `features` into the squeezing phases :math:`\phi` or amplitudes :math:`r` of the modes of
     a continuous-variable quantum state.
@@ -162,21 +175,24 @@ def SqueezingEmbedding(features, n_wires, execution='amplitude'):
         n_wires (int): Number of qubits in the circuit
         execution (str): 'phase' encodes the input into the phase of single-mode squeezing, while
                          'amplitude' uses the amplitude.
+        c (float): parameter setting the value of the phase of all squeezing gates if execution='amplitude', or the
+                   amplitude of all squeezing gates if execution='phase' to a constant.
     """
 
     if n_wires != len(features):
-        raise ValueError("Squeezing Embedding requires a feature vector of size n_wires, got {}.".format(len(features)))
+        raise ValueError("SqueezingEmbedding requires a feature vector of size n_wires which is {}"
+                         ", got {}.".format(n_wires, len(features)))
 
     for i in range(n_wires):
         if execution == 'amplitude':
-            Squeezing(r=features[i], phi=0, wires=i)
+            Squeezing(features[i], c, wires=i)
         elif execution == 'phase':
-            Squeezing(r=0, phi=features[i], wires=i)
+            Squeezing(c, features[i], wires=i)
         else:
             raise ValueError("Execution strategy {} not known. Has to be 'phase' or 'amplitude'.".format(execution))
 
 
-def DisplacementEmbedding(features, n_wires, execution='amplitude'):
+def DisplacementEmbedding(features, n_wires, execution='amplitude', c=0.1):
     """
     Encodes the entries of `features` into the displacement phases :math:`\phi` or amplitudes :math:`r` of the modes of
     a continuous-variable quantum state.
@@ -195,15 +211,18 @@ def DisplacementEmbedding(features, n_wires, execution='amplitude'):
         n_wires (int): Number of qubits in the circuit
         execution (str): 'phase' encodes the input into the phase of single-mode squeezing, while
                          'amplitude' uses the amplitude.
+        c (float): parameter setting the value of the phase of all squeezing gates if execution='amplitude', or the
+                   amplitude of all squeezing gates if execution='phase' to a constant.
     """
 
     if n_wires != len(features):
-        raise ValueError("Squeezing Embedding requires a feature vector of size n_wires, got {}.".format(len(features)))
+        raise ValueError("DisplacementEmbedding requires a feature vector of size n_wires which is {}, "
+                         "got {}.".format(n_wires, len(features)))
 
     for i in range(n_wires):
         if execution == 'amplitude':
-            Displacement(a=features[i], phi=0, wires=i)
+            Displacement(features[i], c, wires=i)
         elif execution == 'phase':
-            Displacement(a=0, phi=features[i], wires=i)
+            Displacement(c, features[i], wires=i)
         else:
             raise ValueError("Execution strategy {} not known. Has to be 'phase' or 'amplitude'.".format(execution))

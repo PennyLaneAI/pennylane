@@ -20,9 +20,11 @@ from math import pi
 import numpy as np
 import pennylane as qml
 from pennylane.templates.embeddings import (AngleEmbedding,
+                                            BasisEmbedding,
                                             AmplitudeEmbedding,
                                             DisplacementEmbedding,
                                             SqueezingEmbedding)
+from pennylane import Beamsplitter
 
 
 @pytest.fixture(scope="session",
@@ -44,86 +46,385 @@ def gaussian_device(n_subsystems):
     return qml.device('default.gaussian', wires=n_subsystems)
 
 
-def test_angle_embedding_state_rotx(qubit_device):
-    """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
-       using the rotation='X' strategy."""
+class TestAngleEmbd:
+    """ Tests the pennylane.templates.embeddings.AngleEmbedding method."""
 
-    features = [0, pi, pi/2, 0]
+    def test_angle_embedding_state_rotx(self, qubit_device, n_subsystems):
+        """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='X' strategy."""
 
-    @qml.qnode(qubit_device)
-    def circuit(x=None):
-        AngleEmbedding(features=x, n_wires=n_subsystems, rotation='X')
-        return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+        features = [pi/2,  pi/2, pi/4, 0]
 
-    res = circuit(x=features)
-    target = [1, 0, -1, 1, 1]
+        @qml.qnode(qubit_device)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='X')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='X')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
 
-    assert np.allclose(res, target[:n_subsystems])
+        res = circuit(x=features[:n_subsystems])
+        target = [1, -1, 0, 1, 1]
 
-#
-# def test_angle_embedding_state_roty(qubit_device):
-#     """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
-#        using the rotation='Y' strategy."""
-#
-#     features = [0, pi, pi/2, 0]
-#
-#     @qml.qnode(qubit_device)
-#     def circuit(x=None):
-#         AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Y')
-#         return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
-#
-#     res = circuit(x=features)
-#     target = [1, 0, -1, 1, 1] #TODO
-#
-#     assert np.allclose(res, target[:n_subsystems])
-#
-#
-# def test_angle_embedding_state_rotz(qubit_device):
-#     """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
-#        using the rotation='Z' strategy."""
-#
-#     features = [0, pi, pi/2, 0]
-#
-#     @qml.qnode(qubit_device)
-#     def circuit(x=None):
-#         AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Z')
-#         return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
-#
-#     res = circuit(x=features)
-#     target = [1, 0, -1, 1, 1] #TODO
-#
-#     assert np.allclose(res, target[:n_subsystems])
-#
-#
-# def test_angle_embedding_state_rotxy(qubit_device):
-#     """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
-#        using the rotation='XY' strategy."""
-#
-#     features = [0, pi, pi/2, 0]
-#
-#     @qml.qnode(qubit_device)
-#     def circuit(x=None):
-#         AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XY')
-#         return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
-#
-#     res = circuit(x=features)
-#     target = [1, 0, -1, 1, 1] #TODO
-#
-#     assert np.allclose(res, target[:n_subsystems])
-#
-#
-# def test_angle_embedding_state_rotxyz(qubit_device):
-#     """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
-#        using the rotation='XYZ' strategy."""
-#
-#     features = [0, pi, pi/2, 0]
-#
-#     @qml.qnode(qubit_device)
-#     def circuit(x=None):
-#         AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XYZ')
-#         return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
-#
-#     res = circuit(x=features)
-#     target = [1, 0, -1, 1, 1] #TODO
-#
-#     assert np.allclose(res, target[:n_subsystems])
+        assert np.allclose(res, target[:n_subsystems])
+
+    def test_angle_embedding_exception_rotx(self):
+        """Verifies that pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='X' strategy raises an exception if there are fewer
+           rotation gates than features."""
+
+        features = [0, 0, 0, 0]
+        n_subsystems = 1
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='X')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='X')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=features)
+        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than num_wires, but is 4.'
+
+    def test_angle_embedding_state_roty(self, qubit_device, n_subsystems):
+        """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='Y' strategy."""
+
+        features = [pi/2,  pi/2, pi/4, 0]
+
+        @qml.qnode(qubit_device)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Y')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Y')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        target = [-1, -1, 0, 1, 1]
+
+        assert np.allclose(res, target[:n_subsystems])
+
+    def test_angle_embedding_exception_roty(self):
+        """Verifies that pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='Z' strategy raises an exception if there are fewer
+           rotation gates than features."""
+
+        features = [0, 0, 0, 0]
+        n_subsystems = 1
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Y')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Y')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=features)
+        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than num_wires, but is 4.'
+
+    def test_angle_embedding_state_rotz(self, qubit_device, n_subsystems):
+        """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='Z' strategy."""
+
+        features = [pi/2,  pi/2, pi/4, 0]
+
+        @qml.qnode(qubit_device)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Z')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Z')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        target = [-1, 1, 1, 1, 1]
+        assert np.allclose(res, target[:n_subsystems])
+
+    def test_angle_embedding_exception_rotz(self):
+        """Verifies that pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='Z' strategy raises an exception if there are fewer
+           rotation gates than features."""
+
+        features = [0, 0, 0, 0]
+        n_subsystems = 1
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Z')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='Z')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=features)
+        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than num_wires, but is 4.'
+
+    def test_angle_embedding_exception_rotxy(self):
+        """Verifies that pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='XY' strategy raises an exception if there are fewer
+           rotation gates than features."""
+
+        features = [0, 0, 0, 0]
+        n_subsystems = 1
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XY')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XY')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=features)
+        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than 2*num_wires, but is 4.'
+
+    def test_angle_embedding_state_rotxy(self, qubit_device, n_subsystems):
+        """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='XY' strategy."""
+
+        #TODO
+
+    def test_angle_embedding_exception_rotxy(self):
+        """Verifies that pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='XY' strategy raises an exception if there are fewer
+           rotation gates than features."""
+
+        features = [0, 0, 0, 0]
+        n_subsystems = 1
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XY')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XY')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=features)
+        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than 2*num_wires, but is 4.'
+
+    def test_angle_embedding_state_rotxyz(self, qubit_device, n_subsystems):
+        """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='XYZ' strategy."""
+
+        #TODO
+
+    def test_angle_embedding_exception_rotxyz(self):
+        """Verifies that pennylane.templates.embeddings.AngleEmbedding()
+           using the rotation='XYZ' strategy raises an exception if there are fewer
+           rotation gates than features."""
+
+        features = [0, 0, 0, 0]
+        n_subsystems = 1
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XYZ')
+            qml.PauliX(wires=0)
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XYZ')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=features)
+        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than 3*num_wires, but is 4.'
+
+
+class TestBasisEmb:
+    """ Tests the pennylane.templates.embeddings.BasisEmbedding method."""
+
+    def test_basis_embedding_state(self):
+        """Checks the state produced by pennylane.templates.embeddings.BasisEmbedding()."""
+
+        state = np.array([0, 1])
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            BasisEmbedding(basis_state=x, n_qubits=2)
+            return [qml.expval.PauliZ(i) for i in range(n_qubits)]
+
+        res = circuit(x=state)
+        assert np.allclose(res, [1, -1])
+
+    def test_basis_embedding_exception_subsystems(self):
+        """Verifies that pennylane.templates.embeddings.BasisEmbedding() throws exception
+        if number of subsystems wrong."""
+
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            BasisEmbedding(basis_state=x, n_qubits=n_qubits)
+            return qml.expval.PauliZ(0)
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=np.array([0, 1, 1]))
+        assert excinfo.value.args[0] == 'BasisEmbedding requires a feature vector of size n_qubits which is 2, got 3.'
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=np.array([1]))
+        assert excinfo.value.args[0] == 'BasisEmbedding requires a feature vector of size n_qubits which is 2, got 1.'
+
+
+class TestAmplitudeEmb:
+    """ Tests the pennylane.templates.embeddings.AmplitudeEmbedding method."""
+    #TODO: hack the state and compare?
+
+    def test_amplitude_embedding_state(self):
+        """Checks the state produced by pennylane.templates.embeddings.AmplitudeEmbedding()."""
+
+        features = np.array([0, 1, 0, 0])
+        n_qubits = 2
+
+        dev = qml.device('default.qubit', wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(features=x, n_qubits=2)
+            return [qml.expval.PauliZ(i) for i in range(n_qubits)]
+
+        res = circuit(x=features)
+
+        assert np.allclose(res, [1, -1])
+
+    def test_amplitude_embedding_exception_subsystems(self):
+        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() throws exception
+        if number of subsystems wrong."""
+
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(features=x, n_qubits=n_qubits)
+            return qml.expval.PauliZ(0)
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
+        assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**n_qubits ' \
+                                        'which is 4, got 5.'
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[np.sqrt(0.2), np.sqrt(0.8)])
+        assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**n_qubits ' \
+                                        'which is 4, got 2.'
+
+
+class TestSqueezingEmb:
+    """ Tests the pennylane.templates.embeddings.SqueezingEmbedding method."""
+
+    def test_squeezing_embedding_state_execution_amplitude(self):
+        """Checks the state produced by pennylane.templates.embeddings.SqueezingEmbedding()
+        using the amplitude execution method."""
+
+        features = np.array([1.2, 0.3])
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, n_wires=2, execution='amplitude', c=1)
+            return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+
+        assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
+
+    # def test_squeezing_embedding_state_execution_phase(self):
+    #     """Checks the state produced by pennylane.templates.embeddings.SqueezingEmbedding()
+    #     using the phase execution method."""
+    #
+    #     features = np.array([2.2, 1.3])
+    #     n_wires = 2
+    #     dev = qml.device('default.gaussian', wires=n_wires)
+    #
+    #     @qml.qnode(dev)
+    #     def circuit(x=None):
+    #         SqueezingEmbedding(features=x, n_wires=2, execution='phase', c=1)
+    #         Beamsplitter(pi/4, 0.1, wires=[0, 1])
+    #         return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+    #
+    #     assert np.allclose(circuit(x=features), [1.3810, 1.3810], atol=0.001)
+
+    def test_squeezing_embedding_exception_subsystems(self):
+        """Verifies that pennylane.templates.embeddings.SqueezingEmbedding() throws exception
+        if number of subsystems wrong."""
+
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, n_wires=2, execution='phase')
+            return [qml.expval.X(i) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[0.2, 0.3, 0.4])
+        assert excinfo.value.args[0] == 'SqueezingEmbedding requires a feature vector of size n_wires ' \
+                                        'which is 2, got 3.'
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[0.2])
+        assert excinfo.value.args[0] == 'SqueezingEmbedding requires a feature vector of size n_wires ' \
+                                        'which is 2, got 1.'
+
+
+class TestDisplacementEmb:
+    """ Tests the pennylane.templates.embeddings.DisplacementEmbedding method."""
+
+    def test_displacement_embedding_state_execution_amplitude(self):
+        """Checks the state produced by pennylane.templates.embeddings.DisplacementEmbedding()
+        using the amplitude execution method."""
+
+        features = np.array([0.1, 1.2])
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            DisplacementEmbedding(features=x, n_wires=2, execution='amplitude', c=1.)
+            return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+
+        assert np.allclose(circuit(x=features), [0.01, 1.44], atol=0.001)
+
+    def test_displacement_embedding_state_execution_phase(self):
+        """Checks the state produced by pennylane.templates.embeddings.DisplacementEmbedding()
+        using the phase execution method."""
+
+        features = np.array([1.5, 0.3])
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            DisplacementEmbedding(features=x, n_wires=2, execution='phase', c=1.)
+            Beamsplitter(pi/4, 0, wires=[0, 1])
+            return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+
+        assert np.allclose(circuit(x=features), [0.6376, 1.362], atol=0.01)
+
+    def test_displacement_embedding_exception_subsystems(self):
+        """Verifies that pennylane.templates.embeddings.DisplacementEmbedding() throws exception
+        if number of subsystems wrong."""
+
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            DisplacementEmbedding(features=x, n_wires=2, execution='phase')
+            return [qml.expval.X(i) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[0.2, 0.3, 0.4])
+        assert excinfo.value.args[0] == 'DisplacementEmbedding requires a feature vector of size n_wires ' \
+                                        'which is 2, got 3.'
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[0.2])
+        assert excinfo.value.args[0] == 'DisplacementEmbedding requires a feature vector of size n_wires ' \
+                                        'which is 2, got 1.'
+
+
