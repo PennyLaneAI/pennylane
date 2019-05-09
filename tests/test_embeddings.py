@@ -182,58 +182,6 @@ class TestAngleEmbd:
             circuit(x=features)
         assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than 2*num_wires, but is 4.'
 
-    def test_angle_embedding_state_rotxy(self, qubit_device, n_subsystems):
-        """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
-           using the rotation='XY' strategy."""
-
-        #TODO
-
-    def test_angle_embedding_exception_rotxy(self):
-        """Verifies that pennylane.templates.embeddings.AngleEmbedding()
-           using the rotation='XY' strategy raises an exception if there are fewer
-           rotation gates than features."""
-
-        features = [0, 0, 0, 0]
-        n_subsystems = 1
-        dev = qml.device('default.qubit', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XY')
-            qml.PauliX(wires=0)
-            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XY')
-            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
-
-        with pytest.raises(ValueError) as excinfo:
-            circuit(x=features)
-        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than 2*num_wires, but is 4.'
-
-    def test_angle_embedding_state_rotxyz(self, qubit_device, n_subsystems):
-        """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
-           using the rotation='XYZ' strategy."""
-
-        #TODO
-
-    def test_angle_embedding_exception_rotxyz(self):
-        """Verifies that pennylane.templates.embeddings.AngleEmbedding()
-           using the rotation='XYZ' strategy raises an exception if there are fewer
-           rotation gates than features."""
-
-        features = [0, 0, 0, 0]
-        n_subsystems = 1
-        dev = qml.device('default.qubit', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XYZ')
-            qml.PauliX(wires=0)
-            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='XYZ')
-            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
-
-        with pytest.raises(ValueError) as excinfo:
-            circuit(x=features)
-        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than 3*num_wires, but is 4.'
-
 
 class TestBasisEmb:
     """ Tests the pennylane.templates.embeddings.BasisEmbedding method."""

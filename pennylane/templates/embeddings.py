@@ -58,17 +58,12 @@ def AngleEmbedding(features, n_wires, rotation='X'):
      * `rotation = 'X'` uses the features to chronologically apply Pauli-X rotations to qubits
      * `rotation = 'Y'` uses the features to chronologically apply Pauli-Y rotations to qubits
      * `rotation = 'Z'` uses the features to chronologically apply Pauli-Z rotations to qubits
-     * `rotation = 'XY'` performs the 'X' strategy using the first `n_wires` features, and the 'Y' strategy using the
-        remaining qubits
-     * `rotation = 'XY'` performs the 'X' strategy using the first `n_wires` features, the 'Y' strategy using the
-        next `n_wires` features, and the 'Z' strategy using the remaining features
 
-    If there are fewer entries in `features` than rotations prescribed by the strategy, the circuit does not apply the
-    remaining rotation gates.
-    If there are fewer rotations than entries in `features`, the circuit will not use the remaining features.
+    The length of `features` has to be smaller or equal to the number of qubits. If there are fewer entries in `features`
+    than rotations, the circuit does not apply the remaining rotation gates.
 
     This embedding method can also be used to encode a binary sequence into a basis state. Choose rotation='X'
-    and features that contain an angle of :math:`\pi /2` where a qubit has to be prepared in state 1.
+    and features of a nonzero value of :math:`\pi /2` only where a qubit has to be prepared in state 1.
 
     Args:
         features (array): Input array of shape (N, ), where N is the number of input features to embed
@@ -76,45 +71,21 @@ def AngleEmbedding(features, n_wires, rotation='X'):
         rotation (str): Strategy of embedding
 
     """
-    if rotation == 'XYZ':
-        if len(features) > 3 * n_wires:
-            raise ValueError("Number of features to embed cannot be larger than 3*num_wires, "
-                             "but is {}.".format(len(features)))
 
+    if len(features) > n_wires:
+        raise ValueError("Number of features to embed cannot be larger than num_wires, "
+                         "but is {}.".format(len(features)))
+    if rotation == 'X':
         for op in range(len(features)):
-            if op < n_wires:
-                RX(features[op], wires=op)
-            elif op < 2*n_wires:
-                RY(features[op], wires=op)
-            else:
-                RZ(features[op], wires=op)
+            RX(features[op], wires=op)
 
-    if rotation == 'XY':
-        if len(features) > 2 * n_wires:
-            raise ValueError("Number of features to embed cannot be larger than 2*num_wires, "
-                             "but is {}.".format(len(features)))
-
+    elif rotation == 'Y':
         for op in range(len(features)):
-            if op < n_wires:
-                RX(features[op], wires=op)
-            else:
-                RY(features[op], wires=op)
+            RY(features[op], wires=op)
 
-    else:
-        if len(features) > n_wires:
-            raise ValueError("Number of features to embed cannot be larger than num_wires, "
-                             "but is {}.".format(len(features)))
-        if rotation == 'X':
-            for op in range(len(features)):
-                RX(features[op], wires=op)
-
-        elif rotation == 'Y':
-            for op in range(len(features)):
-                RY(features[op], wires=op)
-
-        elif rotation == 'Z':
-            for op in range(len(features)):
-                RZ(features[op], wires=op)
+    elif rotation == 'Z':
+        for op in range(len(features)):
+            RZ(features[op], wires=op)
 
 
 def BasisEmbedding(basis_state, n_qubits):
