@@ -87,6 +87,9 @@ def AngleEmbedding(features, n_wires, rotation='X'):
         for op in range(len(features)):
             RZ(features[op], wires=op)
 
+    else:
+        raise ValueError("Rotation has to be `X`, `Y` or `Z`, got {}.".format(rotation))
+
 
 def BasisEmbedding(basis_state, n_qubits):
     """
@@ -160,7 +163,7 @@ def SqueezingEmbedding(features, n_wires, execution='amplitude', c=0.1):
         elif execution == 'phase':
             Squeezing(c, features[i], wires=i)
         else:
-            raise ValueError("Execution strategy {} not known. Has to be 'phase' or 'amplitude'.".format(execution))
+            raise ValueError("Execution strategy {} not known. Has to be `phase` or `amplitude`.".format(execution))
 
 
 def DisplacementEmbedding(features, n_wires, execution='amplitude', c=0.1):
@@ -196,4 +199,4 @@ def DisplacementEmbedding(features, n_wires, execution='amplitude', c=0.1):
         elif execution == 'phase':
             Displacement(c, features[i], wires=i)
         else:
-            raise ValueError("Execution strategy {} not known. Has to be 'phase' or 'amplitude'.".format(execution))
+            raise ValueError("Execution strategy {} not known. Has to be `phase` or `amplitude`.".format(execution))

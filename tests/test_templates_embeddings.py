@@ -162,6 +162,22 @@ class TestAngleEmbd:
             circuit(x=features)
         assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than num_wires, but is 4.'
 
+    def test_angle_embedding_exception_wrongrot(self):
+        """Verifies that pennylane.templates.embeddings.AngleEmbedding() raises an exception if the
+        rotation strategy is unknown."""
+
+        n_subsystems = 1
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AngleEmbedding(features=x, n_wires=n_subsystems, rotation='A')
+            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[1])
+        assert excinfo.value.args[0] == 'Rotation has to be `X`, `Y` or `Z`, got A.'
+
 
 class TestBasisEmb:
     """ Tests the pennylane.templates.embeddings.BasisEmbedding method."""
@@ -299,6 +315,22 @@ class TestSqueezingEmb:
         assert excinfo.value.args[0] == 'SqueezingEmbedding requires a feature vector of size n_wires ' \
                                         'which is 2, got 1.'
 
+    def test_squeezing_embedding_exception_strategy(self):
+        """Verifies that pennylane.templates.embeddings.SqueezingEmbedding() throws exception
+        if strategy unknown."""
+
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, n_wires=2, execution='A')
+            return [qml.expval.X(i) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[1, 2])
+        assert excinfo.value.args[0] == 'Execution strategy A not known. Has to be `phase` or `amplitude`.'
+
 
 class TestDisplacementEmb:
     """ Tests the pennylane.templates.embeddings.DisplacementEmbedding method."""
@@ -355,5 +387,22 @@ class TestDisplacementEmb:
             circuit(x=[0.2])
         assert excinfo.value.args[0] == 'DisplacementEmbedding requires a feature vector of size n_wires ' \
                                         'which is 2, got 1.'
+
+    def test_displacement_embedding_exception_strategy(self):
+        """Verifies that pennylane.templates.embeddings.DisplacementEmbedding() throws exception
+        if strategy unknown."""
+
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            DisplacementEmbedding(features=x, n_wires=2, execution='A')
+            return [qml.expval.X(i) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as excinfo:
+            circuit(x=[1, 2])
+        assert excinfo.value.args[0] == 'Execution strategy A not known. Has to be `phase` or `amplitude`.'
+
 
 
