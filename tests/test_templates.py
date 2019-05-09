@@ -95,7 +95,7 @@ class TestParameterIntegration:
 
         @qml.qnode(qubit_device)
         def circuit(weights):
-            StronglyEntanglingLayers(weights, wires=range(n_subsystems))
+            StronglyEntanglingLayers(*weights, wires=range(n_subsystems))
             return qml.expval.Identity(0)
 
         circuit(weights=p)
@@ -108,7 +108,7 @@ class TestParameterIntegration:
 
         @qml.qnode(qubit_device)
         def circuit(weights):
-            StronglyEntanglingLayer(weights, wires=range(n_subsystems))
+            StronglyEntanglingLayer(*weights, wires=range(n_subsystems))
             return qml.expval.Identity(0)
 
         circuit(weights=p)
@@ -121,7 +121,7 @@ class TestParameterIntegration:
 
         @qml.qnode(qubit_device)
         def circuit(weights):
-            RandomLayers(weights, wires=range(n_subsystems))
+            RandomLayers(*weights, wires=range(n_subsystems))
             return qml.expval.Identity(0)
 
         circuit(weights=p)
@@ -134,7 +134,7 @@ class TestParameterIntegration:
 
         @qml.qnode(qubit_device)
         def circuit(weights):
-            RandomLayer(weights, wires=range(n_subsystems))
+            RandomLayer(*weights, wires=range(n_subsystems))
             return qml.expval.Identity(0)
 
         circuit(weights=p)

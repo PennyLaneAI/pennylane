@@ -138,10 +138,8 @@ def parameters_stronglyentangling_layers(n_layers, n_wires, uniform_min=0, unifo
         np.random.seed(seed)
 
     interval = uniform_max - uniform_min
-
     params = np.random.random(size=(n_layers, n_wires, 3)) * interval + uniform_min
-
-    return params
+    return [params]
 
 
 def parameters_stronglyentangling_layer(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
@@ -165,7 +163,8 @@ def parameters_stronglyentangling_layer(n_wires, uniform_min=0, uniform_max=2 * 
         np.random.seed(seed)
 
     interval = uniform_max - uniform_min
-    return np.random.random(size=(n_wires, 3)) * interval + uniform_min
+    params = np.random.random(size=(n_wires, 3)) * interval + uniform_min
+    return [params]
 
 
 def parameters_random_layers(n_layers, n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
@@ -194,10 +193,8 @@ def parameters_random_layers(n_layers, n_wires, n_rots=None, uniform_min=0, unif
         n_rots = n_wires
 
     interval = uniform_max - uniform_min
-
     params = np.random.random(size=(n_layers, n_rots)) * interval + uniform_min
-
-    return params
+    return [params]
 
 
 def parameters_random_layer(n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
@@ -225,4 +222,5 @@ def parameters_random_layer(n_wires, n_rots=None, uniform_min=0, uniform_max=2 *
         n_rots = n_wires
 
     interval = uniform_max - uniform_min
-    return np.random.random(size=(n_rots,)) * interval + uniform_min
+    params = np.random.random(size=(n_rots,)) * interval + uniform_min
+    return [params]
