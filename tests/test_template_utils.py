@@ -17,12 +17,12 @@ Unit tests for the :mod:`pennylane.templates.utils` module.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.templates.utils import (parameters_cvqnn_layer,
-                                       parameters_cvqnn_layers,
-                                       parameters_random_layer,
-                                       parameters_random_layers,
-                                       parameters_stronglyentangling_layer,
-                                       parameters_stronglyentangling_layers)
+from pennylane.templates.parameters import (parameters_cvqnn_layer,
+                                            parameters_cvqnn_layers,
+                                            parameters_random_layer,
+                                            parameters_random_layers,
+                                            parameters_stronglyentangling_layer,
+                                            parameters_stronglyentangling_layers)
 
 
 @pytest.fixture(scope="session",
@@ -59,7 +59,7 @@ def test_pars_cvqnn_layer_dimensions(n_subsystems):
     a = (n_subsystems, )
     b = (n_subsystems * (n_subsystems - 1) // 2, )
 
-    p = parameters_cvqnn_layer(n_modes=n_subsystems, seed=0)
+    p = parameters_cvqnn_layer(n_wires=n_subsystems, seed=0)
     dims = [p_.shape for p_ in p]
 
     assert dims == [b, b, a, a, a, b, b, a, a, a, a]
@@ -68,7 +68,7 @@ def test_pars_cvqnn_layer_dimensions(n_subsystems):
 def test_pars_cvqnn_layer_range(seed):
     """Confirm that pennylane.templates.utils.parameters_cvqnn_layer() samples from the right distributions."""
 
-    p = parameters_cvqnn_layer(n_modes=1000, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
+    p = parameters_cvqnn_layer(n_wires=1000, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
 
     p_av = np.array([np.mean(p_) for p_ in p])
     p_std = np.array([np.std(p_) for p_ in p])
@@ -86,7 +86,7 @@ def test_pars_cvqnn_layers_dimensions(n_subsystems, n_layers):
     a = (n_layers, n_subsystems)
     b = (n_layers, n_subsystems * (n_subsystems - 1) // 2)
 
-    p = parameters_cvqnn_layers(n_modes=n_subsystems, n_layers=n_layers, seed=0)
+    p = parameters_cvqnn_layers(n_wires=n_subsystems, n_layers=n_layers, seed=0)
     dims = [p_.shape for p_ in p]
 
     assert dims == [b, b, a, a, a, b, b, a, a, a, a]
@@ -95,7 +95,7 @@ def test_pars_cvqnn_layers_dimensions(n_subsystems, n_layers):
 def test_pars_cvqnn_layers_range(seed):
     """Confirm that pennylane.templates.utils.parameters_cvqnn_layers() samples from the right distributions."""
 
-    p = parameters_cvqnn_layers(n_layers=2, n_modes=1000, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
+    p = parameters_cvqnn_layers(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
 
     p_av = np.array([np.mean(p_) for p_ in p])
     p_std = np.array([np.std(p_) for p_ in p])
@@ -110,7 +110,7 @@ def test_pars_stronglyentangling_layer_dimensions(n_subsystems):
     """Confirm that the pennylane.templates.utils.parameters_stronglyentangling_layer()
      returns an array with the right dimensions."""
 
-    p = parameters_stronglyentangling_layer(n_qubits=n_subsystems, seed=0)
+    p = parameters_stronglyentangling_layer(n_wires=n_subsystems, seed=0)
     dims = p.shape
 
     assert dims == (n_subsystems, 3)
@@ -120,7 +120,7 @@ def test_pars_stronglyentangling_layer_range(seed):
     """Confirm that pennylane.templates.utils.parameters_stronglyentangling_layer()
     samples from the right distributions."""
 
-    p = parameters_stronglyentangling_layer(n_qubits=1000, uniform_min=-2, uniform_max=1, seed=seed)
+    p = parameters_stronglyentangling_layer(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
     p_av = np.mean(p)
     p_std = np.std(p)
 
@@ -132,7 +132,7 @@ def test_pars_stronglyentangling_layers_dimensions(n_subsystems, n_layers):
     """Confirm that the pennylane.templates.utils.parameters_stronglyentangling_layers()
      returns an array with the right dimensions."""
 
-    p = parameters_stronglyentangling_layers(n_layers=n_layers, n_qubits=n_subsystems, seed=0)
+    p = parameters_stronglyentangling_layers(n_layers=n_layers, n_wires=n_subsystems, seed=0)
     dims = p.shape
 
     assert dims == (n_layers, n_subsystems, 3)
@@ -142,7 +142,7 @@ def test_pars_stronglyentangling_layers_range(seed):
     """Confirm that pennylane.templates.utils.parameters_stronglyentangling_layers()
     samples from the right distributions."""
 
-    p = parameters_stronglyentangling_layers(n_layers=2, n_qubits=1000, uniform_min=-2, uniform_max=1, seed=seed)
+    p = parameters_stronglyentangling_layers(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
     p_av = np.mean(p)
     p_std = np.std(p)
 
@@ -154,7 +154,7 @@ def test_pars_random_layer_dimensions(n_subsystems, n_rots):
     """Confirm that the pennylane.templates.utils.parameters_random_layer()
      returns an array with the right dimensions."""
 
-    p = parameters_random_layer(n_qubits=n_subsystems, n_rots=n_rots, seed=0)
+    p = parameters_random_layer(n_wires=n_subsystems, n_rots=n_rots, seed=0)
     dims = p.shape
 
     if n_rots is None:
@@ -167,7 +167,7 @@ def test_pars_stronglyentangling_layer_range(seed):
     """Confirm that pennylane.templates.utils.parameters_random_layer()
     samples from the right distributions."""
 
-    p = parameters_random_layer(n_qubits=1000, uniform_min=-2, uniform_max=1, seed=seed)
+    p = parameters_random_layer(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
     p_av = np.mean(p)
     p_std = np.std(p)
 
@@ -179,7 +179,7 @@ def test_pars_random_layers_dimensions(n_subsystems, n_layers, n_rots):
     """Confirm that the pennylane.templates.utils.parameters_random_layers()
      returns an array with the right dimensions."""
 
-    p = parameters_random_layers(n_layers=n_layers, n_qubits=n_subsystems, n_rots=n_rots, seed=0)
+    p = parameters_random_layers(n_wires=n_layers, n_qubits=n_subsystems, n_rots=n_rots, seed=0)
     dims = p.shape
 
     if n_rots is None:
@@ -192,7 +192,7 @@ def test_pars_stronglyentangling_layers_range(seed):
     """Confirm that pennylane.templates.utils.parameters_random_layers()
     samples from the right distributions."""
 
-    p = parameters_random_layers(n_layers=2, n_qubits=1000, uniform_min=-2, uniform_max=1, seed=seed)
+    p = parameters_random_layers(n_wires=2, n_qubits=1000, uniform_min=-2, uniform_max=1, seed=seed)
     p_av = np.mean(p)
     p_std = np.std(p)
 

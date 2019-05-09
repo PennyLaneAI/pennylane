@@ -93,6 +93,10 @@ def StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=CNOT, wires
     Keyword Args:
         wires (Sequence[int]): Wires the block should act on
     """
+    if len(wires) < 2:
+        raise ValueError("StronglyEntanglingLayer requires at least two wires or subsystems to apply "
+                         "the imprimitive gates.")
+
     for i, wire in enumerate(wires):
         Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
