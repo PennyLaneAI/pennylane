@@ -19,11 +19,11 @@ import pytest
 
 import logging as log
 import pennylane as qml
-import numpy as nnp
 from pennylane import numpy as np
 from pennylane.qnode import QuantumFunctionError
 from pennylane.plugins import DefaultGaussian
 from pennylane.templates.layers import Interferometer
+from pennylane import RX, RY, RZ, CZ, CNOT
 log.getLogger('defaults')
 
 
@@ -471,7 +471,7 @@ class TestStronglyEntangling:
                 for n in range(num_wires):
                     res_params = layer_ops[n].parameters
                     exp_params = weights[l, n, :]
-                    assert sum([r == e  for r, e in zip(res_params, exp_params)])
+                    assert sum([r == e for r, e in zip(res_params, exp_params)])
 
     def test_execution(self):
         """Tests the StronglyEntanglingLayers for various parameters."""
@@ -497,44 +497,164 @@ class TestStronglyEntangling:
         assert np.allclose(res, expected, atol=TOL)
 
 
-class TestRandomLayers():
+class TestRandomLayers:
     """Tests for the RandomLayers method from the pennylane.templates.layers module."""
 
     @pytest.fixture(scope="class",
-                    params=[1, 2, 5])
-    def n_rots(request):
+                    params=[1, 2])
+    def n_layers(self, request):
         return request.param
 
     @pytest.fixture(scope="class",
-                    params=[1, 2, 5])
-    def n_layers(request):
+                    params=[2, 3])
+    def n_wires(self, request):
         return request.param
 
-    def test_integration(self, n_rots, n_layers):
-        """integration test for the RandomLayers."""
+    @pytest.fixture(scope="class",
+                    params=[0.2, 0.6])
+    def ratio(self, request):
+        return request.param
+
+    @pytest.fixture(scope="class",
+                    params=[CNOT, CZ])
+    def impr(self, request):
+        return request.param
+
+    @pytest.fixture(scope="class",
+                    params=[[RX], [RY, RZ]])
+    def rots(self, request):
+        return request.param
+
+    def test_random_layers_nlayers(self, n_layers):
+        """Test that  pennylane.templates.layers.RandomLayers() picks the correct number of gates."""
         np.random.seed(12)
+        n_rots = 1
+        n_wires = 2
+        impr = CNOT
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_layers, n_rots)
 
-        for num_wires in range(2, 4):
-            dev = qml.device('default.qubit', wires=num_wires)
-            weights = np.random.randn(n_layers, n_rots)
-            def circuit(weights):
-                qml.templates.layers.RandomLayers(weights, True, wires=range(num_wires))
-                return qml.expval.PauliZ(0)
+        def circuit(weights):
+            qml.templates.layers.RandomLayers(weights=weights, wires=range(n_wires))
+            return qml.expval.PauliZ(0)
 
-            qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev)
+        qnode(weights)
+        queue = qnode.queue
+        types = [type(q) for q in queue]
+        assert len(types) - types.count(impr) == n_layers
+
+    def test_random_layer_imprimitive(self, ratio):
+        """Test that  pennylane.templates.layers.RandomLayer() has the right ratio of imprimitive gates."""
+        np.random.seed(12)
+        n_rots = 500
+        n_wires = 2
+        impr = CNOT
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_rots)
+
+        def circuit(weights):
+            qml.templates.layers.RandomLayer(weights=weights, wires=range(n_wires), ratio_imprim=ratio, impr=CNOT)
+            return qml.expval.PauliZ(0)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode(weights)
+        queue = qnode.queue
+        types = [type(q) for q in queue]
+        ratio_impr = types.count(impr) / len(types)
+        assert np.isclose(ratio_impr, ratio, atol=0.05)
+
+    def test_random_layer_imprimitive(self, n_wires, impr, rots):
+        """Test that  pennylane.templates.layers.RandomLayer() uses the correct types of gates."""
+        np.random.seed(12)
+        n_rots = 20
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_rots)
+
+        def circuit(weights):
+            qml.templates.layers.RandomLayer(weights=weights, wires=range(n_wires),
+                                             imprimitive=impr, rotations=rots)
+            return qml.expval.PauliZ(0)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode(weights)
+        queue = qnode.queue
+        types = [type(q) for q in queue]
+        unique = set(types)
+        gates = {impr, *rots}
+        assert unique == gates
+
+    def test_random_layer_numgates(self, n_wires):
+        """Test that  pennylane.templates.layers.RandomLayer() uses the correct number of gates."""
+        np.random.seed(12)
+        n_rots = 5
+        impr = CNOT
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_rots)
+
+        def circuit(weights):
+            qml.templates.layers.RandomLayer(weights=weights, wires=range(n_wires), imprimitive=impr)
+            return qml.expval.PauliZ(0)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode(weights)
+        queue = qnode.queue
+        types = [type(q) for q in queue]
+        assert len(types) - types.count(impr) == n_rots
+
+    def test_random_layer_randomwires(self, n_wires):
+        """Test that  pennylane.templates.layers.RandomLayer() picks random wires."""
+        np.random.seed(12)
+        n_rots = 500
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_rots)
+
+        def circuit(weights):
+            qml.templates.layers.RandomLayer(weights=weights, wires=range(n_wires))
+            return qml.expval.PauliZ(0)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode(weights)
+        queue = qnode.queue
+        wires = [q._wires for q in queue]
+        wires_flat = [item for w in wires for item in w]
+        mean_wire = np.mean(wires_flat)
+        assert np.isclose(mean_wire, (n_wires - 1) / 2, atol=0.05)
+
+    def test_random_layer_imprimitive(self, n_wires):
+        """Test that  pennylane.templates.layers.RandomLayer() uses the correct weights."""
+        np.random.seed(12)
+        n_rots = 5
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_rots)
+
+        def circuit(weights):
+            qml.templates.layers.RandomLayer(weights=weights, wires=range(n_wires))
+            return qml.expval.PauliZ(0)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode(weights)
+        queue = qnode.queue
+        params = [q.parameters for q in queue]
+        params_flat = [item for p in params for item in p]
+        assert np.allclose(weights.flatten(), params_flat)
+
+    def test_random_layer_exception_subsystems(self):
+        """Tests that pennylane.templates.layers.RandomLayer() throws exception if n_wires < 2."""
+        np.random.seed(12)
+        n_rots = 2
+        n_wires = 1
+
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_rots)
+
+        def circuit(weights):
+            qml.templates.layers.RandomLayers(weights=weights, wires=range(n_wires))
+            return qml.expval.PauliZ(0)
+
+        qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError) as excinfo:
             qnode(weights)
-            queue = qnode.queue
-
-            # test that the queue has the right amount of gates
-            assert len(queue) == n_rots*n_layers
-
-            # test the device parameters
-            for l in range(n_layers):
-                layer_ops = queue[2*l:2*(l+1)]
-
-                # check each rotation gate parameter
-                for n in range(2):
-                    res_params = layer_ops[n].parameters
-                    exp_params = weights[l, :]
-                    assert res_params == exp_params
-
+        assert excinfo.value.args[0] == "RandomLayer requires at least two wires or subsystems to apply " \
+                                        "the imprimitive gates."

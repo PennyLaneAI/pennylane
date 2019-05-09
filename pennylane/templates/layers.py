@@ -139,11 +139,17 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY],
 
     """
 
-    for w in weights:
+    if len(wires) < 2:
+        raise ValueError("RandomLayer requires at least two wires or subsystems to apply "
+                         "the imprimitive gates.")
+
+    i = 0
+    while i < len(weights):
         if np.random.random() > ratio_imprim:
             gate = np.random.choice(rotations)
             wire = np.random.choice(wires)
-            gate(w, wires=wire)
+            gate(weights[i], wires=wire)
+            i += 1
         else:
             on_wires = np.random.permutation(wires)[:2]
             on_wires = list(on_wires)
