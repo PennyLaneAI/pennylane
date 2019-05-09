@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-
-
 Provided layers templates
--------------------------
+=========================
 
-For qubit architectures
-***********************
+Qubit architectures
+-------------------
 
 .. autosummary::
 
@@ -27,8 +25,8 @@ For qubit architectures
     RandomLayers
     RandomLayer
 
-For continuous-variable architectures
-*************************************
+Continuous-variable architectures
+---------------------------------
 
 .. autosummary::
 
@@ -267,7 +265,7 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
       to right and top to bottom in each layer. The first beamsplitters acts on
       wires :math:`0` and :math:`1`.
 
-      .. figure:: ../_static/clements.png
+      .. figure:: ../../_static/clements.png
           :align: center
           :width: 30%
           :target: javascript:void(0);
@@ -281,7 +279,7 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
       on :math:`N-2` and :math:`N-1`, and the third on :math:`N-3` and :math:`N-2`, and
       so on.
 
-      .. figure:: ../_static/reck.png
+      .. figure:: ../../_static/reck.png
           :align: center
           :width: 30%
           :target: javascript:void(0);

@@ -26,8 +26,8 @@ This module provides quantum circuit architectures that can serve as an embeddin
 Provided embeddings
 --------------------
 
-For qubit architectures:
-************************
+Qubit architectures
+*******************
 
 .. autosummary::
 
@@ -35,8 +35,8 @@ For qubit architectures:
     AmplitudeEmbedding
     BasisEmbedding
 
-For continuous-variable architectures:
-**************************************
+Continuous-variable architectures
+*********************************
 
 .. autosummary::
 
@@ -51,22 +51,22 @@ from pennylane import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStat
 
 
 def AngleEmbedding(features, n_wires, rotation='X'):
-    """
-    Uses the entries of `features` as rotation angles of qubits.
+    r"""
+    Uses the entries of ``features`` as rotation angles of qubits.
 
     The details of the strategy are defined by the `rotation` parameter:
      * `rotation = 'X'` uses the features to chronologically apply Pauli-X rotations to qubits
      * `rotation = 'Y'` uses the features to chronologically apply Pauli-Y rotations to qubits
      * `rotation = 'Z'` uses the features to chronologically apply Pauli-Z rotations to qubits
 
-    The length of `features` has to be smaller or equal to the number of qubits. If there are fewer entries in `features`
+    The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in ``features``
     than rotations, the circuit does not apply the remaining rotation gates.
 
     This embedding method can also be used to encode a binary sequence into a basis state. Choose rotation='X'
     and features of a nonzero value of :math:`\pi /2` only where a qubit has to be prepared in state 1.
 
     Args:
-        features (array): Input array of shape (N, ), where N is the number of input features to embed
+        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
         n_wires (int): Number of qubits in the circuit
         rotation (str): Strategy of embedding
 
@@ -92,15 +92,17 @@ def AngleEmbedding(features, n_wires, rotation='X'):
 
 
 def BasisEmbedding(basis_state, n_qubits):
-    """
-    Prepares a quantum state in the state `basis_state'.
+    r"""Prepares a quantum state in the state ``basis_state``.
 
-    For example, for `basis_state' = [0, 1, 0], the quantum system will be prepared in state :math:`|010 \rangle `.
+    For example, for ``basis_state=[0, 1, 0]``, the quantum system will be prepared in state :math:`|010 \rangle`.
 
-    .. note:: BasisEmbedding uses PennyLane's :fun:`BasisState()` and only works in conjunction with
-              devices that implement this function.
+    .. note::
+
+        BasisEmbedding uses PennyLane's :func:`BasisState()` and only works in conjunction with
+        devices that implement this function.
+
     Args:
-        features (array): Input array of shape (N, ), where N is the number of input features to embed
+        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
         n_qubits (int): Number of qubits in the circuit
     """
     if n_qubits != len(basis_state):
@@ -115,11 +117,13 @@ def AmplitudeEmbedding(features, n_qubits):
 
     `features` has to be an array representing a 1-d vector of unit length and with 2**`n_qubits` entries.
 
-    .. note:: AmplitudeEmbedding uses PennyLane's :fun:`QubitStateVector()` and only works in conjunction with
-              devices that implement this function.
+    .. note::
+
+        AmplitudeEmbedding uses PennyLane's :func:`QubitStateVector()` and only works in conjunction with
+        devices that implement this function.
 
     Args:
-        features (array): Input array of shape (N, ), where N is the number of input features to embed
+        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
         n_qubits (int): Number of qubits in the circuit
     """
 
@@ -131,26 +135,27 @@ def AmplitudeEmbedding(features, n_qubits):
 
 
 def SqueezingEmbedding(features, n_wires, execution='amplitude', c=0.1):
-    """
-    Encodes the entries of `features` into the squeezing phases :math:`\phi` or amplitudes :math:`r` of the modes of
+    r"""
+    Encodes the entries of ``features`` into the squeezing phases :math:`\phi` or amplitudes :math:`r` of the modes of
     a continuous-variable quantum state.
 
     The mathematical definition of the squeezing gate is given by the operator
 
     ..math::
-            S(z) = \exp\left(\frac{r}{2}\left(e^{-i\phi}\a^2 -e^{i\phi}{\ad}^{2} \right) \right),
+
+        S(z) = \exp\left(\frac{r}{2}\left(e^{-i\phi}\a^2 -e^{i\phi}{\ad}^{2} \right) \right),
 
     where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
 
-    `features` has to be an array of `n_wires` floats.
+    ``features`` has to be an array of ``n_wires`` floats.
 
     Args:
         features (array): Binary sequence to encode
         n_wires (int): Number of qubits in the circuit
-        execution (str): 'phase' encodes the input into the phase of single-mode squeezing, while
-                         'amplitude' uses the amplitude.
-        c (float): parameter setting the value of the phase of all squeezing gates if execution='amplitude', or the
-                   amplitude of all squeezing gates if execution='phase' to a constant.
+        execution (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
+            ``'amplitude'`` uses the amplitude.
+        c (float): parameter setting the value of the phase of all squeezing gates if ``execution='amplitude'``, or the
+            amplitude of all squeezing gates if ``execution='phase'`` to a constant.
     """
 
     if n_wires != len(features):
@@ -167,8 +172,8 @@ def SqueezingEmbedding(features, n_wires, execution='amplitude', c=0.1):
 
 
 def DisplacementEmbedding(features, n_wires, execution='amplitude', c=0.1):
-    """
-    Encodes the entries of `features` into the displacement phases :math:`\phi` or amplitudes :math:`r` of the modes of
+    r"""
+    Encodes the entries of ``features`` into the displacement phases :math:`\phi` or amplitudes :math:`r` of the modes of
     a continuous-variable quantum state.
 
     The mathematical definition of the displacement gate is given by the operator
@@ -178,15 +183,15 @@ def DisplacementEmbedding(features, n_wires, execution='amplitude', c=0.1):
 
     where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
 
-    `features` has to be an array of `n_wires` floats.
+    ``features`` has to be an array of ``n_wires`` floats.
 
     Args:
         features (array): Binary sequence to encode
         n_wires (int): Number of qubits in the circuit
         execution (str): 'phase' encodes the input into the phase of single-mode squeezing, while
-                         'amplitude' uses the amplitude.
-        c (float): parameter setting the value of the phase of all squeezing gates if execution='amplitude', or the
-                   amplitude of all squeezing gates if execution='phase' to a constant.
+            'amplitude' uses the amplitude.
+        c (float): parameter setting the value of the phase of all squeezing gates if ``execution='amplitude'``, or the
+            amplitude of all squeezing gates if ``execution='phase'`` to a constant.
     """
 
     if n_wires != len(features):
