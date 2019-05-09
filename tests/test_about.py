@@ -1,4 +1,4 @@
-# Copyright 2018 Xanadu Quantum Technologies Inc.
+# Copyright 2019 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Version information.
-   Version number (major.minor.patch[-label])
 """
+Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
+"""
+# pylint: disable=protected-access
+import pennylane
+import pytest
 
-__version__ = '0.3.1'
+
+def test_about(capfd):
+	"""
+	about: Tests if the about string prints correct.
+	"""
+	pennylane.about()
+	out, err = capfd.readouterr()
+	assert (type(out) == str)

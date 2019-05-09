@@ -59,7 +59,7 @@ class TorchQNodeTests(BaseTest):
         # qfunc must return only Expectations
         @qml.qnode(self.dev2, interface='torch')
         def qf(x):
-            qml.RX(x, [0])
+            qml.RX(x, wires=[0])
             return qml.expval.PauliZ(0), 0.3
 
         with self.assertRaisesRegex(QuantumFunctionError, 'must return either'):
@@ -68,7 +68,7 @@ class TorchQNodeTests(BaseTest):
         # all EVs must be returned...
         @qml.qnode(self.dev2, interface='torch')
         def qf(x):
-            qml.RX(x, [0])
+            qml.RX(x, wires=[0])
             ex = qml.expval.PauliZ(1)
             return qml.expval.PauliZ(0)
 
@@ -78,7 +78,7 @@ class TorchQNodeTests(BaseTest):
         # ...in the correct order
         @qml.qnode(self.dev2, interface='torch')
         def qf(x):
-            qml.RX(x, [0])
+            qml.RX(x, wires=[0])
             ex = qml.expval.PauliZ(1)
             return qml.expval.PauliZ(0), ex
 
@@ -88,9 +88,9 @@ class TorchQNodeTests(BaseTest):
         # gates must precede EVs
         @qml.qnode(self.dev2, interface='torch')
         def qf(x):
-            qml.RX(x, [0])
+            qml.RX(x, wires=[0])
             ev = qml.expval.PauliZ(1)
-            qml.RY(0.5, [0])
+            qml.RY(0.5, wires=[0])
             return ev
 
         with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
@@ -99,8 +99,8 @@ class TorchQNodeTests(BaseTest):
         # a wire cannot be measured more than once
         @qml.qnode(self.dev2, interface='torch')
         def qf(x):
-            qml.RX(x, [0])
-            qml.CNOT([0, 1])
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
             return qml.expval.PauliZ(0), qml.expval.PauliZ(1), qml.expval.PauliX(0)
 
         with self.assertRaisesRegex(QuantumFunctionError, 'can only be measured once'):
@@ -109,8 +109,8 @@ class TorchQNodeTests(BaseTest):
         # device must have enough wires for the qfunc
         @qml.qnode(self.dev2, interface='torch')
         def qf(x):
-            qml.RX(x, [0])
-            qml.CNOT([0, 2])
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 2])
             return qml.expval.PauliZ(0)
 
         with self.assertRaisesRegex(QuantumFunctionError, 'applied to invalid wire'):
@@ -119,8 +119,8 @@ class TorchQNodeTests(BaseTest):
         # CV and discrete ops must not be mixed
         @qml.qnode(self.dev1, interface='torch')
         def qf(x):
-            qml.RX(x, [0])
-            qml.Displacement(0.5, 0, [0])
+            qml.RX(x, wires=[0])
+            qml.Displacement(0.5, 0, wires=[0])
             return qml.expval.PauliZ(0)
 
         with self.assertRaisesRegex(QuantumFunctionError, 'Continuous and discrete'):
@@ -129,7 +129,7 @@ class TorchQNodeTests(BaseTest):
         # default plugin cannot execute CV operations, neither gates...
         @qml.qnode(self.dev1, interface='torch')
         def qf(x):
-            qml.Displacement(0.5, 0, [0])
+            qml.Displacement(0.5, 0, wires=[0])
             return qml.expval.X(0)
 
         with self.assertRaisesRegex(DeviceError, 'Gate [a-zA-Z]+ not supported on device'):
@@ -149,9 +149,9 @@ class TorchQNodeTests(BaseTest):
 
         @qml.qnode(self.dev1, interface='torch')
         def circuit(reused_param, other_param):
-            qml.RX(reused_param, [0])
-            qml.RZ(other_param, [0])
-            qml.RX(reused_param, [0])
+            qml.RX(reused_param, wires=[0])
+            qml.RZ(other_param, wires=[0])
+            qml.RX(reused_param, wires=[0])
             return qml.expval.PauliZ(0)
 
         thetas = torch.linspace(-2*np.pi, 2*np.pi, 7)
@@ -173,21 +173,21 @@ class TorchQNodeTests(BaseTest):
 
         @qml.qnode(self.dev1, interface='torch')
         def circuit_n1s(dummy1, array, dummy2):
-            qml.RY(0.5 * array[0,1], 0)
-            qml.RY(-0.5 * array[1,1], 0)
+            qml.RY(0.5 * array[0,1], wires=0)
+            qml.RY(-0.5 * array[1,1], wires=0)
             return qml.expval.PauliX(0)  # returns a scalar
 
         @qml.qnode(self.dev1, interface='torch')
         def circuit_n1v(dummy1, array, dummy2):
-            qml.RY(0.5 * array[0,1], 0)
-            qml.RY(-0.5 * array[1,1], 0)
+            qml.RY(0.5 * array[0,1], wires=0)
+            qml.RY(-0.5 * array[1,1], wires=0)
             return qml.expval.PauliX(0),  # note the comma, returns a 1-vector
 
         @qml.qnode(self.dev2, interface='torch')
         def circuit_nn(dummy1, array, dummy2):
-            qml.RY(0.5 * array[0,1], 0)
-            qml.RY(-0.5 * array[1,1], 0)
-            qml.RY(array[1,0], 1)
+            qml.RY(0.5 * array[0,1], wires=0)
+            qml.RY(-0.5 * array[1,1], wires=0)
+            qml.RY(array[1,0], wires=1)
             return qml.expval.PauliX(0), qml.expval.PauliX(1)  # returns a 2-vector
 
         grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
@@ -220,9 +220,9 @@ class TorchQNodeTests(BaseTest):
         a, b, c = torch.tensor(0.5), torch.tensor(0.54), torch.tensor(0.3)
 
         def ansatz(x, y, z):
-            qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), [0, 1])
-            qml.Rot(x, y, z, 0)
-            qml.CNOT([0, 1])
+            qml.QubitStateVector(np.array([1, 0, 1, 1])/np.sqrt(3), wires=[0, 1])
+            qml.Rot(x, y, z, wires=0)
+            qml.CNOT(wires=[0, 1])
             return qml.expval.PauliZ(0), qml.expval.PauliY(1)
 
         @qml.qnode(self.dev2, interface='torch')
@@ -251,11 +251,11 @@ class TorchQNodeTests(BaseTest):
 
         @qml.qnode(self.dev2, interface='torch')
         def circuit(x, y, z):
-            qml.RX(x, [0])
-            qml.RZ(y, [0])
-            qml.CNOT([0, 1])
-            qml.RY(y, [0])
-            qml.RX(z, [0])
+            qml.RX(x, wires=[0])
+            qml.RZ(y, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=[0])
+            qml.RX(z, wires=[0])
             return qml.expval.PauliY(0), qml.expval.PauliZ(1)
 
         res = circuit(a, b, c)
@@ -274,8 +274,8 @@ class TorchQNodeTests(BaseTest):
 
         @qml.qnode(self.dev2, interface='torch')
         def circuit(w, x=None, y=None):
-            qml.RX(x, [0])
-            qml.RX(y, [1])
+            qml.RX(x, wires=[0])
+            qml.RX(y, wires=[1])
             return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
         c = circuit(torch.tensor(1.), x=np.pi, y=np.pi)
@@ -286,8 +286,8 @@ class TorchQNodeTests(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None):
-            qml.RX(x[0], [0])
-            qml.RX(x[1], [1])
+            qml.RX(x[0], wires=[0])
+            qml.RX(x[1], wires=[1])
             return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
         circuit = qml.QNode(circuit, self.dev2).to_torch()
@@ -318,7 +318,7 @@ class TorchQNodeTests(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None):
-            qml.RX(x, [0])
+            qml.RX(x, wires=[0])
             return qml.expval.PauliZ(0)
 
         circuit = qml.QNode(circuit, self.dev1).to_torch()
@@ -332,8 +332,8 @@ class TorchQNodeTests(BaseTest):
 
         @qml.qnode(self.dev2, interface='torch')
         def circuit(w, x, y):
-            qml.RX(x, [0])
-            qml.RX(y, [1])
+            qml.RX(x, wires=[0])
+            qml.RX(y, wires=[1])
             return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
         c = circuit(torch.tensor(1.), np.pi, np.pi).detach().numpy()
@@ -344,8 +344,8 @@ class TorchQNodeTests(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None):
-            qml.RX(w, [0])
-            qml.RX(x, [1])
+            qml.RX(w, wires=[0])
+            qml.RX(x, wires=[1])
             return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
         circuit = qml.QNode(circuit, self.dev2).to_torch()
@@ -359,8 +359,8 @@ class TorchQNodeTests(BaseTest):
         self.logTestName()
 
         def circuit(w, x=None):
-            qml.RX(w, [0])
-            qml.RX(x, [1])
+            qml.RX(w, wires=[0])
+            qml.RX(x, wires=[1])
             return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
 
         circuit = qml.QNode(circuit, self.dev2).to_torch()
