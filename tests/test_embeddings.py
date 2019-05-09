@@ -275,7 +275,6 @@ class TestBasisEmb:
 
 class TestAmplitudeEmb:
     """ Tests the pennylane.templates.embeddings.AmplitudeEmbedding method."""
-    #TODO: hack the state and compare?
 
     def test_amplitude_embedding_state(self):
         """Checks the state produced by pennylane.templates.embeddings.AmplitudeEmbedding()."""
@@ -334,21 +333,22 @@ class TestSqueezingEmb:
 
         assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
 
-    # def test_squeezing_embedding_state_execution_phase(self):
-    #     """Checks the state produced by pennylane.templates.embeddings.SqueezingEmbedding()
-    #     using the phase execution method."""
-    #
-    #     features = np.array([2.2, 1.3])
-    #     n_wires = 2
-    #     dev = qml.device('default.gaussian', wires=n_wires)
-    #
-    #     @qml.qnode(dev)
-    #     def circuit(x=None):
-    #         SqueezingEmbedding(features=x, n_wires=2, execution='phase', c=1)
-    #         Beamsplitter(pi/4, 0.1, wires=[0, 1])
-    #         return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
-    #
-    #     assert np.allclose(circuit(x=features), [1.3810, 1.3810], atol=0.001)
+    def test_squeezing_embedding_state_execution_phase(self):
+        """Checks the state produced by pennylane.templates.embeddings.SqueezingEmbedding()
+        using the phase execution method."""
+
+        features = np.array([1.2, 0.3])
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, n_wires=2, execution='phase', c=1)
+            Beamsplitter(pi/2, 0, wires=[0, 1])
+            SqueezingEmbedding(features=[0, 0], n_wires=2, execution='phase', c=1)
+            return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+
+        assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
 
     def test_squeezing_embedding_exception_subsystems(self):
         """Verifies that pennylane.templates.embeddings.SqueezingEmbedding() throws exception
@@ -394,17 +394,18 @@ class TestDisplacementEmb:
         """Checks the state produced by pennylane.templates.embeddings.DisplacementEmbedding()
         using the phase execution method."""
 
-        features = np.array([1.5, 0.3])
+        features = np.array([1.2, 0.3])
         n_wires = 2
         dev = qml.device('default.gaussian', wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
             DisplacementEmbedding(features=x, n_wires=2, execution='phase', c=1.)
-            Beamsplitter(pi/4, 0, wires=[0, 1])
+            Beamsplitter(pi/2, 0, wires=[0, 1])
+            DisplacementEmbedding(features=[0, 0], n_wires=2, execution='phase', c=1.)
             return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
 
-        assert np.allclose(circuit(x=features), [0.6376, 1.362], atol=0.01)
+        assert np.allclose(circuit(x=features), [0.089327, 2.724715], atol=0.01)
 
     def test_displacement_embedding_exception_subsystems(self):
         """Verifies that pennylane.templates.embeddings.DisplacementEmbedding() throws exception
