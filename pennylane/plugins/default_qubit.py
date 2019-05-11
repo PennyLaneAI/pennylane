@@ -301,7 +301,7 @@ class DefaultQubit(Device):
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             return
-        elif operation == 'BasisState':
+        if operation == 'BasisState':
             n = len(par[0])
             # get computational basis state number
             if n > self.num_wires or not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
@@ -375,7 +375,7 @@ class DefaultQubit(Device):
             raise ValueError('Only one and two-qubit expectation is supported.')
             # A muti-qubit expansion function extends this.
             # A = self.expand_multi(A, wires)
-        
+
         expectation = np.vdot(self._state, A @ self._state)
 
         if np.abs(expectation.imag) > tolerance:
