@@ -152,8 +152,10 @@ class Hermitian(Expectation):
 
     where :math:`A` acts on the requested wire.
 
+    The matrix A can be N^2\times N^2 acting on N wires.
+
     Args:
-        A (array): square hermitian matrix.
+        A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 0

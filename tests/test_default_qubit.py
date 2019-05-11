@@ -700,7 +700,7 @@ class TestDefaultQubitIntegration(BaseTest):
         target_herm_op = np.outer(target_state.conj(), target_state)
         weights = np.array([0.5, 0.1, 0.2])
         expval = circuit(weights, target_observable=target_herm_op)
-        assert(np.allclose(expval,0.590556))
+        self.assertAlmostEqual(expval, 0.590556, delta=self.tol)
 
 
 if __name__ == '__main__':
