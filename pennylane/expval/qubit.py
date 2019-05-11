@@ -160,8 +160,9 @@ class Hermitian(Expectation):
     """
     num_wires = 0
     num_params = 1
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
+
 
 # As both the qubit and the CV case need an Identity Expectation,
 # and these need to reside in the same name space but have to have

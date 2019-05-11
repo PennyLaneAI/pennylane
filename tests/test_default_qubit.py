@@ -22,34 +22,75 @@ import logging as log
 from pennylane import numpy as np
 
 from defaults import pennylane as qml, BaseTest
-from pennylane.plugins.default_qubit import (spectral_decomposition_qubit,
-                                             I, X, Z, CNOT, Rphi, Rotx, Roty, Rotz, Rot3,
-                                             unitary, hermitian, DefaultQubit)
+from pennylane.plugins.default_qubit import (
+    spectral_decomposition_qubit,
+    I,
+    X,
+    Z,
+    CNOT,
+    Rphi,
+    Rotx,
+    Roty,
+    Rotz,
+    Rot3,
+    unitary,
+    hermitian,
+    DefaultQubit,
+)
 
-log.getLogger('defaults')
+log.getLogger("defaults")
 
 
-U = np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
-              [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])
+U = np.array(
+    [
+        [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
+        [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
+    ]
+)
 
 
-U2 = np.array([[-0.07843244-3.57825948e-01j, 0.71447295-5.38069384e-02j, 0.20949966+6.59100734e-05j, -0.50297381+2.35731613e-01j],
-               [-0.26626692+4.53837083e-01j, 0.27771991-2.40717436e-01j, 0.41228017-1.30198687e-01j, 0.01384490-6.33200028e-01j],
-               [-0.69254712-2.56963068e-02j, -0.15484858+6.57298384e-02j, -0.53082141+7.18073414e-02j, -0.41060450-1.89462315e-01j],
-               [-0.09686189-3.15085273e-01j, -0.53241387-1.99491763e-01j, 0.56928622+3.97704398e-01j, -0.28671074-6.01574497e-02j]])
+U2 = np.array(
+    [
+        [
+            -0.07843244 - 3.57825948e-01j,
+            0.71447295 - 5.38069384e-02j,
+            0.20949966 + 6.59100734e-05j,
+            -0.50297381 + 2.35731613e-01j,
+        ],
+        [
+            -0.26626692 + 4.53837083e-01j,
+            0.27771991 - 2.40717436e-01j,
+            0.41228017 - 1.30198687e-01j,
+            0.01384490 - 6.33200028e-01j,
+        ],
+        [
+            -0.69254712 - 2.56963068e-02j,
+            -0.15484858 + 6.57298384e-02j,
+            -0.53082141 + 7.18073414e-02j,
+            -0.41060450 - 1.89462315e-01j,
+        ],
+        [
+            -0.09686189 - 3.15085273e-01j,
+            -0.53241387 - 1.99491763e-01j,
+            0.56928622 + 3.97704398e-01j,
+            -0.28671074 - 6.01574497e-02j,
+        ],
+    ]
+)
 
 
 U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 
-H = np.array([[1.02789352, 1.61296440-0.3498192j],
-              [1.61296440+0.3498192j, 1.23920938+0j]])
+H = np.array(
+    [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+)
 
 
 def prep_par(par, op):
     "Convert par into a list of parameters that op expects."
-    if op.par_domain == 'A':
+    if op.par_domain == "A":
         return [np.diag([x, 1]) for x in par]
     return par
 
@@ -64,7 +105,7 @@ class TestAuxillaryFunctions(BaseTest):
         a, P = spectral_decomposition_qubit(H)
 
         # verify that H = \sum_k a_k P_k
-        self.assertAllAlmostEqual(H, np.einsum('i,ijk->jk', a, P), delta=self.tol)
+        self.assertAllAlmostEqual(H, np.einsum("i,ijk->jk", a, P), delta=self.tol)
 
     def test_phase_shift(self):
         """Test phase shift is correct"""
@@ -75,7 +116,7 @@ class TestAuxillaryFunctions(BaseTest):
 
         # test arbitrary phase shift
         phi = 0.5432
-        expected = np.array([[1, 0], [0, np.exp(1j*phi)]])
+        expected = np.array([[1, 0], [0, np.exp(1j * phi)]])
         self.assertAllAlmostEqual(Rphi(phi), expected, delta=self.tol)
 
     def test_x_rotation(self):
@@ -86,11 +127,11 @@ class TestAuxillaryFunctions(BaseTest):
         self.assertAllAlmostEqual(Rotx(0), np.identity(2), delta=self.tol)
 
         # test identity for theta=pi/2
-        expected = np.array([[1, -1j], [-1j, 1]])/np.sqrt(2)
+        expected = np.array([[1, -1j], [-1j, 1]]) / np.sqrt(2)
         self.assertAllAlmostEqual(Rotx(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
-        expected = -1j*np.array([[0, 1], [1, 0]])
+        expected = -1j * np.array([[0, 1], [1, 0]])
         self.assertAllAlmostEqual(Rotx(np.pi), expected, delta=self.tol)
 
     def test_y_rotation(self):
@@ -101,7 +142,7 @@ class TestAuxillaryFunctions(BaseTest):
         self.assertAllAlmostEqual(Roty(0), np.identity(2), delta=self.tol)
 
         # test identity for theta=pi/2
-        expected = np.array([[1, -1], [1, 1]])/np.sqrt(2)
+        expected = np.array([[1, -1], [1, 1]]) / np.sqrt(2)
         self.assertAllAlmostEqual(Roty(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
@@ -116,7 +157,7 @@ class TestAuxillaryFunctions(BaseTest):
         self.assertAllAlmostEqual(Rotz(0), np.identity(2), delta=self.tol)
 
         # test identity for theta=pi/2
-        expected = np.diag(np.exp([-1j*np.pi/4, 1j*np.pi/4]))
+        expected = np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4]))
         self.assertAllAlmostEqual(Rotz(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
@@ -132,13 +173,19 @@ class TestAuxillaryFunctions(BaseTest):
         # expected result
         def arbitrary_rotation(x, y, z):
             """arbitrary single qubit rotation"""
-            c = np.cos(y/2)
-            s = np.sin(y/2)
-            return np.array([[np.exp(-0.5j*(x+z))*c, -np.exp(0.5j*(x-z))*s],
-                             [np.exp(-0.5j*(x-z))*s, np.exp(0.5j*(x+z))*c]])
+            c = np.cos(y / 2)
+            s = np.sin(y / 2)
+            return np.array(
+                [
+                    [np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
+                    [np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c],
+                ]
+            )
 
         a, b, c = 0.432, -0.152, 0.9234
-        self.assertAllAlmostEqual(Rot3(a, b, c), arbitrary_rotation(a, b, c), delta=self.tol)
+        self.assertAllAlmostEqual(
+            Rot3(a, b, c), arbitrary_rotation(a, b, c), delta=self.tol
+        )
 
 
 class TestStateFunctions(BaseTest):
@@ -192,6 +239,7 @@ class TestStateFunctions(BaseTest):
 class TestDefaultQubitDevice(BaseTest):
     """Test the default qubit device. The test ensures that the device is properly
     applying qubit operations and calculating the correct observables."""
+
     def setUp(self):
         self.dev = DefaultQubit(wires=2, shots=0)
 
@@ -205,7 +253,9 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that default qubit device supports all PennyLane discrete expectations."""
         self.logTestName()
 
-        self.assertEqual(set(qml.expval.qubit.__all__)|{'Identity'}, set(self.dev._expectation_map))
+        self.assertEqual(
+            set(qml.expval.qubit.__all__) | {"Identity"}, set(self.dev._expectation_map)
+        )
 
     def test_expand_one(self):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
@@ -284,19 +334,22 @@ class TestDefaultQubitDevice(BaseTest):
         """Test the the correct matrix is returned given an operation name"""
         self.logTestName()
 
-        for name, fn in {**self.dev._operation_map, **self.dev._expectation_map}.items():
+        for name, fn in {
+            **self.dev._operation_map,
+            **self.dev._expectation_map,
+        }.items():
             try:
                 op = qml.ops.__getattribute__(name)
             except AttributeError:
                 op = qml.expval.__getattribute__(name)
 
-            p = [0.432423, -0.12312, 0.324][:op.num_params]
+            p = [0.432423, -0.12312, 0.324][: op.num_params]
 
-            if name == 'QubitStateVector':
+            if name == "QubitStateVector":
                 p = [np.array([1, 0, 0, 0])]
-            elif name == 'QubitUnitary':
+            elif name == "QubitUnitary":
                 p = [U]
-            elif name == 'Hermitian':
+            elif name == "Hermitian":
                 p = [H]
 
             res = self.dev._get_operator_matrix(name, p)
@@ -328,25 +381,25 @@ class TestDefaultQubitDevice(BaseTest):
             # the list of wires to apply the operation to
             w = list(range(op.num_wires))
 
-            if op.par_domain == 'A':
+            if op.par_domain == "A":
                 # the parameter is an array
-                if gate_name == 'QubitStateVector':
-                    p = [np.array([1, 0, 1, 1])/np.sqrt(3)]
+                if gate_name == "QubitStateVector":
+                    p = [np.array([1, 0, 1, 1]) / np.sqrt(3)]
                     expected_out = p
-                elif gate_name == 'QubitUnitary':
+                elif gate_name == "QubitUnitary":
                     p = [U]
                     w = [0]
                     expected_out = np.kron(U @ np.array([1, 0]), np.array([1, 0]))
-                elif gate_name == 'BasisState':
+                elif gate_name == "BasisState":
                     p = [np.array([1, 1])]
                     expected_out = np.array([0, 0, 0, 1])
 
-            elif op.par_domain == 'N':
+            elif op.par_domain == "N":
                 # the parameter is an integer
-                p = [1, 3, 4][:op.num_params]
+                p = [1, 3, 4][: op.num_params]
             else:
                 # the parameter is a float
-                p = [0.432423, -0.12312, 0.324][:op.num_params]
+                p = [0.432423, -0.12312, 0.324][: op.num_params]
 
                 if callable(fn):
                     # if the default.qubit is an operation accepting parameters,
@@ -371,19 +424,28 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
         self.logTestName()
 
-        with self.assertRaisesRegex(ValueError, r'State vector must be of length 2\*\*wires.'):
-            p = [np.array([1, 0, 1, 1, 1])/np.sqrt(3)]
-            self.dev.apply('QubitStateVector', wires=[0, 1], par=[p])
+        with self.assertRaisesRegex(
+            ValueError, r"State vector must be of length 2\*\*wires."
+        ):
+            p = [np.array([1, 0, 1, 1, 1]) / np.sqrt(3)]
+            self.dev.apply("QubitStateVector", wires=[0, 1], par=[p])
 
-        with self.assertRaisesRegex(ValueError, "BasisState parameter must be an array of 0 or 1 integers of length at most 2."):
-            self.dev.apply('BasisState', wires=[0, 1], par=[np.array([-0.2, 4.2])])
+        with self.assertRaisesRegex(
+            ValueError,
+            "BasisState parameter must be an array of 0 or 1 integers of length at most 2.",
+        ):
+            self.dev.apply("BasisState", wires=[0, 1], par=[np.array([-0.2, 4.2])])
 
-        with self.assertRaisesRegex(ValueError, "The default.qubit plugin can apply BasisState only to all of the 2 wires."):
-            self.dev.apply('BasisState', wires=[0, 1, 2], par=[np.array([0, 1])])
+        with self.assertRaisesRegex(
+            ValueError,
+            "The default.qubit plugin can apply BasisState only to all of the 2 wires.",
+        ):
+            self.dev.apply("BasisState", wires=[0, 1, 2], par=[np.array([0, 1])])
 
-
-        with self.assertRaisesRegex(ValueError, "This plugin supports only one- and two-qubit gates."):
-            self.dev.apply('QubitUnitary', wires=[0, 1, 2], par=[U2])
+        with self.assertRaisesRegex(
+            ValueError, "This plugin supports only one- and two-qubit gates."
+        ):
+            self.dev.apply("QubitUnitary", wires=[0, 1, 2], par=[U2])
 
     def test_ev(self):
         """Test that expectation values are calculated correctly"""
@@ -396,17 +458,17 @@ class TestDefaultQubitDevice(BaseTest):
             log.debug("\tTesting %s observable...", name)
 
             # start in the state |00>
-            self.dev._state = np.array([1, 0, 1, 1])/np.sqrt(3)
+            self.dev._state = np.array([1, 0, 1, 1]) / np.sqrt(3)
 
             # get the equivalent pennylane operation class
             op = qml.expval.__getattribute__(name)
 
-            if op.par_domain == 'A':
+            if op.par_domain == "A":
                 # the parameter is an array
                 p = [H]
             else:
                 # the parameter is a float
-                p = [0.432423, -0.12312, 0.324][:op.num_params]
+                p = [0.432423, -0.12312, 0.324][: op.num_params]
 
             if callable(fn):
                 # if the default.qubit is an operation accepting parameters,
@@ -416,7 +478,7 @@ class TestDefaultQubitDevice(BaseTest):
                 # otherwise, the operation is simply an array.
                 O = fn
 
-            print("op.num_wires="+str(op.num_wires))
+            print("op.num_wires=" + str(op.num_wires))
 
             # calculate the expected output
             if op.num_wires == 1 or op.num_wires == 0:
@@ -424,7 +486,11 @@ class TestDefaultQubitDevice(BaseTest):
             elif op.num_wires == 2:
                 expected_out = self.dev._state.conj() @ O @ self.dev._state
             else:
-                raise NotImplementedError("Test for operations with num_wires="+op.num_wires+" not implemented.")
+                raise NotImplementedError(
+                    "Test for operations with num_wires="
+                    + op.num_wires
+                    + " not implemented."
+                )
 
             res = self.dev.ev(O, wires=[0])
 
@@ -432,15 +498,17 @@ class TestDefaultQubitDevice(BaseTest):
             self.assertAllAlmostEqual(res, expected_out, delta=self.tol)
 
             # text exception raised if matrix is not 2x2 or 4x4
-            with self.assertRaisesRegex(ValueError, "Only one and two-qubit expectation is supported."):
+            with self.assertRaisesRegex(
+                ValueError, "Only one and two-qubit expectation is supported."
+            ):
                 self.dev.ev(U_toffoli, [0])
 
             # text warning raised if matrix is complex
-            with self.assertLogs(level='WARNING') as l:
-                self.dev.ev(H+1j, [0])
+            with self.assertLogs(level="WARNING") as l:
+                self.dev.ev(H + 1j, [0])
                 self.assertEqual(len(l.output), 1)
                 self.assertEqual(len(l.records), 1)
-                self.assertIn('Nonvanishing imaginary part', l.output[0])
+                self.assertIn("Nonvanishing imaginary part", l.output[0])
 
 
 class TestDefaultQubitIntegration(BaseTest):
@@ -451,22 +519,24 @@ class TestDefaultQubitIntegration(BaseTest):
         """Test that the default plugin loads correctly"""
         self.logTestName()
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
         self.assertEqual(dev.num_wires, 2)
         self.assertEqual(dev.shots, 0)
-        self.assertEqual(dev.short_name, 'default.qubit')
+        self.assertEqual(dev.short_name, "default.qubit")
 
     def test_args(self):
         """Test that the plugin requires correct arguments"""
         self.logTestName()
 
-        with self.assertRaisesRegex(TypeError, "missing 1 required positional argument: 'wires'"):
-            qml.device('default.qubit')
+        with self.assertRaisesRegex(
+            TypeError, "missing 1 required positional argument: 'wires'"
+        ):
+            qml.device("default.qubit")
 
     def test_unsupported_gates(self):
         """Test error is raised with unsupported gates"""
         self.logTestName()
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         gates = set(dev._operation_map.keys())
         all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
@@ -490,14 +560,17 @@ class TestDefaultQubitIntegration(BaseTest):
 
                 return qml.expval.PauliZ(0)
 
-            with self.assertRaisesRegex(qml.DeviceError, "Gate {} not supported on device default.qubit".format(g)):
+            with self.assertRaisesRegex(
+                qml.DeviceError,
+                "Gate {} not supported on device default.qubit".format(g),
+            ):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 
     def test_unsupported_observables(self):
         """Test error is raised with unsupported observables"""
         self.logTestName()
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         obs = set(dev._expectation_map.keys())
         all_obs = set(qml.expval.__all__)
@@ -516,14 +589,17 @@ class TestDefaultQubitIntegration(BaseTest):
                 x = prep_par(x, op)
                 return op(*x, wires=wires)
 
-            with self.assertRaisesRegex(qml.DeviceError, "Expectation {} not supported on device default.qubit".format(g)):
+            with self.assertRaisesRegex(
+                qml.DeviceError,
+                "Expectation {} not supported on device default.qubit".format(g),
+            ):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 
     def test_qubit_circuit(self):
         """Test that the default qubit plugin provides correct result for simple circuit"""
         self.logTestName()
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         p = 0.543
 
@@ -540,7 +616,7 @@ class TestDefaultQubitIntegration(BaseTest):
     def test_qubit_identity(self):
         """Test that the default qubit plugin provides correct result for the Identiy expectation"""
         self.logTestName()
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         p = 0.543
 
@@ -556,8 +632,8 @@ class TestDefaultQubitIntegration(BaseTest):
         """Test that the default qubit plugin provides correct result for high shot number"""
         self.logTestName()
 
-        shots = 10**4
-        dev = qml.device('default.qubit', wires=1, shots=shots)
+        shots = 10 ** 4
+        dev = qml.device("default.qubit", wires=1, shots=shots)
 
         p = 0.543
 
@@ -579,17 +655,17 @@ class TestDefaultQubitIntegration(BaseTest):
         a = 0.312
         b = 0.123
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         for g, qop in dev._operation_map.items():
-            log.debug('\tTesting gate %s...', g)
+            log.debug("\tTesting gate %s...", g)
             self.assertTrue(dev.supported(g))
             dev.reset()
 
             op = getattr(qml.ops, g)
             if op.num_wires == 0:
-                if g == 'BasisState':
-                    wires = [0,1]
+                if g == "BasisState":
+                    wires = [0, 1]
                 else:
                     wires = [0]
             else:
@@ -613,11 +689,11 @@ class TestDefaultQubitIntegration(BaseTest):
                     O = qop
 
                 # calculate the expected output
-                if op.num_wires == 1 or g == 'QubitUnitary':
+                if op.num_wires == 1 or g == "QubitUnitary":
                     out_state = np.kron(O @ np.array([1, 0]), np.array([1, 0]))
-                elif g == 'QubitStateVector':
+                elif g == "QubitStateVector":
                     out_state = x[0]
-                elif g == 'BasisState':
+                elif g == "BasisState":
                     out_state = np.array([0, 0, 0, 1])
                 else:
                     out_state = O @ dev._state
@@ -625,13 +701,13 @@ class TestDefaultQubitIntegration(BaseTest):
                 expectation = out_state.conj() @ np.kron(X, np.identity(2)) @ out_state
                 return expectation
 
-            if g == 'QubitStateVector':
-                p = np.array([1, 0, 0, 1])/np.sqrt(2)
+            if g == "QubitStateVector":
+                p = np.array([1, 0, 0, 1]) / np.sqrt(2)
                 self.assertAllEqual(circuit(p), reference(p))
-            elif g == 'BasisState':
+            elif g == "BasisState":
                 p = np.array([1, 1])
                 self.assertAllEqual(circuit(p), reference(p))
-            elif g == 'QubitUnitary':
+            elif g == "QubitUnitary":
                 self.assertAllEqual(circuit(U), reference(U))
             elif op.num_params == 1:
                 self.assertAllEqual(circuit(a), reference(a))
@@ -643,10 +719,10 @@ class TestDefaultQubitIntegration(BaseTest):
         self.logTestName()
         a = 0.312
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         for g, qop in dev._expectation_map.items():
-            log.debug('\tTesting observable %s...', g)
+            log.debug("\tTesting observable %s...", g)
             self.assertTrue(dev.supported(g))
             dev.reset()
 
@@ -680,13 +756,13 @@ class TestDefaultQubitIntegration(BaseTest):
 
             if op.num_params == 0:
                 self.assertAllEqual(circuit(), reference())
-            elif g == 'Hermitian':
+            elif g == "Hermitian":
                 self.assertAllEqual(circuit(H), reference(H))
 
     def test_two_qubit_observable(self):
         """Tests expval for two-qubit observables """
         self.logTestName()
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(x, target_observable=None):
@@ -696,21 +772,23 @@ class TestDefaultQubitIntegration(BaseTest):
             qml.CNOT(wires=[0, 1])
             return qml.expval.Hermitian(target_observable, wires=[0, 1])
 
-        target_state = 1/np.sqrt(2) * np.array([1,0,0,1])
+        target_state = 1 / np.sqrt(2) * np.array([1, 0, 0, 1])
         target_herm_op = np.outer(target_state.conj(), target_state)
         weights = np.array([0.5, 0.1, 0.2])
         expval = circuit(weights, target_observable=target_herm_op)
         self.assertAlmostEqual(expval, 0.590556, delta=self.tol)
 
 
-if __name__ == '__main__':
-    print('Testing PennyLane version ' + qml.version() + ', default.qubit plugin.')
+if __name__ == "__main__":
+    print("Testing PennyLane version " + qml.version() + ", default.qubit plugin.")
     # run the tests in this file
     suite = unittest.TestSuite()
-    for t in (TestAuxillaryFunctions,
-              TestStateFunctions,
-              TestDefaultQubitDevice,
-              TestDefaultQubitIntegration):
+    for t in (
+        TestAuxillaryFunctions,
+        TestStateFunctions,
+        TestDefaultQubitDevice,
+        TestDefaultQubitIntegration,
+    ):
         ttt = unittest.TestLoader().loadTestsFromTestCase(t)
         suite.addTests(ttt)
     unittest.TextTestRunner().run(suite)
