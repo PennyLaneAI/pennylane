@@ -193,6 +193,19 @@ def _get_default_args(func):
     }
 
 
+def _tr_obs(ex, w, Z):
+    """Transform the observable"""
+    ## if ex is not a successor of op, multiplying by Z should do nothing.
+    #if ex not in ev_successors:
+    #    return ex
+    q = ex.heisenberg_obs(w)
+    qp = q @ Z
+    if q.ndim == 2:
+    # 2nd order observable
+        qp = qp +qp.T
+    return pennylane.expval.PolyXP(qp, wires=range(w))
+
+
 class QNode:
     """Quantum node in the hybrid computational graph.
 
@@ -759,25 +772,8 @@ class QNode:
                 Z = B @ Z @ B_inv  # conjugation
 
                 # ev_successors = self._op_successors(o_idx, 'E')
-
-                def tr_obs(ex):
-                    """Transform the observable"""
-                    # TODO: At initial release, since we use a queue to represent circuit, all expectations values
-                    # are successors to all gates in the same circuit.
-                    # When library uses a DAG representation for circuits, uncomment following if statement
-
-                    ## if ex is not a successor of op, multiplying by Z should do nothing.
-                    #if ex not in ev_successors:
-                    #    return ex
-                    q = ex.heisenberg_obs(w)
-                    qp = q @ Z
-                    if q.ndim == 2:
-                        # 2nd order observable
-                        qp = qp +qp.T
-                    return pennylane.expval.PolyXP(qp, wires=range(w), do_queue=False)
-
                 # transform the observables
-                obs = list(map(tr_obs, self.ev))
+                obs = [_tr_obs(obs, w, Z) for obs in self.ev]
                 # measure transformed observables
                 temp = self.evaluate_obs(obs, unshifted_params, **kwargs)
                 pd += temp

@@ -187,10 +187,6 @@ class Operation(abc.ABC):
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
-        do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`QNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
-            outside of a QNode context.
     """
     _grad_recipe = None
 
@@ -250,7 +246,7 @@ class Operation(abc.ABC):
         """Setter for the grad_recipe property"""
         self._grad_recipe = value
 
-    def __init__(self, *args, wires=None, do_queue=True):
+    def __init__(self, *args, wires=None):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
 
@@ -296,8 +292,7 @@ class Operation(abc.ABC):
             # that they are valid for the given operation
             self.check_wires(self._wires)
 
-        if do_queue:
-            self.queue()
+        self.queue()
 
     def __str__(self):
         """Print the operation name and some information."""
@@ -429,12 +424,9 @@ class Expectation(Operation):
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operation should be immediately
-            pushed into a :class:`QNode` circuit queue. This flag is useful if
-            there is some reason to run an Expectation outside of a QNode context.
     """
     # pylint: disable=abstract-method
-    def __init__(self, *args, wires=None, do_queue=True):
+    def __init__(self, *args, wires=None):
         # extract the arguments
         if wires is not None:
             params = args
@@ -442,7 +434,7 @@ class Expectation(Operation):
             params = args[:-1]
             wires = args[-1]
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires)
 
 
 
