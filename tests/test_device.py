@@ -80,8 +80,8 @@ class DeviceTest(BaseTest):
 
         # queue some gates
         queue = []
-        queue.append(qml.RX(0.543, wires=[0], do_queue=False))
-        queue.append(qml.CNOT(wires=[0, 1], do_queue=False))
+        queue.append(qml.RX(0.543, wires=[0]))
+        queue.append(qml.CNOT(wires=[0, 1]))
 
         dev = qml.device('default.qubit', wires=2)
 
@@ -91,7 +91,7 @@ class DeviceTest(BaseTest):
 
         # inside of the execute method, it works
         with self.assertLogs(level='INFO') as l:
-            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            dev.execute(queue, [qml.expval.PauliX(0)])
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
             self.assertIn('INFO:root:[<pennylane.ops.qubit.RX object', l.output[0])
@@ -103,8 +103,8 @@ class DeviceTest(BaseTest):
 
         # queue some gates
         queue = []
-        queue.append(qml.RX(0.543, wires=[0], do_queue=False))
-        queue.append(qml.CNOT(wires=[0, 1], do_queue=False))
+        queue.append(qml.RX(0.543, wires=[0]))
+        queue.append(qml.CNOT(wires=[0, 1]))
 
         dev = qml.device('default.qubit', wires=2)
 
@@ -114,7 +114,7 @@ class DeviceTest(BaseTest):
 
         # inside of the execute method, it works
         with self.assertLogs(level='INFO') as l:
-            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            dev.execute(queue, [qml.expval.PauliX(0)])
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
             self.assertIn('INFO:root:[<pennylane.expval.qubit.PauliX object', l.output[0])
@@ -142,13 +142,13 @@ class DeviceTest(BaseTest):
                 else:
                     params = np.random.random([op.num_params])
 
-                queue.append(op(*params, wires=list(range(op.num_wires)), do_queue=False))
+                queue.append(op(*params, wires=list(range(op.num_wires))))
 
             temp = [isinstance(op, qml.operation.CV) for op in queue]
             if all(temp):
-                expval = dev.execute(queue, [qml.expval.X(0, do_queue=False)])
+                expval = dev.execute(queue, [qml.expval.X(0)])
             else:
-                expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+                expval = dev.execute(queue, [qml.expval.PauliX(0)])
 
             self.assertTrue(isinstance(expval, np.ndarray))
 
@@ -173,15 +173,15 @@ class DeviceTest(BaseTest):
                 else:
                     params = np.random.random([op.num_params])
 
-                queue = [op(*params, wires=list(range(op.num_wires)), do_queue=False)]
+                queue = [op(*params, wires=list(range(op.num_wires)))]
 
                 temp = isinstance(queue[0], qml.operation.CV)
 
                 with self.assertRaisesRegex(qml.DeviceError, 'not supported on device'):
                     if temp:
-                        expval = dev.execute(queue, [qml.expval.X(0, do_queue=False)])
+                        expval = dev.execute(queue, [qml.expval.X(0)])
                     else:
-                        expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+                        expval = dev.execute(queue, [qml.expval.PauliX(0)])
 
             exps = dev.expectations
             all_exps = set(qml.expval.__all__)
@@ -199,15 +199,15 @@ class DeviceTest(BaseTest):
                 else:
                     params = np.random.random([op.num_params])
 
-                queue = [op(*params, wires=list(range(op.num_wires)), do_queue=False)]
+                queue = [op(*params, wires=list(range(op.num_wires)))]
 
                 temp = isinstance(queue[0], qml.operation.CV)
 
                 with self.assertRaisesRegex(qml.DeviceError, 'not supported on device'):
                     if temp:
-                        expval = dev.execute([qml.Rotation(0.5, wires=0, do_queue=False)], queue)
+                        expval = dev.execute([qml.Rotation(0.5, wires=0)], queue)
                     else:
-                        expval = dev.execute([qml.RX(0.5, wires=0, do_queue=False)], queue)
+                        expval = dev.execute([qml.RX(0.5, wires=0)], queue)
 
 
 class InitDeviceTests(BaseTest):

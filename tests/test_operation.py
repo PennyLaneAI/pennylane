@@ -52,7 +52,7 @@ class BasicTest(BaseTest):
             else:
                 par = [-0.069125, 0.51778, 0.91133, 0.95904][:cls.num_params]
 
-            op = cls(*par, wires=ww, do_queue=False)
+            op = cls(*par, wires=ww)
 
             if issubclass(cls, oo.Expectation):
                 Q = op.heisenberg_obs(0)
@@ -125,27 +125,27 @@ class BasicTest(BaseTest):
                 pars = [0.0] * n
 
             # valid call
-            cls(*pars, wires=ww, do_queue=False)
+            cls(*pars, wires=ww)
 
             # too many parameters
             with self.assertRaisesRegex(ValueError, 'wrong number of parameters'):
-                cls(*(n+1)*[0], wires=ww, do_queue=False)
+                cls(*(n+1)*[0], wires=ww)
 
             # too few parameters
             if n > 0:
                 with self.assertRaisesRegex(ValueError, 'wrong number of parameters'):
-                    cls(*(n-1)*[0], wires=ww, do_queue=False)
+                    cls(*(n-1)*[0], wires=ww)
 
             if w > 0:
                 # too many or too few wires
                 with self.assertRaisesRegex(ValueError, 'wrong number of wires'):
-                    cls(*pars, wires=list(range(w+1)), do_queue=False)
+                    cls(*pars, wires=list(range(w+1)))
                 with self.assertRaisesRegex(ValueError, 'wrong number of wires'):
-                    cls(*pars, wires=list(range(w-1)), do_queue=False)
+                    cls(*pars, wires=list(range(w-1)))
                 # repeated wires
                 if w > 1:
                     with self.assertRaisesRegex(ValueError, 'wires must be unique'):
-                        cls(*pars, wires=w*[0], do_queue=False)
+                        cls(*pars, wires=w*[0])
 
             if n == 0:
                 return
@@ -154,28 +154,28 @@ class BasicTest(BaseTest):
             if cls.par_domain == 'A':
                 # params must be arrays
                 with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
-                    cls(*n*[0.0], wires=ww, do_queue=False)
+                    cls(*n*[0.0], wires=ww)
                 # params must not be Variables
                 with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
-                    cls(*n*[ov.Variable(0)], wires=ww, do_queue=False)
+                    cls(*n*[ov.Variable(0)], wires=ww)
             elif cls.par_domain == 'N':
                 # params must be natural numbers
                 with self.assertRaisesRegex(TypeError, 'Natural number'):
-                    cls(*n*[0.7], wires=ww, do_queue=False)
+                    cls(*n*[0.7], wires=ww)
                 with self.assertRaisesRegex(TypeError, 'Natural number'):
-                    cls(*n*[-1], wires=ww, do_queue=False)
+                    cls(*n*[-1], wires=ww)
             elif cls.par_domain == 'R':
                 # params must be real numbers
                 with self.assertRaisesRegex(TypeError, 'Real scalar parameter expected'):
-                    cls(*n*[1j], wires=ww, do_queue=False)
+                    cls(*n*[1j], wires=ww)
 
             # if par_domain ever gets overridden to an unsupported value, should raise exception
             tmp = cls.par_domain
             with self.assertRaisesRegex(ValueError, 'Unknown parameter domain'):
                 cls.par_domain = 'junk'
-                cls(*n*[0.0], wires=ww, do_queue=False)
+                cls(*n*[0.0], wires=ww)
                 cls.par_domain = 7
-                cls(*n*[0.0], wires=ww, do_queue=False)
+                cls(*n*[0.0], wires=ww)
 
             cls.par_domain = tmp
 
@@ -205,9 +205,9 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         try:
-            pennylane.qubit.Hadamard(wires=0, do_queue=False)
+            pennylane.qubit.Hadamard(wires=0)
         except pennylane.QuantumFunctionError:
-            self.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
+            self.fail("Operation failed to instantiate outside of QNode with.")
 
 
 class DeveloperTests(BaseTest):
@@ -225,7 +225,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'A'
 
         with self.assertRaisesRegex(ValueError, "wrong number of wires"):
-            DummyOp(0.5, wires=[0, 1], do_queue=False)
+            DummyOp(0.5, wires=[0, 1])
 
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
@@ -239,7 +239,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'A'
 
         with self.assertRaisesRegex(ValueError, "wrong number of parameters"):
-            DummyOp(0.5, 0.6, wires=0, do_queue=False)
+            DummyOp(0.5, 0.6, wires=0)
 
     def test_incorrect_param_domain(self):
         """Test that an exception is raised if an incorrect parameter domain is requested"""
@@ -253,7 +253,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'A'
 
         with self.assertRaisesRegex(ValueError, "Unknown parameter domain"):
-            DummyOp(0.5, wires=0, do_queue=False)
+            DummyOp(0.5, wires=0)
 
     def test_incorrect_grad_recipe_length(self):
         """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
@@ -268,7 +268,7 @@ class DeveloperTests(BaseTest):
             grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
 
         with self.assertRaisesRegex(AssertionError, "Gradient recipe must have one entry for each parameter"):
-            DummyOp(0.5, wires=[0, 1], do_queue=False)
+            DummyOp(0.5, wires=[0, 1])
 
     def test_grad_method_with_integer_params(self):
         """Test that an exception is raised if a non-None grad-method is provided for natural number params"""
@@ -282,7 +282,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'A'
 
         with self.assertRaisesRegex(AssertionError, "An operation may only be differentiated with respect to real scalar parameters"):
-            DummyOp(5, wires=[0, 1], do_queue=False)
+            DummyOp(5, wires=[0, 1])
 
     def test_analytic_grad_with_array_param(self):
         """Test that an exception is raised if an analytic gradient is requested with an array param"""
@@ -296,7 +296,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'A'
 
         with self.assertRaisesRegex(AssertionError, "Operations that depend on arrays containing free variables may only be differentiated using the F method"):
-            DummyOp(np.array([1.]), wires=[0, 1], do_queue=False)
+            DummyOp(np.array([1.]), wires=[0, 1])
 
     def test_numerical_grad_with_grad_recipe(self):
         """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
@@ -311,7 +311,7 @@ class DeveloperTests(BaseTest):
             grad_recipe = [(0.5, 0.1)]
 
         with self.assertRaisesRegex(AssertionError, "Gradient recipe is only used by the A method"):
-            DummyOp(0.5, wires=[0, 1], do_queue=False)
+            DummyOp(0.5, wires=[0, 1])
 
     def test_variable_instead_of_array(self):
         """Test that an exception is raised if an array is expected but a variable is passed"""
@@ -325,7 +325,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'A'
 
         with self.assertRaisesRegex(TypeError, "Array parameter expected, got a Variable"):
-            DummyOp(ov.Variable(0), wires=[0], do_queue=False)
+            DummyOp(ov.Variable(0), wires=[0])
 
     def test_array_instead_of_flattened_array(self):
         """Test that an exception is raised if an array is expected, but an array is passed
@@ -341,7 +341,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'F'
 
         with self.assertRaisesRegex(TypeError, "Flattened array parameter expected"):
-            op = DummyOp(np.array([1]), wires=[0], do_queue=False)
+            op = DummyOp(np.array([1]), wires=[0])
             op.check_domain(np.array([1]), True)
 
     def test_scalar_instead_of_array(self):
@@ -356,7 +356,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'F'
 
         with self.assertRaisesRegex(TypeError, "Array parameter expected, got"):
-            op = DummyOp(0.5, wires=[0], do_queue=False)
+            op = DummyOp(0.5, wires=[0])
 
     def test_array_instead_of_real(self):
         """Test that an exception is raised if a real number is expected but an array is passed"""
@@ -370,7 +370,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'F'
 
         with self.assertRaisesRegex(TypeError, "Real scalar parameter expected, got"):
-            op = DummyOp(np.array([1.]), wires=[0], do_queue=False)
+            op = DummyOp(np.array([1.]), wires=[0])
 
     def test_not_natural_param(self):
         """Test that an exception is raised if a natural number is expected but not passed"""
@@ -384,10 +384,10 @@ class DeveloperTests(BaseTest):
             grad_method = None
 
         with self.assertRaisesRegex(TypeError, "Natural number parameter expected, got"):
-            op = DummyOp(0.5, wires=[0], do_queue=False)
+            op = DummyOp(0.5, wires=[0])
 
         with self.assertRaisesRegex(TypeError, "Natural number parameter expected, got"):
-            op = DummyOp(-2, wires=[0], do_queue=False)
+            op = DummyOp(-2, wires=[0])
 
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
@@ -401,7 +401,7 @@ class DeveloperTests(BaseTest):
             grad_method = None
 
         with self.assertRaisesRegex(ValueError, "Must specify the wires"):
-            DummyOp(0.54, do_queue=False)
+            DummyOp(0.54)
 
     def test_wire_passed_positionally(self):
         """Test exception raised if wire is passed as a positional arg"""
@@ -415,7 +415,7 @@ class DeveloperTests(BaseTest):
             grad_method = None
 
         with self.assertRaisesRegex(ValueError, "Must specify the wires"):
-            DummyOp(0.54, 0, do_queue=False)
+            DummyOp(0.54, 0)
 
 
 if __name__ == '__main__':
