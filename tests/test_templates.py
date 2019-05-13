@@ -32,26 +32,28 @@ class DummyDevice(DefaultGaussian):
     _operation_map = DefaultGaussian._operation_map.copy()
     _operation_map['Kerr'] = lambda *x, **y: np.identity(2)
 
-@pytest.fixture(scope="session",
+
+@pytest.fixture(scope="module",
                 params=[2, 3])
 def n_subsystems(request):
     """Number of qubits or qumodes."""
     return request.param
 
-@pytest.fixture(scope="session",
+
+@pytest.fixture(scope="module",
                 params=[1, 2])
 def n_layers(request):
     """Number of layers."""
     return request.param
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def qubit_device(n_subsystems):
     """Number of qubits or modes."""
     return qml.device('default.qubit', wires=n_subsystems)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def gaussian_device(n_subsystems):
     """Number of qubits or modes."""
     return DummyDevice(wires=n_subsystems)

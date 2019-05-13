@@ -25,27 +25,27 @@ from pennylane.templates.parameters import (parameters_cvqnn_layer,
                                             parameters_stronglyentangling_layers)
 
 
-@pytest.fixture(scope="session",
+@pytest.fixture(scope="module",
                 params=[2, 3])
 def n_subsystems(request):
     """Number of qubits or modes."""
     return request.param
 
 
-@pytest.fixture(scope="session",
+@pytest.fixture(scope="module",
                 params=[2, 3])
 def n_layers(request):
     """Number of layers."""
     return request.param
 
 
-@pytest.fixture(scope="session",
+@pytest.fixture(scope="module",
                 params=[None, 2, 10])
 def n_rots(request):
     """Number of rotations in random layer."""
     return request.param
 
-@pytest.fixture(scope="session",
+@pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):
     """Different seeds."""
