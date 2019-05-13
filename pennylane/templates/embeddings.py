@@ -118,7 +118,7 @@ def AmplitudeEmbedding(features, n_qubits):
 
     .. note::
 
-        AmplitudeEmbedding uses PennyLane's :func:`QubitStateVector()` and only works in conjunction with
+        AmplitudeEmbedding uses PennyLane's :class:``~.QubitStateVector`` and only works in conjunction with
         devices that implement this function.
 
     Args:
