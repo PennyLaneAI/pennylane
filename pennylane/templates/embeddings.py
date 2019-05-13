@@ -112,7 +112,7 @@ def BasisEmbedding(basis_state, n_qubits):
 
 def AmplitudeEmbedding(features, n_qubits):
     """
-    Prepares a quantum state whose amplitude vector is given by `features`.
+    Prepares a quantum state whose amplitude vector is given by ``features``.
 
     `features` has to be an array representing a 1-d vector of unit length and with 2**`n_qubits` entries.
 
