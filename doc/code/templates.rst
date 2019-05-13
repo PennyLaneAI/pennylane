@@ -13,20 +13,17 @@ evaluate, and train more complex quantum machine learning models. In the
 quantum machine learning literature, such architectures are commonly known as an
 **ansatz**.
 
-PennyLane conceptually distinguishes two types of templates, layer architectures and input embeddings:
+PennyLane conceptually distinguishes two types of templates, **layer architectures** and **input embeddings**:
 
-* Layer architectures in :mod:`pennylane.templates.layers` define blocks of gates that are repeated like the
-  layers in a neural network. They usually contain only trainable parameters.
+* Layer architectures, found in :mod:`pennylane.templates.layers`, define blocks of gates that are repeated like the layers in a neural network. They usually contain only trainable parameters.
 
-* Embeddings in :mod:`pennylane.templates.embeddings` encode input features into the quantum state of the
-  circuit. These embeddings can also be learnable, or depend on trainable parameters.
+* Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state of the circuit. These embeddings can also depend on trainable parameters, in which case the embedding is learnable.
 
-Each template has a utilities function in :mod:`pennylane.templates.parameters` which generates a randomly
-sampled array for the trainable parameters fed into the template.
+Each trainable template has a dedicated function in :mod:`pennylane.templates.parameters` which generates a list of **randomly initialized** arrays for the trainable **parameters**. The entries of the list contain valid positional arguments for the template to allow for the syntax ``MyTemplate(*par_list)``.
 
 .. note::
 
-    The templates below are constructed out of **structured combinations**
+    Templates are constructed out of **structured combinations**
     of the :mod:`quantum operations <pennylane.ops>` provided by PennyLane.
     As a result, you should follow all the rules of quantum operations
     when you use templates. For example **template functions can only be
@@ -39,7 +36,7 @@ Summary
 .. rst-class:: contents local topic
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     templates/layers
     templates/embeddings
@@ -55,56 +52,95 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
 .. code-block:: python
 
-    import pennylane as qml
-    from pennylane.template.layers import StronglyEntanglingLayers
-    from pennylane import numpy as np
+	import pennylane as qml
+	from pennylane.templates.layers import StronglyEntanglingLayers
+	from pennylane.templates.parameters import parameters_stronglyentangling_layers
 
-    num_wires = 4
-    num_blocks = 3
+	from pennylane import numpy as np
 
-    dev = qml.device('default.qubit', wires=num_wires)
+	num_wires = 4
+	num_blocks = 3
 
-    @qml.qnode(dev)
-    def circuit(weights, x=None):
-        qml.BasisState(x, wires=range(num_wires))
-        StronglyEntanglingLayers(weights, periodic=True, wires=range(num_wires))
-        return qml.expval.PauliZ(0)
+	dev = qml.device('default.qubit', wires=num_wires)
 
-    weights = np.random.randn(num_blocks, num_wires, 3)
-    print(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
 
-The handy :class:`~.Interferometer` function can be used to construct arbitrary
-interferometers in terms of elementary :class:`~.Beamsplitter` operations,
+	@qml.qnode(dev)
+	def circuit(weights, x=None):
+	    qml.BasisState(x, wires=range(num_wires))
+	    StronglyEntanglingLayers(*weights, periodic=True, wires=range(num_wires))
+	    return qml.expval.PauliZ(0)
+
+
+	weights = parameters_stronglyentangling_layers(n_layers= 2, n_wires=4)
+	print(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
+
+.. note::
+
+	``weights`` is a list of parameter arrays. In the case of the strongly entangling template, the list contains exactly one such parameter array of shape ``(num_blocks, num_wires, 3)``. One could alternatively create this list of an array by hand, replacing second-to-last line with ``weights = [np.random.randn(num_blocks, num_wires, 3)]``.
+
+Another exmample is the handy :class:`~.Interferometer` function, which can be used to construct arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations,
 by providing lists of transmittivity and phase angles. PennyLane can
-then be used to easily differentiate and optimize these
-parameters:
+then be used to easily differentiate and optimize these parameters:
 
 .. code-block:: python
 
-    import pennylane as qml
-    from pennylane.template import Interferometer
-    from pennylane import numpy as np
+	import pennylane as qml
+	from pennylane.templates.layers import Interferometer
+	from pennylane import numpy as np
 
-    num_wires = 4
-    num_params = int(num_wires*(num_wires-1)/2)
+	num_wires = 4
+	num_params = int(num_wires * (num_wires - 1) / 2)
 
-    dev = qml.device('default.gaussian', wires=num_wires)
+	dev = qml.device('default.gaussian', wires=num_wires)
 
-    # initial parameters
-    r = np.random.rand(num_wires, 2)
-    theta = np.random.uniform(0, 2*np.pi, num_params)
-    phi = np.random.uniform(0, 2*np.pi, num_params)
+	# initial parameters
+	r = np.random.rand(num_wires, 2)
+	theta = np.random.uniform(0, 2 * np.pi, num_params)
+	phi = np.random.uniform(0, 2 * np.pi, num_params)
+	varphi = np.random.uniform(0, 2 * np.pi, num_wires)
 
-    @qml.qnode(dev)
-    def circuit(theta, phi):
-        for w in range(num_wires):
-            qml.Squeezing(r[w][0], r[w][1], wires=w)
-        Interferometer(theta=theta, phi=phi, wires=range(num_wires))
-        return [qml.expval.MeanPhoton(wires=w) for w in range(num_wires)]
 
-    print(qml.jacobian(circuit, 0)(theta, phi))
+	@qml.qnode(dev)
+	def circuit(theta, phi):
+	    for w in range(num_wires):
+		qml.Squeezing(r[w][0], r[w][1], wires=w)
+	    Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(num_wires))
+	    return [qml.expval.MeanPhoton(wires=w) for w in range(num_wires)]
 
-The function :func:`~.CVNeuralNetLayers` implements the continuous-variable neural network architecture
+	j = qml.jacobian(circuit, 0)
+	print(j(theta, phi, varphi))
+
+Instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, one can also use the :func:`pennylane.templates.parameters.parameters_interferometer()` function. 
+
+
+.. code-block:: python
+
+	import pennylane as qml
+	from pennylane.templates.layers import Interferometer
+	from pennylane.templates.parameters import parameters_interferometer
+	from pennylane import numpy as np
+
+	num_wires = 4
+	num_params = int(num_wires * (num_wires - 1) / 2)
+
+	dev = qml.device('default.gaussian', wires=num_wires)
+
+	# initial parameters
+	r = np.random.rand(num_wires, 2)
+	pars = parameters_interferometer(n_wires)
+
+	@qml.qnode(dev)
+	def circuit(theta, phi, varphi):
+	    for w in range(num_wires):
+		qml.Squeezing(r[w][0], r[w][1], wires=w)
+	    Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(num_wires))
+	    return [qml.expval.MeanPhoton(wires=w) for w in range(num_wires)]
+
+	j = qml.jacobian(circuit, 0)
+	print(j(*pars))
+
+
+An example for a continuous-variable template is the function :func:`~.CVNeuralNetLayers`, which implements the continuous-variable neural network architecture
 from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such neural
 networks can be easily constructed and trained with PennyLane.
 

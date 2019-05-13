@@ -83,10 +83,9 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='X')
             return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Number of features to embed cannot be larger than number of '
+                                             'wires which is 1, got 4.'):
             circuit(x=features)
-        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than number of wires which is 1, ' \
-                                        'got 4.'
 
     def test_angle_embedding_state_roty(self, qubit_device, n_subsystems):
         """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
@@ -103,7 +102,6 @@ class TestAngleEmbd:
 
         res = circuit(x=features[:n_subsystems])
         target = [-1, -1, 0, 1, 1]
-
         assert np.allclose(res, target[:n_subsystems])
 
     def test_angle_embedding_exception_roty(self):
@@ -122,10 +120,9 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Y')
             return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Number of features to embed cannot be larger than '
+                                             'number of wires which is 1, got 4.'):
             circuit(x=features)
-        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than number of wires which is 1,'\
-                                        ' got 4.'
 
     def test_angle_embedding_state_rotz(self, qubit_device, n_subsystems):
         """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
@@ -160,10 +157,9 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
             return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Number of features to embed cannot be larger '
+                                             'than number of wires which is 1, got 4.'):
             circuit(x=features)
-        assert excinfo.value.args[0] == 'Number of features to embed cannot be larger than number of wires which is 1,' \
-                                        ' got 4.'
 
     def test_angle_embedding_exception_wrongrot(self):
         """Verifies that pennylane.templates.embeddings.AngleEmbedding() raises an exception if the
@@ -177,9 +173,8 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='A')
             return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Rotation has to be `X`, `Y` or `Z`, got A.'):
             circuit(x=[1])
-        assert excinfo.value.args[0] == 'Rotation has to be `X`, `Y` or `Z`, got A.'
 
     def test_angle_embedding_exception_wiresnolist(self):
         """Verifies that pennylane.templates.embeddings.AngleEmbedding() raises an exception if ``wires`` is not
@@ -193,9 +188,8 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=3, rotation='A')
             return qml.expval.PauliZ(0)
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses, got 3.'):
             circuit(x=[1])
-        assert excinfo.value.args[0] == 'Wires needs to be a list of wires that the embedding uses, got 3.'
 
 
 class TestBasisEmb:
@@ -228,10 +222,9 @@ class TestBasisEmb:
             BasisEmbedding(basis_state=x, wires=range(2))
             return qml.expval.PauliZ(0)
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Number of bits to embed cannot be larger than '
+                                             'number of wires which is 2, got 3.'):
             circuit(x=np.array([0, 1, 1]))
-        assert excinfo.value.args[0] == 'Number of bits to embed cannot be larger than number of wires which is 2,' \
-                                        ' got 3.'
 
     def test_basis_embedding_exception_wiresnolist(self):
         """Verifies that pennylane.templates.embeddings.BasisEmbedding() raises an exception if ``wires`` is not
@@ -245,9 +238,8 @@ class TestBasisEmb:
             BasisEmbedding(basis_state=x, wires=3)
             return qml.expval.PauliZ(0)
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses, got 3.'):
             circuit(x=[1])
-        assert excinfo.value.args[0] == 'Wires needs to be a list of wires that the embedding uses, got 3.'
 
 
 class TestAmplitudeEmb:
@@ -258,7 +250,6 @@ class TestAmplitudeEmb:
 
         features = np.array([0, 1, 0, 0])
         n_qubits = 2
-
         dev = qml.device('default.qubit', wires=n_qubits)
 
         @qml.qnode(dev)
@@ -267,7 +258,6 @@ class TestAmplitudeEmb:
             return [qml.expval.PauliZ(i) for i in range(n_qubits)]
 
         res = circuit(x=features)
-
         assert np.allclose(res, [1, -1])
 
     def test_amplitude_embedding_exception_subsystems(self):
@@ -286,6 +276,7 @@ class TestAmplitudeEmb:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
         assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**n_qubits ' \
                                         'which is 4, got 5.'
+
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8)])
         assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**n_qubits ' \
@@ -303,9 +294,8 @@ class TestAmplitudeEmb:
             AmplitudeEmbedding(features=x, wires=3)
             return qml.expval.PauliZ(0)
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses, got 3.'):
             circuit(x=[1])
-        assert excinfo.value.args[0] == 'Wires needs to be a list of wires that the embedding uses, got 3.'
 
 
 class TestSqueezingEmb:
@@ -355,14 +345,12 @@ class TestSqueezingEmb:
             SqueezingEmbedding(features=x, wires=range(n_wires), execution='phase')
             return [qml.expval.X(i) for i in range(n_wires)]
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='SqueezingEmbedding requires a feature vector of size n_wires '
+                                             'which is 2, got 3.'):
             circuit(x=[0.2, 0.3, 0.4])
-        assert excinfo.value.args[0] == 'SqueezingEmbedding requires a feature vector of size n_wires ' \
-                                        'which is 2, got 3.'
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='SqueezingEmbedding requires a feature vector of size n_wires '
+                                             'which is 2, got 1.'):
             circuit(x=[0.2])
-        assert excinfo.value.args[0] == 'SqueezingEmbedding requires a feature vector of size n_wires ' \
-                                        'which is 2, got 1.'
 
     def test_squeezing_embedding_exception_strategy(self):
         """Verifies that pennylane.templates.embeddings.SqueezingEmbedding() throws exception
@@ -376,9 +364,8 @@ class TestSqueezingEmb:
             SqueezingEmbedding(features=x, wires=range(n_wires), execution='A')
             return [qml.expval.X(i) for i in range(n_wires)]
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Execution strategy A not known. Has to be `phase` or `amplitude`.'):
             circuit(x=[1, 2])
-        assert excinfo.value.args[0] == 'Execution strategy A not known. Has to be `phase` or `amplitude`.'
 
     def test_squeezing_embedding_exception_wiresnolist(self):
         """Verifies that pennylane.templates.embeddings.SqueezingEmbedding() raises an exception if ``wires`` is not
@@ -392,9 +379,8 @@ class TestSqueezingEmb:
             SqueezingEmbedding(features=x, wires=3, execution='A')
             return qml.expval.X(0)
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses, got 3.'):
             circuit(x=[1])
-        assert excinfo.value.args[0] == 'Wires needs to be a list of wires that the embedding uses, got 3.'
 
 
 class TestDisplacementEmb:
@@ -444,14 +430,12 @@ class TestDisplacementEmb:
             DisplacementEmbedding(features=x, wires=range(n_wires), execution='phase')
             return [qml.expval.X(i) for i in range(n_wires)]
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='DisplacementEmbedding requires a feature vector of size n_wires ' \
+                                        'which is 2, got 3.'):
             circuit(x=[0.2, 0.3, 0.4])
-        assert excinfo.value.args[0] == 'DisplacementEmbedding requires a feature vector of size n_wires ' \
-                                        'which is 2, got 3.'
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='DisplacementEmbedding requires a feature vector of size n_wires ' \
+                                        'which is 2, got 1.'):
             circuit(x=[0.2])
-        assert excinfo.value.args[0] == 'DisplacementEmbedding requires a feature vector of size n_wires ' \
-                                        'which is 2, got 1.'
 
     def test_displacement_embedding_exception_strategy(self):
         """Verifies that pennylane.templates.embeddings.DisplacementEmbedding() throws exception
@@ -465,9 +449,8 @@ class TestDisplacementEmb:
             DisplacementEmbedding(features=x, wires=range(n_wires), execution='A')
             return [qml.expval.X(i) for i in range(n_wires)]
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Execution strategy A not known. Has to be `phase` or `amplitude`.'):
             circuit(x=[1, 2])
-        assert excinfo.value.args[0] == 'Execution strategy A not known. Has to be `phase` or `amplitude`.'
 
     def test_displacement_embedding_exception_wiresnolist(self):
         """Verifies that pennylane.templates.embeddings.DisplacementEmbedding() raises an exception if ``wires`` is not
@@ -481,6 +464,5 @@ class TestDisplacementEmb:
             DisplacementEmbedding(features=x, wires=3, execution='A')
             return qml.expval.X(0)
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses, got 3.'):
             circuit(x=[1])
-        assert excinfo.value.args[0] == 'Wires needs to be a list of wires that the embedding uses, got 3.'

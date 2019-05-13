@@ -12,21 +12,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Parameters
-==========
+Parameter Initializations
+=========================
 
-This module contains methods to create arrays of initial parameters that can
+**Module name:** :mod:`pennylane.templates.parameters`
+
+.. currentmodule:: pennylane.templates.parameters
+
+This module contains methods to create arrays of initial parameters that can \
 be used in :mod:`pennylane.templates.layers`.
+
+Qubit architectures
+-------------------
+
+Strongly entangling circuit
+***************************
+
+.. autosummary::
+
+    parameters_stronglyentangling_layers
+    parameters_stronglyentangling_layer
+
+Random circuit
+**************
+
+.. autosummary::
+
+    parameters_random_layers
+    parameters_random_layer
+
+Continuous-variable architectures
+---------------------------------
+
+Continuous-variable quantum neural network
+******************************************
 
 .. autosummary::
 
     parameters_cvqnn_layers
     parameters_cvqnn_layer
-    parameters_stronglyentangling_layers
-    parameters_stronglyentangling_layer
-    parameters_random_layers
-    parameters_random_layer
 
+Interferometer
+**************
+
+.. autosummary::
+
+    parameters_interferometer
+
+Code details
+^^^^^^^^^^^^
 """
 import numpy as np
 from math import pi
@@ -34,12 +68,12 @@ from math import pi
 
 def parameters_cvqnn_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
     r"""
-    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.CVNeuralNetLayers`.
+    Create a list of eleven randomly initialised parameter arrays for the positional arguments in \
+    :func:`pennylane.templates.layers.CVNeuralNetLayers()`.
 
-    The number of parameters for each of the ``n_layers`` layers is either ``n_wires`` or ``n_wires*(n_wires-1)/2``,
-    depending on the gate type.
+    The shape of the arrays is either ``(n_layers, n_wires)`` or ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-    Rotation angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``, while
+    Rotation angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``, while \
     all other parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
 
     Args:
@@ -76,11 +110,12 @@ def parameters_cvqnn_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi
 
 def parameters_cvqnn_layer(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
     r"""
-    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.CVNeuralNetLayer`.
+    Create a list of eleven randomly initialised parameter arrays for the positional arguments in \
+    :func:`pennylane.templates.layers.CVNeuralNetLayer()`.
 
-    The number of parameters is either ``n_wires`` or ``n_wires*(n_wires-1)/2``, depending on the gate type.
+    The shape of the arrays is either ``(n_wires,)`` or ``(n_wires*(n_wires-1)/2,)``.
 
-    Rotation angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``, while
+    Rotation angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``, while \
     all other parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
 
     Args:
@@ -115,11 +150,43 @@ def parameters_cvqnn_layer(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, s
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
+def parameters_interferometer(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
+    r"""
+    Create a list of three randomly initialised parameter arrays for \
+    :func:`pennylane.templates.layers.Interferometer()`.
+
+    The shape of the arrays is either ``n_wires`` or ``n_wires*(n_wires-1)/2``.
+
+    Rotation angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``, while \
+    all other parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
+
+    Args:
+        n_wires (int): number of modes that the interferometer acts on
+        uniform_min (float): minimum angle of gate parameters
+        uniform_max (float): maximum angle of gate parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        list of three parameter arrays
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    n_if = n_wires * (n_wires - 1) // 2
+    interval = uniform_max-uniform_min
+
+    theta = np.random.random(size=(n_if,)) * interval + uniform_min
+    phi = np.random.random(size=(n_if,)) * interval + uniform_min
+    varphi = np.random.random(size=(n_wires,)) * interval + uniform_min
+
+    return [theta, phi, varphi]
+
+
 def parameters_stronglyentangling_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
-    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.StronglyEntanglingLayers`.
+    Create a list of randomly initialised parameter arrays for \
+    :func:`pennylane.templates.layers.StronglyEntanglingLayers()`.
 
-    The number of parameter array is ``(n_layers, n_qubits, 3)`` and each parameter is drawn uniformly at random
+    The number of parameter array is ``(n_layers, n_qubits, 3)`` and each parameter is drawn uniformly at random \
     from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in RX, RY and RZ rotations
     applied to each layer.
 
@@ -143,11 +210,12 @@ def parameters_stronglyentangling_layers(n_layers, n_wires, uniform_min=0, unifo
 
 def parameters_stronglyentangling_layer(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
-    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.StronglyEntanglingLayers`.
+    Create a list of randomly initialised parameter arrays for \
+    :func:`pennylane.templates.layers.StronglyEntanglingLayers()`.
 
-    The number of parameter array is ``(n_qubits, 3)`` and each parameter is drawn uniformly at random
-    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in RX, RY and RZ rotations
-    applied to each layer.
+    The number of parameter array is ``(n_qubits, 3)`` and each parameter is drawn uniformly at random \
+    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in RX, RY and RZ \
+    rotations applied to each layer.
 
     Args:
         n_wires (int): number of qubits
@@ -168,10 +236,10 @@ def parameters_stronglyentangling_layer(n_wires, uniform_min=0, uniform_max=2 * 
 
 def parameters_random_layers(n_layers, n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
-    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.RandomLayers`.
+    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.RandomLayers()`.
 
-    The number of parameter array is ``(n_layers, K)`` and each parameter is drawn uniformly at random
-    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in randomly
+    The number of parameter array is ``(n_layers, K)`` and each parameter is drawn uniformly at random \
+    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in randomly \
     positioned rotations applied in each layer.
 
     Args:
@@ -198,11 +266,11 @@ def parameters_random_layers(n_layers, n_wires, n_rots=None, uniform_min=0, unif
 
 def parameters_random_layer(n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
-    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.StronglyEntanglingLayers`.
+    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.RandomLayer()`.
 
-    The number of parameter array is ``(n_qubits, 3)`` and each parameter is drawn uniformly at random
-    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in RX, RY and RZ rotations
-    applied to each layer.
+    The number of parameter array is ``(n_qubits, 3)`` and each parameter is drawn uniformly at random \
+    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in RX, RY and RZ \
+    rotations applied to each layer.
 
     Args:
         n_wires (int): number of qubits

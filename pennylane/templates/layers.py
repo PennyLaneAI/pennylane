@@ -12,26 +12,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Provided layers templates
-=========================
+Layers
+=========
+
+**Module name:** :mod:`pennylane.templates.layers`
+
+.. currentmodule:: pennylane.templates.layers
+
 
 Qubit architectures
 -------------------
+
+Strongly entangling circuit
+***************************
+
+Constructs the strongly entangling circuit used in the circuit-centric quantum classifier :cite:`schuld2018circuit`.
+Applies rotations on each qubit, followed by cascades of entangling gates.
 
 .. autosummary::
 
     StronglyEntanglingLayers
     StronglyEntanglingLayer
+
+Random circuit
+**************
+
+Constructs a circuit with randomly distributed rotations and 2-qubit entangling gates.
+
+.. autosummary::
+
     RandomLayers
     RandomLayer
 
 Continuous-variable architectures
 ---------------------------------
 
+Continuous-variable quantum neural network
+******************************************
+
+The CV Quantum Neural Network (CVQNN) architecture from :cite:`killoran2018continuous`.
+
 .. autosummary::
 
     CVNeuralNetLayers
     CVNeuralNetLayer
+
+Interferometer
+**************
+
+A basic interferometer of beam splitters.
+
+.. autosummary::
+
     Interferometer
 
 Code details
@@ -51,8 +83,7 @@ def StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=CN
     A strongly entangling circuit.
 
     Constructs the strongly entangling circuit used in the circuit-centric quantum
-    classifier :cite:`schuld2018circuit`
-    with ``len(weights)`` blocks on the :math:`N` wires with the provided weights.
+    classifier :cite:`schuld2018circuit` with ``len(weights)`` blocks on the :math:`N` wires with the provided weights.
     Each element of weights must be a an array of size :math:`3N`. The number of layers is inferred from the first
     dimension of `weights`.
 

@@ -23,24 +23,68 @@ This module provides quantum circuit architectures that can serve as an embeddin
 (represented by the gate parameters) into a quantum state (see also Schuld & Killoran 2019
 :cite:`schuld2019quantum`).
 
-Provided embeddings
---------------------
-
 Qubit architectures
-*******************
+-------------------
+
+Angle embedding
+***************
+
+Encodes ``n`` features into the rotation angles of ``n`` qubits. The rotation can be Pauli-X, -Y or -Z.
 
 .. autosummary::
 
     AngleEmbedding
+
+Amplitude embedding
+*******************
+
+Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits. The absolute square of all features
+has to add up to one.
+
+.. note::
+
+    This embedding is a wrapper for PennyLane`s :mod:`QubitStateVector()`, and only works with backends which
+    implement this method.
+
+.. autosummary::
+
     AmplitudeEmbedding
+
+Basis embedding
+***************
+
+Encodes :math:`n` bits into a basis state of :math:`n` qubits.
+
+.. note::
+
+    This embedding is a wrapper for PennyLane`s :mod:`BasisState()`, and only works with backends which
+    implement this method.
+
+.. autosummary::
+
     BasisEmbedding
 
 Continuous-variable architectures
-*********************************
+---------------------------------
+
+Squeezing embedding
+*******************
+
+Encodes :math:`M` features into the squeezing amplitude or phase of :math:`M` modes.
+
 
 .. autosummary::
 
     SqueezingEmbedding
+
+
+Displacement embedding
+**********************
+
+Encodes :math:`M` features into the displacement amplitude or phase of :math:`M` modes.
+
+.. autosummary::
+
     DisplacementEmbedding
 
 Code details
@@ -60,8 +104,8 @@ def AngleEmbedding(features, wires, rotation='X'):
      * ``rotation = 'Y'`` uses the features to chronologically apply Pauli-Y rotations to qubits
      * ``rotation = 'Z'`` uses the features to chronologically apply Pauli-Z rotations to qubits
 
-    The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in ``features``
-    than rotations, the circuit does not apply the remaining rotation gates.
+    The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in
+    ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
     This embedding method can also be used to encode a binary sequence into a basis state. Choose ``rotation='X'``
     and features of a nonzero value of :math:`\pi /2` only where a qubit has to be prepared in state 1.
