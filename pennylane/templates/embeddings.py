@@ -187,7 +187,7 @@ def DisplacementEmbedding(features, n_wires, execution='amplitude', c=0.1):
     Args:
         features (array): Binary sequence to encode
         n_wires (int): Number of qubits in the circuit
-        execution (str): 'phase' encodes the input into the phase of single-mode squeezing, while
+        execution (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             'amplitude' uses the amplitude.
         c (float): parameter setting the value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'`` to a constant.
