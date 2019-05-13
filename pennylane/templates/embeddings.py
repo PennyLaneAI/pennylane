@@ -50,6 +50,7 @@ Code details
 from pennylane import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 from collections.abc import Iterable
 
+
 def AngleEmbedding(features, wires, rotation='X'):
     r"""
     Uses the entries of ``features`` as rotation angles of qubits.
@@ -69,7 +70,6 @@ def AngleEmbedding(features, wires, rotation='X'):
         features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
         wires (int): List of qubit indices for the qubits used for the embedding
         rotation (str): Strategy of embedding
-
     """
 
     if not isinstance(wires, Iterable):
@@ -101,11 +101,11 @@ def BasisEmbedding(basis_state, wires):
 
     .. note::
 
-        BasisEmbedding uses PennyLane's :func:`BasisState()` and only works in conjunction with
+        BasisEmbedding uses PennyLane's :class:`~.BasisState` and only works in conjunction with
         devices that implement this function.
 
     Args:
-        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
+        features (array): Input array of shape ``(N, )``, where ``N`` is the number of input features to embed
         wires (int): List of qubit indices for the qubits used for the embedding
     """
     if not isinstance(wires, Iterable):
@@ -119,17 +119,17 @@ def BasisEmbedding(basis_state, wires):
 
 def AmplitudeEmbedding(features, wires):
     """
-    Prepares a quantum state whose amplitude vector is given by `features`.
+    Prepares a quantum state whose amplitude vector is given by ``features``.
 
     ``features`` has to be an array representing a 1-d vector of unit length and with 2**`n_wires` entries.
 
     .. note::
 
-        AmplitudeEmbedding uses PennyLane's :func:`QubitStateVector()` and only works in conjunction with
+        AmplitudeEmbedding uses PennyLane's :class:``~.QubitStateVector`` and only works in conjunction with
         devices that implement this function.
 
     Args:
-        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
+        features (array): Input array of shape ``(N, )``, where ``N`` is the number of input features to embed
         wires (int): List of qubit indices for the qubits used for the embedding
     """
 
@@ -200,8 +200,8 @@ def DisplacementEmbedding(features, wires, execution='amplitude', c=0.1):
     Args:
         features (array): Binary sequence to encode
         wires (int): List of qumode indices for the qumodes used for the embedding
-        execution (str): 'phase' encodes the input into the phase of single-mode squeezing, while
-            'amplitude' uses the amplitude.
+        execution (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
+            ``'amplitude'`` uses the amplitude.
         c (float): parameter setting the value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'`` to a constant.
     """

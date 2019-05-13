@@ -40,7 +40,7 @@ def parameters_cvqnn_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi
     depending on the gate type.
 
     Rotation angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``, while
-    all other parameters are drawn from a normal distribution with mean `mean` and standard deviation `std`.
+    all other parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
 
     Args:
         n_layers (int): number of layers of the CV Neural Net
@@ -81,7 +81,7 @@ def parameters_cvqnn_layer(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, s
     The number of parameters is either ``n_wires`` or ``n_wires*(n_wires-1)/2``, depending on the gate type.
 
     Rotation angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``, while
-    all other parameters are drawn from a normal distribution with mean `mean` and standard deviation `std`.
+    all other parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
 
     Args:
         n_wires (int): number of modes of the CV Neural Net
