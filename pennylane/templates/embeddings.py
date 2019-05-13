@@ -97,7 +97,7 @@ def BasisEmbedding(basis_state, n_qubits):
 
     .. note::
 
-        BasisEmbedding uses PennyLane's :func:`BasisState()` and only works in conjunction with
+        BasisEmbedding uses PennyLane's :class:`~.BasisState` and only works in conjunction with
         devices that implement this function.
 
     Args:
