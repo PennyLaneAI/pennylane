@@ -45,7 +45,7 @@ Summary
 Examples
 --------
 
-For example, you can construct a circuit-centric quantum
+You can construct a circuit-centric quantum
 classifier with the architecture from :cite:`schuld2018circuit` on an arbitrary
 number of wires and with an arbitrary number of blocks by using the
 template :func:`~.StronglyEntanglingLayers` in the following way:
@@ -84,65 +84,53 @@ then be used to easily differentiate and optimize these parameters:
 
 .. code-block:: python
 
-	import pennylane as qml
-	from pennylane.templates.layers import Interferometer
-	from pennylane import numpy as np
-
-	num_wires = 4
-	num_params = int(num_wires * (num_wires - 1) / 2)
-
-	dev = qml.device('default.gaussian', wires=num_wires)
-
-	# initial parameters
-	r = np.random.rand(num_wires, 2)
-	theta = np.random.uniform(0, 2 * np.pi, num_params)
-	phi = np.random.uniform(0, 2 * np.pi, num_params)
-	varphi = np.random.uniform(0, 2 * np.pi, num_wires)
-
-
-	@qml.qnode(dev)
-	def circuit(theta, phi):
-	    for w in range(num_wires):
-		qml.Squeezing(r[w][0], r[w][1], wires=w)
-	    Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(num_wires))
-	    return [qml.expval.MeanPhoton(wires=w) for w in range(num_wires)]
-
-	j = qml.jacobian(circuit, 0)
-	print(j(theta, phi, varphi))
+    import pennylane as qml
+    from pennylane.templates.layers import Interferometer
+    from pennylane import numpy as np
+    
+    num_wires = 4
+    num_params = int(num_wires * (num_wires - 1) / 2)
+    
+    dev = qml.device('default.gaussian', wires=num_wires)
+    
+    # initial parameters
+    r = np.random.rand(num_wires, 2)
+    theta = np.random.uniform(0, 2 * np.pi, num_params)
+    phi = np.random.uniform(0, 2 * np.pi, num_params)
+    varphi = np.random.uniform(0, 2 * np.pi, num_wires)
+    
+    
+    @qml.qnode(dev)
+    def circuit(theta, phi, varphi):
+        for w in range(num_wires):
+            qml.Squeezing(r[w][0], r[w][1], wires=w)
+        Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(num_wires))
+        return [qml.expval.MeanPhoton(wires=w) for w in range(num_wires)]
+    
+    j = qml.jacobian(circuit, 0)
+    print(j(theta, phi, varphi))
 
 Instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, one can also use the :func:`pennylane.templates.parameters.parameters_interferometer()` function. 
 
 
 .. code-block:: python
+    
+    from pennylane.templates.parameters import parameters_interferometer
 
-	import pennylane as qml
-	from pennylane.templates.layers import Interferometer
-	from pennylane.templates.parameters import parameters_interferometer
-	from pennylane import numpy as np
+    ...
+    
+    # initial parameters
+    r = np.random.rand(num_wires, 2)
+    pars = parameters_interferometer(num_wires)
 
-	num_wires = 4
-	num_params = int(num_wires * (num_wires - 1) / 2)
+    ...
 
-	dev = qml.device('default.gaussian', wires=num_wires)
-
-	# initial parameters
-	r = np.random.rand(num_wires, 2)
-	pars = parameters_interferometer(n_wires)
-
-	@qml.qnode(dev)
-	def circuit(theta, phi, varphi):
-	    for w in range(num_wires):
-		qml.Squeezing(r[w][0], r[w][1], wires=w)
-	    Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(num_wires))
-	    return [qml.expval.MeanPhoton(wires=w) for w in range(num_wires)]
-
-	j = qml.jacobian(circuit, 0)
-	print(j(*pars))
+    j = qml.jacobian(circuit, 0)
+    print(j(*pars))
 
 
 An example for a continuous-variable template is the function :func:`~.CVNeuralNetLayers`, which implements the continuous-variable neural network architecture
-from :cite:`killoran2018continuous`. Provided with a suitable array of weights, such neural
-networks can be easily constructed and trained with PennyLane.
+from :cite:`killoran2018continuous`. The template requires non-Gaussian gates, and needs a plugin such as ``pennylane-sf`` to run.
 
 
 .. automodule:: pennylane.templates

@@ -13,11 +13,17 @@
 # limitations under the License.
 r"""
 Layers
-=========
+======
 
 **Module name:** :mod:`pennylane.templates.layers`
 
 .. currentmodule:: pennylane.templates.layers
+
+This module contains templates for trainable `layers` of quantum gates. A layer is a quantum subroutine with
+trainable gate parameters. It is typically applied repeatedly in a variational circuit ansatz.
+
+Most templates in this module have a ``Layer`` version that implements a single layer, as well as a ``Layers``
+version which calls the single layer multiple times, if necessary specifying hyperparameters of each one.
 
 
 Qubit architectures
@@ -26,9 +32,6 @@ Qubit architectures
 Strongly entangling circuit
 ***************************
 
-Constructs the strongly entangling circuit used in the circuit-centric quantum classifier :cite:`schuld2018circuit`.
-Applies rotations on each qubit, followed by cascades of entangling gates.
-
 .. autosummary::
 
     StronglyEntanglingLayers
@@ -36,8 +39,6 @@ Applies rotations on each qubit, followed by cascades of entangling gates.
 
 Random circuit
 **************
-
-Constructs a circuit with randomly distributed rotations and 2-qubit entangling gates.
 
 .. autosummary::
 
@@ -50,8 +51,6 @@ Continuous-variable architectures
 Continuous-variable quantum neural network
 ******************************************
 
-The CV Quantum Neural Network (CVQNN) architecture from :cite:`killoran2018continuous`.
-
 .. autosummary::
 
     CVNeuralNetLayers
@@ -59,8 +58,6 @@ The CV Quantum Neural Network (CVQNN) architecture from :cite:`killoran2018conti
 
 Interferometer
 **************
-
-A basic interferometer of beam splitters.
 
 .. autosummary::
 
@@ -79,13 +76,10 @@ import numpy as np
 
 
 def StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=CNOT, wires=None):
-    """pennylane.template.StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=qml.CNOT, wires)
-    A strongly entangling circuit.
+    """A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in :cite:`schuld2018circuit`.
 
-    Constructs the strongly entangling circuit used in the circuit-centric quantum
-    classifier :cite:`schuld2018circuit` with ``len(weights)`` blocks on the :math:`N` wires with the provided weights.
-    Each element of weights must be a an array of size :math:`3N`. The number of layers is inferred from the first
-    dimension of `weights`.
+    The number of layers is determined by the first dimension of ``weights``. The template is applied to
+    the :math:`N` wires specified by the sequence ``wires``.
 
     Args:
         weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
@@ -108,8 +102,8 @@ def StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=CN
 
 
 def StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=CNOT, wires=None):
-    """pennylane.template.StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=qml.CNOT, wires)
-    An individual block or layer of a strongly entangling circuit.
+    """An individual layer (or `block`) of a strongly entangling circuit, applying rotations on each qubit
+    followed by cascades of 2-qubit entangling gates.
 
     Args:
         weights (array[float]): shape ``(len(wires), 3)`` array of weights
@@ -120,7 +114,7 @@ def StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=CNOT, wires
             defaults to :class:`~.CNOT`
 
     Keyword Args:
-        wires (Sequence[int]): Wires the block should act on
+        wires (Sequence[int]): List of qubit indices that the layer acts on
     """
     if len(wires) < 2:
         raise ValueError("StronglyEntanglingLayer requires at least two wires or subsystems to apply "
@@ -135,10 +129,9 @@ def StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=CNOT, wires
 
 
 def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY], wires=None):
-    """pennylane.template.RandomLayers(weights, n_layers, ratio_imprim=0.3, imprimitive=CNOT, wires=None)
-    A circuit of layers that are randomly populated with single qubit Rotations and an imprimitive gate type,
-    with a ratio of `ratio_imprim` between the two options. The number of layers is inferred from the first
-    dimension of `weights`.
+    """A sequence of layers of type :func:`RandomLayer()`.
+
+    The number of layers is inferred from the first dimension of ``weights``.
 
     Args:
         weights (array[float]): shape ``(n_layers, k)`` array of weights, where k is the number of random rotations
@@ -157,9 +150,8 @@ def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY]
 
 
 def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY], wires=None):
-    """pennylane.template.RandomLayer(ratio_imprim=0.3, imprimitive=CNOT, wires=None)
-    A circuit of layers that are randomly populated with single qubit Rotations and an imprimitive gate type,
-    with a ratio of `ratio_imprim` between the two options.
+    """A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
+    on randomly chosen qubits.
 
     Args:
         weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
@@ -190,17 +182,16 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY],
 
 
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
-    """pennylane.template.CVNeuralNetLayers(weights, wires)
-    A CV Quantum Neural Network
+    """A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in :cite:`killoran2018continuous`.
 
-    Implements the CV Quantum Neural Network (CVQNN) architecture from
-    :cite:`killoran2018continuous` for an arbitrary number of wires
-    and layers.
+    The number of layers :math:`L` is inferred from the first dimension of the eleven weight parameters. The layers
+    act on the :math:`M` modes given in ``wires``, and include interferometers of :math:`K` beamsplitters.
 
-    The input parameters address each gate type separately, so the user has control over which parts of the architectures
-    are made trainable. The number of parameters for each of the :math:`L` layers is either :math:`M` (the number of
-    modes) or :math:`K = M(M-1)/2`, depending on the gate type.
-    Use the utils function XXX to automatically generate a random array of parameters that can be fed into `CVNeuralNet`.
+    .. note::
+
+       The CV neural network architecture includes :class:`~.Kerr` operations.
+       Make sure to use a suitable device, such as the :code:`strawberryfields.fock`
+       device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
     Args:
         theta_1 (array[float]): length :math:`(L, K)` array of transmittivity angles for first interferometer
@@ -226,16 +217,9 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
 
 
 def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
-    """pennylane.template.CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires)
-    A single layer of a CV Quantum Neural Network
-
-    Implements a single layer from the the CV Quantum Neural Network (CVQNN)
-    architecture of :cite:`killoran2018continuous` over :math:`N` wires.
-
-    The input parameters address each gate type separately, so the user has control over which parts of the architectures
-    are made trainable. The number of parameters for each gate type is either :math:`M` (the number of
-    modes) or :math:`K = M(M-1)/2`.
-    Use the utils function XXX to automatically generate a random array of parameters that can be fed into `CVNeuralNet`.
+    """A single layer of a CV Quantum Neural Network as specified in :cite:`killoran2018continuous`.
+    The layer acts on the :math:`N` wires modes specified in ``wires`` and include interferometers
+    of :math:`K` beamsplitters..
 
     .. note::
 
@@ -274,8 +258,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
 
 
 def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplitter='pennylane'):
-    r"""pennylane.template.Interferometer(theta, phi, varphi, wires)
-    General linear interferometer.
+    r"""General linear interferometer, an array of beam splitters and phase shifters.
 
     For :math:`N` wires, the general interferometer is specified by
     providing :math:`N(N-1)` transmittivity angles :math:`\theta` and the same number of

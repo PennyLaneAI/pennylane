@@ -19,9 +19,9 @@ Embeddings
 
 .. currentmodule:: pennylane.templates.embeddings
 
-This module provides quantum circuit architectures that can serve as an embedding of inputs
-(represented by the gate parameters) into a quantum state (see also Schuld & Killoran 2019
-:cite:`schuld2019quantum`).
+This module provides quantum circuit architectures that can embed features into a quantum state.
+The features are associated with gate parameters (see also Schuld & Killoran 2019
+:cite:`schuld2018quantum`).
 
 Qubit architectures
 -------------------
