@@ -122,7 +122,7 @@ def AmplitudeEmbedding(features, n_qubits):
         devices that implement this function.
 
     Args:
-        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
+        features (array): Input array of shape ``(N, )``, where ``N`` is the number of input features to embed
         n_qubits (int): Number of qubits in the circuit
     """
 
