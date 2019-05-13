@@ -67,7 +67,7 @@ def AngleEmbedding(features, n_wires, rotation='X'):
 
     Args:
         features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
-        n_wires (int): Number of qubits in the circuit
+        n_wires (int): Number of wires in the circuit
         rotation (str): Strategy of embedding
     """
 
