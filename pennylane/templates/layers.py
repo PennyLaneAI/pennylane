@@ -87,7 +87,7 @@ def StronglyEntanglingLayers(weights, periodic=True, ranges=None, imprimitive=CN
             applying imprimitive gates
         ranges (Sequence[int]): ranges of the imprimitive gates in the
             respective blocks
-        imprimitive (pennylane.ops.Operation): imprimitive gate to use,
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use,
             defaults to :class:`~.CNOT`
 
     Keyword Args:
@@ -105,13 +105,22 @@ def StronglyEntanglingLayer(weights, periodic=True, r=1, imprimitive=CNOT, wires
     """An individual layer (or `block`) of a strongly entangling circuit, applying rotations on each qubit
     followed by cascades of 2-qubit entangling gates.
 
+    The 2-qubit gates act on each qubit :math:`i` chronologically. The second qubit for each gate is determined
+    by :math:`(i+r)%n` where :math:`n` is the number of qubits.
+
+    .. figure:: ../../_static/layer_sec.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+        An example of two 4-qubit strongly entangling layers (:math:`r=1` and :math:`r=2`) with rotations :math:`R` and
+        CNOTs as imprimitives.
+
     Args:
         weights (array[float]): shape ``(len(wires), 3)`` array of weights
-        periodic (bool): whether to use periodic boundary conditions when
-            applying imprimitive gates
+        periodic (bool): whether to use periodic boundary conditions when applying imprimitive gates
         r (Sequence[int]): range of the imprimitive gates of this block
-        imprimitive (pennylane.ops.Operation): Imprimitive gate to use,
-            defaults to :class:`~.CNOT`
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
 
     Keyword Args:
         wires (Sequence[int]): List of qubit indices that the layer acts on
@@ -138,7 +147,7 @@ def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY]
         ratio_imprim (float): value between 0 and 1 that determines the ration imprimitive/rotation gates
 
     Keyword Args:
-        imprimitive (pennylane.ops.Operation): imprimitive gate to use,
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use,
             defaults to :class:`~.CNOT`
         ratio_imprim (float): Ratio of n_rotations/n_imprimitive
         rotations (list[str]): List of 'X', 'Y', 'Z', which determine the frequency with which a rotation type is used.
@@ -153,11 +162,19 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY],
     """A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
+    .. figure:: ../../_static/layer_rnd.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+        An example of two a 4-qubit random layers with Pauli-y and Pauli-z rotations :math:`R_y, R_z`
+        and controlled-Z gates as imprimitives, as well as ``ratio_imprim=0.3``.
+
     Args:
         weights (array[float]): shape ``(len(weights), len(wires), 3)`` array of weights
 
     Keyword Args:
-        imprimitive (pennylane.ops.Operation): imprimitive gate to use,
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use,
             defaults to :class:`~.CNOT`
         ratio_imprim (float): Ratio of n_rotations/n_imprimitive
         wires (Sequence[int]): wires the strongly entangling circuit should act on
@@ -221,6 +238,14 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
     The layer acts on the :math:`N` wires modes specified in ``wires`` and include interferometers
     of :math:`K` beamsplitters..
 
+    .. figure:: ../../_static/layer_cvqnn.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+        An example of a 4-mode cvqnn layer with squeezers :math:`S`, displacement gates :math:`D` and
+        Kerr gates :math:`K`. The two big blocks are interferometers.
+
     .. note::
 
        The CV neural network architecture includes :class:`~.Kerr` operations.
@@ -269,6 +294,14 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
     :math:`N-1` such rotation parameters are sufficient. If :math:`N` rotation
     parameters are given, the interferometer is over parametrized, but the resulting
     circuit is more symmetric, which can be advantageous.
+
+    .. figure:: ../../_static/layer_interferometer.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+        An example of a 4-mode interferometer with beamsplitters :math:`B` and phase rotations :math:`R`,
+        using ``mesh='rectangular'``.
 
     By specifying the keyword argument ``mesh``, the scheme used to implement the interferometer
     may be adjusted:
