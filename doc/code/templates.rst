@@ -65,14 +65,14 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
 
 	@qml.qnode(dev)
-	def circuit(weights, x=None):
+	def circuit(pars, x=None):
 	    qml.BasisState(x, wires=range(num_wires))
-	    StronglyEntanglingLayers(*weights, periodic=True, wires=range(num_wires))
+	    StronglyEntanglingLayers(*pars, periodic=True, wires=range(num_wires))
 	    return qml.expval.PauliZ(0)
 
 
-	weights = parameters_stronglyentangling_layers(n_layers= 2, n_wires=4)
-	print(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
+	pars = parameters_stronglyentangling_layers(n_layers= 2, n_wires=4)
+	print(circuit(pars, x=np.array(np.random.randint(0, 1, num_wires))))
 
 .. note::
 

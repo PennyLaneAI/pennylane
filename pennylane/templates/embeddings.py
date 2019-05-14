@@ -77,10 +77,10 @@ def AngleEmbedding(features, rotation='X', wires=None):
     r"""
     Encodes :math:`n` features into the rotation angles of :math:`n` qubits.
 
-    The rotations can be chosen as either Pauli-X, -Y or -Z gates, as defined by the ``rotation`` parameter:
-     * ``rotation = 'X'`` uses the features to chronologically apply Pauli-X rotations to qubits
-     * ``rotation = 'Y'`` uses the features to chronologically apply Pauli-Y rotations to qubits
-     * ``rotation = 'Z'`` uses the features to chronologically apply Pauli-Z rotations to qubits
+    The rotations can be chosen as either RX, RY or RZ gates, as defined by the ``rotation`` parameter:
+     * ``rotation = 'X'`` uses the features to chronologically apply RX rotations to qubits
+     * ``rotation = 'Y'`` uses the features to chronologically apply RY rotations to qubits
+     * ``rotation = 'Z'`` uses the features to chronologically apply RZ rotations to qubits
 
     The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
@@ -227,10 +227,10 @@ def DisplacementEmbedding(features, execution='amplitude', c=0.1, wires=None):
         features (array): Binary sequence to encode
 
     Keyword Args:
-        execution (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
+        execution (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
             ``'amplitude'`` uses the amplitude
-        c (float): parameter setting the value of the phase of all squeezing gates if ``execution='amplitude'``, or the
-            amplitude of all squeezing gates if ``execution='phase'``
+        c (float): parameter setting the value of the phase of all displacement gates if ``execution='amplitude'``, or the
+            amplitude of all displacement gates if ``execution='phase'``
         wires (Sequence[int]): sequence of mode indices that the template acts on
    """
 
