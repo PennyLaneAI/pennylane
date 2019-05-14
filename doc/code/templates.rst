@@ -19,7 +19,7 @@ PennyLane conceptually distinguishes two types of templates, **layer architectur
 
 * Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state of the circuit. These embeddings can also depend on trainable parameters, in which case the embedding is learnable.
 
-Each trainable template has a dedicated function in :mod:`pennylane.templates.parameters` which generates a list of **randomly initialized** arrays for the trainable **parameters**. The entries of the list contain valid positional arguments for the template to allow for the syntax ``MyTemplate(*par_list)``.
+Each trainable template has a dedicated function in :mod:`pennylane.templates.parameters` which generates a list of **randomly initialized** arrays for the trainable **parameters**. The entries of the list contain valid positional arguments for the template, allowing for the syntax ``MyTemplate(*par_list)``.
 
 .. note::
 
@@ -78,9 +78,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
 	``weights`` is a list of parameter arrays. In the case of the strongly entangling template, the list contains exactly one such parameter array of shape ``(num_blocks, num_wires, 3)``. One could alternatively create this list of an array by hand, replacing second-to-last line with ``weights = [np.random.randn(num_blocks, num_wires, 3)]``.
 
-Another exmample is the handy :class:`~.Interferometer` function, which can be used to construct arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations,
-by providing lists of transmittivity and phase angles. PennyLane can
-then be used to easily differentiate and optimize these parameters:
+Templates can contain each other. An example is the handy :class:`~.Interferometer` function. It constructs arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations, by providing lists of transmittivity and phase angles. A :func:`~.CVNeuralNetLayers` - implementing the continuous-variable neural network architecture from :cite:`killoran2018continuous` - contains two such interferometers. But it can also be used (and optimized) independently:
 
 .. code-block:: python
 
@@ -110,7 +108,7 @@ then be used to easily differentiate and optimize these parameters:
     j = qml.jacobian(circuit, 0)
     print(j(theta, phi, varphi))
 
-Instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, one can also use the :func:`pennylane.templates.parameters.parameters_interferometer()` function. 
+Instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, one can use the :func:`pennylane.templates.parameters.parameters_interferometer()` function. 
 
 
 .. code-block:: python
@@ -128,10 +126,7 @@ Instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, 
     j = qml.jacobian(circuit, 0)
     print(j(*pars))
 
-
-An example for a continuous-variable template is the function :func:`~.CVNeuralNetLayers`, which implements the continuous-variable neural network architecture
-from :cite:`killoran2018continuous`. The template requires non-Gaussian gates, and needs a plugin such as ``pennylane-sf`` to run.
-
+By growing this library of templates, PennyLane allows easy access to variational models discussed in the quantum machine learning literature. 
 
 .. automodule:: pennylane.templates
    :members:

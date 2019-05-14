@@ -204,7 +204,7 @@ class TestBasisEmb:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            BasisEmbedding(basis_state=x, wires=range(2))
+            BasisEmbedding(features=x, wires=range(2))
             return [qml.expval.PauliZ(i) for i in range(n_qubits)]
 
         res = circuit(x=state)
@@ -219,7 +219,7 @@ class TestBasisEmb:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            BasisEmbedding(basis_state=x, wires=range(2))
+            BasisEmbedding(features=x, wires=range(2))
             return qml.expval.PauliZ(0)
 
         with pytest.raises(ValueError, match='Number of bits to embed cannot be larger than '
@@ -235,7 +235,7 @@ class TestBasisEmb:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            BasisEmbedding(basis_state=x, wires=3)
+            BasisEmbedding(features=x, wires=3)
             return qml.expval.PauliZ(0)
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses, got 3.'):

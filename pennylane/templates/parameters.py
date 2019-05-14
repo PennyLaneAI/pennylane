@@ -20,7 +20,7 @@ Parameter Initializations
 .. currentmodule:: pennylane.templates.parameters
 
 This module contains methods to create arrays of initial parameters that can \
-be used in :mod:`pennylane.templates.layers`.
+be used in trainable templates.
 
 Qubit architectures
 -------------------
@@ -66,9 +66,129 @@ import numpy as np
 from math import pi
 
 
+def parameters_stronglyentangling_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
+    r"""
+    Creates a list of one randomly initialised parameter array for \
+    :func:`pennylane.templates.layers.StronglyEntanglingLayers()`.
+
+    The shape of the parameter array is ``(n_layers, n_qubits, 3)`` and each parameter is drawn uniformly at random \
+    from between ``uniform_min`` and ``uniform_max``. The parameters define the three rotation angles
+    applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+
+    Keyword Args:
+        uniform_min (float): minimum value of non-angle gate parameters
+        uniform_max (float): maximum value of non-angle gate parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        list of parameter arrays
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    interval = uniform_max - uniform_min
+    params = np.random.random(size=(n_layers, n_wires, 3)) * interval + uniform_min
+    return [params]
+
+
+def parameters_stronglyentangling_layer(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
+    r"""
+    Creates a list of one randomly initialised parameter array for \
+    :func:`pennylane.templates.layers.StronglyEntanglingLayers()`.
+
+    The shape of the parameter array is ``(n_qubits, 3)`` and each parameter is drawn uniformly at random \
+    from between ``uniform_min`` and ``uniform_max``. The parameters define the three rotation angles
+    applied to each layer.
+
+    Args:
+        n_wires (int): number of qubits
+
+    Keyword Args:
+        uniform_min (float): minimum value of non-angle gate parameters
+        uniform_max (float): maximum value of non-angle gate parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        list of parameter arrays
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    interval = uniform_max - uniform_min
+    params = np.random.random(size=(n_wires, 3)) * interval + uniform_min
+    return [params]
+
+
+def parameters_random_layers(n_layers, n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
+    r"""
+    Creates a list of one randomly initialised parameter array for :func:`pennylane.templates.layers.RandomLayers()`.
+
+    The shape of the parameter array is ``(n_layers, n_rots)`` and each parameter is drawn uniformly at random \
+    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles of the randomly \
+    positioned rotations applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_qubits (int): number of qubits
+
+    Keyword Args:
+        n_rots (int): number of rotations, if None, ``n_rots`` = ``n_wires``
+        uniform_min (float): minimum value of non-angle gate parameters
+        uniform_max (float): maximum value of non-angle gate parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        list of parameter arrays
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_rots is None:
+        n_rots = n_wires
+
+    interval = uniform_max - uniform_min
+    params = np.random.random(size=(n_layers, n_rots)) * interval + uniform_min
+    return [params]
+
+
+def parameters_random_layer(n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
+    r"""
+    Creates a list of one randomly initialised parameter array for :func:`pennylane.templates.layers.RandomLayer()`.
+
+    The number of parameter array is ``(n_rots,)`` and each parameter is drawn uniformly at random \
+    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles of the randomly \
+    positioned rotations applied in each layer.
+
+    Args:
+        n_wires (int): number of qubits
+        n_rots (int): number of rotations, if None, n_rots = n_qubits
+
+    Keyword Args:
+        uniform_min (float): minimum value of non-angle gate parameters
+        uniform_max (float): maximum value of non-angle gate parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        list of parameter arrays
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_rots is None:
+        n_rots = n_wires
+
+    interval = uniform_max - uniform_min
+    params = np.random.random(size=(n_rots,)) * interval + uniform_min
+    return [params]
+
+
 def parameters_cvqnn_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
     r"""
-    Create a list of eleven randomly initialised parameter arrays for the positional arguments in \
+    Creates a list of eleven randomly initialised parameter arrays for the positional arguments in \
     :func:`pennylane.templates.layers.CVNeuralNetLayers()`.
 
     The shape of the arrays is either ``(n_layers, n_wires)`` or ``(n_layers, n_wires*(n_wires-1)/2)``.
@@ -79,6 +199,8 @@ def parameters_cvqnn_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi
     Args:
         n_layers (int): number of layers of the CV Neural Net
         n_wires (int): number of modes of the CV Neural Net
+
+    Keyword Args:
         uniform_min (float): minimum value of non-angle gate parameters
         uniform_max (float): maximum value of non-angle gate parameters
         mean (float): mean of angle gate parameters
@@ -86,7 +208,7 @@ def parameters_cvqnn_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        list of eleven parameter arrays
+        list of parameter arrays
     """
     if seed is not None:
         np.random.seed(seed)
@@ -110,7 +232,7 @@ def parameters_cvqnn_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi
 
 def parameters_cvqnn_layer(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
     r"""
-    Create a list of eleven randomly initialised parameter arrays for the positional arguments in \
+    Creates a list of eleven randomly initialised parameter arrays for the positional arguments in \
     :func:`pennylane.templates.layers.CVNeuralNetLayer()`.
 
     The shape of the arrays is either ``(n_wires,)`` or ``(n_wires*(n_wires-1)/2,)``.
@@ -120,6 +242,8 @@ def parameters_cvqnn_layer(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, s
 
     Args:
         n_wires (int): number of modes of the CV Neural Net
+
+    Keyword Args:
         uniform_min (float): minimum value of non-angle gate parameters
         uniform_max (float): maximum value of non-angle gate parameters
         mean (float): mean of angle gate parameters
@@ -127,7 +251,7 @@ def parameters_cvqnn_layer(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, s
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        list of eleven parameter arrays
+        list of parameter arrays
     """
     if seed is not None:
         np.random.seed(seed)
@@ -152,22 +276,23 @@ def parameters_cvqnn_layer(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, s
 
 def parameters_interferometer(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
-    Create a list of three randomly initialised parameter arrays for \
+    Creates a list of three randomly initialised parameter arrays for \
     :func:`pennylane.templates.layers.Interferometer()`.
 
-    The shape of the arrays is either ``n_wires`` or ``n_wires*(n_wires-1)/2``.
+    The shape of the arrays is either ``(n_wires,)`` or ``(n_wires*(n_wires-1)/2,)``.
 
-    Rotation angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``, while \
-    all other parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    The angles are initialised uniformly from the interval ``[uniform_min, uniform_max]``.
 
     Args:
         n_wires (int): number of modes that the interferometer acts on
+
+    Keyword Args:
         uniform_min (float): minimum angle of gate parameters
         uniform_max (float): maximum angle of gate parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        list of three parameter arrays
+        list of parameter arrays
     """
     if seed is not None:
         np.random.seed(seed)
@@ -179,115 +304,3 @@ def parameters_interferometer(n_wires, uniform_min=0, uniform_max=2 * pi, seed=N
     varphi = np.random.random(size=(n_wires,)) * interval + uniform_min
 
     return [theta, phi, varphi]
-
-
-def parameters_stronglyentangling_layers(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
-    r"""
-    Create a list of randomly initialised parameter arrays for \
-    :func:`pennylane.templates.layers.StronglyEntanglingLayers()`.
-
-    The number of parameter array is ``(n_layers, n_qubits, 3)`` and each parameter is drawn uniformly at random \
-    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in RX, RY and RZ rotations
-    applied to each layer.
-
-    Args:
-        n_layers (int): number of layers
-        n_wires (int): number of qubits
-        uniform_min (float): minimum value of non-angle gate parameters
-        uniform_max (float): maximum value of non-angle gate parameters
-        seed (int): seed used in sampling the parameters, makes function call deterministic
-
-    Returns:
-        array of parameters
-    """
-    if seed is not None:
-        np.random.seed(seed)
-
-    interval = uniform_max - uniform_min
-    params = np.random.random(size=(n_layers, n_wires, 3)) * interval + uniform_min
-    return [params]
-
-
-def parameters_stronglyentangling_layer(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
-    r"""
-    Create a list of randomly initialised parameter arrays for \
-    :func:`pennylane.templates.layers.StronglyEntanglingLayers()`.
-
-    The number of parameter array is ``(n_qubits, 3)`` and each parameter is drawn uniformly at random \
-    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in RX, RY and RZ \
-    rotations applied to each layer.
-
-    Args:
-        n_wires (int): number of qubits
-        uniform_min (float): minimum value of non-angle gate parameters
-        uniform_max (float): maximum value of non-angle gate parameters
-        seed (int): seed used in sampling the parameters, makes function call deterministic
-
-    Returns:
-        array of parameters
-    """
-    if seed is not None:
-        np.random.seed(seed)
-
-    interval = uniform_max - uniform_min
-    params = np.random.random(size=(n_wires, 3)) * interval + uniform_min
-    return [params]
-
-
-def parameters_random_layers(n_layers, n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
-    r"""
-    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.RandomLayers()`.
-
-    The number of parameter array is ``(n_layers, K)`` and each parameter is drawn uniformly at random \
-    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in randomly \
-    positioned rotations applied in each layer.
-
-    Args:
-        n_layers (int): number of layers
-        n_qubits (int): number of qubits
-        n_rots (int): number of rotations, if None, n_rots = n_qubits
-        uniform_min (float): minimum value of non-angle gate parameters
-        uniform_max (float): maximum value of non-angle gate parameters
-        seed (int): seed used in sampling the parameters, makes function call deterministic
-
-    Returns:
-        array of parameters
-    """
-    if seed is not None:
-        np.random.seed(seed)
-
-    if n_rots is None:
-        n_rots = n_wires
-
-    interval = uniform_max - uniform_min
-    params = np.random.random(size=(n_layers, n_rots)) * interval + uniform_min
-    return [params]
-
-
-def parameters_random_layer(n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
-    r"""
-    Create a list of randomly initialised parameter arrays for :func:`pennylane.templates.layers.RandomLayer()`.
-
-    The number of parameter array is ``(n_qubits, 3)`` and each parameter is drawn uniformly at random \
-    from between ``uniform_min`` and ``uniform_max``. The parameters define the rotation angles in RX, RY and RZ \
-    rotations applied to each layer.
-
-    Args:
-        n_wires (int): number of qubits
-        n_rots (int): number of rotations, if None, n_rots = n_qubits
-        uniform_min (float): minimum value of non-angle gate parameters
-        uniform_max (float): maximum value of non-angle gate parameters
-        seed (int): seed used in sampling the parameters, makes function call deterministic
-
-    Returns:
-        array of parameters
-    """
-    if seed is not None:
-        np.random.seed(seed)
-
-    if n_rots is None:
-        n_rots = n_wires
-
-    interval = uniform_max - uniform_min
-    params = np.random.random(size=(n_rots,)) * interval + uniform_min
-    return [params]

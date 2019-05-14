@@ -20,16 +20,14 @@ Embeddings
 .. currentmodule:: pennylane.templates.embeddings
 
 This module provides quantum circuit architectures that can embed features into a quantum state.
-The features are associated with gate parameters (see also Schuld & Killoran 2019
-:cite:`schuld2018quantum`).
+The features are associated with gate parameters, implicitly mapping them into the Hilbert space of the quantum state
+(see also Schuld & Killoran 2019 :cite:`schuld2018quantum`).
 
 Qubit architectures
 -------------------
 
 Angle embedding
 ***************
-
-Encodes ``n`` features into the rotation angles of ``n`` qubits. The rotation can be Pauli-X, -Y or -Z.
 
 .. autosummary::
 
@@ -38,27 +36,12 @@ Encodes ``n`` features into the rotation angles of ``n`` qubits. The rotation ca
 Amplitude embedding
 *******************
 
-Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits. The absolute square of all features
-has to add up to one.
-
-.. note::
-
-    This embedding is a wrapper for PennyLane`s :mod:`QubitStateVector()`, and only works with backends which
-    implement this method.
-
 .. autosummary::
 
     AmplitudeEmbedding
 
 Basis embedding
 ***************
-
-Encodes :math:`n` bits into a basis state of :math:`n` qubits.
-
-.. note::
-
-    This embedding is a wrapper for PennyLane`s :mod:`BasisState()`, and only works with backends which
-    implement this method.
 
 .. autosummary::
 
@@ -70,9 +53,6 @@ Continuous-variable architectures
 Squeezing embedding
 *******************
 
-Encodes :math:`M` features into the squeezing amplitude or phase of :math:`M` modes.
-
-
 .. autosummary::
 
     SqueezingEmbedding
@@ -80,8 +60,6 @@ Encodes :math:`M` features into the squeezing amplitude or phase of :math:`M` mo
 
 Displacement embedding
 **********************
-
-Encodes :math:`M` features into the displacement amplitude or phase of :math:`M` modes.
 
 .. autosummary::
 
@@ -95,11 +73,11 @@ from pennylane import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStat
 from collections.abc import Iterable
 
 
-def AngleEmbedding(features, wires, rotation='X'):
+def AngleEmbedding(features, rotation='X', wires=None):
     r"""
-    Uses the entries of ``features`` as rotation angles of qubits.
+    Encodes :math:`n` features into the rotation angles of :math:`n` qubits.
 
-    The details of the strategy are defined by the `rotation` parameter:
+    The rotations can be chosen as either Pauli-X, -Y or -Z gates, as defined by the ``rotation`` parameter:
      * ``rotation = 'X'`` uses the features to chronologically apply Pauli-X rotations to qubits
      * ``rotation = 'Y'`` uses the features to chronologically apply Pauli-Y rotations to qubits
      * ``rotation = 'Z'`` uses the features to chronologically apply Pauli-Z rotations to qubits
@@ -112,8 +90,10 @@ def AngleEmbedding(features, wires, rotation='X'):
 
     Args:
         features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
-        wires (int): List of qubit indices for the qubits used for the embedding
-        rotation (str): Strategy of embedding
+
+    Keyword Args:
+        rotation (str): Type of rotations used
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
     if not isinstance(wires, Iterable):
@@ -138,43 +118,22 @@ def AngleEmbedding(features, wires, rotation='X'):
         raise ValueError("Rotation has to be `X`, `Y` or `Z`, got {}.".format(rotation))
 
 
-def BasisEmbedding(basis_state, wires):
-    r"""Prepares a quantum state in the state ``basis_state``.
+def AmplitudeEmbedding(features, wires=None):
+    """
+    Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
-    For example, for ``basis_state=[0, 1, 0]``, the quantum system will be prepared in state :math:`|010 \rangle`.
+    The absolute square of all  elements in ``features`` has to add up to one.
 
     .. note::
 
-        BasisEmbedding uses PennyLane's :class:`~.BasisState` and only works in conjunction with
+        AmplitudeEmbedding uses PennyLane's :class:`QubitStateVector` and only works in conjunction with
         devices that implement this function.
 
     Args:
-        features (array): Input array of shape ``(N, )``, where ``N`` is the number of input features to embed
-        wires (int): List of qubit indices for the qubits used for the embedding
-    """
-    if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
+        features (array): Input array of shape ``(2**n, )``
 
-    if len(basis_state) > len(wires):
-        raise ValueError("Number of bits to embed cannot be larger than number of wires which is {}, "
-                         "got {}.".format(len(wires), len(basis_state)))
-    BasisState(basis_state, wires=wires)
-
-
-def AmplitudeEmbedding(features, wires):
-    """
-    Prepares a quantum state whose amplitude vector is given by ``features``.
-
-    ``features`` has to be an array representing a 1-d vector of unit length and with 2**`n_wires` entries.
-
-    .. note::
-
-        AmplitudeEmbedding uses PennyLane's :class:``~.QubitStateVector`` and only works in conjunction with
-        devices that implement this function.
-
-    Args:
-        features (array): Input array of shape ``(N, )``, where ``N`` is the number of input features to embed
-        wires (int): List of qubit indices for the qubits used for the embedding
+    Keyword Args:
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
     if not isinstance(wires, Iterable):
@@ -187,28 +146,53 @@ def AmplitudeEmbedding(features, wires):
     QubitStateVector(features, wires=wires)
 
 
-def SqueezingEmbedding(features, wires, execution='amplitude', c=0.1):
-    r"""
-    Encodes the entries of ``features`` into the squeezing phases :math:`\phi` or amplitudes :math:`r` of the modes of
-    a continuous-variable quantum state.
+def BasisEmbedding(features, wires=None):
+    r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
+
+    For example, for ``features=[0, 1, 0]``, the quantum system will be prepared in state :math:`|010 \rangle`.
+
+    .. note::
+
+        BasisEmbedding uses PennyLane's :class:`BasisState` and only works in conjunction with
+        devices that implement this function.
+
+    Args:
+        features (array): Binary input array of shape ``(n, )``
+
+    Keyword Args:
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
+    """
+    if not isinstance(wires, Iterable):
+        raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
+
+    if len(features) > len(wires):
+        raise ValueError("Number of bits to embed cannot be larger than number of wires which is {}, "
+                         "got {}.".format(len(wires), len(features)))
+    BasisState(features, wires=wires)
+
+
+def SqueezingEmbedding(features, execution='amplitude', c=0.1, wires=None):
+    r"""Encodes :math:`M` features into the squeezing amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes.
 
     The mathematical definition of the squeezing gate is given by the operator
 
-    ..math::
+    .. math::
 
         S(z) = \exp\left(\frac{r}{2}\left(e^{-i\phi}\a^2 -e^{i\phi}{\ad}^{2} \right) \right),
 
     where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
 
-    ``features`` has to be an array of ``n_wires`` floats.
+    ``features`` has to be an array of ``len(wires)`` floats.
 
     Args:
         features (array): Binary sequence to encode
-        wires (int): List of qumode indices for the qumodes used for the embedding
+
+    Keyword Args:
         execution (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
-            ``'amplitude'`` uses the amplitude.
+            ``'amplitude'`` uses the amplitude
         c (float): parameter setting the value of the phase of all squeezing gates if ``execution='amplitude'``, or the
-            amplitude of all squeezing gates if ``execution='phase'`` to a constant.
+            amplitude of all squeezing gates if ``execution='phase'``
+        wires (Sequence[int]): sequence of mode indices that the template acts on
     """
 
     if not isinstance(wires, Iterable):
@@ -227,28 +211,28 @@ def SqueezingEmbedding(features, wires, execution='amplitude', c=0.1):
             raise ValueError("Execution strategy {} not known. Has to be `phase` or `amplitude`.".format(execution))
 
 
-def DisplacementEmbedding(features, wires, execution='amplitude', c=0.1):
-    r"""
-    Encodes the entries of ``features`` into the displacement phases :math:`\phi` or amplitudes :math:`r` of the modes of
-    a continuous-variable quantum state.
+def DisplacementEmbedding(features, execution='amplitude', c=0.1, wires=None):
+    r"""Encodes :math:`M` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes.
 
     The mathematical definition of the displacement gate is given by the operator
 
-    ..math::
+    .. math::
             D(\alpha) = \exp(r (e^{i\phi}\ad -e^{-i\phi}\a)),
 
     where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
 
-    ``features`` has to be an array of ``n_wires`` floats.
+    ``features`` has to be an array of ``len(wires)`` floats.
 
     Args:
         features (array): Binary sequence to encode
-        wires (int): List of qumode indices for the qumodes used for the embedding
+
+    Keyword Args:
         execution (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
-            ``'amplitude'`` uses the amplitude.
+            ``'amplitude'`` uses the amplitude
         c (float): parameter setting the value of the phase of all squeezing gates if ``execution='amplitude'``, or the
-            amplitude of all squeezing gates if ``execution='phase'`` to a constant.
-    """
+            amplitude of all squeezing gates if ``execution='phase'``
+        wires (Sequence[int]): sequence of mode indices that the template acts on
+   """
 
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))

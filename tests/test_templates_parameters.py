@@ -109,7 +109,7 @@ class TestParsInterferometer:
 
     def test_pars_interferometer_layer_range(self, seed):
         """Confirm that pennylane.templates.utils.parameters_interferometer() samples from the right distributions."""
-        p = parameters_cvqnn_layer(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = parameters_interferometer(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-0.5, -0.5, -0.5])

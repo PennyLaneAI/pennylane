@@ -456,7 +456,7 @@ class TestStronglyEntangling:
         weights = np.random.randn(num_layers, num_wires, 3)
 
         def circuit(weights):
-            StronglyEntanglingLayers(weights, True, wires=range(num_wires))
+            StronglyEntanglingLayers(weights, wires=range(num_wires))
             return qml.expval.PauliZ(0)
 
         qnode = qml.QNode(circuit, dev)
@@ -495,7 +495,7 @@ class TestStronglyEntangling:
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
                     qml.BasisState(x, wires=range(num_wires))
-                    StronglyEntanglingLayers(weights, True, wires=range(num_wires))
+                    StronglyEntanglingLayers(weights, wires=range(num_wires))
                     return qml.expval.PauliZ(0)
 
                 outcomes.append(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
