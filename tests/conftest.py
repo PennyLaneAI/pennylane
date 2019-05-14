@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Shared fixtures for pytest.
+Pytest configuration file for PennyLane test suite.
 """
 import pytest
+import os
 import numpy as np
 import pennylane as qml
 from pennylane.plugins import DefaultGaussian
 
+# defaults
+TOL = 1e-3
 
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
@@ -28,8 +31,8 @@ class DummyDevice(DefaultGaussian):
 
 @pytest.fixture(scope="session")
 def tol():
-    """Tolerance for assert statements."""
-    return 0.001
+    """Numerical tolerance for equality tests."""
+    return float(os.environ.get("TOL", TOL))
 
 
 @pytest.fixture(scope="session", params=[2, 3])
@@ -60,3 +63,31 @@ def gaussian_device(n_subsystems):
 def gaussian_device_4modes(n_subsystems):
     """Number of qubits or modes."""
     return DummyDevice(wires=4)
+
+
+@pytest.fixture(scope='session')
+def torch_support():
+    """Boolean fixture for PyTorch support"""
+    try:
+        import torch
+        from torch.autograd import Variable
+        torch_support = True
+    except ImportError as e:
+        torch_support = False
+
+    return torch_support
+
+
+@pytest.fixture(scope='session')
+def tf_support():
+    """Boolean fixture for TensorFlow support"""
+    try:
+        import tensorflow as tf
+        import tensorflow.contrib.eager as tfe
+        tf.enable_eager_execution()
+        tf_support = True
+    except ImportError as e:
+        tf_support = False
+
+    return tf_support
+

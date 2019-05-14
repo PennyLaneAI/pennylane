@@ -301,7 +301,7 @@ class DefaultQubit(Device):
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             return
-        elif operation == 'BasisState':
+        if operation == 'BasisState':
             n = len(par[0])
             # get computational basis state number
             if n > self.num_wires or not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
@@ -367,10 +367,15 @@ class DefaultQubit(Device):
         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        if A.shape != (2, 2):
-            raise ValueError('2x2 matrix required.')
+        if A.shape == (2, 2):
+            A = self.expand_one(A, wires)
+        elif A.shape == (4, 4):
+            A = self.expand_two(A, wires)
+        else:
+            raise ValueError('Only one and two-qubit expectation is supported.')
+            # A muti-qubit expansion function extends this.
+            # A = self.expand_multi(A, wires)
 
-        A = self.expand_one(A, wires)
         expectation = np.vdot(self._state, A @ self._state)
 
         if np.abs(expectation.imag) > tolerance:
@@ -443,6 +448,18 @@ class DefaultQubit(Device):
         U = U.reshape(dim * 2).transpose(perm).reshape([temp, temp])
         U = np.kron(np.kron(np.eye(before), U), np.eye(after))
         return U
+
+    def expand_multi(self, U, wires):
+        r"""Expand a multi-qubit operator into a full system operator.
+
+        Args:
+          U (array): :math:`2^n \times 2^n` matrix where n = wires.
+          wires (Sequence[int]): Target subsystems (order matters!)
+
+        Returns:
+          array: :math:`2^N\times 2^N` matrix. The full system operator.
+        """
+        raise NotImplementedError
 
     @property
     def operations(self):

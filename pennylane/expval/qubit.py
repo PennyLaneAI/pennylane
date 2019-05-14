@@ -152,14 +152,17 @@ class Hermitian(Expectation):
 
     where :math:`A` acts on the requested wire.
 
+    The matrix A can be N^2\times N^2 acting on N wires.
+
     Args:
-        A (array): square hermitian matrix.
+        A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_wires = 1
+    num_wires = 0
     num_params = 1
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
+
 
 # As both the qubit and the CV case need an Identity Expectation,
 # and these need to reside in the same name space but have to have
