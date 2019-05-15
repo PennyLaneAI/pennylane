@@ -22,9 +22,9 @@ from pennylane.plugins import DefaultGaussian
 from pennylane.templates.layers import (CVNeuralNetLayers, CVNeuralNetLayer,
                                         StronglyEntanglingLayers, StronglyEntanglingLayer,
                                         RandomLayers, RandomLayer)
-from pennylane.templates.parameters import (parameters_stronglyentangling_layers, parameters_stronglyentangling_layer,
-                                            parameters_random_layers, parameters_random_layer,
-                                            parameters_cvqnn_layers, parameters_cvqnn_layer)
+from pennylane.templates.parameters import (parameters_stronglyentanglinglayers_uniform, parameters_stronglyentanglinglayer_uniform,
+                                            parameters_randomlayers_uniform, parameters_randomlayer_uniform,
+                                            parameters_cvqnnlayers_uniform, parameters_cvqnnlayer_uniform)
 
 
 class DummyDevice(DefaultGaussian):
@@ -41,7 +41,7 @@ class TestParameterIntegration:
         """Checks that the pennylane.templates.parameters.parameters_cvqnn_layers() integrates
         with pennnylane.templates.layers.CVNeuralNetLayers()."""
 
-        p = parameters_cvqnn_layers(n_layers=n_layers, n_wires=n_subsystems)
+        p = parameters_cvqnnlayers_uniform(n_layers=n_layers, n_wires=n_subsystems)
 
         @qml.qnode(gaussian_device)
         def circuit(weights):
@@ -54,7 +54,7 @@ class TestParameterIntegration:
         """Checks that the pennylane.templates.parameters.parameters_cvqnn_layer() integrates
         with pennnylane.templates.layers.CVNeuralNetLayer()."""
 
-        p = parameters_cvqnn_layer(n_wires=n_subsystems)
+        p = parameters_cvqnnlayer_uniform(n_wires=n_subsystems)
 
         @qml.qnode(gaussian_device)
         def circuit(weights):
@@ -67,7 +67,7 @@ class TestParameterIntegration:
         """Checks that the pennylane.templates.parameters.parameters_stronglyentangling_layers() integrates
         with pennnylane.templates.layers.StronglyEntanglingLayers()."""
 
-        p = parameters_stronglyentangling_layers(n_layers=n_layers, n_wires=n_subsystems)
+        p = parameters_stronglyentanglinglayers_uniform(n_layers=n_layers, n_wires=n_subsystems)
 
         @qml.qnode(qubit_device)
         def circuit(weights):
@@ -80,7 +80,7 @@ class TestParameterIntegration:
         """Checks that the pennylane.templates.parameters.parameters_stronglyentangling_layer() integrates
         with pennnylane.templates.layers.StronglyEntanglingLayer()."""
 
-        p = parameters_stronglyentangling_layer(n_wires=n_subsystems)
+        p = parameters_stronglyentanglinglayer_uniform(n_wires=n_subsystems)
 
         @qml.qnode(qubit_device)
         def circuit(weights):
@@ -93,7 +93,7 @@ class TestParameterIntegration:
         """Checks that the pennylane.templates.parameters.parameters_random_layers() integrates
         with pennnylane.templates.layers.RandomLayers()."""
 
-        p = parameters_random_layers(n_layers=n_layers, n_wires=n_subsystems)
+        p = parameters_randomlayers_uniform(n_layers=n_layers, n_wires=n_subsystems)
 
         @qml.qnode(qubit_device)
         def circuit(weights):
@@ -106,7 +106,7 @@ class TestParameterIntegration:
         """Checks that the pennylane.templates.parameters.parameters_random_layer() integrates
         with pennnylane.templates.layers.RandomlingLayer()."""
 
-        p = parameters_random_layer(n_wires=n_subsystems)
+        p = parameters_randomlayer_uniform(n_wires=n_subsystems)
 
         @qml.qnode(qubit_device)
         def circuit(weights):

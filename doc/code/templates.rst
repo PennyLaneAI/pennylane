@@ -54,7 +54,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
     import pennylane as qml
     from pennylane.templates.layers import StronglyEntanglingLayers
-    from pennylane.templates.parameters import parameters_stronglyentangling_layers
+    from pennylane.templates.parameters import parameters_stronglyentanglinglayers_normal
     
     from pennylane import numpy as np
     
@@ -71,12 +71,15 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
         return qml.expval.PauliZ(0)
     
     
-    pars = parameters_stronglyentangling_layers(n_layers=n_layers, n_wires=n_wires)
+    pars = parameters_stronglyentanglinglayers_normal(n_layers=n_layers, n_wires=n_wires, mean=0, std=0.1)
     print(circuit(pars, x=np.array(np.random.randint(0, 1, n_wires))))
 
 .. note::
 
-	``pars`` is a list of parameter arrays. In the case of the strongly entangling template, the list contains exactly one such parameter array of shape ``(n_layers, n_wires, 3)``. One could alternatively create this list of an array by hand, replacing second-to-last line with ``weights = [np.random.randn(n_layers, n_wires, 3)]``.
+	``pars`` is a list of parameter arrays. In the case of the strongly entangling template, the list contains exactly one such parameter array of shape ``(n_layers, n_wires, 3)``. One could alternatively create this list of an array by hand, replacing second-to-last line with ``weights = [np.random.normal(loc=0, scale=0.1, size=(n_layers, n_wires, 3))]``.
+
+.. note::
+    Most parameter generating methods have a 'normal' and a 'uniform' version, sampling the angle parameters of rotation gates either from a normal or uniform distribution.
 
 Templates can contain each other. An example is the handy :class:`~.Interferometer` function. It constructs arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations, by providing lists of transmittivity and phase angles. A :func:`~.CVNeuralNetLayers` - implementing the continuous-variable neural network architecture from :cite:`killoran2018continuous` - contains two such interferometers. But it can also be used (and optimized) independently:
 
@@ -114,13 +117,13 @@ Instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, 
 
 .. code-block:: python
     
-    from pennylane.templates.parameters import parameters_interferometer
+    from pennylane.templates.parameters import parameters_interferometer_uniform
 
     ...
     
     # initial parameters
     r = np.random.rand(n_wires, 2)
-    pars = parameters_interferometer(n_wires)
+    pars = parameters_interferometer_uniform(n_wires)
 
     ...
 
