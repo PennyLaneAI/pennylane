@@ -87,7 +87,7 @@ def StronglyEntanglingLayers(weights, ranges=None, imprimitive=CNOT, wires=None)
         weights (array[float]): array of weights of shape ``(L, len(wires), 3)``
 
     Keyword Args:
-        ranges (Sequence[int]): sequence of ranges determining the architecture of the imprimitive gates in each layer
+        ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
@@ -106,7 +106,7 @@ def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
     each gate is determined by :math:`(i+r)\mod n`, where :math:`n` is the number of qubits
     and :math:`r` a layer hyperparameter called the range.
 
-    This is an example of two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`) with
+    This is an example of a two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`) with
     rotations :math:`R` and CNOTs as imprimitives:
 
     .. figure:: ../../_static/layer_sec.png
@@ -118,7 +118,7 @@ def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
         weights (array[float]): array of weights of shape ``(len(wires), 3)``
 
     Keyword Args:
-        r (Sequence[int]): range of the imprimitive gates of this layer
+        r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
@@ -134,7 +134,7 @@ def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
         imprimitive(wires=[wires[i], wires[(i+r) % num_wires]])
 
 
-def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY], wires=None):
+def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ], wires=None):
     """A sequence of layers of type :func:`RandomLayer()`.
 
     The number of layers :math:`L` and the number :math:`k` of rotations per layer is inferred from the first
@@ -147,8 +147,9 @@ def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY]
     Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
-        rotations (list[str]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency determines how often
-            a particular rotation type is used.
+        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
+            determines how often a particular rotation type is used. Defaults to the use of all three
+            rotations with equal frequency.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
@@ -156,11 +157,11 @@ def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY]
         RandomLayer(layer_weights, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations, wires=wires)
 
 
-def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY], wires=None):
+def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ], wires=None):
     """A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
-    The number :math:`k` of single qubit rotations is inferred of the first dimension of ``weights``.
+    The number :math:`k` of single qubit rotations is inferred from the first dimension of ``weights``.
 
     This is an example of two a 4-qubit random layers with four Pauli-y/Pauli-z rotations :math:`R_y, R_z`,
     controlled-Z gates as imprimitives, as well as ``ratio_imprim=0.3``:
@@ -176,6 +177,9 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY],
     Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
+        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
+            determines how often a particular rotation type is used. Defaults to the use of all three
+            rotations with equal frequency.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     """
@@ -236,7 +240,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
     """A layer of interferometers, displacement and squeezing gates mimicking a neural network,
     as well as a Kerr gate nonlinearity.
 
-    The layer acts on the :math:`N` wires modes specified in ``wires``, and includes interferometers
+    The layer acts on the :math:`M` wires modes specified in ``wires``, and includes interferometers
     of :math:`K=M(M-1)/2` beamsplitters.
 
     This example shows a 4-mode CVNeuralNet layer with squeezers :math:`S`, displacement gates :math:`D` and

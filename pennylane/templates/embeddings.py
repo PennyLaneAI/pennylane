@@ -172,7 +172,8 @@ def BasisEmbedding(features, wires=None):
 
 
 def SqueezingEmbedding(features, execution='amplitude', c=0.1, wires=None):
-    r"""Encodes :math:`M` features into the squeezing amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes.
+    r"""Encodes :math:`M` features into the squeezing amplitudes :math:`r \geq 0` or phases :math:`\phi \in [0, 2\pi)`
+    of :math:`M` modes.
 
     The mathematical definition of the squeezing gate is given by the operator
 
@@ -190,7 +191,7 @@ def SqueezingEmbedding(features, execution='amplitude', c=0.1, wires=None):
     Keyword Args:
         execution (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             ``'amplitude'`` uses the amplitude
-        c (float): parameter setting the value of the phase of all squeezing gates if ``execution='amplitude'``, or the
+        c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'``
         wires (Sequence[int]): sequence of mode indices that the template acts on
     """
@@ -229,8 +230,8 @@ def DisplacementEmbedding(features, execution='amplitude', c=0.1, wires=None):
     Keyword Args:
         execution (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
             ``'amplitude'`` uses the amplitude
-        c (float): parameter setting the value of the phase of all displacement gates if ``execution='amplitude'``, or the
-            amplitude of all displacement gates if ``execution='phase'``
+        c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
+            the amplitude of all displacement gates if ``execution='phase'``
         wires (Sequence[int]): sequence of mode indices that the template acts on
    """
 

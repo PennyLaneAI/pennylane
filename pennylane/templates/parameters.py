@@ -71,7 +71,7 @@ def parameters_stronglyentangling_layers(n_layers, n_wires, uniform_min=0, unifo
     Creates a list of one randomly initialised parameter array for \
     :func:`pennylane.templates.layers.StronglyEntanglingLayers()`.
 
-    The shape of the parameter array is ``(n_layers, n_qubits, 3)`` and each parameter is drawn uniformly at random \
+    The shape of the parameter array is ``(n_layers, n_wires, 3)`` and each parameter is drawn uniformly at random \
     from between ``uniform_min`` and ``uniform_max``. The parameters define the three rotation angles
     applied in each layer.
 
@@ -100,7 +100,7 @@ def parameters_stronglyentangling_layer(n_wires, uniform_min=0, uniform_max=2 * 
     Creates a list of one randomly initialised parameter array for \
     :func:`pennylane.templates.layers.StronglyEntanglingLayers()`.
 
-    The shape of the parameter array is ``(n_qubits, 3)`` and each parameter is drawn uniformly at random \
+    The shape of the parameter array is ``(n_wires, 3)`` and each parameter is drawn uniformly at random \
     from between ``uniform_min`` and ``uniform_max``. The parameters define the three rotation angles
     applied to each layer.
 
@@ -133,7 +133,7 @@ def parameters_random_layers(n_layers, n_wires, n_rots=None, uniform_min=0, unif
 
     Args:
         n_layers (int): number of layers
-        n_qubits (int): number of qubits
+        n_wires (int): number of qubits
 
     Keyword Args:
         n_rots (int): number of rotations, if None, ``n_rots`` = ``n_wires``
@@ -165,7 +165,7 @@ def parameters_random_layer(n_wires, n_rots=None, uniform_min=0, uniform_max=2 *
 
     Args:
         n_wires (int): number of qubits
-        n_rots (int): number of rotations, if None, n_rots = n_qubits
+        n_rots (int): number of rotations, if None, ``n_rots`` = ``n_wires``
 
     Keyword Args:
         uniform_min (float): minimum value of non-angle gate parameters
