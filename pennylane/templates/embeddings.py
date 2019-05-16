@@ -26,43 +26,18 @@ The features are associated with gate parameters, implicitly mapping them into t
 Qubit architectures
 -------------------
 
-Angle embedding
-***************
-
 .. autosummary::
 
     AngleEmbedding
-
-Amplitude embedding
-*******************
-
-.. autosummary::
-
     AmplitudeEmbedding
-
-Basis embedding
-***************
-
-.. autosummary::
-
     BasisEmbedding
 
 Continuous-variable architectures
 ---------------------------------
 
-Squeezing embedding
-*******************
-
 .. autosummary::
 
     SqueezingEmbedding
-
-
-Displacement embedding
-**********************
-
-.. autosummary::
-
     DisplacementEmbedding
 
 Code details
@@ -77,10 +52,14 @@ def AngleEmbedding(features, rotation='X', wires=None):
     r"""
     Encodes :math:`n` features into the rotation angles of :math:`n` qubits.
 
-    The rotations can be chosen as either RX, RY or RZ gates, as defined by the ``rotation`` parameter:
-     * ``rotation = 'X'`` uses the features to chronologically apply RX rotations to qubits
-     * ``rotation = 'Y'`` uses the features to chronologically apply RY rotations to qubits
-     * ``rotation = 'Z'`` uses the features to chronologically apply RZ rotations to qubits
+    The rotations can be chosen as either :class:`~.RX`, :class:`~.RY`
+    or :class:`~.RZ` gates, as defined by the ``rotation`` parameter:
+
+    * ``rotation='X'`` uses the features to chronologically apply RX rotations to qubits
+
+    * ``rotation='Y'`` uses the features to chronologically apply RY rotations to qubits
+
+    * ``rotation='Z'`` uses the features to chronologically apply RZ rotations to qubits
 
     The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
@@ -126,7 +105,7 @@ def AmplitudeEmbedding(features, wires=None):
 
     .. note::
 
-        AmplitudeEmbedding uses PennyLane's :class:`QubitStateVector` and only works in conjunction with
+        AmplitudeEmbedding uses PennyLane's :class:`~.QubitStateVector` and only works in conjunction with
         devices that implement this function.
 
     Args:
@@ -153,7 +132,7 @@ def BasisEmbedding(features, wires=None):
 
     .. note::
 
-        BasisEmbedding uses PennyLane's :class:`BasisState` and only works in conjunction with
+        BasisEmbedding uses PennyLane's :class:`~.BasisState` and only works in conjunction with
         devices that implement this function.
 
     Args:
