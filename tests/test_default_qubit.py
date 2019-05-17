@@ -264,27 +264,19 @@ class TestDefaultQubitDevice(BaseTest):
         dev = DefaultQubit(wires=3)
 
         # test applied to wire 0
-        res = dev.expand_one(U, [0])
+        res = dev.expand(U, [0])
         expected = np.kron(np.kron(U, I), I)
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
         # test applied to wire 1
-        res = dev.expand_one(U, [1])
+        res = dev.expand(U, [1])
         expected = np.kron(np.kron(I, U), I)
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
         # test applied to wire 2
-        res = dev.expand_one(U, [2])
+        res = dev.expand(U, [2])
         expected = np.kron(np.kron(I, I), U)
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test exception raised if U is not 2x2 matrix
-        with self.assertRaisesRegex(ValueError, "2x2 matrix required"):
-            dev.expand_one(U2, [0])
-
-        # test exception raised if more than one subsystem provided
-        with self.assertRaisesRegex(ValueError, "One target subsystem required"):
-            dev.expand_one(U, [0, 1])
 
     def test_expand_two(self):
         """Test that a 2 qubit gate correctly expands to 3 qubits."""
@@ -293,42 +285,29 @@ class TestDefaultQubitDevice(BaseTest):
         dev = DefaultQubit(wires=4)
 
         # test applied to wire 0+1
-        res = dev.expand_two(U2, [0, 1])
+        res = dev.expand(U2, [0, 1])
         expected = np.kron(np.kron(U2, I), I)
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
         # test applied to wire 1+2
-        res = dev.expand_two(U2, [1, 2])
+        res = dev.expand(U2, [1, 2])
         expected = np.kron(np.kron(I, U2), I)
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
         # test applied to wire 2+3
-        res = dev.expand_two(U2, [2, 3])
+        res = dev.expand(U2, [2, 3])
         expected = np.kron(np.kron(I, I), U2)
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
         # CNOT with target on wire 1
-        res = dev.expand_two(CNOT, [1, 0])
+        res = dev.expand(CNOT, [1, 0])
         rows = np.array([0, 2, 1, 3])
         expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
-        # test exception raised if U is not 4x4 matrix
-        with self.assertRaisesRegex(ValueError, "4x4 matrix required"):
-            dev.expand_two(U, [0])
-
-        # test exception raised if two subsystems are not provided
-        with self.assertRaisesRegex(ValueError, "Two target subsystems required"):
-            dev.expand_two(U2, [0])
-
         # test exception raised if unphysical subsystems provided
         with self.assertRaisesRegex(ValueError, "Bad target subsystems."):
-            dev.expand_two(U2, [-1, 5])
-
-    def test_expand_multi(self):
-        """Test that any arbitrary qubit gate correctly expands to the full
-        system."""
-        pass
+            dev.expand(U2, [-1, 5])
 
     def test_get_operator_matrix(self):
         """Test the the correct matrix is returned given an operation name"""
@@ -442,11 +421,6 @@ class TestDefaultQubitDevice(BaseTest):
         ):
             self.dev.apply("BasisState", wires=[0, 1, 2], par=[np.array([0, 1])])
 
-        with self.assertRaisesRegex(
-            ValueError, "This plugin supports only one- and two-qubit gates."
-        ):
-            self.dev.apply("QubitUnitary", wires=[0, 1, 2], par=[U2])
-
     def test_ev(self):
         """Test that expectation values are calculated correctly"""
         self.logTestName()
@@ -496,12 +470,6 @@ class TestDefaultQubitDevice(BaseTest):
 
             # verify the device is now in the expected state
             self.assertAllAlmostEqual(res, expected_out, delta=self.tol)
-
-            # text exception raised if matrix is not 2x2 or 4x4
-            with self.assertRaisesRegex(
-                ValueError, "Only one and two-qubit expectation is supported."
-            ):
-                self.dev.ev(U_toffoli, [0])
 
             # text warning raised if matrix is complex
             with self.assertLogs(level="WARNING") as l:
