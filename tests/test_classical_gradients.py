@@ -52,7 +52,7 @@ def test_gradient_multivar():
     multi_var = lambda x: np.sin(x[0]) + np.cos(x[1])
     grad_multi_var = lambda x: np.array([np.cos(x[0]), -np.sin(x[1])])
 
-    x_vec = np.random.uniform(-5, 5, size=(2))
+    x_vec = [1.5, -2.5]
     g = qml.grad(multi_var, 0)
     auto_grad = g(x_vec)
     correct_grad = grad_multi_var(x_vec)
@@ -87,8 +87,8 @@ def test_gradient_multivar():
 def test_gradient_multiargs():
     """Tests gradients of univariate functions with multiple arguments in signature."""
 
-    x = np.random.random()
-    y = np.random.random()
+    x = -2.5
+    y = 1.5
 
     # ----------
     # function 1
@@ -174,8 +174,6 @@ def test_gradient_multivar_multidim():
     gradf = lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]])
     f = lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0])
 
-    x_vals = np.linspace(-10, 10, 16, endpoint=False)
-
     x_vec = np.random.uniform(-5, 5, size=(2))
     x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
@@ -195,11 +193,6 @@ def test_gradient_multivar_multidim():
     )
     f = lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[1, 0])
 
-    x_vals = np.linspace(-10, 10, 16, endpoint=False)
-
-    x_vec = np.random.uniform(-5, 5, size=(2))
-    x_vec_multidim = np.expand_dims(x_vec, axis=1)
-
     g = qml.grad(f, 0)
     auto_grad = g(x_vec_multidim)
     correct_grad = gradf(x_vec_multidim)
@@ -210,11 +203,6 @@ def test_gradient_multivar_multidim():
     # ----------
     gradf = lambda x: np.array([[2 * x_[0]] for x_ in x])
     f = lambda x: np.sum([x_[0] ** 2 for x_ in x])
-
-    x_vals = np.linspace(-10, 10, 16, endpoint=False)
-
-    x_vec = np.random.uniform(-5, 5, size=(2))
-    x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
     g = qml.grad(f, 0)
     auto_grad = g(x_vec_multidim)
