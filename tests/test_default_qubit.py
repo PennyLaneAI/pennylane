@@ -82,6 +82,8 @@ U2 = np.array(
 U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
+U_swap = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
 
 H = np.array(
     [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -308,6 +310,46 @@ class TestDefaultQubitDevice(BaseTest):
         # test exception raised if unphysical subsystems provided
         with self.assertRaisesRegex(ValueError, "Bad target subsystems."):
             dev.expand(U2, [-1, 5])
+
+    def test_expand_three(self):
+        """Test that a 3 qubit gate correctly expands to 4 qubits."""
+        self.logTestName()
+
+        dev = DefaultQubit(wires=4)
+
+        # test applied to wire 0,1,2
+        res = dev.expand(U_toffoli, [0, 1, 2])
+        expected = np.kron(U_toffoli, I)
+        self.assertAllAlmostEqual(res, expected, delta=self.tol)
+
+        # test applied to wire 1,2,3
+        res = dev.expand(U_toffoli, [1, 2, 3])
+        expected = np.kron(I, U_toffoli)
+        self.assertAllAlmostEqual(res, expected, delta=self.tol)
+
+        # test applied to wire 0,2,3
+        res = dev.expand(U_toffoli, [0, 2, 3])
+        expected = np.kron(U_swap, np.kron(I, I)) @ np.kron(I, U_toffoli) @ np.kron(U_swap, np.kron(I, I))
+        self.assertAllAlmostEqual(res, expected, delta=self.tol)
+
+        # test applied to wire 0,1,3
+        res = dev.expand(U_toffoli, [0, 1, 3])
+        expected = np.kron(np.kron(I, I), U_swap) @ np.kron(U_toffoli, I) @ np.kron(np.kron(I, I), U_swap)
+        self.assertAllAlmostEqual(res, expected, delta=self.tol)
+
+        # test applied to wire 3, 1, 2
+        res = dev.expand(U_toffoli, [3, 1, 2])
+        # change the control qubit on the Toffoli gate
+        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
+        expected = np.kron(I, U_toffoli[:, rows][rows])
+        self.assertAllAlmostEqual(res, expected, delta=self.tol)
+
+        # test applied to wire 3, 0, 2
+        res = dev.expand(U_toffoli, [3, 0, 2])
+        # change the control qubit on the Toffoli gate
+        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
+        expected = np.kron(U_swap, np.kron(I, I)) @ np.kron(I, U_toffoli[:, rows][rows]) @ np.kron(U_swap, np.kron(I, I))
+        self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
     def test_get_operator_matrix(self):
         """Test the the correct matrix is returned given an operation name"""

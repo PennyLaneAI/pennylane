@@ -386,15 +386,15 @@ class DefaultQubit(Device):
         Returns:
           array: :math:`2^N\times 2^N` matrix. The full system operator.
         """
+        if self.num_wires == 1:
+            # total number of wires is 1, simply return the matrix
+            return U
+
         N = self.num_wires
         wires = np.asarray(wires)
 
         if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
             raise ValueError('Bad target subsystems.')
-
-        if N == 1:
-            # total number of wires is 1, simply return the matrix
-            return U
 
         # generate N qubit basis states via the cartesian product
         tuples = np.stack(np.meshgrid(*[[0, 1] for _ in range(N)]), -1).reshape(-1, N)
