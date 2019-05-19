@@ -103,7 +103,9 @@ from semantic_version import Version, Spec
 import pennylane.operation
 import pennylane.expval
 import pennylane.template
+
 from pennylane.about import about
+from pennylane.expval import Variance
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
@@ -117,7 +119,7 @@ from ._version import __version__
 from .decorator import qnode
 
 
-from pennylane.expval import Variance
+# import the variance factory
 var = Variance()
 
 

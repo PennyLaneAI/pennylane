@@ -122,6 +122,7 @@ class Variance:
     class attribute ``return_type`` set to ``'variance'``.
     """
     def __getattr__(self, item):
+        # pylint: disable=protected-access
         if item not in __all__:
             raise AttributeError("module 'pennylane.var' has no attribute '{}'".format(item))
 
