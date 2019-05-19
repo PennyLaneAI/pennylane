@@ -127,11 +127,11 @@ class VarianceFactory:
     To use the dynamic attribute loading, you may use this class as
     follows:
 
-    >>> var = Variance()
+    >>> var = VarianceFactory()
     >>> var.PauliX
     >>> var.Homodyne
-    >>> var.qubit.Hermitian # only qubit
-    >>> var.cv.MeanPhoton # only CV
+    >>> var.qubit.Hermitian # only qubit observables
+    >>> var.cv.MeanPhoton # only CV observables
     """
     def __init__(self, observables=__all__, submodule=''):
         self.observables = observables
