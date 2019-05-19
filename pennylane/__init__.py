@@ -117,6 +117,10 @@ from ._version import __version__
 from .decorator import qnode
 
 
+from pennylane.expval import Variance
+var = Variance()
+
+
 # overwrite module docstrings
 numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
 

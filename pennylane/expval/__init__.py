@@ -74,9 +74,12 @@ class PlaceholderExpectation():
     def __new__(cls, *args, **kwargs):
         # pylint: disable=protected-access
         if QNode._current_context is None:
-            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
-
-        supported_expectations = QNode._current_context.device.expectations
+            if cls.__name__ in _qubit__all__:
+                supported_expectations = set(_qubit__all__)
+            else:
+                supported_expectations = set(_cv__all__)
+        else:
+            supported_expectations = QNode._current_context.device.expectations
 
         # TODO: in the next breaking release, make it mandatory for plugins to declare
         # whether they target qubit or CV operations, to avoid needing to
@@ -108,6 +111,40 @@ class Identity(PlaceholderExpectation): #pylint: disable=too-few-public-methods,
     num_wires = 0
     num_params = 0
     par_domain = None
+
+
+class Variance:
+    r"""A generic base class for constructing variance expectations for
+    expectation values that exist for CV and qubit-based devices.
+
+    When instantiated inside a QNode context, returns an instance
+    of the respective class in expval.cv or expval.qubit, with
+    class attribute ``return_type`` set to ``'variance'``.
+    """
+    def __getattr__(self, item):
+        if item not in __all__:
+            raise AttributeError("module 'pennylane.var' has no attribute '{}'".format(item))
+
+        if QNode._current_context is None:
+            if item in _qubit__all__:
+                expvals = set(_qubit__all__)
+            else:
+                expvals = set(_cv__all__)
+        else:
+            expvals = QNode._current_context.device.expectations
+
+        if expvals.intersection([item for item in _cv__all__]):
+            expval_class = getattr(cv, item)
+        elif expvals.intersection([item for item in _qubit__all__]):
+            expval_class = getattr(qubit, item)
+        else:
+            raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit "
+                                       "Operations when constructing the {} Variance.".format(item))
+
+        return type(item, (expval_class,), {"return_type": "variance"})
+
+    def __dir__(self):
+        return __all__
 
 
 __all__ = _cv__all__ + _qubit__all__ + [Identity.__name__]

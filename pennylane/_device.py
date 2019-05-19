@@ -209,13 +209,21 @@ class Device(abc.ABC):
             self.post_apply()
 
             self.pre_expval()
-            expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
+
+            result = []
+
+            for e in expectation:
+                if e.return_type == "expectation":
+                    result.append(self.expval(e.name, e.wires, e.parameters))
+                elif e.return_type == "variance":
+                    result.append(self.var(e.name, e.wires, e.parameters))
+
             self.post_expval()
 
             self._op_queue = None
             self._expval_queue = None
 
-            return np.array(expectations)
+            return np.array(result)
 
     @property
     def op_queue(self):
@@ -334,6 +342,23 @@ class Device(abc.ABC):
 
         Returns:
             float: expectation value
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def var(self, expectation, wires, par):
+        """Return the variance of an expectation.
+
+        For plugin developers: this function should return the variance of the given
+        expectation on the device.
+
+        Args:
+            expectation (str): name of the expectation
+            wires (Sequence[int]): subsystems the expectation value is to be measured on
+            par (tuple): parameters for the observable
+
+        Returns:
+            float: expectation variance
         """
         raise NotImplementedError
 

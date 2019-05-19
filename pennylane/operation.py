@@ -434,6 +434,8 @@ class Expectation(Operation):
             there is some reason to run an Expectation outside of a QNode context.
     """
     # pylint: disable=abstract-method
+    return_type = "expectation"
+
     def __init__(self, *args, wires=None, do_queue=True):
         # extract the arguments
         if wires is not None:
@@ -443,7 +445,6 @@ class Expectation(Operation):
             wires = args[-1]
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
-
 
 
 #=============================================================================
