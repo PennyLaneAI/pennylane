@@ -811,6 +811,10 @@ class QNode:
         """
         old_ev = copy.deepcopy(self.ev)
 
+        # boolean mask: elements are True where the
+        # return type is a variance, False for expectations
+        where_var = [e.return_type == "variance" for e in self.ev]
+
         for i, e in enumerate(self.ev):
             self.ev[i].return_type = 'expectation'
 
@@ -858,10 +862,12 @@ class QNode:
                 self.ev[i] = old
 
         y0 = np.asarray(self.evaluate(params, **kwargs))
-        pd = ysq-2*y0*self._pd_analytic(params, idx, **kwargs)
+        pd = self._pd_analytic(params, idx, **kwargs)
         self.ev = old_ev
 
-        return pd
+        # return the variance shift rule where where_var==True,
+        # otherwise return the expectation parameter shift rule
+        return np.where(where_var, ysq-2*y0*pd, pd)
 
     def to_torch(self):
         """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
