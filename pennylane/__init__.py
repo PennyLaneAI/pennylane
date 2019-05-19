@@ -105,7 +105,7 @@ import pennylane.expval
 import pennylane.template
 
 from pennylane.about import about
-from pennylane.expval import Variance
+from pennylane.expval import VarianceFactory
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
@@ -120,7 +120,7 @@ from .decorator import qnode
 
 
 # import the variance factory
-var = Variance()
+var = VarianceFactory()
 
 
 # overwrite module docstrings
