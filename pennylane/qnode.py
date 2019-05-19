@@ -843,7 +843,7 @@ class QNode:
                 w = e.wires
 
                 # get the heisenberg representation
-                A = e._heisenberg_rep(e.params).reshape(-1, 1)
+                A = e._heisenberg_rep(e.params).reshape(-1, 1) # pylint: disable=protected-access
 
                 # square the hiesenberg representation
                 A = np.kron(A, A.T)
