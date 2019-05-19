@@ -850,10 +850,10 @@ class QNode:
                 # need to calculate d<H^2>/dp
                 # make a copy of the original variance
                 old = copy.deepcopy(e)
-                w = e.wires
+                w = old.wires
 
                 # get the heisenberg representation
-                A = e._heisenberg_rep(e.params).reshape(-1, 1) # pylint: disable=protected-access
+                A = e._heisenberg_rep(old.params).reshape(-1, 1) # pylint: disable=protected-access
 
                 # square the hiesenberg representation
                 A = np.kron(A, A.T)
@@ -862,7 +862,7 @@ class QNode:
                 self.ev[i] = pennylane.expval.PolyXP(A, w, do_queue=False)
 
                 # calculate the analytic derivative of <H^2>
-                ysq = np.asarray(self._pd_analytic(params, idx, **kwargs))
+                ysq = np.asarray(self._pd_analytic(params, idx, force_order2=True, **kwargs))
 
                 # restore the original Hermitian variance
                 self.ev[i] = old

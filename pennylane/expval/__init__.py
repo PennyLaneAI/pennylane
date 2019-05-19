@@ -138,14 +138,14 @@ class VarianceFactory:
         self.submodule = submodule
 
     def __getattr__(self, item):
-        # pylint: disable=protected-access
+        # pylint: disable=protected-access,too-many-branches
         if item == 'qubit':
             # allows the construct qml.var.qubit.PauliX
-            return Variance(observables=_qubit__all__, submodule='.qubit')
+            return VarianceFactory(observables=_qubit__all__, submodule='.qubit')
 
         if item == 'cv':
             # allows the construct qml.cv.qubit.Homodyne
-            return Variance(observables=_cv__all__, submodule='.cv')
+            return VarianceFactory(observables=_cv__all__, submodule='.cv')
 
         if item not in self.observables:
             raise AttributeError("module 'pennylane.var{}' has no attribute '{}'".format(self.submodule, item))
