@@ -815,9 +815,15 @@ class QNode:
         # return type is a variance, False for expectations
         where_var = [e.return_type == "variance" for e in self.ev]
 
-        for i, e in enumerate(self.ev):
+        for i, e in enumerate(e for e in self.ev if e.return_type == "variance"):
+            # iterate through all variance return types
+
+            # temporarily convert return type to expectation
             self.ev[i].return_type = 'expectation'
 
+            # analytic derivative of <H^2>
+            # For involutary observables (H^2 = I),
+            # then d<I>/dp = 0
             ysq = 0
 
             if self.type == 'qubit':
@@ -834,7 +840,7 @@ class QNode:
                     # replace the Hermitian variance with <H^2> expectation
                     self.ev[i] = pennylane.expval.Hermitian(A@A, w, do_queue=False)
 
-                    # calculate the analytic derivative
+                    # calculate the analytic derivative of <H^2>
                     ysq = np.asarray(self._pd_analytic(params, idx, **kwargs))
 
                     # restore the original Hermitian variance
@@ -855,14 +861,18 @@ class QNode:
                 # replace the first order sigma_H variance with <H^2> expectation
                 self.ev[i] = pennylane.expval.PolyXP(A, w, do_queue=False)
 
-                # calculate the analytic derivative
+                # calculate the analytic derivative of <H^2>
                 ysq = np.asarray(self._pd_analytic(params, idx, **kwargs))
 
                 # restore the original Hermitian variance
                 self.ev[i] = old
 
+        # evaluate circuit value at original parameters
         y0 = np.asarray(self.evaluate(params, **kwargs))
+        # evaluate circuit gradient assuming all outputs are expectations
         pd = self._pd_analytic(params, idx, **kwargs)
+
+        # restore original return queue
         self.ev = old_ev
 
         # return the variance shift rule where where_var==True,
