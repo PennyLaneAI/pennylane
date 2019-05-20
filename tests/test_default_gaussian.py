@@ -398,7 +398,7 @@ class TestDefaultGaussianDevice(BaseTest):
             p = U
             self.dev.apply('Interferometer', wires=[0], par=[p])
 
-        with self.assertRaisesRegex(ValueError, 'Bad target subsystems'):
+        with self.assertRaisesRegex(ValueError, "Invalid target subsystems provided in 'wires' argument"):
             p = U2
             dev = DefaultGaussian(wires=4, shots=0, hbar=hbar)
             self.dev.apply('Interferometer', wires=[0, 1, 2], par=[p])
