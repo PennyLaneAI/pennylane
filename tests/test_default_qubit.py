@@ -308,7 +308,7 @@ class TestDefaultQubitDevice(BaseTest):
         self.assertAllAlmostEqual(res, expected, delta=self.tol)
 
         # test exception raised if unphysical subsystems provided
-        with self.assertRaisesRegex(ValueError, "Bad target subsystems."):
+        with self.assertRaisesRegex(ValueError, "Invalid target subsystems provided in 'wires' argument"):
             dev.expand(U2, [-1, 5])
 
     def test_expand_three(self):

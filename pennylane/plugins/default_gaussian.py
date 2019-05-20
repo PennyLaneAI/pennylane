@@ -790,7 +790,7 @@ class DefaultGaussian(Device):
 
         Args:
             S (array): a :math:`2M\times 2M` Symplectic matrix
-            wires (Sequence[int]): the wires of modes S acts on
+            wires (Sequence[int]): the wires of the modes that S acts on
 
         Returns:
             array: the resulting :math:`2N\times 2N` Symplectic matrix
@@ -803,7 +803,7 @@ class DefaultGaussian(Device):
         w = np.asarray(wires)
 
         if np.any(w < 0) or np.any(w >= N) or len(set(w)) != len(w):
-            raise ValueError('Bad target subsystems.')
+            raise ValueError("Invalid target subsystems provided in 'wires' argument.")
 
         M = len(S) // 2
         S2 = np.identity(2 * N)
@@ -811,8 +811,8 @@ class DefaultGaussian(Device):
         if M != len(wires):
             raise ValueError('Incorrect number of subsystems for provided operation.')
 
-        S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:M, :M].copy()  # X
-        S2[(w + N).reshape(-1, 1), (w + N).reshape(1, -1)] = S[M:, M:].copy()  # P
+        S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:M, :M].copy()  # XX
+        S2[(w + N).reshape(-1, 1), (w + N).reshape(1, -1)] = S[M:, M:].copy()  # PP
         S2[w.reshape(-1, 1), (w + N).reshape(1, -1)] = S[:M, M:].copy()  # XP
         S2[(w + N).reshape(-1, 1), w.reshape(1, -1)] = S[M:, :M].copy()  # PX
 

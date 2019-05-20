@@ -380,7 +380,7 @@ class DefaultQubit(Device):
         r"""Expand a multi-qubit operator into a full system operator.
 
         Args:
-          U (array): :math:`2^n \times 2^n` matrix where n = wires.
+          U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
           wires (Sequence[int]): Target subsystems (order matters!)
 
         Returns:
@@ -394,7 +394,7 @@ class DefaultQubit(Device):
         wires = np.asarray(wires)
 
         if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
-            raise ValueError('Bad target subsystems.')
+            raise ValueError("Invalid target subsystems provided in 'wires' argument.")
 
         # generate N qubit basis states via the cartesian product
         tuples = np.stack(np.meshgrid(*[[0, 1] for _ in range(N)]), -1).reshape(-1, N)
