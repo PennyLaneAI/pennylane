@@ -510,6 +510,30 @@ class TestDefaultQubitDevice(BaseTest):
                 self.assertEqual(len(l.records), 1)
                 self.assertIn("Nonvanishing imaginary part", l.output[0])
 
+    def test_var(self):
+        """Tests for variance calculation"""
+        self.logTestName()
+        self.dev.reset()
+
+        # test correct variance for <Z> of a rotated state
+        phi = 0.543
+        theta = 0.6543
+        self.dev.apply('RX', wires=[0], par=[phi])
+        self.dev.apply('RY', wires=[0], par=[theta])
+        var = self.dev.var('PauliZ', [0], [])
+        expected = 0.25*(3-np.cos(2*theta)-2*np.cos(theta)**2*np.cos(2*phi))
+        self.assertAlmostEqual(var, expected, delta=self.tol)
+
+        # test correct variance for <H> of a rotated state
+        self.dev.reset()
+        H = np.array([[4, -1+6j], [-1-6j, 2]])
+        self.dev.apply('RX', wires=[0], par=[phi])
+        self.dev.apply('RY', wires=[0], par=[theta])
+        var = self.dev.var('Hermitian', [0], [H])
+        expected = 0.5*(2*np.sin(2*theta)*np.cos(phi)**2+24*np.sin(phi)\
+                    *np.cos(phi)*(np.sin(theta)-np.cos(theta))+35*np.cos(2*phi)+39)
+        self.assertAlmostEqual(var, expected, delta=self.tol)
+
 
 class TestDefaultQubitIntegration(BaseTest):
     """Integration tests for default.qubit. This test ensures it integrates

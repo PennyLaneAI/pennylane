@@ -815,21 +815,23 @@ class QNode:
         # return type is a variance, False for expectations
         where_var = [e.return_type == "variance" for e in self.ev]
 
-        for i, e in enumerate(e for e in self.ev if e.return_type == "variance"):
+        for i, e in enumerate(self.ev):
             # iterate through all variance return types
+            if e.return_type != 'variance':
+                continue
 
             # temporarily convert return type to expectation
             self.ev[i].return_type = 'expectation'
 
             # analytic derivative of <H^2>
-            # For involutary observables (H^2 = I),
+            # For involutory observables (H^2 = I),
             # then d<I>/dp = 0
             ysq = 0
 
             if self.type == 'qubit':
                 if e.__class__.__name__ == 'Hermitian':
                     # since arbitrary Hermitian expectations
-                    # are not involutary, need to take them into
+                    # are not guaranteed to be involutory, need to take them into
                     # account separately to calculate d<H^2>/dp
 
                     # make a copy of the original variance
@@ -837,14 +839,15 @@ class QNode:
                     A = e.params[0]  # Hermitian matrix
                     w = e.wires
 
-                    # replace the Hermitian variance with <H^2> expectation
-                    self.ev[i] = pennylane.expval.Hermitian(A@A, w, do_queue=False)
+                    if not np.allclose(A @ A, np.identity(A.shape[0])):
+                        # replace the Hermitian variance with <H^2> expectation
+                        self.ev[i] = pennylane.expval.Hermitian(A @ A, w, do_queue=False)
 
-                    # calculate the analytic derivative of <H^2>
-                    ysq = np.asarray(self._pd_analytic(params, idx, **kwargs))
+                        # calculate the analytic derivative of <H^2>
+                        ysq = np.asarray(self._pd_analytic(params, idx, **kwargs))
 
-                    # restore the original Hermitian variance
-                    self.ev[i] = old
+                        # restore the original Hermitian variance
+                        self.ev[i] = old
 
             elif self.type == 'CV':
                 # need to calculate d<H^2>/dp
@@ -853,7 +856,7 @@ class QNode:
                 w = old.wires
 
                 # get the heisenberg representation
-                A = e._heisenberg_rep(old.params).reshape(-1, 1) # pylint: disable=protected-access
+                A = e._heisenberg_rep(old.parameters).reshape(-1, 1) # pylint: disable=protected-access
 
                 # square the hiesenberg representation
                 A = np.kron(A, A.T)

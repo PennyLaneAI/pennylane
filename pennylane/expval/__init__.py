@@ -66,7 +66,6 @@ class PlaceholderExpectation():
     r"""pennylane.expval.PlaceholderExpectation()
     A generic base class for constructing placeholders for operations that
     exist under the same name in CV and qubit-based devices.
-
     When instantiated inside a QNode context, returns an instance
     of the respective class in expval.cv or expval.qubit.
     """
@@ -74,12 +73,9 @@ class PlaceholderExpectation():
     def __new__(cls, *args, **kwargs):
         # pylint: disable=protected-access
         if QNode._current_context is None:
-            if cls.__name__ in _qubit__all__:
-                supported_expectations = set(_qubit__all__)
-            else:
-                supported_expectations = set(_cv__all__)
-        else:
-            supported_expectations = QNode._current_context.device.expectations
+            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
+
+        supported_expectations = QNode._current_context.device.expectations
 
         # TODO: in the next breaking release, make it mandatory for plugins to declare
         # whether they target qubit or CV operations, to avoid needing to
@@ -169,12 +165,11 @@ class VarianceFactory:
                     raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit "
                                                "Operations when constructing the {} Variance.".format(item))
             else:
-                # if not inside a QNode context, just assume that
-                # the variance is a qubit variance by default
-                if item in _qubit__all__ and item in _cv__all__:
-                    raise AttributeError("Variance operator exists for both CV and Qubit circuit. "
-                                         "Please specify by using either pennylane.var.cv.Name or "
-                                         "pennylane.var.qubit.Name.")
+                # # unable to determine which operation is requested
+                # if item in _qubit__all__ and item in _cv__all__:
+                #     raise AttributeError("Variance operator exists for both CV and Qubit circuit. "
+                #                          "Please specify by using either pennylane.var.cv.Name or "
+                #                          "pennylane.var.qubit.Name.")
 
                 if item in _qubit__all__:
                     expval_class = getattr(qubit, item)
