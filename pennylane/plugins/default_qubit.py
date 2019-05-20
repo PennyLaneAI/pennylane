@@ -410,7 +410,10 @@ class DefaultQubit(Device):
         rearanged_wires = np.array(list(wires)+inactive_wires)
 
         # convert to computational basis
-        perm = np.sum(2**np.arange(N-1, -1, -1)*tuples[:, rearanged_wires], axis=1)
+        # i.e., converting the list of basis state bit strings into
+        # a list of decimal numbers that correspond to the computational
+        # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
+        perm = np.ravel_multi_index(tuples[:, rearanged_wires].T, [2]*N)
 
         # permute U to take into account rearranged wires
         return U[:, perm][perm]
