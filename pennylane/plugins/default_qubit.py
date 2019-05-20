@@ -74,6 +74,7 @@ Classes
 Code details
 ^^^^^^^^^^^^
 """
+import itertools
 import logging as log
 
 import numpy as np
@@ -397,8 +398,7 @@ class DefaultQubit(Device):
             raise ValueError('Bad target subsystems.')
 
         # generate N qubit basis states via the cartesian product
-        tuples = np.stack(np.meshgrid(*[[0, 1] for _ in range(N)]), -1).reshape(-1, N)
-        tuples[:, [0, 1]] = tuples[:, [1, 0]]
+        tuples = np.array(list(itertools.product([0, 1], repeat=N)))
 
         # wires not acted on by the operator
         inactive_wires = list(set(range(N))-set(wires))

@@ -765,6 +765,11 @@ class DefaultGaussian(Device):
             self._state = self._operation_map[operation](*par, hbar=self.hbar)
             return # we are done here
 
+        if operation == 'Interferometer':
+            if par[0].shape[0] != len(wires):
+                raise ValueError("Interferometer unitary matrix applied to the incorrect "
+                                 "number of subsystems.")
+
         if 'State' in operation:
             # set the new device state
             mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
