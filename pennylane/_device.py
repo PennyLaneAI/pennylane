@@ -205,7 +205,8 @@ class Device(abc.ABC):
         with self.execution_context():
             self.pre_apply()
             for operation in queue:
-                self.apply(operation.name, operation.wires, operation.parameters)
+                w = [int(i) for i in operation.wires]
+                self.apply(operation.name, w, operation.parameters)
             self.post_apply()
 
             self.pre_expval()
