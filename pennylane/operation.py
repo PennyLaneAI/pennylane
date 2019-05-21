@@ -373,7 +373,7 @@ class Operation(abc.ABC):
         """
         w = [i.val if isinstance(i, Variable) else i for i in self._wires]
         self.check_wires(w)
-        return w
+        return [int(i) for i in w]
 
     @property
     def parameters(self):
