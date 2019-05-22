@@ -242,7 +242,7 @@ class TestBasisEmb:
             circuit(x=[1])
 
 
-class TestAmplitudeEmb:
+class TestAmplitudeEmbedding:
     """ Tests the pennylane.templates.embeddings.AmplitudeEmbedding method."""
 
     def test_amplitude_embedding_state(self):
