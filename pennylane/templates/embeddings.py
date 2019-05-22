@@ -101,7 +101,7 @@ def AmplitudeEmbedding(features, wires=None):
     """
     Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
-    The absolute square of all  elements in ``features`` has to add up to one.
+    The absolute square of all elements in ``features`` has to add up to one.
 
     .. note::
 
