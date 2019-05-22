@@ -96,7 +96,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 Templates can themselves contain other templates. An example is the handy :class:`~.Interferometer` function. It constructs
 arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations, by providing lists of
 transmittivity and phase angles. A :func:`~.CVNeuralNetLayers` template — implementing the continuous-variable neural
-network architecture from :cite:`killoran2018continuous` - contains two such interferometers. But it can also
+network architecture from :cite:`killoran2018continuous` — contains two such interferometers. But it can also
 be used (and optimized) independently:
 
 .. code-block:: python
