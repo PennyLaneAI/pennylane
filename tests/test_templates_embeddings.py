@@ -383,7 +383,7 @@ class TestSqueezingEmbedding:
             circuit(x=[1])
 
 
-class TestDisplacementEmb:
+class TestDisplacementEmbedding:
     """ Tests the pennylane.templates.embeddings.DisplacementEmbedding method."""
 
     def test_displacement_embedding_state_execution_amplitude(self):
