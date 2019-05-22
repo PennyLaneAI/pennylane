@@ -135,8 +135,6 @@ from collections.abc import Sequence
 import inspect
 import copy
 
-import logging as log
-
 import numbers
 
 import autograd.numpy as np
@@ -147,9 +145,6 @@ import pennylane.operation
 
 from .variable  import Variable
 from .utils import _flatten, unflatten
-
-
-log.getLogger()
 
 
 class QuantumFunctionError(Exception):
