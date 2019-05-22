@@ -298,7 +298,7 @@ class TestAmplitudeEmbedding:
             circuit(x=[1])
 
 
-class TestSqueezingEmb:
+class TestSqueezingEmbedding:
     """ Tests the pennylane.templates.embeddings.SqueezingEmbedding method."""
 
     def test_squeezing_embedding_state_execution_amplitude(self):
