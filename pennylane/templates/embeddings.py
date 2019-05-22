@@ -68,7 +68,7 @@ def AngleEmbedding(features, rotation='X', wires=None):
     and features of a nonzero value of :math:`\pi /2` only where a qubit has to be prepared in state 1.
 
     Args:
-        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
+        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed, with :math:`N\leq n`
 
     Keyword Args:
         rotation (str): Type of rotations used
