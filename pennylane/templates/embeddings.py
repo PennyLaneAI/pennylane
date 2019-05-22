@@ -121,7 +121,7 @@ def AmplitudeEmbedding(features, wires=None):
         raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
 
     if 2**len(wires) != len(features):
-        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**n_qubits which is {}, "
+        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**len(wires) which is {}, "
                          "got {}.".format(2 ** len(wires), len(features)))
 
     QubitStateVector(features, wires=wires)
