@@ -30,20 +30,20 @@ Strongly entangling circuit
 
 .. autosummary::
 
-    parameters_stronglyentanglinglayers_uniform
-    parameters_stronglyentanglinglayers_normal
-    parameters_stronglyentanglinglayer_uniform
-    parameters_stronglyentanglinglayer_normal
+    strong_ent_layers_uniform
+    strong_ent_layers_normal
+    strong_ent_layer_uniform
+    strong_ent_layer_normal
 
 Random circuit
 **************
 
 .. autosummary::
 
-    parameters_randomlayers_uniform
-    parameters_randomlayers_normal
-    parameters_randomlayer_uniform
-    parameters_randomlayer_normal
+    random_layers_uniform
+    random_layers_normal
+    random_layer_uniform
+    random_layer_normal
 
 Continuous-variable architectures
 ---------------------------------
@@ -53,18 +53,18 @@ Continuous-variable quantum neural network
 
 .. autosummary::
 
-    parameters_cvqnnlayers_uniform
-    parameters_cvqnnlayers_normal
-    parameters_cvqnnlayer_uniform
-    parameters_cvqnnlayer_normal
+    cvqnn_layers_uniform
+    cvqnn_layers_normal
+    cvqnn_layer_uniform
+    cvqnn_layer_normal
 
 Interferometer
 **************
 
 .. autosummary::
 
-    parameters_interferometer_uniform
-    parameters_interferometer_normal
+    interferometer_uniform
+    interferometer_normal
 
 Code details
 ^^^^^^^^^^^^
@@ -73,7 +73,7 @@ import numpy as np
 from math import pi
 
 
-def parameters_stronglyentanglinglayers_uniform(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
+def strong_ent_layers_uniform(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
     Creates a list of one randomly initialized parameter array for \
     :func:`~.StronglyEntanglingLayers`, sampled uniformly.
@@ -102,7 +102,7 @@ def parameters_stronglyentanglinglayers_uniform(n_layers, n_wires, uniform_min=0
     return [params]
 
 
-def parameters_stronglyentanglinglayers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of one randomly initialized parameter array for \
     :func:`~.StronglyEntanglingLayers`, sampled from a normal distribution.
@@ -130,7 +130,7 @@ def parameters_stronglyentanglinglayers_normal(n_layers, n_wires, mean=0, std=0.
     return [params]
 
 
-def parameters_stronglyentanglinglayer_uniform(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
+def strong_ent_layer_uniform(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
     Creates a list of one randomly initialized parameter array for \
     :func:`~.StronglyEntanglingLayers`, sampled uniformly.
@@ -158,7 +158,7 @@ def parameters_stronglyentanglinglayer_uniform(n_wires, uniform_min=0, uniform_m
     return [params]
 
 
-def parameters_stronglyentanglinglayer_normal(n_wires, mean=0, std=0.1, seed=None):
+def strong_ent_layer_normal(n_wires, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of one randomly initialized parameter array for \
     :func:`~.StronglyEntanglingLayers`, sampled from a normal distribution.
@@ -185,7 +185,7 @@ def parameters_stronglyentanglinglayer_normal(n_wires, mean=0, std=0.1, seed=Non
     return [params]
 
 
-def parameters_randomlayers_uniform(n_layers, n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
+def random_layers_uniform(n_layers, n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
     Creates a list of one randomly initialized parameter array for :func:`~.RandomLayers`, sampled uniformly.
 
@@ -217,7 +217,7 @@ def parameters_randomlayers_uniform(n_layers, n_wires, n_rots=None, uniform_min=
     return [params]
 
 
-def parameters_randomlayers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=None):
+def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of one randomly initialized parameter array for :func:`~.RandomLayers`, sampled from a normal distribution.
 
@@ -248,7 +248,7 @@ def parameters_randomlayers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0
     return [params]
 
 
-def parameters_randomlayer_uniform(n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
+def random_layer_uniform(n_wires, n_rots=None, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
     Creates a list of one randomly initialized parameter array for :func:`~.RandomLayer`, sampled uniformly.
 
@@ -279,7 +279,7 @@ def parameters_randomlayer_uniform(n_wires, n_rots=None, uniform_min=0, uniform_
     return [params]
 
 
-def parameters_randomlayer_normal(n_wires, n_rots=None, mean=0, std=0.1, seed=None):
+def random_layer_normal(n_wires, n_rots=None, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of one randomly initialized parameter array for :func:`~.RandomLayer`, sampled from a normal distribution.
 
@@ -309,7 +309,7 @@ def parameters_randomlayer_normal(n_wires, n_rots=None, mean=0, std=0.1, seed=No
     return [params]
 
 
-def parameters_cvqnnlayers_uniform(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
+def cvqnn_layers_uniform(n_layers, n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
     :func:`~.CVNeuralNetLayers`, sampled uniformly.
@@ -350,10 +350,10 @@ def parameters_cvqnnlayers_uniform(n_layers, n_wires, uniform_min=0, uniform_max
     phi_a = np.random.random(size=(n_layers, n_wires)) * interval + uniform_min
     k = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
 
-    return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
+    return theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k
 
 
-def parameters_cvqnnlayers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+def cvqnn_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
     :func:`~.CVNeuralNetLayers`, sampled from a normal distribution.
@@ -393,7 +393,7 @@ def parameters_cvqnnlayers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
-def parameters_cvqnnlayer_uniform(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
+def cvqnn_layer_uniform(n_wires, uniform_min=0, uniform_max=2 * pi, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
     :func:`~.CVNeuralNetLayer`, sampled uniformly.
@@ -437,7 +437,7 @@ def parameters_cvqnnlayer_uniform(n_wires, uniform_min=0, uniform_max=2 * pi, me
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
-def parameters_cvqnnlayer_normal(n_wires, mean=0, std=0.1, seed=None):
+def cvqnn_layer_normal(n_wires, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
     :func:`~.CVNeuralNetLayer`, sampled from a normal distribution.
@@ -477,7 +477,7 @@ def parameters_cvqnnlayer_normal(n_wires, mean=0, std=0.1, seed=None):
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
-def parameters_interferometer_uniform(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
+def interferometer_uniform(n_wires, uniform_min=0, uniform_max=2 * pi, seed=None):
     r"""
     Creates a list of three randomly initialized parameter arrays for \
     :func:`~.Interferometer`, sampled uniformly.
@@ -509,7 +509,7 @@ def parameters_interferometer_uniform(n_wires, uniform_min=0, uniform_max=2 * pi
     return [theta, phi, varphi]
 
 
-def parameters_interferometer_normal(n_wires, mean=0, std=0.1, seed=None):
+def interferometer_normal(n_wires, mean=0, std=0.1, seed=None):
     r"""
     Creates a list of three randomly initialized parameter arrays for \
     :func:`~.Interferometer`, sampled from a normal distribution.

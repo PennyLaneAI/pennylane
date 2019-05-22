@@ -55,17 +55,18 @@ def AngleEmbedding(features, rotation='X', wires=None):
     The rotations can be chosen as either :class:`~.RX`, :class:`~.RY`
     or :class:`~.RZ` gates, as defined by the ``rotation`` parameter:
 
-    * ``rotation='X'`` uses the features to chronologically apply RX rotations to qubits
+    * ``rotation='X'`` uses the features to apply RX rotations to qubits
 
-    * ``rotation='Y'`` uses the features to chronologically apply RY rotations to qubits
+    * ``rotation='Y'`` uses the features to apply RY rotations to qubits
 
-    * ``rotation='Z'`` uses the features to chronologically apply RZ rotations to qubits
+    * ``rotation='Z'`` uses the features to apply RZ rotations to qubits
 
     The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
-    This embedding method can also be used to encode a binary sequence into a basis state. Choose ``rotation='X'``
-    and features of a nonzero value of :math:`\pi /2` only where a qubit has to be prepared in state 1.
+    This embedding method can also be used to encode a binary sequence into a basis state. For example, to prepare
+    basis state :math:`|0,1,1,0\rangle`, choose ``rotation='X'`` and use the
+    feature vector :math:`[0, \pi/2, \pi/2, 0]`.
 
     Args:
         features (array): Input array of shape ``(N, )``, where N is the number of input features to embed

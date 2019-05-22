@@ -21,7 +21,7 @@ PennyLane conceptually distinguishes two types of templates, **layer architectur
 * Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state of the
   circuit. These embeddings can also depend on trainable parameters, in which case the embedding is learnable.
 
-Each trainable template has a dedicated function in :mod:`pennylane.templates.parameters` which generates a list of
+Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
 **randomly initialized** arrays for the trainable **parameters**. The entries of the list contain valid positional
 arguments for the template, allowing for the syntax ``MyTemplate(*par_list)``.
 
@@ -58,7 +58,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
     import pennylane as qml
     from pennylane.templates.layers import StronglyEntanglingLayers
-    from pennylane.templates.parameters import parameters_stronglyentanglinglayers_normal
+    from pennylane.init import strong_ent_layers_normal
 
     from pennylane import numpy as np
 
@@ -75,7 +75,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
         return qml.expval.PauliZ(0)
 
 
-    pars = parameters_stronglyentanglinglayers_normal(n_layers=n_layers, n_wires=n_wires, mean=0, std=0.1)
+    pars = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires, mean=0, std=0.1)
     print(circuit(pars, x=np.array(np.random.randint(0, 1, n_wires))))
 
 .. note::
@@ -93,9 +93,9 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
     Most parameter generating methods have a 'normal' and a 'uniform' version, sampling the angle parameters
     of rotation gates either from a normal or uniform distribution.
 
-Templates can contain each other. An example is the handy :class:`~.Interferometer` function. It constructs
+Templates can contain each other. An example is the handy :class:`~.Interferometer` template. It constructs
 arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations, by providing lists of
-transmittivity and phase angles. A :func:`~.CVNeuralNetLayers` - implementing the continuous-variable neural
+transmittivity and phase angles. A :func:`~.CVNeuralNetLayer` - implementing the continuous-variable neural
 network architecture from :cite:`killoran2018continuous` - contains two such interferometers. But it can also
 be used (and optimized) independently:
 
@@ -129,23 +129,38 @@ be used (and optimized) independently:
     print(j(theta, phi, varphi))
 
 Instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, one can use
-the :func:`~.parameters_interferometer_uniform` function.
+the :func:`~.interferometer_uniform` function.
 
 
 .. code-block:: python
 
-    from pennylane.templates.parameters import parameters_interferometer_uniform
+    from pennylane.init import interferometer_uniform
 
-    ...
+    import pennylane as qml
+    from pennylane.templates.layers import Interferometer
+    from pennylane import numpy as np
+
+    n_wires = 4
+    n_params = int(n_wires * (n_wires - 1) / 2)
+
+    dev = qml.device('default.gaussian', wires=n_wires)
 
     # initial parameters
     r = np.random.rand(n_wires, 2)
-    pars = parameters_interferometer_uniform(n_wires)
+    pars = interferometer_uniform(n_wires)
 
-    ...
+
+    @qml.qnode(dev)
+    def circuit(theta, phi, varphi):
+        for w in range(n_wires):
+            qml.Squeezing(r[w][0], r[w][1], wires=w)
+        Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(n_wires))
+        return [qml.expval.MeanPhoton(wires=w) for w in range(n_wires)]
+
 
     j = qml.jacobian(circuit, 0)
     print(j(*pars))
+
 
 By growing this library of templates, PennyLane allows easy access to variational models discussed
 in the quantum machine learning literature.

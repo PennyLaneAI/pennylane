@@ -17,20 +17,20 @@ Unit tests for the :mod:`pennylane.templates.parameters` module.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.templates.parameters import (parameters_cvqnnlayer_uniform,
-                                            parameters_cvqnnlayers_uniform,
-                                            parameters_cvqnnlayer_normal,
-                                            parameters_cvqnnlayers_normal,
-                                            parameters_interferometer_uniform,
-                                            parameters_interferometer_normal,
-                                            parameters_randomlayer_uniform,
-                                            parameters_randomlayers_uniform,
-                                            parameters_randomlayer_normal,
-                                            parameters_randomlayers_normal,
-                                            parameters_stronglyentanglinglayer_uniform,
-                                            parameters_stronglyentanglinglayers_uniform,
-                                            parameters_stronglyentanglinglayer_normal,
-                                            parameters_stronglyentanglinglayers_normal)
+from pennylane.init import (cvqnn_layer_uniform,
+                            cvqnn_layers_uniform,
+                            cvqnn_layer_normal,
+                            cvqnn_layers_normal,
+                            interferometer_uniform,
+                            interferometer_normal,
+                            random_layer_uniform,
+                            random_layers_uniform,
+                            random_layer_normal,
+                            random_layers_normal,
+                            strong_ent_layer_uniform,
+                            strong_ent_layers_uniform,
+                            strong_ent_layer_normal,
+                            strong_ent_layers_normal)
 
 
 @pytest.fixture(scope="module",
@@ -64,58 +64,59 @@ class TestParsCVQNN:
     """Tests the pennylane.templates.parameters methods for a cv-quantum neural network."""
 
     def test_pars_cvqnnlayer_uniform_dimensions(self, n_subsystems):
-        """Confirm that pennylane.templates.utils.parameters_cvqnnlayer_uniform()
+        """Confirm that pennylane.init.cvqnn_layer_uniform()
          returns an array with the right dimensions."""
         a = (n_subsystems, )
         b = (n_subsystems * (n_subsystems - 1) // 2, )
-        p = parameters_cvqnnlayer_uniform(n_wires=n_subsystems, seed=0)
+        p = cvqnn_layer_uniform(n_wires=n_subsystems, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
-    def test_pars_cvqnnlayer_uniform_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_cvqnnlayer_uniform() samples from the right
-        distributions."""
-        p = parameters_cvqnnlayer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
-        p_av = np.array([np.mean(p_) for p_ in p])
-        p_std = np.array([np.std(p_) for p_ in p])
-        target_av = np.array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5])
-        target_std = np.array([0.86, 0.86, 0.86, 2, 0.86, 0.86, 0.86, 0.86, 2, 0.86, 2])
-        assert np.allclose(p_av, target_av, atol=0.13)
-        assert np.allclose(p_std, target_std, atol=0.13)
+    # def test_pars_cvqnnlayer_uniform_range(self, seed, tol):
+    #     """Confirm that pennylane.init.cvqnn_layer_uniform() samples from the right
+    #     distributions."""
+    #     for i in range(10000):
+    #         p = cvqnn_layer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
+    #     p_av = np.array([np.mean(p_) for p_ in p])
+    #     p_std = np.array([np.std(p_) for p_ in p])
+    #     target_av = np.array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5])
+    #     target_std = np.array([0.86, 0.86, 0.86, 2, 0.86, 0.86, 0.86, 0.86, 2, 0.86, 2])
+    #     assert np.allclose(p_av, target_av, atol=tol)
+    #     assert np.allclose(p_std, target_std, atol=tol)
 
     def test_pars_cvqnnlayers_uniform_dimensions(self, n_subsystems, n_layers):
-        """Confirm that pennylane.templates.utils.parameters_cvqnnlayers_uniform()
+        """Confirm that pennylane.init.cvqnn_layers_uniform()
          returns an array with the right dimensions."""
         a = (n_layers, n_subsystems)
         b = (n_layers, n_subsystems * (n_subsystems - 1) // 2)
-        p = parameters_cvqnnlayers_uniform(n_wires=n_subsystems, n_layers=n_layers, seed=0)
+        p = cvqnn_layers_uniform(n_wires=n_subsystems, n_layers=n_layers, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
     def test_pars_cvqnnlayers_uniform_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_cvqnnlayers_uniform() samples from the right
+        """Confirm that pennylane.init.cvqnn_layers_uniform() samples from the right
         distributions."""
-        p = parameters_cvqnnlayers_uniform(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
+        p = cvqnn_layers_uniform(n_layers=1000, n_wires=100, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5])
         target_std = np.array([0.86, 0.86, 0.86, 2, 0.86, 0.86, 0.86, 0.86, 2, 0.86, 2])
-        assert np.allclose(p_av, target_av, atol=0.13)
-        assert np.allclose(p_std, target_std, atol=0.13)
+        assert np.allclose(p_av, target_av, atol=0.01)
+        assert np.allclose(p_std, target_std, atol=0.01)
 
     def test_pars_cvqnnlayer_normal_dimensions(self, n_subsystems):
-        """Confirm that pennylane.templates.utils.parameters_cvqnnlayer_normal()
+        """Confirm that pennylane.init.cvqnn_layer_normal()
          returns an array with the right dimensions."""
         a = (n_subsystems, )
         b = (n_subsystems * (n_subsystems - 1) // 2, )
-        p = parameters_cvqnnlayer_normal(n_wires=n_subsystems, seed=0)
+        p = cvqnn_layer_normal(n_wires=n_subsystems, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
     def test_pars_cvqnnlayer_normal_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_cvqnnlayer_normal() samples from the right
+        """Confirm that pennylane.init.cvqnn_layer_normal() samples from the right
         distributions."""
-        p = parameters_cvqnnlayer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
+        p = cvqnn_layer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
@@ -124,18 +125,18 @@ class TestParsCVQNN:
         assert np.allclose(p_std, target_std, atol=0.13)
 
     def test_pars_cvqnnlayers_normal_dimensions(self, n_subsystems, n_layers):
-        """Confirm that pennylane.templates.utils.parameters_cvqnnlayers_normal()
+        """Confirm that pennylane.init.cvqnn_layers_normal()
          returns an array with the right dimensions."""
         a = (n_layers, n_subsystems)
         b = (n_layers, n_subsystems * (n_subsystems - 1) // 2)
-        p = parameters_cvqnnlayers_normal(n_wires=n_subsystems, n_layers=n_layers, seed=0)
+        p = cvqnn_layers_normal(n_wires=n_subsystems, n_layers=n_layers, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
     def test_pars_cvqnnlayers_normal_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_cvqnnlayers_normal() samples from the right
+        """Confirm that pennylane.init.cvqnn_layers_normal() samples from the right
         distributions."""
-        p = parameters_cvqnnlayers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
+        p = cvqnn_layers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
@@ -148,18 +149,18 @@ class TestParsInterferometer:
     """Tests the pennylane.templates.parameters method for an interferometer."""
 
     def test_pars_interferometer_uniform_dimensions(self, n_subsystems):
-        """Confirm that pennylane.templates.utils.parameters_interferometer_uniform()
+        """Confirm that pennylane.init.interferometer_uniform()
          returns an array with the right dimensions."""
         a = (n_subsystems, )
         b = (n_subsystems * (n_subsystems - 1) // 2, )
-        p = parameters_interferometer_uniform(n_wires=n_subsystems, seed=0)
+        p = interferometer_uniform(n_wires=n_subsystems, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a]
 
     def test_pars_interferometer_uniform_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_interferometer_uniform() samples from the right
+        """Confirm that pennylane.init.interferometer_uniform() samples from the right
         distributions."""
-        p = parameters_interferometer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = interferometer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-0.5, -0.5, -0.5])
@@ -168,18 +169,18 @@ class TestParsInterferometer:
         assert np.allclose(p_std, target_std, atol=0.13)
 
     def test_pars_interferometer_normal_dimensions(self, n_subsystems):
-        """Confirm that pennylane.templates.utils.parameters_interferometer_normal()
+        """Confirm that pennylane.init.interferometer_normal()
          returns an array with the right dimensions."""
         a = (n_subsystems, )
         b = (n_subsystems * (n_subsystems - 1) // 2, )
-        p = parameters_interferometer_normal(n_wires=n_subsystems, seed=0)
+        p = interferometer_normal(n_wires=n_subsystems, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a]
 
     def test_pars_interferometer_normal_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_interferometer_normal() samples from the right
+        """Confirm that pennylane.init.interferometer_normal() samples from the right
         distributions."""
-        p = parameters_interferometer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
+        p = interferometer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-1, -1, -1])
@@ -189,72 +190,72 @@ class TestParsInterferometer:
 
 
 class TestParsStronglyEntangling:
-    """Tests the pennylane.templates.parameters methods for a strongly entangling circuit."""
+    """Tests the pennylane.init methods for a strongly entangling circuit."""
 
     def test_pars_stronglyentanglinglayer_uniform_dimensions(self, n_subsystems):
-        """Confirm that the pennylane.templates.utils.parameters_stronglyentanglinglayer_uniform()
+        """Confirm that the pennylane.init.strong_ent_layer_uniform()
          returns an array with the right dimensions."""
         a = (n_subsystems, 3)
-        p = parameters_stronglyentanglinglayer_uniform(n_wires=n_subsystems, seed=0)
+        p = strong_ent_layer_uniform(n_wires=n_subsystems, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
     def test_pars_stronglyentanglinglayer_uniform_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_stronglyentanglinglayer_uniform()
+        """Confirm that pennylane.init.strong_ent_layer_uniform()
         samples from the right distributions."""
-        p = parameters_stronglyentanglinglayer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = strong_ent_layer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-0.5], atol=0.13)
         assert np.isclose(p_std, [0.86], atol=0.13)
 
     def test_pars_stronglyentanglinglayers_uniform_dimensions(self, n_subsystems, n_layers):
-        """Confirm that the pennylane.templates.utils.parameters_stronglyentanglinglayers_uniform()
+        """Confirm that the pennylane.init.strong_ent_layers_uniform()
          returns an array with the right dimensions."""
         a = (n_layers, n_subsystems, 3)
-        p = parameters_stronglyentanglinglayers_uniform(n_layers=n_layers, n_wires=n_subsystems, seed=0)
+        p = strong_ent_layers_uniform(n_layers=n_layers, n_wires=n_subsystems, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
     def test_pars_stronglyentanglinglayers_uniform_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_stronglyentanglinglayers_uniform()
+        """Confirm that pennylane.init.strong_ent_layers_uniform()
         samples from the right distributions."""
-        p = parameters_stronglyentanglinglayers_uniform(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1,
-                                                        seed=seed)
+        p = strong_ent_layers_uniform(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1,
+                                      seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-0.5], atol=0.13)
         assert np.isclose(p_std, [0.86], atol=0.13)
 
     def test_pars_stronglyentanglinglayer_normal_dimensions(self, n_subsystems):
-        """Confirm that the pennylane.templates.utils.parameters_stronglyentanglinglayer_normalm()
+        """Confirm that the pennylane.init.parameters_stronglyentanglinglayer_normalm()
          returns an array with the right dimensions."""
         a = (n_subsystems, 3)
-        p = parameters_stronglyentanglinglayer_normal(n_wires=n_subsystems, seed=0)
+        p = strong_ent_layer_normal(n_wires=n_subsystems, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
     def test_pars_stronglyentanglinglayer_normal_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_stronglyentanglinglayer_normal()
+        """Confirm that pennylane.init.strong_ent_layer_normal()
         samples from the right distributions."""
-        p = parameters_stronglyentanglinglayer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
+        p = strong_ent_layer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-1], atol=0.01)
         assert np.isclose(p_std, [0.2], atol=0.01)
 
     def test_pars_stronglyentanglinglayers_normal_dimensions(self, n_subsystems, n_layers):
-        """Confirm that the pennylane.templates.utils.parameters_stronglyentanglinglayers_normal()
+        """Confirm that the pennylane.init.strong_ent_layers_normal()
          returns an array with the right dimensions."""
         a = (n_layers, n_subsystems, 3)
-        p = parameters_stronglyentanglinglayers_normal(n_layers=n_layers, n_wires=n_subsystems, seed=0)
+        p = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_subsystems, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
     def test_pars_stronglyentanglinglayers_normal_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_stronglyentanglinglayers_normal()
+        """Confirm that pennylane.init.strong_ent_layers_normal()
         samples from the right distributions."""
-        p = parameters_stronglyentanglinglayers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
+        p = strong_ent_layers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-1], atol=0.5)
@@ -262,79 +263,79 @@ class TestParsStronglyEntangling:
 
 
 class TestParsRandom:
-    """Tests the pennylane.templates.parameters methods for a random circuit."""
+    """Tests the pennylane.init methods for a random circuit."""
 
     def test_pars_randomlayer_uniform_dimensions(self, n_subsystems, n_rots):
-        """Confirm that the pennylane.templates.utils.parameters_randomlayer_uniform()
+        """Confirm that the pennylane.init.random_layer_uniform()
          returns an array with the right dimensions."""
         if n_rots is None:
             n_rots = n_subsystems
         a = (n_rots, )
-        p = parameters_randomlayer_uniform(n_wires=n_subsystems, n_rots=n_rots, seed=0)
+        p = random_layer_uniform(n_wires=n_subsystems, n_rots=n_rots, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
     def test_pars_randomlayer_uniform_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_randomlayer_uniform()
+        """Confirm that pennylane.init.random_layer_uniform()
         samples from the right distributions."""
-        p = parameters_randomlayer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = random_layer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-0.5], atol=0.5)
         assert np.isclose(p_std, [0.86], atol=0.5)
 
     def test_pars_randomlayers_uniform_dimensions(self, n_subsystems, n_layers, n_rots):
-        """Confirm that the pennylane.templates.utils.parameters_randomlayers_uniform()
+        """Confirm that the pennylane.init.random_layers_uniform()
          returns an array with the right dimensions."""
         if n_rots is None:
             n_rots = n_subsystems
         a = (n_layers, n_rots)
-        p = parameters_randomlayers_uniform(n_layers=n_layers, n_wires=n_subsystems, n_rots=n_rots, seed=0)
+        p = random_layers_uniform(n_layers=n_layers, n_wires=n_subsystems, n_rots=n_rots, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
     def test_pars_randomlayers_uniform_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_randomlayers_uniform()
+        """Confirm that pennylane.init.random_layers_uniform()
         samples from the right distributions."""
-        p = parameters_randomlayers_uniform(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = random_layers_uniform(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-0.5], atol=0.5)
         assert np.isclose(p_std, [0.86], atol=0.5)
 
     def test_pars_randomlayer_normal_dimensions(self, n_subsystems, n_rots):
-        """Confirm that the pennylane.templates.utils.parameters_randomlayer_normal()
+        """Confirm that the pennylane.init.random_layer_normal()
          returns an array with the right dimensions."""
         if n_rots is None:
             n_rots = n_subsystems
         a = (n_rots, )
-        p = parameters_randomlayer_normal(n_wires=n_subsystems, n_rots=n_rots, seed=0)
+        p = random_layer_normal(n_wires=n_subsystems, n_rots=n_rots, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
     def test_pars_randomlayer_normal_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_randomlayer_normal()
+        """Confirm that pennylane.init.random_layer_normal()
         samples from the right distributions."""
-        p = parameters_randomlayer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
+        p = random_layer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-1], atol=0.5)
         assert np.isclose(p_std, [0.2], atol=0.5)
 
     def test_pars_randomlayers_normal_dimensions(self, n_subsystems, n_layers, n_rots):
-        """Confirm that the pennylane.templates.utils.parameters_randomlayers_normal()
+        """Confirm that the pennylane.init.random_layers_normal()
          returns an array with the right dimensions."""
         if n_rots is None:
             n_rots = n_subsystems
         a = (n_layers, n_rots)
-        p = parameters_randomlayers_normal(n_layers=n_layers, n_wires=n_subsystems, n_rots=n_rots, seed=0)
+        p = random_layers_normal(n_layers=n_layers, n_wires=n_subsystems, n_rots=n_rots, seed=0)
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
     def test_pars_randomlayers_normal_range(self, seed):
-        """Confirm that pennylane.templates.utils.parameters_randomlayers_normal()
+        """Confirm that pennylane.init.random_layers_normal()
         samples from the right distributions."""
-        p = parameters_randomlayers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
+        p = random_layers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-1], atol=0.5)
