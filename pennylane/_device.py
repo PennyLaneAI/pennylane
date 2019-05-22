@@ -85,13 +85,9 @@ Code details
 ~~~~~~~~~~~~
 """
 # pylint: disable=too-many-format-args
-
 import abc
-import logging
 
 import autograd.numpy as np
-
-logging.getLogger()
 
 
 class DeviceError(Exception):
