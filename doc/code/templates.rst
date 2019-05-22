@@ -82,7 +82,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
     ``pars`` is a list of parameter arrays. In the case of the strongly entangling template, the list contains
     exactly one such parameter array of shape ``(n_layers, n_wires, 3)``. One could alternatively create this
-    list of an array by hand, replacing second-to-last line with
+    list of arrays by hand, replacing second-to-last line with
 
     .. code-block:: python
 
