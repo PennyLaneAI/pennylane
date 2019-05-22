@@ -19,9 +19,9 @@ Layers
 
 .. currentmodule:: pennylane.templates.layers
 
-This module contains templates for trainable `layers`. A layer is a fixed sequence of quantum gates,
-where some gates have trainable gate parameters (like rotation angles or squeezing amplitudes). This
-makes the layer `learnable` within the limits of the architecture. A variational circuit typically repeats layers.
+This module contains templates for trainable `layers`. In contrast to other templates such as embeddings, layers
+do typically only take trainable parameters, and get repeated in the circuit -- just like the layers of a
+neural network. This makes the layer `learnable` within the limits of the architecture.
 
 Most templates in this module have a ``Layer`` version that implements a single layer, as well as a ``Layers``
 version which calls the single layer multiple times, possibly using different hyperparameters for the
@@ -96,17 +96,17 @@ def StronglyEntanglingLayers(weights, ranges=None, imprimitive=CNOT, wires=None)
         ranges = [1]*len(weights)
 
     for block_weights, block_range in zip(weights, ranges):
-        StronglyEntanglingLayer(block_weights, r=block_range, imprimitive=imprimitive, wires=wires)
+        StronglyEntanglingLayer(block_weights, range=block_range, imprimitive=imprimitive, wires=wires)
 
 
-def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
+def StronglyEntanglingLayer(weights, range=1, imprimitive=CNOT, wires=None):
     """A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
 
     The 2-qubit or imprimitive gates act on each qubit :math:`i` chronologically. The second qubit for
-    each gate is determined by :math:`(i+r)\mod n`, where :math:`n` is the number of qubits
-    and :math:`r` a layer hyperparameter called the range.
+    each gate is determined by :math:`(i+range)\mod n`, where :math:`n` is equal to `len(wires)`
+    and :math:`range` a layer hyperparameter called the range.
 
-    This is an example of a two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`) with
+    This is an example of two 4-qubit strongly entangling layers (ranges :math:`range=1` and :math:`range=2`) with
     rotations :math:`R` and CNOTs as imprimitives:
 
     .. figure:: ../../_static/layer_sec.png
@@ -118,7 +118,7 @@ def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
         weights (array[float]): array of weights of shape ``(len(wires), 3)``
 
     Keyword Args:
-        r (int): range of the imprimitive gates of this layer, defaults to 1
+        range (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
@@ -131,7 +131,7 @@ def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
 
     num_wires = len(wires)
     for i in range(num_wires):
-        imprimitive(wires=[wires[i], wires[(i+r) % num_wires]])
+        imprimitive(wires=[wires[i], wires[(i + range) % num_wires]])
 
 
 def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ], wires=None):
@@ -145,7 +145,8 @@ def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY,
         weights (array[float]): array of weights of shape ``(L, k)``,
 
     Keyword Args:
-        ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
+        ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation
+            gates (default 0.3)
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
@@ -230,6 +231,12 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
         wires (Sequence[int]): sequence of mode indices that the template acts on
     """
 
+    inferred_layers = [len(theta_1), len(phi_1), len(varphi_1), len(r), len(phi_r), len(theta_2), len(phi_2),
+                       len(varphi_2), len(a), len(phi_a), len(k)]
+    if inferred_layers.count(inferred_layers[0]) != len(inferred_layers):
+        raise ValueError("All parameter arrays need to have the same first dimension, from which the number"
+                         "of layers is inferred, got first dimensions {}.".format(inferred_layers))
+
     n_layers = len(theta_1)
     for l in range(n_layers):
         CVNeuralNetLayer(theta_1[l], phi_1[l], varphi_1[l], r[l], phi_r[l],
@@ -243,7 +250,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
     The layer acts on the :math:`M` wires modes specified in ``wires``, and includes interferometers
     of :math:`K=M(M-1)/2` beamsplitters.
 
-    This example shows a 4-mode CVNeuralNet layer with squeezers :math:`S`, displacement gates :math:`D` and
+    This example shows a 4-mode CVNeuralNet layer with squeezing gates :math:`S`, displacement gates :math:`D` and
     Kerr gates :math:`K`. The two big blocks are interferometers:
 
     .. figure:: ../../_static/layer_cvqnn.png
@@ -289,14 +296,14 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
 def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplitter='pennylane'):
     r"""General linear interferometer, an array of beam splitters and phase shifters.
 
-    For :math:`N` wires, the general interferometer is specified by
-    providing :math:`N(N-1)/2` transmittivity angles :math:`\theta` and the same number of
-    phase angles :math:`\phi`, as well as either :math:`N-1` or :math:`N` additional rotation
+    For :math:`M` wires, the general interferometer is specified by
+    providing :math:`M(M-1)/2` transmittivity angles :math:`\theta` and the same number of
+    phase angles :math:`\phi`, as well as either :math:`M-1` or :math:`M` additional rotation
     parameters :math:`\varphi`.
 
     For the parametrization of a universal interferometer
-    :math:`N-1` such rotation parameters are sufficient. If :math:`N` rotation
-    parameters are given, the interferometer is over parametrized, but the resulting
+    :math:`M-1` such rotation parameters are sufficient. If :math:`M` rotation
+    parameters are given, the interferometer is over-parametrized, but the resulting
     circuit is more symmetric, which can be advantageous.
 
     By specifying the keyword argument ``mesh``, the scheme used to implement the interferometer
@@ -304,9 +311,9 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
 
     * ``mesh='rectangular'`` (default): uses the scheme described in
       :cite:`clements2016optimal`, resulting in a *rectangular* array of
-      :math:`N(N-1)/2` beamsplitters arranged in :math:`N` layers and numbered from left
+      :math:`M(M-1)/2` beamsplitters arranged in :math:`M` layers and ordered from left
       to right and top to bottom in each layer. The first beamsplitters acts on
-      wires :math:`0` and :math:`1`.
+      wires :math:`0` and :math:`1`:
 
       .. figure:: ../../_static/clements.png
           :align: center
@@ -316,10 +323,10 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
       :html:`<br>`
 
     * ``mesh='triangular'``: uses the scheme described in :cite:`reck1994experimental`,
-      resulting in a *triangular* array of :math:`N(N-1)/2` beamsplitters arranged in
-      :math:`2N-3` layers and numbered from left to right and top to bottom. The
-      first and forth beamsplitters act on wires :math:`N-1` and :math:`N`, the second
-      on :math:`N-2` and :math:`N-1`, and the third on :math:`N-3` and :math:`N-2`, and
+      resulting in a *triangular* array of :math:`M(M-1)/2` beamsplitters arranged in
+      :math:`2M-3` layers and ordered from left to right and top to bottom. The
+      first and fourth beamsplitters act on wires :math:`M-1` and :math:`M`, the second
+      on :math:`M-2` and :math:`M-1`, and the third on :math:`M-3` and :math:`M-2`, and
       so on.
 
       .. figure:: ../../_static/reck.png
@@ -328,15 +335,15 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
           :target: javascript:void(0);
 
     In both schemes, the network of :class:`~.Beamsplitter` operations is followed by
-    :math:`N` (or :math:`N-1`) local :class:`Rotation` Operations. In the latter case, the
+    :math:`M` (or :math:`M-1`) local :class:`Rotation` Operations. In the latter case, the
     rotation on the last wire is left out.
 
     The rectangular decomposition is generally advantageous, as it has a lower
-    circuit depth (:math:`N` vs :math:`2N-3`) and optical depth than the triangular
+    circuit depth (:math:`M` vs :math:`2M-3`) and optical depth than the triangular
     decomposition, resulting in reduced optical loss.
 
     This is an example of a 4-mode interferometer with beamsplitters :math:`B` and rotations :math:`R`,
-    using ``mesh='rectangular'``.
+    using ``mesh='rectangular'``:
 
     .. figure:: ../../_static/layer_interferometer.png
         :align: center
@@ -359,14 +366,15 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
         thus increase the number of elementary operations in the circuit.
 
     Args:
-        theta (array): length :math:`N(N-1)/2` array of transmittivity angles :math:`\theta`
-        phi (array): length :math:`N(N-1)/2` array of phase angles :math:`\phi`
-        varphi (array): length :math:`N` or :math:`N-1` array of rotation angles :math:`\varphi`
+        theta (array): length :math:`M(M-1)/2` array of transmittivity angles :math:`\theta`
+        phi (array): length :math:`M(M-1)/2` array of phase angles :math:`\phi`
+        varphi (array): length :math:`M` or :math:`M-1` array of rotation angles :math:`\varphi`
 
     Keyword Args:
         mesh (string): the type of mesh to use
         beamsplitter (str): if ``clements``, the beamsplitter convention from
-          Clements et al. 2016 (https://dx.doi.org/10.1364/OPTICA.3.001460) is used
+          Clements et al. 2016 (https://dx.doi.org/10.1364/OPTICA.3.001460) is used; if ``pennylane``, the
+          beamsplitter is implemented via PennyLane's ``Beamsplitter`` operation.
         wires (Sequence[int]): wires the interferometer should act on
     """
     if isinstance(beamsplitter, Variable):
@@ -382,9 +390,9 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
     else:
         w = wires
 
-    N = len(w)
+    M = len(w)
 
-    if N == 1:
+    if M == 1:
         # the interferometer is a single rotation
         Rotation(varphi[0], wires=w[0])
         return
@@ -394,7 +402,7 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
     if mesh == 'rectangular':
         # Apply the Clements beamsplitter array
         # The array depth is N
-        for l in range(N):
+        for l in range(M):
             for k, (w1, w2) in enumerate(zip(w[:-1], w[1:])):
                 #skip even or odd pairs depending on layer
                 if (l+k)%2 != 1:
@@ -408,8 +416,8 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
     elif mesh == 'triangular':
         # apply the Reck beamsplitter array
         # The array depth is 2*N-3
-        for l in range(2*N-3):
-            for k in range(abs(l+1-(N-1)), N-1, 2):
+        for l in range(2*M-3):
+            for k in range(abs(l+1-(M-1)), M-1, 2):
                 if beamsplitter == 'clements':
                     Rotation(phi[n], wires=[w[k]])
                     Beamsplitter(theta[n], 0, wires=[w[k], w[k+1]])

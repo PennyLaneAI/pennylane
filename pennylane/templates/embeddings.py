@@ -50,26 +50,27 @@ from collections.abc import Iterable
 
 def AngleEmbedding(features, rotation='X', wires=None):
     r"""
-    Encodes :math:`n` features into the rotation angles of :math:`n` qubits.
+    Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
 
     The rotations can be chosen as either :class:`~.RX`, :class:`~.RY`
     or :class:`~.RZ` gates, as defined by the ``rotation`` parameter:
 
-    * ``rotation='X'`` uses the features to apply RX rotations to qubits
+    * ``rotation='X'`` uses the features as angles of RX rotations
 
-    * ``rotation='Y'`` uses the features to apply RY rotations to qubits
+    * ``rotation='Y'`` uses the features as angles of RY rotations
 
-    * ``rotation='Z'`` uses the features to apply RZ rotations to qubits
+    * ``rotation='Z'`` uses the features as angles of RZ rotations
 
     The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
     This embedding method can also be used to encode a binary sequence into a basis state. For example, to prepare
     basis state :math:`|0,1,1,0\rangle`, choose ``rotation='X'`` and use the
-    feature vector :math:`[0, \pi/2, \pi/2, 0]`.
+    feature vector :math:`[0, \pi/2, \pi/2, 0]`. Alternatively, one can use the :fun:`BasisEmbedding()` template.
 
     Args:
-        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed, with :math:`N\leq n`
+        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed,
+            with :math:`N\leq n`
 
     Keyword Args:
         rotation (str): Type of rotations used
@@ -151,9 +152,9 @@ def BasisEmbedding(features, wires=None):
     BasisState(features, wires=wires)
 
 
-def SqueezingEmbedding(features, execution='amplitude', c=0.1, wires=None):
-    r"""Encodes :math:`M` features into the squeezing amplitudes :math:`r \geq 0` or phases :math:`\phi \in [0, 2\pi)`
-    of :math:`M` modes.
+def SqueezingEmbedding(features, method='amplitude', c=0.1, wires=None):
+    r"""Encodes :math:`N` features into the squeezing amplitudes :math:`r \geq 0` or phases :math:`\phi \in [0, 2\pi)`
+    of :math:`M` modes, where :math:`N\leq M`.
 
     The mathematical definition of the squeezing gate is given by the operator
 
@@ -163,13 +164,14 @@ def SqueezingEmbedding(features, execution='amplitude', c=0.1, wires=None):
 
     where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
 
-    ``features`` has to be an array of ``len(wires)`` floats.
+    ``features`` has to be an array of at most ``len(wires)`` floats. If there are fewer entries in
+    ``features`` than wires, the circuit does not apply the remaining squeezing gates.
 
     Args:
-        features (array): Binary sequence to encode
+        features (array): Array of features of size (N,)
 
     Keyword Args:
-        execution (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
+        method (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'``
@@ -179,21 +181,22 @@ def SqueezingEmbedding(features, execution='amplitude', c=0.1, wires=None):
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
 
-    if len(wires) != len(features):
-        raise ValueError("SqueezingEmbedding requires a feature vector of size n_wires which is {}"
-                         ", got {}.".format(len(wires), len(features)))
+    if len(wires) < len(features):
+        raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
+                         "got {}.".format(len(wires), len(features)))
 
-    for f, w in zip(features, wires):
-        if execution == 'amplitude':
-            Squeezing(f, c, wires=w)
-        elif execution == 'phase':
-            Squeezing(c, f, wires=w)
+    for idx, f in enumerate(features):
+        if method == 'amplitude':
+            Squeezing(f, c, wires=wires[idx])
+        elif method == 'phase':
+            Squeezing(c, f, wires=wires[idx])
         else:
-            raise ValueError("Execution strategy {} not known. Has to be `phase` or `amplitude`.".format(execution))
+            raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))
 
 
-def DisplacementEmbedding(features, execution='amplitude', c=0.1, wires=None):
-    r"""Encodes :math:`M` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes.
+def DisplacementEmbedding(features, method='amplitude', c=0.1, wires=None):
+    r"""Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
+     where :math:`N\leq M`.
 
     The mathematical definition of the displacement gate is given by the operator
 
@@ -202,13 +205,14 @@ def DisplacementEmbedding(features, execution='amplitude', c=0.1, wires=None):
 
     where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
 
-    ``features`` has to be an array of ``len(wires)`` floats.
+    ``features`` has to be an array of at most ``len(wires)`` floats. If there are fewer entries in
+    ``features`` than wires, the circuit does not apply the remaining displacement gates.
 
     Args:
-        features (array): Binary sequence to encode
+        features (array): Array of features of size (N,)
 
     Keyword Args:
-        execution (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
+        method (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
             the amplitude of all displacement gates if ``execution='phase'``
@@ -218,14 +222,14 @@ def DisplacementEmbedding(features, execution='amplitude', c=0.1, wires=None):
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
 
-    if len(wires) != len(features):
-        raise ValueError("DisplacementEmbedding requires a feature vector of size n_wires which is {}"
-                         ", got {}.".format(len(wires), len(features)))
+    if len(wires) < len(features):
+        raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
+                         "got {}.".format(len(wires), len(features)))
 
-    for f, w in zip(features, wires):
-        if execution == 'amplitude':
-            Displacement(f, c, wires=w)
-        elif execution == 'phase':
-            Displacement(c, f, wires=w)
+    for idx, f in enumerate(features):
+        if method == 'amplitude':
+            Displacement(f, c, wires=wires[idx])
+        elif method == 'phase':
+            Displacement(c, f, wires=wires[idx])
         else:
-            raise ValueError("Execution strategy {} not known. Has to be `phase` or `amplitude`.".format(execution))
+            raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))

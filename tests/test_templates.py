@@ -26,18 +26,12 @@ from pennylane.init import (strong_ent_layers_uniform, strong_ent_layer_uniform,
                             cvqnn_layers_uniform, cvqnn_layer_uniform)
 
 
-class DummyDevice(DefaultGaussian):
-    """Dummy device to allow Kerr operations"""
-    _operation_map = DefaultGaussian._operation_map.copy()
-    _operation_map['Kerr'] = lambda *x, **y: np.identity(2)
-
-
 class TestParameterIntegration:
-    """ Integration tests for the parameter generation methods from pennylane.templates.parameters
+    """ Integration tests for the parameter generation methods from pennylane.init
     and pennylane.templates.layers."""
 
     def test_integration_cvqnn_layers(self, gaussian_device, n_subsystems, n_layers):
-        """Checks that the pennylane.templates.parameters.parameters_cvqnn_layers() integrates
+        """Checks that pennylane.init.cvqnn_layers_uniform() integrates
         with pennnylane.templates.layers.CVNeuralNetLayers()."""
 
         p = cvqnn_layers_uniform(n_layers=n_layers, n_wires=n_subsystems)
@@ -50,7 +44,7 @@ class TestParameterIntegration:
         circuit(weights=p)
 
     def test_integration_cvqnn_layer(self, gaussian_device, n_subsystems):
-        """Checks that the pennylane.templates.parameters.parameters_cvqnn_layer() integrates
+        """Checks that pennylane.init.cvqnn_layer_uniform() integrates
         with pennnylane.templates.layers.CVNeuralNetLayer()."""
 
         p = cvqnn_layer_uniform(n_wires=n_subsystems)
@@ -63,7 +57,7 @@ class TestParameterIntegration:
         circuit(weights=p)
 
     def test_integration_stronglyentangling_layers(self, qubit_device, n_subsystems, n_layers):
-        """Checks that the pennylane.templates.parameters.parameters_stronglyentangling_layers() integrates
+        """Checks that the pennylane.init.strong_ent_layers_uniform() integrates
         with pennnylane.templates.layers.StronglyEntanglingLayers()."""
 
         p = strong_ent_layers_uniform(n_layers=n_layers, n_wires=n_subsystems)
@@ -76,7 +70,7 @@ class TestParameterIntegration:
         circuit(weights=p)
 
     def test_integration_stronglyentangling_layer(self, qubit_device, n_subsystems):
-        """Checks that the pennylane.templates.parameters.parameters_stronglyentangling_layer() integrates
+        """Checks that the pennylane.init.strong_ent_layer_uniform() integrates
         with pennnylane.templates.layers.StronglyEntanglingLayer()."""
 
         p = strong_ent_layer_uniform(n_wires=n_subsystems)
@@ -89,7 +83,7 @@ class TestParameterIntegration:
         circuit(weights=p)
 
     def test_integration_random_layers(self, qubit_device, n_subsystems, n_layers):
-        """Checks that the pennylane.templates.parameters.parameters_random_layers() integrates
+        """Checks that the pennylane.init.random_layers_uniform() integrates
         with pennnylane.templates.layers.RandomLayers()."""
 
         p = random_layers_uniform(n_layers=n_layers, n_wires=n_subsystems)
@@ -102,8 +96,8 @@ class TestParameterIntegration:
         circuit(weights=p)
 
     def test_integration_random_layer(self, qubit_device, n_subsystems):
-        """Checks that the pennylane.templates.parameters.parameters_random_layer() integrates
-        with pennnylane.templates.layers.RandomlingLayer()."""
+        """Checks that the pennylane.init.random_layer_uniform() integrates
+        with pennnylane.templates.layers.RandomLayer()."""
 
         p = random_layer_uniform(n_wires=n_subsystems)
 

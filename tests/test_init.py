@@ -96,7 +96,7 @@ class TestParsCVQNN:
     def test_pars_cvqnnlayers_uniform_range(self, seed):
         """Confirm that pennylane.init.cvqnn_layers_uniform() samples from the right
         distributions."""
-        p = cvqnn_layers_uniform(n_layers=1000, n_wires=100, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
+        p = cvqnn_layers_uniform(n_layers=1000, n_wires=100, low=-2, high=1, mean=0.5, std=2., seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5])
@@ -160,7 +160,7 @@ class TestParsInterferometer:
     def test_pars_interferometer_uniform_range(self, seed):
         """Confirm that pennylane.init.interferometer_uniform() samples from the right
         distributions."""
-        p = interferometer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = interferometer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-0.5, -0.5, -0.5])
@@ -203,7 +203,7 @@ class TestParsStronglyEntangling:
     def test_pars_stronglyentanglinglayer_uniform_range(self, seed):
         """Confirm that pennylane.init.strong_ent_layer_uniform()
         samples from the right distributions."""
-        p = strong_ent_layer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = strong_ent_layer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-0.5], atol=0.13)
@@ -220,7 +220,7 @@ class TestParsStronglyEntangling:
     def test_pars_stronglyentanglinglayers_uniform_range(self, seed):
         """Confirm that pennylane.init.strong_ent_layers_uniform()
         samples from the right distributions."""
-        p = strong_ent_layers_uniform(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1,
+        p = strong_ent_layers_uniform(n_layers=2, n_wires=1000, low=-2, high=1,
                                       seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
@@ -278,7 +278,7 @@ class TestParsRandom:
     def test_pars_randomlayer_uniform_range(self, seed):
         """Confirm that pennylane.init.random_layer_uniform()
         samples from the right distributions."""
-        p = random_layer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = random_layer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-0.5], atol=0.5)
@@ -297,7 +297,7 @@ class TestParsRandom:
     def test_pars_randomlayers_uniform_range(self, seed):
         """Confirm that pennylane.init.random_layers_uniform()
         samples from the right distributions."""
-        p = random_layers_uniform(n_layers=2, n_wires=1000, uniform_min=-2, uniform_max=1, seed=seed)
+        p = random_layers_uniform(n_layers=2, n_wires=1000, low=-2, high=1, seed=seed)
         p_av = [np.mean(p_) for p_ in p]
         p_std = [np.std(p_) for p_ in p]
         assert np.isclose(p_av, [-0.5], atol=0.5)

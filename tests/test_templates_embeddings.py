@@ -91,7 +91,7 @@ class TestAngleEmbd:
         """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
            using the rotation='Y' strategy."""
 
-        features = [pi/2,  pi/2, pi/4, 0]
+        features = [pi/2, pi/2, pi/4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
@@ -192,7 +192,7 @@ class TestAngleEmbd:
             circuit(x=[1])
 
 
-class TestBasisEmb:
+class TestBasisEmbedding:
     """ Tests the pennylane.templates.embeddings.BasisEmbedding method."""
 
     def test_basis_embedding_state(self):
@@ -311,7 +311,7 @@ class TestSqueezingEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=range(n_wires), execution='amplitude', c=1)
+            SqueezingEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1)
             return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
 
         assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
@@ -326,9 +326,9 @@ class TestSqueezingEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=range(n_wires), execution='phase', c=1)
+            SqueezingEmbedding(features=x, wires=range(n_wires), method='phase', c=1)
             Beamsplitter(pi/2, 0, wires=[0, 1])
-            SqueezingEmbedding(features=[0, 0], wires=range(n_wires), execution='phase', c=1)
+            SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1)
             return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
 
         assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
@@ -342,7 +342,7 @@ class TestSqueezingEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=range(n_wires), execution='phase')
+            SqueezingEmbedding(features=x, wires=range(n_wires), method='phase')
             return [qml.expval.X(i) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match='SqueezingEmbedding requires a feature vector of size n_wires '
@@ -361,7 +361,7 @@ class TestSqueezingEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=range(n_wires), execution='A')
+            SqueezingEmbedding(features=x, wires=range(n_wires), method='A')
             return [qml.expval.X(i) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match='Execution strategy A not known. Has to be `phase` or `amplitude`.'):
@@ -376,7 +376,7 @@ class TestSqueezingEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=3, execution='A')
+            SqueezingEmbedding(features=x, wires=3, method='A')
             return qml.expval.X(0)
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses, got 3.'):
@@ -396,7 +396,7 @@ class TestDisplacementEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            DisplacementEmbedding(features=x, wires=range(n_wires), execution='amplitude', c=1.)
+            DisplacementEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1.)
             return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
 
         assert np.allclose(circuit(x=features), [0.01, 1.44], atol=0.001)
@@ -411,9 +411,9 @@ class TestDisplacementEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            DisplacementEmbedding(features=x, wires=range(n_wires), execution='phase', c=1.)
+            DisplacementEmbedding(features=x, wires=range(n_wires), method='phase', c=1.)
             Beamsplitter(pi/2, 0, wires=[0, 1])
-            DisplacementEmbedding(features=[0, 0], wires=range(n_wires), execution='phase', c=1.)
+            DisplacementEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1.)
             return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
 
         assert np.allclose(circuit(x=features), [0.089327, 2.724715], atol=0.01)
@@ -427,7 +427,7 @@ class TestDisplacementEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            DisplacementEmbedding(features=x, wires=range(n_wires), execution='phase')
+            DisplacementEmbedding(features=x, wires=range(n_wires), method='phase')
             return [qml.expval.X(i) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match='DisplacementEmbedding requires a feature vector of size n_wires ' \
@@ -446,7 +446,7 @@ class TestDisplacementEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            DisplacementEmbedding(features=x, wires=range(n_wires), execution='A')
+            DisplacementEmbedding(features=x, wires=range(n_wires), method='A')
             return [qml.expval.X(i) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match='Execution strategy A not known. Has to be `phase` or `amplitude`.'):
@@ -461,7 +461,7 @@ class TestDisplacementEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            DisplacementEmbedding(features=x, wires=3, execution='A')
+            DisplacementEmbedding(features=x, wires=3, method='A')
             return qml.expval.X(0)
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses, got 3.'):
