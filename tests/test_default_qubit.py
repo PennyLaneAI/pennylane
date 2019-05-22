@@ -19,6 +19,8 @@ import unittest
 import inspect
 import logging as log
 
+import pytest
+
 from pennylane import numpy as np
 
 from defaults import pennylane as qml, BaseTest
@@ -504,11 +506,8 @@ class TestDefaultQubitDevice(BaseTest):
                 self.dev.ev(U_toffoli, [0])
 
             # text warning raised if matrix is complex
-            with self.assertLogs(level="WARNING") as l:
+            with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
                 self.dev.ev(H + 1j, [0])
-                self.assertEqual(len(l.output), 1)
-                self.assertEqual(len(l.records), 1)
-                self.assertIn("Nonvanishing imaginary part", l.output[0])
 
 
 class TestDefaultQubitIntegration(BaseTest):

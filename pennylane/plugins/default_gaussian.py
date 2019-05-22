@@ -89,16 +89,12 @@ Code details
 ^^^^^^^^^^^^
 """
 # pylint: disable=attribute-defined-outside-init
-import logging as log
-
 import numpy as np
 
 from scipy.special import factorial as fac
 
 import pennylane as qml
 from pennylane import Device
-
-log.getLogger()
 
 # tolerance for numerical errors
 tolerance = 1e-10
