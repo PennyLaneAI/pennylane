@@ -44,8 +44,8 @@ Code details
 ^^^^^^^^^^^^
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 from collections.abc import Iterable
+from pennylane import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 
 
 def AngleEmbedding(features, rotation='X', wires=None):
@@ -78,7 +78,7 @@ def AngleEmbedding(features, rotation='X', wires=None):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
+        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
     if len(features) > len(wires):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
@@ -96,7 +96,7 @@ def AngleEmbedding(features, rotation='X', wires=None):
             RZ(f, wires=w)
 
     else:
-        raise ValueError("Rotation has to be `X`, `Y` or `Z`, got {}.".format(rotation))
+        raise ValueError("Rotation has to be `X`, `Y` or `Z`; got {}.".format(rotation))
 
 
 def AmplitudeEmbedding(features, wires=None):
@@ -118,10 +118,10 @@ def AmplitudeEmbedding(features, wires=None):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
+        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
     if 2**len(wires) != len(features):
-        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**len(wires) which is {}, "
+        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**len(wires), which is {}; "
                          "got {}.".format(2 ** len(wires), len(features)))
 
     QubitStateVector(features, wires=wires)
@@ -144,10 +144,10 @@ def BasisEmbedding(features, wires=None):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
+        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
     if len(features) > len(wires):
-        raise ValueError("Number of bits to embed cannot be larger than number of wires which is {}, "
+        raise ValueError("Number of bits to embed cannot be larger than number of wires, which is {}; "
                          "got {}.".format(len(wires), len(features)))
     BasisState(features, wires=wires)
 
@@ -179,7 +179,7 @@ def SqueezingEmbedding(features, method='amplitude', c=0.1, wires=None):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
+        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
     if len(wires) < len(features):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
@@ -220,7 +220,7 @@ def DisplacementEmbedding(features, method='amplitude', c=0.1, wires=None):
    """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
+        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
     if len(wires) < len(features):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "

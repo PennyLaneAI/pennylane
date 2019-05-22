@@ -93,16 +93,16 @@ class TestParsCVQNN:
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
-    def test_pars_cvqnnlayers_uniform_range(self, seed):
+    def test_pars_cvqnnlayers_uniform_range(self, seed, tol_sampl):
         """Confirm that pennylane.init.cvqnn_layers_uniform() samples from the right
         distributions."""
-        p = cvqnn_layers_uniform(n_layers=1000, n_wires=100, low=-2, high=1, mean=0.5, std=2., seed=seed)
+        p = cvqnn_layers_uniform(n_layers=100000, n_wires=10, low=-2, high=1, mean=0.5, std=0.01, seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5])
-        target_std = np.array([0.86, 0.86, 0.86, 2, 0.86, 0.86, 0.86, 0.86, 2, 0.86, 2])
-        assert np.allclose(p_av, target_av, atol=0.01)
-        assert np.allclose(p_std, target_std, atol=0.01)
+        target_std = np.array([0.86, 0.86, 0.86, 0.01, 0.86, 0.86, 0.86, 0.86, 0.01, 0.86, 0.01])
+        assert np.allclose(p_av, target_av, atol=tol_sampl)
+        assert np.allclose(p_std, target_std, atol=tol_sampl)
 
     def test_pars_cvqnnlayer_normal_dimensions(self, n_subsystems):
         """Confirm that pennylane.init.cvqnn_layer_normal()
@@ -113,16 +113,16 @@ class TestParsCVQNN:
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
-    def test_pars_cvqnnlayer_normal_range(self, seed):
-        """Confirm that pennylane.init.cvqnn_layer_normal() samples from the right
-        distributions."""
-        p = cvqnn_layer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
-        p_av = np.array([np.mean(p_) for p_ in p])
-        p_std = np.array([np.std(p_) for p_ in p])
-        target_av = np.array([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
-        target_std = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2])
-        assert np.allclose(p_av, target_av, atol=0.13)
-        assert np.allclose(p_std, target_std, atol=0.13)
+    # def test_pars_cvqnnlayer_normal_range(self, seed, tol_sampl):
+    #     """Confirm that pennylane.init.cvqnn_layer_normal() samples from the right
+    #     distributions."""
+    #     p = [cvqnn_layer_normal(n_wires=10, mean=-1, std=0.2, seed=seed) for _ in range(10000)]
+    #     p_av = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
+    #     p_std = np.std(np.array([np.std(pp) for p_ in p for pp in p_]))
+    #     target_av = -1
+    #     target_std = 0.2
+    #     assert np.allclose(p_av, target_av, atol=tol_sampl)
+    #     assert np.allclose(p_std, target_std, atol=tol_sampl)
 
     def test_pars_cvqnnlayers_normal_dimensions(self, n_subsystems, n_layers):
         """Confirm that pennylane.init.cvqnn_layers_normal()
@@ -133,16 +133,16 @@ class TestParsCVQNN:
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
-    def test_pars_cvqnnlayers_normal_range(self, seed):
+    def test_pars_cvqnnlayers_normal_range(self, seed, tol_sampl):
         """Confirm that pennylane.init.cvqnn_layers_normal() samples from the right
         distributions."""
-        p = cvqnn_layers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
+        p = cvqnn_layers_normal(n_layers=100000, n_wires=10, mean=-1, std=0.2, seed=seed)
         p_av = np.array([np.mean(p_) for p_ in p])
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
         target_std = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2])
-        assert np.allclose(p_av, target_av, atol=0.13)
-        assert np.allclose(p_std, target_std, atol=0.13)
+        assert np.allclose(p_av, target_av, atol=tol_sampl)
+        assert np.allclose(p_std, target_std, atol=tol_sampl)
 
 
 class TestParsInterferometer:
@@ -157,7 +157,7 @@ class TestParsInterferometer:
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a]
 
-    def test_pars_interferometer_uniform_range(self, seed):
+    def test_pars_interferometer_uniform_range(self, seed, tol_sampl):
         """Confirm that pennylane.init.interferometer_uniform() samples from the right
         distributions."""
         p = interferometer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
@@ -165,8 +165,8 @@ class TestParsInterferometer:
         p_std = np.array([np.std(p_) for p_ in p])
         target_av = np.array([-0.5, -0.5, -0.5])
         target_std = np.array([0.86, 0.86, 0.86])
-        assert np.allclose(p_av, target_av, atol=0.13)
-        assert np.allclose(p_std, target_std, atol=0.13)
+        assert np.allclose(p_av, target_av, atol=tol_sampl)
+        assert np.allclose(p_std, target_std, atol=tol_sampl)
 
     def test_pars_interferometer_normal_dimensions(self, n_subsystems):
         """Confirm that pennylane.init.interferometer_normal()

@@ -446,15 +446,18 @@ class TestCVNeuralNet:
         """integration test for the CVNeuralNetLayers method."""
 
         def circuit(weights):
-            CVNeuralNetLayers(weights=weights, wires=range(4))
+            CVNeuralNetLayers(*weights, wires=range(4))
             return qml.expval.X(0)
 
         qnode = qml.QNode(circuit, gaussian_device_4modes)
+
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(ValueError, match="All parameter arrays need to have the same first dimension, "
-                                             "from which the number of layers is inferred, got first dimensions "
-                                             "[1,1,1,1,1,1,1,1,1,1,2]."):
+        with pytest.raises(ValueError) as excinfo:
             qnode(wrong_weights)
+        assert excinfo.value.args[0] == "All parameter arrays need to have the same first dimension, from which " \
+                                        "the number of layers is inferred; got first dimensions " \
+                                        "[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]."
+
 
 class TestStronglyEntangling:
     """Tests for the StronglyEntanglingLayers method from the pennylane.templates.layers module."""

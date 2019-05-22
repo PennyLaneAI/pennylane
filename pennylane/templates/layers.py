@@ -96,14 +96,14 @@ def StronglyEntanglingLayers(weights, ranges=None, imprimitive=CNOT, wires=None)
         ranges = [1]*len(weights)
 
     for block_weights, block_range in zip(weights, ranges):
-        StronglyEntanglingLayer(block_weights, range=block_range, imprimitive=imprimitive, wires=wires)
+        StronglyEntanglingLayer(block_weights, r=block_range, imprimitive=imprimitive, wires=wires)
 
 
-def StronglyEntanglingLayer(weights, range=1, imprimitive=CNOT, wires=None):
+def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
     """A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
 
     The 2-qubit or imprimitive gates act on each qubit :math:`i` chronologically. The second qubit for
-    each gate is determined by :math:`(i+range)\mod n`, where :math:`n` is equal to `len(wires)`
+    each gate is determined by :math:`(i+r)\mod n`, where :math:`n` is equal to `len(wires)`
     and :math:`range` a layer hyperparameter called the range.
 
     This is an example of two 4-qubit strongly entangling layers (ranges :math:`range=1` and :math:`range=2`) with
@@ -118,7 +118,7 @@ def StronglyEntanglingLayer(weights, range=1, imprimitive=CNOT, wires=None):
         weights (array[float]): array of weights of shape ``(len(wires), 3)``
 
     Keyword Args:
-        range (int): range of the imprimitive gates of this layer, defaults to 1
+        r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
@@ -131,7 +131,7 @@ def StronglyEntanglingLayer(weights, range=1, imprimitive=CNOT, wires=None):
 
     num_wires = len(wires)
     for i in range(num_wires):
-        imprimitive(wires=[wires[i], wires[(i + range) % num_wires]])
+        imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
 
 
 def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ], wires=None):
@@ -234,8 +234,8 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
     inferred_layers = [len(theta_1), len(phi_1), len(varphi_1), len(r), len(phi_r), len(theta_2), len(phi_2),
                        len(varphi_2), len(a), len(phi_a), len(k)]
     if inferred_layers.count(inferred_layers[0]) != len(inferred_layers):
-        raise ValueError("All parameter arrays need to have the same first dimension, from which the number"
-                         "of layers is inferred, got first dimensions {}.".format(inferred_layers))
+        raise ValueError("All parameter arrays need to have the same first dimension, from which the number "
+                         "of layers is inferred; got first dimensions {}.".format(inferred_layers))
 
     n_layers = len(theta_1)
     for l in range(n_layers):
@@ -311,8 +311,8 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
 
     * ``mesh='rectangular'`` (default): uses the scheme described in
       :cite:`clements2016optimal`, resulting in a *rectangular* array of
-      :math:`M(M-1)/2` beamsplitters arranged in :math:`M` layers and ordered from left
-      to right and top to bottom in each layer. The first beamsplitters acts on
+      :math:`M(M-1)/2` beamsplitters arranged in :math:`M` slices and ordered from left
+      to right and top to bottom in each slice. The first beamsplitter acts on
       wires :math:`0` and :math:`1`:
 
       .. figure:: ../../_static/clements.png
@@ -324,7 +324,7 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
 
     * ``mesh='triangular'``: uses the scheme described in :cite:`reck1994experimental`,
       resulting in a *triangular* array of :math:`M(M-1)/2` beamsplitters arranged in
-      :math:`2M-3` layers and ordered from left to right and top to bottom. The
+      :math:`2M-3` slices and ordered from left to right and top to bottom. The
       first and fourth beamsplitters act on wires :math:`M-1` and :math:`M`, the second
       on :math:`M-2` and :math:`M-1`, and the third on :math:`M-3` and :math:`M-2`, and
       so on.

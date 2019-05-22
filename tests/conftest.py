@@ -35,6 +35,11 @@ def tol():
     return float(os.environ.get("TOL", TOL))
 
 
+@pytest.fixture(scope="session")
+def tol_sampl():
+    """Numerical tolerance for equality tests of sampling means."""
+    return 0.01
+
 @pytest.fixture(scope="session", params=[2, 3])
 def n_subsystems(request):
     """Number of qubits or qumodes."""

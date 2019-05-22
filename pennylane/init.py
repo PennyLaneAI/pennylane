@@ -69,8 +69,8 @@ Interferometer
 Code details
 ^^^^^^^^^^^^
 """
-import numpy as np
 from math import pi
+import numpy as np
 
 
 def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
@@ -210,7 +210,7 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
     if n_rots is None:
         n_rots = n_wires
 
-    params = np.random.uniform(low=low, high=high,size=(n_layers, n_rots))
+    params = np.random.uniform(low=low, high=high, size=(n_layers, n_rots))
     return [params]
 
 
@@ -271,7 +271,7 @@ def random_layer_uniform(n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
     if n_rots is None:
         n_rots = n_wires
 
-    params = np.random.uniform(low=low, high=high, ize=(n_rots,))
+    params = np.random.uniform(low=low, high=high, size=(n_rots,))
     return [params]
 
 
