@@ -69,7 +69,7 @@ def AngleEmbedding(features, rotation='X', wires=None):
     feature vector :math:`[0, \pi/2, \pi/2, 0]`.
 
     Args:
-        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed
+        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed, with :math:`N\leq n`
 
     Keyword Args:
         rotation (str): Type of rotations used
@@ -80,7 +80,7 @@ def AngleEmbedding(features, rotation='X', wires=None):
         raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
 
     if len(features) > len(wires):
-        raise ValueError("Number of features to embed cannot be larger than number of wires which is {}, "
+        raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
                          "got {}.".format(len(wires), len(features)))
     if rotation == 'X':
         for f, w in zip(features, wires):
@@ -102,7 +102,7 @@ def AmplitudeEmbedding(features, wires=None):
     """
     Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
-    The absolute square of all  elements in ``features`` has to add up to one.
+    The absolute square of all elements in ``features`` has to add up to one.
 
     .. note::
 

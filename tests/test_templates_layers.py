@@ -176,7 +176,7 @@ class TestInterferometer:
 
     def test_two_mode_rect_overparameterised(self, tol):
         """Test that a two mode interferometer using the rectangular mesh
-        correctly gives a beamsplitter+2 rotation gates when requested"""
+        correctly gives a beamsplitter+2 rotation gates"""
         N = 2
         wires = range(N)
         dev = qml.device('default.gaussian', wires=N)

@@ -242,7 +242,7 @@ class TestBasisEmb:
             circuit(x=[1])
 
 
-class TestAmplitudeEmb:
+class TestAmplitudeEmbedding:
     """ Tests the pennylane.templates.embeddings.AmplitudeEmbedding method."""
 
     def test_amplitude_embedding_state(self):
@@ -298,7 +298,7 @@ class TestAmplitudeEmb:
             circuit(x=[1])
 
 
-class TestSqueezingEmb:
+class TestSqueezingEmbedding:
     """ Tests the pennylane.templates.embeddings.SqueezingEmbedding method."""
 
     def test_squeezing_embedding_state_execution_amplitude(self):
@@ -383,7 +383,7 @@ class TestSqueezingEmb:
             circuit(x=[1])
 
 
-class TestDisplacementEmb:
+class TestDisplacementEmbedding:
     """ Tests the pennylane.templates.embeddings.DisplacementEmbedding method."""
 
     def test_displacement_embedding_state_execution_amplitude(self):

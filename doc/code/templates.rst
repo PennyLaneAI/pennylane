@@ -82,7 +82,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
     ``pars`` is a list of parameter arrays. In the case of the strongly entangling template, the list contains
     exactly one such parameter array of shape ``(n_layers, n_wires, 3)``. One could alternatively create this
-    list of an array by hand, replacing second-to-last line with
+    list of arrays by hand, replacing second-to-last line with
 
     .. code-block:: python
 
@@ -95,7 +95,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
 Templates can contain each other. An example is the handy :class:`~.Interferometer` template. It constructs
 arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations, by providing lists of
-transmittivity and phase angles. A :func:`~.CVNeuralNetLayer` - implementing the continuous-variable neural
+transmittivity and phase angles. A :func:`~.CVNeuralNetLayer` template - implementing the continuous-variable neural
 network architecture from :cite:`killoran2018continuous` - contains two such interferometers. But it can also
 be used (and optimized) independently:
 
