@@ -288,6 +288,9 @@ class QNode:
             temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
             kwarg_variables[key] = unflatten(temp, val)
 
+        Variable.free_param_values = np.array(list(_flatten(args)))
+        Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in keyword_values.items()}
+
         # set up the context for Operation entry
         if QNode._current_context is None:
             QNode._current_context = self
