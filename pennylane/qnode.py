@@ -262,7 +262,7 @@ class QNode:
             does not support differentiating with respect to keyword arguments. Instead,
             keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
         """
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
         self.queue = []
         self.ev = []  # temporary queue for EVs
 
