@@ -164,7 +164,7 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, 
 
     The number :math:`k` of single qubit rotations is inferred from the first dimension of ``weights``.
 
-    This is an example of two a 4-qubit random layers with four Pauli-y/Pauli-z rotations :math:`R_y, R_z`,
+    This is an example of two 4-qubit random layers with four Pauli-y/Pauli-z rotations :math:`R_y, R_z`,
     controlled-Z gates as imprimitives, as well as ``ratio_imprim=0.3``:
 
     .. figure:: ../../_static/layer_rnd.png
