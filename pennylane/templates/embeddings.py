@@ -79,7 +79,7 @@ def AngleEmbedding(features, rotation='X', wires=None):
         raise ValueError("Wires needs to be a list of wires that the embedding uses, got {}.".format(wires))
 
     if len(features) > len(wires):
-        raise ValueError("Number of features to embed cannot be larger than number of wires which is {}, "
+        raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
                          "got {}.".format(len(wires), len(features)))
     if rotation == 'X':
         for f, w in zip(features, wires):
