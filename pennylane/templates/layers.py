@@ -104,7 +104,7 @@ def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
 
     The 2-qubit or imprimitive gates act on each qubit :math:`i` chronologically. The second qubit for
     each gate is determined by :math:`(i+r)\mod n`, where :math:`n` is the number of qubits
-    and :math:`r` a layer hyperparameter called the range.
+    and :math:`r` is a layer hyperparameter called the range.
 
     This is an example of a two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`) with
     rotations :math:`R` and CNOTs as imprimitives:
