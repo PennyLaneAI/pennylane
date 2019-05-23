@@ -73,16 +73,11 @@ class TestParsCVQNN:
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
     # def test_pars_cvqnnlayer_uniform_range(self, seed, tol):
-    #     """Confirm that pennylane.init.cvqnn_layer_uniform() samples from the right
-    #     distributions."""
+    #     """Confirm that pennylane.init.cvqnn_layer_uniform() invokes the correct random sampling function."""
     #     for i in range(10000):
-    #         p = cvqnn_layer_uniform(n_wires=1000, uniform_min=-2, uniform_max=1, mean=0.5, std=2., seed=seed)
-    #     p_av = np.array([np.mean(p_) for p_ in p])
-    #     p_std = np.array([np.std(p_) for p_ in p])
-    #     target_av = np.array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5])
-    #     target_std = np.array([0.86, 0.86, 0.86, 2, 0.86, 0.86, 0.86, 0.86, 2, 0.86, 2])
-    #     assert np.allclose(p_av, target_av, atol=tol)
-    #     assert np.allclose(p_std, target_std, atol=tol)
+    #         p = cvqnn_layer_uniform(n_wires=3, uniform_min=-2, uniform_max=1, mean_active=0.5, std_active=2., seed=seed)
+    #
+    #     assert np.allequal(p_av, target_av, atol=tol)
 
     def test_pars_cvqnnlayers_uniform_dimensions(self, n_subsystems, n_layers):
         """Confirm that pennylane.init.cvqnn_layers_uniform()
@@ -93,16 +88,16 @@ class TestParsCVQNN:
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
-    def test_pars_cvqnnlayers_uniform_range(self, seed, tol_sampl):
-        """Confirm that pennylane.init.cvqnn_layers_uniform() samples from the right
-        distributions."""
-        p = cvqnn_layers_uniform(n_layers=100000, n_wires=10, low=-2, high=1, mean=0.5, std=0.01, seed=seed)
-        p_av = np.array([np.mean(p_) for p_ in p])
-        p_std = np.array([np.std(p_) for p_ in p])
-        target_av = np.array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5])
-        target_std = np.array([0.86, 0.86, 0.86, 0.01, 0.86, 0.86, 0.86, 0.86, 0.01, 0.86, 0.01])
-        assert np.allclose(p_av, target_av, atol=tol_sampl)
-        assert np.allclose(p_std, target_std, atol=tol_sampl)
+    # def test_pars_cvqnnlayers_uniform_range(self, seed, tol_sampl):
+    #     """Confirm that pennylane.init.cvqnn_layers_uniform() samples from the right
+    #     distributions."""
+    #     p = cvqnn_layers_uniform(n_layers=100000, n_wires=10, low=-2, high=1, mean_active=0.5, std_active=0.01, seed=seed)
+    #     p_av = np.array([np.mean(p_) for p_ in p])
+    #     p_std = np.array([np.std(p_) for p_ in p])
+    #     target_av = np.array([-0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5])
+    #     target_std = np.array([0.86, 0.86, 0.86, 0.01, 0.86, 0.86, 0.86, 0.86, 0.01, 0.86, 0.01])
+    #     assert np.allclose(p_av, target_av, atol=tol_sampl)
+    #     assert np.allclose(p_std, target_std, atol=tol_sampl)
 
     def test_pars_cvqnnlayer_normal_dimensions(self, n_subsystems):
         """Confirm that pennylane.init.cvqnn_layer_normal()
@@ -133,16 +128,16 @@ class TestParsCVQNN:
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
-    def test_pars_cvqnnlayers_normal_range(self, seed, tol_sampl):
-        """Confirm that pennylane.init.cvqnn_layers_normal() samples from the right
-        distributions."""
-        p = cvqnn_layers_normal(n_layers=100000, n_wires=10, mean=-1, std=0.2, seed=seed)
-        p_av = np.array([np.mean(p_) for p_ in p])
-        p_std = np.array([np.std(p_) for p_ in p])
-        target_av = np.array([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
-        target_std = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2])
-        assert np.allclose(p_av, target_av, atol=tol_sampl)
-        assert np.allclose(p_std, target_std, atol=tol_sampl)
+    # def test_pars_cvqnnlayers_normal_range(self, seed, tol_sampl):
+    #     """Confirm that pennylane.init.cvqnn_layers_normal() samples from the right
+    #     distributions."""
+    #     p = cvqnn_layers_normal(n_layers=100000, n_wires=10, mean=-1, std=0.2, seed=seed)
+    #     p_av = np.array([np.mean(p_) for p_ in p])
+    #     p_std = np.array([np.std(p_) for p_ in p])
+    #     target_av = np.array([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
+    #     target_std = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2])
+    #     assert np.allclose(p_av, target_av, atol=tol_sampl)
+    #     assert np.allclose(p_std, target_std, atol=tol_sampl)
 
 
 class TestParsInterferometer:
@@ -157,16 +152,16 @@ class TestParsInterferometer:
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a]
 
-    def test_pars_interferometer_uniform_range(self, seed, tol_sampl):
-        """Confirm that pennylane.init.interferometer_uniform() samples from the right
-        distributions."""
-        p = interferometer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
-        p_av = np.array([np.mean(p_) for p_ in p])
-        p_std = np.array([np.std(p_) for p_ in p])
-        target_av = np.array([-0.5, -0.5, -0.5])
-        target_std = np.array([0.86, 0.86, 0.86])
-        assert np.allclose(p_av, target_av, atol=tol_sampl)
-        assert np.allclose(p_std, target_std, atol=tol_sampl)
+    # def test_pars_interferometer_uniform_range(self, seed, tol_sampl):
+    #     """Confirm that pennylane.init.interferometer_uniform() samples from the right
+    #     distributions."""
+    #     p = interferometer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
+    #     p_av = np.array([np.mean(p_) for p_ in p])
+    #     p_std = np.array([np.std(p_) for p_ in p])
+    #     target_av = np.array([-0.5, -0.5, -0.5])
+    #     target_std = np.array([0.86, 0.86, 0.86])
+    #     assert np.allclose(p_av, target_av, atol=tol_sampl)
+    #     assert np.allclose(p_std, target_std, atol=tol_sampl)
 
     def test_pars_interferometer_normal_dimensions(self, n_subsystems):
         """Confirm that pennylane.init.interferometer_normal()
@@ -177,16 +172,16 @@ class TestParsInterferometer:
         dims = [p_.shape for p_ in p]
         assert dims == [b, b, a]
 
-    def test_pars_interferometer_normal_range(self, seed):
-        """Confirm that pennylane.init.interferometer_normal() samples from the right
-        distributions."""
-        p = interferometer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
-        p_av = np.array([np.mean(p_) for p_ in p])
-        p_std = np.array([np.std(p_) for p_ in p])
-        target_av = np.array([-1, -1, -1])
-        target_std = np.array([0.2, 0.2, 0.2])
-        assert np.allclose(p_av, target_av, atol=0.13)
-        assert np.allclose(p_std, target_std, atol=0.13)
+    # def test_pars_interferometer_normal_range(self, seed):
+    #     """Confirm that pennylane.init.interferometer_normal() samples from the right
+    #     distributions."""
+    #     p = interferometer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
+    #     p_av = np.array([np.mean(p_) for p_ in p])
+    #     p_std = np.array([np.std(p_) for p_ in p])
+    #     target_av = np.array([-1, -1, -1])
+    #     target_std = np.array([0.2, 0.2, 0.2])
+    #     assert np.allclose(p_av, target_av, atol=0.13)
+    #     assert np.allclose(p_std, target_std, atol=0.13)
 
 
 class TestParsStronglyEntangling:
@@ -200,14 +195,14 @@ class TestParsStronglyEntangling:
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
-    def test_pars_stronglyentanglinglayer_uniform_range(self, seed):
-        """Confirm that pennylane.init.strong_ent_layer_uniform()
-        samples from the right distributions."""
-        p = strong_ent_layer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
-        p_av = [np.mean(p_) for p_ in p]
-        p_std = [np.std(p_) for p_ in p]
-        assert np.isclose(p_av, [-0.5], atol=0.13)
-        assert np.isclose(p_std, [0.86], atol=0.13)
+    # def test_pars_stronglyentanglinglayer_uniform_range(self, seed):
+    #     """Confirm that pennylane.init.strong_ent_layer_uniform()
+    #     samples from the right distributions."""
+    #     p = strong_ent_layer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
+    #     p_av = [np.mean(p_) for p_ in p]
+    #     p_std = [np.std(p_) for p_ in p]
+    #     assert np.isclose(p_av, [-0.5], atol=0.13)
+    #     assert np.isclose(p_std, [0.86], atol=0.13)
 
     def test_pars_stronglyentanglinglayers_uniform_dimensions(self, n_subsystems, n_layers):
         """Confirm that the pennylane.init.strong_ent_layers_uniform()
@@ -217,15 +212,15 @@ class TestParsStronglyEntangling:
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
-    def test_pars_stronglyentanglinglayers_uniform_range(self, seed):
-        """Confirm that pennylane.init.strong_ent_layers_uniform()
-        samples from the right distributions."""
-        p = strong_ent_layers_uniform(n_layers=2, n_wires=1000, low=-2, high=1,
-                                      seed=seed)
-        p_av = [np.mean(p_) for p_ in p]
-        p_std = [np.std(p_) for p_ in p]
-        assert np.isclose(p_av, [-0.5], atol=0.13)
-        assert np.isclose(p_std, [0.86], atol=0.13)
+    # def test_pars_stronglyentanglinglayers_uniform_range(self, seed):
+    #     """Confirm that pennylane.init.strong_ent_layers_uniform()
+    #     samples from the right distributions."""
+    #     p = strong_ent_layers_uniform(n_layers=2, n_wires=1000, low=-2, high=1,
+    #                                   seed=seed)
+    #     p_av = [np.mean(p_) for p_ in p]
+    #     p_std = [np.std(p_) for p_ in p]
+    #     assert np.isclose(p_av, [-0.5], atol=0.13)
+    #     assert np.isclose(p_std, [0.86], atol=0.13)
 
     def test_pars_stronglyentanglinglayer_normal_dimensions(self, n_subsystems):
         """Confirm that the pennylane.init.parameters_stronglyentanglinglayer_normalm()
@@ -235,14 +230,14 @@ class TestParsStronglyEntangling:
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
-    def test_pars_stronglyentanglinglayer_normal_range(self, seed):
-        """Confirm that pennylane.init.strong_ent_layer_normal()
-        samples from the right distributions."""
-        p = strong_ent_layer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
-        p_av = [np.mean(p_) for p_ in p]
-        p_std = [np.std(p_) for p_ in p]
-        assert np.isclose(p_av, [-1], atol=0.01)
-        assert np.isclose(p_std, [0.2], atol=0.01)
+    # def test_pars_stronglyentanglinglayer_normal_range(self, seed):
+    #     """Confirm that pennylane.init.strong_ent_layer_normal()
+    #     samples from the right distributions."""
+    #     p = strong_ent_layer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
+    #     p_av = [np.mean(p_) for p_ in p]
+    #     p_std = [np.std(p_) for p_ in p]
+    #     assert np.isclose(p_av, [-1], atol=0.01)
+    #     assert np.isclose(p_std, [0.2], atol=0.01)
 
     def test_pars_stronglyentanglinglayers_normal_dimensions(self, n_subsystems, n_layers):
         """Confirm that the pennylane.init.strong_ent_layers_normal()
@@ -252,14 +247,14 @@ class TestParsStronglyEntangling:
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
-    def test_pars_stronglyentanglinglayers_normal_range(self, seed):
-        """Confirm that pennylane.init.strong_ent_layers_normal()
-        samples from the right distributions."""
-        p = strong_ent_layers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
-        p_av = [np.mean(p_) for p_ in p]
-        p_std = [np.std(p_) for p_ in p]
-        assert np.isclose(p_av, [-1], atol=0.5)
-        assert np.isclose(p_std, [0.2], atol=0.5)
+    # def test_pars_stronglyentanglinglayers_normal_range(self, seed):
+    #     """Confirm that pennylane.init.strong_ent_layers_normal()
+    #     samples from the right distributions."""
+    #     p = strong_ent_layers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
+    #     p_av = [np.mean(p_) for p_ in p]
+    #     p_std = [np.std(p_) for p_ in p]
+    #     assert np.isclose(p_av, [-1], atol=0.5)
+    #     assert np.isclose(p_std, [0.2], atol=0.5)
 
 
 class TestParsRandom:
@@ -275,14 +270,14 @@ class TestParsRandom:
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
-    def test_pars_randomlayer_uniform_range(self, seed):
-        """Confirm that pennylane.init.random_layer_uniform()
-        samples from the right distributions."""
-        p = random_layer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
-        p_av = [np.mean(p_) for p_ in p]
-        p_std = [np.std(p_) for p_ in p]
-        assert np.isclose(p_av, [-0.5], atol=0.5)
-        assert np.isclose(p_std, [0.86], atol=0.5)
+    # def test_pars_randomlayer_uniform_range(self, seed):
+    #     """Confirm that pennylane.init.random_layer_uniform()
+    #     samples from the right distributions."""
+    #     p = random_layer_uniform(n_wires=1000, low=-2, high=1, seed=seed)
+    #     p_av = [np.mean(p_) for p_ in p]
+    #     p_std = [np.std(p_) for p_ in p]
+    #     assert np.isclose(p_av, [-0.5], atol=0.5)
+    #     assert np.isclose(p_std, [0.86], atol=0.5)
 
     def test_pars_randomlayers_uniform_dimensions(self, n_subsystems, n_layers, n_rots):
         """Confirm that the pennylane.init.random_layers_uniform()
@@ -294,14 +289,14 @@ class TestParsRandom:
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
-    def test_pars_randomlayers_uniform_range(self, seed):
-        """Confirm that pennylane.init.random_layers_uniform()
-        samples from the right distributions."""
-        p = random_layers_uniform(n_layers=2, n_wires=1000, low=-2, high=1, seed=seed)
-        p_av = [np.mean(p_) for p_ in p]
-        p_std = [np.std(p_) for p_ in p]
-        assert np.isclose(p_av, [-0.5], atol=0.5)
-        assert np.isclose(p_std, [0.86], atol=0.5)
+    # def test_pars_randomlayers_uniform_range(self, seed):
+    #     """Confirm that pennylane.init.random_layers_uniform()
+    #     samples from the right distributions."""
+    #     p = random_layers_uniform(n_layers=2, n_wires=1000, low=-2, high=1, seed=seed)
+    #     p_av = [np.mean(p_) for p_ in p]
+    #     p_std = [np.std(p_) for p_ in p]
+    #     assert np.isclose(p_av, [-0.5], atol=0.5)
+    #     assert np.isclose(p_std, [0.86], atol=0.5)
 
     def test_pars_randomlayer_normal_dimensions(self, n_subsystems, n_rots):
         """Confirm that the pennylane.init.random_layer_normal()
@@ -313,14 +308,14 @@ class TestParsRandom:
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
-    def test_pars_randomlayer_normal_range(self, seed):
-        """Confirm that pennylane.init.random_layer_normal()
-        samples from the right distributions."""
-        p = random_layer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
-        p_av = [np.mean(p_) for p_ in p]
-        p_std = [np.std(p_) for p_ in p]
-        assert np.isclose(p_av, [-1], atol=0.5)
-        assert np.isclose(p_std, [0.2], atol=0.5)
+    # def test_pars_randomlayer_normal_range(self, seed):
+    #     """Confirm that pennylane.init.random_layer_normal()
+    #     samples from the right distributions."""
+    #     p = random_layer_normal(n_wires=1000, mean=-1, std=0.2, seed=seed)
+    #     p_av = [np.mean(p_) for p_ in p]
+    #     p_std = [np.std(p_) for p_ in p]
+    #     assert np.isclose(p_av, [-1], atol=0.5)
+    #     assert np.isclose(p_std, [0.2], atol=0.5)
 
     def test_pars_randomlayers_normal_dimensions(self, n_subsystems, n_layers, n_rots):
         """Confirm that the pennylane.init.random_layers_normal()
@@ -332,11 +327,11 @@ class TestParsRandom:
         dims = [p_.shape for p_ in p]
         assert dims == [a]
 
-    def test_pars_randomlayers_normal_range(self, seed):
-        """Confirm that pennylane.init.random_layers_normal()
-        samples from the right distributions."""
-        p = random_layers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
-        p_av = [np.mean(p_) for p_ in p]
-        p_std = [np.std(p_) for p_ in p]
-        assert np.isclose(p_av, [-1], atol=0.5)
-        assert np.isclose(p_std, [0.2], atol=0.5)
+    # def test_pars_randomlayers_normal_range(self, seed):
+    #     """Confirm that pennylane.init.random_layers_normal()
+    #     samples from the right distributions."""
+    #     p = random_layers_normal(n_layers=2, n_wires=1000, mean=-1, std=0.2, seed=seed)
+    #     p_av = [np.mean(p_) for p_ in p]
+    #     p_std = [np.std(p_) for p_ in p]
+    #     assert np.isclose(p_av, [-1], atol=0.5)
+    #     assert np.isclose(p_std, [0.2], atol=0.5)
