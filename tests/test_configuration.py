@@ -76,7 +76,7 @@ class BasicTest(BaseTest):
         """Test that a warning is raised if no configuration file found."""
         self.logTestName()
 
-        with self.assertLogs(level='WARNING') as l:
+        with self.assertLogs(level='INFO') as l:
             Configuration('noconfig')
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
