@@ -305,7 +305,7 @@ def random_layer_normal(n_wires, n_rots=None, mean=0, std=0.1, seed=None):
     return [params]
 
 
-def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean=0, std=0.1, seed=None):
+def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean_active=0, std_active=0.1, seed=None):
     r"""
     Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
     :func:`~.CVNeuralNetLayers`, sampled uniformly.
@@ -313,8 +313,11 @@ def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean=0, std=0.1, s
     The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)`` for the parameters used in an interferometer,
     and ``(n_layers, n_wires)``  else.
 
-    Rotation angles are initialized uniformly from the interval ``[low, high]``, while \
-    all other parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    All gate parameters are drawn uniformly from the interval ``[low, high]``, except from the three types of
+    'active gate parameters': the displacement amplitude, squeezing amplitude and kerr parameter. These
+    active gate parameters are sampled from a normal distribution with mean ``mean_active`` and standard
+    deviation ``std_active``. Since they influence the mean photon number (or energy) of the quantum system,
+    one typically wants to initialize them with values close to zero.
 
     Args:
         n_layers (int): number of layers of the CV Neural Net
@@ -323,8 +326,8 @@ def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean=0, std=0.1, s
     Keyword Args:
         low (float): minimum value of uniformly drawn rotation angles
         high (float): maximum value of uniformly drawn rotation angles
-        mean (float): mean of other gate parameters
-        std (float): standard deviation of other gate parameters
+        mean_active (float): mean of 'active gate parameters'
+        std_active (float): standard deviation of 'active gate parameters'
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
@@ -337,19 +340,19 @@ def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean=0, std=0.1, s
     theta_1 = np.random.uniform(low=low, high=high, size=(n_layers, n_if))
     phi_1 = np.random.uniform(low=low, high=high, size=(n_layers, n_if))
     varphi_1 = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
-    r = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+    r = np.random.normal(loc=mean_active, scale=std_active, size=(n_layers, n_wires))
     phi_r = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
     theta_2 = np.random.uniform(low=low, high=high, size=(n_layers, n_if))
     phi_2 = np.random.uniform(low=low, high=high, size=(n_layers, n_if))
     varphi_2 = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
-    a = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+    a = np.random.normal(loc=mean_active, scale=std_active, size=(n_layers, n_wires))
     phi_a = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
-    k = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+    k = np.random.normal(loc=mean_active, scale=std_active, size=(n_layers, n_wires))
 
-    return theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k
+    return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
-def cvqnn_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+def cvqnn_layers_normal(n_layers, n_wires, mean=0, std=1, mean_active=0, std_active=0.1, seed=None):
     r"""
     Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
     :func:`~.CVNeuralNetLayers`, sampled from a normal distribution.
@@ -357,15 +360,21 @@ def cvqnn_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)`` for the parameters used in an interferometer,
     and ``(n_layers, n_wires)``  else.
 
-    All parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    All gate parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``,
+    except from the three types of 'active gate parameters': the displacement amplitude, squeezing amplitude and kerr
+    parameter. These active gate parameters are sampled from a normal distribution with mean ``mean_active`` and
+    standard deviation ``std_active``. Since they influence the mean photon number (or energy) of the quantum system,
+    one typically wants to initialize them with values close to zero.
 
     Args:
         n_layers (int): number of layers of the CV Neural Net
         n_wires (int): number of modes of the CV Neural Net
 
     Keyword Args:
-        mean (float): mean of parameters
-        std (float): standard deviation of parameters
+        mean (float): mean of non-active parameters
+        std (float): standard deviation of non-active parameters
+        mean_active (float): mean of active gate parameters
+        std_active (float): standard deviation of active gate parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
@@ -378,19 +387,19 @@ def cvqnn_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     theta_1 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_if))
     phi_1 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_if))
     varphi_1 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
-    r = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+    r = np.random.normal(loc=mean_active, scale=std_active, size=(n_layers, n_wires))
     phi_r = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
     theta_2 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_if))
     phi_2 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_if))
     varphi_2 = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
-    a = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+    a = np.random.normal(loc=mean_active, scale=std_active, size=(n_layers, n_wires))
     phi_a = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
-    k = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+    k = np.random.normal(loc=mean_active, scale=std_active, size=(n_layers, n_wires))
 
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
-def cvqnn_layer_uniform(n_wires, low=0, high=2 * pi, mean=0, std=0.1, seed=None):
+def cvqnn_layer_uniform(n_wires, low=0, high=2 * pi, mean_active=0, std_active=0.1, seed=None):
     r"""
     Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
     :func:`~.CVNeuralNetLayer`, sampled uniformly.
@@ -398,17 +407,20 @@ def cvqnn_layer_uniform(n_wires, low=0, high=2 * pi, mean=0, std=0.1, seed=None)
     The shape of the arrays is ``(n_wires*(n_wires-1)/2)`` for the parameters used in an interferometer,
     and ``(n_wires)``  else.
 
-    Rotation angles are initialized uniformly from the interval ``[low, high]``, while \
-    all other parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    All gate parameters are drawn uniformly from the interval ``[low, high]``, except from the three types of
+    'active gate parameters': the displacement amplitude, squeezing amplitude and kerr parameter. These
+    active gate parameters are sampled from a normal distribution with mean ``mean_active`` and standard
+    deviation ``std_active``. Since they influence the mean photon number (or energy) of the quantum system,
+    one typically wants to initialize them with values close to zero.
 
     Args:
         n_wires (int): number of modes of the CV Neural Net
 
     Keyword Args:
-        low (float): minimum value of uniformly drawn rotation angles
-        high (float): maximum value of uniformly drawn rotation angles
-        mean (float): mean of other gate parameters
-        std (float): standard deviation of other gate parameters
+        low (float): minimum value of uniformly drawn non-active gate parameters
+        high (float): maximum value of uniformly drawn non-active gate parameters
+        mean_active (float): mean of active gate parameters
+        std_active (float): standard deviation of active gate parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
@@ -422,19 +434,19 @@ def cvqnn_layer_uniform(n_wires, low=0, high=2 * pi, mean=0, std=0.1, seed=None)
     theta_1 = np.random.uniform(low=low, high=high, size=(n_if, ))
     phi_1 = np.random.uniform(low=low, high=high, size=(n_if, ))
     varphi_1 = np.random.uniform(low=low, high=high, size=(n_wires,))
-    r = np.random.normal(loc=mean, scale=std, size=(n_wires,))
+    r = np.random.normal(loc=mean_active, scale=std_active, size=(n_wires,))
     phi_r = np.random.uniform(low=low, high=high, size=(n_wires,))
     theta_2 = np.random.uniform(low=low, high=high, size=(n_if, ))
     phi_2 = np.random.uniform(low=low, high=high, size=(n_if, ))
     varphi_2 = np.random.uniform(low=low, high=high, size=(n_wires,))
-    a = np.random.normal(loc=mean, scale=std, size=(n_wires,))
+    a = np.random.normal(loc=mean_active, scale=std_active, size=(n_wires,))
     phi_a = np.random.uniform(low=low, high=high, size=(n_wires,))
-    k = np.random.normal(loc=mean, scale=std, size=(n_wires,))
+    k = np.random.normal(loc=mean_active, scale=std_active, size=(n_wires,))
 
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
-def cvqnn_layer_normal(n_wires, mean=0, std=0.1, seed=None):
+def cvqnn_layer_normal(n_wires, mean=0, std=1, mean_active=0, std_active=0.1, seed=None):
     r"""
     Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
     :func:`~.CVNeuralNetLayer`, sampled from a normal distribution.
@@ -442,14 +454,20 @@ def cvqnn_layer_normal(n_wires, mean=0, std=0.1, seed=None):
     The shape of the arrays is ``(n_wires*(n_wires-1)/2)`` for the parameters used in an interferometer,
     and ``(n_wires)``  else.
 
-    All parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    All gate parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``,
+    except from the three types of 'active gate parameters': the displacement amplitude, squeezing amplitude and kerr
+    parameter. These active gate parameters are sampled from a normal distribution with mean ``mean_active`` and
+    standard deviation ``std_active``. Since they influence the mean photon number (or energy) of the quantum system,
+    one typically wants to initialize them with values close to zero.
 
     Args:
         n_wires (int): number of modes of the CV Neural Net
 
     Keyword Args:
-        mean (float): mean of parameters
-        std (float): standard deviation of parameters
+        mean (float): mean of non-active parameters
+        std (float): standard deviation of non-active parameters
+        mean_active (float): mean of active gate parameters
+        std_active (float): standard deviation of active gate parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
@@ -463,14 +481,14 @@ def cvqnn_layer_normal(n_wires, mean=0, std=0.1, seed=None):
     theta_1 = np.random.normal(loc=mean, scale=std, size=(n_if,))
     phi_1 = np.random.normal(loc=mean, scale=std, size=(n_if,))
     varphi_1 = np.random.normal(loc=mean, scale=std, size=(n_wires,))
-    r = np.random.normal(loc=mean, scale=std, size=(n_wires,))
+    r = np.random.normal(loc=mean_active, scale=std_active, size=(n_wires,))
     phi_r = np.random.normal(loc=mean, scale=std, size=(n_wires,))
     theta_2 = np.random.normal(loc=mean, scale=std, size=(n_if,))
     phi_2 = np.random.normal(loc=mean, scale=std, size=(n_if,))
     varphi_2 = np.random.normal(loc=mean, scale=std, size=(n_wires,))
-    a = np.random.normal(loc=mean, scale=std, size=(n_wires,))
+    a = np.random.normal(loc=mean_active, scale=std_active, size=(n_wires,))
     phi_a = np.random.normal(loc=mean, scale=std, size=(n_wires,))
-    k = np.random.normal(loc=mean, scale=std, size=(n_wires,))
+    k = np.random.normal(loc=mean_active, scale=std_active, size=(n_wires,))
 
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
