@@ -22,8 +22,33 @@ PennyLane conceptually distinguishes two types of templates, **layer architectur
   circuit. These embeddings can also depend on trainable parameters, in which case the embedding is learnable.
 
 Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**. The entries of the list contain valid positional
-arguments for the template, allowing for the syntax ``MyTemplate(*par_list)``.
+**randomly initialized** arrays for the trainable **parameters**. For example, for the parameter generating function
+is called ``my_init_fun()`` and its corresponding template ``MyTemplate()`` takes three parameter arrays, the two can be combined in the following two ways: 
+
+1. Dereference the list when feeding it into the template:
+
+.. code-block:: python
+
+   par_list = my_init_fun(...)
+   
+   ...
+   
+   MyTemplate(*par_list, **kwargs)
+   
+   ...
+
+2. Unpack the list as the init function is called:
+
+.. code-block:: python
+
+   a, b, c = my_init_fun(...)
+   
+   ...
+   
+   MyTemplate(a, b, c, **kwargs)
+   
+   ...
+
 
 .. note::
 
