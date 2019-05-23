@@ -45,10 +45,10 @@ Code details
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
-from pennylane import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
+from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 
 
-def AngleEmbedding(features, rotation='X', wires=None):
+def AngleEmbedding(features, wires, rotation='X'):
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
 
@@ -71,10 +71,10 @@ def AngleEmbedding(features, rotation='X', wires=None):
     Args:
         features (array): Input array of shape ``(N, )``, where N is the number of input features to embed,
             with :math:`N\leq n`
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
         rotation (str): Type of rotations used
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
     if not isinstance(wires, Iterable):
@@ -99,7 +99,7 @@ def AngleEmbedding(features, rotation='X', wires=None):
         raise ValueError("Rotation has to be `X`, `Y` or `Z`; got {}.".format(rotation))
 
 
-def AmplitudeEmbedding(features, wires=None):
+def AmplitudeEmbedding(features, wires):
     """
     Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
@@ -112,8 +112,6 @@ def AmplitudeEmbedding(features, wires=None):
 
     Args:
         features (array): Input array of shape ``(2**n, )``
-
-    Keyword Args:
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
@@ -127,7 +125,7 @@ def AmplitudeEmbedding(features, wires=None):
     QubitStateVector(features, wires=wires)
 
 
-def BasisEmbedding(features, wires=None):
+def BasisEmbedding(features, wires):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
     For example, for ``features=[0, 1, 0]``, the quantum system will be prepared in state :math:`|010 \rangle`.
@@ -139,8 +137,6 @@ def BasisEmbedding(features, wires=None):
 
     Args:
         features (array): Binary input array of shape ``(n, )``
-
-    Keyword Args:
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
     if not isinstance(wires, Iterable):
@@ -152,7 +148,7 @@ def BasisEmbedding(features, wires=None):
     BasisState(features, wires=wires)
 
 
-def SqueezingEmbedding(features, method='amplitude', c=0.1, wires=None):
+def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     r"""Encodes :math:`N` features into the squeezing amplitudes :math:`r \geq 0` or phases :math:`\phi \in [0, 2\pi)`
     of :math:`M` modes, where :math:`N\leq M`.
 
@@ -169,13 +165,13 @@ def SqueezingEmbedding(features, method='amplitude', c=0.1, wires=None):
 
     Args:
         features (array): Array of features of size (N,)
+        wires (Sequence[int]): sequence of mode indices that the template acts on
 
     Keyword Args:
         method (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'``
-        wires (Sequence[int]): sequence of mode indices that the template acts on
     """
 
     if not isinstance(wires, Iterable):
@@ -194,7 +190,7 @@ def SqueezingEmbedding(features, method='amplitude', c=0.1, wires=None):
             raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))
 
 
-def DisplacementEmbedding(features, method='amplitude', c=0.1, wires=None):
+def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
     r"""Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
      where :math:`N\leq M`.
 
@@ -210,13 +206,13 @@ def DisplacementEmbedding(features, method='amplitude', c=0.1, wires=None):
 
     Args:
         features (array): Array of features of size (N,)
+        wires (Sequence[int]): sequence of mode indices that the template acts on
 
     Keyword Args:
         method (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
             the amplitude of all displacement gates if ``execution='phase'``
-        wires (Sequence[int]): sequence of mode indices that the template acts on
    """
 
     if not isinstance(wires, Iterable):
