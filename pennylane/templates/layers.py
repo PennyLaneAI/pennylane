@@ -77,7 +77,7 @@ from pennylane.variable import Variable
 import numpy as np
 
 
-def StronglyEntanglingLayers(weights, ranges=None, imprimitive=CNOT, wires=None):
+def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     """A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in :cite:`schuld2018circuit`.
 
     The number of layers :math:`L` is determined by the first dimension of ``weights``. The template is applied to
@@ -85,11 +85,11 @@ def StronglyEntanglingLayers(weights, ranges=None, imprimitive=CNOT, wires=None)
 
     Args:
         weights (array[float]): array of weights of shape ``(L, len(wires), 3)``
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
     if ranges is None:
@@ -99,7 +99,7 @@ def StronglyEntanglingLayers(weights, ranges=None, imprimitive=CNOT, wires=None)
         StronglyEntanglingLayer(block_weights, r=block_range, imprimitive=imprimitive, wires=wires)
 
 
-def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
+def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
     """A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
 
     The 2-qubit or imprimitive gates act on each qubit :math:`i` chronologically. The second qubit for
@@ -116,11 +116,11 @@ def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
 
     Args:
         weights (array[float]): array of weights of shape ``(len(wires), 3)``
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
     if len(wires) < 2:
         raise ValueError("StronglyEntanglingLayer requires at least two wires or subsystems to apply "
@@ -134,7 +134,7 @@ def StronglyEntanglingLayer(weights, r=1, imprimitive=CNOT, wires=None):
         imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
 
 
-def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ], wires=None):
+def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ]):
     """A sequence of layers of type :func:`RandomLayer()`.
 
     The number of layers :math:`L` and the number :math:`k` of rotations per layer is inferred from the first
@@ -143,6 +143,7 @@ def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY,
 
     Args:
         weights (array[float]): array of weights of shape ``(L, k)``,
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation
@@ -151,14 +152,13 @@ def RandomLayers(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY,
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
     for layer_weights in weights:
         RandomLayer(layer_weights, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations, wires=wires)
 
 
-def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ], wires=None):
+def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ]):
     """A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
@@ -174,6 +174,7 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, 
 
     Args:
         weights (array[float]): array of weights of shape ``(k,)``
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
@@ -181,7 +182,6 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, 
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     """
 
@@ -202,7 +202,7 @@ def RandomLayer(weights, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, 
             imprimitive(wires=on_wires)
 
 
-def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
+def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
     """A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in :cite:`killoran2018continuous`.
 
     The number of layers :math:`L` is inferred from the first dimension of the eleven weight parameters. The layers
@@ -226,8 +226,6 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
         a (array[float]): length :math:`(L, M)` array of displacement magnitudes for :class:`~.Displacement` operations
         phi_a (array[float]): length :math:`(L, M)` array of displacement angles for :class:`~.Displacement` operations
         k (array[float]): length :math:`(L, M)` array of kerr parameters for :class:`~.Kerr` operations
-
-    Keyword Args:
         wires (Sequence[int]): sequence of mode indices that the template acts on
     """
 
@@ -243,7 +241,7 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
                          theta_2[l], phi_2[l], varphi_2[l], a[l], phi_a[l], k[l], wires=wires)
 
 
-def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires=None):
+def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
     """A layer of interferometers, displacement and squeezing gates mimicking a neural network,
     as well as a Kerr gate nonlinearity.
 
@@ -276,8 +274,6 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
         a (array[float]): length :math:`(M, )` array of displacement magnitudes for :class:`~.Displacement` operations
         phi_a (array[float]): length :math:`(M, )` array of displacement angles for :class:`~.Displacement` operations
         k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~.Kerr` operations
-
-    Keyword Args:
         wires (Sequence[int]): sequence of mode indices that the template acts on
     """
     Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
@@ -293,7 +289,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
         Kerr(k[i], wires=wire)
 
 
-def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplitter='pennylane'):
+def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='pennylane'):
     r"""General linear interferometer, an array of beam splitters and phase shifters.
 
     For :math:`M` wires, the general interferometer is specified by
@@ -369,13 +365,13 @@ def Interferometer(theta, phi, varphi, wires=None, mesh='rectangular', beamsplit
         theta (array): length :math:`M(M-1)/2` array of transmittivity angles :math:`\theta`
         phi (array): length :math:`M(M-1)/2` array of phase angles :math:`\phi`
         varphi (array): length :math:`M` or :math:`M-1` array of rotation angles :math:`\varphi`
+        wires (Sequence[int]): wires the interferometer should act on
 
     Keyword Args:
         mesh (string): the type of mesh to use
         beamsplitter (str): if ``clements``, the beamsplitter convention from
           Clements et al. 2016 (https://dx.doi.org/10.1364/OPTICA.3.001460) is used; if ``pennylane``, the
           beamsplitter is implemented via PennyLane's ``Beamsplitter`` operation.
-        wires (Sequence[int]): wires the interferometer should act on
     """
     if isinstance(beamsplitter, Variable):
         raise QuantumFunctionError("The beamsplitter parameter influences the "
