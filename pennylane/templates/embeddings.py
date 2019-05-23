@@ -26,18 +26,42 @@ The features are associated with gate parameters, implicitly mapping them into t
 Qubit architectures
 -------------------
 
+Angle embedding
+***************
+
 .. autosummary::
 
     AngleEmbedding
+
+Amplitude embedding
+*******************
+
+.. autosummary::
+
     AmplitudeEmbedding
+
+Basis embedding
+***************
+
+.. autosummary::
+
     BasisEmbedding
 
 Continuous-variable architectures
 ---------------------------------
 
+Squeezing embedding
+*******************
+
 .. autosummary::
 
     SqueezingEmbedding
+
+Displacement embedding
+**********************
+
+.. autosummary::
+
     DisplacementEmbedding
 
 Code details
@@ -66,7 +90,7 @@ def AngleEmbedding(features, wires, rotation='X'):
 
     This embedding method can also be used to encode a binary sequence into a basis state. For example, to prepare
     basis state :math:`|0,1,1,0\rangle`, choose ``rotation='X'`` and use the
-    feature vector :math:`[0, \pi/2, \pi/2, 0]`. Alternatively, one can use the :fun:`BasisEmbedding()` template.
+    feature vector :math:`[0, \pi/2, \pi/2, 0]`. Alternatively, one can use the :mod:`BasisEmbedding()` template.
 
     Args:
         features (array): Input array of shape ``(N, )``, where N is the number of input features to embed,

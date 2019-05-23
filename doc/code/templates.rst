@@ -13,6 +13,10 @@ evaluate, and train more complex quantum machine learning models. In the
 quantum machine learning literature, such architectures are commonly known as an
 **ansatz**.
 
+.. note::
+
+    Templates are constructed out of **structured combinations** of the :mod:`quantum operations <pennylane.ops>` provided by PennyLane. Their usage is exactly the same as a single quantum gates. For example, **template functions can only be used within a valid** :mod:`pennylane.qnode`.
+
 PennyLane conceptually distinguishes two types of templates, **layer architectures** and **input embeddings**:
 
 * Layer architectures, found in :mod:`pennylane.templates.layers`, define sequences of gates that are repeated
@@ -21,46 +25,7 @@ PennyLane conceptually distinguishes two types of templates, **layer architectur
 * Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state of the
   circuit. These embeddings can also depend on trainable parameters, in which case the embedding is learnable.
 
-Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**. For example, for the parameter generating function
-is called ``my_init_fun()`` and its corresponding template ``MyTemplate()`` takes three parameter arrays, the two can be combined in the following two ways: 
-
-1. Dereference the list when feeding it into the template:
-
-.. code-block:: python
-
-   par_list = my_init_fun(...)
-   
-   ...
-   
-   MyTemplate(*par_list, **kwargs)
-   
-   ...
-
-2. Unpack the list as the init function is called:
-
-.. code-block:: python
-
-   a, b, c = my_init_fun(...)
-   
-   ...
-   
-   MyTemplate(a, b, c, **kwargs)
-   
-   ...
-
-
-.. note::
-
-    Templates are constructed out of **structured combinations**
-    of the :mod:`quantum operations <pennylane.ops>` provided by PennyLane.
-    As a result, you should follow all the rules of quantum operations
-    when you use templates. For example **template functions can only be
-    used within a valid** :mod:`pennylane.qnode`.
-
-
-Summary
--------
+The following templates of each type are available:
 
 .. rst-class:: contents local topic
 
@@ -69,7 +34,38 @@ Summary
 
     templates/layers
     templates/embeddings
-    templates/parameters
+
+
+Creating initial parameters
+---------------------------
+
+Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
+**randomly initialized** arrays for the trainable **parameters**. To illustrate how these can be used, let us use a hypothetical parameter generating function ``my_init_fun()`` and its corresponding hypothetical template ``MyTemplate()``, which takes three parameter arrays. The two can be combined in the following two ways: 
+
+1. Dereference the list when feeding it into the template:
+
+.. code-block:: python
+
+   par_list = my_init_fun(...)
+   ...
+   MyTemplate(*par_list, ...)
+
+
+2. Unpack the list as the init function is called:
+
+.. code-block:: python
+
+   a, b, c = my_init_fun(...)
+   ...
+   MyTemplate(a, b, c, ...)
+
+The following parameter initialization methods are available:
+
+
+.. toctree::
+    :maxdepth: 3
+
+    templates/init_parameters
 
 Examples
 --------
