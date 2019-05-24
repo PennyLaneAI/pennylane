@@ -74,6 +74,7 @@ Classes
 Code details
 ^^^^^^^^^^^^
 """
+import itertools
 import warnings
 
 import numpy as np
@@ -317,12 +318,7 @@ class DefaultQubit(Device):
         A = self._get_operator_matrix(operation, par)
 
         # apply unitary operations
-        if len(wires) == 1:
-            U = self.expand_one(A, wires)
-        elif len(wires) == 2:
-            U = self.expand_two(A, wires)
-        else:
-            raise ValueError('This plugin supports only one- and two-qubit gates.')
+        U = self.expand(A, wires)
 
         self._state = U @ self._state
 
@@ -366,14 +362,7 @@ class DefaultQubit(Device):
         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        if A.shape == (2, 2):
-            A = self.expand_one(A, wires)
-        elif A.shape == (4, 4):
-            A = self.expand_two(A, wires)
-        else:
-            raise ValueError('Only one and two-qubit expectation is supported.')
-            # A muti-qubit expansion function extends this.
-            # A = self.expand_multi(A, wires)
+        A = self.expand(A, wires)
 
         expectation = np.vdot(self._state, A @ self._state)
 
@@ -387,78 +376,46 @@ class DefaultQubit(Device):
         self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
 
-    def expand_one(self, U, wires):
-        r"""Expand a one-qubit operator into a full system operator.
-
-        Args:
-          U (array): :math:`2\times 2` matrix
-          wires (Sequence[int]): target subsystem
-
-        Returns:
-          array: :math:`2^n\times 2^n` matrix
-        """
-        if U.shape != (2, 2):
-            raise ValueError('2x2 matrix required.')
-        if len(wires) != 1:
-            raise ValueError('One target subsystem required.')
-        wires = wires[0]
-        before = 2**wires
-        after = 2**(self.num_wires-wires-1)
-        U = np.kron(np.kron(np.eye(before), U), np.eye(after))
-        return U
-
-    def expand_two(self, U, wires):
-        r"""Expand a two-qubit operator into a full system operator.
-
-        Args:
-          U (array): :math:`4\times 4` matrix
-          wires (Sequence[int]): two target subsystems (order matters!)
-
-        Returns:
-          array: :math:`2^n\times 2^n` matrix
-        """
-        if U.shape != (4, 4):
-            raise ValueError('4x4 matrix required.')
-        if len(wires) != 2:
-            raise ValueError('Two target subsystems required.')
-        wires = np.asarray(wires)
-        if np.any(wires < 0) or np.any(wires >= self.num_wires) or wires[0] == wires[1]:
-            raise ValueError('Bad target subsystems.')
-
-        a = np.min(wires)
-        b = np.max(wires)
-        n_between = b-a-1  # number of qubits between a and b
-        # dimensions of the untouched subsystems
-        before = 2**a
-        after = 2**(self.num_wires-b-1)
-        between = 2**n_between
-
-        U = np.kron(U, np.eye(between))
-        # how U should be reordered
-        if wires[0] < wires[1]:
-            p = [0, 2, 1]
-        else:
-            p = [1, 2, 0]
-        dim = [2, 2, between]
-        p = np.array(p)
-        perm = np.r_[p, p+3]
-        # reshape U into another array which has one index per subsystem, permute dimensions, back into original-shape array
-        temp = np.prod(dim)
-        U = U.reshape(dim * 2).transpose(perm).reshape([temp, temp])
-        U = np.kron(np.kron(np.eye(before), U), np.eye(after))
-        return U
-
-    def expand_multi(self, U, wires):
+    def expand(self, U, wires):
         r"""Expand a multi-qubit operator into a full system operator.
 
         Args:
-          U (array): :math:`2^n \times 2^n` matrix where n = wires.
+          U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
           wires (Sequence[int]): Target subsystems (order matters!)
 
         Returns:
           array: :math:`2^N\times 2^N` matrix. The full system operator.
         """
-        raise NotImplementedError
+        if self.num_wires == 1:
+            # total number of wires is 1, simply return the matrix
+            return U
+
+        N = self.num_wires
+        wires = np.asarray(wires)
+
+        if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
+            raise ValueError("Invalid target subsystems provided in 'wires' argument.")
+
+        # generate N qubit basis states via the cartesian product
+        tuples = np.array(list(itertools.product([0, 1], repeat=N)))
+
+        # wires not acted on by the operator
+        inactive_wires = list(set(range(N))-set(wires))
+
+        # expand U to act on the entire system
+        U = np.kron(U, np.identity(2**len(inactive_wires)))
+
+        # move active wires to beginning of the list of wires
+        rearanged_wires = np.array(list(wires)+inactive_wires)
+
+        # convert to computational basis
+        # i.e., converting the list of basis state bit strings into
+        # a list of decimal numbers that correspond to the computational
+        # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
+        perm = np.ravel_multi_index(tuples[:, rearanged_wires].T, [2]*N)
+
+        # permute U to take into account rearranged wires
+        return U[:, perm][perm]
 
     @property
     def operations(self):

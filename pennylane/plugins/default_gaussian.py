@@ -761,13 +761,6 @@ class DefaultGaussian(Device):
             self._state = self._operation_map[operation](*par, hbar=self.hbar)
             return # we are done here
 
-        if operation == 'Interferometer':
-            if par[0].shape[0] != len(wires):
-                raise ValueError("Interferomer unitary matrix applied to the incorrect "
-                                 "number of subsystems.")
-            if len(wires) > 2:
-                raise ValueError("Only 2-mode interferometers are currently supported.")
-
         if 'State' in operation:
             # set the new device state
             mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
@@ -779,10 +772,7 @@ class DefaultGaussian(Device):
         S = self._operation_map[operation](*par)
 
         # expand the symplectic to act on the proper subsystem
-        if len(wires) == 1:
-            S = self.expand_one(S, wires[0])
-        elif len(wires) == 2:
-            S = self.expand_two(S, wires)
+        S = self.expand(S, wires)
 
         # apply symplectic matrix to the means vector
         means = S @ self._state[0]
@@ -791,42 +781,36 @@ class DefaultGaussian(Device):
 
         self._state = [means, cov]
 
-    def expand_one(self, S, wire):
-        r"""Expands a one-mode Symplectic matrix S to act on the entire subsystem.
+    def expand(self, S, wires):
+        r"""Expands a Symplectic matrix S to act on the entire subsystem.
 
         Args:
-            S (array): :math:`2\times 2` Symplectic matrix
-            wire (int): the wire S acts on
+            S (array): a :math:`2M\times 2M` Symplectic matrix
+            wires (Sequence[int]): the wires of the modes that S acts on
 
         Returns:
             array: the resulting :math:`2N\times 2N` Symplectic matrix
         """
-        S2 = np.identity(2*self.num_wires)
+        if self.num_wires == 1:
+            # total number of wires is 1, simply return the matrix
+            return S
 
-        ind = np.concatenate([np.array([wire]), np.array([wire])+self.num_wires])
-        rows = ind.reshape(-1, 1)
-        cols = ind.reshape(1, -1)
-        S2[rows, cols] = S.copy()
+        N = self.num_wires
+        w = np.asarray(wires)
 
-        return S2
+        if np.any(w < 0) or np.any(w >= N) or len(set(w)) != len(w):
+            raise ValueError("Invalid target subsystems provided in 'wires' argument.")
 
-    def expand_two(self, S, wires):
-        r"""Expands a two-mode Symplectic matrix S to act on the entire subsystem.
+        M = len(S) // 2
+        S2 = np.identity(2 * N)
 
-        Args:
-            S (array): :math:`4\times 4` Symplectic matrix
-            wires (Sequence[int]): the list of two wires S acts on
+        if M != len(wires):
+            raise ValueError('Incorrect number of subsystems for provided operation.')
 
-        Returns:
-            array: the resulting :math:`2N\times 2N` Symplectic matrix
-        """
-        S2 = np.identity(2*self.num_wires)
-        w = np.array(wires)
-
-        S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:2, :2].copy() #X
-        S2[(w+self.num_wires).reshape(-1, 1), (w+self.num_wires).reshape(1, -1)] = S[2:, 2:].copy() #P
-        S2[w.reshape(-1, 1), (w+self.num_wires).reshape(1, -1)] = S[:2, 2:].copy() #XP
-        S2[(w+self.num_wires).reshape(-1, 1), w.reshape(1, -1)] = S[2:, :2].copy() #PX
+        S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:M, :M].copy()  # XX
+        S2[(w + N).reshape(-1, 1), (w + N).reshape(1, -1)] = S[M:, M:].copy()  # PP
+        S2[w.reshape(-1, 1), (w + N).reshape(1, -1)] = S[:M, M:].copy()  # XP
+        S2[(w + N).reshape(-1, 1), w.reshape(1, -1)] = S[M:, :M].copy()  # PX
 
         return S2
 
