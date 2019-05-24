@@ -1,14 +1,10 @@
-# Qubit Optimization for 3 qubit Ising model using  Pennylane default qubit ecosystem.
-
+# Qubit Optimization for 3 qubit Ising model using the Pennylane `default qubit` Plugin.
 # Ising models are used in Quantum Annealing to solve Quadratic Unconstrained Binary
-
-# Optimization problems with non-convex  cost functions. This example demonstrates how
-
+# Optimization problems with non-convex cost functions. This example demonstrates how
 # Gradient descent optimizers can get stuck in local minima when using non-convex cost functions.
 
 # This example  uses and compares pennylane gradient descent optimizer with the optimizers
-
-# of PyTorch and and TensorFlow for this quantum system: see Q5_isingmodel.ipynb
+# of PyTorch and TensorFlow for this quantum system: see Q5_isingmodel.ipynb
 
 import torch
 from torch.autograd import Variable
@@ -20,21 +16,21 @@ dev3 = qml.device("default.qubit", wires=3)
 
 @qml.qnode(dev3, interface="torch")
 def circuit3(p1, p2):
-    #   lets say first spin is always up (+1 eigenstate of pauli-z operator)
-    #   then we can optimize the rotation angles for the other two spins
-    #   so that the energy in minimized for the given couplings
+    # Assuming first spin is always up (+1 eigenstate of the Pauli-Z operator),
+    # we can optimize the rotation angles for the other two spins
+    # so that the energy in minimized for the given couplings
 
-    #   WE USE THE GENERAL Rot(phi,theta,omega,wires) single qubit operation
+    # WE USE THE GENERAL Rot(phi,theta,omega,wires) single qubit operation
     qml.Rot(p1[0], p1[1], p1[2], wires=1)
     qml.Rot(p2[0], p2[1], p2[2], wires=2)
     return qml.expval.PauliZ(0), qml.expval.PauliZ(1), qml.expval.PauliZ(2)
 
 
 def cost(var1, var2):
-    # 	let coupling matrix be J=[1, -1]
-    #       circuit3 function returns a numpy array of pauliz exp values
+    # let coupling matrix be J=[1, -1]
+    # circuit3 function returns a numpy array of pauliz exp values
     spins = circuit3(var1, var2)
-    # 	the expectation value of pauliZ is plus 1 for spin up and -1 for spin down
+    # the expectation value of pauliZ is plus 1 for spin up and -1 for spin down
     energy = -(1 * spins[0] * spins[1]) - (-1 * spins[1] * spins[2])
     return energy
 
@@ -47,7 +43,7 @@ test1 = torch.tensor([0, np.pi, 0])
 test2 = torch.tensor([0, np.pi, 0])
 
 cost_check = cost(test1, test2)
-print(cost_check)
+print("Energy for [1,-1,-1] spin configuration: ",cost_check)
 
 # Random initialization in PyTorch
 
@@ -55,7 +51,8 @@ p1 = Variable((np.pi * torch.rand(3, dtype=torch.float64)), requires_grad=True)
 p2 = Variable((np.pi * torch.rand(3, dtype=torch.float64)), requires_grad=True)
 var_init = [p1, p2]
 cost_init = cost(p1, p2)
-print(cost_init)
+print("Randomly initialized angles: ",var_init)
+print("Corresponding cost before initialization:  ",cost_init)
 
 # Now we use PyTorch optimizer to reduce this cost
 
@@ -90,6 +87,6 @@ p1_final, p2_final = opt.param_groups[0]["params"]
 # (phi,theta,omega = (0,0,0) for spin2 and (0,pi,0) for spin3
 # We might not always see this value due to the non-convex cost function
 
-print(p1_final, p2_final)
+print("Optimized angles: ",p1_final, p2_final)
 
-print(cost(p1_final, p2_final))
+print("Final cost after optimization: ",cost(p1_final, p2_final))
