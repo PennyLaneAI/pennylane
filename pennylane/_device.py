@@ -85,13 +85,9 @@ Code details
 ~~~~~~~~~~~~
 """
 # pylint: disable=too-many-format-args
-
 import abc
-import logging
 
 import autograd.numpy as np
-
-logging.getLogger()
 
 
 class DeviceError(Exception):
@@ -301,11 +297,11 @@ class Device(abc.ABC):
             expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in the device
         """
         for o in queue:
-            if not self.supported(o.name):
+            if o.name not in self.operations:
                 raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
         for e in expectations:
-            if not self.supported(e.name):
+            if e.name not in self.expectations:
                 raise DeviceError("Expectation {} not supported on device {}".format(e.name, self.short_name))
 
     @abc.abstractmethod

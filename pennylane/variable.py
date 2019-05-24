@@ -69,13 +69,10 @@ keyword arguments, its ``name``, to return the correct value to the operation.
 
     <h3>Code details</h3>
 """
-import logging
 from collections.abc import Sequence
 import copy
 
 import numpy as np
-
-logging.getLogger()
 
 
 class Variable:

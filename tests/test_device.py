@@ -65,6 +65,39 @@ class DeviceTest(BaseTest):
             for op in ops.union(exps):
                 self.assertTrue(dev.supported(op))
 
+    def test_check_validity(self):
+        """test that the check_validity method correctly
+        determines what operations/expectations are supported."""
+        self.logTestName()
+
+        dev = qml.device('default.qubit', wires=2)
+        # overwrite the device supported operations and expectations
+        dev._operation_map = {'RX':0, 'PauliX':0, 'PauliY':0, 'PauliZ':0, 'Hadamard':0}
+        dev._expectation_map = {'PauliZ':0, 'Identity':0}
+
+        # test a valid queue
+        queue = [
+            qml.RX(1., wires=0, do_queue=False),
+            qml.PauliY(wires=1, do_queue=False),
+            qml.PauliZ(wires=2, do_queue=False),
+        ]
+
+        expectations = [qml.expval.PauliZ(0, do_queue=False)]
+
+        dev.check_validity(queue, expectations)
+
+        # test an invalid operation
+        queue = [qml.RY(1., wires=0, do_queue=False)]
+        with self.assertRaisesRegex(qml.DeviceError, "Gate RY not supported"):
+            dev.check_validity(queue, expectations)
+
+        # test an invalid expectation with the same name
+        # as a valid operation
+        queue = [qml.PauliY(wires=0, do_queue=False)]
+        expectations = [qml.expval.PauliY(0, do_queue=False)]
+        with self.assertRaisesRegex(qml.DeviceError, "Expectation PauliY not supported"):
+            dev.check_validity(queue, expectations)
+
     def test_capabilities(self):
         """check that device can give a dict of further capabilities"""
         self.logTestName()
