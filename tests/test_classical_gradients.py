@@ -176,7 +176,7 @@ class TestGradientMultiargs:
         np.allclose(auto_gradxy, correct_gradxy)
 
 
-class TestMultivarMultidim:
+class TestGradientMultivarMultidim:
     """Tests gradients of multivariate multidimensional functions."""
 
     def test_sin(self):
