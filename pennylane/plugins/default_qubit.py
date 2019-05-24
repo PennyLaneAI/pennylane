@@ -75,14 +75,13 @@ Code details
 ^^^^^^^^^^^^
 """
 import itertools
-import logging as log
+import warnings
 
 import numpy as np
 from scipy.linalg import expm, eigh
 
 from pennylane import Device
 
-log.getLogger()
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -296,7 +295,7 @@ class DefaultQubit(Device):
 
     def apply(self, operation, wires, par):
         if operation == 'QubitStateVector':
-            state = np.asarray(par[0], dtype=np.float64)
+            state = np.asarray(par[0], dtype=np.complex128)
             if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
                 self._state = state
             else:
@@ -368,7 +367,7 @@ class DefaultQubit(Device):
         expectation = np.vdot(self._state, A @ self._state)
 
         if np.abs(expectation.imag) > tolerance:
-            log.warning('Nonvanishing imaginary part % in expectation value.', expectation.imag)
+            warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expectation.imag), RuntimeWarning)
         return expectation.real
 
     def reset(self):
