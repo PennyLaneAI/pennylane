@@ -145,6 +145,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    concepts/quantum_nodes
    concepts/varcirc
    concepts/autograd_quantum
+   concepts/embeddings
    zreferences
 
 
@@ -153,11 +154,12 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Tutorials
    :hidden:
 
-   tutorials/qubit_rotation
-   tutorials/gaussian_transformation
-   tutorials/plugins_hybrid
-   tutorials/pytorch_noise
-   tutorials/advanced_usage
+   tutorials/New_Users
+   tutorials/Examples12
+   tutorials/Interfaces
+   tutorials/Plugins
+   tutorials/Hybrid_Computation
+   tutorials/advanced_features
    tutorials/notebooks
 
 
@@ -210,6 +212,14 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    plugins/default_qubit
    plugins/default_gaussian
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Get Help
+   :hidden:
+
+   Help/help_page
+   Help/feedback_page
+   Help/development_page
 
 :html:`<h2>Indices and tables</h2>`
 

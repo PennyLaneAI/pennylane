@@ -1,0 +1,4 @@
+.. _embeddings:
+
+Quantum Embedding
+==================

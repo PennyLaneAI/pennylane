@@ -59,7 +59,7 @@ Beyond the basic rule that the inputs and parameters :math:`(x;\bm{\theta})` are
 .. note:: As shown in the figure above, the circuit can also include additional gates which have no free parameter associated with them.
 
 
-Examples
+Data Handling
 --------
 
 Data-embedding

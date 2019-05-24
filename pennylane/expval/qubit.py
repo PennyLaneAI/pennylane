@@ -152,7 +152,7 @@ class Hermitian(Expectation):
 
     where :math:`A` acts on the requested wire.
 
-    The matrix A can be N^2\times N^2 acting on N wires.
+    The matrix A can be 2^N \times 2^N acting on N wires.
 
     Args:
         A (array): square hermitian matrix
