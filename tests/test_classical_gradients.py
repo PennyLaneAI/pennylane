@@ -184,7 +184,7 @@ class TestGradientMultivarMultidim:
         x_vec = np.random.uniform(-5, 5, size=(2))
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
-        gradf = lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]])
+        gradf = lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]], dtype=np.float64)
         f = lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0])
 
         g = qml.grad(f, 0)
