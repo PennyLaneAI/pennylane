@@ -294,7 +294,7 @@ class DefaultQubit(Device):
 
     def apply(self, operation, wires, par):
         if operation == 'QubitStateVector':
-            state = np.asarray(par[0], dtype=np.float64)
+            state = np.asarray(par[0], dtype=np.complex128)
             if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
                 self._state = state
             else:

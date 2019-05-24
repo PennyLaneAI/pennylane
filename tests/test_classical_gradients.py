@@ -15,129 +15,210 @@
 Sanity checks for classical automatic gradient formulas (without QNodes).
 """
 
-import unittest
-import logging as log
-log.getLogger('defaults')
+import pytest
 
 from defaults import pennylane as qml, BaseTest
-
 from pennylane import numpy as np
 
-x_vals = np.linspace(-10, 10, 16, endpoint=False)
+
+np.random.seed(42)
 
 
-class BasicTest(BaseTest):
-    """Basic gradient tests.
-    """
-    def setUp(self):
-        self.fnames = ['test_function_1', 'test_function_2', 'test_function_3']
-        self.univariate_funcs = [np.sin,
-                                 lambda x: np.exp(x / 10.),
-                                 lambda x: x ** 2]
-        self.grad_uni_fns = [np.cos,
-                             lambda x: np.exp(x / 10.) / 10.,
-                             lambda x: 2 * x]
-        self.multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
-                                   lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-                                   lambda x: np.sum([x_ ** 2 for x_ in x])]
-        self.grad_multi_funcs = [lambda x: np.array([np.cos(x[0]), -np.sin(x[1])]),
-                                 lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                                                     np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
-                                 lambda x: np.array([2 * x_ for x_ in x])]
-        self.mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]),
-                                lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[1, 0]),
-                                lambda x: np.sum([x_[0] ** 2 for x_ in x])]
-        self.grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]]),
-                                     lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[1, 0])],
-                                                         [np.exp(x[0, 0] / 3) * (1 - np.tanh(x[1, 0]) ** 2)]]),
-                                     lambda x: np.array([[2 * x_[0]] for x_ in x])]
-        self.margs_fns = [lambda x,y: np.sin(x) + np.cos(y),
-                          lambda x,y: np.exp(x / 3) * np.tanh(y),
-                          lambda x,y: np.sum([x_ ** 2 for x_ in [x,y]])]
-        self.grad_margs_funcs = [lambda x,y: (np.cos(x), -np.sin(y)),
-                                 lambda x,y: (np.exp(x / 3) / 3 * np.tanh(y),
-                                              np.exp(x / 3) * (1 - np.tanh(y) ** 2)),
-                                 lambda x,y: (2 * x, 2 * y)]
-        self.margs_mdim_fns = [lambda x,y: (np.sin(x), np.cos(y)),
-                               lambda x,y: (np.exp(x / 3) * np.tanh(y), np.sinh(x * y)),
-                               lambda x,y: (x ** 2 + y ** 2, x * y)]
-        self.grad_margs_mdim_funcs = [lambda x,y: np.diag([np.cos(x), -np.sin(y)]),
-                                      lambda x,y: np.array([[np.exp(x / 3) / 3 * np.tanh(y), np.exp(x / 3) * np.sech(y) ** 2],
-                                                            [np.cosh(x * y) * y, np.cosh(x * y) * x]]),
-                                      lambda x,y: np.array([[2 * x, 2 * y],
-                                                            [y, x]])]
+class TestGradientUnivar:
+    """Tests gradients of univariate unidimensional functions."""
 
-    def test_gradient_univar(self):
-        """Tests gradients of univariate unidimensional functions."""
-        self.logTestName()
+    def test_sin(self):
+        """Tests with sin function."""
+        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        g = qml.grad(np.sin, 0)
+        auto_grad = [g(x) for x in x_vals]
+        correct_grad = np.cos(x_vals)
+        np.allclose(auto_grad, correct_grad)
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x in x_vals:
-                    g = qml.grad(f, 0)
-                    auto_grad = g(x)
-                    correct_grad = gradf(x)
-                    self.assertAlmostEqual(auto_grad, correct_grad, delta=self.tol)
+    def test_exp(self):
+        """Tests exp function."""
+        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        func = lambda x: np.exp(x / 10.0) / 10.0
+        g = qml.grad(func, 0)
+        auto_grad = [g(x) for x in x_vals]
+        correct_grad = np.exp(x_vals / 10.0)
+        np.allclose(auto_grad, correct_grad)
 
-    def test_gradient_multiargs(self):
-        """Tests gradients of univariate functions with multiple arguments in signature."""
-        self.logTestName()
-
-        for gradf, f, name in zip(self.grad_margs_funcs, self.margs_fns, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    x = x_vals[jdx]
-                    y = x_vals[jdx + 1]
-                    # gradient wrt first argument
-                    gx = qml.grad(f, 0)
-                    auto_gradx = gx(x,y)
-                    correct_gradx = gradf(x,y)[0]
-                    self.assertAllAlmostEqual(auto_gradx, correct_gradx, delta=self.tol)
-                    # gradient wrt second argument
-                    gy = qml.grad(f, 1)
-                    auto_grady = gy(x,y)
-                    correct_grady = gradf(x,y)[1]
-                    self.assertAllAlmostEqual(auto_grady, correct_grady, delta=self.tol)
-                    # gradient wrt both arguments
-                    gxy = qml.grad(f, [0,1])
-                    auto_gradxy = gxy(x,y)
-                    correct_gradxy = gradf(x,y)
-                    self.assertAllAlmostEqual(auto_gradxy, correct_gradxy, delta=self.tol)
-
-    def test_gradient_multivar(self):
-        """Tests gradients of multivariate unidimensional functions."""
-        self.logTestName()
-
-        for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    x_vec = x_vals[jdx:jdx+2]
-                    g = qml.grad(f, 0)
-                    auto_grad = g(x_vec)
-                    correct_grad = gradf(x_vec)
-                    self.assertAllAlmostEqual(auto_grad, correct_grad, delta=self.tol)
-
-    def test_gradient_multivar_multidim(self):
-        """Tests gradients of multivariate multidimensional functions."""
-        self.logTestName()
-
-        for gradf, f, name in zip(self.grad_mvar_mdim_funcs, self.mvar_mdim_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    x_vec = x_vals[jdx:jdx+2]
-                    x_vec_multidim = np.expand_dims(x_vec, axis=1)
-                    g = qml.grad(f, 0)
-                    auto_grad = g(x_vec_multidim)
-                    correct_grad = gradf(x_vec_multidim)
-                    self.assertAllAlmostEqual(auto_grad, correct_grad, delta=self.tol)
+    def test_linear(self):
+        """Tests linear function."""
+        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        func = lambda x: 2 * x
+        g = qml.grad(func, 0)
+        auto_grad = [g(x) for x in x_vals]
+        correct_grad = x_vals ** 2
+        np.allclose(auto_grad, correct_grad)
 
 
-if __name__ == '__main__':
-    print('Testing PennyLane version ' + qml.version() + ', classical gradients.')
-    # run the tests in this file
-    suite = unittest.TestSuite()
-    for t in (BasicTest,):
-        ttt = unittest.TestLoader().loadTestsFromTestCase(t)
-        suite.addTests(ttt)
+class TestGradientMultiVar:
+    """Tests gradients of multivariate unidimensional functions."""
 
-    unittest.TextTestRunner().run(suite)
+    def test_sin(self):
+        """Tests gradients with multivariate sin and cosine."""
+        multi_var = lambda x: np.sin(x[0]) + np.cos(x[1])
+        grad_multi_var = lambda x: np.array([np.cos(x[0]), -np.sin(x[1])])
+
+        x_vec = [1.5, -2.5]
+        g = qml.grad(multi_var, 0)
+        auto_grad = g(x_vec)
+        correct_grad = grad_multi_var(x_vec)
+        np.allclose(auto_grad, correct_grad)
+
+    def test_exp(self):
+        """Tests gradients with a multivariate exp and tanh."""
+        multi_var = lambda x: np.exp(x[0] / 3) * np.tanh(x[1])
+        grad_multi_var = lambda x: np.array(
+            [
+                np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+            ]
+        )
+        x_vec = np.random.uniform(-5, 5, size=(2))
+        g = qml.grad(multi_var, 0)
+        auto_grad = g(x_vec)
+        correct_grad = grad_multi_var(x_vec)
+        np.allclose(auto_grad, correct_grad)
+
+    def test_quadratic(self):
+        """Tests gradients with a quadratic function."""
+        multi_var = lambda x: np.sum([x_ ** 2 for x_ in x])
+        grad_multi_var = lambda x: np.array([2 * x_ for x_ in x])
+        x_vec = np.random.uniform(-5, 5, size=(2))
+        g = qml.grad(multi_var, 0)
+        auto_grad = g(x_vec)
+        correct_grad = grad_multi_var(x_vec)
+        np.allclose(auto_grad, correct_grad)
+
+
+class TestGradientMultiargs:
+    """Tests gradients of univariate functions with multiple arguments in signature."""
+
+    def test_sin(self):
+        """Tests multiarg gradients with sin and cos functions."""
+        x = -2.5
+        y = 1.5
+        gradf = lambda x, y: (np.cos(x), -np.sin(y))
+        f = lambda x, y: np.sin(x) + np.cos(y)
+
+        # gradient wrt first argument
+        gx = qml.grad(f, 0)
+        auto_gradx = gx(x, y)
+        correct_gradx = gradf(x, y)[0]
+        np.allclose(auto_gradx, correct_gradx)
+
+        # gradient wrt second argument
+        gy = qml.grad(f, 1)
+        auto_grady = gy(x, y)
+        correct_grady = gradf(x, y)[1]
+        np.allclose(auto_grady, correct_grady)
+
+        # gradient wrt both arguments
+        gxy = qml.grad(f, [0, 1])
+        auto_gradxy = gxy(x, y)
+        correct_gradxy = gradf(x, y)
+        np.allclose(auto_gradxy, correct_gradxy)
+
+    def test_exp(self):
+        """Tests multiarg gradients with exp and tanh functions."""
+        x = -2.5
+        y = 1.5
+        gradf = lambda x, y: (
+            np.exp(x / 3) / 3 * np.tanh(y),
+            np.exp(x / 3) * (1 - np.tanh(y) ** 2),
+        )
+        f = lambda x, y: np.exp(x / 3) * np.tanh(y)
+
+        # gradient wrt first argument
+        gx = qml.grad(f, 0)
+        auto_gradx = gx(x, y)
+        correct_gradx = gradf(x, y)[0]
+        np.allclose(auto_gradx, correct_gradx)
+
+        # gradient wrt second argument
+        gy = qml.grad(f, 1)
+        auto_grady = gy(x, y)
+        correct_grady = gradf(x, y)[1]
+        np.allclose(auto_grady, correct_grady)
+
+        # gradient wrt both arguments
+        gxy = qml.grad(f, [0, 1])
+        auto_gradxy = gxy(x, y)
+        correct_gradxy = gradf(x, y)
+        np.allclose(auto_gradxy, correct_gradxy)
+
+    def test_linear(self):
+        """Tests multiarg gradients with a linear function."""
+        x = -2.5
+        y = 1.5
+        gradf = lambda x, y: (2 * x, 2 * y)
+        f = lambda x, y: np.sum([x_ ** 2 for x_ in [x, y]])
+
+        # gradient wrt first argument
+        gx = qml.grad(f, 0)
+        auto_gradx = gx(x, y)
+        correct_gradx = gradf(x, y)[0]
+        np.allclose(auto_gradx, correct_gradx)
+
+        # gradient wrt second argument
+        gy = qml.grad(f, 1)
+        auto_grady = gy(x, y)
+        correct_grady = gradf(x, y)[1]
+        np.allclose(auto_grady, correct_grady)
+
+        # gradient wrt both arguments
+        gxy = qml.grad(f, [0, 1])
+        auto_gradxy = gxy(x, y)
+        correct_gradxy = gradf(x, y)
+        np.allclose(auto_gradxy, correct_gradxy)
+
+
+class TestGradientMultivarMultidim:
+    """Tests gradients of multivariate multidimensional functions."""
+
+    def test_sin(self):
+        """Tests gradients with multivariate multidimensional sin and cos."""
+        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec_multidim = np.expand_dims(x_vec, axis=1)
+
+        gradf = lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]], dtype=np.float64)
+        f = lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0])
+
+        g = qml.grad(f, 0)
+        auto_grad = g(x_vec_multidim)
+        correct_grad = gradf(x_vec_multidim)
+        np.allclose(auto_grad, correct_grad)
+
+    def test_exp(self):
+        """Tests gradients with multivariate multidimensional exp and tanh."""
+        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec_multidim = np.expand_dims(x_vec, axis=1)
+
+        gradf = lambda x: np.array(
+            [
+                [np.exp(x[0, 0] / 3) / 3 * np.tanh(x[1, 0])],
+                [np.exp(x[0, 0] / 3) * (1 - np.tanh(x[1, 0]) ** 2)],
+            ]
+        )
+        f = lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[1, 0])
+
+        g = qml.grad(f, 0)
+        auto_grad = g(x_vec_multidim)
+        correct_grad = gradf(x_vec_multidim)
+        np.allclose(auto_grad, correct_grad)
+
+    def test_linear(self):
+        """Tests gradients with multivariate multidimensional linear func."""
+        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec_multidim = np.expand_dims(x_vec, axis=1)
+
+        gradf = lambda x: np.array([[2 * x_[0]] for x_ in x])
+        f = lambda x: np.sum([x_[0] ** 2 for x_ in x])
+
+        g = qml.grad(f, 0)
+        auto_grad = g(x_vec_multidim)
+        correct_grad = gradf(x_vec_multidim)
+        np.allclose(auto_grad, correct_grad)
