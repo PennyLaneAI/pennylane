@@ -165,6 +165,7 @@
           <input type="hidden" class="js-site-search-type-field" name="type" >
             <img src="https://github.githubassets.com/images/search-key-slash.svg" alt="" class="mr-2 header-search-key-slash">
 
+<<<<<<< HEAD
             <div class="Box position-absolute overflow-hidden d-none jump-to-suggestions js-jump-to-suggestions-container">
               
 <ul class="d-none js-jump-to-suggestions-template-container">
@@ -1335,4 +1336,97 @@ optimizer instance. These can be reset using the <a href="#id31"><span id="user-
 
   </body>
 </html>
+=======
+    Keyword arguments may also be used in your custom quantum function. PennyLane does **not** differentiate QNodes with respect to keyword arguments,
+    so they are useful for passing external data to your QNode.
+
+
+Optimization
+------------
+
+.. admonition:: Definition
+    :class: defn
+
+    If using the default NumPy/Autograd interface, PennyLane provides a collection of optimizers based on gradient descent. These optimizers accept a cost function and initial parameters,
+    and utilize PennyLane's automatic differentiation to perform gradient descent.
+
+.. tip::
+
+   *See* :mod:`pennylane.optimize` *for details and documentation of available optimizers*
+
+Next, let's make use of PennyLane's built-in optimizers to optimize the two circuit parameters :math:`\phi_1` and :math:`\phi_2` such
+that the qubit, originally in state :math:`\ket{0}`, is rotated to be in state :math:`\ket{1}`. This is equivalent to measuring a
+Pauli-Z expectation value of :math:`-1`, since the state :math:`\ket{1}` is an eigenvector of the Pauli-Z matrix with eigenvalue
+:math:`\lambda=-1`.
+
+In other words, the optimization procedure will find the weights :math:`\phi_1` and :math:`\phi_2` that result in the following
+rotation on the Bloch sphere:
+
+:html:`<br>`
+
+.. figure:: figures/bloch.png
+    :align: center
+    :width: 70%
+    :target: javascript:void(0);
+
+:html:`<br>`
+
+
+To do so, we need to define a **cost** function. By *minimizing* the cost function, the optimizer will determine the values of the
+circuit parameters that produce the desired outcome.
+
+In this case, our desired outcome is a Pauli-Z expectation value of :math:`-1`. Since we know that the Pauli-Z expectation is bound
+between :math:`[-1, 1]`, we can define our cost directly as the output of the QNode:
+
+.. code-block:: python
+
+    def cost(var):
+        return circuit(var)
+
+To begin our optimization, let's choose small initial values of :math:`\phi_1` and :math:`\phi_2`:
+
+>>> init_params = np.array([0.011, 0.012])
+>>> cost(init_params)
+0.9998675058299387
+
+We can see that, for these initial parameter values, the cost function is close to :math:`1`.
+
+Finally, we use an optimizer to update the circuit parameters for 100 steps. We can use the built-in
+:class:`pennylane.optimize.GradientDescentOptimizer` class:
+
+.. code-block:: python
+
+    # initialise the optimizer
+    opt = qml.GradientDescentOptimizer(stepsize=0.4)
+
+    # set the number of steps
+    steps = 100
+    # set the initial parameter values
+    params = init_params
+
+    for i in range(steps):
+        # update the circuit parameters
+        params = opt.step(cost, params)
+
+        if (i+1) % 5 == 0:
+            print('Cost after step {:5d}: {: .7f}'.format(i+1, cost(params)))
+
+    print('Optimized rotation angles: {}'.format(params))
+
+Try this yourself — the optimization should converge after approximately 40 steps, giving the following numerically optimum values of
+:math:`\phi_1` and :math:`\phi_2`:
+
+.. code-block:: python
+
+    Optimized rotation angles: [  5.76516144e-17   3.14159265e+00]
+
+Substituting this into the theoretical result :math:`\braketT{\psi}{\sigma_z}{\psi} = \cos\phi_1\cos\phi_2`, we can verify that
+this is indeed one possible value of the circuit parameters that produces :math:`\braketT{\psi}{\sigma_z}{\psi}=-1`, resulting in
+the qubit being rotated to the state :math:`\ket{1}`.
+
+.. note::
+
+    Some optimizers, such as :class:`~.pennylane.optimize.AdagradOptimizer`, have internal hyperparameters that are stored in the
+    optimizer instance. These can be reset using the :meth:`reset` method.
+>>>>>>> master
 

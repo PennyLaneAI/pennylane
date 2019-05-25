@@ -109,12 +109,9 @@ via the `Autograd <https://github.com/HIPS/autograd>`_ package.
     <h3>Code details</h3>
 """
 # pylint: disable=redefined-outer-name
-import logging as log
 from functools import wraps, lru_cache
 
 from .qnode import QNode
-
-log.getLogger()
 
 
 def qnode(device, interface='numpy'):
