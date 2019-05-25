@@ -49,6 +49,9 @@ as the conventions chosen for their implementation.
     expval/qubit
     expval/cv
 """
+
+from pennylane.qnode import QNode, QuantumFunctionError
+
 from . import cv
 from . import qubit
 
@@ -69,8 +72,6 @@ class PlaceholderExpectation():
     # pylint: disable=too-few-public-methods
     def __new__(cls, *args, **kwargs):
         # pylint: disable=protected-access
-        from pennylane.qnode import QNode, QuantumFunctionError
-
         if QNode._current_context is None:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
@@ -146,8 +147,6 @@ class VarianceFactory:
             raise AttributeError("module 'pennylane.var{}' has no attribute '{}'".format(self.submodule, item))
 
         if self.observables == __all__:
-            from pennylane.qnode import QNode, QuantumFunctionError
-
             if QNode._current_context is not None:
                 # inside a QNode
                 # get the QNode device supported expectations
