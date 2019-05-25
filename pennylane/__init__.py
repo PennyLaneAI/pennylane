@@ -91,7 +91,6 @@ Code details
 ~~~~~~~~~~~~
 """
 import os
-import logging as log
 from pkg_resources import iter_entry_points
 
 from autograd import numpy
@@ -125,21 +124,6 @@ var = VarianceFactory()
 
 # overwrite module docstrings
 numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
-
-
-# set up logging
-numeric_level = 100  # info
-if "LOGGING" in os.environ:
-    logLevel = os.environ["LOGGING"]
-    numeric_level = getattr(log, logLevel.upper(), 10)
-
-
-log.basicConfig(
-    level=numeric_level,
-    format="%(asctime)s %(levelname)s %(message)s",
-    datefmt="%H:%M:%S",
-)
-log.captureWarnings(True)
 
 
 # Look for an existing configuration file

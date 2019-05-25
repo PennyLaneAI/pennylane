@@ -111,15 +111,12 @@ Code details
 import abc
 import numbers
 from collections.abc import Sequence
-import logging as log
 
 import autograd.numpy as np
 
 from .qnode import QNode, QuantumFunctionError
 from .utils import _flatten, _unflatten
 from .variable import Variable
-
-log.getLogger()
 
 
 #=============================================================================
@@ -373,7 +370,7 @@ class Operation(abc.ABC):
         """
         w = [i.val if isinstance(i, Variable) else i for i in self._wires]
         self.check_wires(w)
-        return w
+        return [int(i) for i in w]
 
     @property
     def parameters(self):
