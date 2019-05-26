@@ -150,16 +150,20 @@ class Hermitian(Expectation):
     .. math::
         \braket{A} = \braketT{\psi}{\cdots \otimes I\otimes A\otimes I\cdots}{\psi}
 
-    where :math:`A` acts on the requested wire.
+    where :math:`A` acts on the requested wires.
+
+    If acting on :math:`N` wires, then the matrix :math:`A` must be of size
+    :math:`2^N\times 2^N`.
 
     Args:
-        A (array): square hermitian matrix.
-        wires (Sequence[int] or int): the wire the operation acts on
+        A (array): square hermitian matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_wires = 1
+    num_wires = 0
     num_params = 1
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
+
 
 # As both the qubit and the CV case need an Identity Expectation,
 # and these need to reside in the same name space but have to have

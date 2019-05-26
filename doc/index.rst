@@ -69,7 +69,7 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 ..
 
 - *Large plugin ecosystem*.
-  Install plugins to run your computational circuits on more devices, including **Strawberry Fields**, **Rigetti Forest**, **ProjectQ**, and **IBM Q**
+  Install plugins to run your computational circuits on more devices, including **Strawberry Fields**, **Rigetti Forest**, **ProjectQ**, **Microsoft QDK**, and **IBM Q**
 
 :html:`<h4>Available plugins</h4>`
 
@@ -86,6 +86,10 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 ..
 
 * `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`__: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
+
+..
+
+* `PennyLane-Qsharp <https://github.com/XanaduAI/pennylane-qsharp>`_: Supports integration with the `Microsoft Quantum Development Kit <https://www.microsoft.com/en-us/quantum/development-kit>`__, a quantum computation framework that uses the Q# quantum programming language.
 
 
 :html:`<h2>Getting started</h2>`

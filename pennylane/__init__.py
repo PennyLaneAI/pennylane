@@ -91,8 +91,6 @@ Code details
 ~~~~~~~~~~~~
 """
 import os
-import logging as log
-import collections
 from pkg_resources import iter_entry_points
 
 from autograd import numpy
@@ -104,7 +102,7 @@ from semantic_version import Version, Spec
 import pennylane.operation
 import pennylane.expval
 import pennylane.template
-
+from pennylane.about import about
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
@@ -122,29 +120,12 @@ from .decorator import qnode
 numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
 
 
-# set up logging
-numeric_level = 100 # info
-if "LOGGING" in os.environ:
-    logLevel = os.environ["LOGGING"]
-    numeric_level = getattr(log, logLevel.upper(), 10)
-
-
-log.basicConfig(
-    level=numeric_level,
-    format='%(asctime)s %(levelname)s %(message)s',
-    datefmt='%H:%M:%S'
-)
-log.captureWarnings(True)
-
-
 # Look for an existing configuration file
-default_config = Configuration('config.toml')
+default_config = Configuration("config.toml")
 
 
 # get list of installed plugin devices
-plugin_devices = {
-    entry.name: entry for entry in iter_entry_points('pennylane.plugins')
-}
+plugin_devices = {entry.name: entry for entry in iter_entry_points("pennylane.plugins")}
 
 
 def device(name, *args, **kwargs):
@@ -189,14 +170,14 @@ def device(name, *args, **kwargs):
         options = {}
 
         # load global configuration settings if available
-        config = kwargs.get('config', default_config)
+        config = kwargs.get("config", default_config)
 
         if config:
             # combine configuration options with keyword arguments.
             # Keyword arguments take preference, followed by device options,
             # followed by plugin options, followed by global options.
-            options.update(config['main'])
-            options.update(config[name.split('.')[0]+'.global'])
+            options.update(config["main"])
+            options.update(config[name.split(".")[0] + ".global"])
             options.update(config[name])
 
         kwargs.pop("config", None)
@@ -206,13 +187,19 @@ def device(name, *args, **kwargs):
         plugin_device_class = plugin_devices[name].load()
 
         if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
-            raise DeviceError("The {} plugin requires PennyLane versions {}, however PennyLane "
-                              "version {} is installed.".format(name, plugin_device_class.pennylane_requires, __version__))
+            raise DeviceError(
+                "The {} plugin requires PennyLane versions {}, however PennyLane "
+                "version {} is installed.".format(
+                    name, plugin_device_class.pennylane_requires, __version__
+                )
+            )
 
         # load plugin device
         return plugin_device_class(*args, **options)
 
-    raise DeviceError('Device does not exist. Make sure the required plugin is installed.')
+    raise DeviceError(
+        "Device does not exist. Make sure the required plugin is installed."
+    )
 
 
 def grad(func, argnum):

@@ -135,8 +135,6 @@ from collections.abc import Sequence
 import inspect
 import copy
 
-import logging as log
-
 import numbers
 
 import autograd.numpy as np
@@ -147,9 +145,6 @@ import pennylane.operation
 
 from .variable  import Variable
 from .utils import _flatten, unflatten
-
-
-log.getLogger()
 
 
 class QuantumFunctionError(Exception):
@@ -282,7 +277,7 @@ class QNode:
         keyword_values.update(self.keyword_defaults)
         keyword_values.update(kwargs)
 
-        # warp each keyword argument as a Variable
+        # wrap each keyword argument as a Variable
         kwarg_variables = {}
         for key, val in keyword_values.items():
             temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]

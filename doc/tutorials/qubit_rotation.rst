@@ -249,7 +249,7 @@ We can then evaluate this gradient function at any point in the parameter space.
     >>> dcircuit(0.54, 0.12)
     (array(-0.510438652516502), array(-0.10267819945693203))
 
-    Keyword arguments may also be used in your custom quantum function. PennyLane does differentiate QNodes with respect to keyword arguments,
+    Keyword arguments may also be used in your custom quantum function. PennyLane does **not** differentiate QNodes with respect to keyword arguments,
     so they are useful for passing external data to your QNode.
 
 

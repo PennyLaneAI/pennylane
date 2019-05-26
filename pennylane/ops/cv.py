@@ -78,7 +78,7 @@ Code details
 ~~~~~~~~~~~~
 """
 import numpy as np
-import scipy as sp
+from scipy.linalg import block_diag
 
 from pennylane.operation import CVOperation
 
@@ -106,7 +106,7 @@ def _rotation(phi, bare=False):
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
-    return sp.linalg.block_diag(1, temp) # pylint: disable=no-member
+    return block_diag(1, temp) # pylint: disable=no-member
 
 
 class Rotation(CVOperation):
