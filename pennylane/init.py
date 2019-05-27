@@ -77,6 +77,7 @@ Interferometer
 Code details
 ^^^^^^^^^^^^
 """
+# pylint: disable=too-many-arguments
 from math import pi
 import numpy as np
 
