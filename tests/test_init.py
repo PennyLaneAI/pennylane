@@ -53,12 +53,6 @@ def n_rots(request):
     """Number of rotations in random layer."""
     return request.param
 
-@pytest.fixture(scope="module",
-                params=[1, 2, 3])
-def seed(request):
-    """Different seeds."""
-    return request.param
-
 
 class TestParsCVQNN:
     """Tests the pennylane.templates.parameters methods for a cv-quantum neural network."""

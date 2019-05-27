@@ -569,6 +569,27 @@ class TestRandomLayers:
     def rots(self, request):
         return request.param
 
+    def test_random_layers_seed(self, n_layers, tol, seed):
+        """Test that pennylane.templates.layers.RandomLayers() gets deterministic when using seed."""
+        n_rots = 1
+        n_wires = 2
+        impr = CNOT
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_layers, n_rots)
+
+        def circuit1(weights):
+            RandomLayers(weights=weights, wires=range(n_wires), seed=seed)
+            return qml.expval.PauliZ(0)
+
+        def circuit2(weights):
+            RandomLayers(weights=weights, wires=range(n_wires), seed=seed)
+            return qml.expval.PauliZ(0)
+
+        qnode1 = qml.QNode(circuit1, dev)
+        qnode2 = qml.QNode(circuit2, dev)
+
+        assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
+
     def test_random_layers_nlayers(self, n_layers):
         """Test that  pennylane.templates.layers.RandomLayers() picks the correct number of gates."""
         np.random.seed(12)

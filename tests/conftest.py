@@ -96,3 +96,9 @@ def tf_support():
 
     return tf_support
 
+
+@pytest.fixture(scope="module",
+                params=[1, 2, 3])
+def seed(request):
+    """Different seeds."""
+    return request.param
