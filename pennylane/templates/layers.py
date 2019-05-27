@@ -134,7 +134,7 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
         imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
 
 
-def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ], seed=None):
+def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=None):
     r"""A sequence of layers of type :func:`RandomLayer()`.
 
     The number of layers :math:`L` and the number :math:`k` of rotations per layer is inferred from the first
@@ -154,13 +154,15 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[
             rotations with equal frequency.
         seed (int): seed to generate random architecture
     """
+    if rotations is None:
+        rotations = [RX, RY, RZ]
 
     for layer_weights in weights:
         RandomLayer(layer_weights, wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations,
                     seed=seed)
 
 
-def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ], seed=None):
+def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=None):
     r"""A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
@@ -192,6 +194,9 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[R
                          "the imprimitive gates.")
     if seed is not None:
         np.random.seed(seed)
+
+    if rotations is None:
+        rotations = [RX, RY, RZ]
 
     i = 0
     while i < len(weights):
