@@ -78,7 +78,7 @@ import numpy as np
 
 
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
-    """A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in :cite:`schuld2018circuit`.
+    r"""A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in :cite:`schuld2018circuit`.
 
     The number of layers :math:`L` is determined by the first dimension of ``weights``. The template is applied to
     the qubits specified by the sequence ``wires``.
@@ -100,13 +100,13 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
 
 def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
-    """A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
+    r"""A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
 
     The 2-qubit or imprimitive gates act on each qubit :math:`i` chronologically. The second qubit for
     each gate is determined by :math:`(i+r)\mod n`, where :math:`n` is equal to `len(wires)`
     and :math:`range` a layer hyperparameter called the range.
 
-    This is an example of two 4-qubit strongly entangling layers (ranges :math:`range=1` and :math:`range=2`) with
+    This is an example of two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`, respectively) with
     rotations :math:`R` and CNOTs as imprimitives:
 
     .. figure:: ../../_static/layer_sec.png
@@ -135,7 +135,7 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
 
 
 def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ]):
-    """A sequence of layers of type :func:`RandomLayer()`.
+    r"""A sequence of layers of type :func:`RandomLayer()`.
 
     The number of layers :math:`L` and the number :math:`k` of rotations per layer is inferred from the first
     and second dimension of ``weights``. The type of imprimitive (two-qubit) gate and rotations distributed
@@ -159,7 +159,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[
 
 
 def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[RX, RY, RZ]):
-    """A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
+    r"""A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
     The number :math:`k` of single qubit rotations is inferred from the first dimension of ``weights``.
@@ -203,7 +203,7 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=[R
 
 
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    """A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in :cite:`killoran2018continuous`.
+    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in :cite:`killoran2018continuous`.
 
     The number of layers :math:`L` is inferred from the first dimension of the eleven weight parameters. The layers
     act on the :math:`M` modes given in ``wires``, and include interferometers of :math:`K=M(M-1)/2` beamsplitters.
@@ -242,14 +242,15 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
 
 
 def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    """A layer of interferometers, displacement and squeezing gates mimicking a neural network,
+    r"""A layer of interferometers, displacement and squeezing gates mimicking a neural network,
     as well as a Kerr gate nonlinearity.
 
     The layer acts on the :math:`M` wires modes specified in ``wires``, and includes interferometers
     of :math:`K=M(M-1)/2` beamsplitters.
 
     This example shows a 4-mode CVNeuralNet layer with squeezing gates :math:`S`, displacement gates :math:`D` and
-    Kerr gates :math:`K`. The two big blocks are interferometers:
+    Kerr gates :math:`K`. The two big blocks are interferometers of type
+    :mod:`pennylane.templates.layers.Interferometer`:
 
     .. figure:: ../../_static/layer_cvqnn.png
         :align: center
@@ -316,7 +317,6 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
           :width: 30%
           :target: javascript:void(0);
 
-      :html:`<br>`
 
     * ``mesh='triangular'``: uses the scheme described in :cite:`reck1994experimental`,
       resulting in a *triangular* array of :math:`M(M-1)/2` beamsplitters arranged in

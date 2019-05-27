@@ -13,9 +13,11 @@ evaluate, and train more complex quantum machine learning models. In the
 quantum machine learning literature, such architectures are commonly known as an
 **ansatz**.
 
+Templates are used exactly as one would use a quantum gate, only that they invoke a sequence of quantum gates instead.
+
 .. note::
 
-    Templates are constructed out of **structured combinations** of the :mod:`quantum operations <pennylane.ops>` provided by PennyLane. Their usage is exactly the same as a single quantum gates. For example, **template functions can only be used within a valid** :mod:`pennylane.qnode`.
+    Templates are constructed out of **structured combinations** of the :mod:`quantum operations <pennylane.ops>` provided by PennyLane. This means that **template functions can only be used within a valid** :mod:`pennylane.qnode`.
 
 PennyLane conceptually distinguishes two types of templates, **layer architectures** and **input embeddings**:
 
@@ -23,7 +25,7 @@ PennyLane conceptually distinguishes two types of templates, **layer architectur
   like the layers in a neural network. They usually contain only trainable parameters.
 
 * Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state of the
-  circuit. These embeddings can also depend on trainable parameters, in which case the embedding is learnable.
+  circuit. Hence, they take a feature vector as an argument. These embeddings can also depend on trainable parameters, in which case the embedding is learnable.
 
 The following templates of each type are available:
 
@@ -107,7 +109,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
     .. code-block:: python
 
-        weights = [np.random.normal(loc=0, scale=0.1, size=(n_layers, n_wires, 3))]
+        pars = [np.random.normal(loc=0, scale=0.1, size=(n_layers, n_wires, 3))]
 
 .. note::
 
@@ -149,7 +151,7 @@ be used (and optimized) independently:
     j = qml.jacobian(circuit, 0)
     print(j(theta, phi, varphi))
 
-Instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, one can use
+Once more, instead of generating the arrays for ``theta``, ``phi`` and ``varphi`` by hand, one can use
 the :func:`~.interferometer_uniform` function.
 
 

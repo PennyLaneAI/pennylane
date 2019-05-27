@@ -15,12 +15,20 @@ r"""
 Parameter Initializations
 =========================
 
-**Module name:** :mod:`pennylane.templates.parameters`
+**Module name:** :mod:`pennylane.init`
 
-.. currentmodule:: pennylane.templates.parameters
+.. currentmodule:: pennylane.init
 
 This module contains methods to create arrays of parameters that can \
 be used as initial parameters of trainable templates.
+
+The methods return lists of numpy arrays, and the arrays have the correct shape to be fed in as the first positional
+arguments in the templates.
+
+.. note::
+
+    For the use of PennyLane in combination with PyTorch or TensorFlow, the numpy arrays have to be converted to
+    ``trainable`` tensors.
 
 Qubit architectures
 -------------------
@@ -74,9 +82,8 @@ import numpy as np
 
 
 def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
-    r"""
-    Creates a list of one randomly initialized parameter array for \
-    :func:`~.StronglyEntanglingLayers`, sampled uniformly.
+    r"""Creates a list of a single parameter array for :func:`~.StronglyEntanglingLayers`, drawn from a uniform
+    distribution.
 
     The shape of the parameter array is ``(n_layers, n_wires, 3)`` and each parameter is drawn uniformly at random \
     from between ``low`` and ``high``. The parameters define the three rotation angles
@@ -102,9 +109,8 @@ def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
 
 
 def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""
-    Creates a list of one randomly initialized parameter array for \
-    :func:`~.StronglyEntanglingLayers`, sampled from a normal distribution.
+    r"""Creates a list of a single parameter array for :func:`~.StronglyEntanglingLayers`, drawn from a normal
+    distribution.
 
     The shape of the parameter array is ``(n_layers, n_wires, 3)`` and each parameter is drawn
     from a normal distribution with mean ``mean`` and standard deviation ``std``.
@@ -130,9 +136,8 @@ def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 
 
 def strong_ent_layer_uniform(n_wires, low=0, high=2 * pi, seed=None):
-    r"""
-    Creates a list of one randomly initialized parameter array for \
-    :func:`~.StronglyEntanglingLayers`, sampled uniformly.
+    r"""Creates a list of a single parameter array for :func:`~.StronglyEntanglingLayer`,
+    drawn from a uniform distribution.
 
     The shape of the parameter array is ``(n_wires, 3)`` and each parameter is drawn uniformly at random \
     from between ``low`` and ``high``. The parameters define the three rotation angles
@@ -157,9 +162,8 @@ def strong_ent_layer_uniform(n_wires, low=0, high=2 * pi, seed=None):
 
 
 def strong_ent_layer_normal(n_wires, mean=0, std=0.1, seed=None):
-    r"""
-    Creates a list of one randomly initialized parameter array for \
-    :func:`~.StronglyEntanglingLayers`, sampled from a normal distribution.
+    r"""Creates a list of a single parameter array for :func:`~.StronglyEntanglingLayer`,
+    drawn from a normal distribution.
 
     The shape of the parameter array is ``(n_wires, 3)`` and each parameter is drawn
     from a normal distribution with mean ``mean`` and standard deviation ``std``.
@@ -184,8 +188,7 @@ def strong_ent_layer_normal(n_wires, mean=0, std=0.1, seed=None):
 
 
 def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
-    r"""
-    Creates a list of one randomly initialized parameter array for :func:`~.RandomLayers`, sampled uniformly.
+    r"""Creates a list of a single parameter array for :func:`~.RandomLayers`, drawn from a uniform distribution.
 
     The shape of the parameter array is ``(n_layers, n_rots)`` and each parameter is drawn uniformly at random \
     from between ``low`` and ``high``. The parameters define the rotation angles of the randomly \
@@ -215,8 +218,7 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
 
 
 def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=None):
-    r"""
-    Creates a list of one randomly initialized parameter array for :func:`~.RandomLayers`, sampled from a normal distribution.
+    r"""Creates a list of a single parameter array for :func:`~.RandomLayers`, drawn from a normal distribution.
 
     The shape of the parameter array is ``(n_layers, n_rots)`` and each parameter is drawn
     from a normal distribution with mean ``mean`` and standard deviation ``std``.
@@ -246,8 +248,7 @@ def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=N
 
 
 def random_layer_uniform(n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
-    r"""
-    Creates a list of one randomly initialized parameter array for :func:`~.RandomLayer`, sampled uniformly.
+    r"""Creates a list of a single parameter array for :func:`~.RandomLayer`, drawn from a uniform distribution.
 
     The number of parameter array is ``(n_rots,)`` and each parameter is drawn uniformly at random \
     from between ``low`` and ``high``. The parameters define the rotation angles of the randomly \
@@ -276,8 +277,7 @@ def random_layer_uniform(n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
 
 
 def random_layer_normal(n_wires, n_rots=None, mean=0, std=0.1, seed=None):
-    r"""
-    Creates a list of one randomly initialized parameter array for :func:`~.RandomLayer`, sampled from a normal distribution.
+    r"""Creates a list of a single parameter array for :func:`~.RandomLayer`, drawn from a normal distribution.
 
     The number of parameter array is ``(n_rots,)`` and each parameter is drawn
     from a normal distribution with mean ``mean`` and standard deviation ``std``.
@@ -306,9 +306,9 @@ def random_layer_normal(n_wires, n_rots=None, mean=0, std=0.1, seed=None):
 
 
 def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean_active=0, std_active=0.1, seed=None):
-    r"""
-    Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
-    :func:`~.CVNeuralNetLayers`, sampled uniformly.
+    r"""Creates a list of eleven parameter arrays for :func:`~.CVNeuralNetLayers`,
+    where non-active gate parameters are drawn from a uniform distribution and active parameters
+    from a normal distribution.
 
     The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)`` for the parameters used in an interferometer,
     and ``(n_layers, n_wires)``  else.
@@ -353,9 +353,8 @@ def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean_active=0, std
 
 
 def cvqnn_layers_normal(n_layers, n_wires, mean=0, std=1, mean_active=0, std_active=0.1, seed=None):
-    r"""
-    Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
-    :func:`~.CVNeuralNetLayers`, sampled from a normal distribution.
+    r"""Creates a list of eleven parameter arrays for :func:`~.CVNeuralNetLayers`, where both active and non-active
+    gate parameters are drawn from normal distributions.
 
     The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)`` for the parameters used in an interferometer,
     and ``(n_layers, n_wires)``  else.
@@ -400,9 +399,9 @@ def cvqnn_layers_normal(n_layers, n_wires, mean=0, std=1, mean_active=0, std_act
 
 
 def cvqnn_layer_uniform(n_wires, low=0, high=2 * pi, mean_active=0, std_active=0.1, seed=None):
-    r"""
-    Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
-    :func:`~.CVNeuralNetLayer`, sampled uniformly.
+    r"""Creates a list of eleven parameter arrays for :func:`~.CVNeuralNetLayer`,
+    where non-active gate parameters are drawn from a uniform distribution and active parameters
+    from a normal distribution.
 
     The shape of the arrays is ``(n_wires*(n_wires-1)/2)`` for the parameters used in an interferometer,
     and ``(n_wires)``  else.
@@ -447,9 +446,8 @@ def cvqnn_layer_uniform(n_wires, low=0, high=2 * pi, mean_active=0, std_active=0
 
 
 def cvqnn_layer_normal(n_wires, mean=0, std=1, mean_active=0, std_active=0.1, seed=None):
-    r"""
-    Creates a list of eleven randomly initialized parameter arrays for the positional arguments in \
-    :func:`~.CVNeuralNetLayer`, sampled from a normal distribution.
+    r"""Creates a list of eleven parameter arrays for :func:`~.CVNeuralNetLayer`, where both active and non-active
+    gate parameters are drawn from normal distributions.
 
     The shape of the arrays is ``(n_wires*(n_wires-1)/2)`` for the parameters used in an interferometer,
     and ``(n_wires)``  else.
@@ -494,9 +492,7 @@ def cvqnn_layer_normal(n_wires, mean=0, std=1, mean_active=0, std_active=0.1, se
 
 
 def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
-    r"""
-    Creates a list of three randomly initialized parameter arrays for \
-    :func:`~.Interferometer`, sampled uniformly.
+    r"""Creates a list of three parameter arrays for :func:`~.Interferometer`, drawn from a uniform distribution.
 
     The shape of the arrays is either ``(n_wires,)`` or ``(n_wires*(n_wires-1)/2,)``.
 
@@ -525,9 +521,7 @@ def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
 
 
 def interferometer_normal(n_wires, mean=0, std=0.1, seed=None):
-    r"""
-    Creates a list of three randomly initialized parameter arrays for \
-    :func:`~.Interferometer`, sampled from a normal distribution.
+    r"""Creates a list of three parameter arrays for :func:`~.Interferometer`, drawn from a normal distribution.
 
     The shape of the arrays is either ``(n_wires,)`` or ``(n_wires*(n_wires-1)/2,)``.
 

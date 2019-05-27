@@ -124,8 +124,7 @@ def AngleEmbedding(features, wires, rotation='X'):
 
 
 def AmplitudeEmbedding(features, wires):
-    """
-    Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
+    r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     The absolute square of all elements in ``features`` has to add up to one.
 
