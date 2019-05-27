@@ -150,13 +150,14 @@ class Hermitian(Expectation):
     .. math::
         \braket{A} = \braketT{\psi}{\cdots \otimes I\otimes A\otimes I\cdots}{\psi}
 
-    where :math:`A` acts on the requested wire.
+    where :math:`A` acts on the requested wires.
 
-    The matrix A can be N^2\times N^2 acting on N wires.
+    If acting on :math:`N` wires, then the matrix :math:`A` must be of size
+    :math:`2^N\times 2^N`.
 
     Args:
         A (array): square hermitian matrix
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = 0
     num_params = 1
