@@ -308,7 +308,7 @@ class TestParsInterferometer:
 
 
 class TestParsStronglyEntangling:
-    """Tests the pennylane.init methods for a strongly entangling circuit."""
+    """Tests the pennylane.init module for a strongly entangling circuit."""
 
     def test_stronglyentanglinglayers_uniform_dimensions(self, n_subsystems, n_layers):
         """Confirm that the pennylane.init.strong_ent_layers_uniform()
