@@ -55,7 +55,7 @@ def n_rots(request):
 
 
 class TestParsCVQNN:
-    """Tests the pennylane.templates.parameters methods for a cv-quantum neural network."""
+    """Tests the pennylane.init module for a cv-quantum neural network."""
 
     def test_cvqnnlayers_uniform_dimensions(self, n_subsystems, n_layers):
         """Confirm that pennylane.init.cvqnn_layers_uniform()
@@ -78,7 +78,7 @@ class TestParsCVQNN:
         """Test sampling edge case of pennylane.init.cvqnn_layers_uniform()."""
         p = cvqnn_layers_uniform(n_layers=2, n_wires=10, low=1, high=1, mean_active=1, std_active=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_cvqnnlayers_uniform_seed(self, seed, tol):
         """Confirm that pennylane.init.cvqnn_layers_uniform() invokes the correct np.random sampling function
@@ -105,7 +105,7 @@ class TestParsCVQNN:
         phi_a = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
         k = np.random.normal(loc=mean_a, scale=std_a, size=(n_layers, n_wires))
         p_target = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-        assert np.allclose(p, p_target, atol=tol)
+        assert np.allclose(p, p_target, atol=tol, rtol=0.)
 
     def test_cvqnnlayer_uniform_dimensions(self, n_subsystems):
         """Confirm that pennylane.init.cvqnn_layer_uniform()
@@ -128,7 +128,7 @@ class TestParsCVQNN:
         """Test sampling edge case of pennylane.init.cvqnn_layer_uniform()."""
         p = cvqnn_layer_uniform(n_wires=10, low=1, high=1, mean_active=1, std_active=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_cvqnnlayer_uniform_seed(self, seed, tol):
         """Confirm that pennylane.init.cvqnn_layer_uniform() invokes the correct np.random sampling function
@@ -169,7 +169,7 @@ class TestParsCVQNN:
         n_layers = 3
         p = cvqnn_layers_normal(n_layers=n_layers, n_wires=10, mean=1, std=0, mean_active=1, std_active=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_cvqnnlayers_normal_range(self, seed, tol):
         """Confirm that pennylane.init.cvqnn_layers_normal() invokes the correct np.random sampling function."""
@@ -194,7 +194,7 @@ class TestParsCVQNN:
         phi_a = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
         k = np.random.normal(loc=mean_a, scale=std_a, size=(n_layers, n_wires))
         p_target = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-        assert np.allclose(p, p_target, atol=tol)
+        assert np.allclose(p, p_target, atol=tol, rtol=0.)
 
     def test_cvqnnlayer_normal_dimensions(self, n_subsystems):
         """Confirm that pennylane.init.cvqnn_layer_normal()
@@ -209,7 +209,7 @@ class TestParsCVQNN:
         """Test sampling edge case of pennylane.init.cvqnn_layer_normal()."""
         p = cvqnn_layer_normal(n_wires=10, mean=1, std=0, mean_active=1, std_active=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_cvqnnlayer_normal_range(self, seed, tol):
         """Confirm that pennylane.init.cvqnn_layer_normal() invokes the correct np.random sampling function."""
@@ -237,7 +237,7 @@ class TestParsCVQNN:
 
 
 class TestParsInterferometer:
-    """Tests the pennylane.templates.parameters method for an interferometer."""
+    """Tests the pennylane.init module for an interferometer."""
 
     def test_interferometer_uniform_dimensions(self, n_subsystems):
         """Confirm that pennylane.init.interferometer_uniform()
@@ -259,7 +259,7 @@ class TestParsInterferometer:
         """Test sampling edge case of pennylane.init.interferometer_uniform()."""
         p = interferometer_uniform(n_wires=10, low=1, high=1, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_interferometer_uniform_seed(self, seed, tol):
         """Confirm that pennylane.init.interferometer_uniform() invokes the correct np.random sampling function
@@ -274,7 +274,7 @@ class TestParsInterferometer:
         phi = np.random.uniform(low=low, high=high, size=(n_if,))
         varphi = np.random.uniform(low=low, high=high, size=(n_wires,))
         p_target = [theta, phi, varphi]
-        assert np.allclose(p, p_target, atol=tol)
+        assert np.allclose(p, p_target, atol=tol, rtol=0.)
 
     def test_interferometer_normal_dimensions(self, n_subsystems):
         """Confirm that pennylane.init.interferometer_normal()
@@ -289,7 +289,7 @@ class TestParsInterferometer:
         """Test sampling edge case of pennylane.init.interferometer_normal()."""
         p = interferometer_normal(n_wires=10, mean=1, std=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_interferometer_normal_seed(self, seed, tol):
         """Confirm that pennylane.init.interferometer_normal() invokes the correct np.random sampling function
@@ -304,7 +304,7 @@ class TestParsInterferometer:
         phi = np.random.normal(loc=mean, scale=std, size=(n_if,))
         varphi = np.random.normal(loc=mean, scale=std, size=(n_wires,))
         p_target = [theta, phi, varphi]
-        assert np.allclose(p, p_target, atol=tol)
+        assert np.allclose(p, p_target, atol=tol, rtol=0.)
 
 
 class TestParsStronglyEntangling:
@@ -331,7 +331,7 @@ class TestParsStronglyEntangling:
         n_layers = 3
         p = strong_ent_layers_uniform(n_layers=n_layers, n_wires=10, low=1, high=1, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_stronglyentanglinglayers_uniform_seed(self, seed, tol):
         """Confirm that pennylane.init.strong_ent_layers_uniform() invokes the correct np.random sampling function
@@ -343,7 +343,7 @@ class TestParsStronglyEntangling:
         p = strong_ent_layers_uniform(n_layers=n_layers, n_wires=n_wires, low=low, high=high, seed=seed)
         np.random.seed(seed)
         p_target = np.random.uniform(low=low, high=high, size=(n_layers, n_wires, 3))
-        assert np.allclose(p[0], p_target, atol=tol)
+        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
     def test_stronglyentanglinglayer_uniform_dimensions(self, n_subsystems):
         """Confirm that the pennylane.init.strong_ent_layer_uniform()
@@ -364,7 +364,7 @@ class TestParsStronglyEntangling:
         """Test sampling edge case of pennylane.init.strong_ent_layer_uniform()."""
         p = strong_ent_layer_uniform(n_wires=10, low=1, high=1, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_stronglyentanglinglayer_uniform_seed(self, seed, tol):
         """Confirm that pennylane.init.strong_ent_layer_uniform() invokes the correct np.random sampling function
@@ -375,7 +375,7 @@ class TestParsStronglyEntangling:
         p = strong_ent_layer_uniform(n_wires=n_wires, low=low, high=high, seed=seed)
         np.random.seed(seed)
         p_target = np.random.uniform(low=low, high=high, size=(n_wires, 3))
-        assert np.allclose(p[0], p_target, atol=tol)
+        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
     def test_stronglyentanglinglayers_normal_dimensions(self, n_subsystems, n_layers):
         """Confirm that the pennylane.init.strong_ent_layers_normal()
@@ -390,7 +390,7 @@ class TestParsStronglyEntangling:
         n_layers = 3
         p = strong_ent_layers_normal(n_layers=n_layers, n_wires=10, mean=1, std=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_stronglyentanglinglayers_normal_seed(self, seed, tol):
         """Confirm that pennylane.init.strong_ent_layers_normal() invokes the correct np.random sampling function
@@ -402,7 +402,7 @@ class TestParsStronglyEntangling:
         p = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires, mean=mean, std=std, seed=seed)
         np.random.seed(seed)
         p_target = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires, 3))
-        assert np.allclose(p[0], p_target, atol=tol)
+        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
     def test_stronglyentanglinglayer_normal_dimensions(self, n_subsystems):
         """Confirm that the pennylane.init.parameters_stronglyentanglinglayer_normalm()
@@ -416,7 +416,7 @@ class TestParsStronglyEntangling:
         """Test sampling edge case of pennylane.init.strong_ent_layer_normal()."""
         p = strong_ent_layer_normal(n_wires=10, mean=1, std=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_stronglyentanglinglayer_normal_seed(self, seed, tol):
         """Confirm that pennylane.init.strong_ent_layer_normal() invokes the correct np.random sampling function
@@ -427,11 +427,11 @@ class TestParsStronglyEntangling:
         p = strong_ent_layer_normal(n_wires=n_wires, mean=mean, std=std, seed=seed)
         np.random.seed(seed)
         p_target = np.random.normal(loc=mean, scale=std, size=(n_wires, 3))
-        assert np.allclose(p[0], p_target, atol=tol)
+        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
 
 class TestParsRandom:
-    """Tests the pennylane.init methods for a random circuit."""
+    """Tests the pennylane.init module for a random circuit."""
 
     def test_randomlayers_uniform_dimensions(self, n_subsystems, n_layers, n_rots):
         """Confirm that the pennylane.init.random_layers_uniform()
@@ -456,7 +456,7 @@ class TestParsRandom:
         n_layers = 3
         p = random_layers_uniform(n_layers=n_layers, n_wires=10, low=1, high=1, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_randomlayers_uniform_seed(self, seed, tol):
         """Confirm that pennylane.init.random_layers_uniform() invokes the correct np.random sampling function
@@ -469,7 +469,7 @@ class TestParsRandom:
         p = random_layers_uniform(n_layers=n_layers, n_wires=n_wires, n_rots=n_rots, low=low, high=high, seed=seed)
         np.random.seed(seed)
         p_target = np.random.uniform(low=low, high=high, size=(n_layers, n_rots))
-        assert np.allclose(p[0], p_target, atol=tol)
+        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
     def test_randomlayer_uniform_dimensions(self, n_subsystems, n_rots):
         """Confirm that the pennylane.init.random_layer_uniform()
@@ -492,7 +492,7 @@ class TestParsRandom:
         """Test sampling edge case of pennylane.init.random_layer_uniform()."""
         p = random_layer_uniform(n_wires=10, low=1, high=1, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_randomlayer_uniform_seed(self, seed, tol):
         """Confirm that pennylane.init.random_layer_uniform() invokes the correct np.random sampling function
@@ -504,7 +504,7 @@ class TestParsRandom:
         p = random_layer_uniform(n_wires=n_wires, n_rots=n_rots, low=low, high=high, seed=seed)
         np.random.seed(seed)
         p_target = np.random.uniform(low=low, high=high, size=(n_rots,))
-        assert np.allclose(p[0], p_target, atol=tol)
+        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
     def test_randomlayers_normal_dimensions(self, n_subsystems, n_layers, n_rots):
         """Confirm that the pennylane.init.random_layers_normal()
@@ -521,7 +521,7 @@ class TestParsRandom:
         n_layers = 3
         p = random_layers_normal(n_layers=n_layers, n_wires=10, mean=1, std=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_randomlayers_normal_seed(self, seed, tol):
         """Confirm that pennylane.init.random_layers_normal() invokes the correct np.random sampling function
@@ -534,7 +534,7 @@ class TestParsRandom:
         p = random_layers_normal(n_layers=n_layers, n_wires=n_wires, n_rots=n_rots, mean=mean, std=std, seed=seed)
         np.random.seed(seed)
         p_target = np.random.normal(loc=mean, scale=std, size=(n_layers, n_rots))
-        assert np.allclose(p[0], p_target, atol=tol)
+        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
     def test_randomlayer_normal_dimensions(self, n_subsystems, n_rots):
         """Confirm that the pennylane.init.random_layer_normal()
@@ -550,7 +550,7 @@ class TestParsRandom:
         """Test sampling edge case of pennylane.init.random_layer_normal()."""
         p = random_layer_normal(n_wires=10, mean=1, std=0, seed=seed)
         p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol)
+        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
 
     def test_randomlayer_normal_seed(self, seed, tol):
         """Confirm that pennylane.init.random_layer_normal() invokes the correct np.random sampling function
@@ -562,4 +562,4 @@ class TestParsRandom:
         p = random_layer_normal(n_wires=n_wires, n_rots=n_rots, mean=mean, std=std, seed=seed)
         np.random.seed(seed)
         p_target = np.random.normal(loc=mean, scale=std, size=(n_rots,))
-        assert np.allclose(p[0], p_target, atol=tol)
+        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)

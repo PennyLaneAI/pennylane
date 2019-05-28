@@ -93,7 +93,7 @@ def AngleEmbedding(features, wires, rotation='X'):
     feature vector :math:`[0, \pi/2, \pi/2, 0]`. Alternatively, one can use the :mod:`BasisEmbedding()` template.
 
     Args:
-        features (array): Input array of shape ``(N, )``, where N is the number of input features to embed,
+        features (array): Input array of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
@@ -134,7 +134,7 @@ def AmplitudeEmbedding(features, wires):
         devices that implement this function.
 
     Args:
-        features (array): Input array of shape ``(2**n, )``
+        features (array): Input array of shape ``(2**n,)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 

@@ -327,8 +327,8 @@ def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean_active=0, std
     Keyword Args:
         low (float): minimum value of uniformly drawn rotation angles
         high (float): maximum value of uniformly drawn rotation angles
-        mean_active (float): mean of 'active gate parameters'
-        std_active (float): standard deviation of 'active gate parameters'
+        mean_active (float): mean of active gate parameters
+        std_active (float): standard deviation of active gate parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:

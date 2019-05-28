@@ -42,7 +42,7 @@ Creating initial parameters
 ---------------------------
 
 Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**. To illustrate how these can be used, let us use a hypothetical parameter generating function ``my_init_fun()`` and its corresponding hypothetical template ``MyTemplate()``, which takes three parameter arrays. The two can be combined in the following two ways: 
+**randomly initialized** arrays for the trainable **parameters**. To illustrate how these can be used, let us use a hypothetical parameter initialization function ``my_init_fun()`` and its corresponding hypothetical template ``MyTemplate()``, which takes three parameter arrays. The two can be combined in the following two ways: 
 
 1. Dereference the list when feeding it into the template:
 
@@ -118,8 +118,8 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
 
 Templates can contain each other. An example is the handy :class:`~.Interferometer` template. It constructs
 arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations, by providing lists of
-transmittivity and phase angles. A :func:`~.CVNeuralNetLayer` template - implementing the continuous-variable neural
-network architecture from :cite:`killoran2018continuous` - contains two such interferometers. But it can also
+transmittivity and phase angles. A :func:`~.CVNeuralNetLayer` template — implementing the continuous-variable neural
+network architecture from :cite:`killoran2018continuous` — contains two such interferometers. But it can also
 be used (and optimized) independently:
 
 .. code-block:: python
