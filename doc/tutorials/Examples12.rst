@@ -1,14 +1,52 @@
 .. _Examples12:
 
 Putting It All Together
-=======================
+=========================
+
+Lets put together everything we have learned from the basic tutorials in the following examples : 
 
 
-Example: Qubit Rotation
----------------------------
+.. Add the location of your Jupyter notebook below!
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :titlesonly:
+
+   qubit_rotation.ipynb
+   gaussian_transformation.ipynb
+   QGAN.ipynp
 
 
-Example: Gaussian Transformation
----------------------------------
+.. Copy the template below in order to create a link to your notebook, and a thumbnail.
+
+.. _`Qubit Rotation`: qubit_rotation.html
+.. |qr| image:: figures/bloch.gif
+   :width: 260px
+   :align: middle
+   :target: qubit_rotation.html
+
+.. _`Gaussian Transformation`: gaussian_transformation.html
+.. |gt| image:: figures/bloch.gif
+   :width: 260px
+   :align: middle
+   :target: gaussian_transformation.html
+
+
+.. _`Quantum Generative Adversarial Networks`: QGAN.html
+.. |qgan| image:: figures/bloch.gif
+   :width: 260px
+   :align: middle
+   :target: QGAN.html
+
+.. Add your thumbnail to the table in the Gallery!
+
+.. rst-class:: gallery-table
+
++----------------------+--------------------------------+----------------------------------------------+
+| |qr|                 | |gt|                           | |qgan|                                       |
+|                      |                                |                                              |
+| `Qubit Rotation`_    | `Gaussian Transformation`_     | `Quantum Generative Adversarial Networks`_   |
++----------------------+--------------------------------+----------------------------------------------+
 
 

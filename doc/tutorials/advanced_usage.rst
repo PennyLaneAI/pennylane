@@ -1,23 +1,20 @@
-.. role:: html(raw)
-   :format: html
-
-.. _advanced_features:
+.. _advanced_usage:
 
 Advanced Usage
 ==============
 
-In the previous three introductory tutorials (:ref:`qubit rotation <qubit_rotation>`, :ref:`Gaussian transformation <gaussian_transformation>`, and :ref:`plugins & hybrid computation <plugins_hybrid>`) we explored the basic concepts of PennyLane, including qubit- and CV-model quantum computations, gradient-based optimization, and the construction of hybrid classical-quantum computations.
+In the previous tutorials, we explored the basic concepts of PennyLane including qubit and CV model quantum computations, gradient-based optimization and the construction of hybrid classical-quantum computations.
 
 In this tutorial, we will highlight some of the more advanced features of Pennylane.
 
 Multiple expectation values
 ---------------------------
 
-In all the previous examples, we considered quantum functions with only single expectation values. In fact, PennyLane supports the return of multiple expectation values, up to one per wire.
+As we saw in some of the examples in the tutorials, PennyLane supports the return of multiple expectation values; up to one per wire.
 
 As usual, we begin by importing PennyLane and the PennyLane-provided version of NumPy, and set up a 2-wire qubit device for computations:
 
-.. code::
+.. code-block:: python
 
     import pennylane as qml
     from pennylane import numpy as np
@@ -26,7 +23,7 @@ As usual, we begin by importing PennyLane and the PennyLane-provided version of 
 
 We will start with a simple example circuit, which generates a two-qubit entangled state, then evaluates the expectation value of the Pauli Z operator on each wire.
 
-.. code::
+.. code-block:: python
 
     @qml.qnode(dev)
     def circuit1(param):
@@ -56,7 +53,7 @@ PennyLane uses the pattern that *all positional arguments to quantum functions a
 
 For example, let's create a quantum node that accepts two arguments; a differentiable circuit parameter ``param``, and a fixed circuit parameter ``fixed``:
 
-.. code::
+.. code-block:: python
 
     @qml.qnode(dev)
     def circuit3(param, fixed=None):
@@ -100,4 +97,10 @@ Since keyword arguments do not get considered when computing gradients, the Jaco
     --> 136         value = self.kwarg_values[self.name][self.idx] * self.mult
         137         return value
     TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+
+
+
+Ready-to-use Templates
+------------------------
+PennyLane provides a growing library of ready-to-use templates of common quantum machine learning circuit architectures and embedding functions. These can be used to easily embed classical data and build, evaluate and train more complex quantum machine learning models. They are provided as functions that can be called with the arguments; for details see :ref:`QML Templates <template>.
 

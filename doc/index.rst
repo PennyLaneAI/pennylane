@@ -156,10 +156,10 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    tutorials/New_Users
    tutorials/Examples12
-   tutorials/Interfaces
-   tutorials/Plugins
+   tutorials/UsingInterfaces
+   tutorials/UsingPlugins
    tutorials/Hybrid_Computation
-   tutorials/advanced_features
+   tutorials/advanced_usage
    tutorials/notebooks
 
 
