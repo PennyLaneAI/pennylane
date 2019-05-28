@@ -53,7 +53,7 @@ class TestAngleEmbd:
         """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
            using the rotation='X' strategy."""
 
-        features = [pi/2,  pi/2, pi/4, 0]
+        features = [pi/2, pi/2, pi/4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
