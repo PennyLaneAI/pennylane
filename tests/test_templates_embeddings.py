@@ -27,13 +27,6 @@ from pennylane.templates.embeddings import (AngleEmbedding,
 from pennylane import Beamsplitter
 
 
-@pytest.fixture(scope="session",
-                params=[1, 2, 5])
-def n_subsystems(request):
-    """Number of qubits or modes."""
-    return request.param
-
-
 class TestAngleEmbd:
     """ Tests the pennylane.templates.embeddings.AngleEmbedding method."""
 

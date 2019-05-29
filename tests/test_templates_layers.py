@@ -28,18 +28,6 @@ from pennylane.templates.layers import (Interferometer,
 from pennylane import RX, RY, RZ, CZ, CNOT
 log.getLogger('defaults')
 
-@pytest.fixture(scope="session",
-                params=range(2, 4))
-def n_subsystems_leq2(request):
-    """Number of qubits or modes."""
-    return request.param
-
-@pytest.fixture(scope="session",
-                params=[1, 2, 5])
-def n_subsystems(request):
-    """Number of qubits or modes."""
-    return request.param
-
 
 class TestInterferometer:
     """Tests for the Interferometer from the pennylane.template.layers module."""
@@ -348,6 +336,7 @@ class TestInterferometer:
 class TestCVNeuralNet:
     """Tests for the CVNeuralNet from the pennylane.template module."""
 
+    # Have a fixed number of subsystems in this handcoded test
     @pytest.fixture(scope="class")
     def num_subsystems(self):
         return 4
@@ -462,11 +451,11 @@ class TestCVNeuralNet:
 class TestStronglyEntangling:
     """Tests for the StronglyEntanglingLayers method from the pennylane.templates.layers module."""
 
-    def test_integration(self, n_subsystems_leq2):
+    def test_integration(self, n_subsystems):
         """integration test for the StronglyEntanglingLayers."""
         np.random.seed(12)
         num_layers = 2
-        num_wires = n_subsystems_leq2
+        num_wires = n_subsystems
 
         dev = qml.device('default.qubit', wires=num_wires)
         weights = np.random.randn(num_layers, num_wires, 3)
@@ -545,16 +534,6 @@ class TestRandomLayers:
     """Tests for the RandomLayers method from the pennylane.templates.layers module."""
 
     @pytest.fixture(scope="class",
-                    params=[1, 2])
-    def n_layers(self, request):
-        return request.param
-
-    @pytest.fixture(scope="class",
-                    params=[2, 3])
-    def n_wires(self, request):
-        return request.param
-
-    @pytest.fixture(scope="class",
                     params=[0.2, 0.6])
     def ratio(self, request):
         return request.param
@@ -629,15 +608,15 @@ class TestRandomLayers:
         ratio_impr = types.count(impr) / len(types)
         assert np.isclose(ratio_impr, ratio, atol=0.05)
 
-    def test_random_layer_imprimitive(self, n_wires, impr, rots):
+    def test_random_layer_imprimitive(self, n_subsystems, impr, rots):
         """Test that  pennylane.templates.layers.RandomLayer() uses the correct types of gates."""
         np.random.seed(12)
         n_rots = 20
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_wires),
+            RandomLayer(weights=weights, wires=range(n_subsystems),
                                              imprimitive=impr, rotations=rots)
             return qml.expval.PauliZ(0)
 
@@ -649,16 +628,16 @@ class TestRandomLayers:
         gates = {impr, *rots}
         assert unique == gates
 
-    def test_random_layer_numgates(self, n_wires):
+    def test_random_layer_numgates(self, n_subsystems):
         """Test that  pennylane.templates.layers.RandomLayer() uses the correct number of gates."""
         np.random.seed(12)
         n_rots = 5
         impr = CNOT
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_wires), imprimitive=impr)
+            RandomLayer(weights=weights, wires=range(n_subsystems), imprimitive=impr)
             return qml.expval.PauliZ(0)
 
         qnode = qml.QNode(circuit, dev)
@@ -667,15 +646,15 @@ class TestRandomLayers:
         types = [type(q) for q in queue]
         assert len(types) - types.count(impr) == n_rots
 
-    def test_random_layer_randomwires(self, n_wires):
+    def test_random_layer_randomwires(self, n_subsystems):
         """Test that  pennylane.templates.layers.RandomLayer() picks random wires."""
         np.random.seed(12)
         n_rots = 500
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_wires))
+            RandomLayer(weights=weights, wires=range(n_subsystems))
             return qml.expval.PauliZ(0)
 
         qnode = qml.QNode(circuit, dev)
@@ -684,17 +663,17 @@ class TestRandomLayers:
         wires = [q._wires for q in queue]
         wires_flat = [item for w in wires for item in w]
         mean_wire = np.mean(wires_flat)
-        assert np.isclose(mean_wire, (n_wires - 1) / 2, atol=0.05)
+        assert np.isclose(mean_wire, (n_subsystems - 1) / 2, atol=0.05)
 
-    def test_random_layer_imprimitive(self, n_wires, tol):
+    def test_random_layer_imprimitive(self, n_subsystems, tol):
         """Test that  pennylane.templates.layers.RandomLayer() uses the correct weights."""
         np.random.seed(12)
         n_rots = 5
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_wires))
+            RandomLayer(weights=weights, wires=range(n_subsystems))
             return qml.expval.PauliZ(0)
 
         qnode = qml.QNode(circuit, dev)

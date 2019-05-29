@@ -42,6 +42,12 @@ def n_layers(request):
     return request.param
 
 
+@pytest.fixture(scope="session", params=[2, 3])
+def n_subsystems(request):
+    """Number of qubits or qumodes."""
+    return request.param
+
+
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
     """Number of qubits or modes."""
