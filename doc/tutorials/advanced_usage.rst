@@ -5,7 +5,7 @@ Advanced Usage
 
 In the previous tutorials, we explored the basic concepts of PennyLane including qubit and CV model quantum computations, gradient-based optimization and the construction of hybrid classical-quantum computations.
 
-In this tutorial, we will highlight some of the more advanced features of Pennylane.
+Pennylane offers many exciting features such as constructing multiple QNodes on a single device, applying any arbitrary Unitary matrix to the states and measuring any custom-defined Hermitian operator. In this tutorial, we will highlight other advanced features of Pennylane.
 
 Multiple expectation values
 ---------------------------
@@ -98,6 +98,41 @@ Since keyword arguments do not get considered when computing gradients, the Jaco
         137         return value
     TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
 
+QNodes from different interfaces on one Device
+-----------------------------------------------
+
+Pennylane does not only provide the flexibility of having multiple nodes on one device, it also allows these nodes to have different interfaces. Lets look at the following simple example:
+
+.. code-block:: python
+
+    dev1 = qml.device('default.qubit', wires=1)
+    def circuit(phi):
+        qml.RX(phi, wires=0)
+        return qml.expval.PauliZ(0)
+
+Now, we contruct multiple QNodes on the same device and change the interface of one of them from `NumPy`to `PyTorch`: 
+
+.. code-block:: python
+
+    qnode1 = qml.QNode(circuit, dev1)
+    qnode2 = qml.QNode(circuit, dev1)
+    qnode1_torch = qnode1.to_torch()
+
+Lets define the cost function. Notice that we can pass the QNode as an argument too. This avoids duplication of code. 
+
+.. code-block:: python
+   
+    def cost(qnode, phi):
+        return qnode(phi)
+
+Now we can call the cost function as follows:
+
+>>> print(cost(qnode1, np.pi))
+-1.0
+>>> print(cost(qnode2, np.pi))
+-1.0
+>>> print(cost(qnode1_torch, np.pi))
+tensor(-1., dtype=torch.float64)
 
 
 Ready-to-use Templates
