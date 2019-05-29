@@ -28,7 +28,7 @@ arguments in the templates.
 .. note::
 
     For the use of PennyLane in combination with PyTorch or TensorFlow, the numpy arrays have to be converted to
-    ``trainable`` tensors.
+    *trainable* tensors.
 
 Qubit architectures
 -------------------
