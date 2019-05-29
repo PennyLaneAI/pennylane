@@ -23,6 +23,7 @@ from pennylane.plugins import DefaultGaussian
 # defaults
 TOL = 1e-3
 
+
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
     _operation_map = DefaultGaussian._operation_map.copy()
@@ -33,17 +34,6 @@ class DummyDevice(DefaultGaussian):
 def tol():
     """Numerical tolerance for equality tests."""
     return float(os.environ.get("TOL", TOL))
-
-
-@pytest.fixture(scope="session")
-def tol_sampl():
-    """Numerical tolerance for equality tests of sampling means."""
-    return 0.01
-
-@pytest.fixture(scope="session", params=[2, 3])
-def n_subsystems(request):
-    """Number of qubits or qumodes."""
-    return request.param
 
 
 @pytest.fixture(scope="session", params=[1, 2])
@@ -65,7 +55,7 @@ def gaussian_device(n_subsystems):
 
 
 @pytest.fixture(scope="session")
-def gaussian_device_4modes(n_subsystems):
+def gaussian_device_4modes():
     """Number of qubits or modes."""
     return DummyDevice(wires=4)
 
@@ -102,4 +92,4 @@ def tf_support():
 def seed(request):
     """Different seeds."""
     return request.param
-    
+

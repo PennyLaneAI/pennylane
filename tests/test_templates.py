@@ -28,6 +28,12 @@ from pennylane.init import (strong_ent_layers_uniform, strong_ent_layer_uniform,
                             cvqnn_layers_normal, cvqnn_layer_normal)
 
 
+@pytest.fixture(scope="session", params=[2, 3])
+def n_subsystems(request):
+    """Number of qubits or qumodes."""
+    return request.param
+
+
 class TestParameterIntegration:
     """ Integration tests for the parameter generation methods from pennylane.init
     and pennylane.templates.layers."""

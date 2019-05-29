@@ -27,23 +27,11 @@ from pennylane.templates.embeddings import (AngleEmbedding,
 from pennylane import Beamsplitter
 
 
-@pytest.fixture(scope="module",
+@pytest.fixture(scope="session",
                 params=[1, 2, 5])
 def n_subsystems(request):
     """Number of qubits or modes."""
     return request.param
-
-
-@pytest.fixture(scope="module")
-def qubit_device(n_subsystems):
-    """Number of qubits or modes."""
-    return qml.device('default.qubit', wires=n_subsystems)
-
-
-@pytest.fixture(scope="module")
-def gaussian_device(n_subsystems):
-    """Number of qubits or modes."""
-    return qml.device('default.gaussian', wires=n_subsystems)
 
 
 class TestAngleEmbd:

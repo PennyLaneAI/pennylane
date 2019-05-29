@@ -41,13 +41,6 @@ def n_subsystems(request):
 
 
 @pytest.fixture(scope="module",
-                params=[2, 3])
-def n_layers(request):
-    """Number of layers."""
-    return request.param
-
-
-@pytest.fixture(scope="module",
                 params=[None, 2, 10])
 def n_rots(request):
     """Number of rotations in random layer."""

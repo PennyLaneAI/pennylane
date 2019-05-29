@@ -28,15 +28,15 @@ from pennylane.templates.layers import (Interferometer,
 from pennylane import RX, RY, RZ, CZ, CNOT
 log.getLogger('defaults')
 
-@pytest.fixture(scope="module",
-                params=range(4))
-def wires(request):
+@pytest.fixture(scope="session",
+                params=range(2, 4))
+def n_subsystems_leq2(request):
     """Number of qubits or modes."""
     return request.param
 
-@pytest.fixture(scope="module",
-                params=range(2, 4))
-def wires_nosingle(request):
+@pytest.fixture(scope="session",
+                params=[1, 2, 5])
+def n_subsystems(request):
     """Number of qubits or modes."""
     return request.param
 
@@ -306,7 +306,7 @@ class TestInterferometer:
             assert op.parameters == [varphi[idx]]
             assert op.wires == [idx]
 
-    def test_integration(self, tol, wires):
+    def test_integration(self, tol):
         """test integration with PennyLane and gradient calculations"""
         N = 4
         wires = range(N)
@@ -462,11 +462,11 @@ class TestCVNeuralNet:
 class TestStronglyEntangling:
     """Tests for the StronglyEntanglingLayers method from the pennylane.templates.layers module."""
 
-    def test_integration(self, wires_nosingle):
+    def test_integration(self, n_subsystems_leq2):
         """integration test for the StronglyEntanglingLayers."""
         np.random.seed(12)
         num_layers = 2
-        num_wires = wires_nosingle
+        num_wires = n_subsystems_leq2
 
         dev = qml.device('default.qubit', wires=num_wires)
         weights = np.random.randn(num_layers, num_wires, 3)
