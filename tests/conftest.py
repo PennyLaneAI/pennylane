@@ -62,7 +62,7 @@ def gaussian_device(n_subsystems):
 
 @pytest.fixture(scope="session")
 def gaussian_device_4modes():
-    """Number of qubits or modes."""
+    """A 4 mode Gaussian device."""
     return DummyDevice(wires=4)
 
 
