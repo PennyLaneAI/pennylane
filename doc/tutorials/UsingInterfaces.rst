@@ -1,3 +1,6 @@
+.. role:: html(raw)
+   :format: html
+
 .. _UsingInterfaces:
 
 Using Interfaces in PennyLane
