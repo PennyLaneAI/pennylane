@@ -16,6 +16,7 @@ where :math:`x^{i}` is a :math:`N` dimensional vector for :math:`i=1,\ldots,M`. 
 Basis Embedding
 ^^^^^^^^^^^^^^^^^^^^
 
+<<<<<<< HEAD
 For the basis embedding, classical data has to be in the form of binary strings. The embedded quantum state is the bit-wise translation of a binary string to the corresponding states of the quantum subsystems. For example, :math:`x=1001` is represented by the 4-qubit quantum state :math:`\mid 1001 \rangle`. Hence, one bit of classical information is represented by one quantum subsystem.
 
 Let's consider the classical dataset :math:`\mathcal{D}` mentioned above. For basis embedding, each example has to be a N-bit binary string; :math:`x^{m}=(b_1,\ldots,b_N)` with :math:`b_i \in \{0,1\}` for :math:`i=1,\ldots,N`. Assuming all features are repesented with unit binary precision (one bit), each input example :math:`x^{m}` can be directly mapped to the quantum state :math:`\mid x^{m}\rangle`. **This means that the number of quantum subsystems,** :math:`\bm{n}` **, must be at least equal to** :math:`\bm{N}`. The input data can be represented in the computational basis as
