@@ -20,17 +20,17 @@ Lets put together everything we have learned from the basic tutorials in the fol
 
 .. Copy the template below in order to create a link to your notebook, and a thumbnail.
 
-.. _`Qubit Rotation`: qubit_rotation.html
+.. _`Qubit Rotation`: qrotation.html
 .. |qr| image:: figures/bloch.gif
    :width: 260px
    :align: middle
-   :target: qubit_rotation.html
+   :target: qrotation.html
 
-.. _`Gaussian Transformation`: gaussian_transformation.html
+.. _`Gaussian Transformation`: gtransformation.html
 .. |gt| image:: figures/bloch.gif
    :width: 260px
    :align: middle
-   :target: gaussian_transformation.html
+   :target: gtransformation.html
 
 
 .. _`Quantum Generative Adversarial Networks`: QGAN.html

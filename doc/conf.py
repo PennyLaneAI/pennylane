@@ -40,7 +40,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
     'edit_on_github'
-    # 'nbsphinx'
+    'nbsphinx'
 ]
 
 # nbsphinx settings
