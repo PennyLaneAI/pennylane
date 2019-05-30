@@ -1,3 +1,6 @@
+.. role:: html(raw)
+   :format: html
+
 .. _Examples12:
 
 Putting It All Together
@@ -13,24 +16,25 @@ Lets put together everything we have learned from the basic tutorials in the fol
    :hidden:
    :titlesonly:
 
-   qubit_rotation.ipynb
-   gaussian_transformation.ipynb
+   q_rotation.ipynb
+   g_transformation.ipynb
    QGAN.ipynp
+
 
 
 .. Copy the template below in order to create a link to your notebook, and a thumbnail.
 
-.. _`Qubit Rotation`: qrotation.html
+.. _`Qubit Rotation`: q_rotation.html
 .. |qr| image:: figures/bloch.gif
    :width: 260px
    :align: middle
-   :target: qrotation.html
+   :target: q_rotation.html
 
-.. _`Gaussian Transformation`: gtransformation.html
+.. _`Gaussian Transformation`: g_transformation.html
 .. |gt| image:: figures/bloch.gif
    :width: 260px
    :align: middle
-   :target: gtransformation.html
+   :target: g_transformation.html
 
 
 .. _`Quantum Generative Adversarial Networks`: QGAN.html
