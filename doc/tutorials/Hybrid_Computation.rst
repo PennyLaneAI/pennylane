@@ -1,3 +1,6 @@
+.. role:: html(raw)
+   :format: html
+
 .. _Hybrid_Computation:
 
 Hybrid Computation
