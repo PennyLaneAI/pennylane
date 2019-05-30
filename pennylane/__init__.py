@@ -101,8 +101,12 @@ from semantic_version import Version, Spec
 
 import pennylane.operation
 import pennylane.expval
-import pennylane.template
+
+import pennylane.init
+import pennylane.templates.layers
+import pennylane.templates.embeddings
 from pennylane.about import about
+
 
 from .configuration import Configuration
 from ._device import Device, DeviceError

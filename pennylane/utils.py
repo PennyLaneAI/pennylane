@@ -40,7 +40,7 @@ import numbers
 
 import autograd.numpy as np
 
-from .variable  import Variable
+from pennylane.variable import Variable
 
 
 def _flatten(x):
