@@ -1,3 +1,6 @@
+.. role:: html(raw)
+   :format: html
+
 .. _embeddings:
 
 Quantum embeddings
