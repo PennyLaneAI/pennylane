@@ -1,3 +1,6 @@
+.. role:: html(raw)
+   :format: html
+
 .. _New_Users:
 
 Pennylane QuickStart
@@ -23,7 +26,7 @@ These step-by-step tutorials familiarize the user with the basics of PennyLane. 
 .. Copy the template below in order to create a link to your notebook, and a thumbnail.
 
 .. _`Make your first Quantum Circuit`: make_your_first_quantum_circuit.html
-.. |qc| image:: figures/circuit-tutorial.gif
+.. |qc| image:: figures/bloch.gif
    :width: 260px
    :align: middle
    :target: make_your_first_quantum_circuit.html
