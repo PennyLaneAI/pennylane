@@ -1,10 +1,10 @@
-# Qubit Optimization for 3 qubit Ising model using the Pennylane `default qubit` Plugin.
+# Qubit Optimization for 3 qubit Ising model using the Pennylane `default.qubit` Plugin.
 # Ising models are used in Quantum Annealing to solve Quadratic Unconstrained Binary
-# Optimization problems with non-convex cost functions. This example demonstrates how
-# Gradient descent optimizers can get stuck in local minima when using non-convex cost functions.
+# Optimization (QUBO) problems with non-convex cost functions. This example demonstrates how
+# gradient descent optimizers can get stuck in local minima when using non-convex cost functions.
 
-# This example  uses and compares pennylane gradient descent optimizer with the optimizers
-# of PyTorch and TensorFlow for this quantum system: see Q5_isingmodel.ipynb
+# This example uses and compares the PennyLane gradient descent optimizer with the optimizers
+# of PyTorch and TensorFlow for this quantum system: see also `Q5_isingmodel.ipynb`
 
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
