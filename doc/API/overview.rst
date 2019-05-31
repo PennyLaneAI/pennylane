@@ -68,7 +68,7 @@ You must further tell PennyLane about the operations and expectations that your 
 
     operations = {"CNOT", "PauliX"}
 
-  This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+  This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supports_operation`.
 
 * :attr:`~.Device.expectations`: set of the supported PennyLane expectations as strings, e.g.,
 
@@ -76,7 +76,7 @@ You must further tell PennyLane about the operations and expectations that your 
 
     expectations = {"Homodyne", "MeanPhoton", "X", "P"}
 
-  This is used to decide whether an expectation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+  This is used to decide whether an expectation is supported by your device in the default implementation of the public method :meth:`~.Device.supports_expectation`.
 
 * :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user — this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
 

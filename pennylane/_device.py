@@ -278,16 +278,27 @@ class Device(abc.ABC):
 
         return MockContext()
 
-    def supported(self, name):
-        """Checks if an operation or expectation is supported by this device.
+    def supports_operation(self, name):
+        """Checks if an operation is supported by this device.
 
         Args:
-            name (str): name of the operation or expectation
+            name (str): name of the operation
 
         Returns:
             bool: True iff it is supported
         """
-        return name in self.operations.union(self.expectations)
+        return name in self.operations
+
+    def supports_expectation(self, name):
+        """Checks if an expectation is supported by this device.
+
+        Args:
+            name (str): name of the expectation
+
+        Returns:
+            bool: True iff it is supported
+        """
+        return name in self.expectations
 
     def check_validity(self, queue, expectations):
         """Checks whether the operations and expectations in queue are all supported by the device.

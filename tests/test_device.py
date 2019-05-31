@@ -52,18 +52,27 @@ class DeviceTest(BaseTest):
         for name, dev in self.dev.items():
             self.assertEqual(dev.short_name, name)
 
-    def test_supported(self):
-        """check that a nonempty set of operations/expectations are supported"""
+    def test_supports_operation(self):
+        """check that a nonempty set of operations are supported"""
         self.logTestName()
 
         for dev in self.dev.values():
-            ops = dev.operations
-            exps = dev.expectations
-            self.assertTrue(len(ops) > 0)
-            self.assertTrue(len(exps) > 0)
+            operations = dev.operations
+            self.assertTrue(len(operations) > 0)
 
-            for op in ops.union(exps):
-                self.assertTrue(dev.supported(op))
+            for operation in operations:
+                self.assertTrue(dev.supports_operation(operation))
+
+    def test_supports_expectation(self):
+        """check that a nonempty set of expectations are supported"""
+        self.logTestName()
+
+        for dev in self.dev.values():
+            expectations = dev.expectations
+            self.assertTrue(len(expectations) > 0)
+
+            for expectation in expectations:
+                self.assertTrue(dev.supports_expectation(expectation))
 
     def test_check_validity(self):
         """test that the check_validity method correctly
