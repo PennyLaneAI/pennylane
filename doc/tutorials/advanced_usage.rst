@@ -8,14 +8,14 @@ Advanced Usage
 
 In the previous tutorials, we explored the basic concepts of PennyLane including qubit and CV model quantum computations, gradient-based optimization and the construction of hybrid classical-quantum computations.
 
-Pennylane offers many exciting features such as constructing multiple QNodes on a single device, applying any arbitrary Unitary matrix to the states and measuring any custom-defined Hermitian operator. In this tutorial, we will highlight other advanced features of Pennylane.
+PennyLane offers many exciting features such as constructing multiple QNodes on a single device, applying any arbitrary Unitary matrix to the states and measuring any custom-defined Hermitian operator. In this tutorial, we will highlight other advanced features of Pennylane.
 
 Multiple expectation values
 ---------------------------
 
 As we saw in some of the examples in the tutorials, PennyLane supports the return of multiple expectation values; up to one per wire.
 
-As usual, we begin by importing PennyLane and the PennyLane-provided version of NumPy, and set up a 2-wire qubit device for computations:
+As usual, we begin by importing PennyLane and the PennyLane-provided version of NumPy and set up a 2-wire qubit device for computations:
 
 .. code-block:: python
 
@@ -104,7 +104,7 @@ Since keyword arguments do not get considered when computing gradients, the Jaco
 QNodes from different interfaces on one Device
 -----------------------------------------------
 
-Pennylane does not only provide the flexibility of having multiple nodes on one device, it also allows these nodes to have different interfaces. Lets look at the following simple example:
+PennyLane does not only provide the flexibility of having multiple nodes on one device, it also allows these nodes to have different interfaces. Let's look at the following simple example:
 
 .. code-block:: python
 
@@ -113,7 +113,7 @@ Pennylane does not only provide the flexibility of having multiple nodes on one 
         qml.RX(phi, wires=0)
         return qml.expval.PauliZ(0)
 
-Now, we contruct multiple QNodes on the same device and change the interface of one of them from `NumPy`to `PyTorch`: 
+Now, we contruct multiple QNodes on the same device and change the interface of one of them from NumPy to PyTorch: 
 
 .. code-block:: python
 
@@ -121,7 +121,7 @@ Now, we contruct multiple QNodes on the same device and change the interface of 
     qnode2 = qml.QNode(circuit, dev1)
     qnode1_torch = qnode1.to_torch()
 
-Lets define the cost function. Notice that we can pass the QNode as an argument too. This avoids duplication of code. 
+Let's define the cost function. Notice that we can pass the QNode as an argument too. This avoids duplication of code. 
 
 .. code-block:: python
    
