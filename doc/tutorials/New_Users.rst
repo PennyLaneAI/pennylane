@@ -6,7 +6,8 @@
 Pennylane QuickStart
 =====================
 
-These step-by-step tutorials familiarize the user with the basics of PennyLane. You will be more confident to implement your own interesting problems in PennyLane after you are done with this QuickStart!  
+These step-by-step tutorials provided a gentle introduction to the basics of PennyLane. Once you have worked your way through the QuickStart tutorials, you will be ready to implement your own interesting QML problems in PennyLane!
+
 
 
 .. Add the location of your Jupyter notebook below!
