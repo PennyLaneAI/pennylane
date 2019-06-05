@@ -39,17 +39,28 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
-    'edit_on_github'
-    # 'nbsphinx'
+    'edit_on_github',
+    'sphinx_gallery.gen_gallery'
 ]
 
-# nbsphinx settings
+from glob import glob
+import shutil
+import os
 
-exclude_patterns = ['_build', '**.ipynb_checkpoints', 'tutorials/.ipynb_checkpoints', '*-checkpoint.ipynb']
-nbsphinx_execute = 'never'
-nbsphinx_epilog = """
-.. note:: :download:`Click here <../{{env.docname}}.ipynb>` to download this gallery page as an interactive Jupyter notebook.
-"""
+sphinx_gallery_conf = {
+    # path to your example scripts
+    'examples_dirs': 'tutorials',
+    # path where to save gallery generated examples
+    'gallery_dirs': 'gallery',
+    # build files that start 'tutorial_' and don't contain 'skip'
+    'filename_pattern': r'tutorial_(?!skip)',
+    # first notebook cell in generated Jupyter notebooks
+    'first_notebook_cell': ("# This cell is added by sphinx-gallery\n"
+                            "# It can be customized to whatever you like\n"
+                            "%matplotlib inline"),
+    # thumbnail size
+    'thumbnail_size': (400, 400),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates', 'xanadu_theme']
@@ -335,4 +346,9 @@ autodoc_member_order = 'bysource'
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
 
+from custom_directives import IncludeDirective, GalleryItemDirective, CustomGalleryItemDirective
 
+def setup(app):
+    app.add_directive('includenodoc', IncludeDirective)
+    app.add_directive('galleryitem', GalleryItemDirective)
+    app.add_directive('customgalleryitem', CustomGalleryItemDirective)
