@@ -258,37 +258,6 @@ fieldset[disabled] .btn-xanadu.active {
   background-color: #ffffff;
 }
 
-/* sphinx gallery */
-
-.sphx-glr-download-link-note {
-  display: none;
-}
-
-.container {
-  width: unset!important;
-}
-
-.sphx-glr-script-out .highlight pre {
-    background-color: #f7f7f7!important;
-}
-
-div.sphx-glr-download a:hover {
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 1px 5px rgba(0,0,0,.25)!important;
-    text-decoration: none!important;
-    background-image: none!important;
-
-}
-div.sphx-glr-download a {
-    /*background-image: linear-gradient(to bottom, #FFC, #d5d57e);*/
-    border-radius: 4px!important;
-    border: 1px solid #19b37b!important;
-    color: #000;
-    display: inline-block;
-    font-weight: bold;
-    padding: 1ex;
-    text-align: center;
-}
-
 /* References and footnotes
 -------------------------------------------------- */
 

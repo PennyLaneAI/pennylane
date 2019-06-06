@@ -197,7 +197,7 @@ class CustomGalleryItemDirective(Directive):
     def run(self):
         try:
             if 'tooltip' in self.options:
-                tooltip = self.options['tooltip'][:195] + '...'
+                tooltip = self.options['tooltip'][:195]
             else:
                 raise ValueError('tooltip not found')
 
@@ -213,7 +213,7 @@ class CustomGalleryItemDirective(Directive):
 
                 sphinx_gallery.gen_rst.scale_image(figname, thumbnail, 400, 280)
             else:
-                thumbnail = '_static/img/thumbnails/default.png'
+                thumbnail = '_static/thumbs/code.png'
 
             if 'description' in self.options:
                 description = self.options['description']
