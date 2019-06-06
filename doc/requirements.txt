@@ -8,3 +8,4 @@ toml
 appdirs
 sphinxcontrib-bibtex
 pygments-github-lexers
+sphinx_gallery

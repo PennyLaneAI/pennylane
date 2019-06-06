@@ -61,12 +61,13 @@ Documentation
 To build the documentation, the following additional packages are required:
 
 * `Sphinx <http://sphinx-doc.org/>`_ >=1.5
+* `Sphinx-Gallery <https://sphinx-gallery.github.io/>`_ >=0.3
 * `sphinxcontrib-bibtex <https://sphinxcontrib-bibtex.readthedocs.io/en/latest/>`_ >=0.3.6
 
 These can both be installed via ``pip``:
 ::
 
-	$ python3 -m pip install sphinx sphinxcontrib-bibtex
+	$ python3 -m pip install sphinx sphinx_gallery sphinxcontrib-bibtex
 
 To build the HTML documentation, go to the top-level directory and run
 ::
