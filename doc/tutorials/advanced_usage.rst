@@ -140,5 +140,5 @@ tensor(-1., dtype=torch.float64)
 
 Ready-to-use Templates
 ------------------------
-PennyLane provides a growing library of ready-to-use templates of common quantum machine learning circuit architectures and embedding functions. These can be used to easily embed classical data and build, evaluate and train more complex quantum machine learning models. They are provided as functions that can be called with the arguments; for details see :ref:`QML Templates <template>`.
+PennyLane provides a growing library of ready-to-use templates of common quantum machine learning circuit architectures and embedding functions. These can be used to easily embed classical data and build, evaluate and train more complex quantum machine learning models. They are provided as functions that can be called inside QNodes; for details see :mod:`pennylane.templates`.
 
