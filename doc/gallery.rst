@@ -40,6 +40,10 @@ Using plugins
     :description: :ref:`plugins_hybrid`
 
 .. customgalleryitem::
+    :tooltip: Do arbitrary state preparation on a real quantum computer!
+    :description: :ref:`state_preparation`
+
+.. customgalleryitem::
     :tooltip: Extend PyTorch with real quantum computing power!
     :figure: tutorials/figures/bloch.gif
     :description: :ref:`pytorch_noise`
