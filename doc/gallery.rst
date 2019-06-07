@@ -16,12 +16,12 @@ Intermediate tutorials
 
 
 .. customgalleryitem::
-    :tooltip: Use quantum machine learning to rotate a qubit!
+    :tooltip: Use quantum machine learning to rotate a qubit.
     :figure: tutorials/figures/bloch.png
     :description: :ref:`qubit_rotation`
 
 .. customgalleryitem::
-    :tooltip: Use quantum machine learning to control a beamsplitter!
+    :tooltip: Use quantum machine learning to tune a beamsplitter.
     :figure: tutorials/figures/gaussian_transformation.png
     :description: :ref:`gaussian_transformation`
 
@@ -35,16 +35,16 @@ Using plugins
 -------------
 
 .. customgalleryitem::
-    :tooltip: Use quantum machine learning to create a qubit rotation/beamsplitter optimization loop!
+    :tooltip: Use quantum machine learning in a multi-device quantum algorithm.
     :figure: tutorials/figures/photon_redirection.png
     :description: :ref:`plugins_hybrid`
 
 .. customgalleryitem::
-    :tooltip: Do arbitrary state preparation on a real quantum computer!
+    :tooltip: Do arbitrary state preparation on a real quantum computer.
     :description: :ref:`state_preparation`
 
 .. customgalleryitem::
-    :tooltip: Extend PyTorch with real quantum computing power!
+    :tooltip: Extend PyTorch with real quantum computing power.
     :figure: tutorials/figures/bloch.gif
     :description: :ref:`pytorch_noise`
 
@@ -54,5 +54,5 @@ Examples
 --------
 
 Let's convert the examples folder to sphinx-gallery style, and then
-we can include ising.py here as well!
+we can include ising.py here as well.
 
