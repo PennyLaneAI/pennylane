@@ -143,8 +143,8 @@ import autograd.builtins
 
 import pennylane.operation
 
-from .variable  import Variable
-from .utils import _flatten, unflatten
+from pennylane.utils import _flatten, unflatten
+from .variable import Variable
 
 
 class QuantumFunctionError(Exception):

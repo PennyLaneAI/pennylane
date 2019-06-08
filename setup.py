@@ -46,6 +46,7 @@ info = {
                     'pennylane',
                     'pennylane.ops',
                     'pennylane.expval',
+                    'pennylane.templates',
                     'pennylane.plugins',
                     'pennylane.optimize',
                     'pennylane.interfaces'
