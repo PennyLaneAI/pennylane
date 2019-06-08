@@ -50,7 +50,11 @@ This tutorial looks at a couple of hybrid computation examples in PennyLane.
 .. rst-class:: gallery-table
 
 +---------------------------------------------+---------------------------------------+
-| |qco|                                       | |hgq|                                 |                                       
-|                                             |                                       |                  
+| |qco|                                       | |hgq|                                 |
+|                                             |                                       |
+|                                             |                                       |
 | `Hybrid Quantum-Classical Optimization`_    | `Hybrid GPU-QPU Optimization`_        | 
 +---------------------------------------------+---------------------------------------+
+
+
+

@@ -140,5 +140,44 @@ tensor(-1., dtype=torch.float64)
 
 Ready-to-use Templates
 ------------------------
-PennyLane provides a growing library of ready-to-use templates of common quantum machine learning circuit architectures and embedding functions. These can be used to easily embed classical data and build, evaluate and train more complex quantum machine learning models. They are provided as functions that can be called inside QNodes; for details see :mod:`pennylane.templates`.
+PennyLane provides a growing library of ready-to-use templates of common quantum machine learning circuit architectures and embedding functions. These can be used to easily embed classical data and build (and train) complex quantum machine learning models. They are provided as functions that can be called inside QNodes; for details see :mod:`pennylane.templates`. In the tutorials below, we will go through a couple of examples that use these built-in PennyLane templates in detail. 
+.. Add the location of your Jupyter notebook below!
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :titlesonly:
+
+   templates_tutorial_DV.ipynb
+   templates_tutorial_CV.ipynb
+
+
+.. Copy the template below in order to create a link to your notebook, and a thumbnail.
+
+.. _`Single Layer Strongly Entangling Circuit`: templates_tutorial_DV.html
+.. |sec| image:: figures/slsec.png
+   :width: 260px
+   :align: middle
+   :target: templates_tutorial_DV.html
+
+.. _`Single Layer CV QNN`: templates_tutorial_CV.html
+.. |cvq| image:: figures/cvqnn_example.png
+   :width: 260px
+   :align: middle
+   :target: templates_tutorial_CV.html
+
+
+.. Add your thumbnail to the table in the Gallery!
+
+.. rst-class:: gallery-table
+
++------------------------------------------------+----------------------------+
+| |sec|                                          | |cvq|                      |                                       
+|                                                |                            |                  
+| `Single Layer Strongly Entangling Circuit`_    | `Single Layer CV QNN`_     | 
++------------------------------------------------+----------------------------+
+
+
+
+
 
