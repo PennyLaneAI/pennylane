@@ -4,7 +4,7 @@
 # gradient descent optimizers can get stuck in local minima when using non-convex cost functions.
 
 # This example uses and compares the PennyLane gradient descent optimizer with the optimizers
-# of PyTorch and TensorFlow for this quantum system: see `Q5_isingmodel.ipynb`
+# of PyTorch and TensorFlow for this quantum system: see also `Q5_isingmodel.ipynb`
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -15,7 +15,7 @@ from pennylane.optimize import GradientDescentOptimizer
 dev1 = qml.device("default.qubit", wires=3)
 
 # we will be solving the problem with fixed coupling between the three
-# qubits and optimizing the phase operator to get minimum energy
+# qubits and optimizing the phase operator to get the minimum energy
 # configuration of the spin system
 
 
