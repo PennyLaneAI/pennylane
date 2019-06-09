@@ -265,6 +265,10 @@ class BasicTest(BaseTest):
 
         q.grad_method_for_par[k0] = 'J'
         with self.assertRaisesRegex(ValueError, 'Unknown gradient method'):
+            # in eager mode, the grad method would be
+            # recomputed and overwritten from the
+            # bogus value above.
+            q.eager = False
             q.jacobian(par)
 
         #---------------------------------------------------------
@@ -559,7 +563,7 @@ class TestQNodeGradients:
         assert np.allclose(circuit_output, expected_output, atol=tol, rtol=0)
 
         # circuit jacobians
-        circuit_jacobian = circuit.jacobian(multidim_array)
+        circuit_jacobian = circuit.jacobian([multidim_array])
         expected_jacobian = -np.diag(np.sin(b))
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
