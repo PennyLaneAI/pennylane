@@ -79,7 +79,6 @@ Summary
     ~qnode.QNode
     ~decorator.qnode
     ~qnode.QuantumFunctionError
-    eager_mode
     version
 
 .. note::
@@ -205,50 +204,6 @@ def device(name, *args, **kwargs):
     raise DeviceError(
         "Device does not exist. Make sure the required plugin is installed."
     )
-
-
-def eager_mode():
-    """Force QNodes to be re-constructed on every execution.
-
-    By default, the quantum function that constructs the QNode circuit
-    is only evaluated on the first device execution, to save time and memory.
-
-    Running this function disables this behaviour, and every QNode will be
-    re-constructed on every execution. This is useful if the quantum function
-    contains classical control that alters the quantum circuit.
-
-    For example:
-
-    .. code-block:: python
-
-        qml.eager_mode()
-
-        @qml.qnode(dev)
-        def circuit(params, layers=None, phi=None):
-            for a, b in layers:
-                qml.RX(params[0]*a.val, wires=0)
-                qml.RY(params[1]*b.val, wires=0)
-
-            qml.PhaseShift(phi.val/4, wires=0)
-            return qml.expval.PauliZ(0)
-
-        params = np.array([0.543, 0.342])
-        circuit(params, layers=[[1, -1]], phi=0.5)
-        circuit(params, layers=[[1, -1], [2, 1]], phi=0.2)
-
-    Note that when performing classical processing within a QNode, numerical
-    values of passed keyword arguments can be accessed via the ``.val``
-    attribute.
-
-    Without eager mode activated, the above QNode would only evaluate
-    the defined function on the first call, and use that result
-    for all future executions (even if ``layers`` and ``phi`` changes).
-
-    .. warning::
-
-        This is currently an experimental feature.
-    """
-    QNode.eager = True
 
 
 def grad(func, argnum):

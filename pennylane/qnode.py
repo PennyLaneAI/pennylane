@@ -195,17 +195,22 @@ class QNode:
         func (callable): a Python function containing :class:`~.operation.Operation`
             constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
         device (:class:`~pennylane._device.Device`): device to execute the function on
+        cache (bool): If ``True``, the quantum function used to generate the QNode will
+            be only be called to construct the quantum circuit once, on first execution,
+            and this circuit will be cached for all further executions. Only activate this
+            feature if your quantum circuit structure will never change.
     """
     # pylint: disable=too-many-instance-attributes
     _current_context = None  #: QNode: for building Operation sequences by executing quantum circuit functions
-    eager = False
 
-    def __init__(self, func, device):
+    def __init__(self, func, device, cache=False):
         self.func = func
         self.device = device
         self.num_wires = device.num_wires
         self.num_variables = None
         self.ops = []
+
+        self.cache = cache
 
         self.variable_ops = {}
         """ dict[int->list[(int, int)]]: Mapping from free parameter index to the list of
@@ -238,7 +243,7 @@ class QNode:
                 raise QuantumFunctionError('State preparations and gates must precede expectation values.')
             self.queue.append(op)
 
-    def construct(self, args, **kwargs):
+    def construct(self, args, kwargs=None):
         """Constructs a representation of the quantum circuit.
 
         The user should never have to call this method.
@@ -252,16 +257,17 @@ class QNode:
             args (tuple): Represent the free parameters passed to the circuit.
                 Here we are not concerned with their values, but with their structure.
                 Each free param is replaced with a :class:`~.variable.Variable` instance.
-
-        .. note::
-
-            Additional keyword arguments may be passed to the quantum circuit function, however PennyLane
-            does not support differentiating with respect to keyword arguments. Instead,
-            keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
+            kwargs (dict): Additional keyword arguments may be passed to the quantum circuit function,
+                however PennyLane does not support differentiating with respect to keyword arguments.
+                Instead, keyword arguments are useful for providing data or 'placeholders'
+                to the quantum circuit function.
         """
         # pylint: disable=too-many-branches,too-many-statements
         self.queue = []
         self.ev = []  # temporary queue for EVs
+
+        if kwargs is None:
+            kwargs = {}
 
         # flatten the args, replace each with a Variable instance with a unique index
         temp = [Variable(idx) for idx, val in enumerate(_flatten(args))]
@@ -467,7 +473,7 @@ class QNode:
         Returns:
             float, array[float]: output expectation value(s)
         """
-        if not self.ops or self.eager:
+        if not self.ops or not self.cache:
             if self.num_variables is not None:
                 # circuit construction has previously been called
                 if len(list(_flatten(args))) == self.num_variables:
@@ -483,10 +489,11 @@ class QNode:
                     shaped_args = unflatten(flat_args, self.args_shape)
 
                     # construct the circuit
-                    self.construct(shaped_args, **kwargs)
+                    self.construct(shaped_args, kwargs)
             else:
+                # circuit has not yet been constructed
                 # construct the circuit
-                self.construct(args, **kwargs)
+                self.construct(args, kwargs)
 
         # temporarily store keyword arguments
         keyword_values = {}
@@ -611,9 +618,9 @@ class QNode:
         for k in ('h', 'order', 'shots', 'force_order2'):
             circuit_kwargs.pop(k, None)
 
-        if not self.ops or self.eager:
+        if not self.ops or not self.cache:
             # construct the circuit
-            self.construct(params, **circuit_kwargs)
+            self.construct(params, circuit_kwargs)
 
         flat_params = np.array(list(_flatten(params)))
 
