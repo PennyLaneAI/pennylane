@@ -196,7 +196,7 @@ class QNode:
             constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
         device (:class:`~pennylane._device.Device`): device to execute the function on
         cache (bool): If ``True``, the quantum function used to generate the QNode will
-            be only be called to construct the quantum circuit once, on first execution,
+            only be called to construct the quantum circuit once, on first execution,
             and this circuit will be cached for all further executions. Only activate this
             feature if your quantum circuit structure will never change.
     """
