@@ -302,7 +302,13 @@ class QNode:
             raise QuantumFunctionError('QNode._current_context must not be modified outside this method.')
         # generate the program queue by executing the quantum circuit function
         try:
-            res = self.func(*variables, **kwarg_variables)
+            if self.cache:
+                # caching mode, must use variables for kwargs
+                # so they can be updated without reconstructing
+                res = self.func(*variables, **kwarg_variables)
+            else:
+                # no caching, fine to directly pass kwarg values
+                res = self.func(*variables, **keyword_values)
         finally:
             # remove the context
             QNode._current_context = None
