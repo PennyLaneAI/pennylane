@@ -528,11 +528,11 @@ def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
 def interferometer_normal(n_wires, mean=0, std=0.1, seed=None):
     r"""Returns a list of three arrays of the form ``[theta, phi, varphi]`` where:
 
-    * ``theta`` is the list of beam splitter transmittivity angles, of size ``(n_wires*(n_wires-1)/2, )``
+    * ``theta`` is the array of beam splitter transmittivity angles, of size ``(n_wires*(n_wires-1)/2, )``
 
-    * ``phi`` is the list of beam splitter phases, of size ``(n_wires*(n_wires-1)/2, )``
+    * ``phi`` is the array of beam splitter phases, of size ``(n_wires*(n_wires-1)/2, )``
 
-    * ``varphi`` is the list of local angles for the final rotation gates, of size ``(n_wires, )``
+    * ``varphi`` is the array of local angles for the final rotation gates, of size ``(n_wires, )``
    
     All parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
 
