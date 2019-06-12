@@ -935,7 +935,7 @@ class TestQNodeCacheing:
         def circuit(x, c=None):
             qml.RX(x, wires=0)
 
-            for i in range(c.val):
+            for i in range(c):
                 qml.RX(x, wires=i)
     
             return qml.expval.PauliZ(0)
