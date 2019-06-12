@@ -495,7 +495,7 @@ def cvqnn_layer_normal(n_wires, mean=0, std=1, mean_active=0, std_active=0.1, se
 def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a list of three parameter arrays for :func:`~.Interferometer`, drawn from a uniform distribution.
 
-    The shape of the arrays is either ``(n_wires,)`` or ``(n_wires*(n_wires-1)/2,)``.
+    The shape of one of the arrays is ``(n_wires,)``. It contains the initialized rotation angles :math:`\varphi` for the n_wires Rotation gates. The shape of other two arrays is ``(n_wires*(n_wires-1)/2,)``. These contain the initialized transmittivity angles :math:`\theta` and phase angles :math:`\phi` for the Beam Splitter gates. 
 
     The parameters are initialized uniformly from the interval ``[low, high]``.
 
@@ -524,7 +524,7 @@ def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
 def interferometer_normal(n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a list of three parameter arrays for :func:`~.Interferometer`, drawn from a normal distribution.
 
-    The shape of the arrays is either ``(n_wires,)`` or ``(n_wires*(n_wires-1)/2,)``.
+    The shape of one of the arrays is ``(n_wires,)``. It contains the initialized rotation angles :math:`\varphi` for the n_wires Rotation gates. The shape of other two arrays is ``(n_wires*(n_wires-1)/2,)``. These contain the initialized transmittivity angles :math:`\theta` and phase angles :math:`\phi` for the Beam Splitter gates. 
 
     All parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
 
