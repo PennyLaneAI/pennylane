@@ -134,6 +134,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    installing
    plugins
    research
+   Get Help<https://discuss.pennylane.ai/>
 
 .. toctree::
    :maxdepth: 1
