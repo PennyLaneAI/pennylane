@@ -47,7 +47,7 @@ Summary
 Code details
 ^^^^^^^^^^^^
 """
-from pennylane.operation import Operation, Tensor, Expectation
+from pennylane.operation import Operation
 import pennylane as pl
 import pennylane.ops as ops
 
