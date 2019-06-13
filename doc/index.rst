@@ -147,17 +147,12 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    concepts/autograd_quantum
    zreferences
 
-
 .. toctree::
    :maxdepth: 1
-   :caption: Tutorials
+   :caption: Quickstart
    :hidden:
 
-   tutorials/qubit_rotation
-   tutorials/gaussian_transformation
-   tutorials/plugins_hybrid
-   tutorials/pytorch_noise
-   tutorials/advanced_usage
+   gallery
    tutorials/notebooks
 
 
