@@ -42,12 +42,12 @@ quantum operations supported by PennyLane, as well as their conventions.
 :html:`<h3>Code details</h3>`
 """
 
-from pennylane.operation import Expectation
+from pennylane.operation import Observable
 
 
-class PauliX(Expectation):
+class PauliX(Observable):
     r"""pennylane.expval.PauliX(wires)
-    Expectation value of :class:`PauliX<pennylane.ops.qubit.PauliX>`.
+    Observable value of :class:`PauliX<pennylane.ops.qubit.PauliX>`.
 
     This expectation command returns the value
 
@@ -64,14 +64,17 @@ class PauliX(Expectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = False
+    observable = True
+
     num_wires = 1
     num_params = 0
     par_domain = None
 
 
-class PauliY(Expectation):
+class PauliY(Observable):
     r"""pennylane.expval.PauliY(wires)
-    Expectation value of :class:`PauliY<pennylane.ops.qubit.PauliY>`.
+    Observable value of :class:`PauliY<pennylane.ops.qubit.PauliY>`.
 
     This expectation command returns the value
 
@@ -88,14 +91,17 @@ class PauliY(Expectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = False
+    observable = True
+
     num_wires = 1
     num_params = 0
     par_domain = None
 
 
-class PauliZ(Expectation):
+class PauliZ(Observable):
     r"""pennylane.expval.PauliZ(wires)
-    Expectation value of :class:`PauliZ<pennylane.ops.qubit.PauliZ>`.
+    Observable value of :class:`PauliZ<pennylane.ops.qubit.PauliZ>`.
 
     This expectation command returns the value
 
@@ -112,14 +118,17 @@ class PauliZ(Expectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = False
+    observable = True
+
     num_wires = 1
     num_params = 0
     par_domain = None
 
 
-class Hadamard(Expectation):
+class Hadamard(Observable):
     r"""pennylane.expval.Hadamard(wires)
-    Expectation value of the :class:`Hadamard<pennylane.ops.qubit.Hadamard>` observable.
+    Observable value of the :class:`Hadamard<pennylane.ops.qubit.Hadamard>` observable.
 
     This expectation command returns the value
 
@@ -136,14 +145,17 @@ class Hadamard(Expectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = False
+    observable = True
+
     num_wires = 1
     num_params = 0
     par_domain = None
 
 
-class Hermitian(Expectation):
+class Hermitian(Observable):
     r"""pennylane.expval.Hermitian(A, wires)
-    Expectation value of an arbitrary Hermitian observable.
+    Observable value of an arbitrary Hermitian observable.
 
     For a Hermitian matrix :math:`A`, this expectation command returns the value
 
@@ -159,21 +171,24 @@ class Hermitian(Expectation):
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
+    operation = False
+    observable = True
+
     num_wires = 0
     num_params = 1
     par_domain = "A"
     grad_method = "F"
 
 
-# As both the qubit and the CV case need an Identity Expectation,
+# As both the qubit and the CV case need an Identity Observable,
 # and these need to reside in the same name space but have to have
 # different types, this Identity class is not imported into expval
 # directly (it is not put in __all__ below) and instead expval
 # contains a placeholder class Identity that returns appropriate
 # Identity instances via __new__() suitable for the respective device.
-class Identity(Expectation):
+class Identity(Observable):
     r"""pennylane.expval.Identity(wires)
-    Expectation value of the identity observable :math:`\I`.
+    Observable value of the identity observable :math:`\I`.
 
     The expectation of this observable
 
@@ -188,6 +203,9 @@ class Identity(Expectation):
         Can be used to check normalization in approximate simulators.
 
     """
+    operation = False
+    observable = True
+
     num_wires = 0
     num_params = 0
     par_domain = None

@@ -23,18 +23,8 @@ Output from a quantum system - expval, measure and var
 Functions
 ---------
 
-This module contains the functions for computing expectation values of
-quantum operations, variances and making single shot measurements.
-
-* The :function:`pennylane.output.expval` can be used to get the expectation
-  value of any quantum operation defined in `pennylane.ops`. For example a
-  unitary quantum gate such as `PauliX`.
-
-* The :function:`pennylane.outputs.measure` makes a single shot measurement of
-  some quantum operation and generates a sample.
-
-* The :function:`pennylane.outputs.var` computes the variance of the
-  expectation value for a quantum operation.
+This module contains the functions for computing expectation values,
+variances, and single shot measurements of quantum observables.
 
 Summary
 ^^^^^^^

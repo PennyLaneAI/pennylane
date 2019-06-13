@@ -26,8 +26,8 @@ as the conventions chosen for their implementation.
 .. note::
 
     All quantum operations in PennyLane are top level; they can be accessed
-    via ``qml.OperationName``. Expectation values, however, are contained within
-    the :mod:`pennylane.expval`, and are thus accessed via ``qml.expval.ExpectationName``.
+    via ``qml.OperationName``. Observable values, however, are contained within
+    the :mod:`pennylane.expval`, and are thus accessed via ``qml.expval.ObservableName``.
 
 
 .. note::
@@ -62,8 +62,8 @@ from .cv import __all__ as _cv__all__
 from .qubit import __all__ as _qubit__all__
 
 
-class PlaceholderExpectation():
-    r"""pennylane.expval.PlaceholderExpectation()
+class PlaceholderObservable():
+    r"""pennylane.expval.PlaceholderObservable()
     A generic base class for constructing placeholders for operations that
     exist under the same name in CV and qubit-based devices.
 
@@ -87,12 +87,12 @@ class PlaceholderExpectation():
             return getattr(qubit, cls.__name__)(*args, **kwargs)
         else:
             raise QuantumFunctionError("Unable to determine whether this device supports CV or qubit "
-                                       "Operations when constructing this "+cls.__name__+" Expectation.")
+                                       "Operations when constructing this "+cls.__name__+" Observable.")
 
 
-class Identity(PlaceholderExpectation): #pylint: disable=too-few-public-methods,function-redefined
+class Identity(PlaceholderObservable): #pylint: disable=too-few-public-methods,function-redefined
     r"""pennylane.expval.Identity(wires)
-    Expectation value of the identity observable :math:`\I`.
+    Observable value of the identity observable :math:`\I`.
 
     The expectation of this observable
 

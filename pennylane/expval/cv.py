@@ -45,10 +45,10 @@ quantum operations supported by PennyLane, as well as their conventions.
 
 import numpy as np
 
-from pennylane.operation import CVExpectation
+from pennylane.operation import CVObservable
 
 
-class MeanPhoton(CVExpectation):
+class MeanPhoton(CVObservable):
     r"""pennylane.expval.MeanPhoton(wires)
     Returns the photon number expectation value.
 
@@ -60,7 +60,7 @@ class MeanPhoton(CVExpectation):
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Expectation order: 2nd order in the quadrature operators.
+    * Observable order: 2nd order in the quadrature operators.
     * Heisenberg representation:
 
       .. math:: M = \frac{1}{2\hbar}\begin{bmatrix}
@@ -72,6 +72,9 @@ class MeanPhoton(CVExpectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
+    operation = False
+    observable = True
+    
     num_wires = 1
     num_params = 0
     par_domain = None
@@ -84,7 +87,7 @@ class MeanPhoton(CVExpectation):
         return np.diag([-0.5, 0.5/hbar, 0.5/hbar])
 
 
-class X(CVExpectation):
+class X(CVObservable):
     r"""pennylane.expval.X(wires)
     Returns the position expectation value in phase space.
 
@@ -94,7 +97,7 @@ class X(CVExpectation):
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Expectation order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators.
     * Heisenberg representation:
 
       .. math:: d = [0, 1, 0]
@@ -102,6 +105,9 @@ class X(CVExpectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
+    operation = False
+    observable = True
+
     num_wires = 1
     num_params = 0
     par_domain = None
@@ -113,7 +119,7 @@ class X(CVExpectation):
         return np.array([0, 1, 0])
 
 
-class P(CVExpectation):
+class P(CVObservable):
     r"""pennylane.expval.P(wires)
     Returns the momentum expectation value in phase space.
 
@@ -123,7 +129,7 @@ class P(CVExpectation):
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Expectation order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators.
     * Heisenberg representation:
 
       .. math:: d = [0, 0, 1]
@@ -131,6 +137,9 @@ class P(CVExpectation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
+    operation = False
+    observable = True
+
     num_wires = 1
     num_params = 0
     par_domain = None
@@ -142,9 +151,9 @@ class P(CVExpectation):
         return np.array([0, 0, 1])
 
 
-class Homodyne(CVExpectation):
+class Homodyne(CVObservable):
     r"""pennylane.expval.Homodyne(phi, wires)
-    Expectation value of homodyne measurement in phase space.
+    Observable value of homodyne measurement in phase space.
 
     This expectation command returns the value :math:`\braket{\x_\phi}`,
     where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalised
@@ -154,7 +163,7 @@ class Homodyne(CVExpectation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Expectation order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators.
     * Heisenberg representation:
 
       .. math:: d = [0, \cos\phi, \sin\phi]
@@ -164,6 +173,9 @@ class Homodyne(CVExpectation):
             the homodyne measurement.
         wires (Sequence[int] or int): the wire the operation acts on.
     """
+    operation = False
+    observable = True
+
     num_wires = 1
     num_params = 1
     par_domain = 'R'
@@ -177,9 +189,9 @@ class Homodyne(CVExpectation):
         return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
 
 
-class PolyXP(CVExpectation):
+class PolyXP(CVObservable):
     r"""pennylane.expval.PolyXP(q, wires)
-    Expectation value of a second-order polynomial observable.
+    Observable value of a second-order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
     polynomial in the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
@@ -196,12 +208,15 @@ class PolyXP(CVExpectation):
 
     * Number of wires: None (applied to the entire system).
     * Number of parameters: 1
-    * Expectation order: 2nd order in the quadrature operators.
+    * Observable order: 2nd order in the quadrature operators.
     * Heisenberg representation: :math:`A`
 
     Args:
         q (array[float]): expansion coefficients
     """
+    operation = False
+    observable = True
+
     num_wires = 0
     num_params = 1
     par_domain = 'A'
@@ -214,9 +229,9 @@ class PolyXP(CVExpectation):
         return p[0]
 
 
-class NumberState(CVExpectation):
+class NumberState(CVObservable):
     r"""pennylane.expval.NumberState(n, wires)
-    Expectation value of the number state observable :math:`\ket{n}\bra{n}`.
+    Observable value of the number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable
 
@@ -244,7 +259,7 @@ class NumberState(CVExpectation):
 
     * Number of wires: None (applied to any subset of wires).
     * Number of parameters: 1
-    * Expectation order: None (non-Gaussian)
+    * Observable order: None (non-Gaussian)
 
     Args:
         n (array): Array of non-negative integers representing the number state
@@ -256,6 +271,9 @@ class NumberState(CVExpectation):
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
     """
+    operation = False
+    observable = True
+
     num_wires = 0
     num_params = 1
     par_domain = 'A'
@@ -263,15 +281,15 @@ class NumberState(CVExpectation):
     grad_method = None
     ev_order = None
 
-# As both the qubit and the CV case need an Identity Expectation,
+# As both the qubit and the CV case need an Identity Observable,
 # and these need to reside in the same name space but have to have
 # different types, this Identity class is not imported into expval
 # directly (it is not put in __all__ below) and instead expval
 # contains a placeholder class Identity that returns appropriate
 # Identity instances via __new__() suitable for the respective device.
-class Identity(CVExpectation):
+class Identity(CVObservable):
     r"""pennylane.expval.Identity(wires)
-    Expectation value of the identity observable :math:`\I`.
+    Observable value of the identity observable :math:`\I`.
 
     The expectation of this observable
 
@@ -290,8 +308,11 @@ class Identity(CVExpectation):
 
     * Number of wires: None (applied to any subset of wires).
     * Number of parameters: 0
-    * Expectation order: None (non-Gaussian)
+    * Observable order: None (non-Gaussian)
     """
+    operation = False
+    observable = True
+
     num_wires = 0
     num_params = 0
     par_domain = None

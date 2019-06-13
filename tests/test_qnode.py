@@ -149,7 +149,7 @@ class BasicTest(BaseTest):
         #---------------------------------------------------------
         ## faulty quantum functions
 
-        # qfunc must return only Expectations
+        # qfunc must return only Observables
         @qml.qnode(self.dev2)
         def qf(x):
             qml.RX(x, wires=[0])
@@ -224,7 +224,7 @@ class BasicTest(BaseTest):
         @qml.qnode(self.dev1)
         def qf(x):
             return qml.expval.X(wires=0)
-        with self.assertRaisesRegex(DeviceError, 'Expectation [a-zA-Z]+ not supported on device'):
+        with self.assertRaisesRegex(DeviceError, 'Observable [a-zA-Z]+ not supported on device'):
             qf(par)
 
 

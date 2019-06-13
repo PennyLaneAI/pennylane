@@ -251,7 +251,7 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that default qubit device supports all PennyLane discrete gates."""
         self.logTestName()
 
-        self.assertEqual(set(qml.ops.qubit.__all__), set(self.dev._operation_map))
+        self.assertEqual(set([i.__name__ for i in qml.ops.qubit.all_ops]), set(self.dev._operation_map))
 
     def test_expectation_map(self):
         """Test that default qubit device supports all PennyLane discrete expectations."""
@@ -548,7 +548,7 @@ class TestDefaultQubitIntegration(BaseTest):
         dev = qml.device("default.qubit", wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)} - {'Identity', 'PlaceholderOperation'}
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
@@ -600,7 +600,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
-                "Expectation {} not supported on device default.qubit".format(g),
+                "Observable {} not supported on device default.qubit".format(g),
             ):
                 x = np.random.random([op.num_params])
                 circuit(*x)

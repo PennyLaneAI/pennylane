@@ -73,6 +73,18 @@ State preparation
     FockDensityMatrix
     CatState
 
+Observables
+-----------
+
+.. autosummary::
+    MeanPhoton
+    X
+    P
+    Homodyne
+    PolyXP
+    NumberState
+    Identity
+
 
 Code details
 ~~~~~~~~~~~~
@@ -106,7 +118,7 @@ def _rotation(phi, bare=False):
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
-    return block_diag(1, temp) # pylint: disable=no-member
+    return block_diag(1, temp)  # pylint: disable=no-member
 
 
 class Rotation(CVOperation):
@@ -133,10 +145,12 @@ class Rotation(CVOperation):
     Args:
         phi (float): the rotation angle
     """
+    operation = True
+    observable = False
     num_wires = 1
     num_params = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -171,13 +185,15 @@ class Squeezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
     num_wires = 1
     num_params = 2
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
     shift = 0.1
-    grad_recipe = [(0.5/np.sinh(shift), shift), None]
+    grad_recipe = [(0.5 / np.sinh(shift), shift), None]
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -212,13 +228,15 @@ class Displacement(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
     num_wires = 1
     num_params = 2
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
     shift = 0.1
-    grad_recipe = [(0.5/shift, shift), None]
+    grad_recipe = [(0.5 / shift, shift), None]
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -259,10 +277,12 @@ class Beamsplitter(CVOperation):
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
     num_params = 2
     num_wires = 2
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
     # For the beamsplitter, both parameters are rotation-like
     @staticmethod
@@ -309,13 +329,16 @@ class TwoModeSqueezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 2
     num_wires = 2
-    par_domain = 'R'
+    par_domain = "R"
 
-    grad_method = 'A'
+    grad_method = "A"
     shift = 0.1
-    grad_recipe = [(0.5/np.sinh(shift), shift), None]
+    grad_recipe = [(0.5 / np.sinh(shift), shift), None]
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -357,13 +380,16 @@ class QuadraticPhase(CVOperation):
         s (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
+    par_domain = "R"
 
-    grad_method = 'A'
+    grad_method = "A"
     shift = 0.1
-    grad_recipe = [(0.5/shift, shift)]
+    grad_recipe = [(0.5 / shift, shift)]
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -402,13 +428,16 @@ class ControlledAddition(CVOperation):
         s (float): addition multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_wires = 2
     num_params = 1
-    par_domain = 'R'
+    par_domain = "R"
 
-    grad_method = 'A'
+    grad_method = "A"
     shift = 0.1
-    grad_recipe = [(0.5/shift, shift)]
+    grad_recipe = [(0.5 / shift, shift)]
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -448,13 +477,16 @@ class ControlledPhase(CVOperation):
         s (float):  phase shift multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_wires = 2
     num_params = 1
-    par_domain = 'R'
+    par_domain = "R"
 
-    grad_method = 'A'
+    grad_method = "A"
     shift = 0.1
-    grad_recipe = [(0.5/shift, shift)]
+    grad_recipe = [(0.5 / shift, shift)]
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -481,10 +513,13 @@ class Kerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = "R"
+    grad_method = "F"
 
 
 class CrossKerr(CVOperation):
@@ -504,10 +539,13 @@ class CrossKerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 2
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = "R"
+    grad_method = "F"
 
 
 class CubicPhase(CVOperation):
@@ -527,10 +565,13 @@ class CubicPhase(CVOperation):
         gamma (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = "R"
+    grad_method = "F"
 
 
 class Interferometer(CVOperation):
@@ -567,9 +608,12 @@ class Interferometer(CVOperation):
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[int] or int): the wires the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 0
-    par_domain = 'A'
+    par_domain = "A"
     grad_method = None
     grad_recipe = None
 
@@ -579,20 +623,20 @@ class Interferometer(CVOperation):
         X = p[0].real
         Y = p[0].imag
 
-        rows = np.arange(2*N).reshape(2, -1).T.flatten()
-        S = np.vstack([np.hstack([X, -Y]),
-                       np.hstack([Y, X])])[:, rows][rows]
+        rows = np.arange(2 * N).reshape(2, -1).T.flatten()
+        S = np.vstack([np.hstack([X, -Y]), np.hstack([Y, X])])[:, rows][rows]
 
-        M = np.eye(2*N+1)
-        M[1:2*N+1, 1:2*N+1] = S
+        M = np.eye(2 * N + 1)
+        M[1 : 2 * N + 1, 1 : 2 * N + 1] = S
         return M
 
 
-#=============================================================================
+# =============================================================================
 # State preparation
-#=============================================================================
+# =============================================================================
 
-#TODO: put Heisenberg reps of state preparations in docstrings?
+# TODO: put Heisenberg reps of state preparations in docstrings?
+
 
 class CoherentState(CVOperation):
     r"""pennylane.CoherentState(a, phi, wires)
@@ -609,10 +653,13 @@ class CoherentState(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_wires = 1
     num_params = 2
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = "R"
+    grad_method = "F"
 
 
 class SqueezedState(CVOperation):
@@ -630,10 +677,13 @@ class SqueezedState(CVOperation):
         phi (float): squeezing angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_wires = 1
     num_params = 2
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = "R"
+    grad_method = "F"
 
 
 class DisplacedSqueezedState(CVOperation):
@@ -661,10 +711,13 @@ class DisplacedSqueezedState(CVOperation):
         phi_r (float): squeezing angle :math:`\phi_r`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_wires = 1
     num_params = 4
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = "R"
+    grad_method = "F"
 
 
 class ThermalState(CVOperation):
@@ -681,10 +734,13 @@ class ThermalState(CVOperation):
         nbar (float): mean thermal population of the mode
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_wires = 1
     num_params = 1
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = "R"
+    grad_method = "F"
 
 
 class GaussianState(CVOperation):
@@ -702,10 +758,13 @@ class GaussianState(CVOperation):
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
+    operation = True
+    observable = False
+
     num_wires = 0
     num_params = 2
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
 
 
 class FockState(CVOperation):
@@ -722,9 +781,12 @@ class FockState(CVOperation):
         n (int): Fock state to prepare
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_wires = 1
     num_params = 1
-    par_domain = 'N'
+    par_domain = "N"
     grad_method = None
 
 
@@ -742,10 +804,13 @@ class FockStateVector(CVOperation):
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
     """
+    operation = True
+    observable = False
+
     num_wires = 0
     num_params = 1
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
 
 
 class FockDensityMatrix(CVOperation):
@@ -762,10 +827,13 @@ class FockDensityMatrix(CVOperation):
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
+    operation = True
+    observable = False
+
     num_wires = 0
     num_params = 1
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
 
 
 class CatState(CVOperation):
@@ -794,10 +862,292 @@ class CatState(CVOperation):
             cat state, and :math:`p=1` an odd cat state.
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_wires = 1
     num_params = 3
-    par_domain = 'R'
-    grad_method = 'F'
+    par_domain = "R"
+    grad_method = "F"
+
+
+# =============================================================================
+# Observables
+# =============================================================================
+
+
+class MeanPhoton(CVOperation):
+    r"""pennylane.expval.MeanPhoton(wires)
+    Returns the photon number expectation value.
+
+    This expectation command returns the value
+    :math:`\braket{\hat{n}}` where the number operator is
+    :math:`\hat{n} = \a^\dagger \a = \frac{1}{2\hbar}(\x^2 +\p^2) -\I/2`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Observable order: 2nd order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: M = \frac{1}{2\hbar}\begin{bmatrix}
+            -\hbar & 0 & 0\\
+            0 & 1 & 0\\
+            0 & 0 & 1
+        \end{bmatrix}
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on.
+    """
+    operation = False
+    observable = True
+
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+
+    ev_order = 2
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        hbar = 2
+        return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
+
+
+class X(CVOperation):
+    r"""pennylane.expval.X(wires)
+    Returns the position expectation value in phase space.
+
+    This expectation command returns the value :math:`\braket{\x}`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Observable order: 1st order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: d = [0, 1, 0]
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on.
+    """
+    operation = False
+    observable = True
+
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+
+    ev_order = 1
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        return np.array([0, 1, 0])
+
+
+class P(CVOperation):
+    r"""pennylane.expval.P(wires)
+    Returns the momentum expectation value in phase space.
+
+    This expectation command returns the value :math:`\braket{\p}`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Observable order: 1st order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: d = [0, 0, 1]
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on.
+    """
+    operation = False
+    observable = True
+
+    num_wires = 1
+    num_params = 0
+    par_domain = None
+
+    ev_order = 1
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        return np.array([0, 0, 1])
+
+
+class Homodyne(CVOperation):
+    r"""pennylane.expval.Homodyne(phi, wires)
+    Observable value of homodyne measurement in phase space.
+
+    This expectation command returns the value :math:`\braket{\x_\phi}`,
+    where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalised
+    quadrature operator.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Observable order: 1st order in the quadrature operators.
+    * Heisenberg representation:
+
+      .. math:: d = [0, \cos\phi, \sin\phi]
+
+    Args:
+        phi (float): axis in the phase space at which to calculate
+            the homodyne measurement.
+        wires (Sequence[int] or int): the wire the operation acts on.
+    """
+    operation = False
+    observable = True
+
+    num_wires = 1
+    num_params = 1
+    par_domain = "R"
+
+    grad_method = "A"
+    ev_order = 1
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        phi = p[0]
+        return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
+
+
+class PolyXP(CVOperation):
+    r"""pennylane.expval.PolyXP(q, wires)
+    Observable value of a second-order polynomial observable.
+
+    Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
+    polynomial in the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+
+    For first-order observables the representation is a real vector
+    :math:`\mathbf{d}` such that :math:`P(\x,\p) = \mathbf{d}^T \mathbf{r}`.
+
+    For second-order observables the representation is a real symmetric
+    matrix :math:`A` such that :math:`P(\x,\p) = \mathbf{r}^T A \mathbf{r}`.
+
+    Used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV observables.
+
+    **Details:**
+
+    * Number of wires: None (applied to the entire system).
+    * Number of parameters: 1
+    * Observable order: 2nd order in the quadrature operators.
+    * Heisenberg representation: :math:`A`
+
+    Args:
+        q (array[float]): expansion coefficients
+    """
+    operation = False
+    observable = True
+
+    num_wires = 0
+    num_params = 1
+    par_domain = "A"
+
+    grad_method = "F"
+    ev_order = 2
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        return p[0]
+
+
+class NumberState(CVOperation):
+    r"""pennylane.expval.NumberState(n, wires)
+    Observable value of the number state observable :math:`\ket{n}\bra{n}`.
+
+    Represents the non-Gaussian number state observable
+
+    .. math:: \ket{n}\bra{n} = \ket{n_0, n_1, \dots, n_P}\bra{n_0, n_1, \dots, n_P}
+
+    where :math:`n_i` is the occupation number of the :math:`i` th wire.
+
+    The expectation of this observable is
+
+    .. math::
+        E[\ket{n}\bra{n}] = \text{Tr}(\ket{n}\bra{n}\rho)
+        = \text{Tr}(\braketT{n}{\rho}{n})
+        = \braketT{n}{\rho}{n}
+
+    corresponding to the probability of measuring the quantum state in the state
+    :math:`\ket{n}=\ket{n_0, n_1, \dots, n_P}`.
+
+    .. note::
+
+        If ``NumberState`` is applied to a subset of wires,
+        the unaffected wires are traced out prior to the expectation value
+        calculation.
+
+    **Details:**
+
+    * Number of wires: None (applied to any subset of wires).
+    * Number of parameters: 1
+    * Observable order: None (non-Gaussian)
+
+    Args:
+        n (array): Array of non-negative integers representing the number state
+            observable :math:`\ket{n}\bra{n}=\ket{n_0, n_1, \dots, n_P}\bra{n_0, n_1, \dots, n_P}`.
+
+            For example, to return the expectation value of observable :math:`\ket{0,4,2}\bra{0,4,2}`,
+            on wires 0, 1, and 3 of a QNode, you would call ``NumberState(np.array([0, 4, 2], wires=[0, 1, 3]))``.
+
+            Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
+            total number of wires in the QNode.
+    """
+    operation = False
+    observable = True
+
+    num_wires = 0
+    num_params = 1
+    par_domain = "A"
+
+    grad_method = None
+    ev_order = None
+
+
+# As both the qubit and the CV case need an Identity Observable,
+# and these need to reside in the same name space but have to have
+# different types, this Identity class is not imported into expval
+# directly (it is not put in __all__ below) and instead expval
+# contains a placeholder class Identity that returns appropriate
+# Identity instances via __new__() suitable for the respective device.
+class Identity(CVOperation):
+    r"""pennylane.expval.Identity(wires)
+    Observable value of the identity observable :math:`\I`.
+
+    The expectation of this observable
+
+    .. math::
+        E[\I] = \text{Tr}(\I \rho)
+
+    corresponds to the trace of the quantum state, which in exact
+    simulators should always be equal to 1.
+
+    .. note::
+
+        Can be used to check normalization in approximate simulators such as
+        fock basis based ones.
+
+    **Details:**
+
+    * Number of wires: None (applied to any subset of wires).
+    * Number of parameters: 0
+    * Observable order: None (non-Gaussian)
+    """
+    operation = False
+    observable = True
+
+    num_wires = 0
+    num_params = 0
+    par_domain = None
+
+    grad_method = None
+    ev_order = None
 
 
 all_ops = [
@@ -821,8 +1171,18 @@ all_ops = [
     FockStateVector,
     SqueezedState,
     ThermalState,
-    GaussianState
+    GaussianState,
 ]
 
 
-__all__ = [cls.__name__ for cls in all_ops]
+all_obs = [
+    Homodyne,
+    MeanPhoton,
+    P,
+    X,
+    PolyXP,
+    NumberState,
+]
+
+
+__all__ = [cls.__name__ for cls in all_ops + all_obs]

@@ -95,7 +95,7 @@ class DeviceTest(BaseTest):
         # as a valid operation
         queue = [qml.PauliY(wires=0, do_queue=False)]
         expectations = [qml.expval.PauliY(0, do_queue=False)]
-        with self.assertRaisesRegex(qml.DeviceError, "Expectation PauliY not supported"):
+        with self.assertRaisesRegex(qml.DeviceError, "Observable PauliY not supported"):
             dev.check_validity(queue, expectations)
 
     def test_capabilities(self):
@@ -191,7 +191,7 @@ class DeviceTest(BaseTest):
 
         for dev in self.dev.values():
             ops = dev.operations
-            all_ops = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+            all_ops = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)} - {'Identity', 'PlaceholderOperation'}
 
             for o in all_ops-ops:
                 op = qml.ops.__getattribute__(o)

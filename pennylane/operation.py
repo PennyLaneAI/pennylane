@@ -31,7 +31,7 @@ and measuring expectation values in PennyLane.
   represents an application of the operation with given parameter values to
   a given sequence of wires (subsystems).
 
-* Each  :class:`~.Expectation` subclass represents a type of expectation value,
+* Each  :class:`~.Observable` subclass represents a type of expectation value,
   for example the expectation value of an observable. Each instance of these
   subclasses represents an instruction to evaluate and return the respective
   expectation value for the given parameter values on a sequence of wires
@@ -65,15 +65,15 @@ Summary
 
 .. autosummary::
    Operation
-   Expectation
+   Observable
 
 
 CV Operation base classes
 -------------------------
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
-:class:`~.CVOperation` or :class:`~.CVExpectation` classes instead of :class:`~.Operation`
-and :class:`~.Expectation`.
+:class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
+and :class:`~.Observable`.
 
 Differentiation
 ^^^^^^^^^^^^^^^
@@ -86,7 +86,7 @@ the operation given its list of parameters, namely:
   operation on the vector of quadrature operators :math:`\mathbf{r}` for the given parameter
   values.
 
-* For Gaussian CV Expectations this method should return a real vector (first-order observables)
+* For Gaussian CV Observables this method should return a real vector (first-order observables)
   or symmetric matrix (second-order observables) of coefficients of the quadrature
   operators :math:`\x` and :math:`\p`.
 
@@ -103,7 +103,7 @@ Summary
 .. autosummary::
    CV
    CVOperation
-   CVExpectation
+   CVObservable
 
 Code details
 ^^^^^^^^^^^^
@@ -190,6 +190,18 @@ class Operation(abc.ABC):
             outside of a QNode context.
     """
     _grad_recipe = None
+
+    @abc.abstractproperty
+    def operation(self):
+        """Whether the operation represents a quantum operation
+        that can be applied on a quantum device."""
+        raise NotImplementedError
+
+    @abc.abstractproperty
+    def observable(self):
+        """Whether the operation represents a physical observable/
+        measured quantity that can be returned from a quantum device"""
+        raise NotImplementedError
 
     @abc.abstractproperty
     def num_params(self):
@@ -393,18 +405,18 @@ class Operation(abc.ABC):
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         QNode._current_context._append_op(self)
-        return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
+        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
 #=============================================================================
-# Base Expectation class
+# Base Observable class
 #=============================================================================
 
 
-class Expectation(Operation):
+class Observable(Operation):
     """Base class for expectation value measurements supported by a device.
 
-    :class:`Expectation` is used to describe Hermitian quantum observables.
+    :class:`Observable` is used to describe Hermitian quantum observables.
 
     As with :class:`~.Operation`, the following class attributes must be
     defined for all expectations:
@@ -421,14 +433,14 @@ class Expectation(Operation):
     * :attr:`~.Operation.grad_recipe`
 
     Args:
-        args (tuple[float, int, array, Variable]): Expectation parameters
+        args (tuple[float, int, array, Variable]): Observable parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
         do_queue (bool): Indicates whether the operation should be immediately
             pushed into a :class:`QNode` circuit queue. This flag is useful if
-            there is some reason to run an Expectation outside of a QNode context.
+            there is some reason to run an Observable outside of a QNode context.
     """
     # pylint: disable=abstract-method
     def __init__(self, *args, wires=None, do_queue=True):
@@ -491,7 +503,7 @@ class CV:
             for k, w in enumerate(self.wires):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
-            if isinstance(self, Expectation):
+            if isinstance(self, Observable):
                 W = np.zeros((dim, dim))
             else:
                 W = np.eye(dim)
@@ -560,9 +572,26 @@ class CV:
         """
         return CV._heisenberg_rep != self._heisenberg_rep
 
+
 class CVOperation(CV, Operation):
-    """Base class for continuous-variable quantum operations."""
+    r"""Base class for continuous-variable quantum operations.
+
+    The class attribute :attr:`~.ev_order` can be defined to indicate
+    to PennyLane whether the corresponding CV observable is a polynomial in the
+    quadrature operators. If so,
+
+    * ``ev_order = 1`` indicates a first order polynomial in quadrature
+      operators :math:`(\x, \p)`.
+
+    * ``ev_order = 2`` indicates a second order polynomial in quadrature
+      operators :math:`(\x, \p)`.
+
+    If :attr:`~.ev_order` is not ``None``, then the Heisenberg representation
+    of the observable should be defined in the static method :meth:`~.CV._heisenberg_rep`,
+    returning an array of the correct dimension.
+    """
     # pylint: disable=abstract-method
+    ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
     def heisenberg_pd(self, idx):
         """Partial derivative of the Heisenberg picture transform matrix.
@@ -628,26 +657,33 @@ class CVOperation(CV, Operation):
 
         return self.heisenberg_expand(U, num_wires)
 
+    def heisenberg_obs(self, num_wires):
+        r"""Representation of the observable in the position/momentum operator basis.
 
-class CVExpectation(CV, Expectation):
+        Returns the expansion :math:`q` of the observable, :math:`Q`, in the
+        basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
+
+        * For first-order observables returns a real vector such
+          that :math:`Q = \sum_i q_i \mathbf{r}_i`.
+
+        * For second-order observables returns a real symmetric matrix
+          such that :math:`Q = \sum_{ij} q_{ij} \mathbf{r}_i \mathbf{r}_j`.
+
+        Args:
+            num_wires (int): total number of wires in the quantum circuit
+        Returns:
+            array[float]: :math:`q`
+        """
+        p = self.parameters
+        U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
+        return self.heisenberg_expand(U, num_wires)
+
+
+class CVObservable(CV, Observable):
     r"""Base class for continuous-variable expectation value measurements.
 
-    The class attribute :attr:`~.ev_order` can be defined to indicate
-    to PennyLane whether the corresponding CV observable is a polynomial in the
-    quadrature operators. If so,
-
-    * ``ev_order = 1`` indicates a first order polynomial in quadrature
-      operators :math:`(\x, \p)`.
-
-    * ``ev_order = 2`` indicates a second order polynomial in quadrature
-      operators :math:`(\x, \p)`.
-
-    If :attr:`~.ev_order` is not ``None``, then the Heisenberg representation
-    of the observable should be defined in the static method :meth:`~.CV._heisenberg_rep`,
-    returning an array of the correct dimension.
     """
-    # pylint: disable=abstract-method
-    ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
+    # TODO: deprecated, kept for backwards compatibility
 
     def heisenberg_obs(self, num_wires):
         r"""Representation of the observable in the position/momentum operator basis.

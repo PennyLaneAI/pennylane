@@ -304,7 +304,7 @@ class TestDefaultGaussianDevice(BaseTest):
                          'CubicPhase',
                          'Kerr'}
 
-        self.assertEqual(set(qml.ops.cv.__all__) - non_supported,
+        self.assertEqual(set([i.__name__ for i in qml.ops.cv.all_ops]) - non_supported,
                          set(self.dev._operation_map))
 
     def test_expectation_map(self):
@@ -494,10 +494,14 @@ class TestDefaultGaussianIntegration(BaseTest):
         dev = qml.device('default.gaussian', wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)} - {'Identity', 'PlaceholderOperation'}
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
+            print(g)
+
+            if not op.operation:
+                pass
 
             if op.num_wires == 0:
                 wires = [0]
@@ -541,7 +545,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 x = prep_par(x, op)
                 return op(*x, wires=wires)
 
-            with self.assertRaisesRegex(qml.DeviceError, "Expectation {} not supported on device default.gaussian".format(g)):
+            with self.assertRaisesRegex(qml.DeviceError, "Observable {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 

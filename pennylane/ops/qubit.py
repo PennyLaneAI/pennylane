@@ -43,6 +43,7 @@ Gates
     QubitUnitary
 
 
+
 State preparation
 -----------------
 
@@ -50,6 +51,14 @@ State preparation
     BasisState
     QubitStateVector
 
+
+Observables
+-----------
+
+.. autosummary::
+    Identity
+    Hermitian
+    
 
 Code details
 ~~~~~~~~~~~~
@@ -72,6 +81,9 @@ class Hadamard(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = True
+
     num_params = 0
     num_wires = 1
     par_domain = None
@@ -91,6 +103,9 @@ class PauliX(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = True
+
     num_params = 0
     num_wires = 1
     par_domain = None
@@ -110,6 +125,9 @@ class PauliY(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = True
+
     num_params = 0
     num_wires = 1
     par_domain = None
@@ -129,6 +147,9 @@ class PauliZ(Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = True
+
     num_params = 0
     num_wires = 1
     par_domain = None
@@ -155,6 +176,9 @@ class CNOT(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 0
     num_wires = 2
     par_domain = None
@@ -181,6 +205,9 @@ class CZ(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 0
     num_wires = 2
     par_domain = None
@@ -207,6 +234,9 @@ class SWAP(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 0
     num_wires = 2
     par_domain = None
@@ -231,10 +261,13 @@ class RX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
 class RY(Operation):
@@ -256,10 +289,13 @@ class RY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
 class RZ(Operation):
@@ -281,10 +317,13 @@ class RZ(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
 class PhaseShift(Operation):
@@ -306,10 +345,13 @@ class PhaseShift(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
 class Rot(Operation):
@@ -334,15 +376,18 @@ class Rot(Operation):
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 3
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
-#=============================================================================
+# =============================================================================
 # Arbitrary operations
-#=============================================================================
+# =============================================================================
 
 
 class QubitUnitary(Operation):
@@ -359,15 +404,18 @@ class QubitUnitary(Operation):
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 0
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
 
 
-#=============================================================================
+# =============================================================================
 # State preparation
-#=============================================================================
+# =============================================================================
 
 
 class BasisState(Operation):
@@ -386,9 +434,12 @@ class BasisState(Operation):
             if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 0
-    par_domain = 'A'
+    par_domain = "A"
     grad_method = None
 
 
@@ -406,10 +457,76 @@ class QubitStateVector(Operation):
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
+    operation = True
+    observable = False
+
     num_params = 1
     num_wires = 0
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
+
+
+# =============================================================================
+# Observables
+# =============================================================================
+
+# As both the qubit and the CV case need an Identity Observable,
+# and these need to reside in the same name space but have to have
+# different types, this Identity class is not imported into expval
+# directly (it is not put in __all__ below) and instead expval
+# contains a placeholder class Identity that returns appropriate
+# Identity instances via __new__() suitable for the respective device.
+class Identity(Operation):
+    r"""pennylane.expval.Identity(wires)
+    Observable value of the identity observable :math:`\I`.
+
+    The expectation of this observable
+
+    .. math::
+        E[\I] = \text{Tr}(\I \rho)
+
+    corresponds to the trace of the quantum state, which in exact
+    simulators should always be equal to 1.
+
+    .. note::
+
+        Can be used to check normalization in approximate simulators.
+
+    """
+    operation = False
+    observable = True
+
+    num_wires = 0
+    num_params = 0
+    par_domain = None
+    grad_method = None
+
+
+class Hermitian(Operation):
+    r"""Hermitian(A, wires)
+    Observable value of an arbitrary Hermitian observable.
+
+    For a Hermitian matrix :math:`A`, this expectation command returns the value
+
+    .. math::
+        \braket{A} = \braketT{\psi}{\cdots \otimes I\otimes A\otimes I\cdots}{\psi}
+
+    where :math:`A` acts on the requested wires.
+
+    If acting on :math:`N` wires, then the matrix :math:`A` must be of size
+    :math:`2^N\times 2^N`.
+
+    Args:
+        A (array): square hermitian matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+    """
+    operation = False
+    observable = True
+
+    num_wires = 0
+    num_params = 1
+    par_domain = "A"
+    grad_method = "F"
 
 
 all_ops = [
@@ -427,8 +544,11 @@ all_ops = [
     Rot,
     BasisState,
     QubitStateVector,
-    QubitUnitary
+    QubitUnitary,
 ]
 
 
-__all__ = [cls.__name__ for cls in all_ops]
+all_obs = [Hermitian, Identity]
+
+
+__all__ = [cls.__name__ for cls in all_ops + all_obs]

@@ -84,8 +84,7 @@ Summary
 .. note::
 
     All individual operations (contained in :mod:`~.ops`) and optimizers
-    (contained in :mod:`~.optimize`) may also be imported directly from PennyLane.
-    Expectation values, however, must be accessed via the :mod:`~.expval` module.
+    (contained in :mod:`~.optimize`) may also be imported directly from PennyLane
 
 Code details
 ~~~~~~~~~~~~

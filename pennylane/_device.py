@@ -189,7 +189,7 @@ class Device(abc.ABC):
 
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
-            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return
+            expectation (Iterable[~.operation.Observable]): expectations to evaluate and return
 
         Returns:
             array[float]: expectation value(s)
@@ -236,7 +236,7 @@ class Device(abc.ABC):
         of :meth:`~.execute`.
 
         Returns:
-            list[~.operation.Expectation]
+            list[~.operation.Observable]
         """
         if self._expval_queue is None:
             raise ValueError("Cannot access the expectation value queue outside of the execution context!")
@@ -294,7 +294,7 @@ class Device(abc.ABC):
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in the device
-            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in the device
+            expectations (Iterable[~.operation.Observable]): expectations which are intended to be evaluated in the device
         """
         for o in queue:
             if o.name not in self.operations:
@@ -302,7 +302,7 @@ class Device(abc.ABC):
 
         for e in expectations:
             if e.name not in self.expectations:
-                raise DeviceError("Expectation {} not supported on device {}".format(e.name, self.short_name))
+                raise DeviceError("Observable {} not supported on device {}".format(e.name, self.short_name))
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
