@@ -106,6 +106,7 @@ import pennylane.init
 import pennylane.templates.layers
 import pennylane.templates.embeddings
 from pennylane.about import about
+import pennylane.output
 
 
 from .configuration import Configuration
