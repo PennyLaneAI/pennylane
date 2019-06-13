@@ -300,7 +300,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
 
 
 def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='pennylane'):
-    r"""General linear interferometer, an array of beam splitters and phase shifters.
+    r"""General linear interferometer, an array of beamsplitters and phase shifters.
 
     For :math:`M` wires, the general interferometer is specified by
     providing :math:`M(M-1)/2` transmittivity angles :math:`\theta` and the same number of
