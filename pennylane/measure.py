@@ -41,7 +41,7 @@ wire 2.
         qml.RY(y, wires=1)
         return expval(qml.PauliZ(0)), var(qml.PauliX(1))
 
-Note that _all_ returned observables must be within
+Note that *all* returned observables must be within
 a measurement function; they cannot be 'bare'.
 
 
