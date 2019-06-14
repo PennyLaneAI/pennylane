@@ -147,10 +147,10 @@ class DeviceTest(BaseTest):
 
         # inside of the execute method, it works
         with self.assertLogs(level='INFO') as l:
-            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            dev.execute(queue, [qml.expval(qml.PauliX(0, do_queue=False))])
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
-            self.assertIn('INFO:root:[<pennylane.expval.qubit.PauliX object', l.output[0])
+            self.assertIn('INFO:root:[<pennylane.ops.qubit.PauliX object', l.output[0])
 
     def test_execute(self):
         """check that execution works on supported operations/expectations"""
@@ -191,10 +191,10 @@ class DeviceTest(BaseTest):
 
         for dev in self.dev.values():
             ops = dev.operations
-            all_ops = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+            all_ops = set(qml.ops.__all_ops__)
 
             for o in all_ops-ops:
-                op = qml.ops.__getattribute__(o)
+                op = getattr(qml.ops, o)
 
                 if op.par_domain == 'A':
                     # skip operations with array parameters, as there are too
@@ -217,10 +217,10 @@ class DeviceTest(BaseTest):
                         expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
 
             exps = dev.expectations
-            all_exps = set(qml.expval.__all__)
+            all_exps = set(qml.ops.__all_obs__)
 
             for g in all_exps-exps:
-                op = qml.expval.__getattribute__(g)
+                op = getattr(qml.ops, g)
 
                 if op.par_domain == 'A':
                     # skip expectations with array parameters, as there are too

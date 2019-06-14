@@ -304,13 +304,13 @@ class TestDefaultGaussianDevice(BaseTest):
                          'CubicPhase',
                          'Kerr'}
 
-        self.assertEqual(set(qml.ops.cv.__all__) - non_supported,
+        self.assertEqual(set(qml.ops._cv__ops__) - non_supported,
                          set(self.dev._operation_map))
 
     def test_expectation_map(self):
         """Test that default Gaussian device supports all PennyLane Gaussian continuous expectations."""
         self.logTestName()
-        self.assertEqual(set(qml.expval.cv.__all__)|{'Identity'}-{'Heterodyne'},
+        self.assertEqual(set(qml.ops._cv__obs__)|{'Identity'}-{'Heterodyne'},
                          set(self.dev._expectation_map))
 
     def test_apply(self):
@@ -494,7 +494,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         dev = qml.device('default.gaussian', wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+        all_gates = set(qml.ops.__all_ops__)
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
@@ -525,7 +525,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         dev = qml.device('default.gaussian', wires=2)
 
         obs = set(dev._expectation_map.keys())
-        all_obs = set(qml.expval.__all__)
+        all_obs = set(qml.ops.__all_obs__)
 
         for g in all_obs - obs:
             op = getattr(qml.expval, g)

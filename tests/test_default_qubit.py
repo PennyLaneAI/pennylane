@@ -251,14 +251,14 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that default qubit device supports all PennyLane discrete gates."""
         self.logTestName()
 
-        self.assertEqual(set(qml.ops.qubit.__all__), set(self.dev._operation_map))
+        self.assertEqual(set(qml.ops._qubit__ops__), set(self.dev._operation_map))
 
     def test_expectation_map(self):
         """Test that default qubit device supports all PennyLane discrete expectations."""
         self.logTestName()
 
         self.assertEqual(
-            set(qml.expval.qubit.__all__) | {"Identity"}, set(self.dev._expectation_map)
+            set(qml.ops._qubit__obs__) | {"Identity"}, set(self.dev._expectation_map)
         )
 
     def test_expand_one(self):
@@ -362,9 +362,9 @@ class TestDefaultQubitDevice(BaseTest):
             **self.dev._expectation_map,
         }.items():
             try:
-                op = qml.ops.__getattribute__(name)
+                op = getattr(qml.ops, name)
             except AttributeError:
-                op = qml.expval.__getattribute__(name)
+                op = getattr(qml.expval, name)
 
             p = [0.432423, -0.12312, 0.324][: op.num_params]
 
@@ -400,7 +400,7 @@ class TestDefaultQubitDevice(BaseTest):
             self.dev._state = np.array([1, 0, 0, 0])
 
             # get the equivalent pennylane operation class
-            op = qml.ops.__getattribute__(gate_name)
+            op = getattr(qml.ops, gate_name)
             # the list of wires to apply the operation to
             w = list(range(op.num_wires))
 
@@ -479,7 +479,7 @@ class TestDefaultQubitDevice(BaseTest):
             self.dev._state = np.array([1, 0, 1, 1]) / np.sqrt(3)
 
             # get the equivalent pennylane operation class
-            op = qml.expval.__getattribute__(name)
+            op = getattr(qml.expval, name)
 
             if op.par_domain == "A":
                 # the parameter is an array
@@ -548,7 +548,7 @@ class TestDefaultQubitIntegration(BaseTest):
         dev = qml.device("default.qubit", wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+        all_gates = set(qml.ops.__all_ops__)
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
@@ -582,7 +582,7 @@ class TestDefaultQubitIntegration(BaseTest):
         dev = qml.device("default.qubit", wires=2)
 
         obs = set(dev._expectation_map.keys())
-        all_obs = set(qml.expval.__all__)
+        all_obs = set(qml.ops.__all_obs__)
 
         for g in all_obs - obs:
             op = getattr(qml.expval, g)

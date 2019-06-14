@@ -150,7 +150,13 @@ class CVGradientTest(BaseTest):
                 super().__init__(q, wires=wires)
                 self.name = 'PolyXP'
 
-        gates = [cls for cls in qml.ops.cv.all_ops if cls.supports_analytic]
+        gates = []
+        for name in qml.ops._cv__ops__:
+            cls = getattr(qml.ops, name)
+
+            if cls.supports_analytic:
+                gates.append(cls)
+
         obs   = [qml.expval.X, qml.expval.MeanPhoton, PolyN]
         par = [0.4]
 
@@ -290,7 +296,8 @@ class CVGradientTest(BaseTest):
         gradient analytic method can still be used, and returns the correct result."""
         self.logTestName()
 
-        for cls in qml.ops.cv.all_ops:
+        for name in qml.ops._cv__ops__:
+            cls = getattr(qml.ops, name)
             if cls.supports_heisenberg and (not cls.supports_analytic):
                 dev = qml.device('default.gaussian', wires=2)
 

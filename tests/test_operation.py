@@ -54,7 +54,7 @@ class BasicTest(BaseTest):
 
             op = cls(*par, wires=ww, do_queue=False)
 
-            if issubclass(cls, oo.Expectation):
+            if issubclass(cls, oo.Observable):
                 Q = op.heisenberg_obs(0)
                 # ev_order equals the number of dimensions of the H-rep array
                 self.assertEqual(Q.ndim, cls.ev_order)
@@ -102,7 +102,8 @@ class BasicTest(BaseTest):
                 U_high_order = np.array([U] * 3)
                 op.heisenberg_expand(U_high_order, len(op.wires))
 
-        for cls in pennylane.ops.cv.all_ops + pennylane.expval.cv.all_ops:
+        for op in pennylane.ops._cv__ops__ | pennylane.ops._cv__obs__:
+            cls = getattr(pennylane.ops, op)
             if cls.supports_heisenberg:  # only test gaussian operations
                 h_test(cls)
 
@@ -180,17 +181,17 @@ class BasicTest(BaseTest):
             cls.par_domain = tmp
 
 
-        for cls in pennylane.ops.qubit.all_ops:
-            op_test(cls)
+        for cls in pennylane.ops._qubit__ops__:
+            op_test(getattr(pennylane.ops, cls))
 
-        for cls in pennylane.ops.cv.all_ops:
-            op_test(cls)
+        for cls in pennylane.ops._cv__ops__:
+            op_test(getattr(pennylane.ops, cls))
 
-        for cls in pennylane.expval.qubit.all_ops:
-            op_test(cls)
+        for cls in pennylane.ops._qubit__obs__:
+            op_test(getattr(pennylane.ops, cls))
 
-        for cls in pennylane.expval.cv.all_ops:
-            op_test(cls)
+        for cls in pennylane.ops._cv__obs__:
+            op_test(getattr(pennylane.ops, cls))
 
     def test_operation_outside_queue(self):
         """Test that an error is raised if an operation is called
@@ -198,14 +199,14 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         with self.assertRaisesRegex(pennylane.QuantumFunctionError, "can only be used inside a qfunc"):
-            pennylane.qubit.Hadamard(wires=0)
+            pennylane.ops.Hadamard(wires=0)
 
     def test_operation_no_queue(self):
         """Test that an operation can be called outside a QNode with the do_queue flag"""
         self.logTestName()
 
         try:
-            pennylane.qubit.Hadamard(wires=0, do_queue=False)
+            pennylane.ops.Hadamard(wires=0, do_queue=False)
         except pennylane.QuantumFunctionError:
             self.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
 
