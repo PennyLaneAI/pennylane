@@ -316,6 +316,12 @@ class QNode:
             raise QuantumFunctionError("A quantum function must return either a single measured observable "
                                        "or a nonempty sequence of measured observables.")
 
+        # check that all returned observables have a return_type specified
+        for x in res:
+            if x.return_type is None:
+                raise QuantumFunctionError("Observable '{}' does not have the measurement "
+                                           "type specified.")
+
         # check that all ev's are returned, in the correct order
         if res != tuple(self.ev):
             raise QuantumFunctionError("All measured observables must be returned in the "

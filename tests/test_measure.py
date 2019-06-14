@@ -19,6 +19,20 @@ import pennylane as qml
 from pennylane.qnode import QuantumFunctionError
 
 
+def test_no_measure(tol):
+    """Test that failing to specify a measurement
+    raises an exception"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.PauliY(0)
+
+    with pytest.raises(QuantumFunctionError, match="does not have the measurement"):
+        res = circuit(0.65)
+
+
 class TestExpval:
     """Tests for the new expval function"""
 
