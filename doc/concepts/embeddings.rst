@@ -37,7 +37,7 @@ Amplitude Embedding
 
 In the amplitude embedding technique, data is encoded into the amplitudes of a quantum state. A classical **normalized** :math:`N`-dimensional datapoint :math:`x` is represented by the amplitudes of a :math:`n`-qubit quantum state :math:`\mid \psi_x \rangle` as
 
-.. math:: \mid \psi_x \rangle = \sum_{i=0}^{N-1} x_i |i \rangle,
+.. math:: \mid \psi_x \rangle = \sum_{i=1}^{N} x_i |i \rangle,
 
 where :math:`x_i` is the :math:`i`'th element of :math:`x` and :math:`\mid i \rangle` is the :math:`i`'th computational basis state. For example, let's say we want to encode :math:`x=1010` using amplitude embedding. The first step is to normalize it, i.e., :math:`x_{norm}=\frac{1}{\sqrt{2}}(1010)`. The corresponding amplitude encoding uses two qubits to represent :math:`x_{norm}` as
 
