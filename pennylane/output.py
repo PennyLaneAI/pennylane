@@ -45,9 +45,6 @@ def expval(op):
     r"""pennylane.output.expval()
     Expectation value of the operator supplied :math:`\langle O \rangle`.
 
-    .. math::
-        E[O] = \text{Tr}(O \rho)
-
     Args:
         op (:class:`~pennylane.operation.Operation`): A quantum operator 
         object which is run inside a `QNode`, e.g., `PauliX(wires=[0])`
@@ -64,7 +61,57 @@ def expval(op):
     # set return type to be an expectation value
     op.return_type = 'expectation'
 
-    # add observable to QNode queue
+    # add observable to QNode observable queue
+    QNode._current_context._append_op(op)
+
+    return op
+
+
+def var(op):
+    r"""Variance of the operator supplied :math:`\langle O \rangle`.
+
+    Args:
+        op (:class:`~pennylane.operation.Operation`): A quantum operator 
+        object which is run inside a `QNode`, e.g., `PauliX(wires=[0])`
+    """
+    if QNode._current_context is None:
+        raise QuantumFunctionError("Expectation values can only be used inside a qfunc.")
+
+    if not isinstance(op, Observable):
+        raise QuantumFunctionError("Only observables can be accepted")
+
+    # delete operations from QNode queue
+    QNode._current_context.queue.remove(op)
+
+    # set return type to be an expectation value
+    op.return_type = 'variance'
+
+    # add observable to QNode observable queue
+    QNode._current_context._append_op(op)
+
+    return op
+
+
+def measure(op):
+    r"""Measure operator supplied :math:`\langle O \rangle`.
+
+    Args:
+        op (:class:`~pennylane.operation.Operation`): A quantum operator 
+        object which is run inside a `QNode`, e.g., `PauliX(wires=[0])`
+    """
+    if QNode._current_context is None:
+        raise QuantumFunctionError("Expectation values can only be used inside a qfunc.")
+
+    if not isinstance(op, Observable):
+        raise QuantumFunctionError("Only observables can be accepted")
+
+    # delete operations from QNode queue
+    QNode._current_context.queue.remove(op)
+
+    # set return type to be an expectation value
+    op.return_type = 'sample'
+
+    # add observable to QNode observable queue
     QNode._current_context._append_op(op)
 
     return op
