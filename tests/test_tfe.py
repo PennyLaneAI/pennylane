@@ -142,7 +142,7 @@ class TFEQNodeTests(BaseTest):
         def qf(x):
             return qml.expval.X(0)
 
-        with self.assertRaisesRegex(DeviceError, 'Expectation [a-zA-Z]+ not supported on device'):
+        with self.assertRaisesRegex(DeviceError, 'Observable [a-zA-Z]+ not supported on device'):
             qf(par)
 
     def test_qnode_fanout(self):

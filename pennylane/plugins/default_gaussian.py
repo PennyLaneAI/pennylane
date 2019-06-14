@@ -728,7 +728,7 @@ class DefaultGaussian(Device):
         'Interferometer': interferometer
     }
 
-    _expectation_map = {
+    _observable_map = {
         'MeanPhoton': photon_number,
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
@@ -814,10 +814,10 @@ class DefaultGaussian(Device):
 
         return S2
 
-    def expval(self, expectation, wires, par):
+    def expval(self, observable, wires, par):
         mu, cov = self.reduced_state(wires)
 
-        ev, var = self._expectation_map[expectation](mu, cov, wires, par, hbar=self.hbar)
+        ev, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
 
         if self.shots != 0:
             # estimate the ev
@@ -865,5 +865,5 @@ class DefaultGaussian(Device):
         return set(self._operation_map.keys())
 
     @property
-    def expectations(self):
-        return set(self._expectation_map.keys())
+    def observables(self):
+        return set(self._observable_map.keys())

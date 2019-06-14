@@ -253,7 +253,7 @@ class Device(abc.ABC):
             list[~.operation.Observable]
         """
         if self._obs_queue is None:
-            raise ValueError("Cannot access the expectation value queue outside of the execution context!")
+            raise ValueError("Cannot access the observable value queue outside of the execution context!")
 
         return self._obs_queue
 
@@ -334,7 +334,7 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def expval(self, expectation, wires, par):
+    def expval(self, observable, wires, par):
         """Return the expectation value of an observable.
 
         For plugin developers: this function should return the expectation value of the
@@ -350,7 +350,7 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
-    def var(self, expectation, wires, par):
+    def var(self, observable, wires, par):
         """Return the expectation variance of an observable.
 
         For plugin developers: this function should return the variance of the
@@ -366,7 +366,7 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
-    def sample(self, expectation, wires, par):
+    def sample(self, observable, wires, par):
         """Return a measured sample of an observable.
 
         For plugin developers: this function should return a measurement sample

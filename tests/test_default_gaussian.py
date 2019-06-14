@@ -307,11 +307,11 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertEqual(set(qml.ops._cv__ops__) - non_supported,
                          set(self.dev._operation_map))
 
-    def test_expectation_map(self):
-        """Test that default Gaussian device supports all PennyLane Gaussian continuous expectations."""
+    def test_observable_map(self):
+        """Test that default Gaussian device supports all PennyLane Gaussian continuous observables."""
         self.logTestName()
         self.assertEqual(set(qml.ops._cv__obs__)|{'Identity'}-{'Heterodyne'},
-                         set(self.dev._expectation_map))
+                         set(self.dev._observable_map))
 
     def test_apply(self):
         """Test the application of gates to a state"""
@@ -524,7 +524,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         self.logTestName()
         dev = qml.device('default.gaussian', wires=2)
 
-        obs = set(dev._expectation_map.keys())
+        obs = set(dev._observable_map.keys())
         all_obs = set(qml.ops.__all_obs__)
 
         for g in all_obs - obs:
@@ -541,7 +541,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 x = prep_par(x, op)
                 return op(*x, wires=wires)
 
-            with self.assertRaisesRegex(qml.DeviceError, "Expectation {} not supported on device default.gaussian".format(g)):
+            with self.assertRaisesRegex(qml.DeviceError, "Observable {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 

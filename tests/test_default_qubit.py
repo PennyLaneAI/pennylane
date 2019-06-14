@@ -253,12 +253,12 @@ class TestDefaultQubitDevice(BaseTest):
 
         self.assertEqual(set(qml.ops._qubit__ops__), set(self.dev._operation_map))
 
-    def test_expectation_map(self):
-        """Test that default qubit device supports all PennyLane discrete expectations."""
+    def test_observable_map(self):
+        """Test that default qubit device supports all PennyLane discrete observables."""
         self.logTestName()
 
         self.assertEqual(
-            set(qml.ops._qubit__obs__) | {"Identity"}, set(self.dev._expectation_map)
+            set(qml.ops._qubit__obs__) | {"Identity"}, set(self.dev._observable_map)
         )
 
     def test_expand_one(self):
@@ -359,7 +359,7 @@ class TestDefaultQubitDevice(BaseTest):
 
         for name, fn in {
             **self.dev._operation_map,
-            **self.dev._expectation_map,
+            **self.dev._observable_map,
         }.items():
             try:
                 op = getattr(qml.ops, name)
@@ -471,7 +471,7 @@ class TestDefaultQubitDevice(BaseTest):
         self.dev.reset()
 
         # loop through all supported observables
-        for name, fn in self.dev._expectation_map.items():
+        for name, fn in self.dev._observable_map.items():
             print(name)
             log.debug("\tTesting %s observable...", name)
 
@@ -581,7 +581,7 @@ class TestDefaultQubitIntegration(BaseTest):
         self.logTestName()
         dev = qml.device("default.qubit", wires=2)
 
-        obs = set(dev._expectation_map.keys())
+        obs = set(dev._observable_map.keys())
         all_obs = set(qml.ops.__all_obs__)
 
         for g in all_obs - obs:
@@ -600,7 +600,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
-                "Expectation {} not supported on device default.qubit".format(g),
+                "Observable {} not supported on device default.qubit".format(g),
             ):
                 x = np.random.random([op.num_params])
                 circuit(*x)
@@ -623,7 +623,7 @@ class TestDefaultQubitIntegration(BaseTest):
         self.assertAlmostEqual(circuit(p), expected, delta=self.tol)
 
     def test_qubit_identity(self):
-        """Test that the default qubit plugin provides correct result for the Identiy expectation"""
+        """Test that the default qubit plugin provides correct result for the Identity expectation"""
         self.logTestName()
         dev = qml.device("default.qubit", wires=1)
 
@@ -730,7 +730,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
         dev = qml.device("default.qubit", wires=2)
 
-        for g, qop in dev._expectation_map.items():
+        for g, qop in dev._observable_map.items():
             log.debug("\tTesting observable %s...", g)
             self.assertTrue(dev.supported(g))
             dev.reset()

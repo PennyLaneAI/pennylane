@@ -276,7 +276,7 @@ class DefaultQubit(Device):
         'Rot': Rot3
     }
 
-    _expectation_map = {
+    _observable_map = {
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
@@ -322,9 +322,9 @@ class DefaultQubit(Device):
 
         self._state = U @ self._state
 
-    def expval(self, expectation, wires, par):
+    def expval(self, observable, wires, par):
         # measurement/expectation value <psi|A|psi>
-        A = self._get_operator_matrix(expectation, par)
+        A = self._get_operator_matrix(observable, par)
         if self.shots == 0:
             # exact expectation value
             ev = self.ev(A, wires)
@@ -339,15 +339,15 @@ class DefaultQubit(Device):
         return ev
 
     def _get_operator_matrix(self, operation, par):
-        """Get the operator matrix for a given operation or expectation.
+        """Get the operator matrix for a given operation or observable.
 
         Args:
-          operation    (str): name of the operation/expectation
+          operation    (str): name of the operation/observable
           par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        A = {**self._operation_map, **self._expectation_map}[operation]
+        A = {**self._operation_map, **self._observable_map}[operation]
         if not callable(A):
             return A
         return A(*par)
@@ -356,7 +356,7 @@ class DefaultQubit(Device):
         r"""Evaluates a one-qubit expectation in the current state.
 
         Args:
-          A (array): :math:`2\times 2` Hermitian matrix corresponding to the expectation
+          A (array): :math:`2\times 2` Hermitian matrix corresponding to the observable
           wires (Sequence[int]): target subsystem
 
         Returns:
@@ -422,5 +422,5 @@ class DefaultQubit(Device):
         return set(self._operation_map.keys())
 
     @property
-    def expectations(self):
-        return set(self._expectation_map.keys())
+    def observables(self):
+        return set(self._observable_map.keys())
