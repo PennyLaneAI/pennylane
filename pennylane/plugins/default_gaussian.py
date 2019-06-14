@@ -826,6 +826,11 @@ class DefaultGaussian(Device):
 
         return ev
 
+    def var(self, observable, wires, par):
+        mu, cov = self.reduced_state(wires)
+        _, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
+        return var
+
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
