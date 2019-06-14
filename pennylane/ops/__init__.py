@@ -34,15 +34,6 @@ as well as the conventions chosen for their implementation.
     by the plugin device.
 
 
-General observables
--------------------
-
-.. autosummary::
-    Identity
-
-.. autoclass:
-    Identity
-
 Architecture specific operations
 --------------------------------
 
@@ -53,6 +44,12 @@ Architecture specific operations
 
     ops/qubit
     ops/cv
+
+
+General observables
+-------------------
+
+Observables that can be used on both qubit and CV devices.
 """
 #pylint: disable=too-few-public-methods,function-redefined
 

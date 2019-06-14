@@ -13,12 +13,12 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-Output from a quantum system
-============================
+Measurements
+============
 
-**Module name:** :mod:`pennylane.output`
+**Module name:** :mod:`pennylane.measure`
 
-.. currentmodule:: pennylane.output
+.. currentmodule:: pennylane.measure
 
 Functions
 ---------
@@ -31,8 +31,6 @@ Summary
 
 .. autosummary::
    expval
-   measure
-   var
 
 Code details
 ^^^^^^^^^^^^
@@ -46,16 +44,13 @@ from .operation import Observable
 
 
 class ExpvalFactory:
-    r"""pennylane.output.expval()
-    Expectation value of the operator supplied :math:`\langle O \rangle`.
+    r"""Expectation value of the supplied observable.
 
     Args:
-        op (:class:`~pennylane.operation.Operation`): A quantum operator 
-        object which is run inside a `QNode`, e.g., `PauliX(wires=[0])`
+        op (Observable): a quantum observable object
     """
 
     def __call__(self, op):
-
         if not isinstance(op, Observable):
             raise QuantumFunctionError("Only observables can be accepted")
 
@@ -73,13 +68,24 @@ class ExpvalFactory:
         return op
 
     def __getattr__(self, name):
-        warnings.warn("Calling pennylane.expval.Observable() is deprecated. "
-                      "Please use the new pennylane.expval(qml.Observable()) form.")
+        # This to allow backwards compatibility with the previous
+        # module/attribute UI for requesting expectation values. Note that a deprecation
+        # warning will be raised if this UI is used.
+        #
+        # Once fully deprecated, this method can be removed,
+        # and the ExpvalFactory function can be converted into a
+        # simple expval() function using the code within __call__.
+        warnings.warn("Calling qml.expval.Observable() is deprecated. "
+                      "Please use the new qml.expval(qml.Observable()) form.")
+
         if name in qml.ops.__all__:
             obs_class = getattr(qml.ops, name)
             return type(name, (obs_class,), {"return_type": "expectation"})
 
-    __getattribute__ = __getattr__
-
 
 expval = ExpvalFactory()
+r"""Expectation value of the supplied observable.
+
+Args:
+    op (Observable): a quantum observable object
+"""
