@@ -63,7 +63,7 @@ constraints:
 
 .. note::
 
-    Expectation values **must** come after all other operations at the end
+    Observable values **must** come after all other operations at the end
     of the circuit function as part of the return statement, and cannot appear in the middle.
 
 After the device and quantum circuit function are defined, a :class:`~.QNode` object must be created
@@ -193,7 +193,7 @@ class QNode:
 
     Args:
         func (callable): a Python function containing :class:`~.operation.Operation`
-            constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
+            constructor calls, returning a tuple of :class:`~.operation.Observable` instances.
         device (:class:`~pennylane._device.Device`): device to execute the function on
     """
     # pylint: disable=too-many-instance-attributes
@@ -229,8 +229,11 @@ class QNode:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
         # EVs go to their own, temporary queue
-        if isinstance(op, pennylane.operation.Expectation):
-            self.ev.append(op)
+        if isinstance(op, pennylane.operation.Observable):
+            if op.return_type is None:
+                self.queue.append(op)
+            else:
+                self.ev.append(op)
         else:
             if self.ev:
                 raise QuantumFunctionError('State preparations and gates must precede expectation values.')
@@ -299,11 +302,11 @@ class QNode:
         # check the validity of the circuit
 
         # quantum circuit function return validation
-        if isinstance(res, pennylane.operation.Expectation):
+        if isinstance(res, pennylane.operation.Observable):
             self.output_type = float
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Expectation) for x in res):
+        elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
             # for multiple expectation values, any valid Python sequence of expectation values (i.e., lists, tuples, etc) are supported in the QNode return statement.
             self.output_dim = len(res)
             self.output_type = np.asarray
@@ -317,11 +320,11 @@ class QNode:
             raise QuantumFunctionError("All measured expectation values must be returned in the "
                                        "order they are measured.")
 
-        self.ev = res  #: tuple[Expectation]: returned expectation values
+        self.ev = res  #: tuple[Observable]: returned expectation values
         self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
 
         # classify the circuit contents
-        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops]
+        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
         if all(temp):
             self.type = 'CV'
         elif not True in temp:
@@ -350,8 +353,8 @@ class QNode:
             o_idx (int): index of the operation in the operation queue
             only (str): the type of successors to return.
 
-                - ``'G'``: only return non-Expectations (default)
-                - ``'E'``: only return Expectations
+                - ``'G'``: only return non-Observables (default)
+                - ``'E'``: only return Observables
                 - ``None``: return all successors
 
         Returns:
@@ -369,9 +372,9 @@ class QNode:
         #
         # if it is in a topological order? the docs aren't clear.
         if only == 'E':
-            return list(filter(lambda x: isinstance(x, pennylane.operation.Expectation), succ))
+            return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
         elif only == 'G':
-            return list(filter(lambda x: not isinstance(x, pennylane.operation.Expectation), succ))
+            return list(filter(lambda x: not isinstance(x, pennylane.operation.Observable), succ))
         return succ
 
     def _best_method(self, idx):
@@ -513,7 +516,7 @@ class QNode:
         Assumes :meth:`construct` has already been called.
 
         Args:
-            obs  (Iterable[Expectation]): observables to measure
+            obs  (Iterable[Observable]): observables to measure
             args (array[float]): circuit input parameters
 
         Returns:

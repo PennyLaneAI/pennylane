@@ -43,7 +43,7 @@ def quant_fun(variables):
     qml.RX(variables[0][1], wires=[0])
     qml.RY(variables[1][2], wires=[0])
     qml.RY(variables[2], wires=[0])
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(wires=0))
 
 
 def hybrid_fun(variables):
@@ -60,7 +60,7 @@ def quant_fun_nested(var):
     qml.RY(var[0][1], wires=[0])
     qml.RY(var[1][0], wires=[0])
     qml.RX(var[1][1][0], wires=[0])
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(wires=0))
 
 
 def hybrid_fun_nested(var):
@@ -73,7 +73,7 @@ def quant_fun_flat(var):
     qml.RY(var[1], wires=[0])
     qml.RY(var[2], wires=[0])
     qml.RX(var[3], wires=[0])
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(wires=0))
 
 
 def hybrid_fun_flat(var):
@@ -85,7 +85,7 @@ def quant_fun_mdarr(var):
     qml.RX(var[0, 1], wires=[0])
     qml.RY(var[1, 0], wires=[0])
     qml.RY(var[1, 1], wires=[0])
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(wires=0))
 
 
 def hybrid_fun_mdarr(var):
@@ -97,7 +97,7 @@ def quant_fun_mdlist(var):
     qml.RX(var[0][1], wires=[0])
     qml.RY(var[1][0], wires=[0])
     qml.RY(var[1][1], wires=[0])
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(wires=0))
 
 
 def hybrid_fun_mdlist(var):

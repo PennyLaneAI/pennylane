@@ -57,7 +57,7 @@ Gates and operations
     SWAP
     CZ
 
-Expectations
+Observables
 ------------
 
 .. autosummary::
@@ -221,10 +221,10 @@ def hermitian(*args):
     A = np.asarray(args[0])
 
     if A.shape[0] != A.shape[1]:
-        raise ValueError("Expectation must be a square matrix.")
+        raise ValueError("Observable must be a square matrix.")
 
     if not np.allclose(A, A.conj().T):
-        raise ValueError("Expectation must be Hermitian.")
+        raise ValueError("Observable must be Hermitian.")
 
     return A
 

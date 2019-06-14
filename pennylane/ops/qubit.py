@@ -43,6 +43,7 @@ Gates
     QubitUnitary
 
 
+
 State preparation
 -----------------
 
@@ -51,14 +52,21 @@ State preparation
     QubitStateVector
 
 
+Observables
+-----------
+
+.. autosummary::
+    Hermitian
+    
+
 Code details
 ~~~~~~~~~~~~
 """
 
-from pennylane.operation import Operation
+from pennylane.operation import Observable, Operation
 
 
-class Hadamard(Operation):
+class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
     The Hadamard operator
 
@@ -77,7 +85,7 @@ class Hadamard(Operation):
     par_domain = None
 
 
-class PauliX(Operation):
+class PauliX(Observable, Operation):
     r"""PauliX(wires)
     The Pauli X operator
 
@@ -96,7 +104,7 @@ class PauliX(Operation):
     par_domain = None
 
 
-class PauliY(Operation):
+class PauliY(Observable, Operation):
     r"""PauliY(wires)
     The Pauli Y operator
 
@@ -115,7 +123,7 @@ class PauliY(Operation):
     par_domain = None
 
 
-class PauliZ(Operation):
+class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
     The Pauli Z operator
 
@@ -233,8 +241,8 @@ class RX(Operation):
     """
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
 class RY(Operation):
@@ -258,8 +266,8 @@ class RY(Operation):
     """
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
 class RZ(Operation):
@@ -283,8 +291,8 @@ class RZ(Operation):
     """
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
 class PhaseShift(Operation):
@@ -308,8 +316,8 @@ class PhaseShift(Operation):
     """
     num_params = 1
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
 class Rot(Operation):
@@ -336,13 +344,13 @@ class Rot(Operation):
     """
     num_params = 3
     num_wires = 1
-    par_domain = 'R'
-    grad_method = 'A'
+    par_domain = "R"
+    grad_method = "A"
 
 
-#=============================================================================
+# =============================================================================
 # Arbitrary operations
-#=============================================================================
+# =============================================================================
 
 
 class QubitUnitary(Operation):
@@ -361,13 +369,13 @@ class QubitUnitary(Operation):
     """
     num_params = 1
     num_wires = 0
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
 
 
-#=============================================================================
+# =============================================================================
 # State preparation
-#=============================================================================
+# =============================================================================
 
 
 class BasisState(Operation):
@@ -388,7 +396,7 @@ class BasisState(Operation):
     """
     num_params = 1
     num_wires = 0
-    par_domain = 'A'
+    par_domain = "A"
     grad_method = None
 
 
@@ -408,8 +416,37 @@ class QubitStateVector(Operation):
     """
     num_params = 1
     num_wires = 0
-    par_domain = 'A'
-    grad_method = 'F'
+    par_domain = "A"
+    grad_method = "F"
+
+
+# =============================================================================
+# Observables
+# =============================================================================
+
+
+class Hermitian(Observable):
+    r"""Hermitian(A, wires)
+    Observable value of an arbitrary Hermitian observable.
+
+    For a Hermitian matrix :math:`A`, this expectation command returns the value
+
+    .. math::
+        \braket{A} = \braketT{\psi}{\cdots \otimes I\otimes A\otimes I\cdots}{\psi}
+
+    where :math:`A` acts on the requested wires.
+
+    If acting on :math:`N` wires, then the matrix :math:`A` must be of size
+    :math:`2^N\times 2^N`.
+
+    Args:
+        A (array): square hermitian matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+    """
+    num_wires = 0
+    num_params = 1
+    par_domain = "A"
+    grad_method = "F"
 
 
 all_ops = [
@@ -427,8 +464,11 @@ all_ops = [
     Rot,
     BasisState,
     QubitStateVector,
-    QubitUnitary
+    QubitUnitary,
 ]
 
 
-__all__ = [cls.__name__ for cls in all_ops]
+all_obs = [Hermitian]
+
+
+__all__ = [cls.__name__ for cls in all_ops + all_obs]

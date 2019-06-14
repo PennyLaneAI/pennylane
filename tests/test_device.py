@@ -82,7 +82,7 @@ class DeviceTest(BaseTest):
             qml.PauliZ(wires=2, do_queue=False),
         ]
 
-        expectations = [qml.expval.PauliZ(0, do_queue=False)]
+        expectations = [qml.expval.PauliZ(wires=0, do_queue=False)]
 
         dev.check_validity(queue, expectations)
 
@@ -94,8 +94,8 @@ class DeviceTest(BaseTest):
         # test an invalid expectation with the same name
         # as a valid operation
         queue = [qml.PauliY(wires=0, do_queue=False)]
-        expectations = [qml.expval.PauliY(0, do_queue=False)]
-        with self.assertRaisesRegex(qml.DeviceError, "Expectation PauliY not supported"):
+        expectations = [qml.expval.PauliY(wires=0, do_queue=False)]
+        with self.assertRaisesRegex(qml.DeviceError, "Observable PauliY not supported"):
             dev.check_validity(queue, expectations)
 
     def test_capabilities(self):
@@ -124,7 +124,7 @@ class DeviceTest(BaseTest):
 
         # inside of the execute method, it works
         with self.assertLogs(level='INFO') as l:
-            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            dev.execute(queue, [qml.expval.PauliX(wires=0, do_queue=False)])
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
             self.assertIn('INFO:root:[<pennylane.ops.qubit.RX object', l.output[0])
@@ -147,10 +147,10 @@ class DeviceTest(BaseTest):
 
         # inside of the execute method, it works
         with self.assertLogs(level='INFO') as l:
-            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            dev.execute(queue, [qml.expval.PauliX(wires=0, do_queue=False)])
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
-            self.assertIn('INFO:root:[<pennylane.expval.qubit.PauliX object', l.output[0])
+            self.assertIn('INFO:root:[<abc.PauliX object', l.output[0])
 
     def test_execute(self):
         """check that execution works on supported operations/expectations"""
@@ -179,9 +179,9 @@ class DeviceTest(BaseTest):
 
             temp = [isinstance(op, qml.operation.CV) for op in queue]
             if all(temp):
-                expval = dev.execute(queue, [qml.expval.X(0, do_queue=False)])
+                expval = dev.execute(queue, [qml.expval.X(wires=0, do_queue=False)])
             else:
-                expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+                expval = dev.execute(queue, [qml.expval.PauliX(wires=0, do_queue=False)])
 
             self.assertTrue(isinstance(expval, np.ndarray))
 
@@ -191,7 +191,7 @@ class DeviceTest(BaseTest):
 
         for dev in self.dev.values():
             ops = dev.operations
-            all_ops = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+            all_ops = set(qml.ops.__all__)
 
             for o in all_ops-ops:
                 op = qml.ops.__getattribute__(o)
@@ -212,15 +212,15 @@ class DeviceTest(BaseTest):
 
                 with self.assertRaisesRegex(qml.DeviceError, 'not supported on device'):
                     if temp:
-                        expval = dev.execute(queue, [qml.expval.X(0, do_queue=False)])
+                        expval = dev.execute(queue, [qml.expval.X(wires=0, do_queue=False)])
                     else:
-                        expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+                        expval = dev.execute(queue, [qml.expval.PauliX(wires=0, do_queue=False)])
 
             exps = dev.expectations
             all_exps = set(qml.expval.__all__)
 
             for g in all_exps-exps:
-                op = qml.expval.__getattribute__(g)
+                op = getattr(qml.expval, g)
 
                 if op.par_domain == 'A':
                     # skip expectations with array parameters, as there are too

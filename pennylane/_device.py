@@ -55,7 +55,7 @@ The following methods and attributes must be defined for all devices:
     version
     author
     operations
-    expectations
+    observables
     apply
     expval
 
@@ -104,8 +104,8 @@ class Device(abc.ABC):
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
         shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables. For simulator devices, a value of 0 results
-            in the exact expectation value being returned. Defaults to 0 if not specified.
+            observable values of observables. For simulator devices, a value of 0 results
+            in the exact observable value being returned. Defaults to 0 if not specified.
     """
     #pylint: disable=too-many-public-methods
     _capabilities = {} #: dict[str->*]: plugin capabilities
@@ -162,10 +162,10 @@ class Device(abc.ABC):
 
     @abc.abstractproperty
     def expectations(self):
-        """Get the supported set of expectations.
+        """Get the supported set of observables.
 
         Returns:
-            set[str]: the set of PennyLane expectation names the device supports
+            set[str]: the set of PennyLane observable names the device supports
         """
         raise NotImplementedError
 
@@ -180,8 +180,8 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, expectation):
-        """Execute a queue of quantum operations on the device and then measure the given expectation values.
+    def execute(self, queue, observable):
+        """Execute a queue of quantum operations on the device and then measure the given observable values.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
         :meth:`pre_apply`, :meth:`apply`, :meth:`post_apply`, :meth:`pre_expval`,
@@ -189,14 +189,16 @@ class Device(abc.ABC):
 
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
-            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return
+            observable (Iterable[~.operation.Observable]): observables to evaluate and return
 
         Returns:
-            array[float]: expectation value(s)
+            array[float]: observable value(s)
         """
-        self.check_validity(queue, expectation)
+        self.check_validity(queue, observable)
         self._op_queue = queue
-        self._expval_queue = expectation
+        self._expval_queue = observable
+
+        results = []
 
         with self.execution_context():
             self.pre_apply()
@@ -205,13 +207,23 @@ class Device(abc.ABC):
             self.post_apply()
 
             self.pre_expval()
-            expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
+
+            for i in observable:
+                if i.return_type == 'expectation':
+                    val = self.expval(i.name, i.wires, i.parameters)
+                elif i.return_type == 'variance':
+                    val = self.var(i.name, i.wires, i.parameters)
+                elif i.return_type == 'sample':
+                    val = self.sample(i.name, i.wires, i.parameters)
+
+                results.append(val)
+            
             self.post_expval()
 
             self._op_queue = None
             self._expval_queue = None
 
-            return np.array(expectations)
+            return np.array(results)
 
     @property
     def op_queue(self):
@@ -230,13 +242,13 @@ class Device(abc.ABC):
 
     @property
     def expval_queue(self):
-        """The expectation values to be measured and returned.
+        """The observable values to be measured and returned.
 
         Note that this property can only be accessed within the execution context
         of :meth:`~.execute`.
 
         Returns:
-            list[~.operation.Expectation]
+            list[~.operation.Observable]
         """
         if self._expval_queue is None:
             raise ValueError("Cannot access the expectation value queue outside of the execution context!")
@@ -252,11 +264,11 @@ class Device(abc.ABC):
         pass
 
     def pre_expval(self):
-        """Called during :meth:`execute` before the individual expectations are executed."""
+        """Called during :meth:`execute` before the individual observables are executed."""
         pass
 
     def post_expval(self):
-        """Called during :meth:`execute` after the individual expectations have been executed."""
+        """Called during :meth:`execute` after the individual observables have been executed."""
         pass
 
     def execution_context(self):
@@ -279,30 +291,30 @@ class Device(abc.ABC):
         return MockContext()
 
     def supported(self, name):
-        """Checks if an operation or expectation is supported by this device.
+        """Checks if an operation or observable is supported by this device.
 
         Args:
-            name (str): name of the operation or expectation
+            name (str): name of the operation or observable
 
         Returns:
             bool: True iff it is supported
         """
         return name in self.operations.union(self.expectations)
 
-    def check_validity(self, queue, expectations):
-        """Checks whether the operations and expectations in queue are all supported by the device.
+    def check_validity(self, queue, observables):
+        """Checks whether the operations and observables in queue are all supported by the device.
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in the device
-            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in the device
+            observables (Iterable[~.operation.Observable]): observables which are intended to be evaluated in the device
         """
         for o in queue:
             if o.name not in self.operations:
                 raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
-        for e in expectations:
+        for e in observables:
             if e.name not in self.expectations:
-                raise DeviceError("Expectation {} not supported on device {}".format(e.name, self.short_name))
+                raise DeviceError("Observable {} not supported on device {}".format(e.name, self.short_name))
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
@@ -318,18 +330,18 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def expval(self, expectation, wires, par):
-        """Return the expectation value of an expectation.
+    def expval(self, observable, wires, par):
+        """Return the observable value of an observable.
 
-        For plugin developers: this function should return the expectation value of the given expectation on the device.
+        For plugin developers: this function should return the observable value of the given observable on the device.
 
         Args:
-            expectation (str): name of the expectation
-            wires (Sequence[int]): subsystems the expectation value is to be measured on
+            observable (str): name of the observable
+            wires (Sequence[int]): subsystems the observable value is to be measured on
             par (tuple): parameters for the observable
 
         Returns:
-            float: expectation value
+            float: observable value
         """
         raise NotImplementedError
 
