@@ -37,11 +37,13 @@ Summary
 Code details
 ^^^^^^^^^^^^
 """
+import pennylane as qml
+
 from .qnode import QNode, QuantumFunctionError
 from .operation import Observable
 
 
-def expval(op):
+class expval:
     r"""pennylane.output.expval()
     Expectation value of the operator supplied :math:`\langle O \rangle`.
 
@@ -49,22 +51,29 @@ def expval(op):
         op (:class:`~pennylane.operation.Operation`): A quantum operator 
         object which is run inside a `QNode`, e.g., `PauliX(wires=[0])`
     """
-    if QNode._current_context is None:
-        raise QuantumFunctionError("Expectation values can only be used inside a qfunc.")
 
-    if not isinstance(op, Observable):
-        raise QuantumFunctionError("Only observables can be accepted")
+    def __call__(self, op):
+        if QNode._current_context is None:
+            raise QuantumFunctionError("Expectation values can only be used inside a qfunc.")
 
-    # delete operations from QNode queue
-    QNode._current_context.queue.remove(op)
+        if not isinstance(op, Observable):
+            raise QuantumFunctionError("Only observables can be accepted")
 
-    # set return type to be an expectation value
-    op.return_type = 'expectation'
+        # delete operations from QNode queue
+        QNode._current_context.queue.remove(op)
 
-    # add observable to QNode observable queue
-    QNode._current_context._append_op(op)
+        # set return type to be an expectation value
+        op.return_type = "expectation"
 
-    return op
+        # add observable to QNode observable queue
+        QNode._current_context._append_op(op)
+
+        return op
+
+    def __getattr__(self, name):
+        if op in qml.ops.__all__:
+            obs_class = getattr(qml.ops, name)
+            return type(item, (expval_class,), {"return_type": "expectation"})
 
 
 def var(op):
@@ -84,7 +93,7 @@ def var(op):
     QNode._current_context.queue.remove(op)
 
     # set return type to be an expectation value
-    op.return_type = 'variance'
+    op.return_type = "variance"
 
     # add observable to QNode observable queue
     QNode._current_context._append_op(op)
@@ -109,7 +118,7 @@ def measure(op):
     QNode._current_context.queue.remove(op)
 
     # set return type to be an expectation value
-    op.return_type = 'sample'
+    op.return_type = "sample"
 
     # add observable to QNode observable queue
     QNode._current_context._append_op(op)
