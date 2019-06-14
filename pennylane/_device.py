@@ -350,6 +350,38 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
+    def var(self, expectation, wires, par):
+        """Return the expectation variance of an observable.
+
+        For plugin developers: this function should return the variance of the
+        expectation value of a given observable on the device.
+
+        Args:
+            observable (str): name of the observable
+            wires (Sequence[int]): subsystems the observable is to be measured on
+            par (tuple): parameters for the observable
+
+        Returns:
+            float: variance value
+        """
+        raise NotImplementedError
+
+    def sample(self, expectation, wires, par):
+        """Return a measured sample of an observable.
+
+        For plugin developers: this function should return a measurement sample
+        of the given observable on the device. 
+
+        Args:
+            observable (str): name of the observable
+            wires (Sequence[int]): subsystems the observable is to be measured on
+            par (tuple): parameters for the observable
+
+        Returns:
+            Sequence[float, int]: sample
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def reset(self):
         """Reset the backend state.
