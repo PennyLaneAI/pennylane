@@ -54,13 +54,13 @@ class BasicTest(BaseTest):
 
             op = cls(*par, wires=ww, do_queue=False)
 
-            if issubclass(cls, oo.Observable):
+            if issubclass(cls, oo.Expectation):
                 Q = op.heisenberg_obs(0)
                 # ev_order equals the number of dimensions of the H-rep array
                 self.assertEqual(Q.ndim, cls.ev_order)
                 return
 
-            # not an Observable
+            # not an Expectation
 
             U = op.heisenberg_tr(num_wires=2)
             I = np.eye(*U.shape)
@@ -102,7 +102,7 @@ class BasicTest(BaseTest):
                 U_high_order = np.array([U] * 3)
                 op.heisenberg_expand(U_high_order, len(op.wires))
 
-        for cls in pennylane.ops.cv.all_ops + pennylane.ops.cv.all_obs:
+        for cls in pennylane.ops.cv.all_ops + pennylane.expval.cv.all_ops:
             if cls.supports_heisenberg:  # only test gaussian operations
                 h_test(cls)
 
@@ -186,10 +186,10 @@ class BasicTest(BaseTest):
         for cls in pennylane.ops.cv.all_ops:
             op_test(cls)
 
-        for cls in pennylane.ops.qubit.all_obs:
+        for cls in pennylane.expval.qubit.all_ops:
             op_test(cls)
 
-        for cls in pennylane.ops.cv.all_obs:
+        for cls in pennylane.expval.cv.all_ops:
             op_test(cls)
 
     def test_operation_outside_queue(self):
@@ -198,14 +198,14 @@ class BasicTest(BaseTest):
         self.logTestName()
 
         with self.assertRaisesRegex(pennylane.QuantumFunctionError, "can only be used inside a qfunc"):
-            pennylane.ops.qubit.Hadamard(wires=0)
+            pennylane.qubit.Hadamard(wires=0)
 
     def test_operation_no_queue(self):
         """Test that an operation can be called outside a QNode with the do_queue flag"""
         self.logTestName()
 
         try:
-            pennylane.ops.qubit.Hadamard(wires=0, do_queue=False)
+            pennylane.qubit.Hadamard(wires=0, do_queue=False)
         except pennylane.QuantumFunctionError:
             self.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
 
@@ -219,7 +219,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'R'
             grad_method = 'A'
@@ -233,7 +233,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'R'
             grad_method = 'A'
@@ -247,7 +247,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'J'
             grad_method = 'A'
@@ -261,7 +261,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.CVOperation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'R'
             grad_method = 'A'
@@ -276,7 +276,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'N'
             grad_method = 'A'
@@ -290,7 +290,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'A'
             grad_method = 'A'
@@ -304,7 +304,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'R'
             grad_method = 'F'
@@ -319,7 +319,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'A'
             grad_method = 'A'
@@ -335,7 +335,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'A'
             grad_method = 'F'
@@ -350,7 +350,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'A'
             grad_method = 'F'
@@ -364,7 +364,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'R'
             grad_method = 'F'
@@ -378,7 +378,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'N'
             grad_method = None
@@ -395,7 +395,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'N'
             grad_method = None
@@ -409,7 +409,7 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            num_wires =1
+            num_wires = 1
             num_params = 1
             par_domain = 'N'
             grad_method = None

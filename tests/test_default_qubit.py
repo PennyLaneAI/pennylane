@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
+import inspect
 import logging as log
 
 import pytest
@@ -250,14 +251,14 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that default qubit device supports all PennyLane discrete gates."""
         self.logTestName()
 
-        self.assertEqual(set([i.__name__ for i in qml.ops.qubit.all_ops]), set(self.dev._operation_map))
+        self.assertEqual(set(qml.ops.qubit.__all__), set(self.dev._operation_map))
 
     def test_expectation_map(self):
         """Test that default qubit device supports all PennyLane discrete expectations."""
         self.logTestName()
 
         self.assertEqual(
-            {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}, set(self.dev._expectation_map)
+            set(qml.expval.qubit.__all__) | {"Identity"}, set(self.dev._expectation_map)
         )
 
     def test_expand_one(self):
@@ -478,7 +479,7 @@ class TestDefaultQubitDevice(BaseTest):
             self.dev._state = np.array([1, 0, 1, 1]) / np.sqrt(3)
 
             # get the equivalent pennylane operation class
-            op = getattr(qml.expval, name)
+            op = qml.expval.__getattribute__(name)
 
             if op.par_domain == "A":
                 # the parameter is an array
@@ -547,13 +548,10 @@ class TestDefaultQubitIntegration(BaseTest):
         dev = qml.device("default.qubit", wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = set(qml.ops.__all__)
+        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
-
-            if not isinstance(op, qml.operation.Operation):
-                continue
 
             if op.num_wires == 0:
                 wires = [0]
@@ -567,9 +565,9 @@ class TestDefaultQubitIntegration(BaseTest):
                 op(*x, wires=wires)
 
                 if issubclass(op, qml.operation.CV):
-                    return qml.expval.X(wires=0)
+                    return qml.expval.X(0)
 
-                return qml.expval.PauliZ(wires=0)
+                return qml.expval.PauliZ(0)
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
@@ -602,7 +600,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
-                "Observable {} not supported on device default.qubit".format(g),
+                "Expectation {} not supported on device default.qubit".format(g),
             ):
                 x = np.random.random([op.num_params])
                 circuit(*x)
@@ -618,7 +616,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.PauliY(wires=0)
+            return qml.expval.PauliY(0)
 
         # <0|RX(p)^\dagger.PauliY.RX(p)|0> = -sin(p)
         expected = -np.sin(p)
@@ -635,7 +633,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.Identity(wires=0)
+            return qml.expval.Identity(0)
 
         self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
@@ -652,7 +650,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.PauliY(wires=0)
+            return qml.expval.PauliY(0)
 
         runs = []
         for _ in range(100):
@@ -686,7 +684,7 @@ class TestDefaultQubitIntegration(BaseTest):
             def circuit(*x):
                 """Reference quantum function"""
                 op(*x, wires=wires)
-                return qml.expval.PauliX(wires=0)
+                return qml.expval.PauliX(0)
 
             # compare to reference result
             def reference(*x):

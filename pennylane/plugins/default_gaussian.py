@@ -69,7 +69,7 @@ State preparation
     set_state
 
 
-Observables
+Expectations
 ------------
 
 .. autosummary::
