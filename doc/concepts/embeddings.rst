@@ -39,7 +39,7 @@ In the amplitude embedding technique, data is encoded into the amplitudes of a q
 
 .. math:: \mid \psi_x \rangle = \sum_{i=1}^{N} x_i |i \rangle,
 
-where :math:`x_i` is the :math:`i`'th element of :math:`x` and :math:`\mid i \rangle` is the :math:`i`'th computational basis state. For example, let's say we want to encode :math:`x=1010` using amplitude embedding. The first step is to normalize it, i.e., :math:`x_{norm}=\frac{1}{\sqrt{2}}(1010)`. The corresponding amplitude encoding uses two qubits to represent :math:`x_{norm}` as
+where :math:`N=2^n`, :math:`x_i` is the :math:`i`'th element of :math:`x` and :math:`\mid i \rangle` is the :math:`i`'th computational basis state. For example, let's say we want to encode :math:`x=1010` using amplitude embedding. The first step is to normalize it, i.e., :math:`x_{norm}=\frac{1}{\sqrt{2}}(1010)`. The corresponding amplitude encoding uses two qubits to represent :math:`x_{norm}` as
 
 .. math:: \mid \psi_{x_{norm}} \rangle = \frac{1}{\sqrt{2}}|00 \rangle + \frac{1}{\sqrt{2}}|10 \rangle.  
 
