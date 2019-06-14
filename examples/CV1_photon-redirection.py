@@ -1,6 +1,6 @@
 """Photon redirection example.
 
-In this demo we optimize a beam splitter
+In this demo we optimize a beamsplitter
 to redirect a photon from the first to the second mode.
 """
 
