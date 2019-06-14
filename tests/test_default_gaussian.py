@@ -16,7 +16,6 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
-import inspect
 import logging as log
 
 from scipy.special import factorial as fac
@@ -494,14 +493,13 @@ class TestDefaultGaussianIntegration(BaseTest):
         dev = qml.device('default.gaussian', wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)} - {'Identity', 'PlaceholderOperation'}
+        all_gates = set(qml.ops.__all__)
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
-            print(g)
 
-            if not op.operation:
-                pass
+            if not isinstance(op, qml.operation.Operation):
+                continue
 
             if op.num_wires == 0:
                 wires = [0]
@@ -515,9 +513,9 @@ class TestDefaultGaussianIntegration(BaseTest):
                 op(*x, wires=wires)
 
                 if issubclass(op, qml.operation.CV):
-                    return qml.expval.X(0)
+                    return qml.output.expval(qml.X(wires=0))
 
-                return qml.expval.PauliZ(0)
+                return qml.output.expval(qml.PauliZ(wires=0))
 
             with self.assertRaisesRegex(qml.DeviceError, "Gate {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
@@ -560,7 +558,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.X(0)
+            return qml.output.expval(qml.X(wires=0))
 
         self.assertAlmostEqual(circuit(p), p*np.sqrt(2*hbar), delta=self.tol)
 
@@ -575,7 +573,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.Identity(0)
+            return qml.output.expval(qml.Identity(wires=0))
 
         self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
@@ -592,7 +590,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.X(0)
+            return qml.output.expval(qml.X(wires=0))
 
         runs = []
         for _ in range(100):
@@ -623,7 +621,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 """Reference quantum function"""
                 qml.Displacement(a, 0, wires=[0])
                 op(*x, wires=wires)
-                return qml.expval.X(0)
+                return qml.output.expval(qml.X(wires=0))
 
             # compare to reference result
             def reference(*x):

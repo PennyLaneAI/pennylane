@@ -15,22 +15,22 @@
 Unit tests for the :mod:`pennylane.output`
 """
 # pylint: disable=protected-access,cell-var-from-loop
-import pennylane as pl
+import pennylane as qml
 from pennylane.ops import PauliX, Hadamard
 
 import numpy as np
 
 
-dev = pl.device('default.qubit', wires=2)
+dev = qml.device('default.qubit', wires=2)
 
 
-def test_expval():
+def test_expval(tol):
     """expval: Tests the `expval` function.
     """
     def circuit():
-        pl.PauliZ(wires=0)
-        return pl.output.expval(Hadamard(wires=[0]))
+        qml.PauliZ(wires=0)
+        return qml.output.expval(Hadamard(wires=[0]))
     
-    qcircuit = pl.QNode(circuit, dev)
+    qcircuit = qml.QNode(circuit, dev)
 
-    assert qcircuit() == 0.7071067811865474
+    assert np.allclose(qcircuit(), 1/np.sqrt(2), atol=tol, rtol=0)

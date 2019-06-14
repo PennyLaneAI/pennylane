@@ -37,9 +37,8 @@ Summary
 Code details
 ^^^^^^^^^^^^
 """
-from pennylane.operation import Operation
-import pennylane as pl
-import pennylane.ops as ops
+from .qnode import QNode, QuantumFunctionError
+from .operation import Observable
 
 
 def expval(op):
@@ -53,12 +52,19 @@ def expval(op):
         op (:class:`~pennylane.operation.Operation`): A quantum operator 
         object which is run inside a `QNode`, e.g., `PauliX(wires=[0])`
     """
-    if not isinstance(op, Operation):
-        msg = "Invalid operator for expectation. "
-        msg += "Please use operations defined in `pennylane.ops` subclassing "
-        msg += "`pennylane.operation.Operation`"
+    if QNode._current_context is None:
+        raise QuantumFunctionError("Expectation values can only be used inside a qfunc.")
 
-        raise ValueError(msg)
+    if not isinstance(op, Observable):
+        raise QuantumFunctionError("Only observables can be accepted")
 
-    if op.name in pl.expval.__all__:
-        return getattr(pl.expval, op.name)(*op.params, wires=op.wires)
+    # delete operations from QNode queue
+    QNode._current_context.queue.remove(op)
+
+    # set return type to be an expectation value
+    op.return_type = 'expectation'
+
+    # add observable to QNode queue
+    QNode._current_context._append_op(op)
+
+    return op

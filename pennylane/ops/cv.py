@@ -83,7 +83,6 @@ Observables
     Homodyne
     PolyXP
     NumberState
-    Identity
 
 
 Code details
@@ -92,7 +91,7 @@ Code details
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane.operation import CVOperation
+from pennylane.operation import CVOperation, CVObservable
 
 
 def _rotation(phi, bare=False):
@@ -145,8 +144,6 @@ class Rotation(CVOperation):
     Args:
         phi (float): the rotation angle
     """
-    operation = True
-    observable = False
     num_wires = 1
     num_params = 1
     par_domain = "R"
@@ -185,8 +182,6 @@ class Squeezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
     num_wires = 1
     num_params = 2
     par_domain = "R"
@@ -228,8 +223,6 @@ class Displacement(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
     num_wires = 1
     num_params = 2
     par_domain = "R"
@@ -277,8 +270,6 @@ class Beamsplitter(CVOperation):
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
     num_params = 2
     num_wires = 2
     par_domain = "R"
@@ -329,9 +320,6 @@ class TwoModeSqueezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_params = 2
     num_wires = 2
     par_domain = "R"
@@ -380,9 +368,6 @@ class QuadraticPhase(CVOperation):
         s (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_params = 1
     num_wires = 1
     par_domain = "R"
@@ -428,9 +413,6 @@ class ControlledAddition(CVOperation):
         s (float): addition multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_wires = 2
     num_params = 1
     par_domain = "R"
@@ -477,9 +459,6 @@ class ControlledPhase(CVOperation):
         s (float):  phase shift multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_wires = 2
     num_params = 1
     par_domain = "R"
@@ -513,9 +492,6 @@ class Kerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_params = 1
     num_wires = 1
     par_domain = "R"
@@ -539,9 +515,6 @@ class CrossKerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_params = 1
     num_wires = 2
     par_domain = "R"
@@ -565,9 +538,6 @@ class CubicPhase(CVOperation):
         gamma (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_params = 1
     num_wires = 1
     par_domain = "R"
@@ -608,9 +578,6 @@ class Interferometer(CVOperation):
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[int] or int): the wires the operation acts on
     """
-    operation = True
-    observable = False
-
     num_params = 1
     num_wires = 0
     par_domain = "A"
@@ -653,9 +620,6 @@ class CoherentState(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_wires = 1
     num_params = 2
     par_domain = "R"
@@ -677,9 +641,6 @@ class SqueezedState(CVOperation):
         phi (float): squeezing angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_wires = 1
     num_params = 2
     par_domain = "R"
@@ -711,9 +672,6 @@ class DisplacedSqueezedState(CVOperation):
         phi_r (float): squeezing angle :math:`\phi_r`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_wires = 1
     num_params = 4
     par_domain = "R"
@@ -734,9 +692,6 @@ class ThermalState(CVOperation):
         nbar (float): mean thermal population of the mode
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_wires = 1
     num_params = 1
     par_domain = "R"
@@ -758,9 +713,6 @@ class GaussianState(CVOperation):
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
-    operation = True
-    observable = False
-
     num_wires = 0
     num_params = 2
     par_domain = "A"
@@ -781,9 +733,6 @@ class FockState(CVOperation):
         n (int): Fock state to prepare
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_wires = 1
     num_params = 1
     par_domain = "N"
@@ -804,9 +753,6 @@ class FockStateVector(CVOperation):
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
     """
-    operation = True
-    observable = False
-
     num_wires = 0
     num_params = 1
     par_domain = "A"
@@ -827,9 +773,6 @@ class FockDensityMatrix(CVOperation):
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
-    operation = True
-    observable = False
-
     num_wires = 0
     num_params = 1
     par_domain = "A"
@@ -862,9 +805,6 @@ class CatState(CVOperation):
             cat state, and :math:`p=1` an odd cat state.
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = True
-    observable = False
-
     num_wires = 1
     num_params = 3
     par_domain = "R"
@@ -876,7 +816,7 @@ class CatState(CVOperation):
 # =============================================================================
 
 
-class MeanPhoton(CVOperation):
+class MeanPhoton(CVObservable):
     r"""pennylane.expval.MeanPhoton(wires)
     Returns the photon number expectation value.
 
@@ -900,9 +840,6 @@ class MeanPhoton(CVOperation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    operation = False
-    observable = True
-
     num_wires = 1
     num_params = 0
     par_domain = None
@@ -915,7 +852,7 @@ class MeanPhoton(CVOperation):
         return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
 
 
-class X(CVOperation):
+class X(CVObservable):
     r"""pennylane.expval.X(wires)
     Returns the position expectation value in phase space.
 
@@ -933,9 +870,6 @@ class X(CVOperation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    operation = False
-    observable = True
-
     num_wires = 1
     num_params = 0
     par_domain = None
@@ -947,7 +881,7 @@ class X(CVOperation):
         return np.array([0, 1, 0])
 
 
-class P(CVOperation):
+class P(CVObservable):
     r"""pennylane.expval.P(wires)
     Returns the momentum expectation value in phase space.
 
@@ -965,9 +899,6 @@ class P(CVOperation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    operation = False
-    observable = True
-
     num_wires = 1
     num_params = 0
     par_domain = None
@@ -979,7 +910,7 @@ class P(CVOperation):
         return np.array([0, 0, 1])
 
 
-class Homodyne(CVOperation):
+class Homodyne(CVObservable):
     r"""pennylane.expval.Homodyne(phi, wires)
     Observable value of homodyne measurement in phase space.
 
@@ -1001,9 +932,6 @@ class Homodyne(CVOperation):
             the homodyne measurement.
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    operation = False
-    observable = True
-
     num_wires = 1
     num_params = 1
     par_domain = "R"
@@ -1017,7 +945,7 @@ class Homodyne(CVOperation):
         return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
 
 
-class PolyXP(CVOperation):
+class PolyXP(CVObservable):
     r"""pennylane.expval.PolyXP(q, wires)
     Observable value of a second-order polynomial observable.
 
@@ -1042,9 +970,6 @@ class PolyXP(CVOperation):
     Args:
         q (array[float]): expansion coefficients
     """
-    operation = False
-    observable = True
-
     num_wires = 0
     num_params = 1
     par_domain = "A"
@@ -1057,7 +982,7 @@ class PolyXP(CVOperation):
         return p[0]
 
 
-class NumberState(CVOperation):
+class NumberState(CVObservable):
     r"""pennylane.expval.NumberState(n, wires)
     Observable value of the number state observable :math:`\ket{n}\bra{n}`.
 
@@ -1099,52 +1024,9 @@ class NumberState(CVOperation):
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
     """
-    operation = False
-    observable = True
-
     num_wires = 0
     num_params = 1
     par_domain = "A"
-
-    grad_method = None
-    ev_order = None
-
-
-# As both the qubit and the CV case need an Identity Observable,
-# and these need to reside in the same name space but have to have
-# different types, this Identity class is not imported into expval
-# directly (it is not put in __all__ below) and instead expval
-# contains a placeholder class Identity that returns appropriate
-# Identity instances via __new__() suitable for the respective device.
-class Identity(CVOperation):
-    r"""pennylane.expval.Identity(wires)
-    Observable value of the identity observable :math:`\I`.
-
-    The expectation of this observable
-
-    .. math::
-        E[\I] = \text{Tr}(\I \rho)
-
-    corresponds to the trace of the quantum state, which in exact
-    simulators should always be equal to 1.
-
-    .. note::
-
-        Can be used to check normalization in approximate simulators such as
-        fock basis based ones.
-
-    **Details:**
-
-    * Number of wires: None (applied to any subset of wires).
-    * Number of parameters: 0
-    * Observable order: None (non-Gaussian)
-    """
-    operation = False
-    observable = True
-
-    num_wires = 0
-    num_params = 0
-    par_domain = None
 
     grad_method = None
     ev_order = None

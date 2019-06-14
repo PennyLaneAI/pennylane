@@ -192,18 +192,6 @@ class Operation(abc.ABC):
     _grad_recipe = None
 
     @abc.abstractproperty
-    def operation(self):
-        """Whether the operation represents a quantum operation
-        that can be applied on a quantum device."""
-        raise NotImplementedError
-
-    @abc.abstractproperty
-    def observable(self):
-        """Whether the operation represents a physical observable/
-        measured quantity that can be returned from a quantum device"""
-        raise NotImplementedError
-
-    @abc.abstractproperty
     def num_params(self):
         """Number of parameters the operation takes."""
         raise NotImplementedError
@@ -443,16 +431,7 @@ class Observable(Operation):
             there is some reason to run an Observable outside of a QNode context.
     """
     # pylint: disable=abstract-method
-    def __init__(self, *args, wires=None, do_queue=True):
-        # extract the arguments
-        if wires is not None:
-            params = args
-        else:
-            params = args[:-1]
-            wires = args[-1]
-
-        super().__init__(*params, wires=wires, do_queue=do_queue)
-
+    return_type = None
 
 
 #=============================================================================
@@ -575,23 +554,8 @@ class CV:
 
 class CVOperation(CV, Operation):
     r"""Base class for continuous-variable quantum operations.
-
-    The class attribute :attr:`~.ev_order` can be defined to indicate
-    to PennyLane whether the corresponding CV observable is a polynomial in the
-    quadrature operators. If so,
-
-    * ``ev_order = 1`` indicates a first order polynomial in quadrature
-      operators :math:`(\x, \p)`.
-
-    * ``ev_order = 2`` indicates a second order polynomial in quadrature
-      operators :math:`(\x, \p)`.
-
-    If :attr:`~.ev_order` is not ``None``, then the Heisenberg representation
-    of the observable should be defined in the static method :meth:`~.CV._heisenberg_rep`,
-    returning an array of the correct dimension.
     """
     # pylint: disable=abstract-method
-    ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
     def heisenberg_pd(self, idx):
         """Partial derivative of the Heisenberg picture transform matrix.
@@ -657,33 +621,25 @@ class CVOperation(CV, Operation):
 
         return self.heisenberg_expand(U, num_wires)
 
-    def heisenberg_obs(self, num_wires):
-        r"""Representation of the observable in the position/momentum operator basis.
-
-        Returns the expansion :math:`q` of the observable, :math:`Q`, in the
-        basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
-
-        * For first-order observables returns a real vector such
-          that :math:`Q = \sum_i q_i \mathbf{r}_i`.
-
-        * For second-order observables returns a real symmetric matrix
-          such that :math:`Q = \sum_{ij} q_{ij} \mathbf{r}_i \mathbf{r}_j`.
-
-        Args:
-            num_wires (int): total number of wires in the quantum circuit
-        Returns:
-            array[float]: :math:`q`
-        """
-        p = self.parameters
-        U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
-        return self.heisenberg_expand(U, num_wires)
-
 
 class CVObservable(CV, Observable):
     r"""Base class for continuous-variable expectation value measurements.
 
+    The class attribute :attr:`~.ev_order` can be defined to indicate
+    to PennyLane whether the corresponding CV observable is a polynomial in the
+    quadrature operators. If so,
+
+    * ``ev_order = 1`` indicates a first order polynomial in quadrature
+      operators :math:`(\x, \p)`.
+
+    * ``ev_order = 2`` indicates a second order polynomial in quadrature
+      operators :math:`(\x, \p)`.
+
+    If :attr:`~.ev_order` is not ``None``, then the Heisenberg representation
+    of the observable should be defined in the static method :meth:`~.CV._heisenberg_rep`,
+    returning an array of the correct dimension.
     """
-    # TODO: deprecated, kept for backwards compatibility
+    ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
     def heisenberg_obs(self, num_wires):
         r"""Representation of the observable in the position/momentum operator basis.

@@ -230,7 +230,10 @@ class QNode:
         """
         # EVs go to their own, temporary queue
         if isinstance(op, pennylane.operation.Observable):
-            self.ev.append(op)
+            if op.return_type is None:
+                self.queue.append(op)
+            else:
+                self.ev.append(op)
         else:
             if self.ev:
                 raise QuantumFunctionError('State preparations and gates must precede expectation values.')

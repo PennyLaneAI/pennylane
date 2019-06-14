@@ -16,7 +16,6 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
-import inspect
 import logging as log
 
 import pytest
@@ -548,10 +547,13 @@ class TestDefaultQubitIntegration(BaseTest):
         dev = qml.device("default.qubit", wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)} - {'Identity', 'PlaceholderOperation'}
+        all_gates = set(qml.ops.__all__)
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
+
+            if not isinstance(op, qml.operation.Operation):
+                continue
 
             if op.num_wires == 0:
                 wires = [0]
@@ -565,9 +567,9 @@ class TestDefaultQubitIntegration(BaseTest):
                 op(*x, wires=wires)
 
                 if issubclass(op, qml.operation.CV):
-                    return qml.expval.X(0)
+                    return qml.expval.X(wires=0)
 
-                return qml.expval.PauliZ(0)
+                return qml.expval.PauliZ(wires=0)
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
@@ -616,7 +618,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.PauliY(0)
+            return qml.expval.PauliY(wires=0)
 
         # <0|RX(p)^\dagger.PauliY.RX(p)|0> = -sin(p)
         expected = -np.sin(p)
@@ -633,7 +635,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.Identity(0)
+            return qml.expval.Identity(wires=0)
 
         self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
@@ -650,7 +652,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.PauliY(0)
+            return qml.expval.PauliY(wires=0)
 
         runs = []
         for _ in range(100):
@@ -684,7 +686,7 @@ class TestDefaultQubitIntegration(BaseTest):
             def circuit(*x):
                 """Reference quantum function"""
                 op(*x, wires=wires)
-                return qml.expval.PauliX(0)
+                return qml.expval.PauliX(wires=0)
 
             # compare to reference result
             def reference(*x):

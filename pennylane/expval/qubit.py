@@ -64,8 +64,7 @@ class PauliX(Observable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 1
     num_params = 0
@@ -91,8 +90,7 @@ class PauliY(Observable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 1
     num_params = 0
@@ -118,8 +116,7 @@ class PauliZ(Observable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 1
     num_params = 0
@@ -145,8 +142,7 @@ class Hadamard(Observable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 1
     num_params = 0
@@ -171,8 +167,7 @@ class Hermitian(Observable):
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 0
     num_params = 1
@@ -203,8 +198,7 @@ class Identity(Observable):
         Can be used to check normalization in approximate simulators.
 
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 0
     num_params = 0

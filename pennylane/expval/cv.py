@@ -72,8 +72,7 @@ class MeanPhoton(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
     
     num_wires = 1
     num_params = 0
@@ -105,8 +104,7 @@ class X(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 1
     num_params = 0
@@ -137,8 +135,7 @@ class P(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 1
     num_params = 0
@@ -173,8 +170,7 @@ class Homodyne(CVObservable):
             the homodyne measurement.
         wires (Sequence[int] or int): the wire the operation acts on.
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 1
     num_params = 1
@@ -214,8 +210,7 @@ class PolyXP(CVObservable):
     Args:
         q (array[float]): expansion coefficients
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 0
     num_params = 1
@@ -271,8 +266,7 @@ class NumberState(CVObservable):
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 0
     num_params = 1
@@ -310,8 +304,7 @@ class Identity(CVObservable):
     * Number of parameters: 0
     * Observable order: None (non-Gaussian)
     """
-    operation = False
-    observable = True
+    return_type = 'expectation'
 
     num_wires = 0
     num_params = 0

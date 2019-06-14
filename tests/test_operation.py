@@ -54,8 +54,7 @@ class BasicTest(BaseTest):
 
             op = cls(*par, wires=ww, do_queue=False)
 
-            if issubclass(cls, oo.Observable) or op.observable:
-                print(op)
+            if issubclass(cls, oo.Observable):
                 Q = op.heisenberg_obs(0)
                 # ev_order equals the number of dimensions of the H-rep array
                 self.assertEqual(Q.ndim, cls.ev_order)
@@ -220,8 +219,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'R'
@@ -236,8 +233,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'R'
@@ -252,8 +247,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'J'
@@ -268,8 +261,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.CVOperation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'R'
@@ -285,8 +276,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'N'
@@ -301,8 +290,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'A'
@@ -317,8 +304,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'R'
@@ -334,8 +319,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'A'
@@ -352,8 +335,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'A'
@@ -369,8 +350,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'A'
@@ -385,8 +364,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'R'
@@ -401,8 +378,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'N'
@@ -420,8 +395,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'N'
@@ -436,8 +409,6 @@ class DeveloperTests(BaseTest):
 
         class DummyOp(oo.Operation):
             r"""Dummy custom operation"""
-            operation = True
-            observable = False
             num_wires =1
             num_params = 1
             par_domain = 'N'

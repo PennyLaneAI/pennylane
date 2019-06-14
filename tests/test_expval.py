@@ -56,7 +56,7 @@ def test_pass_positional_wires_to_expval(monkeypatch, capfd):
 
     @qml.qnode(dev)
     def circuit():
-        return qml.expval.Identity(0)
+        return qml.expval.Identity(wires=0)
 
     with monkeypatch.context() as m:
         m.setattr(DefaultQubit, "pre_expval", lambda self: print(self.expval_queue))
