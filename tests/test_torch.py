@@ -72,7 +72,7 @@ class TorchQNodeTests(BaseTest):
             ex = qml.expval.PauliZ(1)
             return qml.expval.PauliZ(0)
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
+        with self.assertRaisesRegex(QuantumFunctionError, 'All measured observables'):
             qf(par)
 
         # ...in the correct order
@@ -82,7 +82,7 @@ class TorchQNodeTests(BaseTest):
             ex = qml.expval.PauliZ(1)
             return qml.expval.PauliZ(0), ex
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'All measured expectation values'):
+        with self.assertRaisesRegex(QuantumFunctionError, 'All measured observables'):
             qf(par)
 
         # gates must precede EVs

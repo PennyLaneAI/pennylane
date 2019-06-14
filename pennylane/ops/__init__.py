@@ -15,13 +15,13 @@
 
 .. currentmodule:: pennylane.ops
 
-PennyLane supports a collection of built-in quantum operations,
-including both discrete-variable (DV) gates as used in the qubit model,
-and continuous-variable (CV) gates as used in the qumode model of quantum
+PennyLane supports a collection of built-in quantum operations and observables,
+including both discrete-variable (DV) operations as used in the qubit model,
+and continuous-variable (CV) operations as used in the qumode model of quantum
 computation.
 
-Here, we summarize the built-in operations supported by PennyLane, as well
-as the conventions chosen for their implementation.
+Here, we summarize the built-in operations and observables supported by PennyLane,
+as well as the conventions chosen for their implementation.
 
 .. note::
 
@@ -33,6 +33,18 @@ as the conventions chosen for their implementation.
     conversion between the two conventions takes places automatically
     by the plugin device.
 
+
+General observables
+-------------------
+
+.. autosummary::
+    Identity
+
+.. autoclass:
+    Identity
+
+Architecture specific operations
+--------------------------------
 
 .. rst-class:: contents local topic
 

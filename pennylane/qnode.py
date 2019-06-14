@@ -41,7 +41,7 @@ The quantum circuit function encapsulated by the QNode must be of the following 
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        return qml.expval.PauliZ(0)
+        return expval(qml.PauliZ(0))
 
 Quantum circuit functions are a restricted subset of Python functions, adhering to the following
 constraints:
@@ -50,7 +50,8 @@ constraints:
   :mod:`operations <pennylane.ops>`, one per line.
 
 * The function must always return either a single or a tuple of
-  :mod:`expectation values <pennylane.expval>`.
+  *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
+  to an :mod:`observable <pennylane.ops>`.
 
 * Classical processing of function arguments, either by arithmetic operations
   or external functions, is not allowed. One current exception is simple scalar
@@ -63,7 +64,7 @@ constraints:
 
 .. note::
 
-    Expectation values **must** come after all other operations at the end
+    Measured observables **must** come after all other operations at the end
     of the circuit function as part of the return statement, and cannot appear in the middle.
 
 After the device and quantum circuit function are defined, a :class:`~.QNode` object must be created
@@ -89,7 +90,7 @@ For example:
                 qml.RZ(x, wires=0)
                 qml.CNOT(wires=[0,1])
                 qml.RY(y, wires=1)
-                return qml.expval.PauliZ(0)
+                return expval(qml.PauliZ(0))
 
             result = my_quantum_function(np.pi/4, 0.7)
 
@@ -193,7 +194,7 @@ class QNode:
 
     Args:
         func (callable): a Python function containing :class:`~.operation.Operation`
-            constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
+            constructor calls, returning a tuple of measured :class:`~.operation.Observable` instances.
         device (:class:`~pennylane._device.Device`): device to execute the function on
     """
     # pylint: disable=too-many-instance-attributes
@@ -236,7 +237,7 @@ class QNode:
                 self.ev.append(op)
         else:
             if self.ev:
-                raise QuantumFunctionError('State preparations and gates must precede expectation values.')
+                raise QuantumFunctionError('State preparations and gates must precede measured observables.')
             self.queue.append(op)
 
     def construct(self, args, **kwargs):
@@ -307,20 +308,21 @@ class QNode:
             self.output_dim = 1
             res = (res,)
         elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
-            # for multiple expectation values, any valid Python sequence of expectation values (i.e., lists, tuples, etc) are supported in the QNode return statement.
+            # for multiple observables values, any valid Python sequence of observables
+            # (i.e., lists, tuples, etc) are supported in the QNode return statement.
             self.output_dim = len(res)
             self.output_type = np.asarray
             res = tuple(res)
         else:
-            raise QuantumFunctionError("A quantum function must return either a single expectation "
-                                       "value or a nonempty sequence of expectation values.")
+            raise QuantumFunctionError("A quantum function must return either a single measured observable "
+                                       "or a nonempty sequence of measured observables.")
 
         # check that all ev's are returned, in the correct order
         if res != tuple(self.ev):
-            raise QuantumFunctionError("All measured expectation values must be returned in the "
+            raise QuantumFunctionError("All measured observables must be returned in the "
                                        "order they are measured.")
 
-        self.ev = res  #: tuple[Expectation]: returned expectation values
+        self.ev = res  #: tuple[Observable]: returned observables
         self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
 
         # classify the circuit contents
@@ -353,8 +355,8 @@ class QNode:
             o_idx (int): index of the operation in the operation queue
             only (str): the type of successors to return.
 
-                - ``'G'``: only return non-Expectations (default)
-                - ``'E'``: only return Expectations
+                - ``'G'``: only return non-observables (default)
+                - ``'E'``: only return observables
                 - ``None``: return all successors
 
         Returns:
@@ -397,7 +399,7 @@ class QNode:
         # 1. To check whether we can use the 'A' or 'A2' method, we need first to check for the
         #    presence of non-Gaussian ops and order-2 observables.
         #
-        # 2. Starting from the expectation values (all leaf nodes under current limitations on
+        # 2. Starting from the measured observables (all leaf nodes under current limitations on
         #    observables, see :ref:`measurements`), walk through the DAG against the edges
         #    (upstream) in arbitrary order.
         #
@@ -462,7 +464,7 @@ class QNode:
             args (tuple): input parameters to the quantum function
 
         Returns:
-            float, array[float]: output expectation value(s)
+            float, array[float]: output measured value(s)
         """
         if not self.ops:
             # construct the circuit
@@ -511,16 +513,16 @@ class QNode:
         return self.output_type(ret)
 
     def evaluate_obs(self, obs, args, **kwargs):
-        """Evaluate the expectation values of the given observables.
+        """Evaluate the value of the given observables.
 
         Assumes :meth:`construct` has already been called.
 
         Args:
-            obs  (Iterable[Expectation]): observables to measure
+            obs  (Iterable[Obserable]): observables to measure
             args (array[float]): circuit input parameters
 
         Returns:
-            array[float]: expectation values
+            array[float]: measured values
         """
         # temporarily store keyword arguments
         keyword_values = {}
@@ -772,7 +774,7 @@ class QNode:
                     if q.ndim == 2:
                         # 2nd order observable
                         qp = qp +qp.T
-                    return pennylane.expval.PolyXP(qp, wires=range(w), do_queue=False)
+                    return pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
 
                 # transform the observables
                 obs = list(map(tr_obs, self.ev))

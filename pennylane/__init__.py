@@ -109,9 +109,9 @@ from pennylane.about import about
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
+from .measure import expval
 from .ops import *
 from .optimize import *
-from .output import expval
 from .qnode import QNode, QuantumFunctionError
 from ._version import __version__
 
