@@ -511,9 +511,9 @@ class TestDefaultGaussianIntegration(BaseTest):
                 op(*x, wires=wires)
 
                 if issubclass(op, qml.operation.CV):
-                    return qml.expval.X(0)
+                    return qml.expval(qml.X(0))
 
-                return qml.expval.PauliZ(0)
+                return qml.expval(qml.PauliZ(0))
 
             with self.assertRaisesRegex(qml.DeviceError, "Gate {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
@@ -528,7 +528,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         all_obs = set(qml.ops.__all_obs__)
 
         for g in all_obs - obs:
-            op = getattr(qml.expval, g)
+            op = getattr(qml.ops, g)
 
             if op.num_wires == 0:
                 wires = [0]
@@ -539,7 +539,7 @@ class TestDefaultGaussianIntegration(BaseTest):
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
-                return op(*x, wires=wires)
+                return qml.expval(op(*x, wires=wires))
 
             with self.assertRaisesRegex(qml.DeviceError, "Observable {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
@@ -556,7 +556,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.X(0)
+            return qml.expval(qml.X(0))
 
         self.assertAlmostEqual(circuit(p), p*np.sqrt(2*hbar), delta=self.tol)
 
@@ -571,7 +571,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.Identity(0)
+            return qml.expval(qml.Identity(0))
 
         self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
@@ -588,7 +588,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.X(0)
+            return qml.expval(qml.X(0))
 
         runs = []
         for _ in range(100):
@@ -619,7 +619,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 """Reference quantum function"""
                 qml.Displacement(a, 0, wires=[0])
                 op(*x, wires=wires)
-                return qml.expval.X(0)
+                return qml.expval(qml.X(0))
 
             # compare to reference result
             def reference(*x):

@@ -25,8 +25,7 @@ The default plugin is meant to be used as a template for writing PennyLane devic
 plugins for new qubit-based backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
-:mod:`qubit operations <pennylane.ops.qubit>` and
-:mod:`expectations <pennylane.expval.qubit>`, and provides a very simple pure state
+:mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 
 The following is the technical documentation of the implementation of the plugin. You will

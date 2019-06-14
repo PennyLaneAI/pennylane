@@ -27,8 +27,7 @@ The :code:`default.gaussian` plugin is meant to be used as a template for writin
 device plugins for new CV backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
-:mod:`continuous-variable Gaussian operations <pennylane.ops.cv>` and
-:mod:`expectations <pennylane.expval.cv>`, and provides a very simple simulation of a
+:mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
 
 The following is the technical documentation of the implementation of the plugin. You will
@@ -629,7 +628,7 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
     N = len(mu)//2
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
-    op = qml.expval.PolyXP(Q, wires=wires, do_queue=False)
+    op = qml.ops.PolyXP(Q, wires=wires, do_queue=False)
     Q = op.heisenberg_obs(N)
 
     if Q.ndim == 1:

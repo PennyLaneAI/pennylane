@@ -479,7 +479,7 @@ class TestDefaultQubitDevice(BaseTest):
             self.dev._state = np.array([1, 0, 1, 1]) / np.sqrt(3)
 
             # get the equivalent pennylane operation class
-            op = getattr(qml.expval, name)
+            op = getattr(qml.ops, name)
 
             if op.par_domain == "A":
                 # the parameter is an array
@@ -565,9 +565,9 @@ class TestDefaultQubitIntegration(BaseTest):
                 op(*x, wires=wires)
 
                 if issubclass(op, qml.operation.CV):
-                    return qml.expval.X(0)
+                    return qml.expval(qml.X(0))
 
-                return qml.expval.PauliZ(0)
+                return qml.expval(qml.PauliZ(0))
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
@@ -585,7 +585,7 @@ class TestDefaultQubitIntegration(BaseTest):
         all_obs = set(qml.ops.__all_obs__)
 
         for g in all_obs - obs:
-            op = getattr(qml.expval, g)
+            op = getattr(qml.ops, g)
 
             if op.num_wires == 0:
                 wires = [0]
@@ -596,7 +596,7 @@ class TestDefaultQubitIntegration(BaseTest):
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
-                return op(*x, wires=wires)
+                return qml.expval(op(*x, wires=wires))
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
@@ -616,7 +616,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.PauliY(0)
+            return qml.expval(qml.PauliY(0))
 
         # <0|RX(p)^\dagger.PauliY.RX(p)|0> = -sin(p)
         expected = -np.sin(p)
@@ -633,7 +633,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.Identity(0)
+            return qml.expval(qml.Identity(0))
 
         self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
@@ -650,7 +650,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.PauliY(0)
+            return qml.expval(qml.PauliY(0))
 
         runs = []
         for _ in range(100):
@@ -684,7 +684,7 @@ class TestDefaultQubitIntegration(BaseTest):
             def circuit(*x):
                 """Reference quantum function"""
                 op(*x, wires=wires)
-                return qml.expval.PauliX(0)
+                return qml.expval(qml.PauliX(0))
 
             # compare to reference result
             def reference(*x):
@@ -735,7 +735,7 @@ class TestDefaultQubitIntegration(BaseTest):
             self.assertTrue(dev.supported(g))
             dev.reset()
 
-            op = getattr(qml.expval, g)
+            op = getattr(qml.ops, g)
             if op.num_wires == 0:
                 wires = [0]
             else:
@@ -745,7 +745,7 @@ class TestDefaultQubitIntegration(BaseTest):
             def circuit(*x):
                 """Reference quantum function"""
                 qml.RX(a, wires=0)
-                return op(*x, wires=wires)
+                return qml.expval(op(*x, wires=wires))
 
             # compare to reference result
             def reference(*x):
@@ -779,7 +779,7 @@ class TestDefaultQubitIntegration(BaseTest):
             qml.RY(x[1], wires=0)
             qml.RZ(x[2], wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.expval.Hermitian(target_observable, wires=[0, 1])
+            return qml.expval(qml.Hermitian(target_observable, wires=[0, 1]))
 
         target_state = 1 / np.sqrt(2) * np.array([1, 0, 0, 1])
         target_herm_op = np.outer(target_state.conj(), target_state)
