@@ -31,7 +31,7 @@ and measuring expectation values in PennyLane.
   represents an application of the operation with given parameter values to
   a given sequence of wires (subsystems).
 
-* Each  :class:`~.Observable` subclass represents a type of expectation value,
+* Each  :class:`~.Expectation` subclass represents a type of expectation value,
   for example the expectation value of an observable. Each instance of these
   subclasses represents an instruction to evaluate and return the respective
   expectation value for the given parameter values on a sequence of wires
@@ -65,15 +65,15 @@ Summary
 
 .. autosummary::
    Operation
-   Observable
+   Expectation
 
 
 CV Operation base classes
 -------------------------
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
-:class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
-and :class:`~.Observable`.
+:class:`~.CVOperation` or :class:`~.CVExpectation` classes instead of :class:`~.Operation`
+and :class:`~.Expectation`.
 
 Differentiation
 ^^^^^^^^^^^^^^^
@@ -86,7 +86,7 @@ the operation given its list of parameters, namely:
   operation on the vector of quadrature operators :math:`\mathbf{r}` for the given parameter
   values.
 
-* For Gaussian CV Observables this method should return a real vector (first-order observables)
+* For Gaussian CV Expectations this method should return a real vector (first-order observables)
   or symmetric matrix (second-order observables) of coefficients of the quadrature
   operators :math:`\x` and :math:`\p`.
 
@@ -103,7 +103,7 @@ Summary
 .. autosummary::
    CV
    CVOperation
-   CVObservable
+   CVExpectation
 
 Code details
 ^^^^^^^^^^^^
@@ -393,18 +393,18 @@ class Operation(abc.ABC):
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         QNode._current_context._append_op(self)
-        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
+        return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
 
 
 #=============================================================================
-# Base Observable class
+# Base Expectation class
 #=============================================================================
 
 
-class Observable(Operation):
+class Expectation(Operation):
     """Base class for expectation value measurements supported by a device.
 
-    :class:`Observable` is used to describe Hermitian quantum observables.
+    :class:`Expectation` is used to describe Hermitian quantum observables.
 
     As with :class:`~.Operation`, the following class attributes must be
     defined for all expectations:
@@ -421,17 +421,26 @@ class Observable(Operation):
     * :attr:`~.Operation.grad_recipe`
 
     Args:
-        args (tuple[float, int, array, Variable]): Observable parameters
+        args (tuple[float, int, array, Variable]): Expectation parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
         do_queue (bool): Indicates whether the operation should be immediately
             pushed into a :class:`QNode` circuit queue. This flag is useful if
-            there is some reason to run an Observable outside of a QNode context.
+            there is some reason to run an Expectation outside of a QNode context.
     """
     # pylint: disable=abstract-method
-    return_type = None
+    def __init__(self, *args, wires=None, do_queue=True):
+        # extract the arguments
+        if wires is not None:
+            params = args
+        else:
+            params = args[:-1]
+            wires = args[-1]
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
 
 
 #=============================================================================
@@ -482,7 +491,7 @@ class CV:
             for k, w in enumerate(self.wires):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
-            if isinstance(self, Observable):
+            if isinstance(self, Expectation):
                 W = np.zeros((dim, dim))
             else:
                 W = np.eye(dim)
@@ -551,10 +560,8 @@ class CV:
         """
         return CV._heisenberg_rep != self._heisenberg_rep
 
-
 class CVOperation(CV, Operation):
-    r"""Base class for continuous-variable quantum operations.
-    """
+    """Base class for continuous-variable quantum operations."""
     # pylint: disable=abstract-method
 
     def heisenberg_pd(self, idx):
@@ -622,7 +629,7 @@ class CVOperation(CV, Operation):
         return self.heisenberg_expand(U, num_wires)
 
 
-class CVObservable(CV, Observable):
+class CVExpectation(CV, Expectation):
     r"""Base class for continuous-variable expectation value measurements.
 
     The class attribute :attr:`~.ev_order` can be defined to indicate
@@ -639,6 +646,7 @@ class CVObservable(CV, Observable):
     of the observable should be defined in the static method :meth:`~.CV._heisenberg_rep`,
     returning an array of the correct dimension.
     """
+    # pylint: disable=abstract-method
     ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
     def heisenberg_obs(self, num_wires):

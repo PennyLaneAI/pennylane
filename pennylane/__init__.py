@@ -84,7 +84,8 @@ Summary
 .. note::
 
     All individual operations (contained in :mod:`~.ops`) and optimizers
-    (contained in :mod:`~.optimize`) may also be imported directly from PennyLane
+    (contained in :mod:`~.optimize`) may also be imported directly from PennyLane.
+    Expectation values, however, must be accessed via the :mod:`~.expval` module.
 
 Code details
 ~~~~~~~~~~~~
@@ -99,18 +100,17 @@ from autograd import jacobian as _jacobian
 from semantic_version import Version, Spec
 
 import pennylane.operation
+import pennylane.expval
 
 import pennylane.init
 import pennylane.templates.layers
 import pennylane.templates.embeddings
 from pennylane.about import about
-import pennylane.output
 
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
 from .ops import *
-from .output import expval
 from .optimize import *
 from .qnode import QNode, QuantumFunctionError
 from ._version import __version__
