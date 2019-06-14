@@ -64,7 +64,7 @@ A quantum node is a computational encapsulation of a quantum function :math:`f(x
 
 So long as we provide some mechanism for evaluating quantum nodes (i.e., a quantum computing device or simulator), a classical computing device can treat it as it would any other callable function which manipulates classical data. We can thus connect quantum nodes with classical transformations to build complex multistage :ref:`hybrid quantum-classical computations <hybrid_computation>`.
 
-.. seealso:: PennyLane implementation of Quantum nodes :mod:`pennylane.qnode`
+.. seealso:: PennyLane implementation of Quantum nodes: :mod:`pennylane.qnode`
 
 .. rubric:: Footnotes
 
