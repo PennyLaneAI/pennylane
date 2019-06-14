@@ -186,10 +186,10 @@ class BasicTest(BaseTest):
         for cls in pennylane.ops.cv.all_ops:
             op_test(cls)
 
-        for cls in pennylane.expval.qubit.all_ops:
+        for cls in pennylane.ops.qubit.all_obs:
             op_test(cls)
 
-        for cls in pennylane.expval.cv.all_ops:
+        for cls in pennylane.ops.cv.all_obs:
             op_test(cls)
 
     def test_operation_outside_queue(self):

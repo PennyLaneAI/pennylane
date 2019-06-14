@@ -99,7 +99,6 @@ from autograd import jacobian as _jacobian
 from semantic_version import Version, Spec
 
 import pennylane.operation
-import pennylane.expval
 
 import pennylane.init
 import pennylane.templates.layers
@@ -111,6 +110,7 @@ import pennylane.output
 from .configuration import Configuration
 from ._device import Device, DeviceError
 from .ops import *
+from .output import expval
 from .optimize import *
 from .qnode import QNode, QuantumFunctionError
 from ._version import __version__

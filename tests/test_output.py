@@ -29,7 +29,7 @@ def test_expval(tol):
     """
     def circuit():
         qml.PauliZ(wires=0)
-        return qml.output.expval(Hadamard(wires=[0]))
+        return qml.expval(Hadamard(wires=[0]))
     
     qcircuit = qml.QNode(circuit, dev)
 

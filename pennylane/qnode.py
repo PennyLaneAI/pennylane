@@ -324,7 +324,7 @@ class QNode:
         self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
 
         # classify the circuit contents
-        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops]
+        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
         if all(temp):
             self.type = 'CV'
         elif not True in temp:

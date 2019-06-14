@@ -150,7 +150,7 @@ class DeviceTest(BaseTest):
             dev.execute(queue, [qml.expval.PauliX(wires=0, do_queue=False)])
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
-            self.assertIn('INFO:root:[<pennylane.expval.qubit.PauliX object', l.output[0])
+            self.assertIn('INFO:root:[<abc.PauliX object', l.output[0])
 
     def test_execute(self):
         """check that execution works on supported operations/expectations"""
@@ -220,7 +220,7 @@ class DeviceTest(BaseTest):
             all_exps = set(qml.expval.__all__)
 
             for g in all_exps-exps:
-                op = qml.expval.__getattribute__(g)
+                op = getattr(qml.expval, g)
 
                 if op.par_domain == 'A':
                     # skip expectations with array parameters, as there are too

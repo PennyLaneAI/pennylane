@@ -257,7 +257,7 @@ class TestDefaultQubitDevice(BaseTest):
         self.logTestName()
 
         self.assertEqual(
-            set(qml.expval.qubit.__all__) | {"Identity"}, set(self.dev._expectation_map)
+            {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}, set(self.dev._expectation_map)
         )
 
     def test_expand_one(self):
@@ -478,7 +478,7 @@ class TestDefaultQubitDevice(BaseTest):
             self.dev._state = np.array([1, 0, 1, 1]) / np.sqrt(3)
 
             # get the equivalent pennylane operation class
-            op = qml.expval.__getattribute__(name)
+            op = getattr(qml.expval, name)
 
             if op.par_domain == "A":
                 # the parameter is an array
