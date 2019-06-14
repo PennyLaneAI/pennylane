@@ -84,7 +84,7 @@ for i in range(steps):
 p1_final, p2_final = opt.param_groups[0]["params"]
 
 # the minimum energy is -2  for the spin configuration [1,1,-1] which corresponds to
-# (phi,theta,omega = (0,0,0) for spin2 and (0,pi,0) for spin3
+# (phi,theta,omega) = (0,0,0) for spin2 and (0,pi,0) for spin3
 # We might not always see this value due to the non-convex cost function
 
 print("Optimized angles:",p1_final, p2_final)

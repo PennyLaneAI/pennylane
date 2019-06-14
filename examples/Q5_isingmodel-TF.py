@@ -82,7 +82,7 @@ for i in range(steps):
         print("Energy after step {:5d}: {: .7f} | Angles: {}".format(i + 1, cost([t1, t2]), [t1, t2]),"\n")
 
 # the minimum energy is -2  for the spin configuration [1,1,-1] which corresponds to
-# (phi,theta,omega = (0,0,0) for spin2 and (0,pi,0) for spin3
+# (phi,theta,omega) = (0,0,0) for spin2 and (0,pi,0) for spin3
 # We might not always see this value due to the non-convex cost function
 
 print("Optimized angles:",t1, t2)
