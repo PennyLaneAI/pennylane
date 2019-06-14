@@ -42,6 +42,42 @@ as the conventions chosen for their implementation.
     ops/qubit
     ops/cv
 """
+#pylint: disable=too-few-public-methods,function-redefined
 
 from .cv import *
 from .qubit import *
+
+
+from .cv import __all__ as _cv__all__
+from .cv import ops as _cv__ops__
+from .cv import obs as _cv__obs__
+
+from .qubit import __all__ as _qubit__all__
+from .qubit import ops as _qubit__ops__
+from .qubit import obs as _qubit__obs__
+
+from pennylane.operation import Observable, CVObservable
+
+
+class Identity(CVObservable, Observable):
+    r"""pennylane.ops.Identity(wires)
+    Observable value of the identity observable :math:`\I`.
+
+    The expectation of this observable
+
+    .. math::
+        E[\I] = \text{Tr}(\I \rho)
+
+    corresponds to the trace of the quantum state, which in exact
+    simulators should always be equal to 1.
+    """
+    num_wires = 0
+    num_params = 0
+    par_domain = None
+    grad_method = None
+    ev_order = None
+
+
+__all__ = _cv__all__ + _qubit__all__ + ["Identity"]
+__all_ops__ = _cv__ops__ + _qubit__ops__ + ["Identity"]
+__all_obs__ = _cv__obs__ + _qubit__obs__ + ["Identity"]
