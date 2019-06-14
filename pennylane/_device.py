@@ -215,10 +215,6 @@ class Device(abc.ABC):
             for obs in observables:
                 if obs.return_type == "expectation":
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == "variance":
-                    results.append(self.var(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == "sample":
-                    results.append(self.sample(obs.name, obs.wires, obs.parameters))
 
             self.post_measure()
 
@@ -283,7 +279,7 @@ class Device(abc.ABC):
         source of :meth:`.Device.execute` for more details).
         """
         # pylint: disable=no-self-use
-        class MockContext(object): # pylint: disable=too-few-public-methods
+        class MockContext: # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute()."""
             def __enter__(self):
                 pass
@@ -347,38 +343,6 @@ class Device(abc.ABC):
 
         Returns:
             float: expectation value
-        """
-        raise NotImplementedError
-
-    def var(self, observable, wires, par):
-        """Return the expectation variance of an observable.
-
-        For plugin developers: this function should return the variance of the
-        expectation value of a given observable on the device.
-
-        Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
-
-        Returns:
-            float: variance value
-        """
-        raise NotImplementedError
-
-    def sample(self, observable, wires, par):
-        """Return a measured sample of an observable.
-
-        For plugin developers: this function should return a measurement sample
-        of the given observable on the device. 
-
-        Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
-
-        Returns:
-            Sequence[float, int]: sample
         """
         raise NotImplementedError
 

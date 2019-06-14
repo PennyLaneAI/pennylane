@@ -150,7 +150,6 @@ from .variable import Variable
 
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
-    pass
 
 
 def _inv_dict(d):
@@ -375,7 +374,7 @@ class QNode:
         # if it is in a topological order? the docs aren't clear.
         if only == 'E':
             return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
-        elif only == 'G':
+        if only == 'G':
             return list(filter(lambda x: not isinstance(x, pennylane.operation.Observable), succ))
         return succ
 

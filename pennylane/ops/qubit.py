@@ -57,7 +57,7 @@ Observables
 
 .. autosummary::
     Hermitian
-    
+
 
 Code details
 ~~~~~~~~~~~~

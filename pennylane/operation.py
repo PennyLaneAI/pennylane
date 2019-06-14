@@ -125,7 +125,7 @@ from .variable import Variable
 #=============================================================================
 
 
-class ClassPropertyDescriptor(object): # pragma: no cover
+class ClassPropertyDescriptor: # pragma: no cover
     """Allows a class property to be defined"""
     # pylint: disable=too-few-public-methods
     def __init__(self, fget, fset=None):
