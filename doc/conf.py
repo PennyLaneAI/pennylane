@@ -53,7 +53,7 @@ sphinx_gallery_conf = {
     # path where to save gallery generated examples
     'gallery_dirs': 'gallery',
     # build files that start 'tutorial_' and don't contain 'skip'
-    'filename_pattern': r'tutorial_(?!skip)',
+    'filename_pattern': r'pennylane_(?!skip)',
     # first notebook cell in generated Jupyter notebooks
     'first_notebook_cell': ("# This cell is added by sphinx-gallery\n"
                             "# It can be customized to whatever you like\n"

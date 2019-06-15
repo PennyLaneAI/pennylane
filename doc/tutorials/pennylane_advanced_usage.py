@@ -1,6 +1,4 @@
 r"""
-.. role:: html(raw)
-   :format: html
 
 .. _advanced_features:
 

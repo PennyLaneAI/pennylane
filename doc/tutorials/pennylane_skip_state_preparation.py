@@ -1,7 +1,4 @@
 r"""
-.. role:: html(raw)
-   :format: html
-
 .. _state_preparation:
 
 State preparation tutorial
@@ -101,29 +98,29 @@ def layer(params, j):
 # choice later allows us to easily evaluate several expectation values
 # without having to define a new qnode each time. Useful!
 
-    # set up the device
-    dev = qml.device('forest.qvm', device='3q-pyqvm', shots=1000)
-    
-    
-    # set up the qnode using a decorator
-    @qml.qnode(dev)
-    
-    # We add a Hermitian operator A as an input that specifies the expectation
-    # value. We set A=None to declare that this is a fixed parameter
-    def circuit(params, A=None):
-        
-        # repeatedly apply each layer in the circuit
-        for j in range(nr_layers):
-            layer(params, j)
-            
-        # returns the expectation of the input matrix A on the first qubit
-        return qml.expval.Hermitian(A, wires=0)
+# set up the device
+dev = qml.device('forest.qvm', device='3q-pyqvm', shots=1000)
+
+
+# set up the qnode using a decorator
+@qml.qnode(dev)
+
+# We add a Hermitian operator A as an input that specifies the expectation
+# value. We set A=None to declare that this is a fixed parameter
+def circuit(params, A=None):
+
+    # repeatedly apply each layer in the circuit
+    for j in range(nr_layers):
+        layer(params, j)
+
+    # returns the expectation of the input matrix A on the first qubit
+    return qml.expval.Hermitian(A, wires=0)
 
 ##############################################################################
 # Our goal is to prepare a state with the same Bloch vector as the target
 # state. Therefore, we define a simple cost function
 #
-# .. math::  C = \sum_{i=1}^3 \left|a_i-a'_i\right|, 
+# .. math::  C = \sum_{i=1}^3 \left|a_i-a'_i\right|,
 #
 # where :math:`\vec{a}=(a_1, a_2, a_3)` is the target vector and
 # :math:`\vec{a}'=(a'_1, a'_2, a'_3)` is the vector of the state prepared
@@ -155,10 +152,10 @@ print('Cost after 0 steps is {:.4f}'.format(cost_fn(params)))
 for n in range(steps):
     params = opt.step(cost_fn, params)
     current_cost = cost_fn(params)
-    
+
     # keeps track of best parameters
     if current_cost < best_cost:
-        best_params = params    
+        best_params = params
 
     # Keep track of progress every 10 steps
     if n % 10 == 9 or n == steps - 1:
@@ -168,7 +165,7 @@ for n in range(steps):
 output_bloch_v = np.zeros(3)
 for l in range(3):
     output_bloch_v[l] = circuit(best_params, A=Paulis[l])
-    
+
 # print results
 print('Target Bloch vector = ', bloch_v)
 print('Output Bloch vector = ', output_bloch_v)

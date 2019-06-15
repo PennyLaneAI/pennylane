@@ -3,16 +3,16 @@
 
 .. _New_Users:
 
-Tutorial gallery
-================
+Tutorials
+=========
 
 These step-by-step tutorials provided a gentle introduction to the basics of PennyLane. Once you have
 worked your way through the QuickStart tutorials, you will be ready to implement your own
 interesting QML problems in PennyLane!
 
 
-Intermediate tutorials
-----------------------
+Learn the PennyLane basics
+--------------------------
 
 
 .. customgalleryitem::

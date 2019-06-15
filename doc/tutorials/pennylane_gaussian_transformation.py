@@ -1,7 +1,4 @@
 r"""
-.. role:: html(raw)
-   :format: html
-
 .. _gaussian_transformation:
 
 Gaussian transformation
@@ -19,14 +16,10 @@ The quantum circuit
 For this basic tutorial, we will consider a special subset of CV operations:
 the *Gaussian transformations*. We work with the following simple Gaussian circuit:
 
-:html:`<br>`
-
 .. figure:: ../tutorials/figures/gaussian_transformation.svg
     :align: center
     :width: 40%
     :target: javascript:void(0);
-
-:html:`<br>`
 
 What is this circuit doing?
 
@@ -114,10 +107,10 @@ print(cost(init_params))
 
 ###############################################################################
 # .. note::
-# 
+#
 #     We avoided initial parameters which are exactly zero because that
 #     corresponds to a critical point with zero gradient.
-# 
+#
 # Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit
 # parameters over 100 optimization steps.
 
@@ -142,7 +135,7 @@ print('Optimized phi:{:8f}'.format(params[2]))
 ###############################################################################
 # The optimization converges after about 20 steps to a cost function value
 # of zero.
-# 
+#
 # We observe that the two angular parameters ``phase_alpha`` and ``phi``
 # do not change during the optimization. Only the magnitude of the complex
 # displacement :math:`|\alpha|` affects the mean photon number of the circuit.

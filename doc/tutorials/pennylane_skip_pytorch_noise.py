@@ -1,7 +1,4 @@
 """
-.. role:: html(raw)
-   :format: html
-
 .. _pytorch_noise:
 
 PyTorch and noisy devices
@@ -150,13 +147,9 @@ print(cost(phi, theta, 400))
 # determine if the optimization was successful; instead, let's plot the output
 # state of the circuit over time on a Bloch sphere:
 #
-# :html:`<br>`
-#
 # .. figure:: ../tutorials/figures/bloch.gif
 #     :align: center
 #     :target: javascript:void(0);
-#
-# :html:`<br>`
 #
 # Here, the red x is the target state of the variational circuit, and the arrow is
 # the variational circuit output state. As the target state changes, the circuit
