@@ -132,7 +132,9 @@ class QGTOptimizer:
             for idx, q in enumerate(self.qnodes):
                 for i in range(len(x.flatten())):
                     # evaluate metric tensor diagonals
-                    metric_tensor[idx, i] = q.subcircuits[i]['result']
+                    res = [v['result'] for k, v in q.subcircuits.items() if i in k][0]
+                    assert len(res) == 1
+                    metric_tensor[idx, i] = res[0]
 
                 if idx > 0:
                     # verify metric tensor is the same as previous metric tensor
@@ -153,7 +155,9 @@ class QGTOptimizer:
 
             for i in range(len(x.flatten())):
                 # evaluate metric tensor diagonals
-                self.metric_tensor[i] = self.qnodes[0].subcircuits[i]['result']
+                res = [v['result'] for k, v in self.qnodes[0].subcircuits.items() if i in k][0]
+                assert len(res) == 1
+                self.metric_tensor[i] = res[0]
 
         return g
 

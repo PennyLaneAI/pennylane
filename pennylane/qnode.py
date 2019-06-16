@@ -132,11 +132,14 @@ QNode internal methods
 Code details
 ~~~~~~~~~~~~
 """
+from collections import namedtuple
 from collections.abc import Sequence
 import inspect
 import copy
 
 import numbers
+
+import networkx as nx
 
 import autograd.numpy as np
 import autograd.extend as ae
@@ -147,6 +150,42 @@ import pennylane.operation
 
 from pennylane.utils import _flatten, unflatten
 from .variable import Variable
+
+
+Command = namedtuple("Command", ["name", "op"])
+
+
+def to_DiGraph(queue, observables):
+    grid = {}
+
+    for idx, op in enumerate(queue + observables):
+        cmd = Command(name=op.name, op=op)
+
+        for q in set(op.wires):
+            # Add cmd to the grid to the end of the line r.ind.
+            if q not in grid:
+                # add a new line to the circuit
+                grid[q] = []
+
+            grid[q].append([idx, cmd])
+
+    G = nx.DiGraph()
+
+    for q, cmds in grid.items():
+        if cmds:
+            # add the first operation on the wire that does not depend on anything
+            attrs = cmds[0][1]._asdict()
+            G.add_node(cmds[0][0], **attrs)
+
+        for i in range(1, len(cmds)):
+            # add the edge between the operations, and the operation nodes themselves
+            if cmds[i][0] not in G:
+                attrs = cmds[i][1]._asdict()
+                G.add_node(cmds[i][0], **attrs)
+
+            G.add_edge(cmds[i - 1][0], cmds[i][0])
+
+    return G
 
 
 class QuantumFunctionError(Exception):
@@ -378,39 +417,75 @@ class QNode:
             # construct the circuit
             self.construct(args, **kwargs)
 
+        # convert the queue to a DAG
+        G = to_DiGraph(self.queue, self.ev)
+
+        # keep track of the layer number
+        layer = 0
+        layer_ops = {0: {"ops": [], "pidx": []}}
+
         for param_idx, gate_param_tuple in self.variable_ops.items():
             # iterate over all parameters
-            for op_idx, op_param_idx in gate_param_tuple: # pylint: disable=unused-variable
-                # iterate over gates where this param is used
-                # Note: op_param_index might not be needed unless
-                # we are looking at multi-param gate
+            for op_idx, op_param_idx in gate_param_tuple:
+                # get all dependents of the existing parameter
+                sub = set(nx.dag.topological_sort(G.subgraph(nx.dag.ancestors(G, op_idx)).copy()))
 
-                # extract the circuit occuring before current operation
-                queue = self.ops[:op_idx]
+                # check if any of the dependents are in the
+                # existing layer
+                if set(layer_ops[layer]["ops"]) & sub:
+                    # operation depends on previous layer,
+                    # start a new layer count
+                    layer += 1
 
-                # current operation
-                curr_op = self.ops[op_idx]
-                gen, scale = curr_op.generator
-                wires = curr_op._wires # pylint: disable=protected-access
+                # store the parameters and ops indices for the layer
+                layer_ops.setdefault(layer, {"ops": [], "pidx": []})
+                layer_ops[layer]["ops"].append(op_idx)
+                layer_ops[layer]["pidx"].append(param_idx)
 
-                if gen is None:
-                    raise QuantumFunctionError("Can't generate subcircuits, operation {}"
-                                               "has no defined generator".format(curr_op))
+        # iterate through each layer
+        for _, ops_pidx in layer_ops.items():
+            # for the layer, get the ops and parameter indices
+            ops, param_idx = ops_pidx.values()
+
+            # get the ops in this layer
+            curr_ops = [op for n, op in G.nodes(data="op") if n in ops]
+
+            # get all ancestor operations
+            subG = G.subgraph(nx.dag.ancestors(G, ops[-1]))
+            queue = [op for _, op in subG.nodes(data="op") if op not in curr_ops]
+
+            obs = []
+            scale = []
+
+            # for each operator, get the generator
+            # and convert it to a variance
+            for op in curr_ops:
+                gen, s = op.generator
+                w = op.wires
 
                 # get the observable corresponding
                 # to the generator of the current operation
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
-                    variance = pennylane.var(pennylane.Hermitian(gen, wires, do_queue=False))
+                    variance = pennylane.var(pennylane.Hermitian(gen, w, do_queue=False))
                 elif issubclass(gen, pennylane.operation.Observable):
                     # generator is an existing PennyLane operation
-                    variance = pennylane.var(gen(wires, do_queue=False))
+                    variance = pennylane.var(gen(w, do_queue=False))
                 else:
-                    raise QuantumFunctionError("Can't generate subcircuits, generator {}"
-                                               "has no corresponding expectation value".format(gen))
+                    raise QuantumFunctionError(
+                        "Can't generate subcircuits, generator {}"
+                        "has no corresponding expectation value".format(gen)
+                    )
 
-                # add subcircuit for param to the dictionary
-                self.subcircuits[param_idx] = {'queue': queue, 'observable': [variance], 'result': None, 'scale': scale}
+                obs.append(variance)
+                scale.append(s)
+
+            self.subcircuits[tuple(param_idx)] = {
+                "queue": queue,
+                "observable": obs,
+                "result": None,
+                "scale": scale,
+            }
 
     def _op_successors(self, o_idx, only='G'):
         """Successors of the given operation in the quantum circuit.
@@ -583,7 +658,8 @@ class QNode:
             # execute any constructed subcircuits
             for _, circuit in self.subcircuits.items():
                 self.device.reset()
-                circuit['result'] = circuit['scale']**2 *self.device.execute(circuit['queue'], circuit['observable'])
+                s = np.array(circuit['scale'])
+                circuit['result'] = s**2 * np.array(self.device.execute(circuit['queue'], circuit['observable']))
 
         return self.output_type(ret)
 
