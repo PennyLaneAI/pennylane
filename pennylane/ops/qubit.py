@@ -62,7 +62,7 @@ Observables
 Code details
 ~~~~~~~~~~~~
 """
-
+import numpy as np
 from pennylane.operation import Observable, Operation
 
 
@@ -243,6 +243,7 @@ class RX(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [PauliX, -1/2]
 
 
 class RY(Operation):
@@ -268,6 +269,7 @@ class RY(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [PauliY, -1/2]
 
 
 class RZ(Operation):
@@ -293,6 +295,7 @@ class RZ(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [PauliZ, -1/2]
 
 
 class PhaseShift(Operation):
@@ -318,6 +321,7 @@ class PhaseShift(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0], [0, 1]]), 1]
 
 
 class Rot(Operation):

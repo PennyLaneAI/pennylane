@@ -1086,3 +1086,103 @@ class TestQNodeVariance:
 
         with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
             circuit.jacobian([1.], method='A')
+
+
+class TestSubcircuits:
+    """Tests for subcircuit construction and evaluation"""
+
+    def test_no_generator(self):
+        """Test exception is raised if subcircuit contains an
+        operation with no generator"""
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.Rot(a, 0, 0, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        with pytest.raises(QuantumFunctionError, match="has no defined generator"):
+            circuit.construct_subcircuits([1])
+
+    def test_generator_no_expval(self, monkeypatch):
+        """Test exception is raised if subcircuit contains an
+        opeation with generator that corresponds to no expectation value"""
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        with monkeypatch.context() as m:
+            m.setattr('pennylane.RX.generator', [qml.RX, 1])
+
+            with pytest.raises(QuantumFunctionError, match="no corresponding expectation value"):
+                circuit.construct_subcircuits([1])
+
+    def test_construct_subcircuit(self):
+        """Test correct subcircuits constructed"""
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        circuit.construct_subcircuits([1, 1, 1])
+        res = circuit.subcircuits
+
+        # first parameter subcircuit
+        assert len(res[0]['queue']) == 0
+        assert isinstance(res[0]['observable'][0], qml.PauliX)
+
+        # second parameter subcircuit
+        assert len(res[1]['queue']) == 1
+        assert isinstance(res[1]['queue'][0], qml.RX)
+        assert isinstance(res[1]['observable'][0], qml.PauliY)
+
+        # third parameter subcircuit
+        assert len(res[2]['queue']) == 3
+        assert isinstance(res[2]['queue'][0], qml.RX)
+        assert isinstance(res[2]['queue'][1], qml.RY)
+        assert isinstance(res[2]['queue'][2], qml.CNOT)
+        assert isinstance(res[2]['observable'][0], qml.Hermitian)
+        assert np.all(res[2]['observable'][0].params[0] == qml.PhaseShift.generator[0])
+
+    def test_evaluate_subcircuit(self, tol):
+        """Test subcircuits evaluate correctly"""
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        # construct subcircuits
+        circuit.construct_subcircuits([1, 1, 1])
+
+        a = 0.432
+        b = 0.12
+        c = -0.432
+
+        # evaluate subcircuits
+        circuit(a, b, c)
+
+        # first parameter subcircuit
+        assert circuit.subcircuits[0]['result'] == 0.25
+
+        # second parameter subcircuit
+        res = circuit.subcircuits[1]['result']
+        expected = np.cos(a)**2/4
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # third parameter subcircuit
+        res = circuit.subcircuits[2]['result']
+        expected = (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/16
+        assert np.allclose(res, expected, atol=tol, rtol=0)

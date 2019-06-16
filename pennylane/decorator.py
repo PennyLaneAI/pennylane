@@ -151,6 +151,8 @@ def qnode(device, interface='numpy'):
 
         # bind the jacobian method to the wrapped function
         wrapper.jacobian = qnode.jacobian
+        wrapper.construct_subcircuits = qnode.construct_subcircuits
+        wrapper.subcircuits = qnode.subcircuits
 
         # bind the qnode attributes to the wrapped function
         wrapper.__dict__.update(qnode.__dict__)

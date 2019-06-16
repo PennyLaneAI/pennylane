@@ -142,6 +142,7 @@ import autograd.numpy as np
 import autograd.extend as ae
 import autograd.builtins
 
+import pennylane
 import pennylane.operation
 
 from pennylane.utils import _flatten, unflatten
@@ -212,6 +213,8 @@ class QNode:
         The first element of the tuple is the index of the Operation in the program queue,
         the second the index of the parameter within the Operation.
         """
+
+        self.subcircuits = {}
 
     def __str__(self):
         """String representation"""
@@ -352,6 +355,62 @@ class QNode:
 
         #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
+
+    def construct_subcircuits(self, args, **kwargs):
+        """Create subcircuits for each parameter.
+
+        If the parameter appears in a gate :math:`G`, the subcircuit contains
+        all gates which precede :math:`G`, and :math:`G` is replaced by the variance
+        value of its generator.
+
+        Args:
+            args (tuple): Represent the free parameters passed to the circuit.
+                Here we are not concerned with their values, but with their structure.
+                Each free param is replaced with a :class:`~.variable.Variable` instance.
+
+        .. note::
+
+            Additional keyword arguments may be passed to the quantum circuit function, however PennyLane
+            does not support differentiating with respect to keyword arguments. Instead,
+            keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
+        """
+        if not self.ops:
+            # construct the circuit
+            self.construct(args, **kwargs)
+
+        for param_idx, gate_param_tuple in self.variable_ops.items():
+            # iterate over all parameters
+            for op_idx, op_param_idx in gate_param_tuple: # pylint: disable=unused-variable
+                # iterate over gates where this param is used
+                # Note: op_param_index might not be needed unless
+                # we are looking at multi-param gate
+
+                # extract the circuit occuring before current operation
+                queue = self.ops[:op_idx]
+
+                # current operation
+                curr_op = self.ops[op_idx]
+                gen, scale = curr_op.generator
+                wires = curr_op._wires # pylint: disable=protected-access
+
+                if gen is None:
+                    raise QuantumFunctionError("Can't generate subcircuits, operation {}"
+                                               "has no defined generator".format(curr_op))
+
+                # get the observable corresponding
+                # to the generator of the current operation
+                if isinstance(gen, np.ndarray):
+                    # generator is a Hermitian matrix
+                    variance = pennylane.var(pennylane.Hermitian(gen, wires, do_queue=False))
+                elif issubclass(gen, pennylane.operation.Observable):
+                    # generator is an existing PennyLane operation
+                    variance = pennylane.var(gen(wires, do_queue=False))
+                else:
+                    raise QuantumFunctionError("Can't generate subcircuits, generator {}"
+                                               "has no corresponding expectation value".format(gen))
+
+                # add subcircuit for param to the dictionary
+                self.subcircuits[param_idx] = {'queue': queue, 'observable': [variance], 'result': None, 'scale': scale}
 
     def _op_successors(self, o_idx, only='G'):
         """Successors of the given operation in the quantum circuit.
@@ -519,6 +578,13 @@ class QNode:
             check_op(op)
 
         ret = self.device.execute(self.queue, self.ev)
+
+        if self.subcircuits:
+            # execute any constructed subcircuits
+            for _, circuit in self.subcircuits.items():
+                self.device.reset()
+                circuit['result'] = circuit['scale']**2 *self.device.execute(circuit['queue'], circuit['observable'])
+
         return self.output_type(ret)
 
     def evaluate_obs(self, obs, args, **kwargs):
