@@ -12,6 +12,6 @@ qit.egg-info
 coverage_html_report/*
 notebooks/*
 .pytest_cache/*
-doc/gallery/*
+doc/tutorials/*
 doc/_static/thumbs/*
 !doc/_static/code.png

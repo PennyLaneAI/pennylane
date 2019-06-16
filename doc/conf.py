@@ -49,9 +49,9 @@ import os
 
 sphinx_gallery_conf = {
     # path to your example scripts
-    'examples_dirs': 'tutorials',
+    'examples_dirs': '../examples',
     # path where to save gallery generated examples
-    'gallery_dirs': 'gallery',
+    'gallery_dirs': 'tutorials',
     # build files that start 'tutorial_' and don't contain 'skip'
     'filename_pattern': r'pennylane_(?!skip)',
     # first notebook cell in generated Jupyter notebooks

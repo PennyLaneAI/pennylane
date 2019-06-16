@@ -1,0 +1,76 @@
+ .. role:: html(raw)
+   :format: html
+
+.. _New_Users:
+
+Tutorials
+=========
+
+These step-by-step tutorials provided a gentle introduction to the basics of PennyLane. Once you have
+worked your way through the QuickStart tutorials, you will be ready to implement your own
+interesting QML problems in PennyLane!
+
+
+Learn the PennyLane basics
+--------------------------
+
+.. customgalleryitem::
+    :tooltip: Use quantum machine learning to rotate a qubit.
+    :figure: ../examples/figures/bloch.png
+    :description: :ref:`qubit_rotation`
+
+.. customgalleryitem::
+    :tooltip: Use quantum machine learning to tune a beamsplitter.
+    :figure: ../examples/figures/gaussian_transformation.png
+    :description: :ref:`gaussian_transformation`
+
+.. customgalleryitem::
+    :tooltip: Multiple expectation values, Jacobians, and keyword arguments.
+    :description: :ref:`advanced_features`
+
+:html:`<div style='clear:both'></div>`
+
+
+Using plugins and quantum hardware
+----------------------------------
+
+.. customgalleryitem::
+    :tooltip: Use quantum machine learning in a multi-device quantum algorithm.
+    :figure: ../examples/figures/photon_redirection.png
+    :description: :ref:`plugins_hybrid`
+
+.. customgalleryitem::
+    :tooltip: Extend PyTorch with real quantum computing power.
+    :figure: ../examples/figures/bloch.gif
+    :description: :ref:`pytorch_noise`
+
+:html:`<div style='clear:both'></div>`
+
+
+Quantum machine learning algorithms
+-----------------------------------
+
+.. customgalleryitem::
+    :tooltip: Do arbitrary state preparation on a real quantum computer.
+    :description: :ref:`state_preparation`
+
+.. customgalleryitem::
+    :tooltip: Use PennyLane to create a simple QGAN
+    :description: :ref:`quantum_GAN`
+
+.. customgalleryitem::
+    :tooltip: A quantum variational classifier
+    :figure: ../examples/figures/classifier_output_59_0.png
+    :description: :ref:`variational_classifier`
+
+.. customgalleryitem::
+    :tooltip: Fit one dimensional noisy data with a quantum neural network.
+    :figure: ../examples/figures/qnn_output_28_0.png
+    :description: :ref:`quantum_neural_net`
+
+.. customgalleryitem::
+    :tooltip: Find the ground state of a Hamiltonian.
+    :figure: ../examples/figures/vqe_output_22_0.png
+    :description: :ref:`vqe`
+
+:html:`<div style='clear:both'></div>`

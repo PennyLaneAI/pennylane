@@ -147,7 +147,7 @@ print(cost(phi, theta, 400))
 # determine if the optimization was successful; instead, let's plot the output
 # state of the circuit over time on a Bloch sphere:
 #
-# .. figure:: ../tutorials/figures/bloch.gif
+# .. figure:: ../../examples/figures/bloch.gif
 #     :align: center
 #     :target: javascript:void(0);
 #
