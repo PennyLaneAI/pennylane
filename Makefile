@@ -47,7 +47,7 @@ docs:
 
 .PHONY : clean-docs
 clean-docs:
-	rm -rf doc/gallery
+	rm -rf doc/tutorials
 	make -C doc clean
 
 

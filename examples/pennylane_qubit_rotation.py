@@ -5,7 +5,7 @@ Basic tutorial: qubit rotation
 ==============================
 
 To see how PennyLane allows the easy construction and optimization of quantum functions, let's
-consider the simple case of **qubit rotation** â€” the PennyLane version of the 'Hello, world!'
+consider the simple case of **qubit rotation** the PennyLane version of the 'Hello, world!'
 example.
 
 The task at hand is to optimize two rotation gates in order to flip a single

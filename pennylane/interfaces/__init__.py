@@ -26,9 +26,6 @@ Depending on the classical machine learning interface chosen,
 you may be able to offload the classical portion of your hybrid model
 onto an accelerator, such as a GPU or TPU.
 
-Background
-----------
-
 By default, when constructing a :ref:`QNode <qnode_decorator>`, PennyLane allows
 the underlying quantum function to accept any default Python types (for example,
 floats, ints, lists) as well as NumPy array arguments, and will always return
