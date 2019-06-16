@@ -109,6 +109,7 @@ blockquote.sphx-glr-script-out {
 
 div.sphx-glr-footer {
     text-align: center;
+    margin-bottom: -40px;
 }
 
 div.binder-badge {
@@ -204,3 +205,60 @@ p.sphx-glr-signature a.reference.external {
 .sphx-glr-script-out .highlight pre {
     background-color: #f7f7f7;
 }
+
+
+#tutorial-type {
+  display: none;
+}
+
+.pennylane-call-to-action-links {
+  padding-top: 25px;
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 1100px) and (max-width: 1239px) {
+  .pennylane-call-to-action-links {
+    padding-top: rem(40px);
+  }
+ }
+
+.pennylane-call-to-action-links #tutorial-type {
+    display: none;
+  }
+
+.pennylane-call-to-action-links a {
+    padding-right: 20px;
+    color: #000;
+    cursor: pointer;
+}
+
+.pennylane-call-to-action-links a:hover {
+  color: #fdb104;
+  text-decoration: none;
+}
+
+#download-python-link,
+#download-notebook-link,
+#github-view-link {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #c3c3c3;
+  padding-right: 40px;
+  display: flex;
+  align-items: center;
+  color: #747474;
+}
+
+#download-python-link:hover,
+#download-notebook-link:hover,
+#github-view-link:hover {
+  border-bottom-color: #19b37b;
+  color: #19b37b;
+}
+
+.sphx-glr-download-link-note.admonition.note,
+.reference.download.internal,
+.sphx-glr-signature {
+  display: none;
+}
+

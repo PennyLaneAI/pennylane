@@ -14,6 +14,14 @@ interesting QML problems in PennyLane!
 Learn the PennyLane basics
 --------------------------
 
+.. toctree::
+    :hidden:
+    :maxdepth: 1
+
+    tutorials/pennylane_qubit_rotation
+    tutorials/pennylane_gaussian_transformation
+    tutorials/pennylane_advanced_usage
+
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to rotate a qubit.
     :figure: ../examples/figures/bloch.png
@@ -34,6 +42,13 @@ Learn the PennyLane basics
 Using plugins and quantum hardware
 ----------------------------------
 
+.. toctree::
+    :hidden:
+    :maxdepth: 1
+
+    tutorials/pennylane_skip_plugins_hybrid
+    tutorials/pennylane_skip_pytorch_noise
+
 .. customgalleryitem::
     :tooltip: Use quantum machine learning in a multi-device quantum algorithm.
     :figure: ../examples/figures/photon_redirection.png
@@ -49,6 +64,16 @@ Using plugins and quantum hardware
 
 Quantum machine learning algorithms
 -----------------------------------
+
+.. toctree::
+    :hidden:
+    :maxdepth: 1
+
+    tutorials/pennylane_skip_state_preparation
+    tutorials/pennylane_QGAN
+    tutorials/pennylane_variational_classifier
+    tutorials/pennylane_skip_quantum_neural_net
+    tutorials/pennylane_variational_quantum_eigensolver
 
 .. customgalleryitem::
     :tooltip: Do arbitrary state preparation on a real quantum computer.
