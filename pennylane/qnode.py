@@ -322,7 +322,7 @@ class QNode:
             does not support differentiating with respect to keyword arguments. Instead,
             keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
         """
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
         self.queue = []
         self.ev = []  # temporary queue for EVs
 
@@ -393,7 +393,7 @@ class QNode:
         self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
 
         # classify the circuit contents
-        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
+        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)] # pylint: disable=no-member
         if all(temp):
             self.type = 'CV'
         elif not True in temp:
@@ -446,7 +446,7 @@ class QNode:
 
         for param_idx, gate_param_tuple in self.variable_ops.items():
             # iterate over all parameters
-            for op_idx, op_param_idx in gate_param_tuple:
+            for op_idx, _ in gate_param_tuple:
                 # get all dependents of the existing parameter
                 sub = set(nx.dag.topological_sort(G.subgraph(nx.dag.ancestors(G, op_idx)).copy()))
 
@@ -1011,7 +1011,7 @@ class QNode:
 
                     if not np.allclose(A @ A, np.identity(A.shape[0])):
                         # replace the Hermitian variance with <H^2> expectation
-                        self.ev[i] = pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False))
+                        self.ev[i] = pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False)) # pylint: disable=no-member
 
                         # calculate the analytic derivative of <H^2>
                         ysq = np.asarray(self._pd_analytic(params, idx, **kwargs))
@@ -1032,7 +1032,7 @@ class QNode:
                 A = np.kron(A, A.T)
 
                 # replace the first order sigma_H variance with <H^2> expectation
-                self.ev[i] = pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False))
+                self.ev[i] = pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)) # pylint: disable=no-member
 
                 # calculate the analytic derivative of <H^2>
                 ysq = np.asarray(self._pd_analytic(params, idx, force_order2=True, **kwargs))

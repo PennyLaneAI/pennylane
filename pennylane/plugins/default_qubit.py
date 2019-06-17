@@ -337,9 +337,8 @@ class DefaultQubit(Device):
 
         return ev
 
-    def var(self, expectation, wires, par):
-        # measurement/expectation value <psi|A|psi>
-        A = self._get_operator_matrix(expectation, par)
+    def var(self, observable, wires, par):
+        A = self._get_operator_matrix(observable, par)
         var = self.ev(A@A, wires) - self.ev(A, wires)**2
         return var
 

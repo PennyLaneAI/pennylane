@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """QGT optimizer"""
+#pylint: disable=too-many-branches
 from collections import Sequence
 
 import autograd
