@@ -683,7 +683,7 @@ class QNode:
             for _, circuit in self.subcircuits.items():
                 self.device.reset()
                 s = np.array(circuit['scale'])
-                circuit['result'] = s**2 * np.array(self.device.execute(circuit['queue'], circuit['observable']))
+                circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
 
         return self.output_type(ret)
 
