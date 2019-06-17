@@ -471,8 +471,13 @@ class QNode:
             curr_ops = [op for n, op in G.nodes(data="op") if n in ops]
 
             # get all ancestor operations
-            subG = G.subgraph(nx.dag.ancestors(G, ops[-1]))
-            queue = [op for _, op in subG.nodes(data="op") if op not in curr_ops]
+            ancestors = set()
+            for o in ops:
+                subG = G.subgraph(nx.dag.ancestors(G, o))
+                ancestors |= set(subG.nodes(data="op"))
+
+            ancestors = sorted(ancestors, key=lambda x: x[0])
+            queue = [op for _, op in ancestors if op not in curr_ops]
 
             obs = []
             scale = []
