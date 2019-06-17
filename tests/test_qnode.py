@@ -1159,16 +1159,19 @@ class TestSubcircuits:
 
         @qml.qnode(dev)
         def circuit(params):
+            # section 1
             qml.RX(params[0], wires=0)
+            # section 2
             qml.RY(params[1], wires=0)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            # layer structure starts here
+            # section 3
             qml.RX(params[2], wires=0)
             qml.RY(params[3], wires=1)
             qml.RZ(params[4], wires=2)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
+            # section 4
             qml.RX(params[5], wires=0)
             qml.RY(params[6], wires=1)
             qml.RZ(params[7], wires=2)
@@ -1180,18 +1183,20 @@ class TestSubcircuits:
         circuit.construct_subcircuits([params])
         res = circuit.subcircuits
 
-        print(res)
+        # this circuit should split into 4 independent
+        # sections or layers when constructing subcircuits
+        assert len(res) == 4
 
-        # first parameter subcircuit
+        # first layer subcircuit
         assert len(res[(0,)]['queue']) == 0
         assert isinstance(res[(0,)]['observable'][0], qml.PauliX)
 
-        # second parameter subcircuit
+        # second layer subcircuit
         assert len(res[(1,)]['queue']) == 1
         assert isinstance(res[(1,)]['queue'][0], qml.RX)
         assert isinstance(res[(1,)]['observable'][0], qml.PauliY)
 
-        # first layer
+        # third layer subcircuit
         layer = res[(2, 3, 4)]
         assert len(layer['queue']) == 4
         assert len(layer['observable']) == 3
@@ -1203,7 +1208,7 @@ class TestSubcircuits:
         assert isinstance(layer['observable'][1], qml.PauliY)
         assert isinstance(layer['observable'][2], qml.PauliZ)
 
-        # second layer
+        # fourth layer subcircuit
         layer = res[(5, 6, 7)]
         assert len(layer['queue']) == 9
         assert len(layer['observable']) == 3
