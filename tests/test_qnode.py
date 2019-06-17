@@ -1136,21 +1136,80 @@ class TestSubcircuits:
         res = circuit.subcircuits
 
         # first parameter subcircuit
-        assert len(res[0]['queue']) == 0
-        assert isinstance(res[0]['observable'][0], qml.PauliX)
+        assert len(res[(0,)]['queue']) == 0
+        assert isinstance(res[(0,)]['observable'][0], qml.PauliX)
 
         # second parameter subcircuit
-        assert len(res[1]['queue']) == 1
-        assert isinstance(res[1]['queue'][0], qml.RX)
-        assert isinstance(res[1]['observable'][0], qml.PauliY)
+        assert len(res[(1,)]['queue']) == 1
+        assert isinstance(res[(1,)]['queue'][0], qml.RX)
+        assert isinstance(res[(1,)]['observable'][0], qml.PauliY)
 
         # third parameter subcircuit
-        assert len(res[2]['queue']) == 3
-        assert isinstance(res[2]['queue'][0], qml.RX)
-        assert isinstance(res[2]['queue'][1], qml.RY)
-        assert isinstance(res[2]['queue'][2], qml.CNOT)
-        assert isinstance(res[2]['observable'][0], qml.Hermitian)
-        assert np.all(res[2]['observable'][0].params[0] == qml.PhaseShift.generator[0])
+        assert len(res[(2,)]['queue']) == 3
+        assert isinstance(res[(2,)]['queue'][0], qml.RX)
+        assert isinstance(res[(2,)]['queue'][1], qml.RY)
+        assert isinstance(res[(2,)]['queue'][2], qml.CNOT)
+        assert isinstance(res[(2,)]['observable'][0], qml.Hermitian)
+        assert np.all(res[(2,)]['observable'][0].params[0] == qml.PhaseShift.generator[0])
+
+    def test_construct_subcircuit_layers(self):
+        """Test correct subcircuits constructed
+        when a layer structure exists"""
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            # layer structure starts here
+            qml.RX(params[2], wires=0)
+            qml.RY(params[3], wires=1)
+            qml.RZ(params[4], wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.RX(params[5], wires=0)
+            qml.RY(params[6], wires=1)
+            qml.RZ(params[7], wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliX(0))
+
+        params = np.ones([8])
+        circuit.construct_subcircuits([params])
+        res = circuit.subcircuits
+
+        print(res)
+
+        # first parameter subcircuit
+        assert len(res[(0,)]['queue']) == 0
+        assert isinstance(res[(0,)]['observable'][0], qml.PauliX)
+
+        # second parameter subcircuit
+        assert len(res[(1,)]['queue']) == 1
+        assert isinstance(res[(1,)]['queue'][0], qml.RX)
+        assert isinstance(res[(1,)]['observable'][0], qml.PauliY)
+
+        # first layer
+        layer = res[(2, 3, 4)]
+        assert len(layer['queue']) == 4
+        assert len(layer['observable']) == 3
+        assert isinstance(layer['queue'][0], qml.RX)
+        assert isinstance(layer['queue'][1], qml.RY)
+        assert isinstance(layer['queue'][2], qml.CNOT)
+        assert isinstance(layer['queue'][3], qml.CNOT)
+        assert isinstance(layer['observable'][0], qml.PauliX)
+        assert isinstance(layer['observable'][1], qml.PauliY)
+        assert isinstance(layer['observable'][2], qml.PauliZ)
+
+        # second layer
+        layer = res[(5, 6, 7)]
+        assert len(layer['queue']) == 9
+        assert len(layer['observable']) == 3
+        assert isinstance(layer['observable'][0], qml.PauliX)
+        assert isinstance(layer['observable'][1], qml.PauliY)
+        assert isinstance(layer['observable'][2], qml.PauliZ)
 
     def test_evaluate_subcircuit(self, tol):
         """Test subcircuits evaluate correctly"""
@@ -1175,14 +1234,14 @@ class TestSubcircuits:
         circuit(a, b, c)
 
         # first parameter subcircuit
-        assert circuit.subcircuits[0]['result'] == 0.25
+        assert circuit.subcircuits[(0,)]['result'] == 0.25
 
         # second parameter subcircuit
-        res = circuit.subcircuits[1]['result']
+        res = circuit.subcircuits[(1,)]['result']
         expected = np.cos(a)**2/4
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # third parameter subcircuit
-        res = circuit.subcircuits[2]['result']
+        res = circuit.subcircuits[(2,)]['result']
         expected = (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/16
         assert np.allclose(res, expected, atol=tol, rtol=0)

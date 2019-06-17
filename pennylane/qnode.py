@@ -156,6 +156,26 @@ Command = namedtuple("Command", ["name", "op"])
 
 
 def to_DiGraph(queue, observables):
+    """Convert a queue and observables to a directed acyclic graph.
+
+    The resulting graph has nodes representing quantum operations,
+    and edges representing dependent/successor operations.
+
+    Each node is labelled by an integer corresponding to the position
+    in the queue; note attributes are used to store information about the node:
+
+    * ``'name'`` *(str)*: name of the quantum operation (e.g., ``'PauliZ'``)
+
+    * ``'op'`` *(Operation or Observable)*: modes the operation acts on
+
+    Args:
+        queue (list[Operation]): the quantum operations to apply
+        observables (list[Observable]): the quantum observables to measure
+
+    Returns:
+        networkx.DiGraph: the directed acyclic graph representing
+        the quantum program
+    """
     grid = {}
 
     for idx, op in enumerate(queue + observables):
@@ -462,6 +482,10 @@ class QNode:
             for op in curr_ops:
                 gen, s = op.generator
                 w = op.wires
+
+                if gen is None:
+                    raise QuantumFunctionError("Can't generate subcircuits, operation {}"
+                                               "has no defined generator".format(op))
 
                 # get the observable corresponding
                 # to the generator of the current operation

@@ -62,8 +62,8 @@ class TestMethodBinding:
         circuit(*params)
         circuit.construct_subcircuits([params])
 
-        assert circuit.subcircuits[0]['queue'] == []
-        assert isinstance(circuit.subcircuits[0]['observable'][0], qml.PauliX)
+        assert circuit.subcircuits[(0,)]['queue'] == []
+        assert isinstance(circuit.subcircuits[(0,)]['observable'][0], qml.PauliX)
 
-        assert isinstance(circuit.subcircuits[1]['queue'][0], qml.RX)
-        assert isinstance(circuit.subcircuits[1]['observable'][0], qml.PauliY)
+        assert isinstance(circuit.subcircuits[(1,)]['queue'][0], qml.RX)
+        assert isinstance(circuit.subcircuits[(1,)]['observable'][0], qml.PauliY)
