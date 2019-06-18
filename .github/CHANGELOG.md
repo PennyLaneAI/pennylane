@@ -1,3 +1,81 @@
+# Release 0.4.0dev0
+
+### New features since last release
+
+* `pennylane.about()` function added, providing details
+  on current PennyLane version, installed plugins, Python,
+  platform, and NumPy versions [#186](https://github.com/XanaduAI/pennylane/pull/186)
+
+* Removed the logic that allowed `wires` to be passed as a positional
+  argument in quantum operations. This allows us to raise more useful
+  error messages for the user if incorrect syntax is used.
+  [#188](https://github.com/XanaduAI/pennylane/pull/188)
+
+* Adds support for multi-qubit expectation values of the `pennylane.Hermitian()`
+  observable [#192](https://github.com/XanaduAI/pennylane/pull/192)
+
+* Adds support for multi-qubit expectation values in `default.qubit`.
+  [#202](https://github.com/XanaduAI/pennylane/pull/202)
+
+* Organize templates into submodules [#195](https://github.com/XanaduAI/pennylane/pull/195).
+  This included the following improvements:
+
+  - Distinguish embedding templates, layer templates, and parameter templates.
+  
+  - New random initialization functions supporting the templates available
+    in the new submodule `pennylane.init`.
+
+  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly
+    distributed over the wires
+
+  - Add various embedding strategies
+
+### Improvements
+
+* Allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
+
+* Portions of the test suite are in the process of being ported to pytest.
+  Note: this is still a work in progress.
+
+  Ported tests include:
+
+  - `test_ops.py`
+  - `test_about.py`
+  - `test_classical_gradients.py`
+  - `test_observables.py`
+  - `test_measure.py`
+  - `test_init.py`
+  - `test_templates*.py`
+  - `test_ops.py`
+  - `test_variable.py`
+  - `test_qnode.py` (partial)
+
+### Bug fixes
+
+* Fixes a bug in `Device.supported`, which would incorrectly
+  mark an operation as supported if it shared a name with an
+  observable [#203](https://github.com/XanaduAI/pennylane/pull/203)
+
+* Fixes a bug in `Operation.wires`, by explicitly casting the
+  type of each wire to an integer [#206](https://github.com/XanaduAI/pennylane/pull/206)
+
+* Removes code in PennyLane which configured the logger,
+  as this would clash with users' configurations
+  [#208](https://github.com/XanaduAI/pennylane/pull/208)
+
+* Fixes a bug in `default.qubit`, in which `QubitStateVector` operations
+  were accidentally being cast to `np.float` instead of `np.complex`.
+  [#211](https://github.com/XanaduAI/pennylane/pull/211)
+
+
+### Contributors
+
+This release contains contributions from:
+
+Shahnawaz Ahmed, riveSunder, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Maria Schuld.
+
+
+
 # Release 0.3.1
 
 ### Bug fixes
