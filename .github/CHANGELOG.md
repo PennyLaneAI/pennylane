@@ -22,7 +22,7 @@
 
   - Distinguish embedding templates, layer templates, and parameter templates
 
-  - Add Random Circuit, in which rotations and 2-qubit gates are randomly
+  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly
     distributed over the wires
 
   - Add various embedding strategies
