@@ -707,8 +707,8 @@ class DefaultGaussian(Device):
     """
     name = 'Default Gaussian PennyLane plugin'
     short_name = 'default.gaussian'
-    pennylane_requires = '0.3'
-    version = '0.3.0'
+    pennylane_requires = '0.4'
+    version = '0.4.0'
     author = 'Xanadu Inc.'
 
     _operation_map = {
