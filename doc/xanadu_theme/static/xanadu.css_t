@@ -29,7 +29,7 @@ body {
   width: 300px;
   overflow: hidden;
   /*background: #fafafa;*/
-  background: #333;
+  background: #efefef;
 }
 
 #right-column {
