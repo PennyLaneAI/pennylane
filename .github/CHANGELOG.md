@@ -20,7 +20,8 @@
 * Organize templates into submodules [#195](https://github.com/XanaduAI/pennylane/pull/195).
   This included the following improvements:
 
-  - Distinguish embedding templates, layer templates, and parameter templates
+  - Distinguish embedding templates, layer templates, and parameter templates.
+    Parameter templates are contained within the new submodule `pennylane.init`.
 
   - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly
     distributed over the wires
