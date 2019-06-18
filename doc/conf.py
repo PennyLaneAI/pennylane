@@ -20,7 +20,7 @@ import sys, os, re
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('_ext'))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath('.')), 'docs'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath('.')), 'doc'))
 
 # -- General configuration ------------------------------------------------
 
