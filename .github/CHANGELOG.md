@@ -17,10 +17,10 @@
 * Adds support for multi-qubit expectation values in `default.qubit`.
   [#202](https://github.com/XanaduAI/pennylane/pull/202)
 
-* Organise templates into submodules [#195](https://github.com/XanaduAI/pennylane/pull/195).
+* Organize templates into submodules [#195](https://github.com/XanaduAI/pennylane/pull/195).
   This included the following improvements:
 
-  - Distinguish embedding templates, layer templates and parameter templates
+  - Distinguish embedding templates, layer templates, and parameter templates
 
   - Add Random Circuit, in which rotations and 2-qubit gates are randomly
     distributed over the wires
@@ -57,7 +57,7 @@
   type of each wire to an integer [#206](https://github.com/XanaduAI/pennylane/pull/206)
 
 * Removes code in PennyLane which configured the logger,
-  as this would clash with users configurations
+  as this would clash with users' configurations
   [#208](https://github.com/XanaduAI/pennylane/pull/208)
 
 * Fixes a bug in `default.qubit`, in which `QubitStateVector` operations
@@ -71,7 +71,6 @@ This release contains contributions from:
 
 Shahnawaz Ahmed, riveSunder, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Maria Schuld.
 
-Josh Izaac and Nathan Killoran.
 
 
 # Release 0.3.1
