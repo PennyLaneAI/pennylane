@@ -197,7 +197,7 @@ class QNode:
         device (:class:`~pennylane._device.Device`): device to execute the function on
         cache (bool): If ``True``, the quantum function used to generate the QNode will
             only be called to construct the quantum circuit once, on first execution,
-            and this circuit will be cached for all further executions. Only activate this
+            and this circuit structure (i.e., the placement of templates, gates, measurements, etc.) will be cached for all further executions. The circuit parameters can still change with every call. Only activate this
             feature if your quantum circuit structure will never change.
     """
     # pylint: disable=too-many-instance-attributes
