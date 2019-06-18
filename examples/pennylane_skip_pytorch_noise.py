@@ -50,12 +50,11 @@ from torch.autograd import Variable
 #
 # Next, we will create our device:
 
-dev = qml.device('forest.qvm', device='2q', noisy=True)
+dev = qml.device("forest.qvm", device="2q", noisy=True)
 
 ##############################################################################
 # Here, we create a noisy two-qubit system, simulated via the QVM. If we wish, we could
 # also build the model on a physical device, such as the ``Aspen-1`` QPU.
-
 
 
 ##############################################################################
@@ -67,7 +66,8 @@ dev = qml.device('forest.qvm', device='2q', noisy=True)
 # our quantum function (encoded by the circuit above) into a quantum node
 # running on the QVM.
 
-@qml.qnode(dev, interface='torch')
+
+@qml.qnode(dev, interface="torch")
 def circuit(phi, theta):
     qml.RX(theta, wires=0)
     qml.RZ(phi, wires=0)
@@ -94,18 +94,20 @@ def circuit(phi, theta):
 # for steps 100 and 200, before changing back to state :math:`\ket{1}` for steps 200
 # to 300, and so on.
 
+
 def cost(phi, theta, step):
-    target = -(-1)**(step // 100)
-    return torch.abs(circuit(phi, theta) - target)**2
+    target = -(-1) ** (step // 100)
+    return torch.abs(circuit(phi, theta) - target) ** 2
+
 
 ##############################################################################
 # Now that the cost function is defined, we can begin the PyTorch optimization.
 # We create two variables, representing the two free parameters of the variational
 # circuit, and initialize an Adam optimizer:
 
-phi = Variable(torch.tensor(1.), requires_grad=True)
+phi = Variable(torch.tensor(1.0), requires_grad=True)
 theta = Variable(torch.tensor(0.05), requires_grad=True)
-opt = torch.optim.Adam([phi, theta], lr = 0.1)
+opt = torch.optim.Adam([phi, theta], lr=0.1)
 
 ##############################################################################
 # As we are using the PyTorch interface, we must use PyTorch optimizers,
@@ -169,21 +171,24 @@ import pennylane as qml
 import torch
 from torch.autograd import Variable
 
-qpu = qml.device('forest.qpu', device='Aspen-1-2Q-B')
+qpu = qml.device("forest.qpu", device="Aspen-1-2Q-B")
 
-@qml.qnode(dev, interface='torch')
+
+@qml.qnode(dev, interface="torch")
 def circuit(phi, theta):
     qml.RX(theta, wires=0)
     qml.RZ(phi, wires=0)
     return qml.expval.PauliZ(0)
 
-def cost(phi, theta, step):
-    target = -(-1)**(step // 100)
-    return torch.abs(circuit(phi, theta) - target)**2
 
-phi = Variable(torch.tensor(1., device='cuda'), requires_grad=True)
-theta = Variable(torch.tensor(0.05, device='cuda'), requires_grad=True)
-opt = torch.optim.Adam([phi, theta], lr = 0.1)
+def cost(phi, theta, step):
+    target = -(-1) ** (step // 100)
+    return torch.abs(circuit(phi, theta) - target) ** 2
+
+
+phi = Variable(torch.tensor(1.0, device="cuda"), requires_grad=True)
+theta = Variable(torch.tensor(0.05, device="cuda"), requires_grad=True)
+opt = torch.optim.Adam([phi, theta], lr=0.1)
 
 for i in range(400):
     opt.zero_grad()

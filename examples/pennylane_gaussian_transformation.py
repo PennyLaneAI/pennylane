@@ -61,7 +61,7 @@ from pennylane import numpy as np
 # Because our circuit contains only Gaussian operations, we can make use of the
 # built-in ``default.gaussian`` device.
 
-dev_gaussian = qml.device('default.gaussian', wires=1)
+dev_gaussian = qml.device("default.gaussian", wires=1)
 
 ###############################################################################
 # After initializing the device, we can construct our quantum node. As before, we use the
@@ -69,11 +69,13 @@ dev_gaussian = qml.device('default.gaussian', wires=1)
 # (encoded by the circuit above) into a quantum node running on the ``default.gaussian``
 # device.
 
+
 @qml.qnode(dev_gaussian)
 def mean_photon_gaussian(mag_alpha, phase_alpha, phi):
     qml.Displacement(mag_alpha, phase_alpha, wires=0)
     qml.Rotation(phi, wires=0)
     return qml.expval.MeanPhoton(0)
+
 
 ###############################################################################
 # Notice that we have broken up the complex number :math:`\alpha` into two real
@@ -90,8 +92,10 @@ def mean_photon_gaussian(mag_alpha, phase_alpha, phi):
 # towards the desired output. We want the mean photon number to be exactly one,
 # so we will use a squared-difference cost function:
 
+
 def cost(params):
-    return (mean_photon_gaussian(params[0], params[1], params[2]) - 1.) ** 2
+    return (mean_photon_gaussian(params[0], params[1], params[2]) - 1.0) ** 2
+
 
 ###############################################################################
 # At the beginning of the optimization, we choose arbitrary small initial parameters:
@@ -126,11 +130,11 @@ for i in range(steps):
     # update the circuit parameters
     params = opt.step(cost, params)
 
-    print('Cost after step {:5d}: {:8f}'.format(i+1, cost(params)) )
+    print("Cost after step {:5d}: {:8f}".format(i + 1, cost(params)))
 
-print('Optimized mag_alpha:{:8f}'.format(params[0]))
-print('Optimized phase_alpha:{:8f}'.format(params[1]))
-print('Optimized phi:{:8f}'.format(params[2]))
+print("Optimized mag_alpha:{:8f}".format(params[0]))
+print("Optimized phase_alpha:{:8f}".format(params[1]))
+print("Optimized phi:{:8f}".format(params[2]))
 
 ###############################################################################
 # The optimization converges after about 20 steps to a cost function value

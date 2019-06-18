@@ -128,7 +128,7 @@ from pennylane import numpy as np
 # the PennyLane-SF plugin is installed, the ``'strawberryfields.fock'`` device can be loaded
 # — no additional commands or library imports required.
 
-dev_fock = qml.device('strawberryfields.fock', wires=2, cutoff_dim=2)
+dev_fock = qml.device("strawberryfields.fock", wires=2, cutoff_dim=2)
 
 ##############################################################################
 # Compared to the default devices provided with PennyLane, the ``'strawberryfields.fock'``
@@ -151,11 +151,13 @@ dev_fock = qml.device('strawberryfields.fock', wires=2, cutoff_dim=2)
 # to convert our quantum function (encoded by the circuit above) into a quantum node
 # running on Strawberry Fields.
 
+
 @qml.qnode(dev_fock)
 def photon_redirection(params):
     qml.FockState(1, wires=0)
     qml.Beamsplitter(params[0], params[1], wires=[0, 1])
     return qml.expval.MeanPhoton(1)
+
 
 ##############################################################################
 # The ``'strawberryfields.fock'`` device supports all CV objects provided by PennyLane;
@@ -170,8 +172,10 @@ def photon_redirection(params):
 # carry out photon redirection. Since we wish to maximize the mean photon number of
 # the second wire, we can define our cost function to minimize the *negative* of the circuit output.
 
+
 def cost(params):
     return -photon_redirection(params)
+
 
 ##############################################################################
 # To begin our optimization, let's choose the following small initial values of
@@ -204,7 +208,7 @@ print(cost(init_params))
 # This can also be verified directly using PennyLane:
 
 dphoton_redirection = qml.grad(photon_redirection, argnum=0)
-print(dphoton_redirection([0., 0.]))
+print(dphoton_redirection([0.0, 0.0]))
 
 ##############################################################################
 # .. rst-class:: sphx-glr-script-out
@@ -231,10 +235,10 @@ for i in range(steps):
     # update the circuit parameters
     params = opt.step(cost, params)
 
-    if (i+1) % 5 == 0:
-        print('Cost after step {:5d}: {: .7f}'.format(i+1, cost(params)) )
+    if (i + 1) % 5 == 0:
+        print("Cost after step {:5d}: {: .7f}".format(i + 1, cost(params)))
 
-print('Optimized rotation angles: {}'.format(params))
+print("Optimized rotation angles: {}".format(params))
 
 ##############################################################################
 # .. rst-class:: sphx-glr-script-out
@@ -244,7 +248,6 @@ print('Optimized rotation angles: {}'.format(params))
 #  .. code-block:: none
 #
 #     Optimized rotation angles: [ 1.57079633  0.01      ]
-
 
 
 ##############################################################################
@@ -269,8 +272,9 @@ print('Optimized rotation angles: {}'.format(params))
 # returns the squared difference of its two inputs using NumPy:
 
 # create the devices
-dev_qubit = qml.device('default.qubit', wires=1)
-dev_fock = qml.device('strawberryfields.fock', wires=2, cutoff_dim=10)
+dev_qubit = qml.device("default.qubit", wires=1)
+dev_fock = qml.device("strawberryfields.fock", wires=2, cutoff_dim=10)
+
 
 @qml.qnode(dev_qubit)
 def qubit_rotation(phi1, phi2):
@@ -279,6 +283,7 @@ def qubit_rotation(phi1, phi2):
     qml.RY(phi2, wires=0)
     return qml.expval.PauliZ(0)
 
+
 @qml.qnode(dev_fock)
 def photon_redirection(params):
     """The photon redirection QNode"""
@@ -286,10 +291,11 @@ def photon_redirection(params):
     qml.Beamsplitter(params[0], params[1], wires=[0, 1])
     return qml.expval.MeanPhoton(1)
 
+
 def squared_difference(x, y):
     """Classical node to compute the squared
     difference between two inputs"""
-    return np.abs(x-y)**2
+    return np.abs(x - y) ** 2
 
 
 ##############################################################################
@@ -320,6 +326,7 @@ def squared_difference(x, y):
 # nodes into a single hybrid computation. Below, we choose default values
 # :math:`\phi_1=0.5`, :math:`\phi_2=0.1`:
 
+
 def cost(params, phi1=0.5, phi2=0.1):
     """Returns the squared difference between
     the photon-redirection and qubit-rotation QNodes, for
@@ -327,6 +334,7 @@ def cost(params, phi1=0.5, phi2=0.1):
     qubit_result = qubit_rotation(phi1, phi2)
     photon_result = photon_redirection(params)
     return squared_difference(qubit_result, photon_result)
+
 
 ##############################################################################
 # Now, we use the built-in :class:`~.GradientDescentOptimizer` to perform the optimization
@@ -345,10 +353,10 @@ for i in range(steps):
     # update the circuit parameters
     params = opt.step(cost, params)
 
-    if (i+1) % 5 == 0:
-        print('Cost after step {:5d}: {: .7f}'.format(i+1, cost(params)))
+    if (i + 1) % 5 == 0:
+        print("Cost after step {:5d}: {: .7f}".format(i + 1, cost(params)))
 
-print('Optimized rotation angles: {}'.format(params))
+print("Optimized rotation angles: {}".format(params))
 
 ##############################################################################
 # .. rst-class:: sphx-glr-script-out

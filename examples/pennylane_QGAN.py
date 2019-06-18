@@ -31,7 +31,7 @@ from pennylane.optimize import GradientDescentOptimizer
 # We also declare a 3-qubit device.
 
 
-dev = qml.device('default.qubit', wires=3)
+dev = qml.device("default.qubit", wires=3)
 
 ##############################################################################
 # Classical and quantum nodes
@@ -46,8 +46,10 @@ dev = qml.device('default.qubit', wires=3)
 # rotated (from the starting state :math:`\left|0\right\rangle`) to some
 # arbitrary, but fixed, state.
 
+
 def real(phi, theta, omega):
     qml.Rot(phi, theta, omega, wires=0)
+
 
 ##############################################################################
 # For the generator and discriminator, we will choose the same basic
@@ -58,6 +60,7 @@ def real(phi, theta, omega):
 # provided as a workspace for the generator, while the discriminator’s
 # output will be on wire 2.
 
+
 def generator(w):
     qml.RX(w[0], wires=0)
     qml.RX(w[1], wires=1)
@@ -65,10 +68,11 @@ def generator(w):
     qml.RY(w[3], wires=1)
     qml.RZ(w[4], wires=0)
     qml.RZ(w[5], wires=1)
-    qml.CNOT(wires=[0,1])
+    qml.CNOT(wires=[0, 1])
     qml.RX(w[6], wires=0)
     qml.RY(w[7], wires=0)
     qml.RZ(w[8], wires=0)
+
 
 def discriminator(w):
     qml.RX(w[0], wires=0)
@@ -77,15 +81,17 @@ def discriminator(w):
     qml.RY(w[3], wires=2)
     qml.RZ(w[4], wires=0)
     qml.RZ(w[5], wires=2)
-    qml.CNOT(wires=[1,2])
+    qml.CNOT(wires=[1, 2])
     qml.RX(w[6], wires=2)
     qml.RY(w[7], wires=2)
     qml.RZ(w[8], wires=2)
+
 
 ##############################################################################
 # We create two QNodes. One where the real data source is wired up to the
 # discriminator, and one where the generator is connected to the
 # discriminator.
+
 
 @qml.qnode(dev)
 def real_disc_circuit(phi, theta, omega, disc_weights):
@@ -93,11 +99,13 @@ def real_disc_circuit(phi, theta, omega, disc_weights):
     discriminator(disc_weights)
     return qml.expval.PauliZ(2)
 
+
 @qml.qnode(dev)
 def gen_disc_circuit(gen_weights, disc_weights):
     generator(gen_weights)
     discriminator(disc_weights)
     return qml.expval.PauliZ(2)
+
 
 ##############################################################################
 # Cost
@@ -115,24 +123,29 @@ def gen_disc_circuit(gen_weights, disc_weights):
 # The generator’s objective is to maximize the probability that the
 # discriminator accepts fake data as real.
 
+
 def prob_real_true(disc_weights):
     true_disc_output = real_disc_circuit(phi, theta, omega, disc_weights)
     # convert to probability
     prob_real_true = (true_disc_output + 1) / 2
     return prob_real_true
 
+
 def prob_fake_true(gen_weights, disc_weights):
     fake_disc_output = gen_disc_circuit(gen_weights, disc_weights)
     # convert to probability
     prob_fake_true = (fake_disc_output + 1) / 2
-    return prob_fake_true # generator wants to minimize this prob
+    return prob_fake_true  # generator wants to minimize this prob
+
 
 def disc_cost(disc_weights):
     cost = prob_fake_true(gen_weights, disc_weights) - prob_real_true(disc_weights)
     return cost
 
+
 def gen_cost(gen_weights):
     return -prob_fake_true(gen_weights, disc_weights)
+
 
 ##############################################################################
 # Optimization
@@ -164,7 +177,7 @@ for it in range(50):
     disc_weights = opt.step(disc_cost, disc_weights)
     cost = disc_cost(disc_weights)
     if it % 5 == 0:
-        print("Step {}: cost = {}".format(it+1, cost))
+        print("Step {}: cost = {}".format(it + 1, cost))
 
 ##############################################################################
 # At the discriminator’s optimum, the probability for the discriminator to

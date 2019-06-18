@@ -20,6 +20,7 @@ import sys, os, re
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('_ext'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath('.')), 'docs'))
 
 # -- General configuration ------------------------------------------------
 
@@ -346,7 +347,7 @@ autodoc_member_order = 'bysource'
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
 
-from .custom_directives import IncludeDirective, GalleryItemDirective, CustomGalleryItemDirective
+from custom_directives import IncludeDirective, GalleryItemDirective, CustomGalleryItemDirective
 
 def setup(app):
     app.add_directive('includenodoc', IncludeDirective)

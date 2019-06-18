@@ -29,7 +29,7 @@ from pennylane.optimize import AdamOptimizer
 # only one quantum mode (or ``wire``). You will need to have the
 # Strawberry Fields plugin for PennyLane installed.
 
-dev = qml.device('strawberryfields.fock', wires=1, cutoff_dim=10)
+dev = qml.device("strawberryfields.fock", wires=1, cutoff_dim=10)
 
 ##############################################################################
 # Quantum node
@@ -38,27 +38,30 @@ dev = qml.device('strawberryfields.fock', wires=1, cutoff_dim=10)
 # For a single quantum mode, each layer of the variational circuit is
 # defined as:
 
+
 def layer(v):
     # Matrix multiplication of input layer
     qml.Rotation(v[0], wires=0)
-    qml.Squeezing(v[1], 0., wires=0)
+    qml.Squeezing(v[1], 0.0, wires=0)
     qml.Rotation(v[2], wires=0)
 
     # Bias
-    qml.Displacement(v[3], 0., wires=0)
+    qml.Displacement(v[3], 0.0, wires=0)
 
     # Element-wise nonlinear transformation
     qml.Kerr(v[4], wires=0)
+
 
 ##############################################################################
 # The variational circuit in the quantum node first encodes the input into
 # the displacement of the mode, and then executes the layers. The output
 # is the expectation of the x-quadrature.
 
+
 @qml.qnode(dev)
 def quantum_neural_net(var, x=None):
     # Encode input x into quantum state
-    qml.Displacement(x, 0., wires=0)
+    qml.Displacement(x, 0.0, wires=0)
 
     # "layer" subcircuits
     for v in var:
@@ -66,12 +69,14 @@ def quantum_neural_net(var, x=None):
 
     return qml.expval.X(0)
 
+
 ##############################################################################
 # Objective
 # ~~~~~~~~~
 #
 # As an objective we take the square loss between target labels and model
 # predictions.
+
 
 def square_loss(labels, predictions):
     loss = 0
@@ -81,15 +86,18 @@ def square_loss(labels, predictions):
     loss = loss / len(labels)
     return loss
 
+
 ##############################################################################
 # In the cost function, we compute the outputs from the variational
 # circuit. Function fitting is a regression problem, and we interpret the
 # expectations from the quantum node as predictions (i.e., without
 # applying postprocessing such as thresholding).
 
+
 def cost(var, features, labels):
     preds = [quantum_neural_net(var, x=x) for x in features]
     return square_loss(labels, preds)
+
 
 ##############################################################################
 # Optimization
@@ -110,10 +118,10 @@ import matplotlib.pyplot as plt
 
 plt.figure()
 plt.scatter(X, Y)
-plt.xlabel('x', fontsize=18)
-plt.ylabel('f(x)', fontsize=18)
-plt.tick_params(axis='both', which='major', labelsize=16)
-plt.tick_params(axis='both', which='minor', labelsize=16)
+plt.xlabel("x", fontsize=18)
+plt.ylabel("f(x)", fontsize=18)
+plt.tick_params(axis="both", which="major", labelsize=16)
+plt.tick_params(axis="both", which="minor", labelsize=16)
 plt.show()
 
 
@@ -673,11 +681,11 @@ predictions = [quantum_neural_net(var, x=x_) for x_ in x_pred]
 
 plt.figure()
 plt.scatter(X, Y)
-plt.scatter(x_pred, predictions, color='green')
-plt.xlabel('x')
-plt.ylabel('f(x)')
-plt.tick_params(axis='both', which='major')
-plt.tick_params(axis='both', which='minor')
+plt.scatter(x_pred, predictions, color="green")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.tick_params(axis="both", which="major")
+plt.tick_params(axis="both", which="minor")
 plt.show()
 
 ##############################################################################
@@ -697,18 +705,18 @@ plt.show()
 # on the number of layers used (generically, the more layers, the smaller
 # the period).
 
-variance = 1.
+variance = 1.0
 
 plt.figure()
 x_pred = np.linspace(-2, 2, 50)
 for i in range(7):
     rnd_var = variance * np.random.randn(num_layers, 7)
     predictions = [quantum_neural_net(rnd_var, x=x_) for x_ in x_pred]
-    plt.plot(x_pred, predictions, color='black')
-plt.xlabel('x')
-plt.ylabel('f(x)')
-plt.tick_params(axis='both', which='major')
-plt.tick_params(axis='both', which='minor')
+    plt.plot(x_pred, predictions, color="black")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.tick_params(axis="both", which="major")
+plt.tick_params(axis="both", which="minor")
 plt.show()
 
 ##############################################################################

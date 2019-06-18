@@ -123,7 +123,7 @@ from pennylane import numpy as np
 # For this tutorial, we are using the qubit model, so let's initialize the ``'default.qubit'`` device
 # provided by PennyLane; a simple pure-state qubit simulator.
 
-dev1 = qml.device('default.qubit', wires=1)
+dev1 = qml.device("default.qubit", wires=1)
 
 ##############################################################################
 # For all devices, :func:`~.pennylane.device` accepts the following arguments:
@@ -156,10 +156,12 @@ dev1 = qml.device('default.qubit', wires=1)
 #
 # First, we need to define the quantum function that will be evaluated in the QNode:
 
+
 def circuit(params):
     qml.RX(params[0], wires=0)
     qml.RY(params[1], wires=0)
     return qml.expval.PauliZ(0)
+
 
 ##############################################################################
 # This is a simple circuit, matching the one described above.
@@ -200,11 +202,13 @@ def circuit(params):
 # on device ``dev1`` by applying the :mod:`qnode decorator <pennylane.decorator>`
 # **directly above** the function definition:
 
+
 @qml.qnode(dev1)
 def circuit(params):
     qml.RX(params[0], wires=0)
     qml.RY(params[1], wires=0)
     return qml.expval.PauliZ(0)
+
 
 ##############################################################################
 # Thus, our ``circuit()`` quantum function is now a :class:`~.QNode`, which will run on
@@ -250,11 +254,13 @@ print(dcircuit([0.54, 0.12]))
 # For example, we could have defined the above quantum circuit function using
 # two positional arguments, instead of one array argument:
 
+
 @qml.qnode(dev1)
 def circuit2(phi1, phi2):
     qml.RX(phi1, wires=0)
     qml.RY(phi2, wires=0)
     return qml.expval.PauliZ(0)
+
 
 ################################################################################
 # When we calculate the gradient for such a function, the usage of ``argnum``
@@ -309,8 +315,10 @@ print(dcircuit(0.54, 0.12))
 # know that the Pauli-Z expectation is bound between :math:`[-1, 1]`, we can define our
 # cost directly as the output of the QNode:
 
+
 def cost(var):
     return circuit(var)
+
 
 ################################################################################
 # To begin our optimization, let's choose small initial values of :math:`\phi_1` and :math:`\phi_2`:
@@ -336,10 +344,10 @@ for i in range(steps):
     # update the circuit parameters
     params = opt.step(cost, params)
 
-    if (i+1) % 5 == 0:
-        print('Cost after step {:5d}: {: .7f}'.format(i+1, cost(params)))
+    if (i + 1) % 5 == 0:
+        print("Cost after step {:5d}: {: .7f}".format(i + 1, cost(params)))
 
-print('Optimized rotation angles: {}'.format(params))
+print("Optimized rotation angles: {}".format(params))
 
 ################################################################################
 # We can see that the optimization converges after approximately 40 steps.

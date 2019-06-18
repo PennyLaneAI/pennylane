@@ -71,7 +71,7 @@ Quantum machine learning algorithms
 
     tutorials/pennylane_skip_state_preparation
     tutorials/pennylane_QGAN
-    tutorials/pennylane_variational_classifier
+    tutorials/pennylane_skip_variational_classifier
     tutorials/pennylane_skip_quantum_neural_net
     tutorials/pennylane_variational_quantum_eigensolver
 

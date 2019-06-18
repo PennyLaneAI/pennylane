@@ -23,17 +23,19 @@ In this tutorial, we will highlight some of the more advanced features of Pennyl
 import pennylane as qml
 from pennylane import numpy as np
 
-dev = qml.device('default.qubit', wires=2)
+dev = qml.device("default.qubit", wires=2)
 
 ##############################################################################
 # We will start with a simple example circuit, which generates a two-qubit entangled state,
 # then evaluates the expectation value of the Pauli Z operator on each wire.
+
 
 @qml.qnode(dev)
 def circuit1(param):
     qml.RX(param, wires=0)
     qml.CNOT(wires=[0, 1])
     return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
 
 ##############################################################################
 # The degree of entanglement of the qubits is determined by the value of ``param``. For a value of
@@ -81,12 +83,14 @@ print(circuit1(np.pi / 2))
 # For example, let's create a quantum node that accepts two arguments; a differentiable
 # circuit parameter ``param``, and a fixed circuit parameter ``fixed``:
 
+
 @qml.qnode(dev)
 def circuit3(param, fixed=None):
     qml.RX(fixed, wires=0)
     qml.RX(param, wires=1)
     qml.CNOT(wires=[0, 1])
     return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+
 
 ##############################################################################
 # Calling the circuit, we can feed values to the keyword argument ``fixed``:

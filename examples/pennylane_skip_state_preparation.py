@@ -36,14 +36,14 @@ import pennylane as qml
 from pennylane import numpy as np
 
 # we generate a three-dimensional random vector by sampling
-#each entry from a standard normal distribution
-v = np.random.normal(0,1, 3)
+# each entry from a standard normal distribution
+v = np.random.normal(0, 1, 3)
 
 # purity of the target state
 purity = 0.66
 
 # create a random Bloch vector with the specified purity
-bloch_v = np.sqrt(2*purity-1)*v/np.sqrt(np.sum(v**2))
+bloch_v = np.sqrt(2 * purity - 1) * v / np.sqrt(np.sum(v ** 2))
 
 # array of Pauli matrices (will be useful later)
 Paulis = np.zeros((3, 2, 2), dtype=complex)
@@ -85,6 +85,7 @@ def layer(params, j):
     qml.CNOT(wires=[0, 2])
     qml.CNOT(wires=[1, 2])
 
+
 ##############################################################################
 # To set up the device, we select a plugin that is compatible with
 # evaluating expectations through sampling: the ``forest.qvm`` plugin. The
@@ -99,7 +100,7 @@ def layer(params, j):
 # without having to define a new qnode each time. Useful!
 
 # set up the device
-dev = qml.device('forest.qvm', device='3q-pyqvm', shots=1000)
+dev = qml.device("forest.qvm", device="3q-pyqvm", shots=1000)
 
 
 # set up the qnode using a decorator
@@ -115,6 +116,7 @@ def circuit(params, A=None):
 
     # returns the expectation of the input matrix A on the first qubit
     return qml.expval.Hermitian(A, wires=0)
+
 
 ##############################################################################
 # Our goal is to prepare a state with the same Bloch vector as the target
@@ -135,6 +137,7 @@ def cost_fn(params):
 
     return cost
 
+
 # set up the optimizer
 opt = qml.AdamOptimizer()
 
@@ -146,7 +149,7 @@ steps = 200
 best_cost = cost_fn(params)
 best_params = np.zeros((nr_qubits, nr_layers, 3))
 
-print('Cost after 0 steps is {:.4f}'.format(cost_fn(params)))
+print("Cost after 0 steps is {:.4f}".format(cost_fn(params)))
 
 # optimization begins
 for n in range(steps):
@@ -159,7 +162,7 @@ for n in range(steps):
 
     # Keep track of progress every 10 steps
     if n % 10 == 9 or n == steps - 1:
-        print('Cost after {} steps is {:.4f}'.format(n+1, current_cost))
+        print("Cost after {} steps is {:.4f}".format(n + 1, current_cost))
 
 # calculate the Bloch vector of the output state
 output_bloch_v = np.zeros(3)
@@ -167,8 +170,8 @@ for l in range(3):
     output_bloch_v[l] = circuit(best_params, A=Paulis[l])
 
 # print results
-print('Target Bloch vector = ', bloch_v)
-print('Output Bloch vector = ', output_bloch_v)
+print("Target Bloch vector = ", bloch_v)
+print("Output Bloch vector = ", output_bloch_v)
 
 
 ##############################################################################

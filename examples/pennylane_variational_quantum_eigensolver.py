@@ -51,7 +51,7 @@ from pennylane.optimize import GradientDescentOptimizer
 ##############################################################################
 # We use the default qubit simulator as a device.
 
-dev = qml.device('default.qubit', wires=2)
+dev = qml.device("default.qubit", wires=2)
 
 ##############################################################################
 # Quantum nodes
@@ -61,11 +61,13 @@ dev = qml.device('default.qubit', wires=2)
 # defines a manifold of possible quantum states. We use a Hadamard, two
 # rotations and a CNOT gate to construct our circuit.
 
+
 def ansatz(var):
     qml.Rot(0.3, 1.8, 5.4, wires=1)
     qml.RX(var[0], wires=0)
     qml.RY(var[1], wires=1)
     qml.CNOT(wires=[0, 1])
+
 
 ##############################################################################
 # A variational eigensolver requires us to evaluate expectations of
@@ -84,15 +86,18 @@ def ansatz(var):
 #     one quantum node:
 #     ``return qml.expectation.PauliX(0), qml.expectation.PauliY(1)``
 
+
 @qml.qnode(dev)
 def circuit_X(var):
     ansatz(var)
     return qml.expval.PauliX(1)
 
+
 @qml.qnode(dev)
 def circuit_Y(var):
     ansatz(var)
     return qml.expval.PauliY(1)
+
 
 ##############################################################################
 # Objective
@@ -103,10 +108,12 @@ def circuit_Y(var):
 # are interested in. In our case, we square this cost function to provide
 # a more interesting landscape with the same minima.
 
+
 def cost(var):
     expX = circuit_X(var)
     expY = circuit_Y(var)
     return (0.1 * expX + 0.5 * expY) ** 2
+
 
 ##############################################################################
 # This cost defines the following landscape:
@@ -118,18 +125,18 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.ticker import MaxNLocator
 
-fig = plt.figure(figsize = (6, 4))
-ax = fig.gca(projection='3d')
+fig = plt.figure(figsize=(6, 4))
+ax = fig.gca(projection="3d")
 
-X = np.linspace(-3., 3., 20)
-Y = np.linspace(-3., 3., 20)
+X = np.linspace(-3.0, 3.0, 20)
+Y = np.linspace(-3.0, 3.0, 20)
 xx, yy = np.meshgrid(X, Y)
 Z = np.array([[cost([x, y]) for x in X] for y in Y]).reshape(len(Y), len(X))
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 
 ax.set_xlabel("v1")
 ax.set_ylabel("v2")
-ax.zaxis.set_major_locator(MaxNLocator(nbins = 5, prune = 'lower'))
+ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
 
 plt.show()
 
@@ -148,30 +155,33 @@ for it in range(20):
     var = opt.step(cost, var)
     var_gd.append(var)
 
-    print('Cost after step {:5d}: {: .7f} | Variables: [{: .5f},{: .5f}]'
-          .format(it+1, cost(var), var[0], var[1]) )
+    print(
+        "Cost after step {:5d}: {: .7f} | Variables: [{: .5f},{: .5f}]".format(
+            it + 1, cost(var), var[0], var[1]
+        )
+    )
 
 ##############################################################################
 # We can plot the path that the variables took during gradient descent. To
 # make the plot more clear, we will shorten the range for :math:`v_2`.
 
-fig = plt.figure(figsize = (6, 4))
-ax = fig.gca(projection='3d')
+fig = plt.figure(figsize=(6, 4))
+ax = fig.gca(projection="3d")
 
-X = np.linspace(-3, np.pi/2, 20)
+X = np.linspace(-3, np.pi / 2, 20)
 Y = np.linspace(-3, 3, 20)
 xx, yy = np.meshgrid(X, Y)
 Z = np.array([[cost([x, y]) for x in X] for y in Y]).reshape(len(Y), len(X))
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 
-path_z = [cost(var)+1e-8 for var in var_gd]
+path_z = [cost(var) + 1e-8 for var in var_gd]
 path_x = [v[0] for v in var_gd]
 path_y = [v[1] for v in var_gd]
-ax.plot(path_x, path_y, path_z, c='green', marker='.', label="graddesc")
+ax.plot(path_x, path_y, path_z, c="green", marker=".", label="graddesc")
 
 ax.set_xlabel("v1")
 ax.set_ylabel("v2")
-ax.zaxis.set_major_locator(MaxNLocator(nbins = 5, prune = 'lower'))
+ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
 
 plt.legend()
 plt.show()
@@ -184,30 +194,36 @@ plt.show()
 # Instead of optimizing the circuit parameters, we can also use a fixed
 # circuit,
 
+
 def ansatz():
     qml.Rot(0.3, 1.8, 5.4, wires=1)
     qml.RX(-0.5, wires=0)
-    qml.RY( 0.5, wires=1)
+    qml.RY(0.5, wires=1)
     qml.CNOT(wires=[0, 1])
+
 
 @qml.qnode(dev)
 def circuit_X():
     ansatz()
     return qml.expval.PauliX(1)
 
+
 @qml.qnode(dev)
 def circuit_Y():
     ansatz()
     return qml.expval.PauliY(1)
 
+
 ##############################################################################
 # and make the classical coefficients that appear in the Hamiltonian the
 # trainable variables.
+
 
 def cost(var):
     expX = circuit_X()
     expY = circuit_Y()
     return (var[0] * expX + var[1] * expY) ** 2
+
 
 opt = GradientDescentOptimizer(0.5)
 
@@ -217,29 +233,32 @@ for it in range(20):
     var = opt.step(cost, var)
     var_gd.append(var)
 
-    print('Cost after step {:5d}: {: .7f} | Variables: [{: .5f},{: .5f}]'
-          .format(it+1, cost(var), var[0], var[1]) )
+    print(
+        "Cost after step {:5d}: {: .7f} | Variables: [{: .5f},{: .5f}]".format(
+            it + 1, cost(var), var[0], var[1]
+        )
+    )
 
 ##############################################################################
 # The landscape has a quadratic shape.
 
-fig = plt.figure(figsize = (6, 4))
-ax = fig.gca(projection='3d')
+fig = plt.figure(figsize=(6, 4))
+ax = fig.gca(projection="3d")
 
-X = np.linspace(-3, np.pi/2, 20)
+X = np.linspace(-3, np.pi / 2, 20)
 Y = np.linspace(-3, 3, 20)
 xx, yy = np.meshgrid(X, Y)
 Z = np.array([[cost([x, y]) for x in X] for y in Y]).reshape(len(Y), len(X))
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 
-path_z = [cost(var)+1e-8 for var in var_gd]
+path_z = [cost(var) + 1e-8 for var in var_gd]
 path_x = [v[0] for v in var_gd]
 path_y = [v[1] for v in var_gd]
-ax.plot(path_x, path_y, path_z, c='pink', marker='.', label="graddesc")
+ax.plot(path_x, path_y, path_z, c="pink", marker=".", label="graddesc")
 
 ax.set_xlabel("v1")
 ax.set_ylabel("v2")
-ax.zaxis.set_major_locator(MaxNLocator(nbins = 5, prune = 'lower'))
+ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
 
 plt.legend()
 plt.show()
@@ -251,6 +270,7 @@ plt.show()
 
 # Finally, we can optimize *classical* and *quantum* weights together by
 # combining the two approaches from above.
+
 
 def ansatz(var):
 
@@ -285,4 +305,4 @@ var = [0.3, 2.5, 0.3, 2.5]
 
 for it in range(10):
     var = opt.step(cost, var)
-    print('Cost after step {:5d}: {: 0.7f}'.format(it+1, cost(var)))
+    print("Cost after step {:5d}: {: 0.7f}".format(it + 1, cost(var)))
