@@ -346,7 +346,7 @@ autodoc_member_order = 'bysource'
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
 
-from custom_directives import IncludeDirective, GalleryItemDirective, CustomGalleryItemDirective
+from .custom_directives import IncludeDirective, GalleryItemDirective, CustomGalleryItemDirective
 
 def setup(app):
     app.add_directive('includenodoc', IncludeDirective)
