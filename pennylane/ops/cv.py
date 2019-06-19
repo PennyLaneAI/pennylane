@@ -817,8 +817,8 @@ class CatState(CVOperation):
 
 
 class MeanPhoton(CVObservable):
-    r"""pennylane.expval.MeanPhoton(wires)
-    Returns the photon number expectation value.
+    r"""pennylane.ops.MeanPhoton(wires)
+    The photon number observable :math:`\langle \hat{n}\rangle`.
 
     This expectation command returns the value
     :math:`\braket{\hat{n}}` where the number operator is
@@ -828,7 +828,7 @@ class MeanPhoton(CVObservable):
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Observable order: 2nd order in the quadrature operators.
+    * Observable order: 2nd order in the quadrature operators
     * Heisenberg representation:
 
       .. math:: M = \frac{1}{2\hbar}\begin{bmatrix}
@@ -838,7 +838,7 @@ class MeanPhoton(CVObservable):
         \end{bmatrix}
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 0
@@ -862,13 +862,13 @@ class X(CVObservable):
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Observable order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators
     * Heisenberg representation:
 
       .. math:: d = [0, 1, 0]
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 0
@@ -891,13 +891,13 @@ class P(CVObservable):
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Observable order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators
     * Heisenberg representation:
 
       .. math:: d = [0, 0, 1]
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 0
@@ -915,22 +915,22 @@ class Homodyne(CVObservable):
     Observable value of homodyne measurement in phase space.
 
     This expectation command returns the value :math:`\braket{\x_\phi}`,
-    where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalised
+    where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalized
     quadrature operator.
 
     **Details:**
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Observable order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators
     * Heisenberg representation:
 
       .. math:: d = [0, \cos\phi, \sin\phi]
 
     Args:
         phi (float): axis in the phase space at which to calculate
-            the homodyne measurement.
-        wires (Sequence[int] or int): the wire the operation acts on.
+            the homodyne measurement
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 1
@@ -962,9 +962,9 @@ class PolyXP(CVObservable):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system).
+    * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Observable order: 2nd order in the quadrature operators.
+    * Observable order: 2nd order in the quadrature operators
     * Heisenberg representation: :math:`A`
 
     Args:
@@ -1010,7 +1010,7 @@ class NumberState(CVObservable):
 
     **Details:**
 
-    * Number of wires: None (applied to any subset of wires).
+    * Number of wires: None (applied to any subset of wires)
     * Number of parameters: 1
     * Observable order: None (non-Gaussian)
 

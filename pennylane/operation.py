@@ -33,13 +33,13 @@ and measuring observables in PennyLane.
 
 * Each  :class:`~.Observable` subclass represents a type of physical observable.
   Each instance of these subclasses represents an instruction to measure and
-  return the respective value for the given parameter values on a
+  return the respective result for the given parameter values on a
   sequence of wires (subsystems).
 
 Differentiation
 ^^^^^^^^^^^^^^^
 
-In general, an :class:`Operation` is differentiable (at least using the finite difference
+In general, an :class:`Operation` is differentiable (at least using the finite-difference
 method) with respect to a parameter iff
 
 * the domain of that parameter is continuous.
@@ -96,7 +96,7 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
-    the finite difference method of gradient computation.
+    the finite-difference method of gradient computation.
 
 Summary
 ^^^^^^^
@@ -428,7 +428,7 @@ class Observable(Operation):
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
         do_queue (bool): Indicates whether the operation should be immediately
-            pushed into a :class:`QNode` circuit queue. This flag is useful if
+            pushed into a :class:`QNode` observable queue. This flag is useful if
             there is some reason to call an observable outside of a QNode context.
     """
     # pylint: disable=abstract-method
