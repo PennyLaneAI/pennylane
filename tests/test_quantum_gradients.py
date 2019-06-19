@@ -396,7 +396,9 @@ class QubitGradientTest(BaseTest):
             autograd_val = grad_fn(*angle_inputs)
             for idx in range(3):
                 onehot_idx = eye[idx]
-                manualgrad_val = (circuit(angle_inputs + np.pi / 2 * onehot_idx) - circuit(angle_inputs - np.pi / 2 * onehot_idx)) / 2
+                param1 = angle_inputs + np.pi / 2 * onehot_idx
+                param2 = angle_inputs - np.pi / 2 * onehot_idx
+                manualgrad_val = (circuit(*param1) - circuit(*param2)) / 2
                 self.assertAlmostEqual(autograd_val[idx], manualgrad_val, delta=self.tol)
 
     def test_qfunc_gradients(self):
@@ -465,13 +467,13 @@ class QubitGradientTest(BaseTest):
             ret = 0
             for d_in, d_out in zip(in_data, out_data):
                 args = np.array([d_in, p])
-                diff = (classifier(args) - d_out)
+                diff = (classifier(*args) - d_out)
                 ret = ret + 2 * diff * classifier.jacobian(args, which=[1], method=grad_method)
             return ret
 
         y0 = error(param)
         grad = autograd.grad(error)
-        grad_auto = grad([param])
+        grad_auto = grad(param)
 
         grad_fd1 = d_error(param, 'F')
         grad_angle = d_error(param, 'A')

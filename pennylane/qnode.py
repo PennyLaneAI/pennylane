@@ -147,6 +147,31 @@ from pennylane.utils import _flatten, unflatten
 from .variable import Variable
 
 
+def pop_jacobian_kwargs(kwargs):
+    """Remove QNode.jacobian specific keyword arguments from a dictionary.
+
+    This is required to correctly pass the user-defined
+    keyword arguments to the QNode quantum function.
+
+    Args:
+        kwargs (dict): dictionary of keyword arguments
+
+    Returns:
+        dict: keyword arguments with all QNode.jacobian
+        keyword arguments removed
+    """
+    # TODO: refactor QNode.jacobian to pass all gradient
+    # specific options under a single `gradient_options`
+    # dictionary, allowing this function to be removed.
+    circuit_kwargs = {}
+    circuit_kwargs.update(kwargs)
+
+    for k in ('h', 'order', 'shots', 'force_order2'):
+        circuit_kwargs.pop(k, None)
+
+    return circuit_kwargs
+
+
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
     pass
@@ -195,15 +220,22 @@ class QNode:
         func (callable): a Python function containing :class:`~.operation.Operation`
             constructor calls, returning a tuple of :class:`~.operation.Expectation` instances.
         device (:class:`~pennylane._device.Device`): device to execute the function on
+        cache (bool): If ``True``, the quantum function used to generate the QNode will
+            only be called to construct the quantum circuit once, on first execution,
+            and this circuit structure (i.e., the placement of templates, gates, measurements, etc.) will be cached for all further executions. The circuit parameters can still change with every call. Only activate this
+            feature if your quantum circuit structure will never change.
     """
     # pylint: disable=too-many-instance-attributes
     _current_context = None  #: QNode: for building Operation sequences by executing quantum circuit functions
 
-    def __init__(self, func, device):
+    def __init__(self, func, device, cache=False):
         self.func = func
         self.device = device
         self.num_wires = device.num_wires
+        self.num_variables = None
         self.ops = []
+
+        self.cache = cache
 
         self.variable_ops = {}
         """ dict[int->list[(int, int)]]: Mapping from free parameter index to the list of
@@ -236,7 +268,7 @@ class QNode:
                 raise QuantumFunctionError('State preparations and gates must precede expectation values.')
             self.queue.append(op)
 
-    def construct(self, args, **kwargs):
+    def construct(self, args, kwargs=None):
         """Constructs a representation of the quantum circuit.
 
         The user should never have to call this method.
@@ -250,20 +282,24 @@ class QNode:
             args (tuple): Represent the free parameters passed to the circuit.
                 Here we are not concerned with their values, but with their structure.
                 Each free param is replaced with a :class:`~.variable.Variable` instance.
-
-        .. note::
-
-            Additional keyword arguments may be passed to the quantum circuit function, however PennyLane
-            does not support differentiating with respect to keyword arguments. Instead,
-            keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
+            kwargs (dict): Additional keyword arguments may be passed to the quantum circuit function,
+                however PennyLane does not support differentiating with respect to keyword arguments.
+                Instead, keyword arguments are useful for providing data or 'placeholders'
+                to the quantum circuit function.
         """
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
         self.queue = []
         self.ev = []  # temporary queue for EVs
+
+        if kwargs is None:
+            kwargs = {}
 
         # flatten the args, replace each with a Variable instance with a unique index
         temp = [Variable(idx) for idx, val in enumerate(_flatten(args))]
         self.num_variables = len(temp)
+
+        # store the nested shape of the arguments for later unflattening
+        self.model = args
 
         # arrange the newly created Variables in the nested structure of args
         variables = unflatten(temp, args)
@@ -277,11 +313,16 @@ class QNode:
         keyword_values.update(self.keyword_defaults)
         keyword_values.update(kwargs)
 
-        # wrap each keyword argument as a Variable
-        kwarg_variables = {}
-        for key, val in keyword_values.items():
-            temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
-            kwarg_variables[key] = unflatten(temp, val)
+        if self.cache:
+            # caching mode, must use variables for kwargs
+            # wrap each keyword argument as a Variable
+            kwarg_variables = {}
+            for key, val in keyword_values.items():
+                temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
+                kwarg_variables[key] = unflatten(temp, val)
+
+        Variable.free_param_values = np.array(list(_flatten(args)))
+        Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in keyword_values.items()}
 
         # set up the context for Operation entry
         if QNode._current_context is None:
@@ -290,7 +331,13 @@ class QNode:
             raise QuantumFunctionError('QNode._current_context must not be modified outside this method.')
         # generate the program queue by executing the quantum circuit function
         try:
-            res = self.func(*variables, **kwarg_variables)
+            if self.cache:
+                # caching mode, must use variables for kwargs
+                # so they can be updated without reconstructing
+                res = self.func(*variables, **kwarg_variables)
+            else:
+                # no caching, fine to directly pass kwarg values
+                res = self.func(*variables, **keyword_values)
         finally:
             # remove the context
             QNode._current_context = None
@@ -461,9 +508,27 @@ class QNode:
         Returns:
             float, array[float]: output expectation value(s)
         """
-        if not self.ops:
-            # construct the circuit
-            self.construct(args, **kwargs)
+        if not self.ops or not self.cache:
+            if self.num_variables is not None:
+                # circuit construction has previously been called
+                if len(list(_flatten(args))) == self.num_variables:
+                    # only construct the circuit if the number
+                    # of arguments matches the allowed number
+                    # of variables.
+                    # This avoids construction happening
+                    # via self._pd_analytic, where temporary
+                    # variables are appended to the argument list.
+
+                    # flatten and unflatten arguments
+                    flat_args = list(_flatten(args))
+                    shaped_args = unflatten(flat_args, self.model)
+
+                    # construct the circuit
+                    self.construct(shaped_args, kwargs)
+            else:
+                # circuit has not yet been constructed
+                # construct the circuit
+                self.construct(args, kwargs)
 
         # temporarily store keyword arguments
         keyword_values = {}
@@ -582,9 +647,11 @@ class QNode:
         if isinstance(params, numbers.Number):
             params = (params,)
 
-        if not self.ops:
+        circuit_kwargs = pop_jacobian_kwargs(kwargs)
+
+        if not self.ops or not self.cache:
             # construct the circuit
-            self.construct(params, **kwargs)
+            self.construct(params, circuit_kwargs)
 
         flat_params = np.array(list(_flatten(params)))
 
@@ -622,7 +689,7 @@ class QNode:
         if 'F' in method.values():
             if order == 1:
                 # the value of the circuit at params, computed only once here
-                y0 = np.asarray(self.evaluate(flat_params, **kwargs))
+                y0 = np.asarray(self.evaluate(params, **circuit_kwargs))
             else:
                 y0 = None
 
@@ -658,19 +725,21 @@ class QNode:
         Returns:
             float: partial derivative of the node.
         """
+        circuit_kwargs = pop_jacobian_kwargs(kwargs)
+
         shift_params = params.copy()
         if order == 1:
             # shift one parameter by h
             shift_params[idx] += h
-            y = np.asarray(self.evaluate(shift_params, **kwargs))
+            y = np.asarray(self.evaluate(shift_params, **circuit_kwargs))
             return (y-y0) / h
         elif order == 2:
             # symmetric difference
             # shift one parameter by +-h/2
             shift_params[idx] += 0.5*h
-            y2 = np.asarray(self.evaluate(shift_params, **kwargs))
+            y2 = np.asarray(self.evaluate(shift_params, **circuit_kwargs))
             shift_params[idx] = params[idx] -0.5*h
-            y1 = np.asarray(self.evaluate(shift_params, **kwargs))
+            y1 = np.asarray(self.evaluate(shift_params, **circuit_kwargs))
             return (y2-y1) / h
         else:
             raise ValueError('Order must be 1 or 2.')
@@ -692,6 +761,9 @@ class QNode:
         Returns:
             float: partial derivative of the node.
         """
+        # remove jacobian specific keyword arguments
+        circuit_kwargs = pop_jacobian_kwargs(kwargs)
+
         n = self.num_variables
         w = self.num_wires
         pd = 0.0
@@ -725,8 +797,8 @@ class QNode:
             if not force_order2 and op.grad_method != 'A2':
                 # basic analytic method, for discrete gates and gaussian CV gates succeeded by order-1 observables
                 # evaluate the circuit in two points with shifted parameter values
-                y2 = np.asarray(self.evaluate(shift_p1, **kwargs))
-                y1 = np.asarray(self.evaluate(shift_p2, **kwargs))
+                y2 = np.asarray(self.evaluate(shift_p1, **circuit_kwargs))
+                y1 = np.asarray(self.evaluate(shift_p2, **circuit_kwargs))
                 pd += (y2-y1) * multiplier
             else:
                 # order-2 method, for gaussian CV gates succeeded by order-2 observables
@@ -774,7 +846,7 @@ class QNode:
                 # transform the observables
                 obs = list(map(tr_obs, self.ev))
                 # measure transformed observables
-                temp = self.evaluate_obs(obs, unshifted_params, **kwargs)
+                temp = self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
                 pd += temp
 
             # restore the original parameter

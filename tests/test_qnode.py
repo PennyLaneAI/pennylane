@@ -257,7 +257,12 @@ class BasicTest(BaseTest):
         def qf(x):
             qml.RX(x, wires=[0])
             return qml.expval.PauliZ(0)
-        q = qml.QNode(qf, self.dev2)
+
+        # in non-cached mode, the grad method would be
+        # recomputed and overwritten from the
+        # bogus value 'J'. Caching stops this from happening.
+        q = qml.QNode(qf, self.dev2, cache=True)
+
         q.evaluate([0.0])
         keys = q.grad_method_for_par.keys()
         if len(keys) > 0:
@@ -559,7 +564,7 @@ class TestQNodeGradients:
         assert np.allclose(circuit_output, expected_output, atol=tol, rtol=0)
 
         # circuit jacobians
-        circuit_jacobian = circuit.jacobian(multidim_array)
+        circuit_jacobian = circuit.jacobian([multidim_array])
         expected_jacobian = -np.diag(np.sin(b))
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
@@ -916,3 +921,59 @@ class TestQNodeGradients:
                                       [0., -np.sin(a[1])] + [0.] * 6,  # expval 1
                                       [0.] * 2 + [0.] * 5 + [-np.sin(b[2, 1])]])  # expval 2
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
+
+
+class TestQNodeCacheing:
+    """Tests for the QNode construction caching"""
+
+    def test_no_caching(self):
+        """Test that the circuit structure changes on
+        subsequent evalutions with caching turned off
+        """
+        dev = qml.device('default.qubit', wires=2)
+
+        def circuit(x, c=None):
+            qml.RX(x, wires=0)
+
+            for i in range(c):
+                qml.RX(x, wires=i)
+    
+            return qml.expval.PauliZ(0)
+
+        circuit = qml.QNode(circuit, dev, cache=False)
+
+        # first evaluation
+        circuit(0, c=0)
+        # check structure
+        assert len(circuit.queue) == 1
+
+        # second evaluation
+        circuit(0, c=1)
+        # check structure
+        assert len(circuit.queue) == 2
+
+    def test_caching(self):
+        """Test that the circuit structure does not change on
+        subsequent evalutions with caching turned on
+        """
+        dev = qml.device('default.qubit', wires=2)
+
+        def circuit(x, c=None):
+            qml.RX(x, wires=0)
+
+            for i in range(c.val):
+                qml.RX(x, wires=i)
+
+            return qml.expval.PauliZ(0)
+
+        circuit = qml.QNode(circuit, dev, cache=True)
+
+        # first evaluation
+        circuit(0, c=0)
+        # check structure
+        assert len(circuit.queue) == 1
+
+        # second evaluation
+        circuit(0, c=1)
+        # check structure
+        assert len(circuit.queue) == 1
