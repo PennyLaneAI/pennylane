@@ -937,8 +937,8 @@ class TestQNodeCacheing:
 
             for i in range(c):
                 qml.RX(x, wires=i)
-    
-            return qml.expval.PauliZ(0)
+
+            return qml.expval(qml.PauliZ(0))
 
         circuit = qml.QNode(circuit, dev, cache=False)
 
@@ -964,7 +964,7 @@ class TestQNodeCacheing:
             for i in range(c.val):
                 qml.RX(x, wires=i)
 
-            return qml.expval.PauliZ(0)
+            return qml.expval(qml.PauliZ(0))
 
         circuit = qml.QNode(circuit, dev, cache=True)
 
