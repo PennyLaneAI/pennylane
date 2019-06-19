@@ -88,7 +88,6 @@ Summary
     All individual operations and observables (contained in :mod:`~.ops`),
     measurements (contained in :mod:`~.measure`), and optimizers
     (contained in :mod:`~.optimize`) may also be imported directly from PennyLane.
-    Expectation values, however, must be accessed via the :mod:`~.expval` module.
 
 Code details
 ~~~~~~~~~~~~

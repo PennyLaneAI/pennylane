@@ -56,6 +56,10 @@ Observables
 -----------
 
 .. autosummary::
+    Hadamard
+    PauliX
+    PauliY
+    PauliZ
     Hermitian
 
 

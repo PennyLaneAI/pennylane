@@ -113,5 +113,5 @@ class TestDeprecatedExpval:
             return qml.expval.R(0)
 
         with pytest.warns(DeprecationWarning, match="is deprecated"):
-            with pytest.raises(AttributeError, match="has no attribute 'R'"):
+            with pytest.raises(AttributeError, match="has no observable 'R'"):
                 res = circuit()

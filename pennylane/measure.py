@@ -87,7 +87,7 @@ class ExpvalFactory:
         if name in qml.ops.__all_ops__:  # pylint: disable=no-member
             raise AttributeError("{} is not an observable: cannot be used with expval".format(name))
 
-        raise AttributeError("module 'pennylane' has no attribute '{}'".format(name))
+        raise AttributeError("module 'pennylane' has no observable '{}'".format(name))
 
 
 expval = ExpvalFactory()
