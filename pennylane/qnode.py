@@ -147,6 +147,31 @@ from pennylane.utils import _flatten, unflatten
 from .variable import Variable
 
 
+def pop_jacobian_kwargs(kwargs):
+    """Remove QNode.jacobian specific keyword arguments from a dictionary.
+
+    This is required to correctly pass the user-defined
+    keyword arguments to the QNode quantum function.
+
+    Args:
+        kwargs (dict): dictionary of keyword arguments
+
+    Returns:
+        dict: keyword arguments with all QNode.jacobian
+        keyword arguments removed
+    """
+    # TODO: refactor QNode.jacobian to pass all gradient
+    # specific options under a single `gradient_options`
+    # dictionary, allowing this function to be removed.
+    circuit_kwargs = {}
+    circuit_kwargs.update(kwargs)
+
+    for k in ('h', 'order', 'shots', 'force_order2'):
+        circuit_kwargs.pop(k, None)
+
+    return circuit_kwargs
+
+
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
     pass
@@ -272,7 +297,9 @@ class QNode:
         # flatten the args, replace each with a Variable instance with a unique index
         temp = [Variable(idx) for idx, val in enumerate(_flatten(args))]
         self.num_variables = len(temp)
-        self.args_shape = args
+
+        # store the nested shape of the arguments for later unflattening
+        self.model = args
 
         # arrange the newly created Variables in the nested structure of args
         variables = unflatten(temp, args)
@@ -494,7 +521,7 @@ class QNode:
 
                     # flatten and unflatten arguments
                     flat_args = list(_flatten(args))
-                    shaped_args = unflatten(flat_args, self.args_shape)
+                    shaped_args = unflatten(flat_args, self.model)
 
                     # construct the circuit
                     self.construct(shaped_args, kwargs)
@@ -620,11 +647,7 @@ class QNode:
         if isinstance(params, numbers.Number):
             params = (params,)
 
-        # remove jacobian specific keyword arguments
-        circuit_kwargs = {}
-        circuit_kwargs.update(kwargs)
-        for k in ('h', 'order', 'shots', 'force_order2'):
-            circuit_kwargs.pop(k, None)
+        circuit_kwargs = pop_jacobian_kwargs(kwargs)
 
         if not self.ops or not self.cache:
             # construct the circuit
@@ -702,11 +725,7 @@ class QNode:
         Returns:
             float: partial derivative of the node.
         """
-        # remove jacobian specific keyword arguments
-        circuit_kwargs = {}
-        circuit_kwargs.update(kwargs)
-        for k in ('h', 'order', 'shots', 'force_order2'):
-            circuit_kwargs.pop(k, None)
+        circuit_kwargs = pop_jacobian_kwargs(kwargs)
 
         shift_params = params.copy()
         if order == 1:
@@ -743,10 +762,7 @@ class QNode:
             float: partial derivative of the node.
         """
         # remove jacobian specific keyword arguments
-        circuit_kwargs = {}
-        circuit_kwargs.update(kwargs)
-        for k in ('h', 'order', 'shots', 'force_order2'):
-            circuit_kwargs.pop(k, None)
+        circuit_kwargs = pop_jacobian_kwargs(kwargs)
 
         n = self.num_variables
         w = self.num_wires
