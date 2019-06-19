@@ -34,10 +34,10 @@ def test_no_measure(tol):
 
 
 class TestExpval:
-    """Tests for the new expval function"""
+    """Tests for the expval function"""
 
     def test_value(self, tol):
-        """Test that the new expval interface works"""
+        """Test that the expval interface works"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -68,6 +68,7 @@ class TestExpval:
 class TestDeprecatedExpval:
     """Tests for the deprecated expval attribute getter.
     Once fully deprecated, this test can be removed"""
+    #TODO: once `qml.expval.Observable` is deprecated, remove this test
 
     def test_value(self, tol):
         """Test that the old expval interface works,
