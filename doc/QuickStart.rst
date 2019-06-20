@@ -18,11 +18,11 @@ PennyLane basics
     :hidden:
     :maxdepth: 1
 
-    tutorials/make_your_first_quantum_circuit
-    tutorials/get_to_know_the_operations
-    tutorials/prepare_your_first_quantum_state
-    tutorials/quantum_gradients
-    tutorials/optimization_in_pennylane
+    tutorials/pennylane_make_your_first_quantum_circuit
+    tutorials/pennylane_get_to_know_the_operations
+    tutorials/pennylane_prepare_your_first_quantum_state
+    tutorials/pennylane_quantum_gradients
+    tutorials/pennylane_optimization_in_pennylane
 
 .. customgalleryitem::
     :tooltip: Learn how to make quantum circuits in PennyLane.
@@ -60,8 +60,8 @@ Let's put together everything we have learned from the basic tutorials by consid
     :hidden:
     :maxdepth: 1
 
-    tutorials/q_rotation
-    tutorials/g_transformation
+    tutorials/pennylane_q_rotation
+    tutorials/pennylane_g_transformation
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to rotate a qubit.
