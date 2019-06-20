@@ -182,12 +182,12 @@ PennyLane provides a growing library of ready-to-use templates of common quantum
     tutorials/pennylane_skip_templates_CV
 
 .. customgalleryitem::
-    :tooltip: Ising model example with PennyLane NumPy interface.
+    :tooltip: Make a strongly entangling circuit in one line by using PennyLane templates.
     :figure: ../examples/figures/slsec_example.png
     :description: :ref:`templates_DV`
 
 .. customgalleryitem::
-    :tooltip: Ising model example with PennyLane PyTorch interface.
+    :tooltip: Make a Quantum Neural Network in one line by using PennyLane templates.
     :figure: ../examples/figures/cvqnn_example.png
     :description: :ref:`templates_CV`
 
