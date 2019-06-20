@@ -316,11 +316,21 @@ class DefaultQubit(Device):
             return
 
         A = self._get_operator_matrix(operation, par)
-
-        # apply unitary operations
-        U = self.expand(A, wires)
-
-        self._state = U @ self._state
+        # TODO: use multi-index vectors/matrices to represent states/gates internally
+        A = np.reshape(A, [2] * len(wires) * 2)
+        s = np.reshape(self._state, [2] * self.num_wires)
+        axes = (np.arange(len(wires), 2 * len(wires)), wires)
+        tdot = np.tensordot(A, s, axes=axes)
+        # tensordot causes the axes given in `wires` to end up in the first positions
+        # of the resulting tensor. This corresponds to a (partial) transpose of
+        # the correct output state
+        # We'll need to invert this permutation to put the indices in the correct place
+        unused_idxs = [idx for idx in range(self.num_wires) if idx not in wires]
+        perm = wires + unused_idxs
+        inv_perm = np.argsort(perm) # argsort gives inverse permutation
+        state_multi_index = np.transpose(tdot, inv_perm)
+        state_flat = np.reshape(state_multi_index, 2 ** self.num_wires)
+        self._state = state_flat
 
     def expval(self, expectation, wires, par):
         # measurement/expectation value <psi|A|psi>
