@@ -26,17 +26,15 @@ computational basis state.
 We then show how to encode real vectors as amplitude vectors (*amplitude
 encoding*) and train the model to recognize the first two classes of
 flowers in the Iris dataset.
-"""
 
-##############################################################################
-# 1. Fitting the parity function
-# ------------------------------
-#
-# Imports
-# ~~~~~~~
-#
-# As before, we import PennyLane, the PennyLane-provided version of NumPy,
-# and an optimizer.
+1. Fitting the parity function
+------------------------------
+
+Imports
+^^^^^^^^
+As before, we import PennyLane, the PennyLane-provided version of NumPy,
+and an optimizer.
+"""
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -44,7 +42,7 @@ from pennylane.optimize import NesterovMomentumOptimizer
 
 ##############################################################################
 # Quantum and classical nodes
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # We create a quantum device with four “wires” (or qubits).
 
@@ -85,16 +83,13 @@ def layer(W):
 # We use the ``BasisState`` function provided by PennyLane, which expects
 # ``x`` to be a list of zeros and ones, i.e. ``[0,1,0,1]``.
 
-
 def statepreparation(x):
     qml.BasisState(x, wires=[0, 1, 2, 3])
-
 
 ##############################################################################
 # Now we define the quantum node as a state preparation routine, followed
 # by a repetition of the layer structure. Borrowing from machine learning,
 # we call the parameters ``weights``.
-
 
 @qml.qnode(dev)
 def circuit(weights, x=None):
@@ -105,7 +100,6 @@ def circuit(weights, x=None):
         layer(W)
 
     return qml.expval.PauliZ(0)
-
 
 ##############################################################################
 # Different from previous examples, the quantum node takes the data as a
@@ -119,21 +113,18 @@ def circuit(weights, x=None):
 # into the quantum node. Before this, we reshape the list of remaining
 # variables for easy use in the quantum node.
 
-
 def variational_classifier(var, x=None):
     weights = var[0]
     bias = var[1]
     return circuit(weights, x=x) + bias
 
-
 ##############################################################################
 # Cost
-# ~~~~
+# ^^^^^
 #
 # In supervised learning, the cost function is usually the sum of a loss
 # function and a regularizer. We use the standard square loss that
 # measures the distance between target labels and model predictions.
-
 
 def square_loss(labels, predictions):
     loss = 0
@@ -143,11 +134,9 @@ def square_loss(labels, predictions):
     loss = loss / len(labels)
     return loss
 
-
 ##############################################################################
 # To monitor how many inputs the current classifier predicted correctly,
 # we also define the accuracy given target labels and model predictions.
-
 
 def accuracy(labels, predictions):
 
@@ -159,20 +148,17 @@ def accuracy(labels, predictions):
 
     return loss
 
-
 ##############################################################################
 # For learning tasks, the cost depends on the data - here the features and
 # labels considered in the iteration of the optimization routine.
-
 
 def cost(var, X, Y):
     predictions = [variational_classifier(var, x=x) for x in X]
     return square_loss(Y, predictions)
 
-
 ##############################################################################
 # Optimization
-# ~~~~~~~~~~~~
+# ^^^^^^^^^^^^^
 #
 # Let’s now load and preprocess some data.
 
@@ -199,8 +185,7 @@ print("...")
 #     X = [0. 0. 1. 1.], Y = -1
 #     X = [0. 1. 0. 0.], Y =  1
 #     ...
-
-##############################################################################
+#
 # We initialize the variables randomly (but fix a seed for
 # reproducability). The first variable in the list is used as a bias,
 # while the rest is fed into the gates of the variational circuit.
@@ -228,8 +213,7 @@ print(var_init)
 #             [ 0.00333674,  0.01494079, -0.00205158],
 #             [ 0.00313068, -0.00854096, -0.0255299 ],
 #             [ 0.00653619,  0.00864436, -0.00742165]]]), 0.0)
-
-##############################################################################
+#
 # Next we create an optimizer and choose a batch size…
 
 opt = NesterovMomentumOptimizer(0.5)
@@ -288,13 +272,13 @@ for it in range(25):
 #     Iter:    23 | Cost: 0.0060335 | Accuracy: 1.0000000
 #     Iter:    24 | Cost: 0.0036153 | Accuracy: 1.0000000
 #     Iter:    25 | Cost: 0.0012741 | Accuracy: 1.0000000
-
-##############################################################################
+#
+#
 # 2. Iris classification
-# ----------------------
+# -----------------------
 #
 # Quantum and classical nodes
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # To encode real-valued vectors into the amplitudes of a quantum state, we
 # use a 2-qubit simulator.
@@ -316,7 +300,6 @@ dev = qml.device("default.qubit", wires=2)
 # had to also decompose controlled Y-axis rotations into more basic
 # circuits following `Nielsen and Chuang
 # (2010) <http://www.michaelnielsen.org/qcqi/>`__.
-
 
 def get_angles(x):
 
@@ -344,7 +327,6 @@ def statepreparation(a):
     qml.RY(a[4], wires=1)
     qml.PauliX(wires=0)
 
-
 ##############################################################################
 # Let’s test if this routine actually works.
 
@@ -366,7 +348,6 @@ print("x               : ", x)
 print("angles          : ", ang)
 print("amplitude vector: ", np.real(dev._state))
 
-
 ##############################################################################
 # .. rst-class:: sphx-glr-script-out
 #
@@ -377,8 +358,8 @@ print("amplitude vector: ", np.real(dev._state))
 #     x               :  [0.53896774 0.79503606 0.27826503 0.        ]
 #     angles          :  [ 0.56397465 -0.          0.         -0.97504604  0.97504604]
 #     amplitude vector:  [ 5.38967743e-01  7.95036065e-01  2.78265032e-01 -1.38777878e-17]
-
-##############################################################################
+#
+#
 # Note that the ``default.qubit`` simulator provides a shortcut to
 # ``statepreparation`` with the command
 # ``qml.QubitStateVector(x, wires=[0, 1])``. However, some devices may not
@@ -387,18 +368,15 @@ print("amplitude vector: ", np.real(dev._state))
 # Since we are working with only 2 qubits now, we need to update the layer
 # function as well.
 
-
 def layer(W):
     qml.Rot(W[0, 0], W[0, 1], W[0, 2], wires=0)
     qml.Rot(W[1, 0], W[1, 1], W[1, 2], wires=1)
     qml.CNOT(wires=[0, 1])
 
-
 ##############################################################################
 # The variational classifier model and its cost remain essentially the
 # same, but we have to reload them with the new state preparation and
 # layer functions.
-
 
 @qml.qnode(dev)
 def circuit(weights, angles=None):
@@ -420,10 +398,9 @@ def cost(weights, features, labels):
     predictions = [variational_classifier(weights, angles=f) for f in features]
     return square_loss(labels, predictions)
 
-
 ##############################################################################
 # Data
-# ~~~~
+# ^^^^^
 #
 # We then load the Iris data set. There is a bit of preprocessing to do in
 # order to encode the inputs into the amplitudes of a quantum state. In
@@ -461,8 +438,8 @@ Y = data[:, -1]
 #     First X sample (padded)    : [0.4  0.75 0.3  0.  ]
 #     First X sample (normalized): [0.44376016 0.83205029 0.33282012 0.        ]
 #     First features sample      : [ 0.67858523 -0.          0.         -1.080839    1.080839  ]
-
-##############################################################################
+#
+#
 # These angles are our new features, which is why we have renamed X to
 # “features” above. Let’s plot the stages of preprocessing and play around
 # with the dimensions (dim1, dim2). Some of them still separate the
@@ -496,7 +473,6 @@ plt.scatter(
 plt.title("Feature vectors (dims {} and {})".format(dim1, dim2))
 plt.show()
 
-
 ##############################################################################
 # .. rst-class:: sphx-glr-horizontal
 #
@@ -515,9 +491,8 @@ plt.show()
 #
 #       .. image:: ../../examples/figures/classifier_output_50_2.png
 #             :class: sphx-glr-multi-img
-
-
-##############################################################################
+#
+#
 # This time we want to generalize from the data samples. To monitor the
 # generalization performance, the data is split into training and
 # validation set.
@@ -537,7 +512,7 @@ X_val = X[index[num_train:]]
 
 ##############################################################################
 # Optimization
-# ~~~~~~~~~~~~
+# ^^^^^^^^^^^^^
 #
 # First we initialize the variables.
 
@@ -573,7 +548,6 @@ for it in range(60):
         "Iter: {:5d} | Cost: {:0.7f} | Acc train: {:0.7f} | Acc validation: {:0.7f} "
         "".format(it + 1, cost(var, features, Y), acc_train, acc_val)
     )
-
 
 ##############################################################################
 # .. rst-class:: sphx-glr-script-out
@@ -642,9 +616,8 @@ for it in range(60):
 #     Iter:    58 | Cost: 0.3755246 | Acc train: 0.9600000 | Acc validation: 0.9200000
 #     Iter:    59 | Cost: 0.3468994 | Acc train: 1.0000000 | Acc validation: 1.0000000
 #     Iter:    60 | Cost: 0.3297071 | Acc train: 1.0000000 | Acc validation: 1.0000000
-
-
-##############################################################################
+#
+#
 # We can plot the continuous output of the variational classifier for the
 # first two dimensions of the Iris data set.
 

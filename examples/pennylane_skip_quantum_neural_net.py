@@ -11,14 +11,13 @@ from that function.
 The variational circuit we use is the continuous-variable quantum neural
 network model described in `Killoran et al.
 (2018) <https://arxiv.org/abs/1806.06871>`__.
-"""
 
-##############################################################################
-# Imports
-# ~~~~~~~
-#
-# We import PennyLane, the wrapped version of NumPy provided by PennyLane,
-# and an optimizer.
+Imports
+^^^^^^^
+
+We import PennyLane, the wrapped version of NumPy provided by PennyLane,
+and an optimizer.
+"""
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -33,11 +32,10 @@ dev = qml.device("strawberryfields.fock", wires=1, cutoff_dim=10)
 
 ##############################################################################
 # Quantum node
-# ~~~~~~~~~~~~
+# ^^^^^^^^^^^^^
 #
 # For a single quantum mode, each layer of the variational circuit is
 # defined as:
-
 
 def layer(v):
     # Matrix multiplication of input layer
@@ -51,12 +49,10 @@ def layer(v):
     # Element-wise nonlinear transformation
     qml.Kerr(v[4], wires=0)
 
-
 ##############################################################################
 # The variational circuit in the quantum node first encodes the input into
 # the displacement of the mode, and then executes the layers. The output
 # is the expectation of the x-quadrature.
-
 
 @qml.qnode(dev)
 def quantum_neural_net(var, x=None):
@@ -69,14 +65,12 @@ def quantum_neural_net(var, x=None):
 
     return qml.expval.X(0)
 
-
 ##############################################################################
 # Objective
-# ~~~~~~~~~
+# ^^^^^^^^^^
 #
 # As an objective we take the square loss between target labels and model
 # predictions.
-
 
 def square_loss(labels, predictions):
     loss = 0
@@ -86,22 +80,19 @@ def square_loss(labels, predictions):
     loss = loss / len(labels)
     return loss
 
-
 ##############################################################################
 # In the cost function, we compute the outputs from the variational
 # circuit. Function fitting is a regression problem, and we interpret the
 # expectations from the quantum node as predictions (i.e., without
 # applying postprocessing such as thresholding).
 
-
 def cost(var, features, labels):
     preds = [quantum_neural_net(var, x=x) for x in features]
     return square_loss(labels, preds)
 
-
 ##############################################################################
 # Optimization
-# ~~~~~~~~~~~~
+# ^^^^^^^^^^^^^
 #
 # We load noisy data samples of a sine function.
 
@@ -123,7 +114,6 @@ plt.ylabel("f(x)", fontsize=18)
 plt.tick_params(axis="both", which="major", labelsize=16)
 plt.tick_params(axis="both", which="minor", labelsize=16)
 plt.show()
-
 
 ##############################################################################
 # .. image:: ../../examples/figures/qnn_output_20_0.png
@@ -158,7 +148,6 @@ var = var_init
 for it in range(500):
     var = opt.step(lambda v: cost(v, X, Y), var)
     print("Iter: {:5d} | Cost: {:0.7f} ".format(it + 1, cost(var, X, Y)))
-
 
 ##############################################################################
 # .. rst-class:: sphx-glr-script-out

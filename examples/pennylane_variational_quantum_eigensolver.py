@@ -1,5 +1,5 @@
 r"""
-.. _vqe:
+.. _variational_quantum_eigensolver:
 
 Variational quantum eigensolver
 ===============================
@@ -32,17 +32,17 @@ the Hamiltonian to minimize
 
     \langle \psi | H | \psi \rangle^2  = (v_1 \langle \psi | X_2 | \psi
     \rangle + v_2 \langle \psi | Y_2 | \psi \rangle )^2 .
-"""
 
-##############################################################################
-# 1. Optimizing the quantum circuit
-# ---------------------------------
-#
-# Imports
-# ~~~~~~~
-#
-# We begin by importing PennyLane, the PennyLane-wrapped version of NumPy,
-# and the GradientDescentOptimizer.
+1. Optimizing the quantum circuit
+---------------------------------
+
+Imports
+^^^^^^^^
+
+We begin by importing PennyLane, the PennyLane-wrapped version of NumPy,
+and the GradientDescentOptimizer.
+
+"""
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -55,19 +55,17 @@ dev = qml.device("default.qubit", wires=2)
 
 ##############################################################################
 # Quantum nodes
-# ~~~~~~~~~~~~~
+# ^^^^^^^^^^^^^^
 #
 # The quantum circuit of the variational eigensolver is an ansatz that
 # defines a manifold of possible quantum states. We use a Hadamard, two
 # rotations and a CNOT gate to construct our circuit.
-
 
 def ansatz(var):
     qml.Rot(0.3, 1.8, 5.4, wires=1)
     qml.RX(var[0], wires=0)
     qml.RY(var[1], wires=1)
     qml.CNOT(wires=[0, 1])
-
 
 ##############################################################################
 # A variational eigensolver requires us to evaluate expectations of
@@ -86,7 +84,6 @@ def ansatz(var):
 #     one quantum node:
 #     ``return qml.expectation.PauliX(0), qml.expectation.PauliY(1)``
 
-
 @qml.qnode(dev)
 def circuit_X(var):
     ansatz(var)
@@ -98,22 +95,19 @@ def circuit_Y(var):
     ansatz(var)
     return qml.expval.PauliY(1)
 
-
 ##############################################################################
 # Objective
-# ~~~~~~~~~
-
+# ^^^^^^^^^^^
+#
 # The cost function to be optimized in VQE is simply a linear combination
 # of the expectations, which defines the expectation of the Hamiltonian we
 # are interested in. In our case, we square this cost function to provide
 # a more interesting landscape with the same minima.
 
-
 def cost(var):
     expX = circuit_X(var)
     expY = circuit_Y(var)
     return (0.1 * expX + 0.5 * expY) ** 2
-
 
 ##############################################################################
 # This cost defines the following landscape:
@@ -142,7 +136,7 @@ plt.show()
 
 ##############################################################################
 # Optimization
-# ~~~~~~~~~~~~
+# ^^^^^^^^^^^^^
 #
 # We create a GradientDescentOptimizer and use it to optimize the cost
 # function.
@@ -186,14 +180,12 @@ ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
 plt.legend()
 plt.show()
 
-
 ##############################################################################
 # 2. Optimizing the Hamiltonian coefficients
 # ------------------------------------------
 #
 # Instead of optimizing the circuit parameters, we can also use a fixed
 # circuit,
-
 
 def ansatz():
     qml.Rot(0.3, 1.8, 5.4, wires=1)
@@ -213,11 +205,9 @@ def circuit_Y():
     ansatz()
     return qml.expval.PauliY(1)
 
-
 ##############################################################################
 # and make the classical coefficients that appear in the Hamiltonian the
 # trainable variables.
-
 
 def cost(var):
     expX = circuit_X()
@@ -263,14 +253,12 @@ ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
 plt.legend()
 plt.show()
 
-
 ##############################################################################
 # 3. Optimizing classical and quantum parameters
 # ----------------------------------------------
 
 # Finally, we can optimize *classical* and *quantum* weights together by
 # combining the two approaches from above.
-
 
 def ansatz(var):
 
