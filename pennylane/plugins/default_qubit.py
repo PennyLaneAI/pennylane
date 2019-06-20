@@ -331,8 +331,7 @@ class DefaultQubit(Device):
         perm = wires + unused_idxs
         inv_perm = np.argsort(perm) # argsort gives inverse permutation
         state_multi_index = np.transpose(tdot, inv_perm)
-        state_flat = np.reshape(state_multi_index, 2 ** self.num_wires)
-        self._state = state_flat
+        self._state = np.reshape(state_multi_index, 2 ** self.num_wires)
 
     def expval(self, expectation, wires, par):
         # measurement/expectation value <psi|A|psi>
