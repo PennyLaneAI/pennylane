@@ -316,6 +316,7 @@ class DefaultQubit(Device):
             return
 
         A = self._get_operator_matrix(operation, par)
+
         # TODO: use multi-index vectors/matrices to represent states/gates internally
         A = np.reshape(A, [2] * len(wires) * 2)
         s = np.reshape(self._state, [2] * self.num_wires)
