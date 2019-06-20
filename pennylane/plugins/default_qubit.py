@@ -322,6 +322,7 @@ class DefaultQubit(Device):
         s = np.reshape(self._state, [2] * self.num_wires)
         axes = (np.arange(len(wires), 2 * len(wires)), wires)
         tdot = np.tensordot(A, s, axes=axes)
+
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
         # the correct output state
