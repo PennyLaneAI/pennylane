@@ -1,10 +1,10 @@
 .. role:: html(raw)
    :format: html
 
-.. _hybrid_plugins:
+.. _hybrid_plugins_comp:
 
 Using plugins and Quantum Hardware
-----------------------------------
+===================================
 
 .. toctree::
     :hidden:
@@ -28,5 +28,6 @@ Using plugins and Quantum Hardware
     :tooltip: Do arbitrary state preparation on a real quantum computer.
     :figure: ../examples/figures/state_prep.png
     :description: :ref:`state_preparation`
+
 
 :html:`<div style='clear:both'></div>`

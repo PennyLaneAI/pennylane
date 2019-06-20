@@ -153,7 +153,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Tutorials
    :hidden:
 
-   hybrid_plugins
+   hybrid_plugins_comp
 
 
 .. toctree::
