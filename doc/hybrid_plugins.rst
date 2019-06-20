@@ -12,6 +12,7 @@ Using plugins and Quantum Hardware
 
     tutorials/pennylane_skip_plugins_hybrid
     tutorials/pennylane_skip_pytorch_noise
+    tutorials/pennylane_skip_state_preparation
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning in a multi-device quantum algorithm.
@@ -22,5 +23,10 @@ Using plugins and Quantum Hardware
     :tooltip: Extend PyTorch with real quantum computing power.
     :figure: ../examples/figures/bloch.gif
     :description: :ref:`pytorch_noise`
+
+.. customgalleryitem::
+    :tooltip: Do arbitrary state preparation on a real quantum computer.
+    :figure: ../examples/figures/state_prep.png
+    :description: :ref:`state_preparation`
 
 :html:`<div style='clear:both'></div>`
