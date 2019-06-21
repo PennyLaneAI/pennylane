@@ -943,7 +943,7 @@ class TestQNodeVariance:
         # circuit jacobians
         gradA = circuit.jacobian([a], method='A')
         gradF = circuit.jacobian([a], method='F')
-        expected = np.sin(2*a)
+        expected = 2*np.sin(a)*np.cos(a)
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 

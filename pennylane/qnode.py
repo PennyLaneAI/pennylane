@@ -873,13 +873,13 @@ class QNode:
 
         return pd
 
-    def _pd_analytic_var(self, params, idx, **kwargs):
+    def _pd_analytic_var(self, param_values, param_idx, **kwargs):
         """Partial derivative of variances of observables using the analytic method.
 
         Args:
-            params (array[float]): point in free parameter space at which
+            param_values (array[float]): point in free parameter space at which
                 to evaluate the partial derivative
-            idx (int): return the partial derivative with respect to this
+            param_idx (int): return the partial derivative with respect to this
                 free parameter
 
         Returns:
@@ -892,71 +892,87 @@ class QNode:
         where_var = [e.return_type == "variance" for e in self.ev]
 
         for i, e in enumerate(self.ev):
-            # iterate through all variance return types
+            # iterate through all observables
+            # here, i is the index of the observable
+            # and e is the observable
+
             if e.return_type != 'variance':
+                # if the expectation value is not a variance
+                # continue on to the next loop iteration
                 continue
 
             # temporarily convert return type to expectation
             self.ev[i].return_type = 'expectation'
 
-            # analytic derivative of <H^2>
-            # For involutory observables (H^2 = I),
+            # analytic derivative of <A^2>
+            # For involutory observables (A^2 = I),
             # then d<I>/dp = 0
-            ysq = 0
+            pdA2 = 0
 
             if self.type == 'qubit':
                 if e.__class__.__name__ == 'Hermitian':
-                    # since arbitrary Hermitian expectations
+                    # since arbitrary Hermitian observables
                     # are not guaranteed to be involutory, need to take them into
-                    # account separately to calculate d<H^2>/dp
+                    # account separately to calculate d<A^2>/dp
 
-                    # make a copy of the original variance
-                    old = copy.deepcopy(e)
                     A = e.params[0]  # Hermitian matrix
                     w = e.wires
 
                     if not np.allclose(A @ A, np.identity(A.shape[0])):
-                        # replace the Hermitian variance with <H^2> expectation
+                        # make a copy of the original variance
+                        old = copy.deepcopy(e)
+
+                        # replace the Hermitian variance with <A^2> expectation
                         self.ev[i] = pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False))
 
-                        # calculate the analytic derivative of <H^2>
-                        ysq = np.asarray(self._pd_analytic(params, idx, **kwargs))
+                        # calculate the analytic derivative of <A^2>
+                        pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, **kwargs))
 
                         # restore the original Hermitian variance
                         self.ev[i] = old
 
             elif self.type == 'CV':
-                # need to calculate d<H^2>/dp
+                # need to calculate d<A^2>/dp
                 # make a copy of the original variance
                 old = copy.deepcopy(e)
                 w = old.wires
 
                 # get the heisenberg representation
-                A = e._heisenberg_rep(old.parameters).reshape(-1, 1) # pylint: disable=protected-access
+                # This will be a real 1D vector representing the
+                # first order observable in the basis [I, x, p]
+                A = e._heisenberg_rep(old.parameters) # pylint: disable=protected-access
 
-                # square the hiesenberg representation
+                # make this a row vector by adding an extra dimension
+                A = np.expand_dims(A, axis=0)
+
+                # take the outer product of the heisenberg representation
+                # with itself, to get a square symmetric matrix representing
+                # the square of the observable
                 A = np.kron(A, A.T)
 
-                # replace the first order sigma_H variance with <H^2> expectation
+                # replace the first order observable var(A) with <A^2>
+                # in the return queue
                 self.ev[i] = pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False))
 
-                # calculate the analytic derivative of <H^2>
-                ysq = np.asarray(self._pd_analytic(params, idx, force_order2=True, **kwargs))
+                # calculate the analytic derivative of <A^2>
+                pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))
 
-                # restore the original Hermitian variance
+                # restore the original observable
                 self.ev[i] = old
 
         # save original cache setting
         cache = self.cache
-        # turn caching on, we do not want the circuit
-        # to be reconstructed, it will remove the
-        # changes we made above
+        # Make sure caching is on. If it is not on,
+        # the circuit will be reconstructed when self.evaluate is
+        # called, overwriting the temporary change we made to
+        # self.ev, where we set the return_type of every observable
+        # to 'expectation'.
         self.cache = True
 
         # evaluate circuit value at original parameters
-        y0 = np.asarray(self.evaluate(params, **kwargs))
+        evA = np.asarray(self.evaluate(param_values, **kwargs))
         # evaluate circuit gradient assuming all outputs are expectations
-        pd = self._pd_analytic(params, idx, **kwargs)
+        pdA = self._pd_analytic(param_values, param_idx, **kwargs)
 
         # restore original return queue
         self.ev = old_ev
@@ -965,7 +981,7 @@ class QNode:
 
         # return the variance shift rule where where_var==True,
         # otherwise return the expectation parameter shift rule
-        return np.where(where_var, ysq-2*y0*pd, pd)
+        return np.where(where_var, pdA2-2*evA*pdA, pdA)
 
     def to_torch(self):
         """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
