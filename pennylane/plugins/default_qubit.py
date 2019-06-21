@@ -31,7 +31,7 @@ simulation of a qubit-based quantum circuit architecture.
 The following is the technical documentation of the implementation of the plugin. You will
 not need to read and understand this to use this plugin.
 
-Auxillary functions
+Auxiliary functions
 -------------------
 
 .. autosummary::
@@ -314,10 +314,19 @@ class DefaultQubit(Device):
             return
 
         A = self._get_operator_matrix(operation, par)
-        self._state = self._mat_vec_product(A, self._state, wires)
+        self._state = self.mat_vec_product(A, self._state, wires)
 
-    def _mat_vec_product(self, mat, vec, wires):
-        # apply multiplication of matrix `mat` to the subsystems of `vec` specified by `wires`
+    def mat_vec_product(self, mat, vec, wires):
+        r"""Apply multiplication of a matrix to subsystems of the quantum state.
+
+        Args:
+            mat (array): matrix to multiply
+            vec (array): state vector to multiply
+            wires (Sequence[int]): target subsystems
+
+        Returns:
+            array: output vector after applying `mat` to input `vec` on specified subsystems
+            """
 
         # TODO: use multi-index vectors/matrices to represent states/gates internally
         mat = np.reshape(mat, [2] * len(wires) * 2)
@@ -336,7 +345,17 @@ class DefaultQubit(Device):
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
     def expval(self, observable, wires, par):
-        # measurement/expectation value <psi|A|psi>
+        r"""Expectation value of observable on specified wires.
+
+        Args:
+          observable      (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par    (tuple[float]): parameter values
+
+        Returns:
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+            """
+
         A = self._get_operator_matrix(observable, par)
         if self.shots == 0:
             # exact expectation value
@@ -366,16 +385,16 @@ class DefaultQubit(Device):
         return A(*par)
 
     def ev(self, A, wires):
-        r"""Evaluates a one-qubit expectation in the current state.
+        r"""Evaluates an expectation value of the current state.
 
         Args:
-          A (array): :math:`2\times 2` Hermitian matrix corresponding to the observable
-          wires (Sequence[int]): target subsystem
+          A (array): :math:`2^M\times 2^M` Hermitian matrix corresponding to the observable
+          wires (Sequence[int]): target subsystems
 
         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        As = self._mat_vec_product(A, self._state, wires)
+        As = self.mat_vec_product(A, self._state, wires)
         expectation = np.vdot(self._state, As)
 
         if np.abs(expectation.imag) > tolerance:
