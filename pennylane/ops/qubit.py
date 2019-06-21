@@ -56,6 +56,10 @@ Observables
 -----------
 
 .. autosummary::
+    Hadamard
+    PauliX
+    PauliY
+    PauliZ
     Hermitian
 
 
@@ -427,9 +431,9 @@ class QubitStateVector(Operation):
 
 class Hermitian(Observable):
     r"""Hermitian(A, wires)
-    Observable value of an arbitrary Hermitian observable.
+    An arbitrary Hermitian observable.
 
-    For a Hermitian matrix :math:`A`, this expectation command returns the value
+    For a Hermitian matrix :math:`A`, the expectation command returns the value
 
     .. math::
         \braket{A} = \braketT{\psi}{\cdots \otimes I\otimes A\otimes I\cdots}{\psi}

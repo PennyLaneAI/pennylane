@@ -44,14 +44,14 @@ on the user-interface of PennyLane, have a look at our tutorials.
 **Core operations**
 
 The main operations and observables supported by PennyLane.
-Each of these operations/observables supports a method
-of automatic differentiation (either analytically or numerically).
+Each of the operations supports a method
+of computing gradients (either analytically or numerically).
 
 The conventions used in defining these operations are also
 provided here.
 
 * Supported operations and observables: :mod:`pennylane.ops`
-* Supported observable measurements: :mod:`pennylane.measure`
+* Supported measurement types: :mod:`pennylane.measure`
 
 **Developer API**
 
@@ -86,9 +86,8 @@ Summary
 .. note::
 
     All individual operations and observables (contained in :mod:`~.ops`),
-    measurements (contained in :mod:`~.measure`) and optimizers
+    measurements (contained in :mod:`~.measure`), and optimizers
     (contained in :mod:`~.optimize`) may also be imported directly from PennyLane.
-    Expectation values, however, must be accessed via the :mod:`~.expval` module.
 
 Code details
 ~~~~~~~~~~~~
