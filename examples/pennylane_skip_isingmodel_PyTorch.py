@@ -7,7 +7,7 @@ Optimization of 3-qubit Ising model in PyTorch
 Qubit Optimization for 3-qubit Ising model using the Pennylane ``default.qubit`` Plugin.
 The Ising model is an example of a system whose optimization landscape is
 non-convex and hence using gradient descent may not be the best strategy
-since the optimization can get stuck in local minimas.
+since the optimization can get stuck in local minima.
 Ising models are used in Quantum Annealing (for example on a D-wave system) to solve Quadratic 
 Unconstrained Binary Optimization (QUBO) problems with non-convex cost functions. This example demonstrates how
 gradient descent optimizers can get stuck in local minima when using non-convex cost functions.
@@ -181,7 +181,7 @@ for i in range(steps):
 #     evaluates the new gradient and passes it onto the optimizer in each step. 
 #
 # The minimum energy is -2  for the spin configuration [1,1,-1] which corresponds to
-# :math:`(\phi, \theta, \omega) = (0, 0, 0)` for the second spin and :math:`(\phi, \theta, \omega) = (0, pi, 0)` for 
+# :math:`(\phi, \theta, \omega) = (0, 0, 0)` for the second spin and :math:`(\phi, \theta, \omega) = (0, \pi, 0)` for 
 # the third spin, respectively. We might not always see this value due to the non-convex cost function.
 
 p1_final, p2_final = opt.param_groups[0]["params"]

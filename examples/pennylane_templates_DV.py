@@ -12,7 +12,7 @@ Parameterized quantum circuits generally consist of three parts:
 
 .. important::
 
-    For discrete variable computing, PennyLane provides simplified circuit
+    For discrete-variable computing, PennyLane provides simplified circuit
     architecture templates using the quantum universality of single-qubit
     rotation gates and imprimitive 2-qubit gates.
 
@@ -112,7 +112,7 @@ pauli4 = np.kron(pauli2, pauli2)
 
 ##############################################################################
 
-print(circuit(my_angles, A= pauli2, B= pauli2))
+print(circuit(my_angles, A=pauli2, B=pauli2))
 
 ##############################################################################
 #

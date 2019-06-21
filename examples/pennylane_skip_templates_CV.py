@@ -10,7 +10,7 @@ This is the quantum analogue of a classical Neural Network.
 
 .. important::
 
-    For continuous variable computing, PennyLane provides a simplified
+    For continuous-variable computing, PennyLane provides a simplified
     circuit architecture template using the universal gate set containing
     Interferometers (made of single-qumode rotation and 2-qumode Beam
     Splitter gates), Squeezing gates, Displacement gates and non-Gaussian
@@ -78,14 +78,14 @@ print(pars)
 # Let’s understand what ``cvqnn_layer_uniform`` function output ``pars``
 # contains:
 #
-# - **array 1:** 6 theta for the 6 BS gates on first interferometer
-# - **array 2:** 6 phi for the 6 BS gates on first interferometer
-# - **array 3:** 4 varphi for the 4 Rotation gates on first interferometer
+# - **array 1:** 6 transmittivity angles theta for the 6 BS gates on first interferometer
+# - **array 2:** 6 phase angles phi for the 6 BS gates on first interferometer
+# - **array 3:** 4 rotation angles varphi for the 4 Rotation gates on first interferometer
 # - **array 4:** 4 squeezing magnitudes for the 4 squeezing gates
 # - **array 5:** 4 squeezing phases for the 4 squeezing gates
-# - **array 6:** 6 theta for the 6 BS gates on second interferometer
-# - **array 7:** 6 phi for the 6 BS gates on second interferometer
-# - **array 8:** 4 varphi for the 4 Rotation gates on second interferometer
+# - **array 6:** 6 transmittivity angles theta for the 6 BS gates on second interferometer
+# - **array 7:** 6 phase angles phi for the 6 BS gates on second interferometer
+# - **array 8:** 4 rotation angles varphi for the 4 Rotation gates on second interferometer
 # - **array 9:** 4 displacement magnitudes for the 4 displacement gates
 # - **array 10:** 4 displacement phases for the 4 displacement gates
 # - **array 11:** 4 Kerr parameters for the 4 Kerr gates

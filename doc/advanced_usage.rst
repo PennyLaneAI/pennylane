@@ -10,37 +10,6 @@ In the previous tutorials, we explored the basic concepts of PennyLane including
 
 PennyLane offers many exciting advanced features such as constructing multiple QNodes on a single device, applying any arbitrary Unitary matrix to the states, measuring any custom-defined Hermitian operator and interfacing with other classical machine learning interfaces, specifically PyTorch and TensorFlow eager execution mode. In this tutorial, we will highlight some of these advanced features.
 
-Using Interfaces in PennyLane
-------------------------------
-
-Here we take an in-depth look at an Ising model example implemented across different interfaces offered by PennyLane. 
-
-.. toctree::
-    :hidden:
-    :maxdepth: 1
-
-    tutorials/pennylane_skip_isingmodel_NumPy 
-    tutorials/pennylane_skip_isingmodel_TF
-    tutorials/pennylane_skip_isingmodel_PyTorch
-
-.. customgalleryitem::
-    :tooltip: Ising model example with PennyLane NumPy interface.
-    :figure: ../examples/figures/pennylane_xanadu.png
-    :description: :ref:`isingmodel_NumPy`
-
-.. customgalleryitem::
-    :tooltip: Ising model example with PennyLane TensorFlow interface.
-    :figure: ../examples/figures/tensorflow.png
-    :description: :ref:`isingmodel_TF`
-
-.. customgalleryitem::
-    :tooltip: Ising model example with PennyLane PyTorch interface.
-    :figure: ../examples/figures/pytorch.png
-    :description: :ref:`isingmodel_PyTorch`
-
-:html:`<div style='clear:both'></div>`
-
-
 Multiple expectation values
 ---------------------------
 
@@ -81,7 +50,7 @@ Keyword arguments
 
 While automatic differentiation is a handy feature, sometimes we want certain parts of our computational pipeline (e.g., the inputs :math:`x` to a parameterized quantum function :math:`f(x;\bf{\theta})` or the training data for a machine learning model) to not be differentiated.
 
-PennyLane uses the pattern that *all positional arguments to quantum functions are available to be differentiated*, while *keyword arguments are never differentiated*. Thus, when using the gradient-descent-based :ref:`optimizers <optimization_methods>` included in PennyLane, all numerical parameters appearing in non-keyword arguments will be updated, while all numerical values included as keyword arguments will not be updated.
+PennyLane uses the pattern that **all positional arguments to quantum functions are available to be differentiated**, while **keyword arguments are never differentiated**. Thus, when using the gradient-descent-based :ref:`optimizers <optimization_methods>` included in PennyLane, all numerical parameters appearing in non-keyword arguments will be updated, while all numerical values included as keyword arguments will not be updated.
 
 .. note:: When constructing the circuit, keyword arguments are defined by providing a **default value** in the function signature. If you would prefer that the keyword argument value be passed every time the quantum circuit function is called, the default value can be set to ``None``.
 
@@ -132,6 +101,38 @@ Since keyword arguments do not get considered when computing gradients, the Jaco
         137         return value
     TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
 
+
+Using Interfaces in PennyLane
+------------------------------
+
+Click on the following tutorials to take an in-depth look at one and the same Ising model tutorial, implemented across different interfaces offered by PennyLane. 
+
+.. toctree::
+    :hidden:
+    :maxdepth: 1
+
+    tutorials/pennylane_skip_isingmodel_NumPy 
+    tutorials/pennylane_skip_isingmodel_TF
+    tutorials/pennylane_skip_isingmodel_PyTorch
+
+.. customgalleryitem::
+    :tooltip: Ising model example with PennyLane NumPy interface.
+    :figure: ../examples/figures/pennylane_xanadu.png
+    :description: :ref:`isingmodel_NumPy`
+
+.. customgalleryitem::
+    :tooltip: Ising model example with PennyLane TensorFlow interface.
+    :figure: ../examples/figures/tensorflow.png
+    :description: :ref:`isingmodel_TF`
+
+.. customgalleryitem::
+    :tooltip: Ising model example with PennyLane PyTorch interface.
+    :figure: ../examples/figures/pytorch.png
+    :description: :ref:`isingmodel_PyTorch`
+
+:html:`<div style='clear:both'></div>`
+
+
 QNodes from different interfaces on one Device
 -----------------------------------------------
 
@@ -144,7 +145,7 @@ PennyLane does not only provide the flexibility of having multiple nodes on one 
         qml.RX(phi, wires=0)
         return qml.expval.PauliZ(0)
 
-Now, we contruct multiple QNodes on the same device and change the interface of one of them from NumPy to PyTorch: 
+Now, we construct multiple QNodes on the same device and change the interface of one of them from NumPy to PyTorch: 
 
 .. code-block:: python
 
