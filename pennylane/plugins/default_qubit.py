@@ -326,7 +326,7 @@ class DefaultQubit(Device):
 
         Returns:
             array: output vector after applying `mat` to input `vec` on specified subsystems
-            """
+        """
 
         # TODO: use multi-index vectors/matrices to represent states/gates internally
         mat = np.reshape(mat, [2] * len(wires) * 2)
