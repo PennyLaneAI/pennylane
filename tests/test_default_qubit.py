@@ -251,14 +251,14 @@ class TestDefaultQubitDevice(BaseTest):
         """Test that default qubit device supports all PennyLane discrete gates."""
         self.logTestName()
 
-        self.assertEqual(set(qml.ops.qubit.__all__), set(self.dev._operation_map))
+        self.assertEqual(set(qml.ops._qubit__ops__), set(self.dev._operation_map))
 
-    def test_expectation_map(self):
-        """Test that default qubit device supports all PennyLane discrete expectations."""
+    def test_observable_map(self):
+        """Test that default qubit device supports all PennyLane discrete observables."""
         self.logTestName()
 
         self.assertEqual(
-            set(qml.expval.qubit.__all__) | {"Identity"}, set(self.dev._expectation_map)
+            set(qml.ops._qubit__obs__) | {"Identity"}, set(self.dev._observable_map)
         )
 
     def test_expand_one(self):
@@ -359,12 +359,12 @@ class TestDefaultQubitDevice(BaseTest):
 
         for name, fn in {
             **self.dev._operation_map,
-            **self.dev._expectation_map,
+            **self.dev._observable_map,
         }.items():
             try:
-                op = qml.ops.__getattribute__(name)
+                op = getattr(qml.ops, name)
             except AttributeError:
-                op = qml.expval.__getattribute__(name)
+                op = getattr(qml.expval, name)
 
             p = [0.432423, -0.12312, 0.324][: op.num_params]
 
@@ -400,7 +400,7 @@ class TestDefaultQubitDevice(BaseTest):
             self.dev._state = np.array([1, 0, 0, 0])
 
             # get the equivalent pennylane operation class
-            op = qml.ops.__getattribute__(gate_name)
+            op = getattr(qml.ops, gate_name)
             # the list of wires to apply the operation to
             w = list(range(op.num_wires))
 
@@ -471,7 +471,7 @@ class TestDefaultQubitDevice(BaseTest):
         self.dev.reset()
 
         # loop through all supported observables
-        for name, fn in self.dev._expectation_map.items():
+        for name, fn in self.dev._observable_map.items():
             print(name)
             log.debug("\tTesting %s observable...", name)
 
@@ -479,7 +479,7 @@ class TestDefaultQubitDevice(BaseTest):
             self.dev._state = np.array([1, 0, 1, 1]) / np.sqrt(3)
 
             # get the equivalent pennylane operation class
-            op = qml.expval.__getattribute__(name)
+            op = getattr(qml.ops, name)
 
             if op.par_domain == "A":
                 # the parameter is an array
@@ -548,7 +548,7 @@ class TestDefaultQubitIntegration(BaseTest):
         dev = qml.device("default.qubit", wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+        all_gates = set(qml.ops.__all_ops__)
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
@@ -565,9 +565,9 @@ class TestDefaultQubitIntegration(BaseTest):
                 op(*x, wires=wires)
 
                 if issubclass(op, qml.operation.CV):
-                    return qml.expval.X(0)
+                    return qml.expval(qml.X(0))
 
-                return qml.expval.PauliZ(0)
+                return qml.expval(qml.PauliZ(0))
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
@@ -581,11 +581,11 @@ class TestDefaultQubitIntegration(BaseTest):
         self.logTestName()
         dev = qml.device("default.qubit", wires=2)
 
-        obs = set(dev._expectation_map.keys())
-        all_obs = set(qml.expval.__all__)
+        obs = set(dev._observable_map.keys())
+        all_obs = set(qml.ops.__all_obs__)
 
         for g in all_obs - obs:
-            op = getattr(qml.expval, g)
+            op = getattr(qml.ops, g)
 
             if op.num_wires == 0:
                 wires = [0]
@@ -596,11 +596,11 @@ class TestDefaultQubitIntegration(BaseTest):
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
-                return op(*x, wires=wires)
+                return qml.expval(op(*x, wires=wires))
 
             with self.assertRaisesRegex(
                 qml.DeviceError,
-                "Expectation {} not supported on device default.qubit".format(g),
+                "Observable {} not supported on device default.qubit".format(g),
             ):
                 x = np.random.random([op.num_params])
                 circuit(*x)
@@ -616,14 +616,14 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.PauliY(0)
+            return qml.expval(qml.PauliY(0))
 
         # <0|RX(p)^\dagger.PauliY.RX(p)|0> = -sin(p)
         expected = -np.sin(p)
         self.assertAlmostEqual(circuit(p), expected, delta=self.tol)
 
     def test_qubit_identity(self):
-        """Test that the default qubit plugin provides correct result for the Identiy expectation"""
+        """Test that the default qubit plugin provides correct result for the Identity expectation"""
         self.logTestName()
         dev = qml.device("default.qubit", wires=1)
 
@@ -633,7 +633,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.Identity(0)
+            return qml.expval(qml.Identity(0))
 
         self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
@@ -650,7 +650,7 @@ class TestDefaultQubitIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
-            return qml.expval.PauliY(0)
+            return qml.expval(qml.PauliY(0))
 
         runs = []
         for _ in range(100):
@@ -684,7 +684,7 @@ class TestDefaultQubitIntegration(BaseTest):
             def circuit(*x):
                 """Reference quantum function"""
                 op(*x, wires=wires)
-                return qml.expval.PauliX(0)
+                return qml.expval(qml.PauliX(0))
 
             # compare to reference result
             def reference(*x):
@@ -730,12 +730,12 @@ class TestDefaultQubitIntegration(BaseTest):
 
         dev = qml.device("default.qubit", wires=2)
 
-        for g, qop in dev._expectation_map.items():
+        for g, qop in dev._observable_map.items():
             log.debug("\tTesting observable %s...", g)
             self.assertTrue(dev.supported(g))
             dev.reset()
 
-            op = getattr(qml.expval, g)
+            op = getattr(qml.ops, g)
             if op.num_wires == 0:
                 wires = [0]
             else:
@@ -745,7 +745,7 @@ class TestDefaultQubitIntegration(BaseTest):
             def circuit(*x):
                 """Reference quantum function"""
                 qml.RX(a, wires=0)
-                return op(*x, wires=wires)
+                return qml.expval(op(*x, wires=wires))
 
             # compare to reference result
             def reference(*x):
@@ -779,7 +779,7 @@ class TestDefaultQubitIntegration(BaseTest):
             qml.RY(x[1], wires=0)
             qml.RZ(x[2], wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.expval.Hermitian(target_observable, wires=[0, 1])
+            return qml.expval(qml.Hermitian(target_observable, wires=[0, 1]))
 
         target_state = 1 / np.sqrt(2) * np.array([1, 0, 0, 1])
         target_herm_op = np.outer(target_state.conj(), target_state)

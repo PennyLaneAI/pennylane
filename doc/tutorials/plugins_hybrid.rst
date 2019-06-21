@@ -142,8 +142,7 @@ running on Strawberry Fields.
         qml.Beamsplitter(params[0], params[1], wires=[0, 1])
         return qml.expval.MeanPhoton(1)
 
-The ``'strawberryfields.fock'`` device supports all CV objects provided by PennyLane; see :ref:`CV operations <cv_ops>`
-and :ref:`CV expectations <cv_expval>`.
+The ``'strawberryfields.fock'`` device supports all CV objects provided by PennyLane; see :ref:`CV operations <cv_ops>`.
 
 
 Optimization

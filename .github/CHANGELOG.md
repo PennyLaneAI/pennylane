@@ -2,6 +2,11 @@
 
 ### New features since last release
 
+* `pennylane.expval()` is now a top-level *function*, and is no longer
+  a package of classes. For now, the existing `pennylane.expval.Observable`
+  interface continues to work, but will raise a deprecation warning.
+  [#232](https://github.com/XanaduAI/pennylane/pull/232)
+
 * `pennylane.about()` function added, providing details
   on current PennyLane version, installed plugins, Python,
   platform, and NumPy versions [#186](https://github.com/XanaduAI/pennylane/pull/186)
@@ -21,7 +26,7 @@
   This included the following improvements:
 
   - Distinguish embedding templates, layer templates, and parameter templates.
-  
+
   - New random initialization functions supporting the templates available
     in the new submodule `pennylane.init`.
 
@@ -30,7 +35,16 @@
 
   - Add various embedding strategies
 
+### Breaking changes
+
+* The `Device` methods `expectations`, `pre_expval`, and `post_expval` have been
+  renamed to `observables`, `pre_measure`, and `post_measure` respectively.
+  [#232](https://github.com/XanaduAI/pennylane/pull/232)
+
 ### Improvements
+
+* `default.qubit` plugin now uses `np.tensordot` when applying quantum operations,
+  resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239)
 
 * Allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
 

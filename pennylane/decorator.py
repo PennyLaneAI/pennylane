@@ -45,7 +45,7 @@ function is no longer accessible (but is accessible via the
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(x, wires=1)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
     result = qfunc1(0.543)
 
@@ -61,7 +61,7 @@ build a hybrid computation. For example,
     def qfunc2(x, y):
         qml.Displacement(x, 0, wires=0)
         qml.Beamsplitter(y, 0, wires=[0, 1])
-        return qml.expval.MeanPhoton(0)
+        return qml.expval(qml.MeanPhoton(0))
 
     def hybrid_computation(x, y):
         return np.sin(qfunc1(y))*np.exp(-qfunc2(x+y, x)**2)
@@ -78,7 +78,7 @@ build a hybrid computation. For example,
             qml.RZ(x, wires=0)
             qml.CNOT(wires=[0,1])
             qml.RY(x, wires=1)
-            return qml.expval.PauliZ(0)
+            return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)

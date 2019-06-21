@@ -18,49 +18,24 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 from pennylane import numpy as np
 from scipy.linalg import block_diag
 
-from defaults import pennylane as qml
-from pennylane.expval import Identity
+import pennylane as qml
 from pennylane.qnode import QuantumFunctionError
 from pennylane.plugins import DefaultQubit
 
 import pytest
 
 
-def test_identity_raises_exception_if_outside_qnode():
-    """expval: Tests that proper exceptions are raised if we try to call
-    Idenity outside a QNode."""
-    with pytest.raises(QuantumFunctionError, match="can only be used inside a qfunc"):
-        Identity(wires=0)
-
-
-def test_identity_raises_exception_if_cannot_guess_device_type():
-    """expval: Tests that proper exceptions are raised if Identity fails to guess
-    whether on a device is CV or qubit."""
-    dev = qml.device("default.qubit", wires=1)
-    dev._expectation_map = {}
-
-    @qml.qnode(dev)
-    def circuit():
-        return qml.expval.Identity(wires=0)
-
-    with pytest.raises(
-        QuantumFunctionError,
-        match="Unable to determine whether this device supports CV or qubit",
-    ):
-        circuit()
-
-
-def test_pass_positional_wires_to_expval(monkeypatch, capfd):
+def test_pass_positional_wires_to_observable(monkeypatch, capfd):
     """Tests whether the ability to pass wires as positional argument is retained"""
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev)
     def circuit():
-        return qml.expval.Identity(0)
+        return qml.expval(qml.Identity(0))
 
     with monkeypatch.context() as m:
-        m.setattr(DefaultQubit, "pre_expval", lambda self: print(self.expval_queue))
+        m.setattr(DefaultQubit, "pre_measure", lambda self: print(self.obs_queue))
         circuit()
 
     out, err = capfd.readouterr()
-    assert "pennylane.expval.qubit.Identity object" in out
+    assert "pennylane.ops.Identity object" in out

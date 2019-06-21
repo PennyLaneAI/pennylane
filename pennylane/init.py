@@ -500,7 +500,7 @@ def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
     * ``phi`` is the array of beamsplitter phases, of size ``(n_wires*(n_wires-1)/2, )``
 
     * ``varphi`` is the array of local angles for the final rotation gates, of size ``(n_wires, )``
- 
+
     All parameters are initialized uniformly from the interval ``[low, high]``.
 
     Args:
@@ -533,7 +533,7 @@ def interferometer_normal(n_wires, mean=0, std=0.1, seed=None):
     * ``phi`` is the array of beamsplitter phases, of size ``(n_wires*(n_wires-1)/2, )``
 
     * ``varphi`` is the array of local angles for the final rotation gates, of size ``(n_wires, )``
-   
+
     All parameters are drawn from a normal distribution with mean ``mean`` and standard deviation ``std``.
 
     Args:
