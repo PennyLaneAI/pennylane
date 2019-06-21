@@ -325,7 +325,7 @@ class DefaultQubit(Device):
             wires (Sequence[int]): target subsystems
 
         Returns:
-            array: output vector after applying `mat` to input `vec` on specified subsystems
+            array: output vector after applying ``mat`` to input ``vec`` on specified subsystems
         """
 
         # TODO: use multi-index vectors/matrices to represent states/gates internally
