@@ -946,6 +946,13 @@ class QNode:
                 # restore the original Hermitian variance
                 self.ev[i] = old
 
+        # save original cache setting
+        cache = self.cache
+        # turn caching on, we do not want the circuit
+        # to be reconstructed, it will remove the
+        # changes we made above
+        self.cache = True
+
         # evaluate circuit value at original parameters
         y0 = np.asarray(self.evaluate(params, **kwargs))
         # evaluate circuit gradient assuming all outputs are expectations
@@ -953,6 +960,8 @@ class QNode:
 
         # restore original return queue
         self.ev = old_ev
+        # restore original caching setting
+        self.cache = cache
 
         # return the variance shift rule where where_var==True,
         # otherwise return the expectation parameter shift rule

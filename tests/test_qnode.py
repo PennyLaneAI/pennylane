@@ -944,8 +944,8 @@ class TestQNodeVariance:
         gradA = circuit.jacobian([0.54], method='A')
         gradF = circuit.jacobian([0.54], method='F')
         expected = np.sin(2*a)
-        assert np.allclose(gradA, expected, atol=tol, rtol=0)
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
     def test_non_involutory_variance(self, tol):
         """Tests a qubit Hermitian observable that is not involutory"""
