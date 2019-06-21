@@ -34,6 +34,8 @@ wire 2.
     import pennylane as qml
     from pennylane import expval, var
 
+    dev = qml.device('default.qubit', wires=2)
+
     @qml.qnode(dev)
     def circuit(x, y):
         qml.RX(x, wires=0)
@@ -135,7 +137,7 @@ def var(op):
         # delete operations from QNode queue
         QNode._current_context.queue.remove(op)
 
-    # set return type to be an expectation value
+    # set return type to be a variance
     op.return_type = "variance"
 
     if QNode._current_context is not None:

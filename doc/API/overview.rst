@@ -15,7 +15,7 @@ A quick primer on terminology of PennyLane plugins in this section:
 
 * Each plugin may provide one (or more) devices, that are accessible directly through PennyLane, as well as any additional private functions or classes.
 
-* Depending on the scope of the plugin, you may wish to provide additional (custom) quantum operations and observables that the user can import module of your plugin.
+* Depending on the scope of the plugin, you may wish to provide additional (custom) quantum operations and observables that the user can import.
 
 .. important::
 
@@ -60,7 +60,7 @@ Defining all these attributes is mandatory.
 Supporting operators and observables
 ------------------------------------
 
-You must further tell PennyLane about the operations and observables that your device supports as well as potentially further capabilities, by providing the following class attributes/properties:
+You must further tell PennyLane about the operations and observables that your device supports as well as potential further capabilities, by providing the following class attributes/properties:
 
 * :attr:`~.Device.operations`: a set of the supported PennyLane operations as strings, e.g.,
 
@@ -116,9 +116,9 @@ where ``queue`` is a list of PennyLane :class:`~.Operation` instances to be appl
 
 * :meth:`~.Device.apply`: This accepts an operation name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the operation, and should apply the resulting operation to given wires of the device.
 
-* :meth:`~.Device.expval`: This accepts an observable name (as a string), the wires (subsystems) to measure, and the parameters for observable. It is expected to return the resulting expectation value from the device.
+* :meth:`~.Device.expval`: This accepts an observable name (as a string), the wires (subsystems) to measure, and the parameters for the observable. It is expected to return the resulting expectation value from the device.
 
-* :meth:`~.Device.var`: This accepts an observable name (as a string), the wires (subsystems) to measure, and the parameters for observable. It is expected to return the resulting variance of the measured observable value from the device.
+* :meth:`~.Device.var`: This accepts an observable name (as a string), the wires (subsystems) to measure, and the parameters for the observable. It is expected to return the resulting variance of the measured observable value from the device.
 
   .. note:: Currently, PennyLane only supports measurements that return a scalar value.
 

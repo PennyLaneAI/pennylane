@@ -374,8 +374,8 @@ class QNode:
             raise QuantumFunctionError("All measured observables must be returned in the "
                                        "order they are measured.")
 
-        self.ev = list(res)  #: tuple[Observable]: returned observables
-        self.ops = self.queue + list(self.ev)  #: list[Operation]: combined list of circuit operations
+        self.ev = list(res)  #: list[Observable]: returned observables
+        self.ops = self.queue + self.ev  #: list[Operation]: combined list of circuit operations
 
         # classify the circuit contents
         temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
