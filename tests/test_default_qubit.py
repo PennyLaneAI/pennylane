@@ -16,7 +16,6 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
-import inspect
 import logging as log
 
 import pytest
@@ -261,98 +260,6 @@ class TestDefaultQubitDevice(BaseTest):
             set(qml.ops._qubit__obs__) | {"Identity"}, set(self.dev._observable_map)
         )
 
-    def test_expand_one(self):
-        """Test that a 1 qubit gate correctly expands to 3 qubits."""
-        self.logTestName()
-
-        dev = DefaultQubit(wires=3)
-
-        # test applied to wire 0
-        res = dev.expand(U, [0])
-        expected = np.kron(np.kron(U, I), I)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 1
-        res = dev.expand(U, [1])
-        expected = np.kron(np.kron(I, U), I)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 2
-        res = dev.expand(U, [2])
-        expected = np.kron(np.kron(I, I), U)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-    def test_expand_two(self):
-        """Test that a 2 qubit gate correctly expands to 3 qubits."""
-        self.logTestName()
-
-        dev = DefaultQubit(wires=4)
-
-        # test applied to wire 0+1
-        res = dev.expand(U2, [0, 1])
-        expected = np.kron(np.kron(U2, I), I)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 1+2
-        res = dev.expand(U2, [1, 2])
-        expected = np.kron(np.kron(I, U2), I)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 2+3
-        res = dev.expand(U2, [2, 3])
-        expected = np.kron(np.kron(I, I), U2)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # CNOT with target on wire 1
-        res = dev.expand(CNOT, [1, 0])
-        rows = np.array([0, 2, 1, 3])
-        expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test exception raised if unphysical subsystems provided
-        with self.assertRaisesRegex(ValueError, "Invalid target subsystems provided in 'wires' argument"):
-            dev.expand(U2, [-1, 5])
-
-    def test_expand_three(self):
-        """Test that a 3 qubit gate correctly expands to 4 qubits."""
-        self.logTestName()
-
-        dev = DefaultQubit(wires=4)
-
-        # test applied to wire 0,1,2
-        res = dev.expand(U_toffoli, [0, 1, 2])
-        expected = np.kron(U_toffoli, I)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 1,2,3
-        res = dev.expand(U_toffoli, [1, 2, 3])
-        expected = np.kron(I, U_toffoli)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 0,2,3
-        res = dev.expand(U_toffoli, [0, 2, 3])
-        expected = np.kron(U_swap, np.kron(I, I)) @ np.kron(I, U_toffoli) @ np.kron(U_swap, np.kron(I, I))
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 0,1,3
-        res = dev.expand(U_toffoli, [0, 1, 3])
-        expected = np.kron(np.kron(I, I), U_swap) @ np.kron(U_toffoli, I) @ np.kron(np.kron(I, I), U_swap)
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 3, 1, 2
-        res = dev.expand(U_toffoli, [3, 1, 2])
-        # change the control qubit on the Toffoli gate
-        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
-        expected = np.kron(I, U_toffoli[:, rows][rows])
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
-        # test applied to wire 3, 0, 2
-        res = dev.expand(U_toffoli, [3, 0, 2])
-        # change the control qubit on the Toffoli gate
-        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
-        expected = np.kron(U_swap, np.kron(I, I)) @ np.kron(I, U_toffoli[:, rows][rows]) @ np.kron(U_swap, np.kron(I, I))
-        self.assertAllAlmostEqual(res, expected, delta=self.tol)
-
     def test_get_operator_matrix(self):
         """Test the the correct matrix is returned given an operation name"""
         self.logTestName()
@@ -472,7 +379,6 @@ class TestDefaultQubitDevice(BaseTest):
 
         # loop through all supported observables
         for name, fn in self.dev._observable_map.items():
-            print(name)
             log.debug("\tTesting %s observable...", name)
 
             # start in the state |00>
@@ -495,8 +401,6 @@ class TestDefaultQubitDevice(BaseTest):
             else:
                 # otherwise, the operation is simply an array.
                 O = fn
-
-            print("op.num_wires=" + str(op.num_wires))
 
             # calculate the expected output
             if op.num_wires == 1 or op.num_wires == 0:
