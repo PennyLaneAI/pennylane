@@ -470,7 +470,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
     def test_variance_coherent_numberstate(self):
-        """test correct mean and variance for number state expectation |<n|alpha>|^2
+        """test correct variance for number state expectation |<n|alpha>|^2
         on a coherent state
         """
         self.logTestName()
