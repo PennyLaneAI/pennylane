@@ -131,8 +131,8 @@ print(entangle_global(sigma_ZZ))
 #
 #     A better practice will be to explicitly mention ``A=None`` in the
 #     arguments of ``entangle_global`` function to inform PennyLane **not** to 
-#     use this matrix as a differential argument. See ``Keyword arguments`` in
-#     :ref:`Advanced Usage <advanced_usage>` tutorial.
+#     use this matrix as a differential argument. See the section on ``Keyword arguments`` in
+#     the :ref:`Advanced usage <advanced_usage>` tutorial.
 #
 # Continuous Variable Quantum Operations
 # ----------------------------------------
@@ -222,8 +222,8 @@ def before_squeezing_P2(mag_alpha, phase_alpha, q = None):
 # .. note::
 #
 #     We explicitly mention ``q=None`` in the arguments to inform PennyLane
-#     **not** to use it as a differential argument. See ``Keyword arguments``
-#     in `Advanced features tutorial.
+#     **not** to use it as a differential argument. See the section on ``Keyword arguments`` in
+#     the :ref:`Advanced usage <advanced_usage>` tutorial.
 #
 
 # let's make the corresponding matrix for PolyXP to get <X^2> 

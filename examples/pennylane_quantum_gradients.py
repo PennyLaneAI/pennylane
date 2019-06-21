@@ -103,4 +103,5 @@ print(dcircuit2(0.54, 0.12))
 # .. note::
 # 	PennyLane does **not** differentiate QNodes with respect to keyword
 # 	arguments. Hence, they are useful for passing external data to a
-# 	quantum node. See ``Keyword arguments`` in the :ref:`advanced_usage` tutorial.
+# 	quantum node. See the section on ``Keyword arguments`` in
+#       the :ref:`Advanced usage <advanced_usage>` tutorial.
