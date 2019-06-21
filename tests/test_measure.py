@@ -115,3 +115,35 @@ class TestDeprecatedExpval:
         with pytest.warns(DeprecationWarning, match="is deprecated"):
             with pytest.raises(AttributeError, match="has no observable 'R'"):
                 res = circuit()
+
+
+class TestVar:
+    """Tests for the var function"""
+
+    def test_value(self, tol):
+        """Test that the var function works"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.var(qml.PauliZ(0))
+
+        x = 0.54
+        res = circuit(x)
+        expected = np.sin(x)**2
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_not_an_observable(self):
+        """Test that a QuantumFunctionError is raised if the provided
+        argument is not an observable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.52, wires=0)
+            return qml.var(qml.CNOT(wires=[0, 1]))
+
+        with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
+            res = circuit()

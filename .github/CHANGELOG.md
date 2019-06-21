@@ -7,6 +7,20 @@
   interface continues to work, but will raise a deprecation warning.
   [#232](https://github.com/XanaduAI/pennylane/pull/232)
 
+* Variance support: QNodes can now return the variance of observables,
+  via the top-level `pennylane.var()` function. To support this on
+  plugin devices, there is a new `Device.var` method.
+
+  The following observables support analytic gradients of variances:
+
+  - All qubit observables (requiring 3 circuit evaluations for involutory
+    observables such as `Identity`, `X`, `Y`, `Z`; and 5 circuit evals for
+    non-involutary observables, currently only `qml.Hermitian`)
+
+  - First-order CV observables (requiring 5 circuit evaluations)
+
+  Second-order CV observables support numerical variance gradients.
+
 * `pennylane.about()` function added, providing details
   on current PennyLane version, installed plugins, Python,
   platform, and NumPy versions [#186](https://github.com/XanaduAI/pennylane/pull/186)
@@ -43,8 +57,8 @@
 
 ### Improvements
 
-* `default.qubit` plugin now uses `np.tensordot` when applying quantum operations,
-  resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239)
+* `default.qubit` plugin now uses `np.tensordot` when applying quantum operations
+  and evaluating expectations, resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239), [#241](https://github.com/XanaduAI/pennylane/pull/241)
 
 * Allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
 

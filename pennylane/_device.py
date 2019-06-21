@@ -59,7 +59,6 @@ The following methods and attributes must be defined for all devices:
     apply
     expval
     var
-    sample
 
 In addition, the following may also be optionally defined:
 
@@ -215,6 +214,8 @@ class Device(abc.ABC):
             for obs in observables:
                 if obs.return_type == "expectation":
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
+                elif obs.return_type == "variance":
+                    results.append(self.var(obs.name, obs.wires, obs.parameters))
 
             self.post_measure()
 
@@ -334,6 +335,22 @@ class Device(abc.ABC):
         """Return the expectation value of an observable.
 
         For plugin developers: this function should return the expectation value of the
+        given observable on the device.
+
+        Args:
+            observable (str): name of the observable
+            wires (Sequence[int]): subsystems the observable is to be measured on
+            par (tuple): parameters for the observable
+
+        Returns:
+            float: expectation value
+        """
+        raise NotImplementedError
+
+    def var(self, observable, wires, par):
+        """Return the variance value of an observable.
+
+        For plugin developers: this function should return the variance value of the
         given observable on the device.
 
         Args:

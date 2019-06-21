@@ -1,2 +1,2 @@
 .. automodule:: pennylane.measure
-   :members: expval
+   :members: expval, var

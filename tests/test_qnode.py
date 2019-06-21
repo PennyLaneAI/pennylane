@@ -923,6 +923,176 @@ class TestQNodeGradients:
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
 
+class TestQNodeVariance:
+    """Qnode variance tests."""
+
+    def test_involutory_variance(self, tol):
+        """Tests qubit observable that are involutory"""
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.var(qml.PauliZ(0))
+
+        a = 0.54
+        var = circuit(a)
+        expected = 1 - np.cos(a)**2
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        gradA = circuit.jacobian([a], method='A')
+        gradF = circuit.jacobian([a], method='F')
+        expected = 2*np.sin(a)*np.cos(a)
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+    def test_non_involutory_variance(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory"""
+        dev = qml.device('default.qubit', wires=1)
+
+        A = np.array([[4, -1+6j], [-1-6j, 2]])
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.var(qml.Hermitian(A, 0))
+
+        a = 0.54
+        var = circuit(a)
+        expected = (39/2) - 6*np.sin(2*a) + (35/2)*np.cos(2*a)
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        gradA = circuit.jacobian([a], method='A')
+        gradF = circuit.jacobian([a], method='F')
+        expected = -35*np.sin(2*a) - 12*np.cos(2*a)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+
+    def test_fanout(self, tol):
+        """Tests qubit observable with repeated parameters"""
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            qml.RY(a, wires=0)
+            return qml.var(qml.PauliZ(0))
+
+        a = 0.54
+        var = circuit(a)
+        expected = 0.5*np.sin(a)**2 * (np.cos(2*a)+3)
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        gradA = circuit.jacobian([a], method='A')
+        gradF = circuit.jacobian([a], method='F')
+        expected = 4*np.sin(a)*np.cos(a)**3
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+
+    def test_expval_and_variance(self, tol):
+        """Test that the qnode works for a combination of expectation
+        values and variances"""
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(c, wires=2)
+            return qml.var(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(2))
+
+        a = 0.54
+        b = -0.423
+        c = 0.123
+
+        var = circuit(a, b, c)
+        expected = np.array([
+            np.sin(a)**2,
+            np.cos(a)*np.cos(b),
+            0.25*(3-2*np.cos(b)**2*np.cos(2*c)-np.cos(2*b))
+        ])
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+        # # circuit jacobians
+        gradA = circuit.jacobian([a, b, c], method='A')
+        gradF = circuit.jacobian([a, b, c], method='F')
+        expected = np.array([
+            [2*np.cos(a)*np.sin(a), -np.cos(b)*np.sin(a), 0],
+            [0, -np.cos(a)*np.sin(b), 0.5*(2*np.cos(b)*np.cos(2*c)*np.sin(b)+np.sin(2*b))],
+            [0, 0, np.cos(b)**2*np.sin(2*c)]
+        ]).T
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+    def test_first_order_cv(self, tol):
+        """Test variance of a first order CV expectation value"""
+        dev = qml.device('default.gaussian', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(r, phi):
+            qml.Squeezing(r, 0, wires=0)
+            qml.Rotation(phi, wires=0)
+            return qml.var(qml.X(0))
+
+        r = 0.543
+        phi = -0.654
+
+        var = circuit(r, phi)
+        expected = np.exp(2*r)*np.sin(phi)**2 + np.exp(-2*r)*np.cos(phi)**2
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        gradA = circuit.jacobian([r, phi], method='A')
+        gradF = circuit.jacobian([r, phi], method='F')
+        expected = np.array([
+            2*np.exp(2*r)*np.sin(phi)**2 - 2*np.exp(-2*r)*np.cos(phi)**2,
+            2*np.sinh(2*r)*np.sin(2*phi)
+        ])
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+
+    def test_second_order_cv(self, tol):
+        """Test variance of a second order CV expectation value"""
+        dev = qml.device('default.gaussian', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(n, a):
+            qml.ThermalState(n, wires=0)
+            qml.Displacement(a, 0, wires=0)
+            return qml.var(qml.MeanPhoton(0))
+
+        n = 0.12
+        a = 0.765
+
+        var = circuit(n, a)
+        expected = n ** 2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        gradF = circuit.jacobian([n, a], method='F')
+        expected = np.array([2*a**2+2*n+1, 2*a*(2*n+1)])
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+
+    def test_error_analytic_second_order_cv(self):
+        """Test exception raised if attempting to use a second
+        order observable to compute the variance derivative analytically"""
+        dev = qml.device('default.gaussian', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.Displacement(a, 0, wires=0)
+            return qml.var(qml.MeanPhoton(0))
+
+        with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
+            circuit.jacobian([1.], method='A')
+
+
 class TestQNodeCacheing:
     """Tests for the QNode construction caching"""
 

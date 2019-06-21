@@ -111,7 +111,7 @@ from pennylane.about import about
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
-from .measure import expval
+from .measure import expval, var
 from .ops import *
 from .optimize import *
 from .qnode import QNode, QuantumFunctionError

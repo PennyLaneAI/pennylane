@@ -21,13 +21,37 @@ Measurements
 .. currentmodule:: pennylane.measure
 
 This module contains the functions for computing expectation values,
-variances, and single shot measurements of quantum observables.
+variances, and measurement samples of quantum observables.
+
+These are used to indicate to the quantum device how to measure
+and return the requested observables. For example, the following
+QNode returns the expectation value of observable :class:`~.PauliZ`
+on wire 1, and the variance of observable :class:`~.PauliX` on
+wire 2.
+
+.. code-block::
+
+    import pennylane as qml
+    from pennylane import expval, var
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x, y):
+        qml.RX(x, wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.RY(y, wires=1)
+        return expval(qml.PauliZ(0)), var(qml.PauliX(1))
+
+Note that *all* returned observables must be within
+a measurement function; they cannot be 'bare'.
 
 Summary
 ^^^^^^^
 
 .. autosummary::
    expval
+   var
 
 Code details
 ^^^^^^^^^^^^
@@ -96,3 +120,28 @@ r"""Expectation value of the supplied observable.
 Args:
     op (Observable): a quantum observable object
 """
+
+
+def var(op):
+    r"""Variance of the supplied observable.
+
+    Args:
+        op (Observable): a quantum observable object
+    """
+    if not isinstance(op, Observable):
+        raise QuantumFunctionError(
+            "{} is not an observable: cannot be used with var".format(op.name)
+        )
+
+    if QNode._current_context is not None:
+        # delete operations from QNode queue
+        QNode._current_context.queue.remove(op)
+
+    # set return type to be a variance
+    op.return_type = "variance"
+
+    if QNode._current_context is not None:
+        # add observable to QNode observable queue
+        QNode._current_context._append_op(op)
+
+    return op
