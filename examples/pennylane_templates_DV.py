@@ -37,11 +37,10 @@ of this circuit is shown below:
 PennyLane’s :func:`~.StronglyEntanglingLayer` template can be used to
 implement such a layer. It requires four input arguments:
 
-1. ``weights``: a matrix containing the angles for all the rotation
-   matrices
-2. ``wires``: all the qubits are acted upon in this circuit architecture
+1. ``weights``: a matrix containing the angles for all the rotation gates
+2. ``wires``: all the qubits the gates will act upon in this circuit architecture
 3. ``range``: the range of 2-qubit entangling gates
-4. ``imprimitive``: the type of two qubit gate
+4. ``imprimitive``: the imprimitive 2-qubit gate to be used
 
 To implement a circuit with multiple layers,
 :func:`~.StronglyEntanglingLayers` template can be called from inside a ``QNode``.
