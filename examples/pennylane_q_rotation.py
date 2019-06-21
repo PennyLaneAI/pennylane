@@ -19,7 +19,7 @@ circuit:
 
 .. figure:: ../../examples/figures/rotation_circuit.png
     :align: center
-    :width: 70%
+    :width: 60%
     :target: javascript:void(0);
 
 Breaking this down step-by-step:

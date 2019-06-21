@@ -4,10 +4,10 @@ r"""
 Executing Quantum Gradients
 ===========================
 
-To do *Quantum Machine Learning* (QML), we need a gradient descent
+To do machine learning with quantum circuits, we need a gradient descent
 strategy. For this, we define a final objective/cost function
 :math:`C` which is to be optimized with respect to some free parameters.
-As explained in :ref:`autograd_quantum` section in the key concepts,
+As explained in the :ref:`autograd_quantum` section in the key concepts,
 PennyLane incorporates both analytic differentiation, as well as
 numerical methods (such as the method of finite differences). Both of
 these are done automatically.
@@ -27,12 +27,12 @@ circuit evaluations with shifted parameters.
 location.
 
 By using this method, PennyLane provides a hardware-scalable way to
-compute gradients and to optimize quantum circuits for QML.
+compute gradients and to optimize quantum circuits for Quantum Machine Learning.
 
 Calculating quantum gradients
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Let’s initialize a ``device`` and define a Quantum function in a
+Let’s initialize a ``device`` and define a quantum function in a
 ``QNode``
 """
 
@@ -103,4 +103,4 @@ print(dcircuit2(0.54, 0.12))
 # .. note::
 # 	PennyLane does **not** differentiate QNodes with respect to keyword
 # 	arguments. Hence, they are useful for passing external data to a
-# 	Quantum node. See ``Keyword arguments`` in Advanced features tutorial.
+# 	quantum node. See ``Keyword arguments`` in the :ref:`advanced_usage` tutorial.

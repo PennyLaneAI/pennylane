@@ -11,7 +11,7 @@ Fields <https://strawberryfields.readthedocs.io/en/latest/>`__
 documentation is a great starting point.
 
  **GOAL:** To optimize displacement gate parameters in order to displace
- a *vacuum mode* in the phase space in order to get one *qumode*.
+ a *vacuum mode* in phase space in order to get one *qumode*.
 
 The Quantum Circuit
 ~~~~~~~~~~~~~~~~~~~
@@ -22,7 +22,7 @@ simple Gaussian circuit:
 
 .. figure:: ../../examples/figures/gaussian_transformation.svg
     :align: center
-    :width: 70%
+    :width: 60%
     :target: javascript:void(0);
 
 What is this circuit doing?
@@ -38,8 +38,8 @@ What is this circuit doing?
 3. **We rotate the qumode.** This is another linear transformation in
    phase space, albeit a rotation (by angle :math:`\phi`) instead of a
    displacement.
-4. **Finally, we measure the mean photon number
-   :math:`\langle\hat{n}\rangle=\langle\hat{a}^{\dagger}\hat{a}\rangle`.**
+4. **Finally, we measure the mean photon number**
+   :math:`\langle\hat{n}\rangle=\langle\hat{a}^{\dagger}\hat{a}\rangle`.
    This quantity, which tells us the average number of photons in the
    final state, is proportional to the energy of the photonic system.
 
@@ -86,7 +86,7 @@ print(cost(init_params))
 
 ##############################################################################
 #
-# When the gate parameters are near to zero, the gates are close to the
+# When the gate parameters are close to zero, the gates are close to the
 # *identity transformation*, which leaves the initial state largely
 # unchanged. Since the initial state contains no photons, the mean photon
 # number of the circuit output is approximately zero and the cost is close

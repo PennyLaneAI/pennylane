@@ -23,12 +23,14 @@ from pennylane import numpy as np
 # Let’s first look at the features PennyLane provides for state
 # preparation on the ``default.qubit`` device.
 #
-#    `BasisState <https://pennylane.readthedocs.io/en/latest/code/ops/qubit.html#pennylane.ops.qubit.BasisState>`__
+#    The 
+#    `BasisState <https://pennylane.readthedocs.io/en/latest/code/ops/
+#    qubit.html#pennylane.ops.qubit.BasisState>`__
 #    function prepares the device in a single computational basis state.
 #    For example, if we are working with two qubits and want to initialize
 #    the device in the state
 #    :math:`|10\rangle = \begin{pmatrix} 0 \\ 0 \\ 1 \\ 0 \end{pmatrix}`,
-#    we can use *BasisState* function. We will need to pass this state as
+#    we can use the *BasisState* function. We will need to pass this state as
 #    an array, i.e ``np.array([1,0])``. If we are working with three
 #    qubits and want to initialize the device in the state
 #    :math:`|111\rangle = \begin{pmatrix} 0 \\ 0 \\ 0 \\ 0 \\ 0 \\ 0 \\ 0 \\ 1 \end{pmatrix}`,
@@ -52,12 +54,15 @@ print(make_State1(n = nstr))
 
 ##############################################################################
 #
-# This output makes sense as applying the CNOT gate transforms
-# :math:`|10\rangle` to :math:`|11\rangle` state.
+# This output is expected, as applying the CNOT gate transforms
+# :math:`|10\rangle` to :math:`|11\rangle` state, which results in the two Pauli-Z expectation values
+# being :math:`-1` and :math:`-1`.
 #
-#    `QubitStateVector <https://pennylane.readthedocs.io/en/latest/code/ops/qubit.html#pennylane.ops.qubit.QubitStateVector>`__
+#    The 
+#    `QubitStateVector <https://pennylane.readthedocs.io/en/latest/code/ops/
+#    qubit.html#pennylane.ops.qubit.QubitStateVector>`__
 #    function prepares the device subsystems by using the given ket vector
-#    in the Fock basis. This acts similar to the BasisState function
+#    in the Fock basis. This acts similar to the BasisState function,
 #    except:
 #
 #    -  It can be used to prepare more complicated wavefunctions
@@ -98,7 +103,9 @@ print(make_State2(s = state))
 # Let’s look at the features PennyLane provides for state preparation on
 # the ``default.gaussian`` device.
 #
-#    `CoherentState <https://pennylane.readthedocs.io/en/latest/code/ops/cv.html#pennylane.ops.cv.CoherentState>`__
+#    The 
+#    `CoherentState <https://pennylane.readthedocs.io/en/latest/code/ops/
+#    cv.html#pennylane.ops.cv.CoherentState>`__
 #    function prepares a coherent state with the given displacement
 #    magnitude :math:`| \alpha |` and angle :math:`\phi`.
 
@@ -115,15 +122,19 @@ print(make_State3(2, 0))
 
 ##############################################################################
 #
-# This makes sense as :math:`\langle\hat{n}\rangle = |\alpha|^{2}`
+# This is expected, as :math:`\langle\hat{n}\rangle = |\alpha|^{2}`
 #
-#    `DisplacedSqueezedState <https://pennylane.readthedocs.io/en/latest/code/ops/cv.html#pennylane.ops.cv.DisplacedSqueezedState>`__
+#    The 
+#    `DisplacedSqueezedState <https://pennylane.readthedocs.io/en/latest/code/ops/
+#    cv.html#pennylane.ops.cv.DisplacedSqueezedState>`__
 #    function prepares a displaced squeezed state in the phase space by
 #    applying a displacement operator followed by a squeezing operator -
 #    :math:`D(\alpha)S(z)|0\rangle` - like we saw in an example in the
-#    tutorial on Quantum operators.
+#    tutorial on quantum operators.
 #
-#    `GaussianState <https://pennylane.readthedocs.io/en/latest/code/ops/cv.html#pennylane.ops.cv.GaussianState>`__
+#    The
+#    `GaussianState <https://pennylane.readthedocs.io/en/latest/code/ops/
+#    cv.html#pennylane.ops.cv.GaussianState>`__
 #    function prepares a Gaussian state on the whole system with the given
 #    parameters. It requires two input arguments:
 #
@@ -152,11 +163,11 @@ print(make_State4(mean_array, Cov_mat))
 # **NOTE:** We used :math:`\langle x\rangle=2` and
 # :math:`\langle p\rangle=0`. As ``MeanPhoton`` returns the expectation
 # value of the number operator :math:`\langle \hat{n} \rangle`, we have to
-# use x-representation of Coherent states to calculate the mean
+# use the x-representation of Coherent states to calculate the mean
 # position and momentum:
 #
 # .. math:: \langle x\rangle = \sqrt{\frac{2\hbar}{mw}} \Re(\alpha)
 #
 # .. math:: \langle p\rangle = \sqrt{2\hbar mw} \Im(\alpha)
 # .. note::
-#     In PennyLane, it is assumed that :math:`\hbar = 2` and factor :math:`mw=1`.
+#     In PennyLane, it is assumed that :math:`\hbar = 2` and :math:`mw=1`.

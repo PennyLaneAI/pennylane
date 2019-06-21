@@ -11,7 +11,7 @@ Importing PennyLane and NumPy
 
 First, we import PennyLane itself, as well as a wrapped version of
 *NumPy* which is provided via PennyLane. This allows us to use the
-familiar NumPy functions along with Quantum functions.
+familiar NumPy functions along with *quantum functions*.
 """
 
 import pennylane as qml
@@ -22,7 +22,8 @@ from pennylane import numpy as np
 #
 #     When constructing a hybrid quantum/classical computational model with
 #     PennyLane, it is important to always import NumPy from PennyLane, not
-#     the standard NumPy!
+#     the standard NumPy! This way, PennyLane can pass gradients through classical and quantum
+#     computations.
 #
 # Creating a device
 # -------------------
@@ -87,7 +88,7 @@ def circuit(param):
     return qml.expval.PauliZ(0)
 
 ##############################################################################
-# **NOTE:** the function ``circuit()`` is constructed as if it were any
+# **NOTE:** The function ``circuit()`` is constructed as if it were any
 # other Python function using Python notation (``def fn(...)``); it
 # accepts a positional argument ``param`` which may be a list, a tuple or
 # an array.
@@ -109,7 +110,7 @@ def circuit(param):
 #    circuit parameters.
 #
 # Once we have written the quantum function, we convert it into a :class:`~.QNode` 
-# running on device ``dev`` by applying the:mod:`qnode decorator <pennylane.decorator>`
+# running on device ``dev`` by applying the :mod:`qnode decorator <pennylane.decorator>`
 # directly above the function definition:
 
 @qml.qnode(dev)
@@ -157,7 +158,7 @@ def qfunc1():
 print(qfunc1())
 
 ################################################################################
-# This makes sense as :math:`\langle0\mid\hat{I}\mid0\rangle=1`
+# This is the expected outcome, as :math:`\langle0\mid\hat{I}\mid0\rangle=1`
 
 # using default.gaussian device with one subsystem
 dev2 = qml.device('default.gaussian', wires = 1)
@@ -171,7 +172,7 @@ print(qfunc2())
 
 ################################################################################
 #
-# This makes sense as the Gaussian state is initialized to the vaccum
+# This is expected, as the Gaussian state is initialized to the vaccum
 # state (the lowest energy Gaussian state with no displacement or
 # squeezing in phase space) that has zero number of Photons.
 #

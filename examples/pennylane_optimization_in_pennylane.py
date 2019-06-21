@@ -17,7 +17,7 @@ The gradient descent algorithm has two steps:
 
 The scaling factor :math:`\eta` is known as the *learning rate*.
 
-   This procedure is carried out automatically by the PennyLane
+   This procedure is carried out automatically by the PennyLane's 
    :class:`GradientDescentOptimizer <pennylane.optimize.GradientDescentOptimizer>`
    class object. This function needs to be called with one argument: the
    stepsize for the gradient descent algorithm.

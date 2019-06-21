@@ -54,7 +54,7 @@ PennyLane basics
 
 Putting it all together
 -----------------------------------
-Let's put together everything we have learned from the basic tutorials by considering PennyLane version of the ‘Hello, world!’ example - qubit rotation and qumode displacement.
+Let's put together everything we have learned from the basic tutorials and consider PennyLane's version of the ‘Hello, world!’ example - qubit rotation and qumode displacement.
 
 .. toctree::
     :hidden:
