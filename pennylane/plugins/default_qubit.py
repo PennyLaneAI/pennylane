@@ -73,7 +73,6 @@ Classes
 Code details
 ^^^^^^^^^^^^
 """
-import itertools
 import warnings
 
 import numpy as np

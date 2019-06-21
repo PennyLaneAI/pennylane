@@ -16,7 +16,6 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
-import inspect
 import logging as log
 
 import pytest
