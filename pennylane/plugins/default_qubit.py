@@ -315,12 +315,16 @@ class DefaultQubit(Device):
             return
 
         A = self._get_operator_matrix(operation, par)
+        self._state = self._mat_vec_product(A, self._state, wires)
+
+    def _mat_vec_product(self, mat, vec, wires):
+        # apply multiplication of matrix `mat` to the subsystems of `vec` specified by `wires`
 
         # TODO: use multi-index vectors/matrices to represent states/gates internally
-        A = np.reshape(A, [2] * len(wires) * 2)
-        s = np.reshape(self._state, [2] * self.num_wires)
+        mat = np.reshape(mat, [2] * len(wires) * 2)
+        vec = np.reshape(vec, [2] * self.num_wires)
         axes = (np.arange(len(wires), 2 * len(wires)), wires)
-        tdot = np.tensordot(A, s, axes=axes)
+        tdot = np.tensordot(mat, vec, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
@@ -330,7 +334,7 @@ class DefaultQubit(Device):
         perm = wires + unused_idxs
         inv_perm = np.argsort(perm) # argsort gives inverse permutation
         state_multi_index = np.transpose(tdot, inv_perm)
-        self._state = np.reshape(state_multi_index, 2 ** self.num_wires)
+        return np.reshape(state_multi_index, 2 ** self.num_wires)
 
     def expval(self, observable, wires, par):
         # measurement/expectation value <psi|A|psi>
@@ -372,9 +376,8 @@ class DefaultQubit(Device):
         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        A = self.expand(A, wires)
-
-        expectation = np.vdot(self._state, A @ self._state)
+        As = self._mat_vec_product(A, self._state, wires)
+        expectation = np.vdot(self._state, As)
 
         if np.abs(expectation.imag) > tolerance:
             warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expectation.imag), RuntimeWarning)
@@ -385,47 +388,6 @@ class DefaultQubit(Device):
         # init the state vector to |00..0>
         self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
-
-    def expand(self, U, wires):
-        r"""Expand a multi-qubit operator into a full system operator.
-
-        Args:
-          U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
-          wires (Sequence[int]): Target subsystems (order matters!)
-
-        Returns:
-          array: :math:`2^N\times 2^N` matrix. The full system operator.
-        """
-        if self.num_wires == 1:
-            # total number of wires is 1, simply return the matrix
-            return U
-
-        N = self.num_wires
-        wires = np.asarray(wires)
-
-        if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
-            raise ValueError("Invalid target subsystems provided in 'wires' argument.")
-
-        # generate N qubit basis states via the cartesian product
-        tuples = np.array(list(itertools.product([0, 1], repeat=N)))
-
-        # wires not acted on by the operator
-        inactive_wires = list(set(range(N))-set(wires))
-
-        # expand U to act on the entire system
-        U = np.kron(U, np.identity(2**len(inactive_wires)))
-
-        # move active wires to beginning of the list of wires
-        rearanged_wires = np.array(list(wires)+inactive_wires)
-
-        # convert to computational basis
-        # i.e., converting the list of basis state bit strings into
-        # a list of decimal numbers that correspond to the computational
-        # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
-        perm = np.ravel_multi_index(tuples[:, rearanged_wires].T, [2]*N)
-
-        # permute U to take into account rearranged wires
-        return U[:, perm][perm]
 
     @property
     def operations(self):
