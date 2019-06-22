@@ -39,12 +39,12 @@
 * Organize templates into submodules [#195](https://github.com/XanaduAI/pennylane/pull/195).
   This included the following improvements:
 
-  - Distinguish embedding templates, layer templates, and parameter templates.
+  - Distinguish embedding templates from layer templates.
 
   - New random initialization functions supporting the templates available
     in the new submodule `pennylane.init`.
 
-  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly
+  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly 
     distributed over the wires
 
   - Add various embedding strategies
@@ -60,7 +60,7 @@
 * `default.qubit` plugin now uses `np.tensordot` when applying quantum operations
   and evaluating expectations, resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239), [#241](https://github.com/XanaduAI/pennylane/pull/241)
 
-* Allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
+* PennyLane now allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
 
 * Portions of the test suite are in the process of being ported to pytest.
   Note: this is still a work in progress.
@@ -80,18 +80,18 @@
 
 ### Bug fixes
 
-* Fixes a bug in `Device.supported`, which would incorrectly
+* Fixed a bug in `Device.supported`, which would incorrectly
   mark an operation as supported if it shared a name with an
   observable [#203](https://github.com/XanaduAI/pennylane/pull/203)
 
-* Fixes a bug in `Operation.wires`, by explicitly casting the
+* Fixed a bug in `Operation.wires`, by explicitly casting the
   type of each wire to an integer [#206](https://github.com/XanaduAI/pennylane/pull/206)
 
-* Removes code in PennyLane which configured the logger,
+* Removed code in PennyLane which configured the logger,
   as this would clash with users' configurations
   [#208](https://github.com/XanaduAI/pennylane/pull/208)
 
-* Fixes a bug in `default.qubit`, in which `QubitStateVector` operations
+* Fixed a bug in `default.qubit`, in which `QubitStateVector` operations
   were accidentally being cast to `np.float` instead of `np.complex`.
   [#211](https://github.com/XanaduAI/pennylane/pull/211)
 
