@@ -116,8 +116,8 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
     Most parameter generating methods have a 'normal' and a 'uniform' version, sampling the angle parameters
     of rotation gates either from a normal or uniform distribution.
 
-Templates can contain each other. An example is the handy :class:`~.Interferometer` template. It constructs
-arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations, by providing lists of
+Templates can contain each other. An example is the handy :class:`~layers.Interferometer` template. It constructs
+arbitrary interferometers in terms of elementary :class:`~pennylane.ops.Beamsplitter` operations, by providing lists of
 transmittivity and phase angles. A :func:`~.CVNeuralNetLayer` template — implementing the continuous-variable neural
 network architecture from :cite:`killoran2018continuous` — contains two such interferometers. But it can also
 be used (and optimized) independently:
