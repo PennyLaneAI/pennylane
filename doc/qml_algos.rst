@@ -6,6 +6,9 @@
 Quantum machine learning algorithms
 -----------------------------------
 
+PennyLane is desgined to do machine learning with quantum computers. These examples show PennyLane's implementation of some of the well-known algorithms from the recent research in quantum machine learning. This is, however, just to showcase how quantum machine learning with PennyLane *could* look like. In principle *any* technique where a quantum circuit is optimized and potentially run on a real device can be implemented in PennyLane.  
+
+
 .. toctree::
     :hidden:
     :maxdepth: 1

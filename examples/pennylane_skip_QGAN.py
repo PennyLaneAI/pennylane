@@ -55,7 +55,7 @@ Training of GANs proceeds as follows:
     :width: 90%
     :target: javascript:void(0);
 
-Qauntum GANs
+Quantum GANs
 ^^^^^^^^^^^^^
 
 This demo walks through how to build and train a simple Quantum

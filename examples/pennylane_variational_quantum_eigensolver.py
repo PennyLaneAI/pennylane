@@ -16,13 +16,12 @@ circuit to minimize the squared energy expectation for a Hamiltonian
     \langle \psi_v | H | \psi_v \rangle^2  =( 0.1 \langle \psi_{v} | X_2 |
     \psi_v \rangle + 0.5 \langle \psi_v | Y_2 | \psi_v \rangle )^2.
 
-Here, :math:`|\psi`\_v\rangle` is the state
+Here, :math:`|\psi_v\rangle` is the state
 obtained after applying a quantum circuit to an initial state
 :math:`|0\rangle`. The quantum circuit depends on trainable variables
 :math:`v = \{v_1, v_2\}`, and :math:`X_2`, :math:`Y_2` denote the
 Pauli-X and Pauli-Y operator acting on the second qubit (*Note: We apply
-the square to make the optimization landscapes more interesting, but in
-common applications the cost is directly the energy expectation value*).
+the square to make the optimization landscapes more interesting, but in common applications the cost is directly equivalent to the energy expectation value*).
 
 After doing this, we will then turn things around and use a fixed
 quantum circuit to prepare a state :math:`|\psi\rangle`, but train the coefficients of
@@ -89,7 +88,6 @@ def circuit_X(var):
     ansatz(var)
     return qml.expval.PauliX(1)
 
-
 @qml.qnode(dev)
 def circuit_Y(var):
     ansatz(var)
@@ -145,6 +143,7 @@ opt = GradientDescentOptimizer(0.5)
 
 var = [0.3, 2.5]
 var_gd = [var]
+
 for it in range(20):
     var = opt.step(cost, var)
     var_gd.append(var)
@@ -193,12 +192,10 @@ def ansatz():
     qml.RY(0.5, wires=1)
     qml.CNOT(wires=[0, 1])
 
-
 @qml.qnode(dev)
 def circuit_X():
     ansatz()
     return qml.expval.PauliX(1)
-
 
 @qml.qnode(dev)
 def circuit_Y():
@@ -214,11 +211,11 @@ def cost(var):
     expY = circuit_Y()
     return (var[0] * expX + var[1] * expY) ** 2
 
-
 opt = GradientDescentOptimizer(0.5)
 
 var = [0.3, 2.5]
 var_gd = [var]
+
 for it in range(20):
     var = opt.step(cost, var)
     var_gd.append(var)
@@ -256,39 +253,33 @@ plt.show()
 ##############################################################################
 # 3. Optimizing classical and quantum parameters
 # ----------------------------------------------
-
+#
 # Finally, we can optimize *classical* and *quantum* weights together by
 # combining the two approaches from above.
 
 def ansatz(var):
-
     qml.Rot(0.3, 1.8, 5.4, wires=1)
     qml.RX(var[0], wires=0)
     qml.RY(var[1], wires=1)
     qml.CNOT(wires=[0, 1])
-
 
 @qml.qnode(dev)
 def circuit_X(var):
     ansatz(var)
     return qml.expval.PauliX(1)
 
-
 @qml.qnode(dev)
 def circuit_Y(var):
     ansatz(var)
     return qml.expval.PauliY(1)
 
-
 def cost(var):
-
     expX = circuit_X(var)
     expY = circuit_Y(var)
-
     return (var[2] * expX + var[3] * expY) ** 2
 
-
 opt = GradientDescentOptimizer(0.5)
+
 var = [0.3, 2.5, 0.3, 2.5]
 
 for it in range(10):

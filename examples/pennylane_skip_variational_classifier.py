@@ -23,8 +23,8 @@ This optimization example demonstrates how to encode binary inputs into
 the initial state of the variational circuit, which is simply a
 computational basis state.
 
-We then show how to encode real vectors as amplitude vectors (*amplitude
-encoding*) and train the model to recognize the first two classes of
+We then show how to encode real vectors as amplitude vectors (see amplitude
+encoding in :ref:`embeddings`) and train the model to recognize the first two classes of
 flowers in the Iris dataset.
 
 1. Fitting the parity function
@@ -73,8 +73,8 @@ def layer(W):
 ##############################################################################
 # We also need a way to encode data inputs :math:`x` into the circuit, so
 # that the measured output depends on the inputs. In this first example,
-# the inputs are bitstrings, which we encode into the state of the qubits.
-# The quantum state $\|:raw-latex:`\psi `:raw-latex:`\rangle `$ after
+# the inputs are bit strings, which we encode into the state of the qubits.
+# The quantum state :math:`| \psi \rangle` after
 # state preparation is a computational basis state that has 1s where
 # :math:`x` has 1s, for example
 #
@@ -87,7 +87,7 @@ def statepreparation(x):
     qml.BasisState(x, wires=[0, 1, 2, 3])
 
 ##############################################################################
-# Now we define the quantum node as a state preparation routine, followed
+# Now, we define the quantum node as a state preparation routine, followed
 # by a repetition of the layer structure. Borrowing from machine learning,
 # we call the parameters ``weights``.
 
@@ -214,13 +214,13 @@ print(var_init)
 #             [ 0.00313068, -0.00854096, -0.0255299 ],
 #             [ 0.00653619,  0.00864436, -0.00742165]]]), 0.0)
 #
-# Next we create an optimizer and choose a batch size…
+# Next we create an optimizer and choose a batch size too train it:
 
 opt = NesterovMomentumOptimizer(0.5)
 batch_size = 5
 
 ##############################################################################
-# …and train the optimizer. We track the accuracy - the share of correctly
+# We track the accuracy - the share of correctly
 # classified data samples. For this we compute the outputs of the
 # variational classifier and turn them into predictions in
 # :math:`\{-1,1\}` by taking the sign of the output.
@@ -333,14 +333,10 @@ def statepreparation(a):
 x = np.array([0.53896774, 0.79503606, 0.27826503, 0.0])
 ang = get_angles(x)
 
-
 @qml.qnode(dev)
 def test(angles=None):
-
     statepreparation(angles)
-
     return qml.expval.PauliZ(0)
-
 
 test(angles=ang)
 
