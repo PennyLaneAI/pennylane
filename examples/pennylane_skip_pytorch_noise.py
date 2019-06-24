@@ -4,7 +4,7 @@
 PyTorch and noisy devices
 =========================
 
-Let's revisit the original :ref:`qubit rotation <qubit_rotation>` tutorial, but instead of
+Let's revisit the original :ref:`qubit rotation <q_rotation>` example tutorial, but instead of
 using the default NumPy/autograd QNode interface, we'll use the :ref:`torch_qnode`.
 We'll also replace the ``default.qubit`` device with a noisy ``forest.qvm`` device, to
 see how the optimization responds to noisy qubits.
@@ -164,8 +164,8 @@ print(cost(phi, theta, 400))
 #
 # As PyTorch natively supports GPU-accelerated classical processing, and Forest provides
 # quantum hardware access in the form of QPUs, with very little modification, we can run
-# the above code as a hybrid GPU-QPU optimization (note that to run the following
-# script, you will need to be using Rigetti's QCS service):
+# the above code as a hybrid GPU-QPU optimization **(note that to run the following
+# script, you will need to be using Rigetti's QCS service)**:
 
 import pennylane as qml
 import torch

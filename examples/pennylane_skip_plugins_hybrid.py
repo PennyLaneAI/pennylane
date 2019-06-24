@@ -4,12 +4,8 @@ r"""
 Plugins and Hybrid computation
 ==============================
 
-This tutorial introduces the notion of hybrid computation by combining several PennyLane
-plugins. We first introduce PennyLane's `Strawberry Fields plugin <https://github.com/XanaduAI/pennylane-sf>`_
-and use it to explore a non-Gaussian photonic circuit. We then combine this photonic circuit with a
-qubit circuit — along with some classical processing — to create and optimize a fully hybrid computation.
-Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` and
-:ref:`Gaussian transformation <gaussian_transformation>` tutorials before attempting this tutorial.
+This tutorial introduces PennyLane's `Strawberry Fields plugin <https://github.com/XanaduAI/pennylane-sf>`_ and uses it to explore a non-Gaussian photonic circuit. We then combine this photonic circuit with a
+qubit circuit — along with some classical processing — to create and optimize a fully hybrid computation. Be sure to read through the examples in :ref:`QucikStart` tutorials before attempting this tutorial.
 
 .. note::
 
@@ -28,29 +24,27 @@ Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` 
 A non-Gaussian circuit
 ----------------------
 
-We first consider a photonic circuit which is similar in spirit to the
-:ref:`qubit rotation <qubit_rotation>` circuit:
+Let's consider a photonic circuit similar to the beamsplitter example circuit we saw in :ref:`get_to_know_the_operations` tutorial:  
 
 .. figure:: ../../examples/figures/photon_redirection.png
     :align: center
-    :width: 30%
+    :width: 40%
     :target: javascript:void(0);
 
 Breaking this down, step-by-step:
 
-1. **We start the computation with two qumode subsystems**. In PennyLane, we use the
-   shorthand 'wires' to refer to quantum subsystems, whether they are qumodes, qubits, or
-   any other kind of quantum register.
+1. **We start the computation with two qumode subsystems**.
 
 2. **Prepare the state** :math:`\ket{1,0}`. That is, the first wire (wire 0) is prepared
    in a single-photon state, while the second
    wire (wire 1) is prepared in the vacuum state. The former state is non-Gaussian,
    necessitating the use of the ``'strawberryfields.fock'`` backend device.
 
-3. **Both wires are then incident on a beamsplitter**, with free parameters :math:`\theta`and :math:`\phi`.
+3. **Both wires are then incident on a beamsplitter**, which has two free parameters :math:`\theta`
+   and :math:`\phi`.
    Here, we have the convention that the beamsplitter transmission amplitude is :math:`t=\cos\theta`,
    and the reflection amplitude is
-   :math:`r=e^{i\phi}\sin\theta`. See :ref:`operations` for a full list of operation conventions.
+   :math:`r=e^{i\phi}\sin\theta`.
 
 4. **Finally, we measure the mean photon number** :math:`\braket{\hat{n}}` of the second wire, where
 
@@ -58,11 +52,12 @@ Breaking this down, step-by-step:
 
    is the number operator, acting on the Fock basis number states, such that :math:`\hat{n}\ket{n} = n\ket{n}`.
 
-The aim of this tutorial is to optimize the beamsplitter parameters :math:`(\theta, \phi)` such
+
+Now, let's optimize the beamsplitter parameters :math:`(\theta, \phi)` such
 that the expected photon number of the second wire is **maximized**. Since the beamsplitter
-is a passive optical element that preserves the total photon number, this to the output
+is a passive optical element that preserves the total photon number, this leads to the output
 state :math:`\ket{0,1}` — i.e., when the incident photon from the first wire has been
-'redirected' to the second wire.
+'redirected' to the second wire. This time, however, we use PennyLane to find the optimum parameters rather than working them out ourselves.  
 
 .. _photon_redirection_calc:
 
@@ -262,7 +257,7 @@ print("Optimized rotation angles: {}".format(params))
 # ------------------
 #
 # To really highlight the capabilities of PennyLane, let's now combine the qubit-rotation QNode
-# from the :ref:`qubit rotation tutorial <qubit_rotation>` with the CV photon-redirection
+# from the :ref:`qubit rotation tutorial <q_rotation>` with the CV photon-redirection
 # QNode from above, as well as some classical processing, to produce a truly hybrid
 # computational model.
 #
@@ -278,7 +273,7 @@ dev_fock = qml.device("strawberryfields.fock", wires=2, cutoff_dim=10)
 
 @qml.qnode(dev_qubit)
 def qubit_rotation(phi1, phi2):
-    """Qubit rotation QNode"""
+    # Qubit rotation QNode
     qml.RX(phi1, wires=0)
     qml.RY(phi2, wires=0)
     return qml.expval.PauliZ(0)
@@ -286,15 +281,15 @@ def qubit_rotation(phi1, phi2):
 
 @qml.qnode(dev_fock)
 def photon_redirection(params):
-    """The photon redirection QNode"""
+    # The photon redirection QNode
     qml.FockState(1, wires=0)
     qml.Beamsplitter(params[0], params[1], wires=[0, 1])
     return qml.expval.MeanPhoton(1)
 
 
 def squared_difference(x, y):
-    """Classical node to compute the squared
-    difference between two inputs"""
+    # Classical node to compute the squared
+    # difference between two inputs
     return np.abs(x - y) ** 2
 
 
@@ -328,9 +323,9 @@ def squared_difference(x, y):
 
 
 def cost(params, phi1=0.5, phi2=0.1):
-    """Returns the squared difference between
-    the photon-redirection and qubit-rotation QNodes, for
-    fixed values of the qubit rotation angles phi1 and phi2"""
+    # Returns the squared difference between
+    # the photon-redirection and qubit-rotation QNodes, for
+    # fixed values of the qubit rotation angles phi1 and phi2
     qubit_result = qubit_rotation(phi1, phi2)
     photon_result = photon_redirection(params)
     return squared_difference(qubit_result, photon_result)

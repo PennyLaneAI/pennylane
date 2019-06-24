@@ -6,6 +6,14 @@
 Using plugins and Quantum Hardware
 ===================================
 
+The most powerful design feature of PennyLane is that it allows the user to run hybrid computations on a variety of different simulators and real quantum hardware. The framework that executes a quantum node is called the *device*. *Plugins* are the interfaces that allow PennyLane to communicate with different devices. They define whether and how PennyLane's standard operations are implemented, and how expectation values are computed.
+
+.. note:: 
+            Plugins have to be separately installed; see :ref:`plugins` for more details. 
+
+The following tutorials introduce the notion of hybrid computation by combining several PennyLane plugins.
+
+
 .. toctree::
     :hidden:
     :maxdepth: 1

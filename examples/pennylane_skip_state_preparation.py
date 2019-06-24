@@ -1,11 +1,11 @@
 r"""
 .. _state_preparation:
 
-State preparation in Forest
-============================
+State preparation in Forest SDK
+================================
 
 In this notebook, we build and optimize a circuit to prepare arbitrary
-single-qubit states, including mixed states. Along the way, we also show
+single-qubit states, including mixed states, using the *Forest* plugin. Along the way, we also show
 how to:
 
 1. Construct compact expressions for circuits composed of many layers.
@@ -28,7 +28,7 @@ The *purity* of a state is defined as :math:`p=\text{Tr}(\rho^2)`, which
 for a qubit is bounded as :math:`1/2\leq p\geq 1`. The state is pure if
 :math:`p=1` and maximally mixed if :math:`p=1/2`. In this example, we
 select the target state by choosing a random Bloch vector and
-renormalizing it to have a specified purity.
+renormalize it to have a specified purity.
 
 """
 
@@ -144,8 +144,8 @@ opt = qml.AdamOptimizer()
 # number of steps in the optimization routine
 steps = 200
 
-# the final stage of optimization isn't always the best, so we keep track of
-# the best parameters along the way
+# the final stage of optimization isn't always the best, 
+# so we keep track of the best parameters along the way
 best_cost = cost_fn(params)
 best_params = np.zeros((nr_qubits, nr_layers, 3))
 
