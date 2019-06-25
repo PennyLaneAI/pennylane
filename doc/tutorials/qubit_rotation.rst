@@ -182,7 +182,7 @@ be a valid quantum function, there are some important restrictions:
   As a result, the quantum function always returns a classical quantity, allowing the QNode to interface
   with other classical functions (and also other QNodes).
 
-  For a full list of quantum expectation values, see :mod:`supported expectations <pennylane.expval>`.
+  For a full list of quantum expectation values, see :mod:`supported observables <pennylane.measure>`.
 
 * **Quantum functions must not contain any classical processing of circuit parameters.**
 
