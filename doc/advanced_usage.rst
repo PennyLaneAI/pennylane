@@ -8,7 +8,7 @@ Advanced Usage
 
 In the previous tutorials, we explored the basic concepts of PennyLane including discrete- and continuous-variable quantum computation models and gradient-based optimization.
 
-PennyLane offers many exciting advanced features such as constructing multiple QNodes on a single device, applying any arbitrary Unitary matrix to the states, measuring any custom-defined Hermitian operator and interfacing with other classical machine learning interfaces, specifically PyTorch and TensorFlow eager execution mode. In this tutorial, we will highlight some of these advanced features.
+PennyLane offers many exciting advanced features such as constructing multiple QNodes on a single device, applying any arbitrary Unitary matrix to the states, measuring any custom-defined Hermitian operator and interfacing with other classical machine learning interfaces, specifically PyTorch and TensorFlow. In this tutorial, we will highlight some of these advanced features.
 
 Multiple expectation values
 ---------------------------
@@ -136,7 +136,7 @@ Click on the following tutorials to take an in-depth look at one and the same Is
 QNodes from different interfaces on one Device
 -----------------------------------------------
 
-PennyLane does not only provide the flexibility of having multiple nodes on one device, it also allows these nodes to have different interfaces. Let's look at the following simple example:
+PennyLane does not only provide the flexibility of having multiple quantum nodes on one device, it also allows these nodes to have different interfaces. Let's look at the following simple example:
 
 .. code-block:: python
 

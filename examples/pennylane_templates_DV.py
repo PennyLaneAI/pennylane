@@ -6,7 +6,7 @@ Single Layer Strongly Entangling Circuit
 
 Parameterized quantum circuits generally consist of three parts:
 
-- state preparation where classical data is embedded into a quantum state (see concepts/Quantum embeddings) 
+- state preparation where classical data is embedded into a quantum state (see :ref:`Quantum embeddings <concept_embeddings>`) 
 - parameterized gates that act on the said quantum state 
 - measurement
 
