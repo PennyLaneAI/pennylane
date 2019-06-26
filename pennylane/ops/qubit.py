@@ -40,6 +40,10 @@ Gates
     RZ
     PhaseShift
     Rot
+    CRX
+    CRY
+    CRZ
+    CRot
     QubitUnitary
 
 
@@ -371,7 +375,8 @@ class CRX(Operation):
     * Gradient recipe: :math:`\frac{d}{d\phi}CR_x(\phi) = \frac{1}{2}\left[CR_x(\phi+\pi/2) - CR_x(\phi-\pi/2)\right]`
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -399,7 +404,8 @@ class CRY(Operation):
     * Gradient recipe: :math:`\frac{d}{d\phi}CR_y(\phi) = \frac{1}{2}\left[CR_y(\phi+\pi/2) - CR_y(\phi-\pi/2)\right]`
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -427,7 +433,8 @@ class CRZ(Operation):
     * Gradient recipe: :math:`\frac{d}{d\phi}CR_z(\phi) = \frac{1}{2}\left[CR_z(\phi+\pi/2) - CR_z(\phi-\pi/2)\right]`
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 1
     num_wires = 2
@@ -452,11 +459,13 @@ class CRot(Operation):
 
     * Number of wires: 2
     * Number of parameters: 3
-    * Gradient recipe: :math:`\frac{d}{d\phi}CRot(\phi) = \frac{1}{2}\left[CRot(\phi+\pi/2) - CRot(\phi-\pi/2)\right]`
-      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}CR(\phi) = \frac{1}{2}\left[CR(\phi+\pi/2) - CR(\phi-\pi/2)\right]`. This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
 
     Args:
-        wires (Sequence[int] or int): the wires the operation acts on
+        phi (float): rotation angle :math:`\phi`
+        theta (float): rotation angle :math:`\theta`
+        omega (float): rotation angle :math:`\omega`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 3
     num_wires = 2
@@ -578,6 +587,10 @@ ops = {
     "RZ",
     "PhaseShift",
     "Rot",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
