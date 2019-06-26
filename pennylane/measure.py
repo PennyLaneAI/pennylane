@@ -29,7 +29,7 @@ QNode returns the expectation value of observable :class:`~.PauliZ`
 on wire 1, and the variance of observable :class:`~.PauliX` on
 wire 2.
 
-.. code-block::
+.. code-block:: python
 
     import pennylane as qml
     from pennylane import expval, var
