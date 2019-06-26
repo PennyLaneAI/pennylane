@@ -98,13 +98,13 @@ def circuit(param):
 #
 # *  Quantum functions must only contain quantum operations, one operation
 #    per line, in the order in which they are to be applied. For a full
-#    list of quantum operations, see :mod:`supported operations <pennylane.ops>`
+#    list of quantum operations, see :mod:`supported operations <pennylane.ops>`.
 #
 # *  Quantum functions must return either a single or a tuple of
-#    expectation values ``expval``. As a result, the quantum function
+#    expectation values ``expval`` or variances ``var``. As a result, the quantum function
 #    always returns a classical quantity, allowing the QNode to interface
 #    with other classical functions (and also other QNodes). For a full
-#    list of quantum expectation values, see :mod:`supported expectations <pennylane.expval>`
+#    list of available measurements, see :mod:`measuremnets <pennylane.measure>`.
 #
 # *  Quantum functions must not contain any classical processing of
 #    circuit parameters.
@@ -177,9 +177,9 @@ print(qfunc2())
 # squeezing in phase space) that has zero number of Photons.
 #
 # .. note::
-#     1. Final measurements are considered as *expectation values*
-#     :math:`\langle \cdots \rangle` – i.e., averages – not single-shot
-#     results. Expectation values are deterministic, whereas single-shot
+#     1. The *expectation values* returned by QNodes, 
+#     :math:`\langle \cdots \rangle`, are averages – not single-shot
+#     results. As a result, these are deterministic, whereas single-shot
 #     measurements are stochastic. This is what allows us to do machine
 #     learning on the circuit (Note: the same principle holds for deep
 #     learning models).
@@ -187,4 +187,4 @@ print(qfunc2())
 #     2. Since circuits are meant to be run on quantum hardware, there is
 #     limited support for classical computation *inside* the circuit
 #     function. On the other hand, classical processing of circuit
-#     inputs/outputs is fully supported
+#     inputs/outputs is fully supported.
