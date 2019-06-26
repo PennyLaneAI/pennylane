@@ -76,8 +76,8 @@ def AngleEmbedding(features, wires, rotation='X'):
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
 
-    The rotations can be chosen as either :class:`~.RX`, :class:`~.RY`
-    or :class:`~.RZ` gates, as defined by the ``rotation`` parameter:
+    The rotations can be chosen as either :class:`~pennylane.ops.RX`, :class:`~pennylane.ops.RY`
+    or :class:`~pennylane.ops.RZ` gates, as defined by the ``rotation`` parameter:
 
     * ``rotation='X'`` uses the features as angles of RX rotations
 
@@ -130,7 +130,7 @@ def AmplitudeEmbedding(features, wires):
 
     .. note::
 
-        AmplitudeEmbedding uses PennyLane's :class:`~.QubitStateVector` and only works in conjunction with
+        AmplitudeEmbedding uses PennyLane's :class:`~pennylane.ops.QubitStateVector` and only works in conjunction with
         devices that implement this function.
 
     Args:
@@ -155,7 +155,7 @@ def BasisEmbedding(features, wires):
 
     .. note::
 
-        BasisEmbedding uses PennyLane's :class:`~.BasisState` and only works in conjunction with
+        BasisEmbedding uses PennyLane's :class:`~pennylane.ops.BasisState` and only works in conjunction with
         devices that implement this function.
 
     Args:

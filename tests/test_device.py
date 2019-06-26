@@ -53,12 +53,12 @@ class DeviceTest(BaseTest):
             self.assertEqual(dev.short_name, name)
 
     def test_supported(self):
-        """check that a nonempty set of operations/expectations are supported"""
+        """check that a nonempty set of operations/observables are supported"""
         self.logTestName()
 
         for dev in self.dev.values():
             ops = dev.operations
-            exps = dev.expectations
+            exps = dev.observables
             self.assertTrue(len(ops) > 0)
             self.assertTrue(len(exps) > 0)
 
@@ -67,13 +67,13 @@ class DeviceTest(BaseTest):
 
     def test_check_validity(self):
         """test that the check_validity method correctly
-        determines what operations/expectations are supported."""
+        determines what operations/observables are supported."""
         self.logTestName()
 
         dev = qml.device('default.qubit', wires=2)
-        # overwrite the device supported operations and expectations
+        # overwrite the device supported operations and observables
         dev._operation_map = {'RX':0, 'PauliX':0, 'PauliY':0, 'PauliZ':0, 'Hadamard':0}
-        dev._expectation_map = {'PauliZ':0, 'Identity':0}
+        dev._observable_map = {'PauliZ':0, 'Identity':0}
 
         # test a valid queue
         queue = [
@@ -82,21 +82,21 @@ class DeviceTest(BaseTest):
             qml.PauliZ(wires=2, do_queue=False),
         ]
 
-        expectations = [qml.expval.PauliZ(0, do_queue=False)]
+        observables = [qml.expval(qml.PauliZ(0, do_queue=False))]
 
-        dev.check_validity(queue, expectations)
+        dev.check_validity(queue, observables)
 
         # test an invalid operation
         queue = [qml.RY(1., wires=0, do_queue=False)]
         with self.assertRaisesRegex(qml.DeviceError, "Gate RY not supported"):
-            dev.check_validity(queue, expectations)
+            dev.check_validity(queue, observables)
 
-        # test an invalid expectation with the same name
+        # test an invalid observable with the same name
         # as a valid operation
         queue = [qml.PauliY(wires=0, do_queue=False)]
-        expectations = [qml.expval.PauliY(0, do_queue=False)]
-        with self.assertRaisesRegex(qml.DeviceError, "Expectation PauliY not supported"):
-            dev.check_validity(queue, expectations)
+        observables = [qml.expval(qml.PauliY(0, do_queue=False))]
+        with self.assertRaisesRegex(qml.DeviceError, "Observable PauliY not supported"):
+            dev.check_validity(queue, observables)
 
     def test_capabilities(self):
         """check that device can give a dict of further capabilities"""
@@ -106,7 +106,7 @@ class DeviceTest(BaseTest):
             caps = dev.capabilities()
             self.assertTrue(isinstance(caps, dict))
 
-    @patch.object(DefaultQubit, 'pre_expval', lambda self: log.info(self.op_queue))
+    @patch.object(DefaultQubit, 'pre_measure', lambda self: log.info(self.op_queue))
     def test_op_queue(self):
         """Check that peaking at the operation queue works correctly"""
         self.logTestName()
@@ -124,14 +124,14 @@ class DeviceTest(BaseTest):
 
         # inside of the execute method, it works
         with self.assertLogs(level='INFO') as l:
-            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            dev.execute(queue, [qml.expval(qml.PauliX(0, do_queue=False))])
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
             self.assertIn('INFO:root:[<pennylane.ops.qubit.RX object', l.output[0])
 
-    @patch.object(DefaultQubit, 'pre_expval', lambda self: log.info(self.expval_queue))
-    def test_expval_queue(self):
-        """Check that peaking at the expval queue works correctly"""
+    @patch.object(DefaultQubit, 'pre_measure', lambda self: log.info(self.obs_queue))
+    def test_obs_queue(self):
+        """Check that peaking at the obs queue works correctly"""
         self.logTestName()
 
         # queue some gates
@@ -142,23 +142,23 @@ class DeviceTest(BaseTest):
         dev = qml.device('default.qubit', wires=2)
 
         # outside of an execution context, error will be raised
-        with self.assertRaisesRegex(ValueError, "Cannot access the expectation value queue outside of the execution context!"):
-            dev.expval_queue
+        with self.assertRaisesRegex(ValueError, "Cannot access the observable value queue outside of the execution context!"):
+            dev.obs_queue
 
         # inside of the execute method, it works
         with self.assertLogs(level='INFO') as l:
-            dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+            dev.execute(queue, [qml.expval(qml.PauliX(0, do_queue=False))])
             self.assertEqual(len(l.output), 1)
             self.assertEqual(len(l.records), 1)
-            self.assertIn('INFO:root:[<pennylane.expval.qubit.PauliX object', l.output[0])
+            self.assertIn('INFO:root:[<pennylane.ops.qubit.PauliX object', l.output[0])
 
     def test_execute(self):
-        """check that execution works on supported operations/expectations"""
+        """check that execution works on supported operations/observables"""
         self.logTestName()
 
         for dev in self.dev.values():
             ops = dev.operations
-            exps = dev.expectations
+            exps = dev.observables
 
             queue = []
             for o in ops:
@@ -179,22 +179,22 @@ class DeviceTest(BaseTest):
 
             temp = [isinstance(op, qml.operation.CV) for op in queue]
             if all(temp):
-                expval = dev.execute(queue, [qml.expval.X(0, do_queue=False)])
+                expval = dev.execute(queue, [qml.expval(qml.X(0, do_queue=False))])
             else:
-                expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+                expval = dev.execute(queue, [qml.expval(qml.PauliX(0, do_queue=False))])
 
             self.assertTrue(isinstance(expval, np.ndarray))
 
     def test_validity(self):
-        """check that execution throws error on unsupported operations/expectations"""
+        """check that execution throws error on unsupported operations/observables"""
         self.logTestName()
 
         for dev in self.dev.values():
             ops = dev.operations
-            all_ops = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+            all_ops = set(qml.ops.__all_ops__)
 
             for o in all_ops-ops:
-                op = qml.ops.__getattribute__(o)
+                op = getattr(qml.ops, o)
 
                 if op.par_domain == 'A':
                     # skip operations with array parameters, as there are too
@@ -212,18 +212,18 @@ class DeviceTest(BaseTest):
 
                 with self.assertRaisesRegex(qml.DeviceError, 'not supported on device'):
                     if temp:
-                        expval = dev.execute(queue, [qml.expval.X(0, do_queue=False)])
+                        expval = dev.execute(queue, [qml.expval(qml.X(0, do_queue=False))])
                     else:
-                        expval = dev.execute(queue, [qml.expval.PauliX(0, do_queue=False)])
+                        expval = dev.execute(queue, [qml.expval(qml.PauliX(0, do_queue=False))])
 
-            exps = dev.expectations
-            all_exps = set(qml.expval.__all__)
+            exps = dev.observables
+            all_exps = set(qml.ops.__all_obs__)
 
             for g in all_exps-exps:
-                op = qml.expval.__getattribute__(g)
+                op = getattr(qml.ops, g)
 
                 if op.par_domain == 'A':
-                    # skip expectations with array parameters, as there are too
+                    # skip observables with array parameters, as there are too
                     # many constraints to consider. These should be tested
                     # directly within the plugin tests.
                     continue

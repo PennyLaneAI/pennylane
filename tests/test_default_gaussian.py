@@ -304,14 +304,14 @@ class TestDefaultGaussianDevice(BaseTest):
                          'CubicPhase',
                          'Kerr'}
 
-        self.assertEqual(set(qml.ops.cv.__all__) - non_supported,
+        self.assertEqual(set(qml.ops._cv__ops__) - non_supported,
                          set(self.dev._operation_map))
 
-    def test_expectation_map(self):
-        """Test that default Gaussian device supports all PennyLane Gaussian continuous expectations."""
+    def test_observable_map(self):
+        """Test that default Gaussian device supports all PennyLane Gaussian continuous observables."""
         self.logTestName()
-        self.assertEqual(set(qml.expval.cv.__all__)|{'Identity'}-{'Heterodyne'},
-                         set(self.dev._expectation_map))
+        self.assertEqual(set(qml.ops._cv__obs__)|{'Identity'}-{'Heterodyne'},
+                         set(self.dev._observable_map))
 
     def test_apply(self):
         """Test the application of gates to a state"""
@@ -409,35 +409,32 @@ class TestDefaultGaussianDevice(BaseTest):
 
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
-        # test correct mean and variance for <n> of a displaced thermal state
+        # test correct mean for <n> of a displaced thermal state
         nbar = 0.5431
         alpha = 0.324-0.59j
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
         mean = dev.expval('MeanPhoton', [0], [])
         self.assertAlmostEqual(mean, np.abs(alpha)**2+nbar, delta=self.tol)
-        # self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
 
-        # test correct mean and variance for Homodyne P measurement
+        # test correct mean for Homodyne P measurement
         alpha = 0.324-0.59j
         dev.apply('CoherentState', wires=[0], par=[alpha])
         mean = dev.expval('P', [0], [])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
-        # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
-        # test correct mean and variance for Homodyne measurement
+        # test correct mean for Homodyne measurement
         mean = dev.expval('Homodyne', [0], [np.pi/2])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
-        # self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
-        # test correct mean and variance for number state expectation |<n|alpha>|^2
+        # test correct mean for number state expectation |<n|alpha>|^2
         # on a coherent state
         for n in range(3):
             mean = dev.expval('NumberState', [0], [np.array([n])])
             expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             self.assertAlmostEqual(mean, expected, delta=self.tol)
 
-        # test correct mean and variance for number state expectation |<n|S(r)>|^2
+        # test correct mean for number state expectation |<n|S(r)>|^2
         # on a squeezed state
         n = 1
         r = 0.4523
@@ -445,6 +442,62 @@ class TestDefaultGaussianDevice(BaseTest):
         mean = dev.expval('NumberState', [0], [np.array([2*n])])
         expected = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         self.assertAlmostEqual(mean, expected, delta=self.tol)
+
+    def test_variance_displaced_thermal_mean_photon(self):
+        """test correct variance for <n> of a displaced thermal state"""
+        self.logTestName()
+        dev = qml.device('default.gaussian', wires=1, hbar=hbar)
+
+        nbar = 0.5431
+        alpha = 0.324-0.59j
+        dev.apply('ThermalState', wires=[0], par=[nbar])
+        dev.apply('Displacement', wires=[0], par=[alpha, 0])
+        var = dev.var('MeanPhoton', [0], [])
+        self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
+
+    def test_variance_coherent_homodyne(self):
+        """test correct variance for Homodyne P measurement"""
+        self.logTestName()
+        dev = qml.device('default.gaussian', wires=1, hbar=hbar)
+
+        alpha = 0.324-0.59j
+        dev.apply('CoherentState', wires=[0], par=[alpha])
+        var = dev.var('P', [0], [])
+        self.assertAlmostEqual(var, hbar/2, delta=self.tol)
+
+        # test correct mean and variance for Homodyne measurement
+        var = dev.var('Homodyne', [0], [np.pi/2])
+        self.assertAlmostEqual(var, hbar/2, delta=self.tol)
+
+    def test_variance_coherent_numberstate(self):
+        """test correct variance for number state expectation |<n|alpha>|^2
+        on a coherent state
+        """
+        self.logTestName()
+        dev = qml.device('default.gaussian', wires=1, hbar=hbar)
+
+        alpha = 0.324-0.59j
+
+        dev.apply('CoherentState', wires=[0], par=[alpha])
+
+        for n in range(3):
+            var = dev.var('NumberState', [0], [np.array([n])])
+            mean = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
+            self.assertAlmostEqual(var, mean*(1-mean), delta=self.tol)
+
+    def test_variance_squeezed_numberstate(self):
+        """test correct variance for number state expectation |<n|S(r)>|^2
+        on a squeezed state
+        """
+        self.logTestName()
+        dev = qml.device('default.gaussian', wires=1, hbar=hbar)
+
+        n = 1
+        r = 0.4523
+        dev.apply('SqueezedState', wires=[0], par=[r, 0])
+        var = dev.var('NumberState', [0], [np.array([2*n])])
+        mean = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
+        self.assertAlmostEqual(var, mean*(1-mean), delta=self.tol)
 
     def test_reduced_state(self):
         """Test reduced state"""
@@ -494,7 +547,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         dev = qml.device('default.gaussian', wires=2)
 
         gates = set(dev._operation_map.keys())
-        all_gates = {m[0] for m in inspect.getmembers(qml.ops, inspect.isclass)}
+        all_gates = set(qml.ops.__all_ops__)
 
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
@@ -511,9 +564,9 @@ class TestDefaultGaussianIntegration(BaseTest):
                 op(*x, wires=wires)
 
                 if issubclass(op, qml.operation.CV):
-                    return qml.expval.X(0)
+                    return qml.expval(qml.X(0))
 
-                return qml.expval.PauliZ(0)
+                return qml.expval(qml.PauliZ(0))
 
             with self.assertRaisesRegex(qml.DeviceError, "Gate {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
@@ -524,11 +577,11 @@ class TestDefaultGaussianIntegration(BaseTest):
         self.logTestName()
         dev = qml.device('default.gaussian', wires=2)
 
-        obs = set(dev._expectation_map.keys())
-        all_obs = set(qml.expval.__all__)
+        obs = set(dev._observable_map.keys())
+        all_obs = set(qml.ops.__all_obs__)
 
         for g in all_obs - obs:
-            op = getattr(qml.expval, g)
+            op = getattr(qml.ops, g)
 
             if op.num_wires == 0:
                 wires = [0]
@@ -539,9 +592,9 @@ class TestDefaultGaussianIntegration(BaseTest):
             def circuit(*x):
                 """Test quantum function"""
                 x = prep_par(x, op)
-                return op(*x, wires=wires)
+                return qml.expval(op(*x, wires=wires))
 
-            with self.assertRaisesRegex(qml.DeviceError, "Expectation {} not supported on device default.gaussian".format(g)):
+            with self.assertRaisesRegex(qml.DeviceError, "Observable {} not supported on device default.gaussian".format(g)):
                 x = np.random.random([op.num_params])
                 circuit(*x)
 
@@ -556,7 +609,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.X(0)
+            return qml.expval(qml.X(0))
 
         self.assertAlmostEqual(circuit(p), p*np.sqrt(2*hbar), delta=self.tol)
 
@@ -571,7 +624,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.Identity(0)
+            return qml.expval(qml.Identity(0))
 
         self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
 
@@ -588,7 +641,7 @@ class TestDefaultGaussianIntegration(BaseTest):
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval.X(0)
+            return qml.expval(qml.X(0))
 
         runs = []
         for _ in range(100):
@@ -619,7 +672,7 @@ class TestDefaultGaussianIntegration(BaseTest):
                 """Reference quantum function"""
                 qml.Displacement(a, 0, wires=[0])
                 op(*x, wires=wires)
-                return qml.expval.X(0)
+                return qml.expval(qml.X(0))
 
             # compare to reference result
             def reference(*x):

@@ -25,3 +25,4 @@ notebooks/*
 .pytest_cache/*
 
 !formalism/tasks.pdf
+*.DS_Store

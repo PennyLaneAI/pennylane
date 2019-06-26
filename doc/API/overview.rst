@@ -15,7 +15,7 @@ A quick primer on terminology of PennyLane plugins in this section:
 
 * Each plugin may provide one (or more) devices, that are accessible directly through PennyLane, as well as any additional private functions or classes.
 
-* Depending on the scope of the plugin, you may wish to provide additional (custom) quantum operations and expectations that the user can import module of your plugin.
+* Depending on the scope of the plugin, you may wish to provide additional (custom) quantum operations and observables that the user can import.
 
 .. important::
 
@@ -57,10 +57,10 @@ Here, we have begun defining some important class attributes that allow PennyLan
 Defining all these attributes is mandatory.
 
 
-Supporting operators and expectations
--------------------------------------
+Supporting operators and observables
+------------------------------------
 
-You must further tell PennyLane about the operations and expectations that your device supports as well as potentially further capabilities, by providing the following class attributes/properties:
+You must further tell PennyLane about the operations and observables that your device supports as well as potential further capabilities, by providing the following class attributes/properties:
 
 * :attr:`~.Device.operations`: a set of the supported PennyLane operations as strings, e.g.,
 
@@ -70,17 +70,17 @@ You must further tell PennyLane about the operations and expectations that your 
 
   This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
 
-* :attr:`~.Device.expectations`: set of the supported PennyLane expectations as strings, e.g.,
+* :attr:`~.Device.observables`: set of the supported PennyLane observables as strings, e.g.,
 
   .. code-block:: python
 
-    expectations = {"Homodyne", "MeanPhoton", "X", "P"}
+    observables = {"Homodyne", "MeanPhoton", "X", "P"}
 
-  This is used to decide whether an expectation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+  This is used to decide whether an observable is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
 
 * :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user — this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
 
-For a better idea of how to best implement :attr:`~.Device.operations` and :attr:`~.Device.expectations`, refer to the two reference plugins.
+For a better idea of how to best implement :attr:`~.Device.operations` and :attr:`~.Device.observables`, refer to the two reference plugins.
 
 
 Applying operations
@@ -92,39 +92,49 @@ When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execut
 
 .. code-block:: python
 
+    results = []
+
     with self.execution_context():
         self.pre_apply()
         for operation in queue:
             self.apply(operation.name, operation.wires, operation.parameters)
         self.post_apply()
 
-        self.pre_expval()
-        expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
-        self.post_expval()
+        self.pre_measure()
 
-        return np.array(expectations)
+        for obs in observables:
+            if obs.return_type == "expectation":
+                results.append(self.expval(obs.name, obs.wires, obs.parameters))
+            elif obs.return_type == "variance":
+                results.append(self.var(obs.name, obs.wires, obs.parameters))
 
-where ``queue`` is a list of PennyLane :class:`~.Operation` instances to be applied, and ``expectation`` is a list of PennyLane :class:`~.Expectation` instances to be measured and returned. In most cases, there are therefore a minimum of two methods that any device **must** implement:
+        self.post_measure()
+
+        return np.array(results)
+
+where ``queue`` is a list of PennyLane :class:`~.Operation` instances to be applied, and ``observables`` is a list of PennyLane :class:`~.Observable` instances to be measured and returned. In most cases, there are therefore a minimum of three methods that any device **must** implement:
 
 * :meth:`~.Device.apply`: This accepts an operation name (as a string), the wires (subsystems) to apply the operation to, and the parameters for the operation, and should apply the resulting operation to given wires of the device.
 
-* :meth:`~.Device.expval`: This accepts an observable name (as a string), the wires (subsystems) to measure, and the parameters for observable. It is expected to return the resulting expectation value from the device.
+* :meth:`~.Device.expval`: This accepts an observable name (as a string), the wires (subsystems) to measure, and the parameters for the observable. It is expected to return the resulting expectation value from the device.
 
-  .. note:: Currently, PennyLane only supports expectations that return a scalar value.
+* :meth:`~.Device.var`: This accepts an observable name (as a string), the wires (subsystems) to measure, and the parameters for the observable. It is expected to return the resulting variance of the measured observable value from the device.
+
+  .. note:: Currently, PennyLane only supports measurements that return a scalar value.
 
 However, additional flexibility is sometimes required for interfacing with more complicated frameworks. In such cases, the following (optional) methods may also be implemented:
 
 * :meth:`~.Device.__init__`: By default, this method receives the ``short_name`` of the device, number of wires (``self.num_wires``), and number of shots ``self.shots``. This is the right place to set up your device. You may add parameters while overwriting this method if you need to add additional options that the user must pass to the device on initialization. Make sure that you call ``super().__init__(self.short_name, wires, shots)`` at some point here.
 
-* :meth:`~.Device.execution_context`: Here you may return a context manager for the circuit execution phase (see above). You can implement this method if the quantum library for which you are writing the device requires such an execution context while applying operations and measuring expectation values from the device.
+* :meth:`~.Device.execution_context`: Here you may return a context manager for the circuit execution phase (see above). You can implement this method if the quantum library for which you are writing the device requires such an execution context while applying operations and measuring results from the device.
 
 * :meth:`~.Device.pre_apply`: for any setup/code that must be executed before applying operations
 
 * :meth:`~.Device.post_apply`: for any setup/code that must be executed after applying operations
 
-* :meth:`~.Device.pre_expval`: for any setup/code that must be executed before measuring observables
+* :meth:`~.Device.pre_measure`: for any setup/code that must be executed before measuring observables
 
-* :meth:`~.Device.post_expval`: for any setup/code that must be executed after measuring observables
+* :meth:`~.Device.post_measure`: for any setup/code that must be executed after measuring observables
 
 .. warning:: In advanced cases, the :meth:`~.Device.execute` method may be overwritten directly. This provides full flexibility for handling the device execution yourself. However, this may have unintended side-effects and is not recommended — if possible, try implementing a suitable subset of the methods provided above.
 
@@ -167,7 +177,7 @@ In general, as all supported operations have their gradient formula defined and 
 Supporting new operations
 -------------------------
 
-If you would like to support an operation or observable that is not currently supported by PennyLane, you can subclass the :class:`~.Operation` and :class:`~.Expectation` classes, and define the number of parameters the operation takes, and the number of wires the operation acts on. For example, to define the Ising gate :math:`XX_\phi` depending on parameter :math:`\phi`,
+If you would like to support an operation or observable that is not currently supported by PennyLane, you can subclass the :class:`~.Operation` and :class:`~.Observable` classes, and define the number of parameters the operation takes, and the number of wires the operation acts on. For example, to define the Ising gate :math:`XX_\phi` depending on parameter :math:`\phi`,
 
 .. code-block:: python
 
@@ -206,7 +216,7 @@ The user can then import this operation directly from your plugin, and use it wh
     def my_qfunc(phi):
         qml.Hadamard(wires=0)
         Ising(phi, wires=[0,1])
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
 .. warning::
 
@@ -216,7 +226,7 @@ The user can then import this operation directly from your plugin, and use it wh
 Supporting new CV operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For custom continuous-variable operations or expectations, the :class:`~.CVOperation` or :class:`~.CVExpectation` classes must be subclassed instead.
+For custom continuous-variable operations or observables, the :class:`~.CVOperation` or :class:`~.CVObservable` classes must be subclassed instead.
 
 In addition, for Gaussian CV operations, you may need to provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of the operator given its list of parameters:
 
@@ -241,4 +251,4 @@ In addition, for Gaussian CV operations, you may need to provide the static clas
   - For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
   - For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`, where :math:`\x_k` and :math:`\p_k` are the quadrature operators of qumode :math:`k`.
 
-Non-Gaussian CV operations and expectations are currently only supported via the finite difference method of gradient computation.
+Non-Gaussian CV operations and observables are currently only supported via the finite difference method of gradient computation.

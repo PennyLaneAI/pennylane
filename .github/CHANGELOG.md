@@ -2,6 +2,25 @@
 
 ### New features since last release
 
+* `pennylane.expval()` is now a top-level *function*, and is no longer
+  a package of classes. For now, the existing `pennylane.expval.Observable`
+  interface continues to work, but will raise a deprecation warning.
+  [#232](https://github.com/XanaduAI/pennylane/pull/232)
+
+* Variance support: QNodes can now return the variance of observables,
+  via the top-level `pennylane.var()` function. To support this on
+  plugin devices, there is a new `Device.var` method.
+
+  The following observables support analytic gradients of variances:
+
+  - All qubit observables (requiring 3 circuit evaluations for involutory
+    observables such as `Identity`, `X`, `Y`, `Z`; and 5 circuit evals for
+    non-involutary observables, currently only `qml.Hermitian`)
+
+  - First-order CV observables (requiring 5 circuit evaluations)
+
+  Second-order CV observables support numerical variance gradients.
+
 * `pennylane.about()` function added, providing details
   on current PennyLane version, installed plugins, Python,
   platform, and NumPy versions [#186](https://github.com/XanaduAI/pennylane/pull/186)
@@ -20,19 +39,28 @@
 * Organize templates into submodules [#195](https://github.com/XanaduAI/pennylane/pull/195).
   This included the following improvements:
 
-  - Distinguish embedding templates, layer templates, and parameter templates.
-  
+  - Distinguish embedding templates from layer templates.
+
   - New random initialization functions supporting the templates available
     in the new submodule `pennylane.init`.
 
-  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly
+  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly 
     distributed over the wires
 
   - Add various embedding strategies
 
+### Breaking changes
+
+* The `Device` methods `expectations`, `pre_expval`, and `post_expval` have been
+  renamed to `observables`, `pre_measure`, and `post_measure` respectively.
+  [#232](https://github.com/XanaduAI/pennylane/pull/232)
+
 ### Improvements
 
-* Allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
+* `default.qubit` plugin now uses `np.tensordot` when applying quantum operations
+  and evaluating expectations, resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239), [#241](https://github.com/XanaduAI/pennylane/pull/241)
+
+* PennyLane now allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
 
 * Portions of the test suite are in the process of being ported to pytest.
   Note: this is still a work in progress.
@@ -52,18 +80,18 @@
 
 ### Bug fixes
 
-* Fixes a bug in `Device.supported`, which would incorrectly
+* Fixed a bug in `Device.supported`, which would incorrectly
   mark an operation as supported if it shared a name with an
   observable [#203](https://github.com/XanaduAI/pennylane/pull/203)
 
-* Fixes a bug in `Operation.wires`, by explicitly casting the
+* Fixed a bug in `Operation.wires`, by explicitly casting the
   type of each wire to an integer [#206](https://github.com/XanaduAI/pennylane/pull/206)
 
-* Removes code in PennyLane which configured the logger,
+* Removed code in PennyLane which configured the logger,
   as this would clash with users' configurations
   [#208](https://github.com/XanaduAI/pennylane/pull/208)
 
-* Fixes a bug in `default.qubit`, in which `QubitStateVector` operations
+* Fixed a bug in `default.qubit`, in which `QubitStateVector` operations
   were accidentally being cast to `np.float` instead of `np.complex`.
   [#211](https://github.com/XanaduAI/pennylane/pull/211)
 
