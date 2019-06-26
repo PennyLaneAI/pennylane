@@ -90,7 +90,7 @@ def layer(params, j):
 ##############################################################################
 # To set up the device, we select a plugin that is compatible with
 # evaluating expectations through sampling: the ``forest.qvm`` plugin. The
-# syntax is slightly different than for other plugins, we need to also
+# syntax is slightly different than for other plugins; we need to also
 # feed a ``device`` keyword specifying the number of qubits in the format
 # ``[number of qubits]q-pyqvm``. The keyword ``shots`` indicates the
 # number of samples used to estimate expectation values.

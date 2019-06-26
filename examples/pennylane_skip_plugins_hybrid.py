@@ -155,8 +155,8 @@ def photon_redirection(params):
 
 
 ##############################################################################
-# The ``'strawberryfields.fock'`` device supports all CV objects provided by PennyLane;
-# see :ref:`CV operations <cv_ops>` and :ref:`CV expectations <cv_expval>`.
+# The ``'strawberryfields.fock'`` device supports all CV operations provided by PennyLane;
+# see :mod:`<pennylane.ops.cv>`.
 
 
 ##############################################################################
