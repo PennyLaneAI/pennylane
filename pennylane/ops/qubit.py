@@ -336,7 +336,7 @@ class Rot(Operation):
     **Details:**
 
     * Number of wires: 1
-    * Number of parameters: 1
+    * Number of parameters: 3
     * Gradient recipe: :math:`\frac{d}{d\phi}R(\phi) = \frac{1}{2}\left[R(\phi+\pi/2) - R(\phi-\pi/2)\right]`.
       This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
 
@@ -348,6 +348,118 @@ class Rot(Operation):
     """
     num_params = 3
     num_wires = 1
+    par_domain = "R"
+    grad_method = "A"
+
+class CRX(Operation):
+    r"""CRX(phi, wires)
+    The controlled-RX operator
+
+    .. math:: CRX = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & \cos(\phi/2) & -i\sin(\phi/2)\\
+            0 & 0 & -i\sin(\phi/2) & \cos(\phi/2)
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}CR_x(\phi) = \frac{1}{2}\left[CR_x(\phi+\pi/2) - CR_x(\phi-\pi/2)\right]`
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+
+class CRY(Operation):
+    r"""CRY(phi, wires)
+    The controlled-RY operator
+
+    .. math:: CRY = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & \cos(\phi/2) & -\sin(\phi/2)\\
+            0 & 0 & \sin(\phi/2) & \cos(\phi/2)
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}CR_y(\phi) = \frac{1}{2}\left[CR_y(\phi+\pi/2) - CR_y(\phi-\pi/2)\right]`
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+
+class CRZ(Operation):
+    r"""CRZ(phi, wires)
+    The controlled-RZ operator
+
+    .. math:: CRZ = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & e^{-i\phi/2} & 0\\
+            0 & 0 & 0 & e^{i\phi/2}
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}CR_z(\phi) = \frac{1}{2}\left[CR_z(\phi+\pi/2) - CR_z(\phi-\pi/2)\right]`
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 1
+    num_wires = 2
+    par_domain = "R"
+    grad_method = "A"
+
+
+class CRot(Operation):
+    r"""CRot(phi, theta, omega, wires)
+    The controlled-Rot operator
+
+    .. math:: CRot = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & e^{-i(\phi+\omega)/2}\cos(\theta/2) & -e^{i(\phi-\omega)/2}\sin(\theta/2)\\
+            0 & 0 & e^{-i(\phi-\omega)/2}\sin(\theta/2) & e^{i(\phi+\omega)/2}\cos(\theta/2)
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 3
+    * Gradient recipe: :math:`\frac{d}{d\phi}CRot(\phi) = \frac{1}{2}\left[CRot(\phi+\pi/2) - CRot(\phi-\pi/2)\right]`
+      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 3
+    num_wires = 2
     par_domain = "R"
     grad_method = "A"
 
