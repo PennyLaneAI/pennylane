@@ -8,13 +8,13 @@ To see how PennyLane allows the easy construction and optimization of
 quantum functions, let’s consider the simple case of qubit rotation —
 the PennyLane version of the ‘Hello, world!’ example.
 
- **GOAL:** To optimize two qubit rotation gates in order to flip a single
+ **GOAL:** To optimize two rotation gates in order to flip a single
  qubit from state :math:`|0\rangle` to state :math:`|1\rangle`.
 
 The Quantum Circuit
 ~~~~~~~~~~~~~~~~~~~
 
-In the basic example, we wish to implement the following quantum
+In this basic example, we wish to implement the following quantum
 circuit:
 
 .. figure:: ../../examples/figures/rotation_circuit.png

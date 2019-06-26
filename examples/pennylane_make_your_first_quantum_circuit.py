@@ -47,7 +47,7 @@ from pennylane import numpy as np
 #
 # * :mod:`default.qubit <pennylane.plugins.default_qubit>`: pure state qubit simulator
 #
-# * :mod:`default.gaussian < pennylane.plugins.default_gaussian>`: Gaussian states simulator
+# * :mod:`default.gaussian <pennylane.plugins.default_gaussian>`: Gaussian states simulator
 #
 # Additional devices are supported through plugins - see :ref:`plugin ecosystem <plugins>`
 # for more details.
@@ -64,7 +64,8 @@ dev = qml.device('default.qubit', wires = 1)
 #
 # * ``wires``: the number of subsystems to initialize the device with
 #
-# Here, ``wires=1`` means that a single qubit is initiated.
+# Here, the argument ``wires = 1`` means that a single qubit is initiated. All qubits are initialized in the 
+# state :math:`|0\rangle`.
 #
 # Constructing the QNode
 # ----------------------
@@ -82,7 +83,7 @@ dev = qml.device('default.qubit', wires = 1)
 # First, we need to define the quantum function that will be evaluated in
 # the QNode:
 
-# let's use PennyLane operator RX - Rotation about the X-axis by angle param
+# let's use PennyLane's RX gate - Rotation about the x-axis by angle param
 def circuit(param):
     qml.RX(param, wires=0)
     return qml.expval.PauliZ(0)
@@ -104,7 +105,7 @@ def circuit(param):
 #    expectation values ``expval`` or variances ``var``. As a result, the quantum function
 #    always returns a classical quantity, allowing the QNode to interface
 #    with other classical functions (and also other QNodes). For a full
-#    list of available measurements, see :mod:`measuremnets <pennylane.measure>`.
+#    list of available measurements, see :mod:`supported measurements <pennylane.measure>`.
 #
 # *  Quantum functions must not contain any classical processing of
 #    circuit parameters.
@@ -120,11 +121,6 @@ def circuit(param):
 
 ################################################################################
 #
-# .. figure:: ../../examples/figures/bloch.png
-#     :align: center
-#     :width: 70%
-#     :target: javascript:void(0);
-#
 # .. note::
 #
 #     We use the ``QNode`` decorator to indicate that this is not a typical
@@ -134,14 +130,20 @@ def circuit(param):
 #
 # Thus, our ``circuit()`` quantum function is now a ``QNode``, which will
 # run on device ``dev`` every time it is evaluated. To evaluate, we simply
-# call the function with some appropriate numerical inputs:
+# call the function with some appropriate numerical inputs. Let's rotate the state by :math:`\pi`:
 
 print(circuit(np.pi))
 
 ################################################################################
 #
-# This makes sense since the qubit is intialized in :math:`\mid0\rangle`
-# state.
+# This is the expected outcome, as the qubit is rotated to the state :math:`\mid1\rangle`
+# under the rotation :math:`RX(\pi)` as depicted in the figure below.
+#
+# .. figure:: ../../examples/figures/bloch.png
+#     :align: center
+#     :width: 70%
+#     :target: javascript:void(0);
+#
 #
 # Examples
 # ---------
@@ -172,16 +174,15 @@ print(qfunc2())
 
 ################################################################################
 #
-# This is expected, as the Gaussian state is initialized to the vaccum
+# This is expected, as the Gaussian state is initialized in the vaccum
 # state (the lowest energy Gaussian state with no displacement or
 # squeezing in phase space) that has zero number of Photons.
 #
 # .. note::
-#     1. The *expectation values* returned by QNodes, 
-#     :math:`\langle \cdots \rangle`, are averages – not single-shot
-#     results. As a result, these are deterministic, whereas single-shot
-#     measurements are stochastic. This is what allows us to do machine
-#     learning on the circuit (Note: the same principle holds for deep
+#     1. The *expectation values*, :math:`\langle \cdots \rangle`, returned by QNodes 
+#     are averages, not single-shot results. As a result, these are deterministic,
+#     whereas single-shot measurements are stochastic. This is what allows us to do
+#     machine learning on the circuit (Note: the same principle holds for deep
 #     learning models).
 #
 #     2. Since circuits are meant to be run on quantum hardware, there is

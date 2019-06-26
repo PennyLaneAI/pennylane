@@ -23,9 +23,7 @@ from pennylane import numpy as np
 # Let’s first look at the features PennyLane provides for state
 # preparation on the ``default.qubit`` device.
 #
-#    The 
-#    `BasisState <https://pennylane.readthedocs.io/en/latest/code/ops/
-#    qubit.html#pennylane.ops.qubit.BasisState>`__
+#    The :mod:`BasisState <pennylane.ops.qubit.BasisState>`
 #    function prepares the device in a single computational basis state.
 #    For example, if we are working with two qubits and want to initialize
 #    the device in the state
@@ -58,9 +56,7 @@ print(make_State1(n = nstr))
 # :math:`|10\rangle` to :math:`|11\rangle` state, which results in the two Pauli-Z expectation values
 # being :math:`-1` and :math:`-1`.
 #
-#    The 
-#    `QubitStateVector <https://pennylane.readthedocs.io/en/latest/code/ops/
-#    qubit.html#pennylane.ops.qubit.QubitStateVector>`__
+#    The :mod:`QubitStateVector <pennylane.ops.qubit.QubitStateVector>`
 #    function prepares the device subsystems by using the given ket vector
 #    in the Fock basis. This acts similar to the BasisState function,
 #    except:
@@ -103,9 +99,7 @@ print(make_State2(s = state))
 # Let’s look at the features PennyLane provides for state preparation on
 # the ``default.gaussian`` device.
 #
-#    The 
-#    `CoherentState <https://pennylane.readthedocs.io/en/latest/code/ops/
-#    cv.html#pennylane.ops.cv.CoherentState>`__
+#    The :mod:`CoherentState <pennylane.ops.cv.CoherentState>`
 #    function prepares a coherent state with the given displacement
 #    magnitude :math:`| \alpha |` and angle :math:`\phi`.
 
@@ -124,17 +118,13 @@ print(make_State3(2, 0))
 #
 # This is expected, as :math:`\langle\hat{n}\rangle = |\alpha|^{2}`
 #
-#    The 
-#    `DisplacedSqueezedState <https://pennylane.readthedocs.io/en/latest/code/ops/
-#    cv.html#pennylane.ops.cv.DisplacedSqueezedState>`__
+#    The :mod:`DisplacedSqueezedState <pennylane.ops.cv.DisplacedSqueezedState>`
 #    function prepares a displaced squeezed state in the phase space by
 #    applying a displacement operator followed by a squeezing operator -
 #    :math:`D(\alpha)S(z)|0\rangle` - like we saw in an example in the
 #    tutorial on quantum operators.
 #
-#    The
-#    `GaussianState <https://pennylane.readthedocs.io/en/latest/code/ops/
-#    cv.html#pennylane.ops.cv.GaussianState>`__
+#    The :mod:`GaussianState <pennylane.ops.cv.GaussianState>`
 #    function prepares a Gaussian state on the whole system with the given
 #    parameters. It requires two input arguments:
 #
