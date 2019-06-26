@@ -81,7 +81,7 @@ def ansatz(var):
 #     If the Pauli observables were evaluated on different wires, we
 #     could use one quantum node and return a tuple of expectations in only
 #     one quantum node:
-#     ``return qml.expectation.PauliX(0), qml.expectation.PauliY(1)``
+#     ``return qml.expval.PauliX(0), qml.expval.PauliY(1)``
 
 @qml.qnode(dev)
 def circuit_X(var):
@@ -136,7 +136,7 @@ plt.show()
 # Optimization
 # ^^^^^^^^^^^^^
 #
-# We create a GradientDescentOptimizer and use it to optimize the cost
+# We create a ``GradientDescentOptimizer`` and use it to optimize the cost
 # function.
 
 opt = GradientDescentOptimizer(0.5)

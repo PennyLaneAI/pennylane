@@ -94,9 +94,7 @@ gan_dev = qml.device('default.qubit', wires=3)
 # In this QGAN example, we will use a quantum circuit to generate the real
 # data- a qubit that has been rotated (from the starting state
 # :math:`|0\rangle`) to some arbitrary but fixed state. We will use the
-# PennyLane
-# `Rot <https://pennylane.readthedocs.io/en/latest/code/ops/qubit.html#pennylane.ops.qubit.Rot>`__
-# operation.
+# PennyLane :mod:`Rot <pennylane.ops.qubit.Rot>` operation.
 
 def real(phi, theta, omega):
     qml.Rot(phi, theta, omega, wires=0)

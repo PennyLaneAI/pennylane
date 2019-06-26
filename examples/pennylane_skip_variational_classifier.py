@@ -80,7 +80,7 @@ def layer(W):
 #
 # .. math::  x = 0101 \rightarrow |\psi \rangle = |0101 \rangle .
 #
-# We use the ``BasisState`` function provided by PennyLane, which expects
+# We use the :mod:`BasisState <pennylane.ops.qubit.BasisState>` function provided by PennyLane, which expects
 # ``x`` to be a list of zeros and ones, i.e. ``[0,1,0,1]``.
 
 def statepreparation(x):
