@@ -225,7 +225,7 @@ class RX(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}R_x(\phi) = \frac{1}{2}\left[R_x(\phi+\pi/2)+R_x(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}R_x(\phi) = \frac{1}{2}\left[R_x(\phi+\pi/2)-R_x(\phi-\pi/2)\right]`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -250,7 +250,7 @@ class RY(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}R_y(\phi) = \frac{1}{2}\left[R_y(\phi+\pi/2)+R_y(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}R_y(\phi) = \frac{1}{2}\left[R_y(\phi+\pi/2)-R_y(\phi-\pi/2)\right]`
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -275,7 +275,7 @@ class RZ(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}R_z(\phi) = \frac{1}{2}\left[R_z(\phi+\pi/2)+R_z(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}R_z(\phi) = \frac{1}{2}\left[R_z(\phi+\pi/2)-R_z(\phi-\pi/2)\right]`
 
     Args:
         phi (float): rotation angle :math:`\phi`
