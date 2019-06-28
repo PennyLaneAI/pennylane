@@ -817,18 +817,20 @@ class CatState(CVOperation):
 
 
 class MeanPhoton(CVObservable):
-    r"""pennylane.expval.MeanPhoton(wires)
-    Returns the photon number expectation value.
+    r"""pennylane.ops.MeanPhoton(wires)
+    The photon number observable :math:`\langle \hat{n}\rangle`.
 
-    This expectation command returns the value
-    :math:`\braket{\hat{n}}` where the number operator is
+    The number operator is defined as
     :math:`\hat{n} = \a^\dagger \a = \frac{1}{2\hbar}(\x^2 +\p^2) -\I/2`.
+
+    When used with the :func:`~.expval` function, the mean
+    photon number :math:`\braket{\hat{n}}` is returned.
 
     **Details:**
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Observable order: 2nd order in the quadrature operators.
+    * Observable order: 2nd order in the quadrature operators
     * Heisenberg representation:
 
       .. math:: M = \frac{1}{2\hbar}\begin{bmatrix}
@@ -838,7 +840,7 @@ class MeanPhoton(CVObservable):
         \end{bmatrix}
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 0
@@ -853,22 +855,24 @@ class MeanPhoton(CVObservable):
 
 
 class X(CVObservable):
-    r"""pennylane.expval.X(wires)
-    Returns the position expectation value in phase space.
+    r"""pennylane.ops.X(wires)
+    The position quadrature observable :math:`\hat{x}`.
 
-    This expectation command returns the value :math:`\braket{\x}`.
+    When used with the :func:`~.expval` function, the position expectation
+    value :math:`\braket{\hat{n}}` is returned. This corresponds to
+    the mean displacement in the phase space along the :math:`x` axis.
 
     **Details:**
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Observable order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators
     * Heisenberg representation:
 
       .. math:: d = [0, 1, 0]
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 0
@@ -882,22 +886,24 @@ class X(CVObservable):
 
 
 class P(CVObservable):
-    r"""pennylane.expval.P(wires)
-    Returns the momentum expectation value in phase space.
+    r"""pennylane.ops.P(wires)
+    The momentum quadrature observable :math:`\hat{p}`.
 
-    This expectation command returns the value :math:`\braket{\p}`.
+    When used with the :func:`~.expval` function, the momentum expectation
+    value :math:`\braket{\hat{p}}` is returned. This corresponds to
+    the mean displacement in the phase space along the :math:`p` axis.
 
     **Details:**
 
     * Number of wires: 1
     * Number of parameters: 0
-    * Observable order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators
     * Heisenberg representation:
 
       .. math:: d = [0, 0, 1]
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 0
@@ -911,26 +917,26 @@ class P(CVObservable):
 
 
 class Homodyne(CVObservable):
-    r"""pennylane.expval.Homodyne(phi, wires)
-    Observable value of homodyne measurement in phase space.
+    r"""pennylane.ops.Homodyne(phi, wires)
+    The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
-    This expectation command returns the value :math:`\braket{\x_\phi}`,
-    where :math:`\x_\phi = \x cos\phi+\p\sin\phi` is the generalised
-    quadrature operator.
+    When used with the :func:`~.expval` function, the expectation
+    value :math:`\braket{\hat{\x_\phi}}` is returned. This corresponds to
+    the mean displacement in the phase space along axis at angle :math:`\phi`.
 
     **Details:**
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Observable order: 1st order in the quadrature operators.
+    * Observable order: 1st order in the quadrature operators
     * Heisenberg representation:
 
       .. math:: d = [0, \cos\phi, \sin\phi]
 
     Args:
         phi (float): axis in the phase space at which to calculate
-            the homodyne measurement.
-        wires (Sequence[int] or int): the wire the operation acts on.
+            the generalized quadrature observable
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     num_params = 1
@@ -946,8 +952,8 @@ class Homodyne(CVObservable):
 
 
 class PolyXP(CVObservable):
-    r"""pennylane.expval.PolyXP(q, wires)
-    Observable value of a second-order polynomial observable.
+    r"""pennylane.ops.PolyXP(q, wires)
+    An arbitrary second-order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
     polynomial in the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)`.
@@ -958,13 +964,13 @@ class PolyXP(CVObservable):
     For second-order observables the representation is a real symmetric
     matrix :math:`A` such that :math:`P(\x,\p) = \mathbf{r}^T A \mathbf{r}`.
 
-    Used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV observables.
+    Used by :meth:`QNode._pd_analytic` for evaluating arbitrary order-2 CV expectation values.
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system).
+    * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Observable order: 2nd order in the quadrature operators.
+    * Observable order: 2nd order in the quadrature operators
     * Heisenberg representation: :math:`A`
 
     Args:
@@ -983,8 +989,8 @@ class PolyXP(CVObservable):
 
 
 class NumberState(CVObservable):
-    r"""pennylane.expval.NumberState(n, wires)
-    Observable value of the number state observable :math:`\ket{n}\bra{n}`.
+    r"""pennylane.ops.NumberState(n, wires)
+    The number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable
 
@@ -1004,13 +1010,13 @@ class NumberState(CVObservable):
 
     .. note::
 
-        If ``NumberState`` is applied to a subset of wires,
+        If ``expval(NumberState)`` is applied to a subset of wires,
         the unaffected wires are traced out prior to the expectation value
         calculation.
 
     **Details:**
 
-    * Number of wires: None (applied to any subset of wires).
+    * Number of wires: None (applied to any subset of wires)
     * Number of parameters: 1
     * Observable order: None (non-Gaussian)
 
@@ -1018,8 +1024,8 @@ class NumberState(CVObservable):
         n (array): Array of non-negative integers representing the number state
             observable :math:`\ket{n}\bra{n}=\ket{n_0, n_1, \dots, n_P}\bra{n_0, n_1, \dots, n_P}`.
 
-            For example, to return the expectation value of observable :math:`\ket{0,4,2}\bra{0,4,2}`,
-            on wires 0, 1, and 3 of a QNode, you would call ``NumberState(np.array([0, 4, 2], wires=[0, 1, 3]))``.
+            For example, to return the observable :math:`\ket{0,4,2}\bra{0,4,2}` acting on
+            wires 0, 1, and 3 of a QNode, you would call ``NumberState(np.array([0, 4, 2], wires=[0, 1, 3]))``.
 
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.

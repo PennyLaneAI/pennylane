@@ -34,7 +34,7 @@ as well as the conventions chosen for their implementation.
     by the plugin device.
 
 
-Architecture specific operations
+Architecture-specific operations
 --------------------------------
 
 .. rst-class:: contents local topic
@@ -70,7 +70,7 @@ from pennylane.operation import Observable, CVObservable
 
 class Identity(CVObservable, Observable):
     r"""pennylane.ops.Identity(wires)
-    Observable value of the identity observable :math:`\I`.
+    The identity observable :math:`\I`.
 
     The expectation of this observable
 

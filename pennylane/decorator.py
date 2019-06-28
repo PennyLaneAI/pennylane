@@ -114,7 +114,7 @@ from functools import wraps, lru_cache
 from .qnode import QNode
 
 
-def qnode(device, interface='numpy'):
+def qnode(device, interface='numpy', cache=False):
     """QNode decorator.
 
     Args:
@@ -131,12 +131,17 @@ def qnode(device, interface='numpy'):
 
             * ``interface='tfe'``: The QNode accepts and returns eager execution
               TensorFlow ``tfe.Variable`` objects.
+
+        cache (bool): If ``True``, the quantum function used to generate the QNode will
+            only be called to construct the quantum circuit once, on first execution,
+            and this circuit structure (i.e., the placement of templates, gates, measurements, etc.) will be cached for all further executions. The circuit parameters can still change with every call. Only activate this
+            feature if your quantum circuit structure will never change.
     """
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
 
-        qnode = QNode(func, device)
+        qnode = QNode(func, device, cache=cache)
 
         if interface == 'torch':
             return qnode.to_torch()

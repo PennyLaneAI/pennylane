@@ -29,10 +29,12 @@ QNode returns the expectation value of observable :class:`~.PauliZ`
 on wire 1, and the variance of observable :class:`~.PauliX` on
 wire 2.
 
-.. code-block::
+.. code-block:: python
 
     import pennylane as qml
     from pennylane import expval, var
+
+    dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev)
     def circuit(x, y):
@@ -43,7 +45,6 @@ wire 2.
 
 Note that *all* returned observables must be within
 a measurement function; they cannot be 'bare'.
-
 
 Summary
 ^^^^^^^
@@ -110,7 +111,7 @@ class ExpvalFactory:
         if name in qml.ops.__all_ops__:  # pylint: disable=no-member
             raise AttributeError("{} is not an observable: cannot be used with expval".format(name))
 
-        raise AttributeError("module 'pennylane' has no attribute '{}'".format(name))
+        raise AttributeError("module 'pennylane' has no observable '{}'".format(name))
 
 
 expval = ExpvalFactory()
@@ -136,7 +137,7 @@ def var(op):
         # delete operations from QNode queue
         QNode._current_context.queue.remove(op)
 
-    # set return type to be an expectation value
+    # set return type to be a variance
     op.return_type = "variance"
 
     if QNode._current_context is not None:

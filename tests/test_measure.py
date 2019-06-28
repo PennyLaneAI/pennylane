@@ -11,13 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the measure module.
-
-Note: these tests only test the functionality and validation
-of the functions in measure.py, they should *not* be testing
-that the returned values or gradients are correct. This is a matter
-for test_qnode or test_quantum_gradients.
-"""
+"""Unit tests for the measure module"""
 import pytest
 import numpy as np
 
@@ -40,10 +34,10 @@ def test_no_measure(tol):
 
 
 class TestExpval:
-    """Tests for the new expval function"""
+    """Tests for the expval function"""
 
     def test_value(self, tol):
-        """Test that the new expval interface works"""
+        """Test that the expval interface works"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -74,6 +68,7 @@ class TestExpval:
 class TestDeprecatedExpval:
     """Tests for the deprecated expval attribute getter.
     Once fully deprecated, this test can be removed"""
+    #TODO: once `qml.expval.Observable` is deprecated, remove this test
 
     def test_value(self, tol):
         """Test that the old expval interface works,
@@ -118,7 +113,7 @@ class TestDeprecatedExpval:
             return qml.expval.R(0)
 
         with pytest.warns(DeprecationWarning, match="is deprecated"):
-            with pytest.raises(AttributeError, match="has no attribute 'R'"):
+            with pytest.raises(AttributeError, match="has no observable 'R'"):
                 res = circuit()
 
 
