@@ -26,42 +26,18 @@ The features are associated with gate parameters, implicitly mapping them into t
 Qubit architectures
 -------------------
 
-Angle embedding
-***************
-
 .. autosummary::
 
     AngleEmbedding
-
-Amplitude embedding
-*******************
-
-.. autosummary::
-
     AmplitudeEmbedding
-
-Basis embedding
-***************
-
-.. autosummary::
-
     BasisEmbedding
 
 Continuous-variable architectures
 ---------------------------------
 
-Squeezing embedding
-*******************
-
 .. autosummary::
 
     SqueezingEmbedding
-
-Displacement embedding
-**********************
-
-.. autosummary::
-
     DisplacementEmbedding
 
 Code details

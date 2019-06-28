@@ -158,25 +158,16 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
 .. toctree::
    :maxdepth: 1
-   :caption: Library details
+   :caption: User API
    :hidden:
 
    code/init
-   code/qnode
    code/decorator
-   code/interfaces
-   code/optimize
-   code/configuration
-   code/utils
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Supported operations
-   :hidden:
-
    code/ops
    code/measure
    code/templates
+   code/optimize
+   code/configuration
 
 .. toctree::
    :maxdepth: 1
@@ -185,16 +176,11 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    API/overview
    API/device
+   API/qnode
+   API/utils
    API/operation
    API/variable
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Reference plugins
-   :hidden:
-
-   plugins/default_qubit
-   plugins/default_gaussian
+   API/reference_plugins
 
 
 :html:`<h2>Indices and tables</h2>`

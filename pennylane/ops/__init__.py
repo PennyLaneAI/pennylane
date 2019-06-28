@@ -33,10 +33,6 @@ as well as the conventions chosen for their implementation.
     conversion between the two conventions takes places automatically
     by the plugin device.
 
-
-Architecture-specific operations
---------------------------------
-
 .. rst-class:: contents local topic
 
 .. toctree::

@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Classical interfaces overview
-=============================
+.. raw:: html
+
+    <h2>Classical interfaces</h2>
 
 **Module name:** :mod:`pennylane.interfaces`
 
 .. currentmodule:: pennylane.interfaces
 
-PennyLane now provides experimental support for additional classical
+PennyLane now provides support for additional classical
 machine learning interfaces, specifically PyTorch and TensorFlow eager execution mode.
 
 Depending on the classical machine learning interface chosen,
@@ -53,8 +54,12 @@ with other classical machine learning libraries; in such a case, the QNode is mo
 2. It correctly passes the quantum analytic gradient to the classical machine
    learning library during backpropagation.
 
-We now support additional classical interfaces in PennyLane,
-beginning with PyTorch and TensorFlow eager execution mode.
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+
+    Creating QNodes <self>
 
 .. rst-class:: contents local topic
 

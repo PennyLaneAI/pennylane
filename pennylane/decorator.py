@@ -83,30 +83,12 @@ build a hybrid computation. For example,
         qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)
 
-.. raw:: html
+.. autofunction:: qnode
 
-    <h3>Classical interface support (experimental)</h3>
-
-To try one of the new classical machine learning interfaces,
-you can specify the ``interface`` keyword argument when using the QNode decorator.
-
-Current classical interfaces include:
-
-* :ref:`PyTorch <torch_qnode>`: ``interface='torch'``
-* :ref:`TensorFlow eager execution <tf_qnode>`: ``interface='tfe'``
-
-If not specified, the standard NumPy/autograd classical interface,
-
-.. code-block:: python
-
-    from pennylane import numpy as np
-
-is used, which enhances standard NumPy functions with automatic differentiation
-via the `Autograd <https://github.com/HIPS/autograd>`_ package.
-
-.. raw:: html
-
-    <h3>Code details</h3>
+.. automodule:: pennylane.interfaces
+   :members:
+   :private-members:
+   :inherited-members:
 """
 # pylint: disable=redefined-outer-name
 from functools import wraps, lru_cache
