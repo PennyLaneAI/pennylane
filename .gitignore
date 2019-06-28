@@ -15,3 +15,4 @@ notebooks/*
 doc/tutorials/*
 doc/_static/thumbs/*
 !doc/_static/code.png
+*.DS_Store
