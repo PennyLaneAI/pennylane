@@ -711,9 +711,9 @@ class TestDefaultQubitIntegration(BaseTest):
                 return expectation
 
             if op.num_params == 0:
-                self.assertAllEqual(circuit(), reference())
+                self.assertAllAlmostEqual(circuit(), reference(), delta=self.tol)
             elif g == "Hermitian":
-                self.assertAllEqual(circuit(H), reference(H))
+                self.assertAllAlmostEqual(circuit(H), reference(H), delta=self.tol)
 
     def test_two_qubit_observable(self):
         """Tests expval for two-qubit observables """
