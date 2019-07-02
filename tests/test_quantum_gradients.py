@@ -143,7 +143,7 @@ class CVGradientTest(BaseTest):
         self.logTestName()
 
         class PolyN(qml.ops.PolyXP):
-            "Mimics MeanPhoton using the arbitrary 2nd order observable interface. Results should be identical."
+            "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
             def __init__(self, wires):
                 hbar = 2
                 q = np.diag([-0.5, 0.5/hbar, 0.5/hbar])
@@ -157,7 +157,7 @@ class CVGradientTest(BaseTest):
             if cls.supports_analytic:
                 gates.append(cls)
 
-        obs   = [qml.ops.X, qml.ops.MeanPhoton, PolyN]
+        obs   = [qml.ops.X, qml.ops.NumberOperator, PolyN]
         par = [0.4]
 
         for G in reversed(gates):

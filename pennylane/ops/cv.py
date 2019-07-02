@@ -77,7 +77,7 @@ Observables
 -----------
 
 .. autosummary::
-    MeanPhoton
+    NumberOperator
     X
     P
     Homodyne
@@ -816,8 +816,8 @@ class CatState(CVOperation):
 # =============================================================================
 
 
-class MeanPhoton(CVObservable):
-    r"""pennylane.ops.MeanPhoton(wires)
+class NumberOperator(CVObservable):
+    r"""pennylane.ops.NumberOperator(wires)
     The photon number observable :math:`\langle \hat{n}\rangle`.
 
     The number operator is defined as
@@ -1063,7 +1063,7 @@ ops = {
 }
 
 
-obs = {"Homodyne", "MeanPhoton", "P", "X", "PolyXP", "NumberState"}
+obs = {"Homodyne", "NumberOperator", "P", "X", "PolyXP", "NumberState"}
 
 
 __all__ = list(ops | obs)

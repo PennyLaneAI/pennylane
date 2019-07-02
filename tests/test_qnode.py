@@ -1065,7 +1065,7 @@ class TestQNodeVariance:
         def circuit(n, a):
             qml.ThermalState(n, wires=0)
             qml.Displacement(a, 0, wires=0)
-            return qml.var(qml.MeanPhoton(0))
+            return qml.var(qml.NumberOperator(0))
 
         n = 0.12
         a = 0.765
@@ -1087,7 +1087,7 @@ class TestQNodeVariance:
         @qml.qnode(dev)
         def circuit(a):
             qml.Displacement(a, 0, wires=0)
-            return qml.var(qml.MeanPhoton(0))
+            return qml.var(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
             circuit.jacobian([1.], method='A')
