@@ -430,7 +430,7 @@ class TestDefaultGaussianDevice(BaseTest):
         # test correct mean for number state expectation |<n|alpha>|^2
         # on a coherent state
         for n in range(3):
-            mean = dev.expval('NumberState', [0], [np.array([n])])
+            mean = dev.expval('NumberStateProjector', [0], [np.array([n])])
             expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             self.assertAlmostEqual(mean, expected, delta=self.tol)
 
@@ -439,7 +439,7 @@ class TestDefaultGaussianDevice(BaseTest):
         n = 1
         r = 0.4523
         dev.apply('SqueezedState', wires=[0], par=[r, 0])
-        mean = dev.expval('NumberState', [0], [np.array([2*n])])
+        mean = dev.expval('NumberStateProjector', [0], [np.array([2*n])])
         expected = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         self.assertAlmostEqual(mean, expected, delta=self.tol)
 
@@ -481,7 +481,7 @@ class TestDefaultGaussianDevice(BaseTest):
         dev.apply('CoherentState', wires=[0], par=[alpha])
 
         for n in range(3):
-            var = dev.var('NumberState', [0], [np.array([n])])
+            var = dev.var('NumberStateProjector', [0], [np.array([n])])
             mean = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             self.assertAlmostEqual(var, mean*(1-mean), delta=self.tol)
 
@@ -495,7 +495,7 @@ class TestDefaultGaussianDevice(BaseTest):
         n = 1
         r = 0.4523
         dev.apply('SqueezedState', wires=[0], par=[r, 0])
-        var = dev.var('NumberState', [0], [np.array([2*n])])
+        var = dev.var('NumberStateProjector', [0], [np.array([2*n])])
         mean = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         self.assertAlmostEqual(var, mean*(1-mean), delta=self.tol)
 

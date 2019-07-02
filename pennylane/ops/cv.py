@@ -82,7 +82,7 @@ Observables
     P
     QuadratureOperator
     PolyXP
-    NumberState
+    NumberStateProjector
 
 
 Code details
@@ -988,8 +988,8 @@ class PolyXP(CVObservable):
         return p[0]
 
 
-class NumberState(CVObservable):
-    r"""pennylane.ops.NumberState(n, wires)
+class NumberStateProjector(CVObservable):
+    r"""pennylane.ops.NumberStateProjector(n, wires)
     The number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable
@@ -1010,7 +1010,7 @@ class NumberState(CVObservable):
 
     .. note::
 
-        If ``expval(NumberState)`` is applied to a subset of wires,
+        If ``expval(NumberStateProjector)`` is applied to a subset of wires,
         the unaffected wires are traced out prior to the expectation value
         calculation.
 
@@ -1025,7 +1025,7 @@ class NumberState(CVObservable):
             observable :math:`\ket{n}\bra{n}=\ket{n_0, n_1, \dots, n_P}\bra{n_0, n_1, \dots, n_P}`.
 
             For example, to return the observable :math:`\ket{0,4,2}\bra{0,4,2}` acting on
-            wires 0, 1, and 3 of a QNode, you would call ``NumberState(np.array([0, 4, 2], wires=[0, 1, 3]))``.
+            wires 0, 1, and 3 of a QNode, you would call ``NumberStateProjector(np.array([0, 4, 2], wires=[0, 1, 3]))``.
 
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
@@ -1063,7 +1063,7 @@ ops = {
 }
 
 
-obs = {"QuadratureOperator", "NumberOperator", "P", "X", "PolyXP", "NumberState"}
+obs = {"QuadratureOperator", "NumberOperator", "P", "X", "PolyXP", "NumberStateProjector"}
 
 
 __all__ = list(ops | obs)

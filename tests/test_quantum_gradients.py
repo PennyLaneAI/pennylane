@@ -128,7 +128,7 @@ class CVGradientTest(BaseTest):
         @qml.qnode(self.gaussian_dev)
         def circuit(y):
             qml.Squeezing(y, 0., wires=[0])
-            return qml.expval(qml.NumberState(np.array([2, 0]), wires=[0, 1]))
+            return qml.expval(qml.NumberStateProjector(np.array([2, 0]), wires=[0, 1]))
 
         grad_fn = autograd.grad(circuit, 0)
 
