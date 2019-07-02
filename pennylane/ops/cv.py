@@ -80,7 +80,7 @@ Observables
     NumberOperator
     X
     P
-    Homodyne
+    QuadratureOperator
     PolyXP
     NumberState
 
@@ -916,8 +916,8 @@ class P(CVObservable):
         return np.array([0, 0, 1])
 
 
-class Homodyne(CVObservable):
-    r"""pennylane.ops.Homodyne(phi, wires)
+class QuadratureOperator(CVObservable):
+    r"""pennylane.ops.QuadratureOperator(phi, wires)
     The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
     When used with the :func:`~.expval` function, the expectation
@@ -1063,7 +1063,7 @@ ops = {
 }
 
 
-obs = {"Homodyne", "NumberOperator", "P", "X", "PolyXP", "NumberState"}
+obs = {"QuadratureOperator", "NumberOperator", "P", "X", "PolyXP", "NumberState"}
 
 
 __all__ = list(ops | obs)
