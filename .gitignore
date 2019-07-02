@@ -26,3 +26,4 @@ notebooks/*
 
 !formalism/tasks.pdf
 *.DS_Store
+/.vscode/*
