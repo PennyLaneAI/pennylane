@@ -237,7 +237,7 @@ class RX(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_x(\phi)) = \frac{1}{2}\left[f(R_x(\phi+\pi/2)) - f(R_x(\phi-\pi/2))\right]` 
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_x(\phi)) = \frac{1}{2}\left[f(R_x(\phi+\pi/2)) - f(R_x(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`R_x(\phi)`.
 
     Args:
@@ -263,7 +263,7 @@ class RY(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = \frac{1}{2}\left[f(R_y(\phi+\pi/2)) - f(R_y(\phi-\pi/2))\right]` 
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = \frac{1}{2}\left[f(R_y(\phi+\pi/2)) - f(R_y(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`R_y(\phi)`.
 
     Args:
@@ -289,7 +289,7 @@ class RZ(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_z(\phi)) = \frac{1}{2}\left[f(R_z(\phi+\pi/2)) - f(R_z(\phi-\pi/2))\right]` 
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_z(\phi)) = \frac{1}{2}\left[f(R_z(\phi+\pi/2)) - f(R_z(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`R_z(\phi)`.
 
     Args:
@@ -315,7 +315,7 @@ class PhaseShift(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_\phi(\phi)) = \frac{1}{2}\left[f(R_\phi(\phi+\pi/2)) - f(R_\phi(\phi-\pi/2))\right]` 
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_\phi(\phi)) = \frac{1}{2}\left[f(R_\phi(\phi+\pi/2)) - f(R_\phi(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`R_{\phi}(\phi)`.
 
     Args:
@@ -341,8 +341,8 @@ class Rot(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(R(\phi)) = \frac{1}{2}\left[f(R(\phi+\pi/2)) - f(R(\phi-\pi/2))\right]`. 
-      where :math:`f` is an expectation value depending on :math:`R_x(\phi)`. 
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R(\phi)) = \frac{1}{2}\left[f(R(\phi+\pi/2)) - f(R(\phi-\pi/2))\right]`.
+      where :math:`f` is an expectation value depending on :math:`R_x(\phi)`.
       This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
 
     Args:
