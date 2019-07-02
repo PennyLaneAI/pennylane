@@ -439,16 +439,16 @@ class ControlledPhase(CVOperation):
     Controlled phase operation.
 
     .. math::
-           \text{CP}(s) =  \iint dx dy \: e^{i sxy/\hbar} \ket{x,y}\bra{x,y}
+           \text{CZ}(s) =  \iint dx dy \: e^{i sxy/\hbar} \ket{x,y}\bra{x,y}
            = e^{i s \: \hat{x} \otimes \hat{x}/\hbar}.
 
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{ds}f(\text{CP}(s)) = \frac{1}{2 a} \left[f(\text{CP}(s+a)) - f(\text{CP}(s-a))\right]`,
+    * Gradient recipe: :math:`\frac{d}{ds}f(\text{CZ}(s)) = \frac{1}{2 a} \left[f(\text{CZ}(s+a)) - f(\text{CZ}(s-a))\right]`,
       where :math:`a` is an arbitrary real number (:math:`0.1` by default) and
-      :math:`f` is an expectation value depending on :math:`\text{CP}(s)`.
+      :math:`f` is an expectation value depending on :math:`\text{CZ}(s)`.
 
     * Heisenberg representation:
 
