@@ -467,6 +467,23 @@ class TestDefaultQubitDevice(BaseTest):
                     *np.cos(phi)*(np.sin(theta)-np.cos(theta))+35*np.cos(2*phi)+39)
         self.assertAlmostEqual(var, expected, delta=self.tol)
 
+    def test_sample_dimensions(self):
+        self.logTestName()
+        self.dev.reset()
+
+        self.dev.apply('RX', wires=[0], par=[1.5708])
+        self.dev.apply('RX', wires=[1], par=[1.5708])
+
+        s1 = self.dev.sample('PauliZ', [0], [], 10)
+        self.assertAllEqual(s1.shape, (10,))
+
+        s2 = self.dev.sample('PauliZ', [1], [], 12)
+        self.assertAllEqual(s2.shape, (12,))
+
+        s3 = self.dev.sample('CZ', [0,1], [], 17)
+        self.assertAllEqual(s3.shape, (17,))
+
+
 class TestDefaultQubitIntegration(BaseTest):
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""

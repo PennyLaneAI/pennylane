@@ -106,6 +106,23 @@ def spectral_decomposition_qubit(A):
         P.append(np.outer(temp, temp.conj()))
     return d, P
 
+def spectral_decomposition(A):
+    r"""Spectral decomposition of a Hermitian matrix.
+
+    Args:
+        A (array): Hermitian matrix
+
+    Returns:
+        (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
+        such that :math:`A = \sum_k a_k P_k`.
+    """
+    d, v = eigh(A)
+    P = []
+    for k in range(d.shape[0]):
+        temp = v[:, k]
+        P.append(np.outer(temp, temp.conj()))
+    return d, P
+
 
 #========================================================
 #  fixed gates
@@ -378,13 +395,13 @@ class DefaultQubit(Device):
     def sample(self, observable, wires, par, n):
         # sample Bernoulli distribution n times / binomial distribution once
         A = self._get_operator_matrix(observable, par)
-        a, P = spectral_decomposition_qubit(A)
-        p0 = self.ev(P[0], wires)  # probability of measuring a[0]
-        n0 = np.random.binomial(n, p0)
-        samples = np.ones(n) * a[1]
-        samples[n0 == 0] = a[0]
+        a, P = spectral_decomposition(A)
 
-        return samples
+        p = np.zeros(a.shape)
+        for idx, Pi in enumerate(P):
+            p[idx] = self.ev(Pi, wires)
+
+        return np.random.choice(a, n, p=p)
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
