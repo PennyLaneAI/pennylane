@@ -24,7 +24,7 @@ from pennylane import numpy as np
 
 from defaults import pennylane as qml, BaseTest
 from pennylane.plugins.default_qubit import (
-    spectral_decomposition_qubit,
+    spectral_decomposition,
     I,
     X,
     Z,
@@ -101,11 +101,11 @@ def prep_par(par, op):
 class TestAuxillaryFunctions(BaseTest):
     """Test auxillary functions."""
 
-    def test_spectral_decomposition_qubit(self):
+    def test_spectral_decomposition(self):
         """Test that the correct spectral decomposition is returned."""
         self.logTestName()
 
-        a, P = spectral_decomposition_qubit(H)
+        a, P = spectral_decomposition(H)
 
         # verify that H = \sum_k a_k P_k
         self.assertAllAlmostEqual(H, np.einsum("i,ijk->jk", a, P), delta=self.tol)
