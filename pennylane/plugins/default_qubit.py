@@ -35,7 +35,7 @@ Auxiliary functions
 -------------------
 
 .. autosummary::
-    spectral_decomposition_qubit
+    spectral_decomposition
     unitary
     hermitian
 
@@ -89,23 +89,6 @@ tolerance = 1e-10
 #  utilities
 #========================================================
 
-def spectral_decomposition_qubit(A):
-    r"""Spectral decomposition of a :math:`2\times 2` Hermitian matrix.
-
-    Args:
-        A (array): :math:`2\times 2` Hermitian matrix
-
-    Returns:
-        (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
-        such that :math:`A = \sum_k a_k P_k`.
-    """
-    d, v = eigh(A)
-    P = []
-    for k in range(2):
-        temp = v[:, k]
-        P.append(np.outer(temp, temp.conj()))
-    return d, P
-
 def spectral_decomposition(A):
     r"""Spectral decomposition of a Hermitian matrix.
 
@@ -114,7 +97,7 @@ def spectral_decomposition(A):
 
     Returns:
         (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
-        such that :math:`A = \sum_k a_k P_k`.
+            such that :math:`A = \sum_k a_k P_k`.
     """
     d, v = eigh(A)
     P = []
@@ -379,11 +362,7 @@ class DefaultQubit(Device):
             ev = self.ev(A, wires)
         else:
             # estimate the ev
-            # sample Bernoulli distribution n_eval times / binomial distribution once
-            a, P = spectral_decomposition_qubit(A)
-            p0 = self.ev(P[0], wires)  # probability of measuring a[0]
-            n0 = np.random.binomial(self.shots, p0)
-            ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
+            ev = np.mean(self.sample(observable, wires, par, self.shots))
 
         return ev
 
