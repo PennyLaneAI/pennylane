@@ -366,7 +366,7 @@ class Device(abc.ABC):
         Returns:
             float: expectation value
         """
-        raise NotImplementedError
+        raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
     def sample(self, observable, wires, par, n=None):
         """Return a sample of an observable.
@@ -384,7 +384,7 @@ class Device(abc.ABC):
         Returns:
             array[float]: samples in an array of dimension [n, num_wires]
         """
-        raise NotImplementedError
+        raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
 
     @abc.abstractmethod
     def reset(self):
