@@ -366,12 +366,15 @@ class DefaultQubit(Device):
 
         return ev
 
-    def var(self, expectation, wires, par):
+    def var(self, observable, wires, par):
         # measurement/expectation value <psi|A|psi>
-        A = self._get_operator_matrix(expectation, par)
+        A = self._get_operator_matrix(observable, par)
         return self.ev(A@A, wires) - self.ev(A, wires)**2
 
-    def sample(self, observable, wires, par, n):
+    def sample(self, observable, wires, par, n=None):
+        if n is None:
+            n = self.shots
+
         # sample Bernoulli distribution n times / binomial distribution once
         A = self._get_operator_matrix(observable, par)
         a, P = spectral_decomposition(A)
