@@ -364,7 +364,7 @@ class Device(abc.ABC):
             par (tuple): parameters for the observable
 
         Returns:
-            float: expectation value
+            float: variance
         """
         raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
