@@ -145,3 +145,30 @@ def var(op):
         QNode._current_context._append_op(op)
 
     return op
+
+
+def sample(op, n=None):
+    r"""Returns a sample of the supplied observable.
+
+    Args:
+        op (Observable): a quantum observable object
+        n (int): number of samples that should be obtained. Defaults to the
+            number of shots given as a parameter to the corresponding Device.
+    """
+    if not isinstance(op, Observable):
+        raise QuantumFunctionError(
+            "{} is not an observable: cannot be used with sample".format(op.name)
+        )
+
+    if QNode._current_context is not None:
+        # delete operations from QNode queue
+        QNode._current_context.queue.remove(op)
+
+    # set return type to be a sample
+    op.return_type = "sample"
+
+    if QNode._current_context is not None:
+        # add observable to QNode observable queue
+        QNode._current_context._append_op(op)
+
+    return op

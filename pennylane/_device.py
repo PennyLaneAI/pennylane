@@ -216,6 +216,8 @@ class Device(abc.ABC):
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type == "variance":
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
+                elif obs.return_type == "sample":
+                    results.append(self.sample(obs.name, obs.wires, obs.parameters))
 
             self.post_measure()
 
@@ -360,6 +362,25 @@ class Device(abc.ABC):
 
         Returns:
             float: expectation value
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def sample(self, observable, wires, par, n=None):
+        """Return a sample of an observable.
+
+        For plugin developers: this function should return the result of an evaluation
+        of the given observable on the device.
+
+        Args:
+            observable (str): name of the observable
+            wires (Sequence[int]): subsystems the observable is to be measured on
+            par (tuple): parameters for the observable
+            n (int): number of samples that should be obtained. Defaults to the
+                number of shots given as a parameter to the corresponding Device.
+
+        Returns:
+            array[float]: samples in an array of dimension [n, num_wires]
         """
         raise NotImplementedError
 
