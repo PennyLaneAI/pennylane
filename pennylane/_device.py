@@ -217,7 +217,10 @@ class Device(abc.ABC):
                 elif obs.return_type == "variance":
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type == "sample":
-                    results.append(self.sample(obs.name, obs.wires, obs.parameters))
+                    if not hasattr(obs, 'num_samples'):
+                        raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
+
+                    results.append(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples))
 
             self.post_measure()
 
@@ -365,7 +368,6 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
     def sample(self, observable, wires, par, n=None):
         """Return a sample of an observable.
 

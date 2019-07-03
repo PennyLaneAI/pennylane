@@ -167,6 +167,12 @@ def sample(op, n=None):
     # set return type to be a sample
     op.return_type = "sample"
 
+    # decorate the operation with the number of samples specified
+    if n is None:
+        op.num_samples = QNode._current_context.device.shots
+    else:
+        op.num_samples = n
+
     if QNode._current_context is not None:
         # add observable to QNode observable queue
         QNode._current_context._append_op(op)
