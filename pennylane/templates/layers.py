@@ -185,7 +185,7 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
 
     .. warning::
         If you use a random number generator anywhere inside the quantum function without the ``cache=False`` option,
-        a new random circuit architecture will be created every time the qnode is evaluated.
+        a new random circuit architecture will be created every time the quantum node is evaluated.
 
     Args:
         weights (array[float]): array of weights of shape ``(k,)``
