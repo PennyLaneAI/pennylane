@@ -405,6 +405,9 @@ class DefaultQubit(Device):
         if n is None:
             n = self.shots
 
+        if n == 0:
+            raise ValueError("Calling sample with n = 0 is not possible.")
+
         A = self._get_operator_matrix(observable, par)
         a, P = spectral_decomposition(A)
 

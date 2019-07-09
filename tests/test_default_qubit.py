@@ -468,6 +468,9 @@ class TestDefaultQubitDevice(BaseTest):
         self.assertAlmostEqual(var, expected, delta=self.tol)
 
     def test_sample_dimensions(self):
+        """Tests if the samples returned by sample have 
+        the correct dimensions
+        """
         self.logTestName()
         self.dev.reset()
 
@@ -484,6 +487,9 @@ class TestDefaultQubitDevice(BaseTest):
         self.assertAllEqual(s3.shape, (17,))
 
     def test_sample_mean_and_variance(self):
+        """Tests if the sampling works as expected by checking mean
+        and variance
+        """
         self.logTestName()
         self.dev.reset()
 
@@ -496,6 +502,24 @@ class TestDefaultQubitDevice(BaseTest):
         # the sampling itself goes awry
         self.assertAlmostEqual(s1.mean(), 0.0, delta=0.1)
         self.assertAlmostEqual(s1.var(), 1.0, delta=0.1)
+
+    def test_sample_exception_analytic_mode(self):
+        """Tests if the sampling raises an error for sample size n=0
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        with self.assertRaisesRegex(
+            ValueError, "Calling sample with n = 0 is not possible."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = 0)
+            
+        # self.def.shots = 0, so this should also fail
+        with self.assertRaisesRegex(
+            ValueError, "Calling sample with n = 0 is not possible."
+        ):
+            self.dev.sample('PauliZ', [0], [])
+
 
 
 class TestDefaultQubitIntegration(BaseTest):
