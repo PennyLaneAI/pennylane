@@ -486,6 +486,21 @@ class TestDefaultQubitDevice(BaseTest):
         s3 = self.dev.sample('CZ', [0,1], [], 17)
         self.assertAllEqual(s3.shape, (17,))
 
+    def test_sample_values(self):
+        """Tests if the samples returned by sample have
+        the correct values
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        self.dev.apply('RX', wires=[0], par=[1.5708])
+
+        s1 = self.dev.sample('PauliZ', [0], [], 10)        
+
+        # s1 should only contain 1 and -1, which is guaranteed if
+        # they square to 1
+        self.assertAllAlmostEqual(s1**2, 1, delta=self.tol)
+
     def test_sample_mean_and_variance(self):
         """Tests if the sampling works as expected by checking mean
         and variance
