@@ -524,7 +524,7 @@ class QubitGradientTest(BaseTest):
                 self.assertAlmostEqual(grad_eval, grad_true, delta=self.tol)
 
     def test_gradient_exception_on_sample(self):
-        "Tests that the automatic gradient of a Pauli X-rotation is correct."
+        """Tests that the proper exception is raised if differentiation of sampling is attempted."""
         self.logTestName()
 
         @qml.qnode(self.qubit_dev1)
