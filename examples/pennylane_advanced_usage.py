@@ -11,11 +11,11 @@ In this tutorial, we will highlight some of the more advanced features of Pennyl
 """
 
 ##############################################################################
-# Multiple expectation values
-# ---------------------------
+# Multiple measurements
+# ---------------------
 #
 # In all the previous examples, we considered quantum functions with only single expectation values.
-# In fact, PennyLane supports the return of multiple expectation values, up to one per wire.
+# In fact, PennyLane supports the return of multiple measurements, up to one per wire.
 #
 # As usual, we begin by importing PennyLane and the PennyLane-provided version of NumPy, and
 # set up a 2-wire qubit device for computations:
@@ -34,7 +34,7 @@ dev = qml.device("default.qubit", wires=2)
 def circuit1(param):
     qml.RX(param, wires=0)
     qml.CNOT(wires=[0, 1])
-    return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
 
 ##############################################################################
@@ -56,6 +56,15 @@ print(circuit1(np.pi / 2))
 #     i.e., this circuit is evaluating :math:`\braket{\sigma_z}_0` and :math:`\braket{\sigma_z}_1`,
 #     not :math:`\braket{\sigma_z\otimes \sigma_z}_{01}` (where the subscript denotes which wires the
 #     observable is located on).
+#
+# We may even mix different return types, for example expectation values and variances:
+
+
+@qml.qnode(dev)
+def circuit1(param):
+    qml.RX(param, wires=0)
+    qml.CNOT(wires=[0, 1])
+    return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
 
 ##############################################################################
@@ -89,7 +98,7 @@ def circuit3(param, fixed=None):
     qml.RX(fixed, wires=0)
     qml.RX(param, wires=1)
     qml.CNOT(wires=[0, 1])
-    return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
 
 ##############################################################################

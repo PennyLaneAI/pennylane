@@ -156,12 +156,12 @@ dev_fock = qml.device("strawberryfields.fock", wires=2, cutoff_dim=2)
 def photon_redirection(params):
     qml.FockState(1, wires=0)
     qml.Beamsplitter(params[0], params[1], wires=[0, 1])
-    return qml.expval.MeanPhoton(1)
+    return qml.expval(qml.MeanPhoton(1))
 
 
 ##############################################################################
 # The ``'strawberryfields.fock'`` device supports all CV objects provided by PennyLane;
-# see :ref:`CV operations <cv_ops>` and :ref:`CV expectations <cv_expval>`.
+# see :ref:`CV operations <cv_ops>`.
 
 
 ##############################################################################
@@ -281,7 +281,7 @@ def qubit_rotation(phi1, phi2):
     """Qubit rotation QNode"""
     qml.RX(phi1, wires=0)
     qml.RY(phi2, wires=0)
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(0))
 
 
 @qml.qnode(dev_fock)
@@ -289,7 +289,7 @@ def photon_redirection(params):
     """The photon redirection QNode"""
     qml.FockState(1, wires=0)
     qml.Beamsplitter(params[0], params[1], wires=[0, 1])
-    return qml.expval.MeanPhoton(1)
+    return qml.expval(qml.MeanPhoton(1))
 
 
 def squared_difference(x, y):

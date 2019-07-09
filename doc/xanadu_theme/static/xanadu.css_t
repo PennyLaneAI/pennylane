@@ -38,6 +38,7 @@ body {
   background-color: #fff;
   max-width: 900px;
   float: left;
+  width: 100%;
 }
 
 a.headerlink {

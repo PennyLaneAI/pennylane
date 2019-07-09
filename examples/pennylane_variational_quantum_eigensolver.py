@@ -90,13 +90,13 @@ def ansatz(var):
 @qml.qnode(dev)
 def circuit_X(var):
     ansatz(var)
-    return qml.expval.PauliX(1)
+    return qml.expval(qml.PauliX(1))
 
 
 @qml.qnode(dev)
 def circuit_Y(var):
     ansatz(var)
-    return qml.expval.PauliY(1)
+    return qml.expval(qml.PauliY(1))
 
 
 ##############################################################################
@@ -205,13 +205,13 @@ def ansatz():
 @qml.qnode(dev)
 def circuit_X():
     ansatz()
-    return qml.expval.PauliX(1)
+    return qml.expval(qml.PauliX(1))
 
 
 @qml.qnode(dev)
 def circuit_Y():
     ansatz()
-    return qml.expval.PauliY(1)
+    return qml.expval(qml.PauliY(1))
 
 
 ##############################################################################
@@ -283,13 +283,13 @@ def ansatz(var):
 @qml.qnode(dev)
 def circuit_X(var):
     ansatz(var)
-    return qml.expval.PauliX(1)
+    return qml.expval(qml.PauliX(1))
 
 
 @qml.qnode(dev)
 def circuit_Y(var):
     ansatz(var)
-    return qml.expval.PauliY(1)
+    return qml.expval(qml.PauliY(1))
 
 
 def cost(var):

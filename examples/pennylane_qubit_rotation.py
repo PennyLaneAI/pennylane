@@ -103,7 +103,7 @@ from pennylane import numpy as np
 # .. admonition:: Definition
 #     :class: defn
 #
-#     Any computational object that can apply quantum operations, and return an expectation value
+#     Any computational object that can apply quantum operations, and return an measurement value
 #     is called a quantum **device**.
 #
 #     In PennyLane, a device could be a hardware device (such as the IBM QX4, via the
@@ -146,7 +146,7 @@ dev1 = qml.device("default.qubit", wires=1)
 #
 #     QNodes are an abstract encapsulation of a quantum function, described by a
 #     quantum circuit. QNodes are bound to a particular quantum device, which is
-#     used to evaluate expectation values of this circuit.
+#     used to evaluate expectation and variance values of this circuit.
 #
 # .. tip::
 #
@@ -160,7 +160,7 @@ dev1 = qml.device("default.qubit", wires=1)
 def circuit(params):
     qml.RX(params[0], wires=0)
     qml.RY(params[1], wires=0)
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(0))
 
 
 ##############################################################################
@@ -182,20 +182,20 @@ def circuit(params):
 #
 #   For a full list of quantum operations, see :mod:`supported operations <pennylane.ops>`.
 #
-# * **Quantum functions must return either a single or a tuple of expectation values**.
+# * **Quantum functions must return either a single or a tuple of measured observables**.
 #
 #   As a result, the quantum function always returns a classical quantity, allowing
 #   the QNode to interface with other classical functions (and also other QNodes).
 #
-#   For a full list of quantum expectation values, see
-#   :mod:`supported expectations <pennylane.expval>`.
+#   See the full list of :mod:`quantum observables <pennylane.ops>`, as well
+#   supported :mod:`measurement return types <pennylane.measure>`.
 #
 # * **Quantum functions must not contain any classical processing of circuit parameters.**
 #
 # .. note::
 #
 #     Certain devices may only support a subset of the available PennyLane
-#     operations/expectations, or may even provide additional operations/expectations.
+#     operations/observables, or may even provide additional operations/observables.
 #     Please consult the documentation for the plugin/device for more details.
 #
 # Once we have written the quantum function, we convert it into a :class:`~.QNode` running
@@ -207,7 +207,7 @@ def circuit(params):
 def circuit(params):
     qml.RX(params[0], wires=0)
     qml.RY(params[1], wires=0)
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(0))
 
 
 ##############################################################################
@@ -259,7 +259,7 @@ print(dcircuit([0.54, 0.12]))
 def circuit2(phi1, phi2):
     qml.RX(phi1, wires=0)
     qml.RY(phi2, wires=0)
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(0))
 
 
 ################################################################################

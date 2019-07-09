@@ -71,7 +71,7 @@ dev = qml.device("forest.qvm", device="2q", noisy=True)
 def circuit(phi, theta):
     qml.RX(theta, wires=0)
     qml.RZ(phi, wires=0)
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(0))
 
 
 ##############################################################################
@@ -178,7 +178,7 @@ qpu = qml.device("forest.qpu", device="Aspen-1-2Q-B")
 def circuit(phi, theta):
     qml.RX(theta, wires=0)
     qml.RZ(phi, wires=0)
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(0))
 
 
 def cost(phi, theta, step):

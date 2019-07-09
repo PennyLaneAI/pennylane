@@ -115,7 +115,7 @@ def circuit(params, A=None):
         layer(params, j)
 
     # returns the expectation of the input matrix A on the first qubit
-    return qml.expval.Hermitian(A, wires=0)
+    return qml.expval(qml.Hermitian(A, wires=0))
 
 
 ##############################################################################

@@ -74,7 +74,7 @@ dev_gaussian = qml.device("default.gaussian", wires=1)
 def mean_photon_gaussian(mag_alpha, phase_alpha, phi):
     qml.Displacement(mag_alpha, phase_alpha, wires=0)
     qml.Rotation(phi, wires=0)
-    return qml.expval.MeanPhoton(0)
+    return qml.expval(qml.MeanPhoton(0))
 
 
 ###############################################################################
