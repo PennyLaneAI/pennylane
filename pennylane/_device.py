@@ -335,9 +335,9 @@ class Device(abc.ABC):
         r"""Returns the expectation value of observable on specified wires.
 
         Args:
-          observable      (str): name of the observable
+          observable (str): name of the observable
           wires (Sequence[int]): target subsystems
-          par    (tuple[float]): parameter values
+          par (tuple[float]): parameter values
 
         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
@@ -348,9 +348,9 @@ class Device(abc.ABC):
         r"""Returns the variance of observable on specified wires.
 
         Args:
-          observable      (str): name of the observable
+          observable (str): name of the observable
           wires (Sequence[int]): target subsystems
-          par    (tuple[float]): parameter values
+          par (tuple[float]): parameter values
 
         Returns:
           float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
