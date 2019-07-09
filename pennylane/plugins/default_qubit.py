@@ -370,9 +370,18 @@ class DefaultQubit(Device):
 
         return ev
 
-    def var(self, expectation, wires, par):
-        # measurement/expectation value <psi|A|psi>
-        A = self._get_operator_matrix(expectation, par)
+    def var(self, observable, wires, par):
+        r"""Variance of observable on specified wires.
+
+        Args:
+          observable      (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par    (tuple[float]): parameter values
+
+        Returns:
+          float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
+            """
+        A = self._get_operator_matrix(observable, par)
         return self.ev(A@A, wires) - self.ev(A, wires)**2
 
     def _get_operator_matrix(self, operation, par):

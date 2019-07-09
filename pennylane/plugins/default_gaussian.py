@@ -814,6 +814,16 @@ class DefaultGaussian(Device):
         return S2
 
     def expval(self, observable, wires, par):
+        r"""Expectation value of observable on specified wires.
+
+        Args:
+          observable      (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par    (tuple[float]): parameter values
+
+        Returns:
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+            """
         mu, cov = self.reduced_state(wires)
 
         ev, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
@@ -827,6 +837,16 @@ class DefaultGaussian(Device):
         return ev
 
     def var(self, observable, wires, par):
+        r"""Variance of observable on specified wires.
+
+        Args:
+          observable      (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par    (tuple[float]): parameter values
+
+        Returns:
+          float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
+            """
         mu, cov = self.reduced_state(wires)
         _, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
         return var

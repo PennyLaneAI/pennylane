@@ -1,3 +1,5 @@
+.. _torch:
+
 .. automodule:: pennylane.interfaces.torch
    :members:
    :private-members:
