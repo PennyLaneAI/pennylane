@@ -2,6 +2,12 @@
 
 ### New features since last release
 
+* Sampling support: QNodes can now return a specified number of samples
+  from a given observable via the top-level `pennylane.sample()` function.
+  To support this on plugin devices, there is a new `Device.sample` method.
+
+  Taking gradients of QNodes that involve sampling is not possible.
+
 * `pennylane.expval()` is now a top-level *function*, and is no longer
   a package of classes. For now, the existing `pennylane.expval.Observable`
   interface continues to work, but will raise a deprecation warning.
