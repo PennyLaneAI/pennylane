@@ -535,6 +535,24 @@ class TestDefaultQubitDevice(BaseTest):
         ):
             self.dev.sample('PauliZ', [0], [])
 
+    def test_sample_exception_wrong_n(self):
+        """Tests if the sampling raises an error for sample size n<0
+        or non-integer n
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        with self.assertRaisesRegex(
+            ValueError, "The number of samples must be a positive integer."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = -12)
+            
+        # self.def.shots = 0, so this should also fail
+        with self.assertRaisesRegex(
+            ValueError, "The number of samples must be a positive integer."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = 12.3)
+
 
 
 class TestDefaultQubitIntegration(BaseTest):

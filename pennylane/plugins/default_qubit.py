@@ -407,6 +407,8 @@ class DefaultQubit(Device):
 
         if n == 0:
             raise ValueError("Calling sample with n = 0 is not possible.")
+        if n < 0 or not type(n) is int:
+            raise ValueError("The number of samples must be a positive integer.")
 
         A = self._get_operator_matrix(observable, par)
         a, P = spectral_decomposition(A)
