@@ -483,6 +483,20 @@ class TestDefaultQubitDevice(BaseTest):
         s3 = self.dev.sample('CZ', [0,1], [], 17)
         self.assertAllEqual(s3.shape, (17,))
 
+    def test_sample_mean_and_variance(self):
+        self.logTestName()
+        self.dev.reset()
+
+        self.dev.apply('RX', wires=[0], par=[1.570796])
+
+        s1 = self.dev.sample('PauliZ', [0], [], 2000)
+
+        # We use large deltas here because sampling is stochastic
+        # this ensures that the test only fails if something in
+        # the sampling itself goes awry
+        self.assertAlmostEqual(s1.mean(), 0.0, delta=0.1)
+        self.assertAlmostEqual(s1.var(), 1.0, delta=0.1)
+
 
 class TestDefaultQubitIntegration(BaseTest):
     """Integration tests for default.qubit. This test ensures it integrates
