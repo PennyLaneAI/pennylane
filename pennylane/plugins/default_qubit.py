@@ -56,7 +56,7 @@ Gates and operations
     SWAP
     CZ
 
-Expectations
+Observables
 ------------
 
 .. autosummary::
@@ -227,7 +227,7 @@ def hermitian(*args):
     return A
 
 def identity(*_):
-    """Identity matrix for expectations.
+    """Identity matrix observable.
 
     Returns:
         array: 2x2 identity matrix
@@ -345,17 +345,6 @@ class DefaultQubit(Device):
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
     def expval(self, observable, wires, par):
-        r"""Expectation value of observable on specified wires.
-
-        Args:
-          observable      (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par    (tuple[float]): parameter values
-
-        Returns:
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
-            """
-
         A = self._get_operator_matrix(observable, par)
         if self.shots == 0:
             # exact expectation value
@@ -371,16 +360,6 @@ class DefaultQubit(Device):
         return ev
 
     def var(self, observable, wires, par):
-        r"""Variance of observable on specified wires.
-
-        Args:
-          observable      (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par    (tuple[float]): parameter values
-
-        Returns:
-          float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
-            """
         A = self._get_operator_matrix(observable, par)
         return self.ev(A@A, wires) - self.ev(A, wires)**2
 
@@ -399,15 +378,6 @@ class DefaultQubit(Device):
         return A(*par)
 
     def ev(self, A, wires):
-        r"""Evaluates an expectation value of the current state.
-
-        Args:
-          A (array): :math:`2^M\times 2^M` Hermitian matrix corresponding to the observable
-          wires (Sequence[int]): target subsystems
-
-        Returns:
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
-        """
         As = self.mat_vec_product(A, self._state, wires)
         expectation = np.vdot(self._state, As)
 
