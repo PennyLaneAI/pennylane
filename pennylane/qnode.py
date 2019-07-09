@@ -667,6 +667,9 @@ class QNode:
             # construct the circuit
             self.construct(params, circuit_kwargs)
 
+        if any(e.return_type == 'sample' for e in self.ev):
+            raise QuantumFunctionError("Circuits that include sampling can not be differentiated.")
+
         flat_params = np.array(list(_flatten(params)))
 
         if which is None:

@@ -523,6 +523,22 @@ class QubitGradientTest(BaseTest):
 
                 self.assertAlmostEqual(grad_eval, grad_true, delta=self.tol)
 
+    def test_gradient_exception_on_sample(self):
+        "Tests that the automatic gradient of a Pauli X-rotation is correct."
+        self.logTestName()
+
+        @qml.qnode(self.qubit_dev1)
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            return qml.sample(qml.PauliZ(0), 1)
+
+        with self.assertRaisesRegex(
+            qml.QuantumFunctionError, 
+            "Circuits that include sampling can not be differentiated."
+        ):
+            grad_fn = autograd.grad(circuit)
+            grad_fn(1.0)
+
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + qml.version() + ', automatic gradients.')

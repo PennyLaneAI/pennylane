@@ -169,7 +169,8 @@ def sample(op, n=None):
 
     # decorate the operation with the number of samples specified
     if n is None:
-        op.num_samples = QNode._current_context.device.shots
+        if QNode._current_context is not None:
+            op.num_samples = QNode._current_context.device.shots
     else:
         op.num_samples = n
 
