@@ -356,9 +356,9 @@ class DefaultQubit(Device):
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
             """
 
-        A = self._get_operator_matrix(observable, par)
         if self.shots == 0:
             # exact expectation value
+            A = self._get_operator_matrix(observable, par)
             ev = self.ev(A, wires)
         else:
             # estimate the ev
@@ -367,15 +367,44 @@ class DefaultQubit(Device):
         return ev
 
     def var(self, observable, wires, par):
-        # measurement/expectation value <psi|A|psi>
-        A = self._get_operator_matrix(observable, par)
-        return self.ev(A@A, wires) - self.ev(A, wires)**2
+        r"""Variance of observable on specified wires.
+
+        Args:
+          observable      (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par    (tuple[float]): parameter values
+
+        Returns:
+          float: variance :math:`\text{Var}(A) = \expect{A^2}-\expect{A}^2 = \bra{\psi}A^2\ket{\psi}-\bra{\psi}A\ket{\psi}^2`
+            """
+
+        if self.shots == 0:
+            # exact expectation value
+            A = self._get_operator_matrix(observable, par)
+            var = self.ev(A@A, wires) - self.ev(A, wires)**2
+        else:
+            # estimate the ev
+            var = np.var(self.sample(observable, wires, par, self.shots))
+
+        return var
 
     def sample(self, observable, wires, par, n=None):
+        r"""Sample of observable on specified wires.
+
+        Args:
+          observable      (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par    (tuple[float]): parameter values
+          n               (int): number of samples
+
+        Returns:
+          float: n samples of the observable. Defaults to the number of
+          shots given as a parameter to the corresponding Device.
+            """
+
         if n is None:
             n = self.shots
 
-        # sample Bernoulli distribution n times / binomial distribution once
         A = self._get_operator_matrix(observable, par)
         a, P = spectral_decomposition(A)
 
