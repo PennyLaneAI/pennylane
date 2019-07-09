@@ -22,7 +22,7 @@ def circuit(var):
     """
     qml.RX(var[0], wires=0)
     qml.RY(var[1], wires=0)
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(0))
 
 
 def objective(var):
