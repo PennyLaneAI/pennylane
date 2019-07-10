@@ -193,7 +193,7 @@ def CRotx(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix `
+        array: unitary 4x4 rotation matrix
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1*1j*np.sin(theta/2)], [0, 0, -1*1j*np.sin(theta/2), np.cos(theta/2)]])
 
