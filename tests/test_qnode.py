@@ -945,25 +945,6 @@ class TestQNodeGradients:
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev)
-        def circuit1(x):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        b = 0.123 #gradient is zero for all `b` for this particular circuit
-
-	# get the analytic gradient
-        gradA = circuit1.jacobian([b], method='A')
-	# get the finite difference gradient
-        gradF = circuit1.jacobian([b], method='F')
-
-	# the expected gradient
-        expected = 0
-
-        assert np.allclose(gradF, expected, atol=tol, rtol=0)
-        assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
 
     def test_controlled_RY_gradient(self, tol):
@@ -989,25 +970,7 @@ class TestQNodeGradients:
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev)
-        def circuit1(x):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.CRY(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        b = 0.123 #gradient is zero for all `b` for this particular circuit
-
-	# get the analytic gradient
-        gradA = circuit1.jacobian([b], method='A')
-	# get the finite difference gradient
-        gradF = circuit1.jacobian([b], method='F')
-
-	# the expected gradient
-        expected = 0
-
-        assert np.allclose(gradF, expected, atol=tol, rtol=0)
-        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+        
 
     def test_controlled_RZ_gradient(self, tol):
         """Test gradient of controlled RZ gate"""
@@ -1032,25 +995,7 @@ class TestQNodeGradients:
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev)
-        def circuit1(x):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.CRZ(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        b = 0.123 #gradient is zero for all `b` for this particular circuit
-
-	# get the analytic gradient
-        gradA = circuit1.jacobian([b], method='A')
-	# get the finite difference gradient
-        gradF = circuit1.jacobian([b], method='F')
-
-	# the expected gradient
-        expected = 0
-
-        assert np.allclose(gradF, expected, atol=tol, rtol=0)
-        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+        
 
 class TestQNodeVariance:
     """Qnode variance tests."""
