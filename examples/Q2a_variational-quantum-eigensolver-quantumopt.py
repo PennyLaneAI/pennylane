@@ -36,7 +36,7 @@ def circuit_X(var):
         expectation of Pauli-X observable on Qubit 1
     """
     ansatz(var)
-    return qml.expval.PauliX(1)
+    return qml.expval(qml.PauliX(1))
 
 
 @qml.qnode(dev)
@@ -50,7 +50,7 @@ def circuit_Y(var):
         expectation of Pauli-Y observable on Qubit 1
     """
     ansatz(var)
-    return qml.expval.PauliY(1)
+    return qml.expval(qml.PauliY(1))
 
 
 def cost(var):

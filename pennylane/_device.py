@@ -332,35 +332,29 @@ class Device(abc.ABC):
 
     @abc.abstractmethod
     def expval(self, observable, wires, par):
-        """Return the expectation value of an observable.
-
-        For plugin developers: this function should return the expectation value of the
-        given observable on the device.
+        r"""Returns the expectation value of observable on specified wires.
 
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
+          observable (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par (tuple[float]): parameter values
 
         Returns:
-            float: expectation value
-        """
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+            """
         raise NotImplementedError
 
     def var(self, observable, wires, par):
-        """Return the variance value of an observable.
-
-        For plugin developers: this function should return the variance value of the
-        given observable on the device.
+        r"""Returns the variance of observable on specified wires.
 
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
+          observable (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par (tuple[float]): parameter values
 
         Returns:
-            float: expectation value
-        """
+          float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
+            """
         raise NotImplementedError
 
     @abc.abstractmethod
