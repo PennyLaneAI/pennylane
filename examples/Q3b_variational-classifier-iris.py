@@ -75,7 +75,7 @@ def circuit(weights, angles=None):
     for W in weights:
         layer(W)
 
-    return qml.expval.PauliZ(0)
+    return qml.expval(qml.PauliZ(0))
 
 
 def variational_classifier(var, angles=None):

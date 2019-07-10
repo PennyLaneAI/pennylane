@@ -61,7 +61,7 @@ running on the QVM.
     def circuit(phi, theta):
         qml.RX(theta, wires=0)
         qml.RZ(phi, wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
 .. note::
 
@@ -148,7 +148,7 @@ As PyTorch natively supports GPU-accelerated classical processing, and Forest pr
     def circuit(phi, theta):
         qml.RX(theta, wires=0)
         qml.RZ(phi, wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
     def cost(phi, theta, step):
         target = -(-1)**(step // 100)
