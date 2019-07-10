@@ -58,7 +58,7 @@ Gates and operations
     CRotx
     CRoty
     CRotz
-    CRot
+    CRot3
 
 Expectations
 ------------
@@ -193,9 +193,9 @@ def CRotx(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix `
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_x(\theta)`
     """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1*1j*np.sin(theta/2)], [0, 0, -1*1j*np.sin(theta/2), np.cos(theta/2)]])
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1j*np.sin(theta/2)], [0, 0, -1j*np.sin(theta/2), np.cos(theta/2)]])
 
 
 def CRoty(theta):
@@ -204,9 +204,9 @@ def CRoty(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix `
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_y(\theta)`
     """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1*np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
 
 
 def CRotz(theta):
@@ -215,9 +215,9 @@ def CRotz(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix `
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_z(\theta)` 
     """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1*1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
 
 
 def CRot3(a, b, c):
@@ -226,9 +226,9 @@ def CRot3(a, b, c):
     Args:
         a,b,c (float): rotation angles
     Returns:
-        array: unitary 4x4 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R(a,b,c)` 
     """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1*1j*(a+c)/2)*np.cos(b/2), -1*np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1*1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
 
 
 

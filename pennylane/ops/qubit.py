@@ -359,7 +359,7 @@ class CRX(Operation):
     r"""CRX(phi, wires)
     The controlled-RX operator
 
-    .. math:: CRX = \begin{bmatrix}
+    .. math:: CR_x(\phi) = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0\\
             0 & 0 & \cos(\phi/2) & -i\sin(\phi/2)\\
@@ -388,7 +388,7 @@ class CRY(Operation):
     r"""CRY(phi, wires)
     The controlled-RY operator
 
-    .. math:: CRY = \begin{bmatrix}
+    .. math:: CR_y(\phi) = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0\\
             0 & 0 & \cos(\phi/2) & -\sin(\phi/2)\\
@@ -417,7 +417,7 @@ class CRZ(Operation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
-    .. math:: CRZ = \begin{bmatrix}
+    .. math:: CR_z(\phi) = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0\\
             0 & 0 & e^{-i\phi/2} & 0\\
@@ -446,7 +446,7 @@ class CRot(Operation):
     r"""CRot(phi, theta, omega, wires)
     The controlled-Rot operator
 
-    .. math:: CRot = \begin{bmatrix}
+    .. math:: CR(\phi, \theta, \omega) = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0\\
             0 & 0 & e^{-i(\phi+\omega)/2}\cos(\theta/2) & -e^{i(\phi-\omega)/2}\sin(\theta/2)\\

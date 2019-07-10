@@ -25,7 +25,7 @@ from autograd import numpy as np
 from defaults import pennylane as qml, BaseTest
 
 from pennylane.qnode import _flatten, unflatten, QNode, QuantumFunctionError
-from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, Y, Z, X
+from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, Y, Z
 from pennylane._device import DeviceError
 
 
