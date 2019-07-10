@@ -173,6 +173,11 @@ def sample(op, n=None):
             op.num_samples = QNode._current_context.device.shots
     else:
         op.num_samples = n
+        
+    if n == 0:
+        raise ValueError("Calling sample with n = 0 is not possible.")
+    if n < 0 or not type(n) is int:
+        raise ValueError("The number of samples must be a positive integer.")
 
     if QNode._current_context is not None:
         # add observable to QNode observable queue

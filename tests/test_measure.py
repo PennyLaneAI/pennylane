@@ -147,3 +147,67 @@ class TestVar:
 
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
+
+
+class TestSample:
+    """Tests for the sample function"""
+
+    def test_sample_dimension(self, tol):
+        """Test that the sample function outputs samples of the right size"""
+        dev = qml.device("default.qubit", wires=2)
+
+        n_sample = 10
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.54, wires=0)
+            return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliX(1), 2*n_sample)
+
+        sample = circuit()
+
+        assert np.allclose(sample.shape, (2,), atol=0, rtol=0)
+        assert np.allclose(sample[0].shape, (n_sample,), atol=0, rtol=0)
+        assert np.allclose(sample[1].shape, (2*n_sample,), atol=0, rtol=0)
+
+    def test_sample_exception_wrong_n(self):
+        """Tests if the sampling raises an error for sample size n<=0
+        or non-integer n
+        """
+        dev = qml.device("default.qubit", wires=2)
+
+        with pytest.raises(ValueError, match="Calling sample with n = 0 is not possible."):            
+            @qml.qnode(dev)
+            def circuit_a():
+                qml.RX(0.52, wires=0)
+                return qml.sample(qml.PauliZ(0), n=0)
+
+            circuit_a()
+
+        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):     
+            @qml.qnode(dev)
+            def circuit_b():
+                qml.RX(0.52, wires=0)
+                return qml.sample(qml.PauliZ(0), n=-12)
+
+            circuit_b()
+            
+        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):     
+            @qml.qnode(dev)
+            def circuit_c():
+                qml.RX(0.52, wires=0)
+                return qml.sample(qml.PauliZ(0), n=20.4)
+
+            circuit_c()
+
+    def test_not_an_observable(self):
+        """Test that a QuantumFunctionError is raised if the provided
+        argument is not an observable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.52, wires=0)
+            return qml.sample(qml.CNOT(wires=[0, 1]))
+
+        with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
+            sample = circuit()
