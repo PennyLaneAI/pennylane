@@ -73,7 +73,7 @@ def real_disc_circuit(phi, theta, omega, disc_weights):
     """
     real(phi, theta, omega)
     discriminator(disc_weights)
-    return qml.expval.PauliZ(2)
+    return qml.expval(qml.PauliZ(2))
 
 
 @qml.qnode(dev)
@@ -86,7 +86,7 @@ def gen_disc_circuit(gen_weights, disc_weights):
     """
     generator(gen_weights)
     discriminator(disc_weights)
-    return qml.expval.PauliZ(2)
+    return qml.expval(qml.PauliZ(2))
 
 
 def prob_real_true(disc_weights):
