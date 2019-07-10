@@ -93,21 +93,17 @@ def layer(params, j):
 # feed a ``device`` keyword specifying the number of qubits in the format
 # ``[number of qubits]q-pyqvm``. The keyword ``shots`` indicates the
 # number of samples used to estimate expectation values.
+#
 
+dev = qml.device("forest.qvm", device="3q-pyqvm", shots=1000)
+
+##############################################################################
 # When defining the qnode, we introduce as input a Hermitian operator
 # :math:`A` that specifies the expectation value being evaluated. This
 # choice later allows us to easily evaluate several expectation values
 # without having to define a new qnode each time. Useful!
 
-# set up the device
-dev = qml.device("forest.qvm", device="3q-pyqvm", shots=1000)
-
-
-# set up the qnode using a decorator
 @qml.qnode(dev)
-
-# We add a Hermitian operator A as an input that specifies the expectation
-# value. We set A=None to declare that this is a fixed parameter
 def circuit(params, A=None):
 
     # repeatedly apply each layer in the circuit
@@ -136,7 +132,6 @@ def cost_fn(params):
         cost += np.abs(circuit(params, A=Paulis[k]) - bloch_v[k])
 
     return cost
-
 
 # set up the optimizer
 opt = qml.AdamOptimizer()

@@ -11,16 +11,7 @@ worked your way through the QuickStart tutorials, you will be ready to implement
 interesting QML problems in PennyLane!
 
 
-Learn the PennyLane basics
---------------------------
-
-.. toctree::
-    :hidden:
-    :maxdepth: 1
-
-    tutorials/pennylane_qubit_rotation
-    tutorials/pennylane_gaussian_transformation
-    tutorials/pennylane_advanced_usage
+:html:`<h3>Learn the PennyLane basics</h3>`
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to rotate a qubit.
@@ -36,18 +27,6 @@ Learn the PennyLane basics
     :tooltip: Multiple expectation values, Jacobians, and keyword arguments.
     :description: :ref:`advanced_features`
 
-:html:`<div style='clear:both'></div>`
-
-
-Using plugins and quantum hardware
-----------------------------------
-
-.. toctree::
-    :hidden:
-    :maxdepth: 1
-
-    tutorials/pennylane_skip_plugins_hybrid
-    tutorials/pennylane_skip_pytorch_noise
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning in a multi-device quantum algorithm.
@@ -62,18 +41,7 @@ Using plugins and quantum hardware
 :html:`<div style='clear:both'></div>`
 
 
-Quantum machine learning algorithms
------------------------------------
-
-.. toctree::
-    :hidden:
-    :maxdepth: 1
-
-    tutorials/pennylane_skip_state_preparation
-    tutorials/pennylane_QGAN
-    tutorials/pennylane_skip_variational_classifier
-    tutorials/pennylane_skip_quantum_neural_net
-    tutorials/pennylane_variational_quantum_eigensolver
+:html:`<h3>Quantum machine learning algorithms</h3>`
 
 .. customgalleryitem::
     :tooltip: Do arbitrary state preparation on a real quantum computer.
@@ -99,3 +67,19 @@ Quantum machine learning algorithms
     :description: :ref:`vqe`
 
 :html:`<div style='clear:both'></div>`
+
+
+.. toctree::
+    :hidden:
+    :maxdepth: 2
+
+    tutorials/pennylane_qubit_rotation
+    tutorials/pennylane_gaussian_transformation
+    tutorials/pennylane_advanced_usage
+    tutorials/pennylane_skip_plugins_hybrid
+    tutorials/pennylane_skip_pytorch_noise
+    tutorials/pennylane_skip_state_preparation
+    tutorials/pennylane_QGAN
+    tutorials/pennylane_skip_variational_classifier
+    tutorials/pennylane_skip_quantum_neural_net
+    tutorials/pennylane_variational_quantum_eigensolver

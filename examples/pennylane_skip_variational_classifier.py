@@ -76,7 +76,7 @@ def layer(W):
 # We also need a way to encode data inputs :math:`x` into the circuit, so
 # that the measured output depends on the inputs. In this first example,
 # the inputs are bitstrings, which we encode into the state of the qubits.
-# The quantum state $\|:raw-latex:`\psi `:raw-latex:`\rangle `$ after
+# The quantum state :math:`\psi` after
 # state preparation is a computational basis state that has 1s where
 # :math:`x` has 1s, for example
 #
