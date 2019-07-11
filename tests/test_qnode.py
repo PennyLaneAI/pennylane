@@ -932,7 +932,7 @@ class TestQNodeGradients:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        a = 0.572   #gradient is zero for all `a` for this particular circuit
+        a = 0.542  #any value of a should give zero gradient
 
 	# get the analytic gradient
         gradA = circuit.jacobian([a], method='A')
@@ -959,7 +959,7 @@ class TestQNodeGradients:
         gradF = circuit1.jacobian([b], method='F')
 
 	# the expected gradient
-        expected = -0.12269
+        expected = -np.sin(b)
 
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
@@ -975,7 +975,7 @@ class TestQNodeGradients:
             qml.CRY(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        a = 0.572   #gradient is zero for all `a` for this particular circuit
+        a = 0.542  #any value of a should give zero gradient
 
 	# get the analytic gradient
         gradA = circuit.jacobian([a], method='A')
@@ -1002,7 +1002,7 @@ class TestQNodeGradients:
         gradF = circuit1.jacobian([b], method='F')
 
 	# the expected gradient
-        expected = -0.12269
+        expected = -np.sin(b)
 
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
@@ -1018,7 +1018,7 @@ class TestQNodeGradients:
             qml.CRZ(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        a = 0.572   #gradient is zero for all `a` for this particular circuit
+        a = 0.542  #any value of a should give zero gradient
 
 	# get the analytic gradient
         gradA = circuit.jacobian([a], method='A')
@@ -1045,7 +1045,7 @@ class TestQNodeGradients:
         gradF = circuit1.jacobian([b], method='F')
 
 	# the expected gradient
-        expected = -0.12269
+        expected = -np.sin(b)
 
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
