@@ -1,4 +1,8 @@
-# Release 0.4.0dev0
+# Version 0.4.dev
+
+* Added controlled rotation gates to PennyLane operations and `default.qubit` plugin.
+
+# Release 0.4.0
 
 ### New features since last release
 

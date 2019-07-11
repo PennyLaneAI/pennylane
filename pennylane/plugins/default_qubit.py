@@ -55,6 +55,10 @@ Gates and operations
     CNOT
     SWAP
     CZ
+    CRotx
+    CRoty
+    CRotz
+    CRot3
 
 Observables
 ------------
@@ -183,6 +187,51 @@ def Rot3(a, b, c):
     return Rotz(c) @ (Roty(b) @ Rotz(a))
 
 
+def CRotx(theta):
+    r"""Two-qubit controlled rotation about the x axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_x(\theta)`
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1j*np.sin(theta/2)], [0, 0, -1j*np.sin(theta/2), np.cos(theta/2)]])
+
+
+def CRoty(theta):
+    r"""Two-qubit controlled rotation about the y axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_y(\theta)`
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
+
+
+def CRotz(theta):
+    r"""Two-qubit controlled rotation about the z axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_z(\theta)` 
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
+
+
+def CRot3(a, b, c):
+    r"""Arbitrary two-qubit controlled rotation using three Euler angles.
+
+    Args:
+        a,b,c (float): rotation angles
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R(a,b,c)` 
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
+
+
+
 #========================================================
 #  Arbitrary states and operators
 #========================================================
@@ -271,7 +320,11 @@ class DefaultQubit(Device):
         'RX': Rotx,
         'RY': Roty,
         'RZ': Rotz,
-        'Rot': Rot3
+        'Rot': Rot3,
+        'CRX': CRotx,
+        'CRY': CRoty,
+        'CRZ': CRotz,
+        'CRot': CRot3
     }
 
     _observable_map = {
