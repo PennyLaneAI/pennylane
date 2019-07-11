@@ -945,6 +945,24 @@ class TestQNodeGradients:
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
+        @qml.qnode(dev)
+        def circuit1(x):
+            qml.RX(x,wires=0)
+            qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        b = 0.123   #gradient is -sin(x)
+
+	# get the analytic gradient
+        gradA = circuit1.jacobian([b], method='A')
+	# get the finite difference gradient
+        gradF = circuit1.jacobian([b], method='F')
+
+	# the expected gradient
+        expected = -0.12269
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
 
     def test_controlled_RY_gradient(self, tol):
@@ -970,6 +988,24 @@ class TestQNodeGradients:
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
+        @qml.qnode(dev)
+        def circuit1(x):
+            qml.RX(x,wires=0)
+            qml.CRY(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        b = 0.123   #gradient is -sin(x)
+
+	# get the analytic gradient
+        gradA = circuit1.jacobian([b], method='A')
+	# get the finite difference gradient
+        gradF = circuit1.jacobian([b], method='F')
+
+	# the expected gradient
+        expected = -0.12269
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
         
 
     def test_controlled_RZ_gradient(self, tol):
@@ -991,6 +1027,25 @@ class TestQNodeGradients:
 
 	# the expected gradient
         expected = 0
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev)
+        def circuit1(x):
+            qml.RX(x,wires=0)
+            qml.CRZ(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        b = 0.123   #gradient is -sin(x)
+
+	# get the analytic gradient
+        gradA = circuit1.jacobian([b], method='A')
+	# get the finite difference gradient
+        gradF = circuit1.jacobian([b], method='F')
+
+	# the expected gradient
+        expected = -0.12269
 
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
