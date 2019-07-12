@@ -95,7 +95,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
     def circuit(pars, x=None):
         qml.BasisState(x, wires=range(n_wires))
         StronglyEntanglingLayers(*pars, wires=range(n_wires))
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
 
     pars = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires, mean=0, std=0.1)
@@ -145,7 +145,7 @@ be used (and optimized) independently:
         for w in range(n_wires):
             qml.Squeezing(r[w][0], r[w][1], wires=w)
         Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(n_wires))
-        return [qml.expval.MeanPhoton(wires=w) for w in range(n_wires)]
+        return [qml.expval(qml.MeanPhoton(wires=w)) for w in range(n_wires)]
 
 
     j = qml.jacobian(circuit, 0)
@@ -178,7 +178,7 @@ the :func:`~.interferometer_uniform` function.
         for w in range(n_wires):
             qml.Squeezing(r[w][0], r[w][1], wires=w)
         Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(n_wires))
-        return [qml.expval.MeanPhoton(wires=w) for w in range(n_wires)]
+        return [qml.expval(qml.MeanPhoton(wires=w)) for w in range(n_wires)]
 
 
     j = qml.jacobian(circuit, 0)

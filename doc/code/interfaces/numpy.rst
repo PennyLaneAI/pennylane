@@ -42,7 +42,7 @@ but this can also be specified explicitly by passing the ``interface='numpy'`` k
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0), qml.expval.Hadamard(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
 The QNode ``circuit()`` is a NumPy-interfacing QNode, accepting standard Python
 data types such as ints, floats, lists, and tuples, as well as NumPy arrays, and
@@ -72,7 +72,7 @@ using different classical interfaces:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0), qml.expval.Hadamard(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
     qnode1 = qml.QNode(circuit, dev1)
     qnode2 = qml.QNode(circuit, dev2)
@@ -98,7 +98,7 @@ For example, consider the following QNode:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
 We can now use :func:`~.grad` to create a QNode *gradient function*,
 with respect to both QNode parameters ``phi`` and ``theta``:
@@ -133,7 +133,7 @@ lead to a final expectation value of 0.5:
         qml.RZ(x[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.RX(x[2], wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
     def cost(x):
         return np.abs(circuit(x) - 0.5)**2
@@ -187,7 +187,7 @@ If you want to compute the Jacobian matrix for a function with multiple input pa
         qml.RZ(params[1], wires=0)
         qml.RX(params[2], wires=1)
         qml.CNOT(wires=[0, 1])
-        return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
 It has a full Jacobian with two rows and three columns:
 
