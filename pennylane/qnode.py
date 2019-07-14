@@ -351,7 +351,9 @@ class QNode:
         # quantum circuit function return validation
         if isinstance(res, pennylane.operation.Observable):
             if res.return_type == "sample":
-                self.output_type = np.asarray
+                # Squeezing ensures that there is only one array of values returned
+                # when only a single-mode sample is requested
+                self.output_type = lambda x: np.squeeze(x)
             else:
                 self.output_type = float
 
@@ -362,6 +364,7 @@ class QNode:
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
             self.output_dim = len(res)
             self.output_type = np.asarray
+
             res = tuple(res)
         else:
             raise QuantumFunctionError("A quantum function must return either a single measured observable "

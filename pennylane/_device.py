@@ -227,6 +227,11 @@ class Device(abc.ABC):
             self._op_queue = None
             self._obs_queue = None
 
+            # Ensures that a combination with sample does not put
+            # expvals and vars in superfluous arrays
+            if any(obs.return_type == "sample" for obs in observables):
+                return results
+            
             return np.array(results)
 
     @property
