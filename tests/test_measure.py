@@ -175,7 +175,7 @@ class TestSample:
         """
         dev = qml.device("default.qubit", wires=2)
 
-        with pytest.raises(ValueError, match="Calling sample with n = 0 is not possible."):            
+        with pytest.raises(ValueError, match="Calling sample with n = 0 is not possible."):
             @qml.qnode(dev)
             def circuit_a():
                 qml.RX(0.52, wires=0)
@@ -183,15 +183,15 @@ class TestSample:
 
             circuit_a()
 
-        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):     
+        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):
             @qml.qnode(dev)
             def circuit_b():
                 qml.RX(0.52, wires=0)
                 return qml.sample(qml.PauliZ(0), n=-12)
 
             circuit_b()
-            
-        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):     
+
+        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):
             @qml.qnode(dev)
             def circuit_c():
                 qml.RX(0.52, wires=0)

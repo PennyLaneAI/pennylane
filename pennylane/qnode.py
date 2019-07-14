@@ -354,8 +354,8 @@ class QNode:
                 self.output_type = np.asarray
             else:
                 self.output_type = float
-                
-            self.output_dim = 1            
+
+            self.output_dim = 1
             res = (res,)
         elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
