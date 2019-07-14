@@ -220,9 +220,9 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
-        assert np.array_equal(result.shape, (3,n_sample))
+        assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == np.dtype("float")
-        
+
         dev.reset()
 
         @qml.qnode(dev)

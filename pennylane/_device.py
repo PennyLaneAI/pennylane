@@ -231,7 +231,7 @@ class Device(abc.ABC):
             # expvals and vars in superfluous arrays
             if any(obs.return_type == "sample" for obs in observables):
                 return results
-            
+
             return np.array(results)
 
     @property

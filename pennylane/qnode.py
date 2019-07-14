@@ -353,7 +353,7 @@ class QNode:
             if res.return_type == "sample":
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
-                self.output_type = lambda x: np.squeeze(x)
+                self.output_type = np.squeeze
             else:
                 self.output_type = float
 
