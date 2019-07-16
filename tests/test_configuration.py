@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
 # pylint: disable=protected-access
 import unittest
+import pytest
 import os
 import logging as log
 
@@ -26,6 +27,7 @@ import pennylane as qml
 from pennylane import Configuration
 
 log.getLogger('defaults')
+
 
 
 filename = 'default_config.toml'
@@ -154,18 +156,16 @@ class BasicTest(BaseTest):
         self.assertTrue(config)
 
 
-class PennyLaneInitTests(BaseTest):
+class TestPennyLaneInit:
     """Tests to ensure that the code in PennyLane/__init__.py
     correctly knows how to load and use configuration data"""
 
-    def test_device_load(self):
+    def test_device_load(self, default_config):
         """Test loading a device with a configuration."""
-        self.logTestName()
+        dev = qml.device('default.gaussian', wires=2, config=default_config)
 
-        config = Configuration(name=filename)
-        dev = qml.device('default.gaussian', wires=2, config=config)
-
-        self.assertTrue(dev.hbar, 1)
+        assert dev.hbar == 2
+        assert dev.shots == 0
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + pennylane.version() + ', Configuration class.')
