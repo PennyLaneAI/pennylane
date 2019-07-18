@@ -90,6 +90,9 @@ def tf_support():
     except ImportError as e:
         tf_support = False
 
+    return tf_support
+
+
 @pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):
