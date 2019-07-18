@@ -90,11 +90,6 @@ def tf_support():
     except ImportError as e:
         tf_support = False
 
-@pytest.fixture(scope="session")
-def default_config():
-    return qml.Configuration(name='default_config.toml')
-
-
 @pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):
