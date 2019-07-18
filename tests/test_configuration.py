@@ -14,15 +14,13 @@
 """
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
-# pylint: disable=protected-access
-import unittest
 import pytest
 import os
 import logging as log
 
 import toml
 
-from defaults import pennylane, BaseTest
+from defaults import pennylane
 import pennylane as qml
 from pennylane import Configuration
 
@@ -31,13 +29,17 @@ log.getLogger('defaults')
 @pytest.fixture(scope="session")
 def config_path():
     return 'default_config.toml'
+    
+@pytest.fixture(scope="function")
+def default_config(config_path):
+    return Configuration(name=config_path)
 
 @pytest.fixture(scope="session")
 def default_config_toml(config_path):
     return toml.load(config_path)
 
-class TestConfigurationLoading:
-    """Test loading the configuration from a file."""
+class TestConfigurationFileInteraction:
+    """Test the interaction with the configuration file."""
 
     def test_loading_current_directory(self, monkeypatch, config_path, default_config_toml):
         """Test that the default configuration file can be loaded
@@ -86,79 +88,68 @@ class TestConfigurationLoading:
         assert len(caplog.records) == 1
         assert caplog.records[0].message == "No PennyLane configuration file found."
 
-class TestSave:
-
-    def test_save(self):
+    def test_save(self, tmpdir, config_path):
         """Test saving a configuration file."""
-        self.logTestName()
-
-        config = Configuration(name=filename)
+        config = Configuration(name=config_path)
 
         # make a change
         config['strawberryfields.global']['shots'] = 10
-        config.save('test_config.toml')
 
-        result = toml.load('test_config.toml')
-        os.remove('test_config.toml')
-        self.assertEqual(config._config, result)
+        temp_path = tmpdir.join('test_config.toml')
+        config.save(temp_path)
 
-    def test_get_item(self):
+        result = toml.load(temp_path)
+        config._config == result
+
+class TestProperties:
+    """Test that the configuration class works as expected"""
+
+    def test_get_item(self, default_config):
         """Test getting items."""
-        self.logTestName()
-
-        config = Configuration(name=filename)
-
         # get existing options
-        self.assertEqual(config['main.shots'], 0)
-        self.assertEqual(config['main']['shots'], 0)
-        self.assertEqual(config['strawberryfields.global.hbar'], 1)
-        self.assertEqual(config['strawberryfields.global']['hbar'], 1)
+        assert default_config['main.shots'] == 0
+        assert default_config['main']['shots'] == 0
+        assert default_config['strawberryfields.global.hbar'] == 1
+        assert default_config['strawberryfields.global']['hbar'] == 1
 
         # get nested dictionaries
-        self.assertEqual(config['strawberryfields.fock'], {'cutoff_dim': 10})
+        assert default_config['strawberryfields.fock'] == {'cutoff_dim': 10}
 
         # get key that doesn't exist
-        self.assertEqual(config['projectq.ibm.idonotexist'], {})
+        assert default_config['projectq.ibm.idonotexist'] == {}
 
-    def test_set_item(self):
+    def test_set_item(self, default_config):
         """Test setting items."""
-        self.logTestName()
-
-        config = Configuration(name=filename)
 
         # set existing options
-        config['main.shots'] = 10
-        self.assertEqual(config['main.shots'], 10)
-        self.assertEqual(config['main']['shots'], 10)
+        default_config['main.shots'] = 10
+        assert default_config['main.shots'] == 10
+        assert default_config['main']['shots'] == 10
 
-        config['strawberryfields.global']['hbar'] = 5
-        self.assertEqual(config['strawberryfields.global.hbar'], 5)
-        self.assertEqual(config['strawberryfields.global']['hbar'], 5)
+        default_config['strawberryfields.global']['hbar'] = 5
+        assert default_config['strawberryfields.global.hbar'] == 5
+        assert default_config['strawberryfields.global']['hbar'] == 5
 
         # set new options
-        config['projectq.ibm']['device'] = 'ibmqx4'
-        self.assertEqual(config['projectq.ibm.device'], 'ibmqx4')
+        default_config['projectq.ibm']['device'] = 'ibmqx4'
+        assert default_config['projectq.ibm.device'] == 'ibmqx4'
 
         # set nested dictionaries
-        config['strawberryfields.tf'] = {'batched': True, 'cutoff_dim': 6}
-        self.assertEqual(config['strawberryfields.tf'], {'batched': True, 'cutoff_dim': 6})
+        default_config['strawberryfields.tf'] = {'batched': True, 'cutoff_dim': 6}
+        assert default_config['strawberryfields.tf'] == {'batched': True, 'cutoff_dim': 6}
 
         # set nested keys that don't exist dictionaries
-        config['strawberryfields.another.hello.world'] = 5
-        self.assertEqual(config['strawberryfields.another'], {'hello': {'world': 5}})
+        default_config['strawberryfields.another.hello.world'] = 5
+        assert default_config['strawberryfields.another'] == {'hello': {'world': 5}}
 
-    def test_bool(self):
+    def test_bool(self, default_config):
         """Test boolean value of the Configuration object."""
-        self.logTestName()
 
         # test false if no config is loaded
         config = Configuration('noconfig')
-        self.assertFalse(config)
 
-        # test true if config is loaded
-        config = Configuration(filename)
-        self.assertTrue(config)
-
+        assert not config   
+        assert default_config
 
 class TestPennyLaneInit:
     """Tests to ensure that the code in PennyLane/__init__.py
@@ -170,12 +161,3 @@ class TestPennyLaneInit:
 
         assert dev.hbar == 2
         assert dev.shots == 0
-
-if __name__ == '__main__':
-    print('Testing PennyLane version ' + pennylane.version() + ', Configuration class.')
-    # run the tests in this file
-    suite = unittest.TestSuite()
-    for t in (BasicTest, PennyLaneInitTests):
-        ttt = unittest.TestLoader().loadTestsFromTestCase(t)
-        suite.addTests(ttt)
-    unittest.TextTestRunner().run(suite)
