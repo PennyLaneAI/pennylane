@@ -92,7 +92,8 @@ class TestConfigurationFileInteraction:
         # make a change
         config['strawberryfields.global']['shots'] = 10
 
-        temp_config_path = tmp_path / 'test_config.toml'
+        # Need to convert to string for Python 3.5 compatibility
+        temp_config_path = str(tmp_path / 'test_config.toml')
         config.save(temp_config_path)
 
         result = toml.load(temp_config_path)
