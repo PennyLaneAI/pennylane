@@ -42,26 +42,22 @@ def skip_if_no_torch_support(torch_support):
 
 
 @pytest.mark.usefixtures("skip_if_no_torch_support")
-class TestTorchQNode():
+class TestTorchQNodeExceptions():
     """TorchQNode basic tests."""
 
-    def test_qnode_fail(self, qubit_device_1_wire, qubit_device_2_wires):
-        """Tests that QNode initialization failures correctly raise exceptions."""
-        par = torch.tensor(0.5)
-
-        #---------------------------------------------------------
-        ## faulty quantum functions
-
-        # qfunc must return only Expectations
+    def test_qnode_fails_on_wrong_return_type(self, qubit_device_2_wires):
+        """The qfunc must return only Expectations"""
         @qml.qnode(qubit_device_2_wires, interface='torch')
         def qf(x):
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0)), 0.3
 
         with pytest.raises(QuantumFunctionError, match='must return either'):
-            qf(par)
+            qf(torch.tensor(0.5))
 
-        # all EVs must be returned...
+    def test_qnode_fails_on_expval_not_returned(self, qubit_device_2_wires):
+        """All expectation values in the qfunc must be returned"""
+
         @qml.qnode(qubit_device_2_wires, interface='torch')
         def qf(x):
             qml.RX(x, wires=[0])
@@ -69,9 +65,11 @@ class TestTorchQNode():
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(QuantumFunctionError, match='All measured observables'):
-            qf(par)
+            qf(torch.tensor(0.5))
 
-        # ...in the correct order
+    def test_qnode_fails_on_wrong_expval_order(self, qubit_device_2_wires):
+        """Expvals must be returned in the order they were created in"""
+
         @qml.qnode(qubit_device_2_wires, interface='torch')
         def qf(x):
             qml.RX(x, wires=[0])
@@ -79,9 +77,11 @@ class TestTorchQNode():
             return qml.expval(qml.PauliZ(0)), ex
 
         with pytest.raises(QuantumFunctionError, match='All measured observables'):
-            qf(par)
+            qf(torch.tensor(0.5))
 
-        # gates must precede EVs
+    def test_qnode_fails_on_gates_after_measurements(self, qubit_device_2_wires):
+        """Gates have to precede measurements"""
+
         @qml.qnode(qubit_device_2_wires, interface='torch')
         def qf(x):
             qml.RX(x, wires=[0])
@@ -90,9 +90,11 @@ class TestTorchQNode():
             return ev
 
         with pytest.raises(QuantumFunctionError, match='gates must precede'):
-            qf(par)
+            qf(torch.tensor(0.5))
 
-        # a wire cannot be measured more than once
+    def test_qnode_fails_on_multiple_measurements_of_same_wire(self, qubit_device_2_wires):
+        """A wire can only be measured once"""
+        
         @qml.qnode(qubit_device_2_wires, interface='torch')
         def qf(x):
             qml.RX(x, wires=[0])
@@ -100,9 +102,11 @@ class TestTorchQNode():
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliX(0))
 
         with pytest.raises(QuantumFunctionError, match='can only be measured once'):
-            qf(par)
+            qf(torch.tensor(0.5))
 
-        # device must have enough wires for the qfunc
+    def test_qnode_fails_on_qfunc_with_too_many_wires(self, qubit_device_2_wires):
+        """The device must have sufficient wires for the qfunc"""
+
         @qml.qnode(qubit_device_2_wires, interface='torch')
         def qf(x):
             qml.RX(x, wires=[0])
@@ -110,9 +114,11 @@ class TestTorchQNode():
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(QuantumFunctionError, match='applied to invalid wire'):
-            qf(par)
+            qf(torch.tensor(0.5))
 
-        # CV and discrete ops must not be mixed
+    def test_qnode_fails_on_combination_of_cv_and_qbit_ops(self, qubit_device_1_wire):
+        """CV and discrete operations must not be mixed"""
+        
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def qf(x):
             qml.RX(x, wires=[0])
@@ -120,24 +126,32 @@ class TestTorchQNode():
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(QuantumFunctionError, match='Continuous and discrete'):
-            qf(par)
+            qf(torch.tensor(0.5))
 
-        # default plugin cannot execute CV operations, neither gates...
+    def test_qnode_fails_for_cv_ops_on_qubit_device(self, qubit_device_1_wire):
+        """A qubit device can not execute CV operations"""
+
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def qf(x):
             qml.Displacement(0.5, 0, wires=[0])
             return qml.expval(qml.X(0))
 
         with pytest.raises(DeviceError, match='Gate [a-zA-Z]+ not supported on device'):
-            qf(par)
+            qf(torch.tensor(0.5))
 
-        # ...nor observables
+    def test_qnode_fails_for_cv_observables_on_qubit_device(self, qubit_device_1_wire):
+        """A qubit device can not measure CV observables"""
+
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def qf(x):
             return qml.expval(qml.X(0))
 
         with pytest.raises(DeviceError, match='Observable [a-zA-Z]+ not supported on device'):
-            qf(par)
+            qf(torch.tensor(0.5))
+
+
+@pytest.mark.usefixtures("skip_if_no_torch_support")
+class TestTorchQNodeParameterHandling:
 
     def test_qnode_fanout(self, qubit_device_1_wire, tol):
         """Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."""
