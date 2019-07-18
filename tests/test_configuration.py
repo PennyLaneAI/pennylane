@@ -20,28 +20,25 @@ import logging as log
 
 import toml
 
-from defaults import pennylane
 import pennylane as qml
 from pennylane import Configuration
 
 log.getLogger('defaults')
 
-@pytest.fixture(scope="session")
-def config_path():
-    return 'default_config.toml'
+config_path = 'default_config.toml'
     
 @pytest.fixture(scope="function")
-def default_config(config_path):
+def default_config():
     return Configuration(name=config_path)
 
 @pytest.fixture(scope="session")
-def default_config_toml(config_path):
+def default_config_toml():
     return toml.load(config_path)
 
 class TestConfigurationFileInteraction:
     """Test the interaction with the configuration file."""
 
-    def test_loading_current_directory(self, monkeypatch, config_path, default_config_toml):
+    def test_loading_current_directory(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from the current directory."""
         
@@ -52,7 +49,7 @@ class TestConfigurationFileInteraction:
         assert config.path == os.path.join(os.curdir, config_path)
         assert config._config == default_config_toml
 
-    def test_loading_environment_variable(self, monkeypatch, config_path, default_config_toml):
+    def test_loading_environment_variable(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from an environment variable."""
 
@@ -65,7 +62,7 @@ class TestConfigurationFileInteraction:
         assert config._env_config_dir == os.environ["PENNYLANE_CONF"]
         assert config.path == os.path.join(os.environ["PENNYLANE_CONF"], config_path)
 
-    def test_loading_absolute_path(self, monkeypatch, config_path, default_config_toml):
+    def test_loading_absolute_path(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from an absolute path."""
 
@@ -88,17 +85,17 @@ class TestConfigurationFileInteraction:
         assert len(caplog.records) == 1
         assert caplog.records[0].message == "No PennyLane configuration file found."
 
-    def test_save(self, tmpdir, config_path):
+    def test_save(self, tmp_path):
         """Test saving a configuration file."""
         config = Configuration(name=config_path)
 
         # make a change
         config['strawberryfields.global']['shots'] = 10
 
-        temp_path = tmpdir.join('test_config.toml')
-        config.save(temp_path)
+        temp_config_path = tmp_path / 'test_config.toml'
+        config.save(temp_config_path)
 
-        result = toml.load(temp_path)
+        result = toml.load(temp_config_path)
         config._config == result
 
 class TestProperties:
