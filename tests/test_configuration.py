@@ -28,61 +28,65 @@ from pennylane import Configuration
 
 log.getLogger('defaults')
 
+@pytest.fixture(scope="session")
+def config_path():
+    return 'default_config.toml'
 
+@pytest.fixture(scope="session")
+def default_config_toml(config_path):
+    return toml.load(config_path)
 
-filename = 'default_config.toml'
-expected_config = toml.load(filename)
+class TestConfigurationLoading:
+    """Test loading the configuration from a file."""
 
-
-class BasicTest(BaseTest):
-    """Configuration class tests."""
-
-    def test_loading_current_directory(self):
+    def test_loading_current_directory(self, monkeypatch, config_path, default_config_toml):
         """Test that the default configuration file can be loaded
         from the current directory."""
-        self.logTestName()
+        
+        monkeypatch.chdir(".")
+        monkeypatch.setenv("PENNYLANE_CONF", "")
+        config = Configuration(name=config_path)
 
-        os.curdir = "."
-        os.environ["PENNYLANE_CONF"] = ""
-        config = Configuration(name=filename)
+        assert config.path == os.path.join(os.curdir, config_path)
+        assert config._config == default_config_toml
 
-        self.assertEqual(config._config, expected_config)
-        self.assertEqual(config.path, os.path.join(os.curdir, filename))
-
-    def test_loading_environment_variable(self):
+    def test_loading_environment_variable(self, monkeypatch, config_path, default_config_toml):
         """Test that the default configuration file can be loaded
         from an environment variable."""
-        self.logTestName()
 
         os.curdir = "None"
-        os.environ["PENNYLANE_CONF"] = os.getcwd()
-        config = Configuration(name=filename)
+        monkeypatch.setenv("PENNYLANE_CONF", os.getcwd())
 
-        self.assertEqual(config._config, expected_config)
-        self.assertEqual(config._env_config_dir, os.environ["PENNYLANE_CONF"])
-        self.assertEqual(config.path, os.path.join(os.environ["PENNYLANE_CONF"], filename))
+        config = Configuration(name=config_path)
 
-    def test_loading_absolute_path(self):
+        assert config._config == default_config_toml
+        assert config._env_config_dir == os.environ["PENNYLANE_CONF"]
+        assert config.path == os.path.join(os.environ["PENNYLANE_CONF"], config_path)
+
+    def test_loading_absolute_path(self, monkeypatch, config_path, default_config_toml):
         """Test that the default configuration file can be loaded
         from an absolute path."""
-        self.logTestName()
 
         os.curdir = "None"
-        os.environ["PENNYLANE_CONF"] = ""
-        config = Configuration(name=os.path.join(os.getcwd(), filename))
+        monkeypatch.setenv("PENNYLANE_CONF", "")
 
-        self.assertEqual(config._config, expected_config)
-        self.assertEqual(config.path, os.path.join(os.getcwd(), filename))
+        config = Configuration(name=os.path.join(os.getcwd(), config_path))
 
-    def test_not_found_warning(self):
+        assert config._config == default_config_toml
+        assert config.path == os.path.join(os.getcwd(), config_path)
+
+    def test_not_found_warning(self, caplog):
         """Test that a warning is raised if no configuration file found."""
-        self.logTestName()
+        
+        caplog.clear()
+        caplog.set_level(log.INFO)
 
-        with self.assertLogs(level='INFO') as l:
-            Configuration('noconfig')
-            self.assertEqual(len(l.output), 1)
-            self.assertEqual(len(l.records), 1)
-            self.assertIn('No PennyLane configuration file found.', l.output[0])
+        Configuration("noconfig")
+        
+        assert len(caplog.records) == 1
+        assert caplog.records[0].message == "No PennyLane configuration file found."
+
+class TestSave:
 
     def test_save(self):
         """Test saving a configuration file."""
