@@ -178,51 +178,6 @@ class TestTorchQNodeParameterHandling:
 
                 assert np.allclose(y_eval, y_true, atol=tol, rtol=0)
 
-    def test_qnode_array_parameters_scalar_return(self, qubit_device_1_wire, qubit_device_2_wires, tol):
-        """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch."""
-
-        @qml.qnode(qubit_device_1_wire, interface='torch')
-        def circuit_n1s(dummy1, array, dummy2):
-            qml.RY(0.5 * array[0,1], wires=0)
-            qml.RY(-0.5 * array[1,1], wires=0)
-            return qml.expval(qml.PauliX(0))  # returns a scalar
-
-        @qml.qnode(qubit_device_1_wire, interface='torch')
-        def circuit_n1v(dummy1, array, dummy2):
-            qml.RY(0.5 * array[0,1], wires=0)
-            qml.RY(-0.5 * array[1,1], wires=0)
-            return qml.expval(qml.PauliX(0)),  # note the comma, returns a 1-vector
-
-        @qml.qnode(qubit_device_2_wires, interface='torch')
-        def circuit_nn(dummy1, array, dummy2):
-            qml.RY(0.5 * array[0,1], wires=0)
-            qml.RY(-0.5 * array[1,1], wires=0)
-            qml.RY(array[1,0], wires=1)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))  # returns a 2-vector
-
-        grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
-        cost_target = 1.03257
-
-        for circuit in [circuit_n1s, circuit_n1v, circuit_nn]:
-
-            args = (torch.tensor(0.46), torch.tensor([[2., 3., 0.3], [7., 4., 2.1]]), torch.tensor(-0.13))
-            for i in args:
-                i.requires_grad = True
-
-            def cost(x, array, y):
-                c = torch.as_tensor(circuit(torch.tensor(0.111), array, torch.tensor(4.5)), dtype=torch.float32)
-                if c.shape:
-                    c = c[0]  # get a scalar
-                return c +0.5*array[0,0] +x -0.4*y
-
-            cost_res = cost(*args)
-            cost_res.backward()
-
-            assert np.allclose(cost_res.detach().numpy(), cost_target, atol=tol, rtol=0)
-
-            for i in range(3):
-                assert np.allclose(args[i].grad.detach().numpy(), grad_target[i], atol=tol, rtol=0)
-
     def test_qnode_array_parameters_scalar_return(self, qubit_device_1_wire, tol):
         """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch."""
 
