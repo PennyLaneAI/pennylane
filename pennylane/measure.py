@@ -68,27 +68,51 @@ class ExpvalFactory:
     r"""Expectation value of the supplied observable.
 
     Args:
-        op (Observable): a quantum observable object
+        ops (list of Observable): Quantum observable or a list of observables.
     """
 
-    def __call__(self, op):
-        if not isinstance(op, Observable):
-            raise QuantumFunctionError(
-                "{} is not an observable: cannot be used with expval".format(op.name)
-            )
+    def __call__(self, *ops):
+        wires = []
+        for obs in ops:
+            if not isinstance(obs, Observable):
+                raise QuantumFunctionError(
+                    "{} is not an observable: cannot be used with expval".format(
+                        obs.name
+                    )
+                )
 
-        if QNode._current_context is not None:
-            # delete operations from QNode queue
-            QNode._current_context.queue.remove(op)
+            if QNode._current_context is not None:
+                # delete operations from QNode queue
+                QNode._current_context.queue.remove(obs)
 
-        # set return type to be an expectation value
-        op.return_type = "expectation"
+            # set return type to be an expectation value
+            obs.return_type = "expectation"
 
-        if QNode._current_context is not None:
-            # add observable to QNode observable queue
-            QNode._current_context._append_op(op)
+            if len(obs.wires) == 1:
+                wires.append(obs.wires)
+            else:
+                raise QuantumFunctionError(
+                    "Only single wire observables can be tensored."
+                )
 
-        return op
+        if len(ops) == 1:
+            # Single observable
+            if QNode._current_context is not None:
+                # add observable to QNode observable queue
+                QNode._current_context._append_op(*ops)
+        else:
+            # Tensor observable. Expand as a multi-qubit Hermitian observable
+            flat_wires = [i for sub in wires for i in sub]
+            num_wires = QNode._current_context.num_wires
+
+            # tensored_matrix =
+
+            if QNode._current_context is not None:
+                # add observable to QNode tensor observable queue
+                pass
+                # QNode._current_context._append_tensorop(qml.Hermitian(tensored_matrix,
+                #                                         wires=wires))
+        return ops
 
     def __getattr__(self, name):
         # This to allow backwards compatibility with the previous
@@ -109,7 +133,9 @@ class ExpvalFactory:
             return type(name, (obs_class,), {"return_type": "expectation"})
 
         if name in qml.ops.__all_ops__:  # pylint: disable=no-member
-            raise AttributeError("{} is not an observable: cannot be used with expval".format(name))
+            raise AttributeError(
+                "{} is not an observable: cannot be used with expval".format(name)
+            )
 
         raise AttributeError("module 'pennylane' has no observable '{}'".format(name))
 
