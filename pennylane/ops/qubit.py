@@ -480,7 +480,7 @@ class CRot(Operation):
 
 class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
-    Apply an arbitrary unitary matrix
+    Apply an arbitrary fixed unitary matrix; QubitUnitary only accepts unitary matrices which do not depend on any parameters.
 
     **Details:**
 
