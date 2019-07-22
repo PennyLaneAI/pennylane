@@ -351,6 +351,8 @@ class DefaultQubit(Device):
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError("The default.qubit plugin can apply QubitStateVector only to all of the {} wires.".format(self.num_wires))
             return
         if operation == 'BasisState':
             n = len(par[0])
