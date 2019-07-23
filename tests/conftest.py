@@ -68,6 +68,21 @@ def qubit_device_3_wires():
     return qml.device('default.qubit', wires=3)
 
 
+@pytest.fixture(scope="function")
+def qubit_device_1_wire():
+    return qml.device('default.qubit', wires=1)
+
+
+@pytest.fixture(scope="function")
+def qubit_device_2_wires():
+    return qml.device('default.qubit', wires=2)
+    
+
+@pytest.fixture(scope="function")
+def qubit_device_3_wires():
+    return qml.device('default.qubit', wires=3)
+
+
 @pytest.fixture(scope="session")
 def gaussian_device(n_subsystems):
     """Number of qubits or modes."""
