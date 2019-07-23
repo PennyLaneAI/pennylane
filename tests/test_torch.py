@@ -129,7 +129,7 @@ class TestTorchQNodeExceptions():
             qf(torch.tensor(0.5))
 
     def test_qnode_fails_for_cv_ops_on_qubit_device(self, qubit_device_1_wire):
-        """A qubit device can not execute CV operations"""
+        """A qubit device cannot execute CV operations"""
 
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def qf(x):
@@ -140,7 +140,7 @@ class TestTorchQNodeExceptions():
             qf(torch.tensor(0.5))
 
     def test_qnode_fails_for_cv_observables_on_qubit_device(self, qubit_device_1_wire):
-        """A qubit device can not measure CV observables"""
+        """A qubit device cannot measure CV observables"""
 
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def qf(x):
