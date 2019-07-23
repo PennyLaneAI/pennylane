@@ -180,7 +180,7 @@ def sample(op, n=None):
         raise ValueError("The number of samples must be a positive integer.")
 
     if QNode._current_context is not None:
-        # add observable to QNode observable queue
+        # add observable back to QNode observable queue
         QNode._current_context._append_op(op)
 
     return op
