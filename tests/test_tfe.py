@@ -195,8 +195,7 @@ class TestTFEQNodeParameterHandling:
 
         def cost(x, array, y):
             c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
-            if c.shape != tf.TensorShape([]):
-                c = c[0]  # get a scalar
+            
             return c +0.5*array[0,0] +x -0.4*y
 
         with tf.GradientTape() as tape:
@@ -222,8 +221,7 @@ class TestTFEQNodeParameterHandling:
 
         def cost(x, array, y):
             c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
-            if c.shape != tf.TensorShape([]):
-                c = c[0]  # get a scalar
+            c = c[0]  # get a scalar
             return c +0.5*array[0,0] +x -0.4*y
 
         with tf.GradientTape() as tape:
@@ -250,8 +248,7 @@ class TestTFEQNodeParameterHandling:
 
         def cost(x, array, y):
             c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
-            if c.shape != tf.TensorShape([]):
-                c = c[0]  # get a scalar
+            c = c[0]  # get a scalar
             return c +0.5*array[0,0] +x -0.4*y
 
         with tf.GradientTape() as tape:
