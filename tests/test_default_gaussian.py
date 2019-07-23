@@ -74,7 +74,7 @@ class TestExceptions(BaseTest):
 
         @qml.qnode(dev)
         def circuit():
-            return qml.sample(qml.MeanPhoton(0), 10)
+            return qml.sample(qml.NumberOperator(0), 10)
         
         with self.assertRaisesRegex(NotImplementedError, "Sampling is not supported in default.gaussian"):
             res = circuit()
