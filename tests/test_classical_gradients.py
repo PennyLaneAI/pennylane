@@ -17,7 +17,7 @@ Sanity checks for classical automatic gradient formulas (without QNodes).
 
 import pytest
 
-from defaults import pennylane as qml, BaseTest
+import pennylane as qml
 from pennylane import numpy as np
 
 
@@ -27,37 +27,40 @@ np.random.seed(42)
 class TestGradientUnivar:
     """Tests gradients of univariate unidimensional functions."""
 
-    def test_sin(self):
+    def test_sin(self, tol):
         """Tests with sin function."""
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
         g = qml.grad(np.sin, 0)
         auto_grad = [g(x) for x in x_vals]
         correct_grad = np.cos(x_vals)
-        np.allclose(auto_grad, correct_grad)
 
-    def test_exp(self):
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
+
+    def test_exp(self, tol):
         """Tests exp function."""
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
         func = lambda x: np.exp(x / 10.0) / 10.0
         g = qml.grad(func, 0)
         auto_grad = [g(x) for x in x_vals]
-        correct_grad = np.exp(x_vals / 10.0)
-        np.allclose(auto_grad, correct_grad)
+        correct_grad = np.exp(x_vals / 10.0) / 100.0
 
-    def test_linear(self):
-        """Tests linear function."""
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
+
+    def test_poly(self, tol):
+        """Tests a polynomial function."""
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
-        func = lambda x: 2 * x
+        func = lambda x: 2 * x**2 + 3 * x + 4
         g = qml.grad(func, 0)
         auto_grad = [g(x) for x in x_vals]
-        correct_grad = x_vals ** 2
-        np.allclose(auto_grad, correct_grad)
+        correct_grad = 4 * x_vals + 3
+        
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
 
 
 class TestGradientMultiVar:
     """Tests gradients of multivariate unidimensional functions."""
 
-    def test_sin(self):
+    def test_sin(self, tol):
         """Tests gradients with multivariate sin and cosine."""
         multi_var = lambda x: np.sin(x[0]) + np.cos(x[1])
         grad_multi_var = lambda x: np.array([np.cos(x[0]), -np.sin(x[1])])
@@ -66,9 +69,10 @@ class TestGradientMultiVar:
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
-        np.allclose(auto_grad, correct_grad)
+        
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
 
-    def test_exp(self):
+    def test_exp(self, tol):
         """Tests gradients with a multivariate exp and tanh."""
         multi_var = lambda x: np.exp(x[0] / 3) * np.tanh(x[1])
         grad_multi_var = lambda x: np.array(
@@ -81,9 +85,10 @@ class TestGradientMultiVar:
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
-        np.allclose(auto_grad, correct_grad)
 
-    def test_quadratic(self):
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
+
+    def test_quadratic(self, tol):
         """Tests gradients with a quadratic function."""
         multi_var = lambda x: np.sum([x_ ** 2 for x_ in x])
         grad_multi_var = lambda x: np.array([2 * x_ for x_ in x])
@@ -91,13 +96,14 @@ class TestGradientMultiVar:
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
-        np.allclose(auto_grad, correct_grad)
+
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
 
 
 class TestGradientMultiargs:
     """Tests gradients of univariate functions with multiple arguments in signature."""
 
-    def test_sin(self):
+    def test_sin(self, tol):
         """Tests multiarg gradients with sin and cos functions."""
         x = -2.5
         y = 1.5
@@ -108,21 +114,21 @@ class TestGradientMultiargs:
         gx = qml.grad(f, 0)
         auto_gradx = gx(x, y)
         correct_gradx = gradf(x, y)[0]
-        np.allclose(auto_gradx, correct_gradx)
+        assert np.allclose(auto_gradx, correct_gradx, atol=tol, rtol=0)
 
         # gradient wrt second argument
         gy = qml.grad(f, 1)
         auto_grady = gy(x, y)
         correct_grady = gradf(x, y)[1]
-        np.allclose(auto_grady, correct_grady)
+        assert np.allclose(auto_grady, correct_grady, atol=tol, rtol=0)
 
         # gradient wrt both arguments
         gxy = qml.grad(f, [0, 1])
         auto_gradxy = gxy(x, y)
         correct_gradxy = gradf(x, y)
-        np.allclose(auto_gradxy, correct_gradxy)
+        assert np.allclose(auto_gradxy, correct_gradxy, atol=tol, rtol=0)
 
-    def test_exp(self):
+    def test_exp(self, tol):
         """Tests multiarg gradients with exp and tanh functions."""
         x = -2.5
         y = 1.5
@@ -136,21 +142,21 @@ class TestGradientMultiargs:
         gx = qml.grad(f, 0)
         auto_gradx = gx(x, y)
         correct_gradx = gradf(x, y)[0]
-        np.allclose(auto_gradx, correct_gradx)
+        assert np.allclose(auto_gradx, correct_gradx, atol=tol, rtol=0)
 
         # gradient wrt second argument
         gy = qml.grad(f, 1)
         auto_grady = gy(x, y)
         correct_grady = gradf(x, y)[1]
-        np.allclose(auto_grady, correct_grady)
+        assert np.allclose(auto_grady, correct_grady, atol=tol, rtol=0)
 
         # gradient wrt both arguments
         gxy = qml.grad(f, [0, 1])
         auto_gradxy = gxy(x, y)
         correct_gradxy = gradf(x, y)
-        np.allclose(auto_gradxy, correct_gradxy)
+        assert np.allclose(auto_gradxy, correct_gradxy, atol=tol, rtol=0)
 
-    def test_linear(self):
+    def test_linear(self, tol):
         """Tests multiarg gradients with a linear function."""
         x = -2.5
         y = 1.5
@@ -161,25 +167,25 @@ class TestGradientMultiargs:
         gx = qml.grad(f, 0)
         auto_gradx = gx(x, y)
         correct_gradx = gradf(x, y)[0]
-        np.allclose(auto_gradx, correct_gradx)
+        assert np.allclose(auto_gradx, correct_gradx, atol=tol, rtol=0)
 
         # gradient wrt second argument
         gy = qml.grad(f, 1)
         auto_grady = gy(x, y)
         correct_grady = gradf(x, y)[1]
-        np.allclose(auto_grady, correct_grady)
+        assert np.allclose(auto_grady, correct_grady, atol=tol, rtol=0)
 
         # gradient wrt both arguments
         gxy = qml.grad(f, [0, 1])
         auto_gradxy = gxy(x, y)
         correct_gradxy = gradf(x, y)
-        np.allclose(auto_gradxy, correct_gradxy)
+        assert np.allclose(auto_gradxy, correct_gradxy, atol=tol, rtol=0)
 
 
 class TestGradientMultivarMultidim:
     """Tests gradients of multivariate multidimensional functions."""
 
-    def test_sin(self):
+    def test_sin(self, tol):
         """Tests gradients with multivariate multidimensional sin and cos."""
         x_vec = np.random.uniform(-5, 5, size=(2))
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
@@ -190,9 +196,9 @@ class TestGradientMultivarMultidim:
         g = qml.grad(f, 0)
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
-        np.allclose(auto_grad, correct_grad)
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
 
-    def test_exp(self):
+    def test_exp(self, tol):
         """Tests gradients with multivariate multidimensional exp and tanh."""
         x_vec = np.random.uniform(-5, 5, size=(2))
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
@@ -208,9 +214,9 @@ class TestGradientMultivarMultidim:
         g = qml.grad(f, 0)
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
-        np.allclose(auto_grad, correct_grad)
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
 
-    def test_linear(self):
+    def test_linear(self, tol):
         """Tests gradients with multivariate multidimensional linear func."""
         x_vec = np.random.uniform(-5, 5, size=(2))
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
@@ -221,4 +227,4 @@ class TestGradientMultivarMultidim:
         g = qml.grad(f, 0)
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
-        np.allclose(auto_grad, correct_grad)
+        assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)

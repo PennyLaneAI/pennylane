@@ -55,8 +55,12 @@ Gates and operations
     CNOT
     SWAP
     CZ
+    CRotx
+    CRoty
+    CRotz
+    CRot3
 
-Expectations
+Observables
 ------------
 
 .. autosummary::
@@ -183,6 +187,51 @@ def Rot3(a, b, c):
     return Rotz(c) @ (Roty(b) @ Rotz(a))
 
 
+def CRotx(theta):
+    r"""Two-qubit controlled rotation about the x axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_x(\theta)`
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1j*np.sin(theta/2)], [0, 0, -1j*np.sin(theta/2), np.cos(theta/2)]])
+
+
+def CRoty(theta):
+    r"""Two-qubit controlled rotation about the y axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_y(\theta)`
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
+
+
+def CRotz(theta):
+    r"""Two-qubit controlled rotation about the z axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_z(\theta)` 
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
+
+
+def CRot3(a, b, c):
+    r"""Arbitrary two-qubit controlled rotation using three Euler angles.
+
+    Args:
+        a,b,c (float): rotation angles
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R(a,b,c)` 
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
+
+
+
 #========================================================
 #  Arbitrary states and operators
 #========================================================
@@ -227,7 +276,7 @@ def hermitian(*args):
     return A
 
 def identity(*_):
-    """Identity matrix for expectations.
+    """Identity matrix observable.
 
     Returns:
         array: 2x2 identity matrix
@@ -249,7 +298,7 @@ class DefaultQubit(Device):
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
-    pennylane_requires = '0.4'
+    pennylane_requires = '0.5'
     version = '0.4.0'
     author = 'Xanadu Inc.'
 
@@ -271,7 +320,11 @@ class DefaultQubit(Device):
         'RX': Rotx,
         'RY': Roty,
         'RZ': Rotz,
-        'Rot': Rot3
+        'Rot': Rot3,
+        'CRX': CRotx,
+        'CRY': CRoty,
+        'CRZ': CRotz,
+        'CRot': CRot3
     }
 
     _observable_map = {
@@ -399,15 +452,6 @@ class DefaultQubit(Device):
         return A(*par)
 
     def ev(self, A, wires):
-        r"""Evaluates an expectation value of the current state.
-
-        Args:
-          A (array): :math:`2^M\times 2^M` Hermitian matrix corresponding to the observable
-          wires (Sequence[int]): target subsystems
-
-        Returns:
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
-        """
         As = self.mat_vec_product(A, self._state, wires)
         expectation = np.vdot(self._state, As)
 

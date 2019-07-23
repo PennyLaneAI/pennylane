@@ -132,7 +132,8 @@ class Rotation(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{dr}R(r) = \frac{1}{2} \left[R(\phi+\pi/2) - R(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{dr}f(R(r)) = \frac{1}{2} \left[f(R(\phi+\pi/2)) - f(R(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R(r)`.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -167,8 +168,9 @@ class Squeezing(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}S(r,\phi) = \frac{1}{2\sinh s} \left[S(r+s, \phi) - S(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{dr}f(S(r,\phi)) = \frac{1}{2\sinh s} \left[f(S(r+s, \phi)) - f(S(r-s, \phi))\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`S(r,\phi)`.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -212,8 +214,9 @@ class Displacement(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}D(a,\phi) = \frac{1}{2s} \left[D(a+s, \phi) - D(a-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default)
+    * Gradient recipe: :math:`\frac{d}{da}f(D(a,\phi)) = \frac{1}{2s} \left[f(D(a+s, \phi)) - f(D(a-s, \phi))\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`D(a,\phi)`.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix} 1 & 0 & 0 \\ 2a\cos\phi & 1 & 0 \\ 2a\sin\phi & 0 & 1\end{bmatrix}
@@ -250,7 +253,8 @@ class Beamsplitter(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}B(r,\phi) = \frac{1}{2} \left[B(\theta+\pi/2, \phi) - B(\theta-\pi/2, \phi)\right]`
+    * Gradient recipe: :math:`\frac{d}{d \theta}f(B(\theta,\phi)) = \frac{1}{2} \left[f(B(\theta+\pi/2, \phi)) - f(B(\theta-\pi/2, \phi))\right]`
+      where :math:`f` is an expectation value depending on :math:`B(\theta,\phi)`.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -302,8 +306,9 @@ class TwoModeSqueezing(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{dr}f(S_2(r,\phi)) = \frac{1}{2\sinh s} \left[f(S_2(r+s, \phi)) - f(S_2(r-s, \phi))\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`S_2(r,\phi)`.
 
     * Heisenberg representation:
 
@@ -352,9 +357,9 @@ class QuadraticPhase(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{ds}f(P(s)) = \frac{1}{2 a} \left[f(P(s+a)) - f(P(s-a))\right]`,
+      where :math:`a` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`P(s)`.
 
     * Heisenberg representation:
 
@@ -395,9 +400,9 @@ class ControlledAddition(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{ds}f(\text{CX}(s)) = \frac{1}{2 a} \left[f(\text{CX}(s+a)) - f(\text{CX}(s-a))\right]`,
+      where :math:`a` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`\text{CX}(s)`.
 
     * Heisenberg representation:
 
@@ -434,16 +439,16 @@ class ControlledPhase(CVOperation):
     Controlled phase operation.
 
     .. math::
-           \text{CX}(s) =  \iint dx dy \: e^{i sxy/\hbar} \ket{x,y}\bra{x,y}
+           \text{CZ}(s) =  \iint dx dy \: e^{i sxy/\hbar} \ket{x,y}\bra{x,y}
            = e^{i s \: \hat{x} \otimes \hat{x}/\hbar}.
 
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{ds}f(\text{CZ}(s)) = \frac{1}{2 a} \left[f(\text{CZ}(s+a)) - f(\text{CZ}(s-a))\right]`,
+      where :math:`a` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`\text{CZ}(s)`.
 
     * Heisenberg representation:
 

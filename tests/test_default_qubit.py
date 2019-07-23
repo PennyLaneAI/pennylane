@@ -34,6 +34,10 @@ from pennylane.plugins.default_qubit import (
     Roty,
     Rotz,
     Rot3,
+    CRotx,
+    CRoty,
+    CRotz,
+    CRot3,
     unitary,
     hermitian,
     DefaultQubit,
@@ -190,6 +194,79 @@ class TestAuxillaryFunctions(BaseTest):
             Rot3(a, b, c), arbitrary_rotation(a, b, c), delta=self.tol
         )
 
+    def test_C_x_rotation(self):
+        """Test controlled x rotation is correct"""
+        self.logTestName()
+
+        # test identity for theta=0
+        self.assertAllAlmostEqual(CRotx(0), np.identity(4), delta=self.tol)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1j/np.sqrt(2)], [0, 0, -1j/np.sqrt(2), 1/np.sqrt(2)]]) 
+        self.assertAllAlmostEqual(CRotx(np.pi / 2), expected, delta=self.tol)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, -1j, 0]])
+        self.assertAllAlmostEqual(CRotx(np.pi), expected, delta=self.tol)
+
+    def test_C_y_rotation(self):
+        """Test controlled y rotation is correct"""
+        self.logTestName()
+
+        # test identity for theta=0
+        self.assertAllAlmostEqual(CRoty(0), np.identity(4), delta=self.tol)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1/np.sqrt(2)], [0, 0, 1/np.sqrt(2), 1/np.sqrt(2)]]) 
+        self.assertAllAlmostEqual(CRoty(np.pi / 2), expected, delta=self.tol)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
+        self.assertAllAlmostEqual(CRoty(np.pi), expected, delta=self.tol)
+
+    def test_C_z_rotation(self):
+        """Test controlled z rotation is correct"""
+        self.logTestName()
+
+        # test identity for theta=0
+        self.assertAllAlmostEqual(CRotz(0), np.identity(4), delta=self.tol)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j * np.pi / 4), 0], [0, 0, 0, np.exp(1j * np.pi / 4)]]) 
+        self.assertAllAlmostEqual(CRotz(np.pi / 2), expected, delta=self.tol)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])
+        self.assertAllAlmostEqual(CRotz(np.pi), expected, delta=self.tol)
+
+    def test_controlled_arbitrary_rotation(self):
+        """Test controlled arbitrary rotation is correct"""
+        self.logTestName()
+
+        # test identity for phi,theta,omega=0
+        self.assertAllAlmostEqual(CRot3(0,0,0), np.identity(4), delta=self.tol)
+
+        # test identity for phi,theta,omega=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
+        self.assertAllAlmostEqual(CRot3(np.pi,np.pi,np.pi), expected, delta=self.tol)
+
+        def arbitrary_Crotation(x, y, z):
+            """controlled arbitrary single qubit rotation"""
+            c = np.cos(y / 2)
+            s = np.sin(y / 2)
+            return np.array(
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
+                    [0, 0, np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c]
+                ]
+            )
+
+        a, b, c = 0.432, -0.152, 0.9234
+        self.assertAllAlmostEqual(
+            CRot3(a, b, c), arbitrary_Crotation(a, b, c), delta=self.tol
+        )
 
 class TestStateFunctions(BaseTest):
     """Arbitrary state and operator tests."""

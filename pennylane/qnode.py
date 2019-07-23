@@ -41,7 +41,7 @@ The quantum circuit function encapsulated by the QNode must be of the following 
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        return expval(qml.PauliZ(0))
+        return qml.expval(qml.PauliZ(0))
 
 Quantum circuit functions are a restricted subset of Python functions, adhering to the following
 constraints:
@@ -90,7 +90,7 @@ For example:
                 qml.RZ(x, wires=0)
                 qml.CNOT(wires=[0,1])
                 qml.RY(y, wires=1)
-                return expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0))
 
             result = my_quantum_function(np.pi/4, 0.7)
 
