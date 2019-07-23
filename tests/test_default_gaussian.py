@@ -63,6 +63,21 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
+class TestExceptions(BaseTest):
+    """Tests that default.gaussian throws the correct error messages"""
+
+    def test_sample_exception(self):
+        """Test that default.gaussian raises an exception if sampling is attempted."""
+        self.logTestName()
+
+        dev = qml.device('default.gaussian', wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.MeanPhoton(0), 10)
+        
+        with self.assertRaisesRegex(NotImplementedError, "Sampling is not supported in default.gaussian"):
+            res = circuit()
 
 class TestAuxillaryFunctions(BaseTest):
     """Tests the auxillary functions"""
