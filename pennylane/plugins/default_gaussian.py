@@ -733,7 +733,7 @@ class DefaultGaussian(Device):
         'P': homodyne(np.pi/2),
         'QuadOperator': homodyne(None),
         'PolyXP': poly_quad_expectations,
-        'NumberStateProjector': fock_expectation,
+        'FockStateProjector': fock_expectation,
         'Identity': identity
     }
 
