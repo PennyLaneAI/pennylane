@@ -161,7 +161,7 @@ def sample(op, n=None):
         )
 
     if QNode._current_context is not None:
-        # delete operations from QNode queue
+        # delete operation from QNode queue
         QNode._current_context.queue.remove(op)
 
     # set return type to be a sample
