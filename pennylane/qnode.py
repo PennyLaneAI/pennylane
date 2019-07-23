@@ -353,9 +353,9 @@ class QNode:
             if res.return_type == "sample":
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
-                self.output_type = np.squeeze
+                self.output_conversion = np.squeeze
             else:
-                self.output_type = float
+                self.output_conversion = float
 
             self.output_dim = 1
             res = (res,)
@@ -363,7 +363,7 @@ class QNode:
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
             self.output_dim = len(res)
-            self.output_type = np.asarray
+            self.output_conversion = np.asarray
 
             res = tuple(res)
         else:
@@ -591,7 +591,7 @@ class QNode:
             check_op(op)
 
         ret = self.device.execute(self.queue, self.ev)
-        return self.output_type(ret)
+        return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, **kwargs):
         """Evaluate the value of the given observables.
