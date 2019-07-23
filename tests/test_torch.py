@@ -197,8 +197,6 @@ class TestTorchQNodeParameterHandling:
 
         def cost(x, array, y):
             c = torch.as_tensor(circuit(torch.tensor(0.111), array, torch.tensor(4.5)), dtype=torch.float32)
-            if c.shape:
-                c = c[0]  # get a scalar
             return c +0.5*array[0,0] +x -0.4*y
 
         cost_res = cost(*args)
@@ -228,8 +226,7 @@ class TestTorchQNodeParameterHandling:
 
         def cost(x, array, y):
             c = torch.as_tensor(circuit(torch.tensor(0.111), array, torch.tensor(4.5)), dtype=torch.float32)
-            if c.shape:
-                c = c[0]  # get a scalar
+            c = c[0]  # get a scalar
             return c +0.5*array[0,0] +x -0.4*y
 
         cost_res = cost(*args)
@@ -260,8 +257,7 @@ class TestTorchQNodeParameterHandling:
 
         def cost(x, array, y):
             c = torch.as_tensor(circuit(torch.tensor(0.111), array, torch.tensor(4.5)), dtype=torch.float32)
-            if c.shape:
-                c = c[0]  # get a scalar
+            c = c[0]  # get a scalar
             return c +0.5*array[0,0] +x -0.4*y
 
         cost_res = cost(*args)
