@@ -452,14 +452,14 @@ class DefaultQubit(Device):
         return A(*par)
 
     def ev(self, A, wires):
-        """Expectation value of observable on specified wires.	
+        r"""Expectation value of observable on specified wires.
 
-         Args:	
-          observable      (str): name of the observable	
-          wires (Sequence[int]): target subsystems	
-          par    (tuple[float]): parameter values	
-         Returns:	
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`	
+         Args:
+          observable      (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par    (tuple[float]): parameter values
+         Returns:
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         As = self.mat_vec_product(A, self._state, wires)
         expectation = np.vdot(self._state, As)
