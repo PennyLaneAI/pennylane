@@ -179,7 +179,8 @@ class TestTorchQNodeParameterHandling:
                 assert np.allclose(y_eval, y_true, atol=tol, rtol=0)
 
     def test_qnode_array_parameters_scalar_return(self, qubit_device_1_wire, tol):
-        """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch."""
+        """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch.
+           Test case for a circuit that returns a scalar."""
 
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def circuit(dummy1, array, dummy2):
@@ -209,7 +210,8 @@ class TestTorchQNodeParameterHandling:
             assert np.allclose(args[i].grad.detach().numpy(), grad_target[i], atol=tol, rtol=0)
 
     def test_qnode_array_parameters_1_vector_return(self, qubit_device_1_wire, tol):
-        """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch."""
+        """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch.
+           Test case for a circuit that returns a 1-vector."""
 
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def circuit(dummy1, array, dummy2):
@@ -239,7 +241,8 @@ class TestTorchQNodeParameterHandling:
             assert np.allclose(args[i].grad.detach().numpy(), grad_target[i], atol=tol, rtol=0)
 
     def test_qnode_array_parameters_2_vector_return(self, qubit_device_2_wires, tol):
-        """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch."""
+        """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch.
+           Test case for a circuit that returns a 2-vector."""
 
         @qml.qnode(qubit_device_2_wires, interface='torch')
         def circuit(dummy1, array, dummy2):
