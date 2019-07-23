@@ -7,6 +7,7 @@
   To support this on plugin devices, there is a new `Device.sample` method.
 
   Taking gradients of QNodes that involve sampling is not possible.
+  [#256](https://github.com/XanaduAI/pennylane/pull/256)
 
 * `pennylane.expval()` is now a top-level *function*, and is no longer
   a package of classes. For now, the existing `pennylane.expval.Observable`
