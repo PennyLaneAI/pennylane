@@ -80,7 +80,7 @@ Observables
     NumberOperator
     X
     P
-    QuadratureOperator
+    QuadOperator
     PolyXP
     NumberStateProjector
 
@@ -916,8 +916,8 @@ class P(CVObservable):
         return np.array([0, 0, 1])
 
 
-class QuadratureOperator(CVObservable):
-    r"""pennylane.ops.QuadratureOperator(phi, wires)
+class QuadOperator(CVObservable):
+    r"""pennylane.ops.QuadOperator(phi, wires)
     The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
     When used with the :func:`~.expval` function, the expectation
@@ -1063,7 +1063,7 @@ ops = {
 }
 
 
-obs = {"QuadratureOperator", "NumberOperator", "P", "X", "PolyXP", "NumberStateProjector"}
+obs = {"QuadOperator", "NumberOperator", "P", "X", "PolyXP", "NumberStateProjector"}
 
 
 __all__ = list(ops | obs)

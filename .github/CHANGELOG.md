@@ -52,7 +52,7 @@
 ### Breaking changes
 
 * The following CV observables were renamed to comply with the new Operation/Observable
-  scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadratureOperator` and `NumberState` to `NumberStateProjector`. [#243](https://github.com/XanaduAI/pennylane/pull/243)
+  scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `NumberStateProjector`. [#243](https://github.com/XanaduAI/pennylane/pull/243)
 
 * The `Device` methods `expectations`, `pre_expval`, and `post_expval` have been
   renamed to `observables`, `pre_measure`, and `post_measure` respectively.

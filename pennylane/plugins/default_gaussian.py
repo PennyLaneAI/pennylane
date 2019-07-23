@@ -731,7 +731,7 @@ class DefaultGaussian(Device):
         'NumberOperator': photon_number,
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
-        'QuadratureOperator': homodyne(None),
+        'QuadOperator': homodyne(None),
         'PolyXP': poly_quad_expectations,
         'NumberStateProjector': fock_expectation,
         'Identity': identity

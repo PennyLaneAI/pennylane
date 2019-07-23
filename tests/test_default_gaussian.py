@@ -424,7 +424,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
 
         # test correct mean for Homodyne measurement
-        mean = dev.expval('QuadratureOperator', [0], [np.pi/2])
+        mean = dev.expval('QuadOperator', [0], [np.pi/2])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
 
         # test correct mean for number state expectation |<n|alpha>|^2
@@ -466,7 +466,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
         # test correct mean and variance for Homodyne measurement
-        var = dev.var('QuadratureOperator', [0], [np.pi/2])
+        var = dev.var('QuadOperator', [0], [np.pi/2])
         self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
     def test_variance_coherent_numberstate(self):
