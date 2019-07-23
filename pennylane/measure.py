@@ -152,7 +152,7 @@ def sample(op, n=None):
 
     Args:
         op (Observable): a quantum observable object
-        n (int): number of samples that should be obtained. Defaults to the
+        n (int): Number of samples that should be obtained. Defaults to the
             number of shots given as a parameter to the corresponding Device.
     """
     if not isinstance(op, Observable):
