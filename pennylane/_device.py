@@ -387,7 +387,7 @@ class Device(abc.ABC):
                 number of shots given as a parameter to the corresponding Device.
 
         Returns:
-            array[float]: samples in an array of dimension [n, num_wires]
+            array[float]: samples in an array of dimension ``(n, num_wires)``
         """
         raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
 
