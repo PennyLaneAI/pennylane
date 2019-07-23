@@ -182,6 +182,8 @@ class TestTorchQNodeParameterHandling:
         """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch.
            Test case for a circuit that returns a scalar."""
 
+        # The objective of this test is not to check if the results are correctly calculated, 
+        # but to check that the interoperability of the different return types works.
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def circuit(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], wires=0)
@@ -211,6 +213,8 @@ class TestTorchQNodeParameterHandling:
         """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch.
            Test case for a circuit that returns a 1-vector."""
 
+        # The objective of this test is not to check if the results are correctly calculated, 
+        # but to check that the interoperability of the different return types works.
         @qml.qnode(qubit_device_1_wire, interface='torch')
         def circuit(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], wires=0)
@@ -241,6 +245,8 @@ class TestTorchQNodeParameterHandling:
         """Test that QNode can take arrays as input arguments, and that they interact properly with PyTorch.
            Test case for a circuit that returns a 2-vector."""
 
+        # The objective of this test is not to check if the results are correctly calculated, 
+        # but to check that the interoperability of the different return types works.
         @qml.qnode(qubit_device_2_wires, interface='torch')
         def circuit(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], wires=0)
