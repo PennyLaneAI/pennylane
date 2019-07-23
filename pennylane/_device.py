@@ -377,7 +377,7 @@ class Device(abc.ABC):
             observable (str): name of the observable
             wires (Sequence[int]): subsystems the observable is to be measured on
             par (tuple): parameters for the observable
-            n (int): number of samples that should be obtained. Defaults to the
+            n (int): Number of samples that should be obtained. Defaults to the
                 number of shots given as a parameter to the corresponding Device.
 
         Returns:
