@@ -455,9 +455,8 @@ class DefaultQubit(Device):
         r"""Expectation value of observable on specified wires.
 
          Args:
-          observable      (str): name of the observable
+          A            (matrix): the observable
           wires (Sequence[int]): target subsystems
-          par    (tuple[float]): parameter values
          Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """

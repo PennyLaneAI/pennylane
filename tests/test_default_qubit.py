@@ -545,7 +545,7 @@ class TestDefaultQubitDevice(BaseTest):
         self.assertAlmostEqual(var, expected, delta=self.tol)
 
     def test_sample_dimensions(self):
-        """Tests if the samples returned by sample have 
+        """Tests if the samples returned by the sample function have 
         the correct dimensions
         """
         self.logTestName()

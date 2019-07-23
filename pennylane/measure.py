@@ -167,7 +167,7 @@ def sample(op, n=None):
     # set return type to be a sample
     op.return_type = "sample"
 
-    # decorate the operation with the number of samples specified
+    # attach the number of samples to the operation object
     if n is None:
         if QNode._current_context is not None:
             op.num_samples = QNode._current_context.device.shots

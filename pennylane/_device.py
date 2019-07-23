@@ -182,7 +182,7 @@ class Device(abc.ABC):
         return cls._capabilities
 
     def execute(self, queue, observables):
-        """Execute a queue of quantum operations on the device and then measure the given expectation values.
+        """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
         :meth:`pre_apply`, :meth:`apply`, :meth:`post_apply`, :meth:`pre_measure`,
