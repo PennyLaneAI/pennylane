@@ -345,17 +345,6 @@ class DefaultQubit(Device):
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
     def expval(self, observable, wires, par):
-        r"""Expectation value of observable on specified wires.
-
-        Args:
-          observable      (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par    (tuple[float]): parameter values
-
-        Returns:
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
-            """
-
         if self.shots == 0:
             # exact expectation value
             A = self._get_operator_matrix(observable, par)
@@ -367,17 +356,6 @@ class DefaultQubit(Device):
         return ev
 
     def var(self, observable, wires, par):
-        r"""Variance of observable on specified wires.
-
-        Args:
-          observable      (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par    (tuple[float]): parameter values
-
-        Returns:
-          float: variance :math:`\text{Var}(A) = \expect{A^2}-\expect{A}^2 = \bra{\psi}A^2\ket{\psi}-\bra{\psi}A\ket{\psi}^2`
-            """
-
         if self.shots == 0:
             # exact expectation value
             A = self._get_operator_matrix(observable, par)
@@ -389,19 +367,6 @@ class DefaultQubit(Device):
         return var
 
     def sample(self, observable, wires, par, n=None):
-        r"""Sample of observable on specified wires.
-
-        Args:
-          observable      (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par    (tuple[float]): parameter values
-          n               (int): number of samples
-
-        Returns:
-          float: n samples of the observable. Defaults to the number of
-          shots given as a parameter to the corresponding Device.
-            """
-
         if n is None:
             n = self.shots
 
