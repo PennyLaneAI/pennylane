@@ -1,6 +1,15 @@
-# Version 0.4.dev
+# Release 0.5.0-dev
 
 * Added controlled rotation gates to PennyLane operations and `default.qubit` plugin.
+  [#251](https://github.com/XanaduAI/pennylane/pull/251)
+
+### Contributors
+
+This release contains contributions from (in alphabetical order):
+
+Aroosa Ijaz
+
+
 
 # Release 0.4.0
 
