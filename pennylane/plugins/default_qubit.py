@@ -215,7 +215,7 @@ def CRotz(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_z(\theta)` 
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_z(\theta)`
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
 
@@ -226,7 +226,7 @@ def CRot3(a, b, c):
     Args:
         a,b,c (float): rotation angles
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R(a,b,c)` 
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
 
@@ -452,6 +452,15 @@ class DefaultQubit(Device):
         return A(*par)
 
     def ev(self, A, wires):
+        """Expectation value of observable on specified wires.	
+
+         Args:	
+          observable      (str): name of the observable	
+          wires (Sequence[int]): target subsystems	
+          par    (tuple[float]): parameter values	
+         Returns:	
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`	
+        """
         As = self.mat_vec_product(A, self._state, wires)
         expectation = np.vdot(self._state, As)
 
