@@ -130,7 +130,7 @@ class TestTFEQNodeExceptions():
             qf(tfe.Variable(0.5))
 
     def test_qnode_fails_for_cv_ops_on_qubit_device(self, qubit_device_1_wire):
-        """A qubit device can not execute CV operations"""
+        """A qubit device cannot execute CV operations"""
 
         @qml.qnode(qubit_device_1_wire, interface='tfe')
         def qf(x):
