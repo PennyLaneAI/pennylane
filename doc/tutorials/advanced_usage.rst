@@ -32,7 +32,7 @@ We will start with a simple example circuit, which generates a two-qubit entangl
     def circuit1(param):
         qml.RX(param, wires=0)
         qml.CNOT(wires=[0, 1])
-        return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
 The degree of entanglement of the qubits is determined by the value of ``param``. For a value of :math:`\frac{\pi}{2}`, they are maximally entangled. In this case, the reduced states on each subsystem are completely mixed, and local expectation values — like those we are measuring — will average to zero.
 
@@ -63,7 +63,7 @@ For example, let's create a quantum node that accepts two arguments; a different
         qml.RX(fixed, wires=0)
         qml.RX(param, wires=1)
         qml.CNOT(wires=[0, 1])
-        return qml.expval.PauliZ(0), qml.expval.PauliZ(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
 Calling the circuit, we can feed values to the keyword argument ``fixed``:
 
