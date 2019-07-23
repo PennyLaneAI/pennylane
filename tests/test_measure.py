@@ -216,7 +216,6 @@ class TestSample:
             return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliZ(1), n_sample), qml.sample(qml.PauliZ(2), n_sample)
 
         result = circuit_a()
-        print(type(result))
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
@@ -230,7 +229,6 @@ class TestSample:
             return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliZ(1), 2*n_sample), qml.sample(qml.PauliZ(2), 3*n_sample)
 
         result = circuit_b()
-        print(type(result))
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
