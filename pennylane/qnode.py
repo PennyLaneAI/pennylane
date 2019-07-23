@@ -41,7 +41,7 @@ The quantum circuit function encapsulated by the QNode must be of the following 
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        return expval(qml.PauliZ(0))
+        return qml.expval(qml.PauliZ(0))
 
 Quantum circuit functions are a restricted subset of Python functions, adhering to the following
 constraints:
@@ -90,7 +90,7 @@ For example:
                 qml.RZ(x, wires=0)
                 qml.CNOT(wires=[0,1])
                 qml.RY(y, wires=1)
-                return expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0))
 
             result = my_quantum_function(np.pi/4, 0.7)
 
@@ -350,7 +350,13 @@ class QNode:
 
         # quantum circuit function return validation
         if isinstance(res, pennylane.operation.Observable):
-            self.output_type = float
+            if res.return_type == "sample":
+                # Squeezing ensures that there is only one array of values returned
+                # when only a single-mode sample is requested
+                self.output_type = np.squeeze
+            else:
+                self.output_type = float
+
             self.output_dim = 1
             res = (res,)
         elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
@@ -358,6 +364,7 @@ class QNode:
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
             self.output_dim = len(res)
             self.output_type = np.asarray
+
             res = tuple(res)
         else:
             raise QuantumFunctionError("A quantum function must return either a single measured observable "
@@ -666,6 +673,9 @@ class QNode:
         if not self.ops or not self.cache:
             # construct the circuit
             self.construct(params, circuit_kwargs)
+
+        if any(e.return_type == 'sample' for e in self.ev):
+            raise QuantumFunctionError("Circuits that include sampling can not be differentiated.")
 
         flat_params = np.array(list(_flatten(params)))
 

@@ -68,7 +68,7 @@ State preparation
     set_state
 
 
-Expectations
+Observables
 ------------
 
 .. autosummary::
@@ -706,7 +706,7 @@ class DefaultGaussian(Device):
     """
     name = 'Default Gaussian PennyLane plugin'
     short_name = 'default.gaussian'
-    pennylane_requires = '0.4'
+    pennylane_requires = '0.5'
     version = '0.4.0'
     author = 'Xanadu Inc.'
 
@@ -830,6 +830,10 @@ class DefaultGaussian(Device):
         mu, cov = self.reduced_state(wires)
         _, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
         return var
+
+    def sample(self, observable, wires, par, n=None):
+        raise NotImplementedError("Sampling is not supported in default.gaussian, "
+                                  "please install PennyLane-SF or another plugin capable of sampling")
 
     def reset(self):
         """Reset the device"""

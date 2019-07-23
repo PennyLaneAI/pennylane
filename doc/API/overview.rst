@@ -201,7 +201,13 @@ where
 
 * :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'`` method. This is a list with one tuple per operation parameter. For parameter :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in a gradient recipe of
 
-  .. math:: \frac{d}{d\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
+  .. math:: \frac{d}{d\phi_k}f(O(\phi_k)) = c_k\left[f(O(\phi_k+s_k))-f(O(\phi_k-s_k))\right].
+  
+  where :math:`f` is an expectation value that depends on :math:`O(\phi_k)`, an example being 
+
+  .. math:: f(O(\phi_k)) = \braket{0 | O^{\dagger}(\phi_k) \hat{B} O(\phi_k) | 0}
+
+  which is the simple expectation value of the operator :math:`\hat{B}` evolved via the gate :math:`O(\phi_k)`.
 
 Note that if ``grad_recipe = None``, the default gradient recipe is :math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
 

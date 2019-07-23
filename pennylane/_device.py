@@ -216,11 +216,21 @@ class Device(abc.ABC):
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type == "variance":
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
+                elif obs.return_type == "sample":
+                    if not hasattr(obs, 'num_samples'):
+                        raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
+
+                    results.append(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples))
 
             self.post_measure()
 
             self._op_queue = None
             self._obs_queue = None
+
+            # Ensures that a combination with sample does not put
+            # expvals and vars in superfluous arrays
+            if any(obs.return_type == "sample" for obs in observables):
+                return results
 
             return np.array(results)
 
@@ -332,36 +342,48 @@ class Device(abc.ABC):
 
     @abc.abstractmethod
     def expval(self, observable, wires, par):
-        """Return the expectation value of an observable.
-
-        For plugin developers: this function should return the expectation value of the
-        given observable on the device.
+        r"""Returns the expectation value of observable on specified wires.
 
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
+          observable (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par (tuple[float]): parameter values
 
         Returns:
-            float: expectation value
-        """
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+            """
         raise NotImplementedError
 
     def var(self, observable, wires, par):
-        """Return the variance value of an observable.
+        r"""Returns the variance of observable on specified wires.
 
-        For plugin developers: this function should return the variance value of the
-        given observable on the device.
+        Args:
+          observable (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par (tuple[float]): parameter values
+
+        Returns:
+            float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
+        """
+        raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
+
+    def sample(self, observable, wires, par, n=None):
+        """Return a sample of an observable.
+
+        For plugin developers: this function should return the result of an evaluation
+        of the given observable on the device.
 
         Args:
             observable (str): name of the observable
             wires (Sequence[int]): subsystems the observable is to be measured on
             par (tuple): parameters for the observable
+            n (int): number of samples that should be obtained. Defaults to the
+                number of shots given as a parameter to the corresponding Device.
 
         Returns:
-            float: expectation value
+            array[float]: samples in an array of dimension ``(n, num_wires)``
         """
-        raise NotImplementedError
+        raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
 
     @abc.abstractmethod
     def reset(self):
