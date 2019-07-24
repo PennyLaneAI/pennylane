@@ -217,7 +217,7 @@ class Device(abc.ABC):
                 elif obs.return_type == "variance":
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type == "sample":
-                    if not hasattr(obs, 'num_samples'):
+                    if not hasattr(obs, "num_samples"):
                         raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
 
                     results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
@@ -232,7 +232,7 @@ class Device(abc.ABC):
             if all(obs.return_type == "sample" for obs in observables):
                 return np.asarray(results)
             elif any(obs.return_type == "sample" for obs in observables):
-                return np.asarray(results, dtype='object')
+                return np.asarray(results, dtype="object")
             else:
                 return np.asarray(results)
 
