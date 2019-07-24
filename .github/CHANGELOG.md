@@ -12,11 +12,17 @@
 * Added controlled rotation gates to PennyLane operations and `default.qubit` plugin.
   [#251](https://github.com/XanaduAI/pennylane/pull/251)
 
+### Breaking changes
+
+* The following CV observables were renamed to comply with the new Operation/Observable
+  scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.
+  [#243](https://github.com/XanaduAI/pennylane/pull/243)
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Johannes Jakob Meyer
+Aroosa Ijaz, Johannes Jakob Meyer.
 
 
 
@@ -73,10 +79,6 @@ Aroosa Ijaz, Johannes Jakob Meyer
 
 ### Breaking changes
 
-* The following CV observables were renamed to comply with the new Operation/Observable
-  scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.
-  [#243](https://github.com/XanaduAI/pennylane/pull/243)
-
 * The `Device` methods `expectations`, `pre_expval`, and `post_expval` have been
   renamed to `observables`, `pre_measure`, and `post_measure` respectively.
   [#232](https://github.com/XanaduAI/pennylane/pull/232)
@@ -126,7 +128,7 @@ Aroosa Ijaz, Johannes Jakob Meyer
 
 This release contains contributions from:
 
-Shahnawaz Ahmed, riveSunder, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Maria Schuld, Johannes Jakob Meyer.
+Shahnawaz Ahmed, riveSunder, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Maria Schuld.
 
 # Release 0.3.1
 
