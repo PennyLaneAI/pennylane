@@ -77,12 +77,12 @@ Observables
 -----------
 
 .. autosummary::
-    MeanPhoton
+    NumberOperator
     X
     P
-    Homodyne
+    QuadOperator
     PolyXP
-    NumberState
+    FockStateProjector
 
 
 Code details
@@ -821,8 +821,8 @@ class CatState(CVOperation):
 # =============================================================================
 
 
-class MeanPhoton(CVObservable):
-    r"""pennylane.ops.MeanPhoton(wires)
+class NumberOperator(CVObservable):
+    r"""pennylane.ops.NumberOperator(wires)
     The photon number observable :math:`\langle \hat{n}\rangle`.
 
     The number operator is defined as
@@ -921,8 +921,8 @@ class P(CVObservable):
         return np.array([0, 0, 1])
 
 
-class Homodyne(CVObservable):
-    r"""pennylane.ops.Homodyne(phi, wires)
+class QuadOperator(CVObservable):
+    r"""pennylane.ops.QuadOperator(phi, wires)
     The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
     When used with the :func:`~.expval` function, the expectation
@@ -993,8 +993,8 @@ class PolyXP(CVObservable):
         return p[0]
 
 
-class NumberState(CVObservable):
-    r"""pennylane.ops.NumberState(n, wires)
+class FockStateProjector(CVObservable):
+    r"""pennylane.ops.FockStateProjector(n, wires)
     The number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable
@@ -1015,7 +1015,7 @@ class NumberState(CVObservable):
 
     .. note::
 
-        If ``expval(NumberState)`` is applied to a subset of wires,
+        If ``expval(FockStateProjector)`` is applied to a subset of wires,
         the unaffected wires are traced out prior to the expectation value
         calculation.
 
@@ -1030,7 +1030,7 @@ class NumberState(CVObservable):
             observable :math:`\ket{n}\bra{n}=\ket{n_0, n_1, \dots, n_P}\bra{n_0, n_1, \dots, n_P}`.
 
             For example, to return the observable :math:`\ket{0,4,2}\bra{0,4,2}` acting on
-            wires 0, 1, and 3 of a QNode, you would call ``NumberState(np.array([0, 4, 2], wires=[0, 1, 3]))``.
+            wires 0, 1, and 3 of a QNode, you would call ``FockStateProjector(np.array([0, 4, 2], wires=[0, 1, 3]))``.
 
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
@@ -1068,7 +1068,7 @@ ops = {
 }
 
 
-obs = {"Homodyne", "MeanPhoton", "P", "X", "PolyXP", "NumberState"}
+obs = {"QuadOperator", "NumberOperator", "P", "X", "PolyXP", "FockStateProjector"}
 
 
 __all__ = list(ops | obs)

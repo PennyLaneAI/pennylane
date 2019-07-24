@@ -728,12 +728,12 @@ class DefaultGaussian(Device):
     }
 
     _observable_map = {
-        'MeanPhoton': photon_number,
+        'NumberOperator': photon_number,
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
-        'Homodyne': homodyne(None),
+        'QuadOperator': homodyne(None),
         'PolyXP': poly_quad_expectations,
-        'NumberState': fock_expectation,
+        'FockStateProjector': fock_expectation,
         'Identity': identity
     }
 
