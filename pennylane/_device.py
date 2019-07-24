@@ -231,10 +231,10 @@ class Device(abc.ABC):
             # expvals and vars in superfluous arrays
             if all(obs.return_type == "sample" for obs in observables):
                 return np.asarray(results)
-            elif any(obs.return_type == "sample" for obs in observables):
+            if any(obs.return_type == "sample" for obs in observables):
                 return np.asarray(results, dtype="object")
-            else:
-                return np.asarray(results)
+            
+            return np.asarray(results)
 
     @property
     def op_queue(self):

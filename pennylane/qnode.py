@@ -666,7 +666,9 @@ class QNode:
             array[float]: Jacobian matrix, with shape ``(n_out, len(which))``, where ``len(which)`` is the
             number of free parameters, and ``n_out`` is the number of expectation values returned
             by the QNode.
-        """
+        """        
+        # pylint: disable=too-many-statements
+        
         # in QNode.construct we need to be able to (essentially) apply the unpacking operator to params
         if isinstance(params, numbers.Number):
             params = (params,)
@@ -678,7 +680,7 @@ class QNode:
             self.construct(params, circuit_kwargs)
 
         sample_ops = [e for e in self.ev if e.return_type == "sample"]
-        if len(sample_ops) > 0:
+        if sample_ops:
             names = [str(e) for e in sample_ops]
             raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
                                        "The following observable include sampling: {}".format('; '.join(names)))
