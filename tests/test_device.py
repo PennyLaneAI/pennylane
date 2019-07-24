@@ -186,7 +186,7 @@ class DeviceTest(BaseTest):
             self.assertTrue(isinstance(expval, np.ndarray))
             
     def test_sample_attribute_error(self):
-        """Check that an error is raised if a required attributed
+        """Check that an error is raised if a required attribute
            is not present in a sampled observable"""
         self.logTestName()
 
