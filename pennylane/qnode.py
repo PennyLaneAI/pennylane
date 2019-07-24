@@ -365,7 +365,7 @@ class QNode:
 
             # Device already returns the correct numpy array,
             # so no further conversion is required
-            self.output_conversion = lambda x: x
+            self.output_conversion = np.asarray
             self.output_dim = len(res)
 
             res = tuple(res)
