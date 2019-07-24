@@ -253,7 +253,7 @@ class TestSqueezingEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             SqueezingEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1)
-            return [qml.expval(qml.MeanPhoton(wires=0)), qml.expval(qml.MeanPhoton(wires=1))]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
 
@@ -270,7 +270,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='phase', c=1)
             Beamsplitter(pi/2, 0, wires=[0, 1])
             SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1)
-            return [qml.expval(qml.MeanPhoton(wires=0)), qml.expval(qml.MeanPhoton(wires=1))]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
 
@@ -336,7 +336,7 @@ class TestDisplacementEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             DisplacementEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1.)
-            return [qml.expval(qml.MeanPhoton(wires=0)), qml.expval(qml.MeanPhoton(wires=1))]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [0.01, 1.44], atol=0.001)
 
@@ -353,7 +353,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='phase', c=1.)
             Beamsplitter(pi/2, 0, wires=[0, 1])
             DisplacementEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1.)
-            return [qml.expval(qml.MeanPhoton(wires=0)), qml.expval(qml.MeanPhoton(wires=1))]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [0.089327, 2.724715], atol=0.01)
 

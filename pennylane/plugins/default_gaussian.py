@@ -728,12 +728,12 @@ class DefaultGaussian(Device):
     }
 
     _observable_map = {
-        'MeanPhoton': photon_number,
+        'NumberOperator': photon_number,
         'X': homodyne(0),
         'P': homodyne(np.pi/2),
-        'Homodyne': homodyne(None),
+        'QuadOperator': homodyne(None),
         'PolyXP': poly_quad_expectations,
-        'NumberState': fock_expectation,
+        'FockStateProjector': fock_expectation,
         'Identity': identity
     }
 
@@ -830,6 +830,10 @@ class DefaultGaussian(Device):
         mu, cov = self.reduced_state(wires)
         _, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
         return var
+
+    def sample(self, observable, wires, par, n=None):
+        raise NotImplementedError("Sampling is not supported in default.gaussian, "
+                                  "please install PennyLane-SF or another plugin capable of sampling")
 
     def reset(self):
         """Reset the device"""

@@ -42,7 +42,7 @@ def quantum_neural_net(var, x=None):
         x (array[float]): single input vector
 
     Returns:
-        float: expectation of Homodyne measurement on Mode 0
+        float: expectation of X measurement on Mode 0
     """
     # Encode input x into quantum state
     qml.Displacement(x, 0., wires=0)
