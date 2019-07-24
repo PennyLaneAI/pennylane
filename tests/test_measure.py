@@ -223,7 +223,7 @@ class TestSample:
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == np.dtype("float")
 
-    def test_multi_wire_sample_regular_shape(self, tol):
+    def test_multi_wire_sample_ragged_shape(self, tol):
         """Test the return type and shape of sampling multiple wires
            where a ragged array is expected"""
         dev = qml.device("default.qubit", wires=3)
