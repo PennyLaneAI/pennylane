@@ -236,7 +236,8 @@ class TestSample:
 
         result = circuit()
 
-        # If all the dimensions are equal the result will end up to be a proper rectangular array
+        # If the sample dimensions are not equal we expect the 
+        # output to be an array of dtype="object"
         assert isinstance(result, np.ndarray)
         assert result.dtype == np.dtype("object")
         assert np.array_equal(result.shape, (3,))
