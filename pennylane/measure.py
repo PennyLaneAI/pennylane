@@ -160,6 +160,17 @@ def sample(op, n=None):
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
 
+    if n is None:
+        if QNode._current_context is not None:
+            n = QNode._current_context.device.shots
+        else:
+            raise QuantumFunctionError("Could not load number of samples from underlying device.")
+
+    if n == 0:
+        raise ValueError("Calling sample with n = 0 is not possible.")
+    if n < 0 or not isinstance(n, int):
+        raise ValueError("The number of samples must be a positive integer.")
+
     if QNode._current_context is not None:
         # delete operation from QNode queue
         QNode._current_context.queue.remove(op)
@@ -168,16 +179,7 @@ def sample(op, n=None):
     op.return_type = "sample"
 
     # attach the number of samples to the operation object
-    if n is None:
-        if QNode._current_context is not None:
-            op.num_samples = QNode._current_context.device.shots
-    else:
-        op.num_samples = n
-
-    if n == 0:
-        raise ValueError("Calling sample with n = 0 is not possible.")
-    if n < 0 or not isinstance(n, int):
-        raise ValueError("The number of samples must be a positive integer.")
+    op.num_samples = n
 
     if QNode._current_context is not None:
         # add observable back to QNode observable queue

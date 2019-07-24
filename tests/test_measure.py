@@ -266,6 +266,14 @@ class TestSample:
         assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
+        
+    def test_sample_exception_device_context_missing(self):
+        """Tests if the sampling raises an error when using a default
+           sample number but the underlying device can't be accessed"""
+
+        with pytest.raises(QuantumFunctionError, match="Could not load number of samples from underlying device."):
+            qml.QNode._current_context = None
+            qml.sample(qml.PauliZ(0, do_queue=False))
 
     def test_sample_exception_wrong_n(self):
         """Tests if the sampling raises an error for sample size n<=0
