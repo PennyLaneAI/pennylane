@@ -184,6 +184,23 @@ class DeviceTest(BaseTest):
                 expval = dev.execute(queue, [qml.expval(qml.PauliX(0, do_queue=False))])
 
             self.assertTrue(isinstance(expval, np.ndarray))
+            
+    def test_sample_attribute_error(self):
+        """Check that an error is raised if a required attribute
+           is not present in a sampled observable"""
+        self.logTestName()
+
+        dev = qml.device('default.qubit', wires=2)
+
+        queue = [qml.RX(0.543, wires=[0], do_queue=False)]
+
+        # Make a sampling observable but delete its num_samples attribute
+        obs = qml.sample(qml.PauliZ(0, do_queue=False), n = 10)
+        del obs.num_samples
+        obs = [obs]
+
+        with self.assertRaisesRegex(qml.DeviceError, "Number of samples not specified for observable"):
+            dev.execute(queue, obs)
 
     def test_validity(self):
         """check that execution throws error on unsupported operations/observables"""
