@@ -220,7 +220,7 @@ class Device(abc.ABC):
                     if not hasattr(obs, 'num_samples'):
                         raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
 
-                    results.append(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples))
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
 
             self.post_measure()
 
@@ -229,10 +229,12 @@ class Device(abc.ABC):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if any(obs.return_type == "sample" for obs in observables):
-                return results
-
-            return np.array(results)
+            if all(obs.return_type == "sample" for obs in observables):
+                return np.asarray(results)
+            elif any(obs.return_type == "sample" for obs in observables):
+                return np.asarray(results, dtype='object')
+            else:
+                return np.asarray(results)
 
     @property
     def op_queue(self):

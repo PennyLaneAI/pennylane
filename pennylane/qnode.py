@@ -362,13 +362,10 @@ class QNode:
         elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
-            if all(x.return_type == "sample" for x in res):
-                self.output_conversion = np.asarray
-            elif any(x.return_type == "sample" for x in res):
-                self.output_conversion = lambda list: np.asarray(list, dtype=object)
-            else:
-                self.output_conversion = np.asarray
 
+            # Device already returns the correct numpy array,
+            # so no further conversion is required
+            self.output_conversion = lambda x: x
             self.output_dim = len(res)
 
             res = tuple(res)
