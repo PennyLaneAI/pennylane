@@ -233,7 +233,7 @@ class Device(abc.ABC):
                 return np.asarray(results)
             if any(obs.return_type == "sample" for obs in observables):
                 return np.asarray(results, dtype="object")
-            
+
             return np.asarray(results)
 
     @property

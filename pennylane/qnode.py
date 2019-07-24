@@ -666,9 +666,9 @@ class QNode:
             array[float]: Jacobian matrix, with shape ``(n_out, len(which))``, where ``len(which)`` is the
             number of free parameters, and ``n_out`` is the number of expectation values returned
             by the QNode.
-        """        
+        """
         # pylint: disable=too-many-statements
-        
+
         # in QNode.construct we need to be able to (essentially) apply the unpacking operator to params
         if isinstance(params, numbers.Number):
             params = (params,)
