@@ -545,7 +545,7 @@ class TestDefaultQubitDevice(BaseTest):
         self.assertAlmostEqual(var, expected, delta=self.tol)
 
     def test_var_estimate(self):
-        """Test that variance is estimated and not analytically calculated"""
+        """Test that variance is not analytically calculated"""
         self.logTestName()
         
         dev = qml.device('default.qubit', wires=1, shots=3)
@@ -556,8 +556,8 @@ class TestDefaultQubitDevice(BaseTest):
 
         var = circuit()
 
-        # With 3 samples we are guaranteed to not get the correct result
-        # if the variance is estimated from them
+        # With 3 samples we are guaranteed to see a difference between
+        # an estimated variance an an analytically calculated one
         self.assertTrue(var != 1.0)
 
     def test_sample_dimensions(self):
