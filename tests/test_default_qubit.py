@@ -24,7 +24,7 @@ from pennylane import numpy as np
 
 from defaults import pennylane as qml, BaseTest
 from pennylane.plugins.default_qubit import (
-    spectral_decomposition_qubit,
+    spectral_decomposition,
     I,
     X,
     Z,
@@ -105,11 +105,11 @@ def prep_par(par, op):
 class TestAuxillaryFunctions(BaseTest):
     """Test auxillary functions."""
 
-    def test_spectral_decomposition_qubit(self):
+    def test_spectral_decomposition(self):
         """Test that the correct spectral decomposition is returned."""
         self.logTestName()
 
-        a, P = spectral_decomposition_qubit(H)
+        a, P = spectral_decomposition(H)
 
         # verify that H = \sum_k a_k P_k
         self.assertAllAlmostEqual(H, np.einsum("i,ijk->jk", a, P), delta=self.tol)
@@ -544,6 +544,93 @@ class TestDefaultQubitDevice(BaseTest):
                     *np.cos(phi)*(np.sin(theta)-np.cos(theta))+35*np.cos(2*phi)+39)
         self.assertAlmostEqual(var, expected, delta=self.tol)
 
+    def test_var_estimate(self):
+        """Test that variance is not analytically calculated"""
+        self.logTestName()
+        
+        dev = qml.device('default.qubit', wires=1, shots=3)
+        
+        @qml.qnode(dev)
+        def circuit():
+            return qml.var(qml.PauliX(0))
+
+        var = circuit()
+
+        # With 3 samples we are guaranteed to see a difference between
+        # an estimated variance an an analytically calculated one
+        self.assertTrue(var != 1.0)
+
+    def test_sample_dimensions(self):
+        """Tests if the samples returned by the sample function have 
+        the correct dimensions
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        self.dev.apply('RX', wires=[0], par=[1.5708])
+        self.dev.apply('RX', wires=[1], par=[1.5708])
+
+        s1 = self.dev.sample('PauliZ', [0], [], 10)
+        self.assertAllEqual(s1.shape, (10,))
+
+        s2 = self.dev.sample('PauliZ', [1], [], 12)
+        self.assertAllEqual(s2.shape, (12,))
+
+        s3 = self.dev.sample('CZ', [0,1], [], 17)
+        self.assertAllEqual(s3.shape, (17,))
+
+    def test_sample_values(self):
+        """Tests if the samples returned by sample have
+        the correct values
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        self.dev.apply('RX', wires=[0], par=[1.5708])
+
+        s1 = self.dev.sample('PauliZ', [0], [], 10)        
+
+        # s1 should only contain 1 and -1, which is guaranteed if
+        # they square to 1
+        self.assertAllAlmostEqual(s1**2, 1, delta=self.tol)
+
+    def test_sample_exception_analytic_mode(self):
+        """Tests if the sampling raises an error for sample size n=0
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        with self.assertRaisesRegex(
+            ValueError, "Calling sample with n = 0 is not possible."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = 0)
+            
+        # self.def.shots = 0, so this should also fail
+        with self.assertRaisesRegex(
+            ValueError, "Calling sample with n = 0 is not possible."
+        ):
+            self.dev.sample('PauliZ', [0], [])
+
+    def test_sample_exception_wrong_n(self):
+        """Tests if the sampling raises an error for sample size n<0
+        or non-integer n
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        with self.assertRaisesRegex(
+            ValueError, "The number of samples must be a positive integer."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = -12)
+            
+        # self.def.shots = 0, so this should also fail
+        with self.assertRaisesRegex(
+            ValueError, "The number of samples must be a positive integer."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = 12.3)
+
+
+
 class TestDefaultQubitIntegration(BaseTest):
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
@@ -788,9 +875,9 @@ class TestDefaultQubitIntegration(BaseTest):
                 return expectation
 
             if op.num_params == 0:
-                self.assertAllEqual(circuit(), reference())
+                self.assertAllAlmostEqual(circuit(), reference(), delta=self.tol)
             elif g == "Hermitian":
-                self.assertAllEqual(circuit(H), reference(H))
+                self.assertAllAlmostEqual(circuit(H), reference(H), delta=self.tol)
 
     def test_two_qubit_observable(self):
         """Tests expval for two-qubit observables """

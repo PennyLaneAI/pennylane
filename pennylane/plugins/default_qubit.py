@@ -35,7 +35,7 @@ Auxiliary functions
 -------------------
 
 .. autosummary::
-    spectral_decomposition_qubit
+    spectral_decomposition
     unitary
     hermitian
 
@@ -93,19 +93,19 @@ tolerance = 1e-10
 #  utilities
 #========================================================
 
-def spectral_decomposition_qubit(A):
-    r"""Spectral decomposition of a :math:`2\times 2` Hermitian matrix.
+def spectral_decomposition(A):
+    r"""Spectral decomposition of a Hermitian matrix.
 
     Args:
-        A (array): :math:`2\times 2` Hermitian matrix
+        A (array): Hermitian matrix
 
     Returns:
         (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
-        such that :math:`A = \sum_k a_k P_k`.
+            such that :math:`A = \sum_k a_k P_k`.
     """
     d, v = eigh(A)
     P = []
-    for k in range(2):
+    for k in range(d.shape[0]):
         temp = v[:, k]
         P.append(np.outer(temp, temp.conj()))
     return d, P
@@ -215,7 +215,7 @@ def CRotz(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_z(\theta)` 
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_z(\theta)`
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
 
@@ -226,7 +226,7 @@ def CRot3(a, b, c):
     Args:
         a,b,c (float): rotation angles
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R(a,b,c)` 
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
 
@@ -398,23 +398,44 @@ class DefaultQubit(Device):
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
     def expval(self, observable, wires, par):
-        A = self._get_operator_matrix(observable, par)
         if self.shots == 0:
             # exact expectation value
+            A = self._get_operator_matrix(observable, par)
             ev = self.ev(A, wires)
         else:
             # estimate the ev
-            # sample Bernoulli distribution n_eval times / binomial distribution once
-            a, P = spectral_decomposition_qubit(A)
-            p0 = self.ev(P[0], wires)  # probability of measuring a[0]
-            n0 = np.random.binomial(self.shots, p0)
-            ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
+            ev = np.mean(self.sample(observable, wires, par, self.shots))
 
         return ev
 
     def var(self, observable, wires, par):
+        if self.shots == 0:
+            # exact expectation value
+            A = self._get_operator_matrix(observable, par)
+            var = self.ev(A@A, wires) - self.ev(A, wires)**2
+        else:
+            # estimate the ev
+            var = np.var(self.sample(observable, wires, par, self.shots))
+
+        return var
+
+    def sample(self, observable, wires, par, n=None):
+        if n is None:
+            n = self.shots
+
+        if n == 0:
+            raise ValueError("Calling sample with n = 0 is not possible.")
+        if n < 0 or not isinstance(n, int):
+            raise ValueError("The number of samples must be a positive integer.")
+
         A = self._get_operator_matrix(observable, par)
-        return self.ev(A@A, wires) - self.ev(A, wires)**2
+        a, P = spectral_decomposition(A)
+
+        p = np.zeros(a.shape)
+        for idx, Pi in enumerate(P):
+            p[idx] = self.ev(Pi, wires)
+
+        return np.random.choice(a, n, p=p)
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
@@ -431,6 +452,14 @@ class DefaultQubit(Device):
         return A(*par)
 
     def ev(self, A, wires):
+        r"""Expectation value of observable on specified wires.
+
+         Args:
+          A (array[float]): the observable matrix as array
+          wires (Sequence[int]): target subsystems
+         Returns:
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        """
         As = self.mat_vec_product(A, self._state, wires)
         expectation = np.vdot(self._state, As)
 
