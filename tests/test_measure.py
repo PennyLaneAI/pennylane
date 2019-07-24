@@ -205,30 +205,36 @@ class TestSample:
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
 
-    def test_multi_wire_sample(self, tol):
-        """Test the return type and shape of sampling multiple wires"""
+    def test_multi_wire_sample_regular_shape(self, tol):
+        """Test the return type and shape of sampling multiple wires
+           where a rectangular array is expected"""
         dev = qml.device("default.qubit", wires=3)
 
         n_sample = 10
 
         @qml.qnode(dev)
-        def circuit_a():
+        def circuit():
             return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliZ(1), n_sample), qml.sample(qml.PauliZ(2), n_sample)
 
-        result = circuit_a()
+        result = circuit()
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == np.dtype("float")
 
-        dev.reset()
+    def test_multi_wire_sample_regular_shape(self, tol):
+        """Test the return type and shape of sampling multiple wires
+           where a ragged array is expected"""
+        dev = qml.device("default.qubit", wires=3)
+
+        n_sample = 10
 
         @qml.qnode(dev)
-        def circuit_b():
+        def circuit():
             return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliZ(1), 2*n_sample), qml.sample(qml.PauliZ(2), 3*n_sample)
 
-        result = circuit_b()
+        result = circuit()
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
@@ -237,6 +243,28 @@ class TestSample:
         assert np.array_equal(result[0].shape, (n_sample,))
         assert np.array_equal(result[1].shape, (2*n_sample,))
         assert np.array_equal(result[2].shape, (3*n_sample,))
+
+    def test_sample_output_type_in_combination(self, tol):
+        """Test the return type and shape of sampling multiple works 
+           in combination with expvals and vars"""
+        dev = qml.device("default.qubit", wires=3)
+
+        n_sample = 10
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2), n_sample)
+
+        result = circuit()
+
+        # If all the dimensions are equal the result will end up to be a proper rectangular array
+        assert isinstance(result, np.ndarray)
+        assert result.dtype == np.dtype("object")
+        assert np.array_equal(result.shape, (3,))
+        assert isinstance(result[0], float)
+        assert isinstance(result[1], float)
+        assert result[2].dtype == np.dtype("float")
+        assert np.array_equal(result[2].shape, (n_sample,))
 
     def test_sample_exception_wrong_n(self):
         """Tests if the sampling raises an error for sample size n<=0
