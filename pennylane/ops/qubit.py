@@ -480,13 +480,13 @@ class CRot(Operation):
 
 class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
-    Apply an arbitrary fixed unitary matrix; QubitUnitary only accepts unitary matrices which do not depend on any parameters.
+    Apply an arbitrary fixed unitary matrix.
 
     **Details:**
 
     * Number of wires: The operation can act on any number of wires.
     * Number of parameters: 1
-    * Gradient recipe: None (the operation may not be differentiated)
+    * Gradient recipe: None
 
     Args:
         U (array[complex]): square unitary matrix
@@ -533,7 +533,7 @@ class QubitStateVector(Operation):
 
     * Number of wires: None (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (integer parameters not supported)
+    * Gradient recipe: None
 
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
