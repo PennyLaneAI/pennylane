@@ -287,7 +287,7 @@ class TestSample:
         """Tests if the sampling raises an error when using a default
            sample number but the underlying device can't be accessed"""
 
-        with pytest.raises(QuantumFunctionError, match="Could not load number of samples from underlying device."):
+        with pytest.raises(QuantumFunctionError, match="Could not find a bound device to determine the default number of samples."):
             qml.QNode._current_context = None
             qml.sample(qml.PauliZ(0, do_queue=False))
 

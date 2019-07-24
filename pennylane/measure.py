@@ -164,7 +164,7 @@ def sample(op, n=None):
         if QNode._current_context is not None:
             n = QNode._current_context.device.shots
         else:
-            raise QuantumFunctionError("Could not load number of samples from underlying device.")
+            raise QuantumFunctionError("Could not find a bound device to determine the default number of samples.")
 
     if n == 0:
         raise ValueError("Calling sample with n = 0 is not possible.")
