@@ -455,7 +455,7 @@ class DefaultQubit(Device):
         r"""Expectation value of observable on specified wires.
 
          Args:
-          A            (matrix): the observable
+          A      (array[float]): the observable matrix as array
           wires (Sequence[int]): target subsystems
          Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
