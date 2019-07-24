@@ -62,8 +62,11 @@ class DeviceTest(BaseTest):
             self.assertTrue(len(ops) > 0)
             self.assertTrue(len(exps) > 0)
 
-            for op in ops.union(exps):
-                self.assertTrue(dev.supported(op))
+            for op in ops:
+                self.assertTrue(dev.supports_operation(op))
+
+            for obs in exps:
+                self.assertTrue(dev.supports_observable(obs))
 
     def test_check_validity(self):
         """test that the check_validity method correctly

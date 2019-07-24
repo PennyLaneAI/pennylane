@@ -89,6 +89,8 @@ Code details
 import abc
 
 import autograd.numpy as np
+import pennylane as qml
+from pennylane.operation import Operation, Observable
 
 
 class DeviceError(Exception):
@@ -311,6 +313,39 @@ class Device(abc.ABC):
             bool: True iff it is supported
         """
         return name in self.operations.union(self.observables)
+
+    def supports_operation(self, operation):
+        """Checks if an operation is supported by this device.
+
+        Args:
+            operation (Operation/string): operation to be checked
+
+        Returns:
+            bool: True iff it is supported
+        """
+        if isinstance(operation, Operation):
+            return operation.name in self.operations
+        if isinstance(operation, str):
+            return operation in self.operations
+        
+        raise ValueError("The given operation must either be an instance of pennylane.Operation or a string.")
+
+    def supports_observable(self, observable):
+        """Checks if an observable is supported by this device.
+
+        Args:
+            operation (Observable/string): observable to be checked
+
+        Returns:
+            bool: True iff it is supported
+        """
+        if isinstance(observable, Observable):
+            return observable.name in self.observables
+        if isinstance(observable, str):
+            return observable in self.observables
+        
+        raise ValueError("The given observable must either be an instance of pennylane.Observable or a string.")
+
 
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
