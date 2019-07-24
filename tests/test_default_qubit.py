@@ -544,6 +544,22 @@ class TestDefaultQubitDevice(BaseTest):
                     *np.cos(phi)*(np.sin(theta)-np.cos(theta))+35*np.cos(2*phi)+39)
         self.assertAlmostEqual(var, expected, delta=self.tol)
 
+    def test_var_estimate(self):
+        """Test that variance is estimated and not analytically calculated"""
+        self.logTestName()
+        
+        dev = qml.device('default.qubit', wires=1, shots=3)
+        
+        @qml.qnode(dev)
+        def circuit():
+            return qml.var(qml.PauliX(0))
+
+        var = circuit()
+
+        # With 3 samples we are guaranteed to not get the correct result
+        # if the variance is estimated from them
+        self.assertTrue(var != 1.0)
+
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have 
         the correct dimensions
