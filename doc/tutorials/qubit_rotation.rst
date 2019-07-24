@@ -160,7 +160,7 @@ First, we need to define the quantum function that will be evaluated in the QNod
     def circuit(params):
         qml.RX(params[0], wires=0)
         qml.RY(params[1], wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
 This is a simple circuit, matching the one described above.
 Notice that the function ``circuit()`` is constructed as if it were any other Python function;
@@ -177,12 +177,12 @@ be a valid quantum function, there are some important restrictions:
 
   For a full list of quantum operations, see :mod:`supported operations <pennylane.ops>`.
 
-* **Quantum functions must return either a single or a tuple of expectation values**.
+* **Quantum functions must return either a single or a tuple of measurement results**.
 
   As a result, the quantum function always returns a classical quantity, allowing the QNode to interface
   with other classical functions (and also other QNodes).
 
-  For a full list of quantum expectation values, see :mod:`supported observables <pennylane.measure>`.
+  For a full list of quantum measurement operators, see :mod:`supported observables <pennylane.measure>`.
 
 * **Quantum functions must not contain any classical processing of circuit parameters.**
 
@@ -200,7 +200,7 @@ applying the :mod:`qnode decorator <pennylane.decorator>` **directly above** the
     def circuit(params):
         qml.RX(params[0], wires=0)
         qml.RY(params[1], wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
 Thus, our ``circuit()`` quantum function is now a :class:`~.QNode`, which will run on device ``dev1`` every time it is evaluated.
 To evaluate, we simply call the function with some appropriate numerical inputs:
@@ -241,7 +241,7 @@ We can then evaluate this gradient function at any point in the parameter space.
         def circuit2(phi1, phi2):
             qml.RX(phi1, wires=0)
             qml.RY(phi2, wires=0)
-            return qml.expval.PauliZ(0)
+            return qml.expval(qml.PauliZ(0))
 
     When we calculate the gradient for such a function, the usage of ``argnum`` will be slightly different. In this case, ``argnum=0`` will return the gradient with respect to only the first parameter (``phi1``), and ``argnum=1`` will give the gradient for ``phi2``. To get the gradient with respect to both parameters, we can use ``argnum=[0,1]``:
 
@@ -292,8 +292,8 @@ between :math:`[-1, 1]`, we can define our cost directly as the output of the QN
 
 .. code-block:: python
 
-    def cost(var):
-        return circuit(var)
+    def cost(param):
+        return circuit(param)
 
 To begin our optimization, let's choose small initial values of :math:`\phi_1` and :math:`\phi_2`:
 
