@@ -1,5 +1,14 @@
 # Release 0.5.0-dev
 
+### New features since last release
+
+* Sampling support: QNodes can now return a specified number of samples
+  from a given observable via the top-level `pennylane.sample()` function.
+  To support this on plugin devices, there is a new `Device.sample` method.
+
+  Calculating gradients of QNodes that involve sampling is not possible.
+  [#256](https://github.com/XanaduAI/pennylane/pull/256)
+
 * Added controlled rotation gates to PennyLane operations and `default.qubit` plugin.
   [#251](https://github.com/XanaduAI/pennylane/pull/251)
 
@@ -7,20 +16,13 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz
+Aroosa Ijaz, Johannes Jakob Meyer
 
 
 
 # Release 0.4.0
 
 ### New features since last release
-
-* Sampling support: QNodes can now return a specified number of samples
-  from a given observable via the top-level `pennylane.sample()` function.
-  To support this on plugin devices, there is a new `Device.sample` method.
-
-  Taking gradients of QNodes that involve sampling is not possible.
-  [#256](https://github.com/XanaduAI/pennylane/pull/256)
 
 * `pennylane.expval()` is now a top-level *function*, and is no longer
   a package of classes. For now, the existing `pennylane.expval.Observable`
