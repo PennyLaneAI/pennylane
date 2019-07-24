@@ -266,6 +266,22 @@ class TestSample:
         assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
+
+    def test_sample_default_n(self, tol):
+        """Test the return type and shape of sampling multiple works 
+           in combination with expvals and vars"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0))
+
+        result = circuit()
+
+        # If all the dimensions are equal the result will end up to be a proper rectangular array
+        assert np.array_equal(result.shape, (n_shots,))
         
     def test_sample_exception_device_context_missing(self):
         """Tests if the sampling raises an error when using a default
