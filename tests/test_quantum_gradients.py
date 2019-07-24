@@ -527,16 +527,16 @@ class QubitGradientTest(BaseTest):
         """Tests that the proper exception is raised if differentiation of sampling is attempted."""
         self.logTestName()
 
-        @qml.qnode(self.qubit_dev1)
+        @qml.qnode(self.qubit_dev2)
         def circuit(x):
             qml.RX(x, wires=[0])
-            return qml.sample(qml.PauliZ(0), 1)
+            return qml.sample(qml.PauliZ(0), 1), qml.sample(qml.PauliX(1), 1)
 
         with self.assertRaisesRegex(
             qml.QuantumFunctionError, 
             "Circuits that include sampling can not be differentiated."
         ):
-            grad_fn = autograd.grad(circuit)
+            grad_fn = autograd.jacobian(circuit)
             grad_fn(1.0)
 
 

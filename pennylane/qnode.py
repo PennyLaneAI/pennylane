@@ -677,8 +677,11 @@ class QNode:
             # construct the circuit
             self.construct(params, circuit_kwargs)
 
-        if any(e.return_type == 'sample' for e in self.ev):
-            raise QuantumFunctionError("Circuits that include sampling can not be differentiated.")
+        sample_ops = [e for e in self.ev if e.return_type == "sample"]
+        if len(sample_ops) > 0:
+            names = [str(e) for e in sample_ops]
+            raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
+                                       "The following observable include sampling: {}".format('; '.join(names)))
 
         flat_params = np.array(list(_flatten(params)))
 
