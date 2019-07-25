@@ -144,7 +144,7 @@ be used (and optimized) independently:
         for w in range(n_wires):
             qml.Squeezing(r[w][0], r[w][1], wires=w)
         Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(n_wires))
-        return [qml.expval(qml.MeanPhoton(wires=w)) for w in range(n_wires)]
+        return [qml.expval(qml.NumberOperator(wires=w)) for w in range(n_wires)]
 
 
     j = qml.jacobian(circuit, 0)
@@ -177,7 +177,7 @@ the :func:`~.interferometer_uniform` function.
         for w in range(n_wires):
             qml.Squeezing(r[w][0], r[w][1], wires=w)
         Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(n_wires))
-        return [qml.expval(qml.MeanPhoton(wires=w)) for w in range(n_wires)]
+        return [qml.expval(qml.NumberOperator(wires=w)) for w in range(n_wires)]
 
 
     j = qml.jacobian(circuit, 0)

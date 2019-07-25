@@ -63,6 +63,21 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
+class TestExceptions(BaseTest):
+    """Tests that default.gaussian throws the correct error messages"""
+
+    def test_sample_exception(self):
+        """Test that default.gaussian raises an exception if sampling is attempted."""
+        self.logTestName()
+
+        dev = qml.device('default.gaussian', wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.NumberOperator(0), 10)
+        
+        with self.assertRaisesRegex(NotImplementedError, "Sampling is not supported in default.gaussian"):
+            res = circuit()
 
 class TestAuxillaryFunctions(BaseTest):
     """Tests the auxillary functions"""
@@ -414,7 +429,7 @@ class TestDefaultGaussianDevice(BaseTest):
         alpha = 0.324-0.59j
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
-        mean = dev.expval('MeanPhoton', [0], [])
+        mean = dev.expval('NumberOperator', [0], [])
         self.assertAlmostEqual(mean, np.abs(alpha)**2+nbar, delta=self.tol)
 
         # test correct mean for Homodyne P measurement
@@ -424,13 +439,13 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
 
         # test correct mean for Homodyne measurement
-        mean = dev.expval('Homodyne', [0], [np.pi/2])
+        mean = dev.expval('QuadOperator', [0], [np.pi/2])
         self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
 
         # test correct mean for number state expectation |<n|alpha>|^2
         # on a coherent state
         for n in range(3):
-            mean = dev.expval('NumberState', [0], [np.array([n])])
+            mean = dev.expval('FockStateProjector', [0], [np.array([n])])
             expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             self.assertAlmostEqual(mean, expected, delta=self.tol)
 
@@ -439,7 +454,7 @@ class TestDefaultGaussianDevice(BaseTest):
         n = 1
         r = 0.4523
         dev.apply('SqueezedState', wires=[0], par=[r, 0])
-        mean = dev.expval('NumberState', [0], [np.array([2*n])])
+        mean = dev.expval('FockStateProjector', [0], [np.array([2*n])])
         expected = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         self.assertAlmostEqual(mean, expected, delta=self.tol)
 
@@ -452,7 +467,7 @@ class TestDefaultGaussianDevice(BaseTest):
         alpha = 0.324-0.59j
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
-        var = dev.var('MeanPhoton', [0], [])
+        var = dev.var('NumberOperator', [0], [])
         self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
 
     def test_variance_coherent_homodyne(self):
@@ -466,7 +481,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
         # test correct mean and variance for Homodyne measurement
-        var = dev.var('Homodyne', [0], [np.pi/2])
+        var = dev.var('QuadOperator', [0], [np.pi/2])
         self.assertAlmostEqual(var, hbar/2, delta=self.tol)
 
     def test_variance_coherent_numberstate(self):
@@ -481,7 +496,7 @@ class TestDefaultGaussianDevice(BaseTest):
         dev.apply('CoherentState', wires=[0], par=[alpha])
 
         for n in range(3):
-            var = dev.var('NumberState', [0], [np.array([n])])
+            var = dev.var('FockStateProjector', [0], [np.array([n])])
             mean = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             self.assertAlmostEqual(var, mean*(1-mean), delta=self.tol)
 
@@ -495,7 +510,7 @@ class TestDefaultGaussianDevice(BaseTest):
         n = 1
         r = 0.4523
         dev.apply('SqueezedState', wires=[0], par=[r, 0])
-        var = dev.var('NumberState', [0], [np.array([2*n])])
+        var = dev.var('FockStateProjector', [0], [np.array([2*n])])
         mean = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         self.assertAlmostEqual(var, mean*(1-mean), delta=self.tol)
 

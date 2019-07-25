@@ -25,7 +25,7 @@ from autograd import numpy as np
 from defaults import pennylane as qml, BaseTest
 
 from pennylane.qnode import _flatten, unflatten, QNode, QuantumFunctionError
-from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, Y, Z
+from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, Y, Z
 from pennylane._device import DeviceError
 
 
@@ -922,6 +922,135 @@ class TestQNodeGradients:
                                       [0.] * 2 + [0.] * 5 + [-np.sin(b[2, 1])]])  # expval 2
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
+    def test_controlled_RX_gradient(self, tol):
+        """Test gradient of controlled RX gate"""
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=0)
+            qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        a = 0.542  #any value of a should give zero gradient
+
+	# get the analytic gradient
+        gradA = circuit.jacobian([a], method='A')
+	# get the finite difference gradient
+        gradF = circuit.jacobian([a], method='F')
+
+	# the expected gradient
+        expected = 0
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev)
+        def circuit1(x):
+            qml.RX(x,wires=0)
+            qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        b = 0.123   #gradient is -sin(x)
+
+	# get the analytic gradient
+        gradA = circuit1.jacobian([b], method='A')
+	# get the finite difference gradient
+        gradF = circuit1.jacobian([b], method='F')
+
+	# the expected gradient
+        expected = -np.sin(b)
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+
+    def test_controlled_RY_gradient(self, tol):
+        """Test gradient of controlled RY gate"""
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=0)
+            qml.CRY(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        a = 0.542  #any value of a should give zero gradient
+
+	# get the analytic gradient
+        gradA = circuit.jacobian([a], method='A')
+	# get the finite difference gradient
+        gradF = circuit.jacobian([a], method='F')
+
+	# the expected gradient
+        expected = 0
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev)
+        def circuit1(x):
+            qml.RX(x,wires=0)
+            qml.CRY(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        b = 0.123   #gradient is -sin(x)
+
+	# get the analytic gradient
+        gradA = circuit1.jacobian([b], method='A')
+	# get the finite difference gradient
+        gradF = circuit1.jacobian([b], method='F')
+
+	# the expected gradient
+        expected = -np.sin(b)
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+        
+
+    def test_controlled_RZ_gradient(self, tol):
+        """Test gradient of controlled RZ gate"""
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=0)
+            qml.CRZ(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        a = 0.542  #any value of a should give zero gradient
+
+	# get the analytic gradient
+        gradA = circuit.jacobian([a], method='A')
+	# get the finite difference gradient
+        gradF = circuit.jacobian([a], method='F')
+
+	# the expected gradient
+        expected = 0
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev)
+        def circuit1(x):
+            qml.RX(x,wires=0)
+            qml.CRZ(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        b = 0.123   #gradient is -sin(x)
+
+	# get the analytic gradient
+        gradA = circuit1.jacobian([b], method='A')
+	# get the finite difference gradient
+        gradF = circuit1.jacobian([b], method='F')
+
+	# the expected gradient
+        expected = -np.sin(b)
+
+        assert np.allclose(gradF, expected, atol=tol, rtol=0)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+        
 
 class TestQNodeVariance:
     """Qnode variance tests."""
@@ -1065,7 +1194,7 @@ class TestQNodeVariance:
         def circuit(n, a):
             qml.ThermalState(n, wires=0)
             qml.Displacement(a, 0, wires=0)
-            return qml.var(qml.MeanPhoton(0))
+            return qml.var(qml.NumberOperator(0))
 
         n = 0.12
         a = 0.765
@@ -1087,7 +1216,7 @@ class TestQNodeVariance:
         @qml.qnode(dev)
         def circuit(a):
             qml.Displacement(a, 0, wires=0)
-            return qml.var(qml.MeanPhoton(0))
+            return qml.var(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
             circuit.jacobian([1.], method='A')
