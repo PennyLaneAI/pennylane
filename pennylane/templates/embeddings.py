@@ -127,7 +127,7 @@ def AngleEmbedding(features, wires, rotation='X'):
 def AmplitudeEmbedding(features, wires, pad):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits. 
 
-    If the total number of amplitudes to embed are less than :math:`2**n`, non-informative constants (zeros) can be padded to ``features``. To avail this, the argument ``pad`` should be set to ``True``.
+    If the total number of features to embed are less than the :math:`2^n` available amplitudes, non-informative constants (zeros) can be padded to ``features``. To avail this, the argument ``pad`` should be set to ``True``.
 
     The absolute square of all elements in ``features`` has to add up to one.
 
