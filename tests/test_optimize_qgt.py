@@ -23,8 +23,7 @@ class TestExceptions:
 
     def test_obj_func_not_a_qnode(self):
         """Test that if the objective function is not a
-        QNode, and no QNode dependencies are passed,
-        an error is raised."""
+        QNode, an error is raised."""
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -39,55 +38,8 @@ class TestExceptions:
         opt = qml.QGTOptimizer()
         params = 0.5
 
-        with pytest.raises(ValueError, match="qnode argument must be provided"):
+        with pytest.raises(ValueError, match="Objective function must be a QNode"):
             opt.step(cost, params)
-
-    def test_qnode_arg_not_a_qnode(self):
-        """Test that if the objective function is not a
-        QNode, QNode dependencies are passed,
-        an error is raised if one of the dependents is not a QNode."""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        def cost(a):
-            return circuit(a)
-
-        opt = qml.QGTOptimizer()
-        params = 0.5
-
-        with pytest.raises(ValueError, match="not a QNode"):
-            opt.step(cost, params, qnodes=[cost])
-
-    def test_qnodes_with_different_ansatz(self):
-        """Test that if QNodes with different ansatz are used to
-        construct the cost function, an exception is raised."""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit1(a):
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        @qml.qnode(dev)
-        def circuit2(a):
-            qml.RY(a, wires=0)
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliX(0))
-
-        def cost(a):
-            return 0.1 * circuit1(a) + 0.5 * circuit2(a)
-
-        opt = qml.QGTOptimizer()
-        params = 0.5
-
-        with pytest.raises(ValueError, match="QNodes containing different circuits"):
-            opt.step(cost, params, qnodes=[circuit1, circuit2])
 
 
 class TestOptimize:

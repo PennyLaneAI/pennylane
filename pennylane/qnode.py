@@ -305,7 +305,7 @@ class QNode:
         the second the index of the parameter within the Operation.
         """
 
-        self.subcircuits = {}
+        self._metric_tensor_subcircuits = {}
 
     def __str__(self):
         """String representation"""
@@ -473,8 +473,8 @@ class QNode:
         #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
 
-    def construct_subcircuits(self, args, **kwargs):
-        """Create subcircuits for each parameter.
+    def construct_metric_tensor(self, args, **kwargs):
+        """Create metric tensor subcircuits for each parameter.
 
         If the parameter appears in a gate :math:`G`, the subcircuit contains
         all gates which precede :math:`G`, and :math:`G` is replaced by the variance
@@ -491,10 +491,6 @@ class QNode:
             does not support differentiating with respect to keyword arguments. Instead,
             keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
         """
-        if not self.ops:
-            # construct the circuit
-            self.construct(args, **kwargs)
-
         # convert the queue to a DAG
         G = to_DiGraph(self.queue, self.ev)
 
@@ -547,7 +543,7 @@ class QNode:
                 w = op.wires
 
                 if gen is None:
-                    raise QuantumFunctionError("Can't generate subcircuits, operation {}"
+                    raise QuantumFunctionError("Can't generate metric tensor, operation {}"
                                                "has no defined generator".format(op))
 
                 # get the observable corresponding
@@ -560,14 +556,14 @@ class QNode:
                     variance = pennylane.var(gen(w, do_queue=False))
                 else:
                     raise QuantumFunctionError(
-                        "Can't generate subcircuits, generator {}"
+                        "Can't generate metric tensor, generator {}"
                         "has no corresponding expectation value".format(gen)
                     )
 
                 obs.append(variance)
                 scale.append(s)
 
-            self.subcircuits[tuple(param_idx)] = {
+            self._metric_tensor_subcircuits[tuple(param_idx)] = {
                 "queue": queue,
                 "observable": obs,
                 "result": None,
@@ -758,15 +754,44 @@ class QNode:
             check_op(op)
 
         ret = self.device.execute(self.queue, self.ev)
-
-        if self.subcircuits:
-            # execute any constructed subcircuits
-            for _, circuit in self.subcircuits.items():
-                self.device.reset()
-                s = np.array(circuit['scale'])
-                circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
-
         return self.output_conversion(ret)
+
+    def metric_tensor(self, *args, **kwargs):
+        """Evaluate the value of the metric tensor.
+
+        Args:
+            obs  (Iterable[Obserable]): observables to measure
+            args (array[float]): circuit input parameters
+
+        Returns:
+            array[float]: measured values
+        """
+        if not self.ops or not self.cache:
+            # construct the circuit
+            self.construct(args, kwargs)
+
+        # temporarily store keyword arguments
+        keyword_values = {}
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()})
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in kwargs.items()})
+
+        # temporarily store the free parameter values in the Variable class
+        Variable.free_param_values = np.array(list(_flatten(args)))
+        Variable.kwarg_values = keyword_values
+
+        if not self._metric_tensor_subcircuits:
+            self.construct_metric_tensor(args, **kwargs)
+
+        tensor = np.zeros([self.num_variables])
+
+        # execute any constructed metric tensor subcircuits
+        for params, circuit in self._metric_tensor_subcircuits.items():
+            self.device.reset()
+            s = np.array(circuit['scale'])
+            circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
+            tensor[np.array(params)] = circuit['result']
+
+        return tensor
 
     def evaluate_obs(self, obs, args, **kwargs):
         """Evaluate the value of the given observables.
