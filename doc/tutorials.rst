@@ -66,6 +66,11 @@ interesting QML problems in PennyLane!
     :figure: ../examples/figures/vqe_output_22_0.png
     :description: :ref:`vqe`
 
+.. customgalleryitem::
+    :tooltip: Universal Quantum Classifier with data-reuploading
+    :figure: ../examples/figures/universal_dnn.png
+    :description: :ref:`universal_classifier`
+
 :html:`<div style='clear:both'></div>`
 
 
@@ -83,3 +88,4 @@ interesting QML problems in PennyLane!
     tutorials/pennylane_skip_variational_classifier
     tutorials/pennylane_skip_quantum_neural_net
     tutorials/pennylane_variational_quantum_eigensolver
+    tutorials/pennylane_universal_classifier

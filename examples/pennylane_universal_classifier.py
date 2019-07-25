@@ -1,14 +1,16 @@
 r"""
 .. _universal_classifier:
 
-Universal quantum classifier using data-reuploading
-===================================================
-**Author: Shahnawaz Ahmed (shahnawaz.ahmed95@gmail.com)**
+Universal Quantum Classifier 
+=============================
+Data-reuploading circuits (Perez-Salinas et al. (2019))
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Shahnawaz Ahmed (shahnawaz.ahmed95@gmail.com)**
 
 A single-qubit quantum circuit which can implement arbitrary unitary
 operations can be used as a universal classifier much like a single
 hidden-layered Neural Network. As surprising as it sounds, `Adri´an
-P´erez-Salinas et al. (2019) <https://strawberryfields.readthedocs.io/en/latest/>`_
+P´erez-Salinas et al. (2019) <https://arxiv.org/abs/1907.02085>`_
 discuss this with their idea of ´data
 reuploading´. It is possible to load a single qubit with arbitrary
 dimensional data and then use it as a universal classifier.
@@ -29,34 +31,35 @@ outside a circle. The goal is to train a quantum circuit to predict the
 label (red or blue) given an input point’s coordinate.
 
 .. figure:: ../../examples/figures/universal_circles.png
+   :scale: 65%
    :alt: circles
 
-   Circles
 
-Quantum states, data loading and their transformation using unitary operations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transforming quantum states using unitary operations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A single-qubit quantum state is characterized by a two-dimensional state
 vector and can be visualized as a point in the so-called Bloch sphere.
 Instead of just being a 0 (up) or 1 (down), it can exist in a
 superposition with say 30% chance of being in the :math:`|0 \rangle` and
 70% chance of being in the :math:`|1 \rangle` state. This is represented
-by a state vector $\|:raw-latex:`\psi `:raw-latex:`\rangle `= 0.3|0
-:raw-latex:`\rangle `+ 0.7|1 :raw-latex:`\rangle `$ - the probability
+by a state vector :math:`\psi \rangle = 0.3|0 \rangle + 0.7|1 \rangle ` - the probability
 “amplitude” of the quantum state. In general we can take a vector
 :math:`(\alpha, \beta)` to represent the probabilities of a qubit being
 in a particular state and visualize it on the Bloch sphere as an arrow.
 
 .. figure:: ../../examples/figures/universal_bloch.png
+   :scale: 65%
    :alt: bloch
 
-   Bloch
+Data loading using unitaries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to load data onto a single qubit, we use a unitary operation U
 (:math:`x_1`, :math:`x_2`, :math:`x_3`) which is just a parameterized
 matrix multiplication representing the rotation of the state vector in
 the Bloch sphere. Eg., to load :math:`(x_1, x_2)` into the qubit, we
-just start from some initial state vector, $|0 :raw-latex:`\rangle `$,
+just start from some initial state vector, :math:`|0 \rangle `,
 apply the unitary operation :math:`U(x_1, x_2, 0)` and end up at a new
 point on the Bloch sphere. Here we have padded 0 since our data is only
 2D. Adri´an P´erez-Salinas et al. (2019) discuss how to load a higher
@@ -64,8 +67,8 @@ dimensional data point (:math:`[x_1, x_2, x_3, x_4, x_5, x_6]`) by
 breaking it down in sets of three parameters
 (:math:`U(x_1, x_2, x_3), U(x_4, x_5, x_6)`).
 
-Model parameters and linear layers with data re-uploading
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Model parameters with data re-uploading
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once we load the data onto the quantum circuit, we want to have some
 trainable nonlinear model similar to a Neural Network and a way of
@@ -82,11 +85,11 @@ sets of weights,
 for :math:`L` layers. The quantum circuit would look like the following:
 
 .. figure:: ../../examples/figures/universal_layers.png
+   :scale: 75%
    :alt: Layers
 
-   Layers
 
-Nonlinear “collapse” and the cost function
+The cost function and "nonlinear collapse"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 So far, we have only performed linear operations (matrix
@@ -153,9 +156,9 @@ provide some quantum advantage over classical neural networks. But here,
 we will only implement a single qubit classifier.
 
 .. figure:: ../../examples/figures/universal_dnn.png
+   :scale: 35%
    :alt: DNN
 
-   DNN
 
 References
 ==========
@@ -163,11 +166,8 @@ References
 [1] Pérez-Salinas, Adrián, et al. “Data re-uploading for a universal
 quantum classifier.” arXiv preprint arXiv:1907.02085 (2019).
 
-“Talk is cheap. Show me the code.”
-----------------------------------
-
-- Linus Torvalds
-~~~~~~~~~~~~~~~~
+“Talk is cheap. Show me the code. - Linus Torvalds”
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
 import pennylane as pl
@@ -236,8 +236,6 @@ plt.show()
 
 
 ##############################################################################
-# .. image:: ../../examples/figures/universal_output_5_0.png
-
 # Define output labels as quantum state vectors
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def density_matrix(state):
@@ -259,8 +257,8 @@ state_labels = [label_0, label_1]
 
 
 ##############################################################################
-# Make a simple classifier data reloading circuit and define the cost
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Simple classifier with data reloading and fidelity loss
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dev = pl.device("default.qubit", wires=1)
 # Use your own pennylane-plugin to run on some particular backend
 
@@ -319,8 +317,8 @@ def cost(weights, x, y, state_labels=None):
 
 
 ##############################################################################
-# Utility functions for testing and creating batches of datapoints
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Utility functions for testing and creating batches
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def test(weights, x, y, state_labels=None):
     """
     Tests on a given set of data.
@@ -412,8 +410,8 @@ X_test = np.hstack((Xtest, np.zeros((Xtest.shape[0], 1))))
 
 
 ##############################################################################
-# Train and evaluate the classifier using gradient descent
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Train and evaluate the classifier using Adam optimizer
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 num_layers = 3
 learning_rate = .5
 epochs = 10
@@ -488,6 +486,6 @@ plt.show()
 
 
 ##############################################################################
-# image:: ../../examples/figures/universal_result.png
-
+# `pennylane.about()`
+# ~~~~~~~
 pl.about()
