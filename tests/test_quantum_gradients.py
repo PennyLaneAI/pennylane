@@ -128,7 +128,7 @@ class CVGradientTest(BaseTest):
         @qml.qnode(self.gaussian_dev)
         def circuit(y):
             qml.Squeezing(y, 0., wires=[0])
-            return qml.expval(qml.NumberState(np.array([2, 0]), wires=[0, 1]))
+            return qml.expval(qml.FockStateProjector(np.array([2, 0]), wires=[0, 1]))
 
         grad_fn = autograd.grad(circuit, 0)
 
@@ -143,7 +143,7 @@ class CVGradientTest(BaseTest):
         self.logTestName()
 
         class PolyN(qml.ops.PolyXP):
-            "Mimics MeanPhoton using the arbitrary 2nd order observable interface. Results should be identical."
+            "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
             def __init__(self, wires):
                 hbar = 2
                 q = np.diag([-0.5, 0.5/hbar, 0.5/hbar])
@@ -157,7 +157,7 @@ class CVGradientTest(BaseTest):
             if cls.supports_analytic:
                 gates.append(cls)
 
-        obs   = [qml.ops.X, qml.ops.MeanPhoton, PolyN]
+        obs   = [qml.ops.X, qml.ops.NumberOperator, PolyN]
         par = [0.4]
 
         for G in reversed(gates):
@@ -522,6 +522,22 @@ class QubitGradientTest(BaseTest):
                 grad_true = grad_true0 + grad_true1 # product rule
 
                 self.assertAlmostEqual(grad_eval, grad_true, delta=self.tol)
+
+    def test_gradient_exception_on_sample(self):
+        """Tests that the proper exception is raised if differentiation of sampling is attempted."""
+        self.logTestName()
+
+        @qml.qnode(self.qubit_dev2)
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            return qml.sample(qml.PauliZ(0), 1), qml.sample(qml.PauliX(1), 1)
+
+        with self.assertRaisesRegex(
+            qml.QuantumFunctionError, 
+            "Circuits that include sampling can not be differentiated."
+        ):
+            grad_fn = autograd.jacobian(circuit)
+            grad_fn(1.0)
 
 
 if __name__ == '__main__':

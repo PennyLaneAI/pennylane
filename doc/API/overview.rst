@@ -74,7 +74,7 @@ You must further tell PennyLane about the operations and observables that your d
 
   .. code-block:: python
 
-    observables = {"Homodyne", "MeanPhoton", "X", "P"}
+    observables = {"QuadOperator", "NumberOperator", "X", "P"}
 
   This is used to decide whether an observable is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
 

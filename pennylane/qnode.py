@@ -412,14 +412,24 @@ class QNode:
 
         # quantum circuit function return validation
         if isinstance(res, pennylane.operation.Observable):
-            self.output_type = float
+            if res.return_type == "sample":
+                # Squeezing ensures that there is only one array of values returned
+                # when only a single-mode sample is requested
+                self.output_conversion = np.squeeze
+            else:
+                self.output_conversion = float
+
             self.output_dim = 1
             res = (res,)
         elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
+
+            # Device already returns the correct numpy array,
+            # so no further conversion is required
+            self.output_conversion = np.asarray
             self.output_dim = len(res)
-            self.output_type = np.asarray
+
             res = tuple(res)
         else:
             raise QuantumFunctionError("A quantum function must return either a single measured observable "
@@ -756,7 +766,7 @@ class QNode:
                 s = np.array(circuit['scale'])
                 circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
 
-        return self.output_type(ret)
+        return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, **kwargs):
         """Evaluate the value of the given observables.
@@ -829,6 +839,8 @@ class QNode:
             number of free parameters, and ``n_out`` is the number of expectation values returned
             by the QNode.
         """
+        # pylint: disable=too-many-statements
+
         # in QNode.construct we need to be able to (essentially) apply the unpacking operator to params
         if isinstance(params, numbers.Number):
             params = (params,)
@@ -838,6 +850,12 @@ class QNode:
         if not self.ops or not self.cache:
             # construct the circuit
             self.construct(params, circuit_kwargs)
+
+        sample_ops = [e for e in self.ev if e.return_type == "sample"]
+        if sample_ops:
+            names = [str(e) for e in sample_ops]
+            raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
+                                       "The following observable include sampling: {}".format('; '.join(names)))
 
         flat_params = np.array(list(_flatten(params)))
 
