@@ -195,7 +195,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits))
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=features)
@@ -210,17 +210,17 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits))
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
-        assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**len(wires), ' \
+        assert excinfo.value.args[0] == 'AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), ' \
                                         'which is 4; got 5.'
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8)])
-        assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**len(wires), ' \
+        assert excinfo.value.args[0] == 'AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), ' \
                                         'which is 4; got 2.'
 
     def test_amplitude_embedding_exception_wiresnolist(self):
@@ -232,7 +232,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=3)
+            AmplitudeEmbedding(features=x, wires=3, pad=False)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
