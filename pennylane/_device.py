@@ -310,7 +310,7 @@ class Device(abc.ABC):
             operation (Operation/string): operation to be checked
 
         Returns:
-            bool: True iff it is supported
+            bool: ``True`` iff supplied operation is supported
         """
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
