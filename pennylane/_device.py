@@ -90,7 +90,6 @@ Code details
 import abc
 
 import autograd.numpy as np
-import pennylane as qml
 from pennylane.operation import Operation, Observable
 
 
@@ -333,7 +332,7 @@ class Device(abc.ABC):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
             return observable in self.observables
-        
+
         raise ValueError("The given operation must either be a pennylane.Observable class or a string.")
 
 

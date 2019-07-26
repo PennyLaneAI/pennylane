@@ -238,7 +238,7 @@ class DeviceTest(BaseTest):
                 expval = dev.execute(queue, [qml.expval(qml.PauliX(0, do_queue=False))])
 
             self.assertTrue(isinstance(expval, np.ndarray))
-            
+
     def test_sample_attribute_error(self):
         """Check that an error is raised if a required attribute
            is not present in a sampled observable"""
@@ -249,7 +249,7 @@ class DeviceTest(BaseTest):
         queue = [qml.RX(0.543, wires=[0], do_queue=False)]
 
         # Make a sampling observable but delete its num_samples attribute
-        obs = qml.sample(qml.PauliZ(0, do_queue=False), n = 10)
+        obs = qml.sample(qml.PauliZ(0, do_queue=False), n=10)
         del obs.num_samples
         obs = [obs]
 
