@@ -193,7 +193,7 @@ def CRotx(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_x(\theta)`
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1j*np.sin(theta/2)], [0, 0, -1j*np.sin(theta/2), np.cos(theta/2)]])
 
@@ -204,7 +204,7 @@ def CRoty(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_y(\theta)`
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
 
@@ -215,7 +215,7 @@ def CRotz(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R_z(\theta)`
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
 
@@ -226,7 +226,7 @@ def CRot3(a, b, c):
     Args:
         a,b,c (float): rotation angles
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I} + |1\rangle\langle 1|\otimes R(a,b,c)`
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
     return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
 
@@ -351,6 +351,8 @@ class DefaultQubit(Device):
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError("The default.qubit plugin can apply QubitStateVector only to all of the {} wires.".format(self.num_wires))
             return
         if operation == 'BasisState':
             n = len(par[0])
