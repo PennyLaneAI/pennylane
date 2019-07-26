@@ -195,7 +195,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=features)
@@ -210,7 +210,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError) as excinfo:
@@ -232,7 +232,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=3, pad=False)
+            AmplitudeEmbedding(features=x, wires=3, pad=False, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
