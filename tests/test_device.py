@@ -71,8 +71,8 @@ class DeviceTest(BaseTest):
 
     @patch.multiple(Device, __abstractmethods__=set(), operations=PropertyMock(return_value=['PauliX']))
     def test_supports_operation_argument_types(self):
-        """check that a the different argument types for the function
-           device.supports_operation are supported"""
+        """Checks that device.supports_operations returns the correct result 
+           when passed both string and Operation class arguments"""
         self.logTestName()
 
         mock_device = Device()
@@ -82,8 +82,8 @@ class DeviceTest(BaseTest):
 
     @patch.multiple(Device, __abstractmethods__=set(), observables=PropertyMock(return_value=['PauliX']))
     def test_supports_observable_argument_types(self):
-        """check that a the different argument types for the function
-           device.supports_observable are supported"""
+        """Checks that device.supports_observable returns the correct result 
+           when passed both string and Operation class arguments"""
         self.logTestName()
 
         mock_device = Device()
