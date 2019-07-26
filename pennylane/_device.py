@@ -307,7 +307,7 @@ class Device(abc.ABC):
         """Checks if an operation is supported by this device.
 
         Args:
-            operation (Operation/string): operation to be checked
+            operation (Operation,str): operation to be checked
 
         Returns:
             bool: ``True`` iff supplied operation is supported
@@ -323,10 +323,10 @@ class Device(abc.ABC):
         """Checks if an observable is supported by this device.
 
         Args:
-            operation (Observable/string): observable to be checked
+            operation (Observable,str): observable to be checked
 
         Returns:
-            bool: True iff it is supported
+            bool: ``True`` iff supplied observable is supported
         """
         if isinstance(observable, type) and issubclass(observable, Observable):
             return observable.__name__ in self.observables
