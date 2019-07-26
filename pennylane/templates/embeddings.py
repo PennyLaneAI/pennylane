@@ -131,7 +131,7 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
     ``pad`` should be set to ``True``. It is set to ``False`` by default.
 
     The L2-norm of ``features`` must be one. By default, AmplitudeEmbedding expects a normalized
-    feature vector. The argument ``normalize`` can set to ``True`` to automatically normalize it.
+    feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
 
     .. note::
 
@@ -142,8 +142,7 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         features (array): Input array of shape ``(2**n,)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
         pad (Boolean): controls the activation of the padding option, defaults to ``False``
-        normalize (Boolean): controls the activation of the normalization option, defaults to
-        ``False``
+        normalize (Boolean): controls the activation of automatic normalization, defaults to ``False``
     """
 
     if not isinstance(wires, Iterable):
