@@ -323,12 +323,12 @@ class Device(abc.ABC):
         Returns:
             bool: True iff it is supported
         """
-        if isinstance(operation, Operation):
-            return operation.name in self.operations
+        if isinstance(operation, type) and issubclass(operation, Operation):
+            return operation.__name__ in self.operations
         if isinstance(operation, str):
             return operation in self.operations
         
-        raise ValueError("The given operation must either be an instance of pennylane.Operation or a string.")
+        raise ValueError("The given operation must either be a pennylane.Operation class or a string.")
 
     def supports_observable(self, observable):
         """Checks if an observable is supported by this device.
@@ -339,12 +339,12 @@ class Device(abc.ABC):
         Returns:
             bool: True iff it is supported
         """
-        if isinstance(observable, Observable):
-            return observable.name in self.observables
+        if isinstance(observable, type) and issubclass(observable, Observable):
+            return observable.__name__ in self.observables
         if isinstance(observable, str):
             return observable in self.observables
         
-        raise ValueError("The given observable must either be an instance of pennylane.Observable or a string.")
+        raise ValueError("The given operation must either be a pennylane.Observable class or a string.")
 
 
     def check_validity(self, queue, observables):

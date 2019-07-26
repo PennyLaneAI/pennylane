@@ -67,6 +67,44 @@ class DeviceTest(BaseTest):
 
             for obs in exps:
                 self.assertTrue(dev.supports_observable(obs))
+    
+    def test_supports_operation_argument_types(self):
+        """check that a the different argument types for the function
+           device.supports_operation are supported"""
+        self.logTestName()
+
+        self.assertTrue(self.dev['default.qubit'].supports_operation('PauliX'))
+        self.assertTrue(self.dev['default.qubit'].supports_operation(qml.PauliX))
+    
+    def test_supports_observable_argument_types(self):
+        """check that a the different argument types for the function
+           device.supports_observable are supported"""
+        self.logTestName()
+
+        self.assertTrue(self.dev['default.qubit'].supports_observable('PauliX'))
+        self.assertTrue(self.dev['default.qubit'].supports_observable(qml.PauliX))
+    
+    def test_supports_operation_exception(self):
+        """check that a the function device.supports_operation raises proper errors
+           if the argument is of the wrong type"""
+        self.logTestName()
+
+        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Operation class or a string."):
+            self.dev['default.qubit'].supports_operation(3)
+
+        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Operation class or a string."):
+            self.dev['default.qubit'].supports_operation(qml.Device)
+    
+    def test_supports_observable_exception(self):
+        """check that a the function device.supports_observable raises proper errors
+           if the argument is of the wrong type"""
+        self.logTestName()
+
+        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Observable class or a string."):
+            self.dev['default.qubit'].supports_observable(3)
+
+        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Observable class or a string."):
+            self.dev['default.qubit'].supports_observable(qml.Device)
 
     def test_check_validity(self):
         """test that the check_validity method correctly
