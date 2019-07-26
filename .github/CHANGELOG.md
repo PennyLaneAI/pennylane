@@ -6,6 +6,7 @@
   was replaced with two separate methods `Device.supports_observable` and `Device.supports_operation`.
   The methods can now be called with string arguments (`dev.supports_observable('PauliX')`) and with
   class information arguments (`dev.supports_observable(qml.PauliX)`).
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
 
 * Sampling support: QNodes can now return a specified number of samples
   from a given observable via the top-level `pennylane.sample()` function.
