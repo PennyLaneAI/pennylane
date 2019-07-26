@@ -202,7 +202,7 @@ class TestAuxillaryFunctions(BaseTest):
         self.assertAllAlmostEqual(CRotx(0), np.identity(4), delta=self.tol)
 
         # test identity for theta=pi/2
-        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1j/np.sqrt(2)], [0, 0, -1j/np.sqrt(2), 1/np.sqrt(2)]]) 
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1j/np.sqrt(2)], [0, 0, -1j/np.sqrt(2), 1/np.sqrt(2)]])
         self.assertAllAlmostEqual(CRotx(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
@@ -217,7 +217,7 @@ class TestAuxillaryFunctions(BaseTest):
         self.assertAllAlmostEqual(CRoty(0), np.identity(4), delta=self.tol)
 
         # test identity for theta=pi/2
-        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1/np.sqrt(2)], [0, 0, 1/np.sqrt(2), 1/np.sqrt(2)]]) 
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1/np.sqrt(2)], [0, 0, 1/np.sqrt(2), 1/np.sqrt(2)]])
         self.assertAllAlmostEqual(CRoty(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
@@ -232,7 +232,7 @@ class TestAuxillaryFunctions(BaseTest):
         self.assertAllAlmostEqual(CRotz(0), np.identity(4), delta=self.tol)
 
         # test identity for theta=pi/2
-        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j * np.pi / 4), 0], [0, 0, 0, np.exp(1j * np.pi / 4)]]) 
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j * np.pi / 4), 0], [0, 0, 0, np.exp(1j * np.pi / 4)]])
         self.assertAllAlmostEqual(CRotz(np.pi / 2), expected, delta=self.tol)
 
         # test identity for theta=pi
@@ -547,9 +547,9 @@ class TestDefaultQubitDevice(BaseTest):
     def test_var_estimate(self):
         """Test that variance is not analytically calculated"""
         self.logTestName()
-        
+
         dev = qml.device('default.qubit', wires=1, shots=3)
-        
+
         @qml.qnode(dev)
         def circuit():
             return qml.var(qml.PauliX(0))
@@ -561,7 +561,7 @@ class TestDefaultQubitDevice(BaseTest):
         self.assertTrue(var != 1.0)
 
     def test_sample_dimensions(self):
-        """Tests if the samples returned by the sample function have 
+        """Tests if the samples returned by the sample function have
         the correct dimensions
         """
         self.logTestName()
@@ -588,7 +588,7 @@ class TestDefaultQubitDevice(BaseTest):
 
         self.dev.apply('RX', wires=[0], par=[1.5708])
 
-        s1 = self.dev.sample('PauliZ', [0], [], 10)        
+        s1 = self.dev.sample('PauliZ', [0], [], 10)
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
@@ -604,7 +604,7 @@ class TestDefaultQubitDevice(BaseTest):
             ValueError, "Calling sample with n = 0 is not possible."
         ):
             self.dev.sample('PauliZ', [0], [], n = 0)
-            
+
         # self.def.shots = 0, so this should also fail
         with self.assertRaisesRegex(
             ValueError, "Calling sample with n = 0 is not possible."
@@ -622,7 +622,7 @@ class TestDefaultQubitDevice(BaseTest):
             ValueError, "The number of samples must be a positive integer."
         ):
             self.dev.sample('PauliZ', [0], [], n = -12)
-            
+
         # self.def.shots = 0, so this should also fail
         with self.assertRaisesRegex(
             ValueError, "The number of samples must be a positive integer."
@@ -784,7 +784,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
             op = getattr(qml.ops, g)
             if op.num_wires == 0:
-                if g == "BasisState":
+                if g == "BasisState" or g == "QubitStateVector":
                     wires = [0, 1]
                 else:
                     wires = [0]
