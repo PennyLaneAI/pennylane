@@ -316,7 +316,7 @@ class Device(abc.ABC):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
             return operation in self.operations
-        
+
         raise ValueError("The given operation must either be a pennylane.Operation class or a string.")
 
     def supports_observable(self, observable):
