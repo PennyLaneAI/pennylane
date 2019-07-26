@@ -2,20 +2,18 @@ r"""
 .. _universal_classifier:
 
 Universal Quantum Classifier 
-=============================
-Data-reuploading circuits (Perez-Salinas et al. (2019))
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-**Shahnawaz Ahmed (shahnawaz.ahmed95@gmail.com)**
+============================
+**Author: Shahnawaz Ahmed (shahnawaz.ahmed95@gmail.com)**
 
 A single-qubit quantum circuit which can implement arbitrary unitary
 operations can be used as a universal classifier much like a single
-hidden-layered Neural Network. As surprising as it sounds, `Adri´an
-P´erez-Salinas et al. (2019) <https://arxiv.org/abs/1907.02085>`_
-discuss this with their idea of ´data
-reuploading´. It is possible to load a single qubit with arbitrary
+hidden-layered Neural Network. As surprising as it sounds, 
+`Pérez-Salinas et al. (2019) <https://arxiv.org/abs/1907.02085>`_
+discuss this with their idea of 'data
+reuploading'. It is possible to load a single qubit with arbitrary
 dimensional data and then use it as a universal classifier.
 
-In this example, we will implement this idea with ``Pennylane`` - a
+In this example, we will implement this idea with Pennylane - a
 python based tool for quantum machine learning, automatic
 differentiation, and optimization of hybrid quantum-classical
 computations.
@@ -43,10 +41,11 @@ vector and can be visualized as a point in the so-called Bloch sphere.
 Instead of just being a 0 (up) or 1 (down), it can exist in a
 superposition with say 30% chance of being in the :math:`|0 \rangle` and
 70% chance of being in the :math:`|1 \rangle` state. This is represented
-by a state vector :math:`\psi \rangle = 0.3|0 \rangle + 0.7|1 \rangle ` - the probability
-“amplitude” of the quantum state. In general we can take a vector
-:math:`(\alpha, \beta)` to represent the probabilities of a qubit being
-in a particular state and visualize it on the Bloch sphere as an arrow.
+by a state vector :math:`|\psi \rangle = 0.3|0 \rangle + 0.7|1 \rangle` -
+the probability "amplitude" of the quantum state. In general we can take
+a vector :math:`(\alpha, \beta)` to represent the probabilities of a qubit
+being in a particular state and visualize it on the Bloch sphere as an
+arrow.
 
 .. figure:: ../../examples/figures/universal_bloch.png
    :scale: 65%
@@ -55,14 +54,14 @@ in a particular state and visualize it on the Bloch sphere as an arrow.
 Data loading using unitaries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In order to load data onto a single qubit, we use a unitary operation U
-(:math:`x_1`, :math:`x_2`, :math:`x_3`) which is just a parameterized
+In order to load data onto a single qubit, we use a unitary operation
+:math:`U(x_1, x_2, x_3)` which is just a parameterized
 matrix multiplication representing the rotation of the state vector in
-the Bloch sphere. Eg., to load :math:`(x_1, x_2)` into the qubit, we
-just start from some initial state vector, :math:`|0 \rangle `,
+the Bloch sphere. E.g., to load :math:`(x_1, x_2)` into the qubit, we
+just start from some initial state vector, :math:`|0 \rangle`,
 apply the unitary operation :math:`U(x_1, x_2, 0)` and end up at a new
 point on the Bloch sphere. Here we have padded 0 since our data is only
-2D. Adri´an P´erez-Salinas et al. (2019) discuss how to load a higher
+2D. Pérez-Salinas et al. (2019) discuss how to load a higher
 dimensional data point (:math:`[x_1, x_2, x_3, x_4, x_5, x_6]`) by
 breaking it down in sets of three parameters
 (:math:`U(x_1, x_2, x_3), U(x_4, x_5, x_6)`).
@@ -71,9 +70,9 @@ Model parameters with data re-uploading
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once we load the data onto the quantum circuit, we want to have some
-trainable nonlinear model similar to a Neural Network and a way of
+trainable nonlinear model similar to a neural network as well as a way of
 learning the weights of the model from data. This is again done with
-unitaries, :math:`U(\theta_1, \theta_2, \theta_3)` such that we load the
+unitaries, :math:`U(\theta_1, \theta_2, \theta_3)`, such that we load the
 data first and then apply the weights to form a single layer
 :math:`L(\vec \theta, \vec x) = U(\vec \theta)U(\vec x)`. In principle,
 this is just application of two matrix multiplications on an input
@@ -116,8 +115,9 @@ assign a class based on the label our output has a higher overlap. This
 is much like having a set of ouput neurons and selecting the one which
 has the highest value as the label.
 
-In ``pennylane``, we can define an observable (the expected output
-label) and make a circuit to return the fidelity using the ``Hermitian``
+In Pennylane, we can define an observable (the expected output
+label) and make a circuit to return the fidelity using the
+`Hermitian <https://pennylane.readthedocs.io/en/latest/code/ops/qubit.html#pennylane.ops.qubit.Hermitian>`_
 operator. We can then define the cost function as the sum of the
 fidelities for all the data points after passing throuh the circuit
 and optimize the parameters :math:`(\vec \theta)` to minimize the cost.
@@ -147,7 +147,7 @@ action. Deep Neural Networks proved to be better in practice and we have
 some intuitive idea why, read “Why does deep and cheap learning work so
 well?” by Henry W. Lin, Max Tegmark (MIT) and David Rolnick (2016).
 
-Adri´an P´erez-Salinas et al. (2019) describe that in their approach the
+Pérez-Salinas et al. (2019) describe that in their approach the
 “layers” :math:`L_i(\vec \theta_i, \vec x )` are analogous to the size
 of the intermediate hidden layer of the neural network. And what counts
 for deep (multiple layers of the neural network) relates to the number
@@ -159,41 +159,30 @@ we will only implement a single qubit classifier.
    :scale: 35%
    :alt: DNN
 
-
-References
-==========
-
-[1] Pérez-Salinas, Adrián, et al. “Data re-uploading for a universal
-quantum classifier.” arXiv preprint arXiv:1907.02085 (2019).
-
-“Talk is cheap. Show me the code. - Linus Torvalds”
+"Talk is cheap. Show me the code. - Linus Torvalds"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
-import pennylane as pl
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.optimize import AdamOptimizer, GradientDescentOptimizer
 
 import matplotlib.pyplot as plt
 
 
-##############################################################################
 # Make a dataset of points in and out of a circle
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def circle(samples, center=[0.0, 0.0], radius=0.7):
     """
     Generates a dataset of points with 1/0 labels inside a given radius. 
     
-    Parameters
-    ----------
-    samples: int
-        The number of samples to generate.
-        
-    center: tuple
-        The center of the circle
-        
-    radius: float
-        The radius of the circle.
+    Args:
+        samples (int): number of samples to generate.
+        center (tuple): center of the circle
+        radius (float: radius of the circle.
+
+    Returns:
+        Xvals (array of tuples): coordinates of points
+        Xvals (array of ints): classification labels
     """
     Xvals, yvals = [], []
 
@@ -211,13 +200,9 @@ def plot_data(x, y, fig=None, ax=None):
     """
     Plot data with red/blue values for a binary classification.
     
-    Parameters
-    ----------
-    x: ndarray (m, 2)
-        An array of m data points with each having dimension 2
-        
-    y: ndarray (m)
-        An array of labels as int (0/1).
+    Args:
+        x (array of tuples): array of data points as tuples
+        y (array of ints): array of data points as tuples
     """
     if fig == None:
         fig, ax = plt.subplots(1, 1, figsize=(5, 5))
@@ -235,14 +220,13 @@ plot_data(Xdata, ydata, fig=fig, ax=ax)
 plt.show()
 
 
-##############################################################################
 # Define output labels as quantum state vectors
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def density_matrix(state):
     """Calculates the density matrix representation of a state.
 
     Args:
         state (array[complex]): array representing a quantum state vector
+
     Returns:
         dm: (array[complex]): array representing the density matrix.
     """
@@ -250,20 +234,17 @@ def density_matrix(state):
 
 
 label_0 = [[1.0 + 0.0j], [0.0 + 0.0j]]
-
 label_1 = [[0.0 + 0.0j], [1.0 + 0.0j]]
-
 state_labels = [label_0, label_1]
 
 
-##############################################################################
 # Simple classifier with data reloading and fidelity loss
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dev = pl.device("default.qubit", wires=1)
+dev = qml.device("default.qubit", wires=1)
 # Use your own pennylane-plugin to run on some particular backend
 
 
-@pl.qnode(dev)
+@qml.qnode(dev)
 def qcircuit(var, x=None, y=None):
     """A variational quantum circuit representing the Universal classifier.
 
@@ -276,9 +257,9 @@ def qcircuit(var, x=None, y=None):
         float: fidelity between output state and input
     """
     for v in var:
-        pl.Rot(*x, wires=0)
-        pl.Rot(*v, wires=0)
-    return pl.expval(pl.Hermitian(y, wires=[0]))
+        qml.Rot(*x, wires=0)
+        qml.Rot(*v, wires=0)
+    return qml.expval(qml.Hermitian(y, wires=[0]))
 
 
 def fidelity(state1, state2):
@@ -316,7 +297,6 @@ def cost(weights, x, y, state_labels=None):
     return loss / len(x)
 
 
-##############################################################################
 # Utility functions for testing and creating batches
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def test(weights, x, y, state_labels=None):
@@ -397,8 +377,9 @@ def iterate_minibatches(inputs, targets, batch_size):
 
 
 ##############################################################################
+# Training on circle dataset
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Generate training and test data
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 num_training = 200
 num_test = 500
 
@@ -409,11 +390,9 @@ Xtest, y_test = circle(num_test)
 X_test = np.hstack((Xtest, np.zeros((Xtest.shape[0], 1))))
 
 
-##############################################################################
 # Train and evaluate the classifier using Adam optimizer
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 num_layers = 3
-learning_rate = .5
+learning_rate = 0.5
 epochs = 10
 batch_size = 50
 
@@ -436,9 +415,7 @@ num_circuit_evaluations = 0
 
 print(
     "Epoch: {:2d} | Cost: {:3f} | Train accuracy: {:3f} | Test Accuracy: {:3f}".format(
-        0, loss, accuracy_train, accuracy_test
-    )
-)
+        0, loss, accuracy_train, accuracy_test))
 
 for it in range(epochs):
     for Xbatch, ybatch in iterate_minibatches(X_train, y_train, batch_size=batch_size):
@@ -454,9 +431,7 @@ for it in range(epochs):
     res = [it + 1, loss, accuracy_train, accuracy_test]
     print(
         "Epoch: {:2d} | Loss: {:3f} | Train accuracy: {:3f} | Test accuracy: {:3f}".format(
-            *res
-        )
-    )
+            *res))
 
 
 ##############################################################################
@@ -486,6 +461,14 @@ plt.show()
 
 
 ##############################################################################
-# `pennylane.about()`
+# This tutorial was generated using the following Pennylane version
 # ~~~~~~~
-pl.about()
+qml.about()
+
+
+##############################################################################
+# References
+# ~~~~~~~~~~
+
+# [1] Pérez-Salinas, Adrián, et al. “Data re-uploading for a universal
+# quantum classifier.” arXiv preprint arXiv:1907.02085 (2019).
