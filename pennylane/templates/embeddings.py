@@ -145,19 +145,22 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         normalize (Boolean): controls the activation of automatic normalization, defaults to ``False``
     """
 
+    n_features = len(features)
+    n_amplitudes = 2**len(wires)
+
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
-    if pad and 2**len(wires) >= len(features):
-        features = np.pad(features, (0, 2**len(wires)-len(features)), 'constant')
+    if n_amplitudes < n_features:
+        raise ValueError("AmplitudeEmbedding requires the size of feature vector to be smaller than or equal to 2**len(wires), which is {}; "
+                         "got {}.".format(n_amplitudes, n_features))
 
-    if pad and 2**len(wires) < len(features):
-        raise ValueError("AmplitudeEmbedding with padding requires the size of feature vector to be smaller than 2**len(wires), which is {}; "
-                         "got {}.".format(2 ** len(wires), len(features)))
+    if pad and n_amplitudes >= n_features:
+        features = np.pad(features, (0, n_amplitudes-n_features), 'constant')
 
-    if  not pad and 2**len(wires) != len(features):
+    if  not pad and n_amplitudes != n_features:
         raise ValueError("AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), which is {}; "
-                         "got {}.".format(2 ** len(wires), len(features)))
+                         "got {}.".format(n_amplitudes, n_features))
 
     if normalize and np.linalg.norm(features, 2) != 1:
         features = features * (1/np.linalg.norm(features, 2))
