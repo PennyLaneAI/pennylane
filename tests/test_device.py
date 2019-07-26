@@ -15,7 +15,7 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 import inspect
 import logging as log
 log.getLogger('defaults')
@@ -25,6 +25,7 @@ from autograd import numpy as np
 
 from defaults import pennylane as qml, BaseTest
 from pennylane.plugins import DefaultQubit
+from pennylane import Device
 
 
 class DeviceTest(BaseTest):
@@ -62,8 +63,61 @@ class DeviceTest(BaseTest):
             self.assertTrue(len(ops) > 0)
             self.assertTrue(len(exps) > 0)
 
-            for op in ops.union(exps):
-                self.assertTrue(dev.supported(op))
+            for op in ops:
+                self.assertTrue(dev.supports_operation(op))
+
+            for obs in exps:
+                self.assertTrue(dev.supports_observable(obs))
+
+    @patch.multiple(Device, __abstractmethods__=set(), operations=PropertyMock(return_value=['PauliX']))
+    def test_supports_operation_argument_types(self):
+        """Checks that device.supports_operations returns the correct result 
+           when passed both string and Operation class arguments"""
+        self.logTestName()
+
+        mock_device = Device()
+
+        self.assertTrue(mock_device.supports_operation('PauliX'))
+        self.assertTrue(mock_device.supports_operation(qml.PauliX))
+
+    @patch.multiple(Device, __abstractmethods__=set(), observables=PropertyMock(return_value=['PauliX']))
+    def test_supports_observable_argument_types(self):
+        """Checks that device.supports_observable returns the correct result 
+           when passed both string and Operation class arguments"""
+        self.logTestName()
+
+        mock_device = Device()
+
+        self.assertTrue(mock_device.supports_observable('PauliX'))
+        self.assertTrue(mock_device.supports_observable(qml.PauliX))
+
+    @patch.multiple(Device, __abstractmethods__=set())
+    def test_supports_operation_exception(self):
+        """check that a the function device.supports_operation raises proper errors
+           if the argument is of the wrong type"""
+        self.logTestName()
+
+        mock_device = Device()
+
+        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Operation class or a string."):
+            mock_device.supports_operation(3)
+
+        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Operation class or a string."):
+            mock_device.supports_operation(Device)
+
+    @patch.multiple(Device, __abstractmethods__=set())
+    def test_supports_observable_exception(self):
+        """check that a the function device.supports_observable raises proper errors
+           if the argument is of the wrong type"""
+        self.logTestName()
+
+        mock_device = Device()
+
+        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Observable class or a string."):
+            mock_device.supports_observable(3)
+
+        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Observable class or a string."):
+            mock_device.supports_observable(qml.CNOT)
 
     def test_check_validity(self):
         """test that the check_validity method correctly
@@ -184,7 +238,7 @@ class DeviceTest(BaseTest):
                 expval = dev.execute(queue, [qml.expval(qml.PauliX(0, do_queue=False))])
 
             self.assertTrue(isinstance(expval, np.ndarray))
-            
+
     def test_sample_attribute_error(self):
         """Check that an error is raised if a required attribute
            is not present in a sampled observable"""
@@ -195,7 +249,7 @@ class DeviceTest(BaseTest):
         queue = [qml.RX(0.543, wires=[0], do_queue=False)]
 
         # Make a sampling observable but delete its num_samples attribute
-        obs = qml.sample(qml.PauliZ(0, do_queue=False), n = 10)
+        obs = qml.sample(qml.PauliZ(0, do_queue=False), n=10)
         del obs.num_samples
         obs = [obs]
 

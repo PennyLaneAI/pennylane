@@ -2,6 +2,12 @@
 
 ### New features since last release
 
+* The method `Device.supported` that listed all the supported operations and observables
+  was replaced with two separate methods `Device.supports_observable` and `Device.supports_operation`.
+  The methods can now be called with string arguments (`dev.supports_observable('PauliX')`) and with
+  class information arguments (`dev.supports_observable(qml.PauliX)`).
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
+
 * Sampling support: QNodes can now return a specified number of samples
   from a given observable via the top-level `pennylane.sample()` function.
   To support this on plugin devices, there is a new `Device.sample` method.
@@ -13,6 +19,9 @@
   [#251](https://github.com/XanaduAI/pennylane/pull/251)
 
 ### Breaking changes
+
+* The method `Device.supported` was removed.
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
 
 * The following CV observables were renamed to comply with the new Operation/Observable
   scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.

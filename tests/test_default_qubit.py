@@ -779,7 +779,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
         for g, qop in dev._operation_map.items():
             log.debug("\tTesting gate %s...", g)
-            self.assertTrue(dev.supported(g))
+            self.assertTrue(dev.supports_operation(g))
             dev.reset()
 
             op = getattr(qml.ops, g)
@@ -843,7 +843,7 @@ class TestDefaultQubitIntegration(BaseTest):
 
         for g, qop in dev._observable_map.items():
             log.debug("\tTesting observable %s...", g)
-            self.assertTrue(dev.supported(g))
+            self.assertTrue(dev.supports_observable(g))
             dev.reset()
 
             op = getattr(qml.ops, g)
