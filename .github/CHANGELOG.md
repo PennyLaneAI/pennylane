@@ -21,6 +21,7 @@
 ### Breaking changes
 
 * The method `Device.supported` was removed.
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
 
 * The following CV observables were renamed to comply with the new Operation/Observable
   scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.
