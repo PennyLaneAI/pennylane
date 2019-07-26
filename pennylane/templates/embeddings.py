@@ -128,9 +128,10 @@ def AmplitudeEmbedding(features, wires, pad=False):
 
     If the total number of features to embed are less than the :math:`2^n` available amplitudes,
     non-informative constants (zeros) can be padded to ``features``. To enable this, the argument
-    ``pad`` should be set to ``True``. It is set to ``False`` by default. 
+    ``pad`` should be set to ``True``. It is set to ``False`` by default.
 
-    The absolute square of all elements in ``features`` has to add up to one.
+    The absolute square of all elements in ``features`` has to add up to one. If this is not the
+    case, AmplitudeEmbedding automatically normalizes the input vector by the L2-norm. 
 
     .. note::
 
@@ -146,15 +147,19 @@ def AmplitudeEmbedding(features, wires, pad=False):
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
-    if pad and 2**len(wires) != len(features):
+    if pad and 2**len(wires) >= len(features):
         features = np.pad(features, (0, 2**len(wires)-len(features)), 'constant')
+
+    if pad and 2**len(wires) < len(features):
+        raise ValueError("AmplitudeEmbedding with padding requires the size of feature vector to be smaller than 2**len(wires), which is {}; "
+                         "got {}.".format(2 ** len(wires), len(features)))
 
     if  not pad and 2**len(wires) != len(features):
         raise ValueError("AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), which is {}; "
                          "got {}.".format(2 ** len(wires), len(features)))
 
     if np.linalg.norm(features, 2) != 1:
-        raise ValueError("AmplitudeEmbedding requires a normalized feature vector.")
+        features = features * (1/np.linalg.norm(features, 2)) 
 
     QubitStateVector(features, wires=wires)
 
