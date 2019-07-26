@@ -39,7 +39,8 @@ user interface:
 .. autosummary::
     short_name
     capabilities
-    supported
+    supports_operation
+    supports_observable
     execute
     reset
 
@@ -302,17 +303,6 @@ class Device(abc.ABC):
                 pass
 
         return MockContext()
-
-    def supported(self, name):
-        """Checks if an operation or observable is supported by this device.
-
-        Args:
-            name (str): name of the operation or observable
-
-        Returns:
-            bool: True iff it is supported
-        """
-        return name in self.operations.union(self.observables)
 
     def supports_operation(self, operation):
         """Checks if an operation is supported by this device.
