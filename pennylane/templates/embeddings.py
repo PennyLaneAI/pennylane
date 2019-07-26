@@ -123,15 +123,15 @@ def AngleEmbedding(features, wires, rotation='X'):
         raise ValueError("Rotation has to be `X`, `Y` or `Z`; got {}.".format(rotation))
 
 
-def AmplitudeEmbedding(features, wires, pad=False):
+def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     If the total number of features to embed are less than the :math:`2^n` available amplitudes,
     non-informative constants (zeros) can be padded to ``features``. To enable this, the argument
     ``pad`` should be set to ``True``. It is set to ``False`` by default.
 
-    The absolute square of all elements in ``features`` has to add up to one. If this is not the
-    case, AmplitudeEmbedding automatically normalizes the input vector by the L2-norm. 
+    The L2-norm of ``features`` must be one. By default, AmplitudeEmbedding expects a normalized
+    feature vector. The argument ``normalize`` can set to ``True`` to automatically normalize it.
 
     .. note::
 
@@ -142,6 +142,8 @@ def AmplitudeEmbedding(features, wires, pad=False):
         features (array): Input array of shape ``(2**n,)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
         pad (Boolean): controls the activation of the padding option, defaults to ``False``
+        normalize (Boolean): controls the activation of the normalization option, defaults to
+        ``False``
     """
 
     if not isinstance(wires, Iterable):
@@ -158,8 +160,11 @@ def AmplitudeEmbedding(features, wires, pad=False):
         raise ValueError("AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), which is {}; "
                          "got {}.".format(2 ** len(wires), len(features)))
 
-    if np.linalg.norm(features, 2) != 1:
-        features = features * (1/np.linalg.norm(features, 2)) 
+    if normalize and np.linalg.norm(features, 2) != 1:
+        features = features * (1/np.linalg.norm(features, 2))
+
+    if not normalize and np.linalg.norm(features, 2) != 1:
+        raise ValueError("AmplitudeEmbedding requires a normalized feature vector. The argument normalize can be set to True to automatically normalize it.")
 
     QubitStateVector(features, wires=wires)
 
