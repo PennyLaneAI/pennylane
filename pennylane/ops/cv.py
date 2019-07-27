@@ -91,7 +91,7 @@ Code details
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane.operation import All, Any, CVOperation, CVObservable
+from pennylane.operation import Any, CVOperation, CVObservable
 
 
 def _rotation(phi, bare=False):
