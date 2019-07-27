@@ -65,7 +65,7 @@ from .qubit import __all__ as _qubit__all__
 from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
 
-from pennylane.operation import Observable, CVObservable
+from pennylane.operation import All, Any, Observable, CVObservable
 
 
 class Identity(CVObservable, Observable):
@@ -80,7 +80,7 @@ class Identity(CVObservable, Observable):
     corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 0
     par_domain = None
     grad_method = None

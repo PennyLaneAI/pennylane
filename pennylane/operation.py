@@ -110,6 +110,7 @@ Code details
 ^^^^^^^^^^^^
 """
 import abc
+from enum import IntEnum
 import numbers
 from collections.abc import Sequence
 
@@ -119,6 +120,20 @@ from .qnode import QNode, QuantumFunctionError
 from .utils import _flatten, _unflatten
 from .variable import Variable
 
+
+#=============================================================================
+# Wire types
+#=============================================================================
+
+Wires = IntEnum("Wires", {"Any": -1, "All": 0})
+
+All = Wires.All
+"""IntEnum: An enumeration which represents all wires in the
+subsystem. It is equivalent to an integer with value 0."""
+
+Any = Wires.Any
+"""IntEnum: An enumeration which represents any wires in the
+subsystem. It is equivalent to an integer with value -1."""
 
 #=============================================================================
 # Class property
@@ -252,6 +267,11 @@ class Operation(abc.ABC):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
 
+        if self.num_wires == All:
+            if do_queue:
+                if set(wires) != set(range(QNode._current_context.num_wires)):
+                    raise ValueError("Operation {} must act on all wires".format(self.name))
+
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
@@ -311,7 +331,7 @@ class Operation(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
-        if self.num_wires != 0 and len(wires) != self.num_wires:
+        if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
             raise ValueError("{}: wrong number of wires. "
                              "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
 
