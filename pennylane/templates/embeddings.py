@@ -128,7 +128,7 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
 
     If the total number of features to embed are less than the :math:`2^n` available amplitudes,
     non-informative constants (zeros) can be padded to ``features``. To enable this, the argument
-    ``pad`` should be set to ``True``. It is set to ``False`` by default.
+    ``pad`` should be set to ``True``.
 
     The L2-norm of ``features`` must be one. By default, AmplitudeEmbedding expects a normalized
     feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
@@ -139,10 +139,10 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         devices that implement this function.
 
     Args:
-        features (array): Input array of shape ``(2**n,)``
+        features (array): input array of shape ``(2**n,)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
-        pad (Boolean): controls the activation of the padding option, defaults to ``False``
-        normalize (Boolean): controls the activation of automatic normalization, defaults to ``False``
+        pad (Boolean): controls the activation of the padding option
+        normalize (Boolean): controls the activation of automatic normalization
     """
 
     n_features = len(features)
