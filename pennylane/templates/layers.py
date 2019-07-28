@@ -180,7 +180,7 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
 
     .. note::
         Using the default seed (or any other fixed integer seed) generates one and the same circuit in every
-        quantum node. To generate different circuit architectures, either use a random seed, or use ``seed=None``
+        quantum node. To generate different circuit architectures, either use a different random seed, or use ``seed=None``
         together with the ``cache=False`` option when creating a quantum node.
 
     .. warning::
