@@ -549,7 +549,7 @@ class TestRandomLayers:
         return request.param
 
     def test_random_layers_seed_deterministic(self, n_layers, tol, seed):
-        """Test that pennylane.templates.layers.RandomLayers() acts deterministically when using seed."""
+        """Test that pennylane.templates.layers.RandomLayers() acts deterministically when using fixed seed."""
         n_rots = 1
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
