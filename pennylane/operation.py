@@ -125,7 +125,9 @@ from .variable import Variable
 # Wire types
 #=============================================================================
 
-Wires = IntEnum("Wires", {"Any": -1, "All": 0})
+class Wires(IntEnum):
+    Any = -1
+    All = 0
 
 All = Wires.All
 """IntEnum: An enumeration which represents all wires in the
