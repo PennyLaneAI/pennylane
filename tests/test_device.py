@@ -28,17 +28,6 @@ def mock_device():
         yield Device()
 
 
-class TestAbstractMethods:
-    """Test that the abstract methods of the Device class raise
-       a NotImplementedError"""
-
-    def test_reset(self, mock_device):
-        """Test that a NotImplementedError is raised in device.reset()"""
-
-        with pytest.raises(NotImplementedError):
-            mock_device.reset()
-
-
 mock_device_operations = ["PauliX", "PauliZ", "CNOT"]
 
 
