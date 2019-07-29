@@ -14,9 +14,9 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
-import unittest
-from unittest.mock import DEFAULT, MagicMock, Mock, PropertyMock, patch
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
+import pennylane as qml
 import pytest
 from pennylane import Device, DeviceError
 
@@ -73,7 +73,7 @@ class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
     def test_supports_operation_argument_types(self, mock_device_with_operations):
-        """Checks that device.supports_operations returns the correct result 
+        """Checks that device.supports_operations returns the correct result
            when passed both string and Operation class arguments"""
 
         assert mock_device_with_operations.supports_operation("PauliX")
@@ -83,7 +83,7 @@ class TestDeviceSupportedLogic:
         assert not mock_device_with_operations.supports_operation(qml.PauliY)
 
     def test_supports_observable_argument_types(self, mock_device_with_observables):
-        """Checks that device.supports_observable returns the correct result 
+        """Checks that device.supports_observable returns the correct result
            when passed both string and Operation class arguments"""
 
         assert mock_device_with_observables.supports_observable("PauliX")
