@@ -530,7 +530,7 @@ class BasisState(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = All
+    num_wires = Any
     par_domain = "A"
     grad_method = None
 
