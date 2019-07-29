@@ -53,10 +53,10 @@ Observables that can be used on both qubit and CV devices.
 """
 #pylint: disable=too-few-public-methods,function-redefined
 
+from pennylane.operation import Any, Observable, CVObservable
+
 from .cv import *
 from .qubit import *
-
-from pennylane.operation import Any, Observable, CVObservable
 
 from .cv import __all__ as _cv__all__
 from .cv import ops as _cv__ops__

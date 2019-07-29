@@ -87,7 +87,7 @@ Classes
 Code details
 ^^^^^^^^^^^^
 """
-# pylint: disable=attribute-defined-outside-init
+# pylint: disable=attribute-defined-outside-init,too-many-arguments
 import numpy as np
 
 from scipy.special import factorial as fac
