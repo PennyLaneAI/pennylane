@@ -126,6 +126,9 @@ from .variable import Variable
 #=============================================================================
 
 class Wires(IntEnum):
+    """Integer enumeration class
+    to represent the number of wires
+    an operation acts on"""
     Any = -1
     All = 0
 
