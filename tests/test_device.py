@@ -14,8 +14,9 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
+import pytest
 import unittest
-from unittest.mock import patch, PropertyMock
+from unittest.mock import patch, Mock, PropertyMock, MagicMock
 import inspect
 import logging as log
 log.getLogger('defaults')
@@ -27,6 +28,84 @@ from defaults import pennylane as qml, BaseTest
 from pennylane.plugins import DefaultQubit
 from pennylane import Device
 
+
+@pytest.fixture(scope="function")
+def mock_device():
+    """A mock instance of the abstract Device class"""
+    with patch.multiple(Device, __abstractmethods__=set()):
+        yield Device()
+
+class TestAbstractMethods:
+    """Test that the abstract methods of the Device class raise
+       a NotImplementedError"""
+
+    def test_reset(self, mock_device):
+        """Test that a NotImplementedError is raised in device.reset()"""
+
+        with pytest.raises(NotImplementedError):
+            mock_device.reset()
+
+
+mock_device_operations = ['PauliX', 'PauliY', 'PauliZ', 'CNOT']
+
+@pytest.fixture(scope="function")
+def mock_device_with_operations():
+    """A mock instance of the abstract Device class with non-empty operations"""
+
+    with patch.multiple(Device, 
+        __abstractmethods__=set(), 
+        operations=PropertyMock(return_value=mock_device_operations)
+    ):
+        yield Device()
+
+mock_device_observables = ['PauliX', 'PauliY', 'PauliZ']
+
+@pytest.fixture(scope="function")
+def mock_device_with_observables(mock_device):
+    """A mock instance of the abstract Device class with non-empty observables"""
+
+    with patch.multiple(Device, 
+        __abstractmethods__=set(), 
+        observables=PropertyMock(return_value=mock_device_observables)
+    ):
+        yield Device()
+
+class TestDeviceSupportedLogic:
+    """Test the logic associated with the supported operations and observables"""
+
+    def test_supports_operation_argument_types(self, mock_device_with_operations):
+        """Checks that device.supports_operations returns the correct result 
+           when passed both string and Operation class arguments"""
+
+        assert mock_device_with_operations.supports_operation('PauliX')
+        assert mock_device_with_operations.supports_operation(qml.PauliX)
+
+    def test_supports_observable_argument_types(self, mock_device_with_observables):
+        """Checks that device.supports_observable returns the correct result 
+           when passed both string and Operation class arguments"""
+
+        assert mock_device_with_observables.supports_observable('PauliX')
+        assert mock_device_with_observables.supports_observable(qml.PauliX)
+
+    def test_supports_operation_exception(self, mock_device):
+        """check that a the function device.supports_operation raises proper errors
+           if the argument is of the wrong type"""
+
+        with pytest.raises(ValueError, match="The given operation must either be a pennylane.Operation class or a string."):
+            mock_device.supports_operation(3)
+
+        with pytest.raises(ValueError, match="The given operation must either be a pennylane.Operation class or a string."):
+            mock_device.supports_operation(Device)
+
+    def test_supports_observable_exception(self, mock_device):
+        """check that a the function device.supports_observable raises proper errors
+           if the argument is of the wrong type"""
+
+        with pytest.raises(ValueError, match="The given operation must either be a pennylane.Observable class or a string."):
+            mock_device.supports_observable(3)
+
+        with pytest.raises(ValueError, match="The given operation must either be a pennylane.Observable class or a string."):
+            mock_device.supports_observable(qml.CNOT)
 
 class DeviceTest(BaseTest):
     """Device tests."""
@@ -52,73 +131,7 @@ class DeviceTest(BaseTest):
 
         for name, dev in self.dev.items():
             self.assertEqual(dev.short_name, name)
-
-    def test_supported(self):
-        """check that a nonempty set of operations/observables are supported"""
-        self.logTestName()
-
-        for dev in self.dev.values():
-            ops = dev.operations
-            exps = dev.observables
-            self.assertTrue(len(ops) > 0)
-            self.assertTrue(len(exps) > 0)
-
-            for op in ops:
-                self.assertTrue(dev.supports_operation(op))
-
-            for obs in exps:
-                self.assertTrue(dev.supports_observable(obs))
-
-    @patch.multiple(Device, __abstractmethods__=set(), operations=PropertyMock(return_value=['PauliX']))
-    def test_supports_operation_argument_types(self):
-        """Checks that device.supports_operations returns the correct result 
-           when passed both string and Operation class arguments"""
-        self.logTestName()
-
-        mock_device = Device()
-
-        self.assertTrue(mock_device.supports_operation('PauliX'))
-        self.assertTrue(mock_device.supports_operation(qml.PauliX))
-
-    @patch.multiple(Device, __abstractmethods__=set(), observables=PropertyMock(return_value=['PauliX']))
-    def test_supports_observable_argument_types(self):
-        """Checks that device.supports_observable returns the correct result 
-           when passed both string and Operation class arguments"""
-        self.logTestName()
-
-        mock_device = Device()
-
-        self.assertTrue(mock_device.supports_observable('PauliX'))
-        self.assertTrue(mock_device.supports_observable(qml.PauliX))
-
-    @patch.multiple(Device, __abstractmethods__=set())
-    def test_supports_operation_exception(self):
-        """check that a the function device.supports_operation raises proper errors
-           if the argument is of the wrong type"""
-        self.logTestName()
-
-        mock_device = Device()
-
-        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Operation class or a string."):
-            mock_device.supports_operation(3)
-
-        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Operation class or a string."):
-            mock_device.supports_operation(Device)
-
-    @patch.multiple(Device, __abstractmethods__=set())
-    def test_supports_observable_exception(self):
-        """check that a the function device.supports_observable raises proper errors
-           if the argument is of the wrong type"""
-        self.logTestName()
-
-        mock_device = Device()
-
-        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Observable class or a string."):
-            mock_device.supports_observable(3)
-
-        with self.assertRaisesRegex(ValueError, "The given operation must either be a pennylane.Observable class or a string."):
-            mock_device.supports_observable(qml.CNOT)
-
+            
     def test_check_validity(self):
         """test that the check_validity method correctly
         determines what operations/observables are supported."""
