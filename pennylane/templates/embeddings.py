@@ -145,11 +145,11 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         normalize (Boolean): controls the activation of automatic normalization
     """
 
-    n_features = len(features)
-    n_amplitudes = 2**len(wires)
-
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+
+    n_features = len(features)
+    n_amplitudes = 2**len(wires)
 
     if n_amplitudes < n_features:
         raise ValueError("AmplitudeEmbedding requires the size of feature vector to be smaller than or equal to 2**len(wires), which is {}; "
