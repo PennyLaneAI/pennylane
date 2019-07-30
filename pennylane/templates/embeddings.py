@@ -70,7 +70,7 @@ Code details
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
-
+import numpy as np
 
 def AngleEmbedding(features, wires, rotation='X'):
     r"""
@@ -123,10 +123,15 @@ def AngleEmbedding(features, wires, rotation='X'):
         raise ValueError("Rotation has to be `X`, `Y` or `Z`; got {}.".format(rotation))
 
 
-def AmplitudeEmbedding(features, wires):
+def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
-    The absolute square of all elements in ``features`` has to add up to one.
+    If the total number of features to embed are less than the :math:`2^n` available amplitudes,
+    non-informative constants (zeros) can be padded to ``features``. To enable this, the argument
+    ``pad`` should be set to ``True``.
+
+    The L2-norm of ``features`` must be one. By default, AmplitudeEmbedding expects a normalized
+    feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
 
     .. note::
 
@@ -134,16 +139,34 @@ def AmplitudeEmbedding(features, wires):
         devices that implement this function.
 
     Args:
-        features (array): Input array of shape ``(2**n,)``
+        features (array): input array of shape ``(2**n,)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
+        pad (Boolean): controls the activation of the padding option
+        normalize (Boolean): controls the activation of automatic normalization
     """
 
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
-    if 2**len(wires) != len(features):
-        raise ValueError("AmplitudeEmbedding requires a feature vector of size 2**len(wires), which is {}; "
-                         "got {}.".format(2 ** len(wires), len(features)))
+    n_features = len(features)
+    n_amplitudes = 2**len(wires)
+
+    if n_amplitudes < n_features:
+        raise ValueError("AmplitudeEmbedding requires the size of feature vector to be smaller than or equal to 2**len(wires), which is {}; "
+                         "got {}.".format(n_amplitudes, n_features))
+
+    if pad and n_amplitudes >= n_features:
+        features = np.pad(features, (0, n_amplitudes-n_features), 'constant')
+
+    if  not pad and n_amplitudes != n_features:
+        raise ValueError("AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), which is {}; "
+                         "got {}.".format(n_amplitudes, n_features))
+
+    if normalize and np.linalg.norm(features, 2) != 1:
+        features = features * (1/np.linalg.norm(features, 2))
+
+    if not normalize and np.linalg.norm(features, 2) != 1:
+        raise ValueError("AmplitudeEmbedding requires a normalized feature vector. The argument normalize can be set to True to automatically normalize it.")
 
     QubitStateVector(features, wires=wires)
 
