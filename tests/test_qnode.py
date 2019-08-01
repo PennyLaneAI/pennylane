@@ -443,7 +443,8 @@ class TestQNodeParameters:
 
     @pytest.mark.parametrize("x,y", zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7)**2/11))
     def test_fanout(self, qubit_device_1_wire, tol, x, y):
-        """Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."""
+        """Tests that qnodes can compute the correct function when the 
+           same parameter is used in multiple gates."""
 
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -456,61 +457,18 @@ class TestQNodeParameters:
 
         node = qml.QNode(circuit, qubit_device_1_wire)
 
-        assert np.allclose(node(x, y), analytic_expval(x, y), atol=tol, rtol=0)
+        assert np.isclose(node(x, y), analytic_expval(x, y), atol=tol, rtol=0)
 
-class BasicTest(BaseTest):
-    """Qnode basic tests.
-    """
+    def test_array_parameters_scalar_return(self, qubit_device_1_wire, tol):
+        """Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow.
+           Test case for a circuit that returns a scalar."""
 
-    def setUp(self):
-        self.dev1 = qml.device("default.qubit", wires=1)
-        self.dev2 = qml.device("default.qubit", wires=2)
-
-    def test_qnode_fanout(self):
-        "Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."
-        self.logTestName()
-
-        def circuit(reused_param, other_param):
-            qml.RX(reused_param, wires=[0])
-            qml.RZ(other_param, wires=[0])
-            qml.RX(reused_param, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        f = qml.QNode(circuit, self.dev1)
-
-        for reused_param in thetas:
-            for theta in thetas:
-                other_param = theta ** 2 / 11
-                y_eval = f(reused_param, other_param)
-                Rx = Rotx(reused_param)
-                Rz = Rotz(other_param)
-                zero_state = np.array([1.0, 0.0])
-                final_state = Rx @ Rz @ Rx @ zero_state
-                y_true = expZ(final_state)
-                self.assertAlmostEqual(y_eval, y_true, delta=self.tol)
-
-    def test_qnode_array_parameters(self):
-        "Test that QNode can take arrays as input arguments, and that they interact properly with autograd."
-        self.logTestName()
-
-        @qml.qnode(self.dev1)
-        def circuit_n1s(dummy1, array, dummy2):
+        def circuit(dummy1, array, dummy2):
             qml.RY(0.5 * array[0, 1], wires=0)
             qml.RY(-0.5 * array[1, 1], wires=0)
-            return qml.expval(qml.PauliX(0))  # returns a scalar
+            return qml.expval(qml.PauliX(0))
 
-        @qml.qnode(self.dev1)
-        def circuit_n1v(dummy1, array, dummy2):
-            qml.RY(0.5 * array[0, 1], wires=0)
-            qml.RY(-0.5 * array[1, 1], wires=0)
-            return (qml.expval(qml.PauliX(0)),)  # note the comma, returns a 1-vector
-
-        @qml.qnode(self.dev2)
-        def circuit_nn(dummy1, array, dummy2):
-            qml.RY(0.5 * array[0, 1], wires=0)
-            qml.RY(-0.5 * array[1, 1], wires=0)
-            qml.RY(array[1, 0], wires=1)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))  # returns a 2-vector
+        node = qml.QNode(circuit, qubit_device_1_wire)
 
         args = (0.46, np.array([[2.0, 3.0, 0.3], [7.0, 4.0, 2.1]]), -0.13)
         grad_target = (
@@ -519,17 +477,92 @@ class BasicTest(BaseTest):
             np.array(-0.4),
         )
         cost_target = 1.03257
-        for circuit in [circuit_n1s, circuit_n1v, circuit_nn]:
 
-            def cost(x, array, y):
-                c = circuit(0.111, array, 4.5)
-                if not np.isscalar(c):
-                    c = c[0]  # get a scalar
-                return c + 0.5 * array[0, 0] + x - 0.4 * y
+        def cost(x, array, y):
+            c = node(0.111, array, 4.5)
+            return c + 0.5 * array[0, 0] + x - 0.4 * y
 
-            cost_grad = qml.grad(cost, argnum=[0, 1, 2])
-            self.assertAllAlmostEqual(cost(*args), cost_target, delta=self.tol)
-            self.assertAllAlmostEqual(cost_grad(*args), grad_target, delta=self.tol)
+        cost_grad = qml.grad(cost, argnum=[0, 1, 2])
+        computed_grad = cost_grad(*args)
+
+        assert np.isclose(cost(*args), cost_target, atol=tol, rtol=0)
+        
+        assert np.allclose(computed_grad[0], grad_target[0], atol=tol, rtol=0)
+        assert np.allclose(computed_grad[1], grad_target[1], atol=tol, rtol=0)
+        assert np.allclose(computed_grad[2], grad_target[2], atol=tol, rtol=0)
+
+    def test_qnode_array_parameters_1_vector_return(self, qubit_device_1_wire, tol):
+        """Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow.
+           Test case for a circuit that returns a 1-vector."""
+
+        def circuit(dummy1, array, dummy2):
+            qml.RY(0.5 * array[0, 1], wires=0)
+            qml.RY(-0.5 * array[1, 1], wires=0)
+            return (qml.expval(qml.PauliX(0)),)
+
+        node = qml.QNode(circuit, qubit_device_1_wire)
+
+        args = (0.46, np.array([[2.0, 3.0, 0.3], [7.0, 4.0, 2.1]]), -0.13)
+        grad_target = (
+            np.array(1.0),
+            np.array([[0.5, 0.43879, 0], [0, -0.43879, 0]]),
+            np.array(-0.4),
+        )
+        cost_target = 1.03257
+
+        def cost(x, array, y):
+            c = node(0.111, array, 4.5)[0]
+            return c + 0.5 * array[0, 0] + x - 0.4 * y
+
+        cost_grad = qml.grad(cost, argnum=[0, 1, 2])
+        computed_grad = cost_grad(*args)
+
+        assert np.isclose(cost(*args), cost_target, atol=tol, rtol=0)
+        
+        assert np.allclose(computed_grad[0], grad_target[0], atol=tol, rtol=0)
+        assert np.allclose(computed_grad[1], grad_target[1], atol=tol, rtol=0)
+        assert np.allclose(computed_grad[2], grad_target[2], atol=tol, rtol=0)
+
+    def test_qnode_array_parameters_2_vector_return(self, qubit_device_2_wires, tol):
+        """Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow.
+           Test case for a circuit that returns a 2-vector."""
+
+        def circuit(dummy1, array, dummy2):
+            qml.RY(0.5 * array[0, 1], wires=0)
+            qml.RY(-0.5 * array[1, 1], wires=0)
+            qml.RY(array[1, 0], wires=1)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        node = qml.QNode(circuit, qubit_device_2_wires)
+
+        args = (0.46, np.array([[2.0, 3.0, 0.3], [7.0, 4.0, 2.1]]), -0.13)
+        grad_target = (
+            np.array(1.0),
+            np.array([[0.5, 0.43879, 0], [0, -0.43879, 0]]),
+            np.array(-0.4),
+        )
+        cost_target = 1.03257
+
+        def cost(x, array, y):
+            c = node(0.111, array, 4.5)[0]
+            return c + 0.5 * array[0, 0] + x - 0.4 * y
+
+        cost_grad = qml.grad(cost, argnum=[0, 1, 2])
+        computed_grad = cost_grad(*args)
+
+        assert np.isclose(cost(*args), cost_target, atol=tol, rtol=0)
+        
+        assert np.allclose(computed_grad[0], grad_target[0], atol=tol, rtol=0)
+        assert np.allclose(computed_grad[1], grad_target[1], atol=tol, rtol=0)
+        assert np.allclose(computed_grad[2], grad_target[2], atol=tol, rtol=0)
+
+class BasicTest(BaseTest):
+    """Qnode basic tests.
+    """
+
+    def setUp(self):
+        self.dev1 = qml.device("default.qubit", wires=1)
+        self.dev2 = qml.device("default.qubit", wires=2)
 
     def test_array_parameters_evaluate(self):
         "Test that array parameters gives same result as positional arguments."
