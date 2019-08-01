@@ -14,21 +14,21 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
-import pytest
+import logging as log
 import unittest
 from unittest.mock import Mock, PropertyMock, patch
-import logging as log
-
-log.getLogger("defaults")
 
 import autograd
+import pytest
 from autograd import numpy as np
+from pennylane._device import Device, DeviceError
+from pennylane.plugins.default_qubit import CNOT, CRotx, CRoty, CRotz, I, Rotx, Roty, Rotz, Y, Z
+from pennylane.qnode import QNode, QuantumFunctionError, _flatten, unflatten
 
-from defaults import pennylane as qml, BaseTest
+from defaults import BaseTest
+from defaults import pennylane as qml
 
-from pennylane.qnode import _flatten, unflatten, QNode, QuantumFunctionError
-from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, Y, Z
-from pennylane._device import DeviceError, Device
+log.getLogger("defaults")
 
 
 def expZ(state):
@@ -174,9 +174,8 @@ class TestQNodeOperationQueue:
     # self.assertTrue(q.ops[5] not in successors)
 
 
-
 @pytest.fixture(scope="function")
-def operable_mock_device():
+def operable_mock_device_2_wires():
     """A mock instance of the abstract Device class that can support
        qfuncs."""
 
@@ -186,8 +185,10 @@ def operable_mock_device():
         operations=PropertyMock(return_value=["RX", "RY", "CNOT"]),
         observables=PropertyMock(return_value=["PauliX", "PauliY", "PauliZ"]),
         reset=Mock(),
+        apply=Mock(),
+        expval=Mock(return_value=1),
     ):
-        yield Device()
+        yield Device(wires=2)
 
 class TestQNodeExceptions:
     """Tests that QNode raises proper errors"""
@@ -210,7 +211,7 @@ class TestQNodeExceptions:
         ):
             node.construct([0.0])
 
-    def test_return_of_non_observable(self, operable_mock_device):
+    def test_return_of_non_observable(self, operable_mock_device_2_wires):
         """Tests that the QNode properly raises an error if the qfunc returns something
            besides observables."""
 
@@ -218,12 +219,12 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(wires=0)), 0.3
 
-        node = qml.QNode(circuit, operable_mock_device)
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(QuantumFunctionError, match="must return either"):
             node(0.5)
 
-    def test_observable_not_returned(self, operable_mock_device):
+    def test_observable_not_returned(self, operable_mock_device_2_wires):
         """Tests that the QNode properly raises an error if the qfunc does not
            return all observables."""
 
@@ -232,12 +233,12 @@ class TestQNodeExceptions:
             ex = qml.expval(qml.PauliZ(wires=1))
             return qml.expval(qml.PauliZ(wires=0))
 
-        node = qml.QNode(circuit, operable_mock_device)
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(QuantumFunctionError, match="All measured observables"):
             node(0.5)
 
-    def test_observable_order_violated(self, operable_mock_device):
+    def test_observable_order_violated(self, operable_mock_device_2_wires):
         """Tests that the QNode properly raises an error if the qfunc does not
            return all observables in the correct order."""
 
@@ -246,12 +247,12 @@ class TestQNodeExceptions:
             ex = qml.expval(qml.PauliZ(wires=1))
             return qml.expval(qml.PauliZ(wires=0)), ex
 
-        node = qml.QNode(circuit, operable_mock_device)
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(QuantumFunctionError, match="All measured observables"):
             node(0.5)
 
-    def test_operations_after_observables(self, operable_mock_device):
+    def test_operations_after_observables(self, operable_mock_device_2_wires):
         """Tests that the QNode properly raises an error if the qfunc contains
            operations after observables."""
 
@@ -261,12 +262,12 @@ class TestQNodeExceptions:
             qml.RY(0.5, wires=[0])
             return qml.expval(qml.PauliZ(wires=0))
 
-        node = qml.QNode(circuit, operable_mock_device)
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(QuantumFunctionError, match="gates must precede"):
             node(0.5)
 
-    def test_multiple_measurements_on_same_wire(self, operable_mock_device):
+    def test_multiple_measurements_on_same_wire(self, operable_mock_device_2_wires):
         """Tests that the QNode properly raises an error if the same wire
            is measured multiple times."""
 
@@ -275,39 +276,43 @@ class TestQNodeExceptions:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliX(0))
 
-        node = qml.QNode(circuit, operable_mock_device)
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(QuantumFunctionError, match="can only be measured once"):
             node(0.5)
 
-    def test_operation_on_nonexistant_wire(self, operable_mock_device):
+    def test_operation_on_nonexistant_wire(self, operable_mock_device_2_wires):
         """Tests that the QNode properly raises an error if an operation 
            is applied to a non-existant wire."""
+
+        operable_mock_device_2_wires.num_wires = 2
 
         def circuit(x):
             qml.RX(x, wires=[0])
             qml.CNOT(wires=[0, 2])
             return qml.expval(qml.PauliZ(0))
 
-        node = qml.QNode(circuit, operable_mock_device)
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(QuantumFunctionError, match="applied to invalid wire"):
             node(0.5)
 
-    def test_observable_on_nonexistant_wire(self, operable_mock_device):
+    def test_observable_on_nonexistant_wire(self, operable_mock_device_2_wires):
         """Tests that the QNode properly raises an error if an observable 
            is measured on a non-existant wire."""
+
+        operable_mock_device_2_wires.num_wires = 2
 
         def circuit(x):
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
-        node = qml.QNode(circuit, operable_mock_device)
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(QuantumFunctionError, match="applied to invalid wire"):
             node(0.5)
 
-    def test_mixing_of_cv_and_qubit_operations(self, operable_mock_device):
+    def test_mixing_of_cv_and_qubit_operations(self, operable_mock_device_2_wires):
         """Tests that the QNode properly raises an error if qubit and 
            CV operations are mixed in the same qfunc."""
 
@@ -316,10 +321,122 @@ class TestQNodeExceptions:
             qml.Displacement(0.5, 0, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = qml.QNode(circuit, operable_mock_device)
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(QuantumFunctionError, match="Continuous and discrete"):
             node(0.5)
+
+
+class TestQNodeJacobianExceptions:
+    """Tests that QNode.jacobian raises proper errors"""
+
+    def test_undifferentiable_operation(self, operable_mock_device_2_wires):
+        """Tests that QNode.jacobian properly raises an error if the
+           qfunc contains an operation that is not differentiable."""
+
+        def circuit(x):
+            qml.BasisState(np.array([x, 0]), wires=[0, 1])
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
+
+        with pytest.raises(ValueError, match="Cannot differentiate wrt parameter"):
+            node.jacobian(0.5)
+
+
+    def test_operation_not_supporting_analytic_gradient(self, operable_mock_device_2_wires):
+        """Tests that QNode.jacobian properly raises an error if the
+           qfunc contains an operation that does not support analytic gradients."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.Hermitian(np.diag([x, 0]), 0))
+
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
+
+        with pytest.raises(ValueError, match="analytic gradient method cannot be used with"):
+            node.jacobian(0.5, method="A")
+
+
+    def test_bogus_gradient_method_set(self, operable_mock_device_2_wires):
+        """Tests that QNode.jacobian properly raises an error if the
+           gradient method set is bogus."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        # in non-cached mode, the grad method would be
+        # recomputed and overwritten from the
+        # bogus value 'J'. Caching stops this from happening.
+        node = qml.QNode(circuit, operable_mock_device_2_wires, cache=True)
+
+        node.evaluate([0.0])
+        keys = node.grad_method_for_par.keys()
+        if len(keys) > 0:
+            k0 = [k for k in keys][0]
+
+        node.grad_method_for_par[k0] = "J"
+
+        with pytest.raises(ValueError, match="Unknown gradient method"):
+            node.jacobian(0.5)
+
+            
+    def test_indices_not_unique(self, operable_mock_device_2_wires):
+        """Tests that QNode.jacobian properly raises an error if the
+           jacobian is requested for non-unique indices."""
+
+        def circuit(x):
+            qml.Rot(0.3, x, -0.2, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
+
+        with pytest.raises(ValueError, match="Parameter indices must be unique."):
+            node.jacobian(0.5, which=[0, 0])
+            
+    def test_indices_nonexistant(self, operable_mock_device_2_wires):
+        """Tests that QNode.jacobian properly raises an error if the
+           jacobian is requested for non-existant parameters."""
+
+        def circuit(x):
+            qml.Rot(0.3, x, -0.2, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
+
+        with pytest.raises(ValueError, match="Tried to compute the gradient wrt"):
+            node.jacobian(0.5, which=[0, 6])
+
+        with pytest.raises(ValueError, match="Tried to compute the gradient wrt"):
+            node.jacobian(0.5, which=[1, -1])
+            
+    def test_unknown_method(self, operable_mock_device_2_wires):
+        """Tests that QNode.jacobian properly raises an error if the
+           gradient method is unknown."""
+
+        def circuit(x):
+            qml.Rot(0.3, x, -0.2, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
+
+        with pytest.raises(ValueError, match="Unknown gradient method"):
+            node.jacobian(0.5, method="unknown")
+            
+    def test_wrong_order_in_finite_difference(self, operable_mock_device_2_wires):
+        """Tests that QNode.jacobian properly raises an error if finite
+           differences are attempted with wrong order."""
+
+        def circuit(x):
+            qml.Rot(0.3, x, -0.2, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = qml.QNode(circuit, operable_mock_device_2_wires)
+
+        with pytest.raises(ValueError, match="Order must be 1 or 2"):
+            node.jacobian(0.5, method="F", order=3)
 
 
 class BasicTest(BaseTest):
@@ -329,81 +446,6 @@ class BasicTest(BaseTest):
     def setUp(self):
         self.dev1 = qml.device("default.qubit", wires=1)
         self.dev2 = qml.device("default.qubit", wires=2)
-
-    def test_jacobian_fail(self):
-        "Tests that QNode.jacobian failures correctly raise exceptions."
-        self.logTestName()
-        par = 0.5
-
-        # ---------------------------------------------------------
-        ## bad circuit
-
-        # undifferentiable operation
-        def qf(x):
-            qml.BasisState(np.array([x, 0]), wires=[0, 1])
-            qml.RX(x, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        q = qml.QNode(qf, self.dev2)
-        with self.assertRaisesRegex(ValueError, "Cannot differentiate wrt parameter"):
-            q.jacobian(par)
-
-        # operation that does not support the 'A' method
-        def qf(x):
-            qml.RX(x, wires=[0])
-            return qml.expval(qml.Hermitian(np.diag([x, 0]), 0))
-
-        q = qml.QNode(qf, self.dev2)
-        with self.assertRaisesRegex(ValueError, "analytic gradient method cannot be used with"):
-            q.jacobian(par, method="A")
-
-        # bogus gradient method set
-        def qf(x):
-            qml.RX(x, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        # in non-cached mode, the grad method would be
-        # recomputed and overwritten from the
-        # bogus value 'J'. Caching stops this from happening.
-        q = qml.QNode(qf, self.dev2, cache=True)
-
-        q.evaluate([0.0])
-        keys = q.grad_method_for_par.keys()
-        if len(keys) > 0:
-            k0 = [k for k in keys][0]
-
-        q.grad_method_for_par[k0] = "J"
-        with self.assertRaisesRegex(ValueError, "Unknown gradient method"):
-            q.jacobian(par)
-
-        # ---------------------------------------------------------
-        ## bad input parameters
-
-        def qf_ok(x):
-            qml.Rot(0.3, x, -0.2, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        # if indices wrt. which the gradient is taken are specified they must be unique
-        q = qml.QNode(qf_ok, self.dev2)
-        with self.assertRaisesRegex(ValueError, "indices must be unique"):
-            q.jacobian(par, which=[0, 0])
-
-        # gradient wrt. nonexistent parameters
-        q = qml.QNode(qf_ok, self.dev2)
-        with self.assertRaisesRegex(ValueError, "Tried to compute the gradient wrt"):
-            q.jacobian(par, which=[0, 6])
-        with self.assertRaisesRegex(ValueError, "Tried to compute the gradient wrt"):
-            q.jacobian(par, which=[1, -1])
-
-        # unknown grad method
-        q = qml.QNode(qf_ok, self.dev1)
-        with self.assertRaisesRegex(ValueError, "Unknown gradient method"):
-            q.jacobian(par, method="unknown")
-
-        # only order-1 and order-2 finite diff methods are available
-        q = qml.QNode(qf_ok, self.dev1)
-        with self.assertRaisesRegex(ValueError, "Order must be 1 or 2"):
-            q.jacobian(par, method="F", order=3)
 
     def test_qnode_fanout(self):
         "Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."
