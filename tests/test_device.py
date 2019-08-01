@@ -381,7 +381,7 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
-    @pytest.fixture
+    @pytest.fixture(scope="function")
     def mock_device(self):
         with patch.multiple(
             Device,
