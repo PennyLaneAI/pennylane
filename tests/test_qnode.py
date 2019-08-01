@@ -28,10 +28,6 @@ from defaults import pennylane as qml
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 
-b = np.linspace(-1.0, 1.0, 8)
-b_shapes = [(8,), (8, 1), (4, 2), (2, 2, 2), (2, 1, 2, 1, 2)]
-
-
 class TestHelperMethods:
     """Tests the internal helper methods of QNode"""
 
@@ -717,35 +713,36 @@ class TestQNodeKeywordArguments:
 class TestQNodeGradients:
     """Qnode gradient tests."""
 
-    @pytest.mark.parametrize("s", b_shapes)
-    def test_multidim_array(self, s, tol):
+    @pytest.mark.parametrize("shape", [(8,), (8, 1), (4, 2), (2, 2, 2), (2, 1, 2, 1, 2)])
+    def test_multidim_array(self, shape, tol):
         """Tests that arguments which are multidimensional arrays are
         properly evaluated and differentiated in QNodes."""
-
-        multidim_array = np.reshape(b, s)
+        
+        base_array = np.linspace(-1.0, 1.0, 8)
+        multidim_array = np.reshape(b, shape)
 
         def circuit(w):
-            qml.RX(w[np.unravel_index(0, s)], wires=0)  # b[0]
-            qml.RX(w[np.unravel_index(1, s)], wires=1)  # b[1]
-            qml.RX(w[np.unravel_index(2, s)], wires=2)  # ...
-            qml.RX(w[np.unravel_index(3, s)], wires=3)
-            qml.RX(w[np.unravel_index(4, s)], wires=4)
-            qml.RX(w[np.unravel_index(5, s)], wires=5)
-            qml.RX(w[np.unravel_index(6, s)], wires=6)
-            qml.RX(w[np.unravel_index(7, s)], wires=7)
-            return tuple(qml.expval(qml.PauliZ(idx)) for idx in range(len(b)))
+            qml.RX(w[np.unravel_index(0, shape)], wires=0)  # base_array[0]
+            qml.RX(w[np.unravel_index(1, shape)], wires=1)  # base_array[1]
+            qml.RX(w[np.unravel_index(2, shape)], wires=2)  # ...
+            qml.RX(w[np.unravel_index(3, shape)], wires=3)
+            qml.RX(w[np.unravel_index(4, shape)], wires=4)
+            qml.RX(w[np.unravel_index(5, shape)], wires=5)
+            qml.RX(w[np.unravel_index(6, shape)], wires=6)
+            qml.RX(w[np.unravel_index(7, shape)], wires=7)
+            return tuple(qml.expval(qml.PauliZ(idx)) for idx in range(len(base_array)))
 
         dev = qml.device("default.qubit", wires=8)
         circuit = qml.QNode(circuit, dev)
 
         # circuit evaluations
         circuit_output = circuit(multidim_array)
-        expected_output = np.cos(b)
+        expected_output = np.cos(base_array)
         assert np.allclose(circuit_output, expected_output, atol=tol, rtol=0)
 
         # circuit jacobians
         circuit_jacobian = circuit.jacobian([multidim_array])
-        expected_jacobian = -np.diag(np.sin(b))
+        expected_jacobian = -np.diag(np.sin(base_array))
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
     def test_qnode_cv_gradient_methods(self):
