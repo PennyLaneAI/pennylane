@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
 import pytest
 import unittest
+from unittest.mock import PropertyMock, patch
 import logging as log
 
 log.getLogger("defaults")
@@ -27,7 +28,7 @@ from defaults import pennylane as qml, BaseTest
 
 from pennylane.qnode import _flatten, unflatten, QNode, QuantumFunctionError
 from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, Y, Z
-from pennylane._device import DeviceError
+from pennylane._device import DeviceError, Device
 
 
 def expZ(state):
@@ -108,6 +109,79 @@ class TestHelperMethods:
             unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
 
 
+@pytest.fixture(scope="function")
+def mock_device():
+    """A mock instance of the abstract Device class"""
+
+    with patch.multiple(Device, __abstractmethods__=set()):
+        yield Device()
+
+
+@pytest.fixture(scope="function")
+def opqueue_test_node(mock_device):
+    """Provides a circuit for the subsequent tests of the operation queue"""
+
+    def circuit(x):
+        qml.RX(x, wires=[0])
+        qml.CNOT(wires=[0, 1])
+        qml.RY(0.4, wires=[0])
+        qml.RZ(-0.2, wires=[1])
+        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+    node = qml.QNode(circuit, mock_device)
+    node.construct([1.0])
+
+    return node
+
+
+class TestQNodeOperationQueue:
+    """Tests that the QNode operation queue is properly filled and interacted with"""
+
+    def test_operation_ordering(self, opqueue_test_node):
+        """Tests that the ordering of the operations is correct"""
+
+        assert opqueue_test_node.ops[0].name == "RX"
+        assert opqueue_test_node.ops[1].name == "CNOT"
+        assert opqueue_test_node.ops[2].name == "RY"
+        assert opqueue_test_node.ops[3].name == "RZ"
+        assert opqueue_test_node.ops[4].name == "PauliX"
+        assert opqueue_test_node.ops[5].name == "PauliZ"
+
+    def test_op_successors_operations_only(self, opqueue_test_node):
+        """Tests that _op_successors properly extracts the successors that are operations"""
+
+        operation_successors = opqueue_test_node._op_successors(0, only="G")
+
+        assert opqueue_test_node.ops[0] not in operation_successors
+        assert opqueue_test_node.ops[1] in operation_successors
+        assert opqueue_test_node.ops[4] not in operation_successors
+
+    def test_op_successors_observables_only(self, opqueue_test_node):
+        """Tests that _op_successors properly extracts the successors that are observables"""
+
+        observable_successors = opqueue_test_node._op_successors(0, only="E")
+
+        assert opqueue_test_node.ops[0] not in observable_successors
+        assert opqueue_test_node.ops[1] not in observable_successors
+        assert opqueue_test_node.ops[4] in observable_successors
+
+    def test_op_successors_both_operations_and_observables(self, opqueue_test_node):
+        """Tests that _op_successors properly extracts all successors"""
+
+        successors = opqueue_test_node._op_successors(0, only=None)
+
+        assert opqueue_test_node.ops[0] not in successors
+        assert opqueue_test_node.ops[1] in successors
+        assert opqueue_test_node.ops[4] in successors
+
+    # TODO
+    # once _op_successors has been upgraded to return only strict successors using a DAG
+    # add a test that checks that the strict ordering is used
+    # successors = q._op_successors(2, only=None)
+    # self.assertTrue(q.ops[4] in successors)
+    # self.assertTrue(q.ops[5] not in successors)
+
+
 class BasicTest(BaseTest):
     """Qnode basic tests.
     """
@@ -115,47 +189,6 @@ class BasicTest(BaseTest):
     def setUp(self):
         self.dev1 = qml.device("default.qubit", wires=1)
         self.dev2 = qml.device("default.qubit", wires=2)
-
-    def test_op_successors(self):
-        "Tests QNode._op_successors()."
-        self.logTestName()
-
-        def qf(x):
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 1])
-            qml.RY(0.4, wires=[0])
-            qml.RZ(-0.2, wires=[1])
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
-
-        q = qml.QNode(qf, self.dev2)
-        q.construct([1.0])
-
-        # the six operations in qf should appear in q.ops in the same order they appear above
-        self.assertTrue(q.ops[0].name == "RX")
-        self.assertTrue(q.ops[1].name == "CNOT")
-        self.assertTrue(q.ops[2].name == "RY")
-        self.assertTrue(q.ops[3].name == "RZ")
-        self.assertTrue(q.ops[4].name == "PauliX")
-        self.assertTrue(q.ops[5].name == "PauliZ")
-        # only gates
-        gate_successors = q._op_successors(0, only="G")
-        self.assertTrue(q.ops[0] not in gate_successors)
-        self.assertTrue(q.ops[1] in gate_successors)
-        self.assertTrue(q.ops[4] not in gate_successors)
-        # only evs
-        ev_sucessors = q._op_successors(0, only="E")
-        self.assertTrue(q.ops[0] not in ev_sucessors)
-        self.assertTrue(q.ops[1] not in ev_sucessors)
-        self.assertTrue(q.ops[4] in ev_sucessors)
-        # both
-        successors = q._op_successors(0, only=None)
-        self.assertTrue(q.ops[0] not in successors)
-        self.assertTrue(q.ops[1] in successors)
-        self.assertTrue(q.ops[4] in successors)
-        # TODO once _op_successors has been upgraded to return only strict successors using a DAG
-        # successors = q._op_successors(2, only=None)
-        # self.assertTrue(q.ops[4] in successors)
-        # self.assertTrue(q.ops[5] not in successors)
 
     def test_qnode_fail(self):
         "Tests that QNode initialization failures correctly raise exceptions."
