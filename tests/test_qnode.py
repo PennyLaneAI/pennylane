@@ -14,19 +14,18 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
-from unittest.mock import Mock, PropertyMock, patch
 import math
+from unittest.mock import Mock, PropertyMock, patch
 
-import autograd
 import pytest
 from autograd import numpy as np
-from pennylane._device import Device, DeviceError
+
+import pennylane as qml
+from pennylane._device import Device
 from pennylane.qnode import QNode, QuantumFunctionError, _flatten, unflatten
 
-from defaults import BaseTest
-from defaults import pennylane as qml
-
 flat_dummy_array = np.linspace(-1, 1, 64)
+
 
 class TestHelperMethods:
     """Tests the internal helper methods of QNode"""
@@ -85,7 +84,7 @@ class TestHelperMethods:
             unflatten(flat_dummy_array, model)
 
     def test_unflatten_error_too_many_elements(self):
-        """Tests that unflatten raises an error if the given iterable has 
+        """Tests that unflatten raises an error if the given iterable has
            more elements than the model"""
 
         reshaped = np.reshape(flat_dummy_array, (16, 2, 2))
@@ -268,7 +267,7 @@ class TestQNodeExceptions:
             node(0.5)
 
     def test_operation_on_nonexistant_wire(self, operable_mock_device_2_wires):
-        """Tests that the QNode properly raises an error if an operation 
+        """Tests that the QNode properly raises an error if an operation
            is applied to a non-existant wire."""
 
         operable_mock_device_2_wires.num_wires = 2
@@ -284,7 +283,7 @@ class TestQNodeExceptions:
             node(0.5)
 
     def test_observable_on_nonexistant_wire(self, operable_mock_device_2_wires):
-        """Tests that the QNode properly raises an error if an observable 
+        """Tests that the QNode properly raises an error if an observable
            is measured on a non-existant wire."""
 
         operable_mock_device_2_wires.num_wires = 2
@@ -299,7 +298,7 @@ class TestQNodeExceptions:
             node(0.5)
 
     def test_mixing_of_cv_and_qubit_operations(self, operable_mock_device_2_wires):
-        """Tests that the QNode properly raises an error if qubit and 
+        """Tests that the QNode properly raises an error if qubit and
            CV operations are mixed in the same qfunc."""
 
         def circuit(x):
@@ -358,7 +357,7 @@ class TestQNodeJacobianExceptions:
 
         node.evaluate([0.0])
         keys = node.grad_method_for_par.keys()
-        if len(keys) > 0:
+        if keys:
             k0 = [k for k in keys][0]
 
         node.grad_method_for_par[k0] = "J"
@@ -430,7 +429,7 @@ class TestQNodeParameters:
         zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
     )
     def test_fanout(self, qubit_device_1_wire, tol, x, y):
-        """Tests that qnodes can compute the correct function when the 
+        """Tests that qnodes can compute the correct function when the
            same parameter is used in multiple gates."""
 
         def circuit(x, y):
@@ -717,9 +716,9 @@ class TestQNodeGradients:
     def test_multidim_array(self, shape, tol):
         """Tests that arguments which are multidimensional arrays are
         properly evaluated and differentiated in QNodes."""
-        
+
         base_array = np.linspace(-1.0, 1.0, 8)
-        multidim_array = np.reshape(b, shape)
+        multidim_array = np.reshape(base_array, shape)
 
         def circuit(w):
             qml.RX(w[np.unravel_index(0, shape)], wires=0)  # base_array[0]
