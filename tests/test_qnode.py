@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane` :class:`QNode` class.
 import logging as log
 import unittest
 from unittest.mock import Mock, PropertyMock, patch
+import math
 
 import autograd
 import pytest
@@ -190,6 +191,7 @@ def operable_mock_device_2_wires():
     ):
         yield Device(wires=2)
 
+
 class TestQNodeExceptions:
     """Tests that QNode raises proper errors"""
 
@@ -344,7 +346,6 @@ class TestQNodeJacobianExceptions:
         with pytest.raises(ValueError, match="Cannot differentiate wrt parameter"):
             node.jacobian(0.5)
 
-
     def test_operation_not_supporting_analytic_gradient(self, operable_mock_device_2_wires):
         """Tests that QNode.jacobian properly raises an error if the
            qfunc contains an operation that does not support analytic gradients."""
@@ -357,7 +358,6 @@ class TestQNodeJacobianExceptions:
 
         with pytest.raises(ValueError, match="analytic gradient method cannot be used with"):
             node.jacobian(0.5, method="A")
-
 
     def test_bogus_gradient_method_set(self, operable_mock_device_2_wires):
         """Tests that QNode.jacobian properly raises an error if the
@@ -382,7 +382,6 @@ class TestQNodeJacobianExceptions:
         with pytest.raises(ValueError, match="Unknown gradient method"):
             node.jacobian(0.5)
 
-            
     def test_indices_not_unique(self, operable_mock_device_2_wires):
         """Tests that QNode.jacobian properly raises an error if the
            jacobian is requested for non-unique indices."""
@@ -395,7 +394,7 @@ class TestQNodeJacobianExceptions:
 
         with pytest.raises(ValueError, match="Parameter indices must be unique."):
             node.jacobian(0.5, which=[0, 0])
-            
+
     def test_indices_nonexistant(self, operable_mock_device_2_wires):
         """Tests that QNode.jacobian properly raises an error if the
            jacobian is requested for non-existant parameters."""
@@ -411,7 +410,7 @@ class TestQNodeJacobianExceptions:
 
         with pytest.raises(ValueError, match="Tried to compute the gradient wrt"):
             node.jacobian(0.5, which=[1, -1])
-            
+
     def test_unknown_method(self, operable_mock_device_2_wires):
         """Tests that QNode.jacobian properly raises an error if the
            gradient method is unknown."""
@@ -424,7 +423,7 @@ class TestQNodeJacobianExceptions:
 
         with pytest.raises(ValueError, match="Unknown gradient method"):
             node.jacobian(0.5, method="unknown")
-            
+
     def test_wrong_order_in_finite_difference(self, operable_mock_device_2_wires):
         """Tests that QNode.jacobian properly raises an error if finite
            differences are attempted with wrong order."""
@@ -438,6 +437,26 @@ class TestQNodeJacobianExceptions:
         with pytest.raises(ValueError, match="Order must be 1 or 2"):
             node.jacobian(0.5, method="F", order=3)
 
+
+class TestQNodeParameters:
+    """Tests the handling of parameters in the QNode"""
+
+    @pytest.mark.parametrize("x,y", zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7)**2/11))
+    def test_fanout(self, qubit_device_1_wire, tol, x, y):
+        """Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."""
+
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RZ(y, wires=[0])
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        def analytic_expval(x, y):
+            return math.cos(x)**2 - math.cos(y) * math.sin(x)**2
+
+        node = qml.QNode(circuit, qubit_device_1_wire)
+
+        assert np.allclose(node(x, y), analytic_expval(x, y), atol=tol, rtol=0)
 
 class BasicTest(BaseTest):
     """Qnode basic tests.
