@@ -36,7 +36,7 @@ def expZ(state):
 
 thetas = np.linspace(-2 * np.pi, 2 * np.pi, 7)
 
-dummy_array= np.linspace(-1, 1, 64)
+flat_dummy_array = np.linspace(-1, 1, 64)
 
 b = np.linspace(-1.0, 1.0, 8)
 b_shapes = [(8,), (8, 1), (4, 2), (2, 2, 2), (2, 1, 2, 1, 2)]
@@ -60,13 +60,52 @@ class TestHelperMethods:
         ],
     )
     def test_flatten(self, shape):
-        "Tests that _flatten successfully flattens multidimensional arrays."
+        """Tests that _flatten successfully flattens multidimensional arrays."""
 
-        reshaped = np.reshape(dummy_array, shape)
+        reshaped = np.reshape(flat_dummy_array, shape)
         flattened = np.array([x for x in _flatten(reshaped)])
 
-        assert flattened.shape == dummy_array.shape
-        assert np.array_equal(flattened, dummy_array)
+        assert flattened.shape == flat_dummy_array.shape
+        assert np.array_equal(flattened, flat_dummy_array)
+
+    @pytest.mark.parametrize(
+        "shape",
+        [
+            (64,),
+            (64, 1),
+            (32, 2),
+            (16, 4),
+            (8, 8),
+            (16, 2, 2),
+            (8, 2, 2, 2),
+            (4, 2, 2, 2, 2),
+            (2, 2, 2, 2, 2, 2),
+        ],
+    )
+    def test_unflatten(self, shape):
+        """Tests that _unflatten successfully unflattens multidimensional arrays."""
+
+        reshaped = np.reshape(flat_dummy_array, shape)
+        unflattened = np.array([x for x in unflatten(flat_dummy_array, reshaped)])
+
+        assert unflattened.shape == reshaped.shape
+        assert np.array_equal(unflattened, reshaped)
+
+    def test_unflatten_error_unsupported_model(self):
+        """Tests that unflatten raises an error if the given model is not supported"""
+
+        with pytest.raises(TypeError, match="Unsupported type in the model"):
+            model = lambda x: x  # not a valid model for unflatten
+            unflatten(flat_dummy_array, model)
+
+    def test_unflatten_error_too_many_elements(self):
+        """Tests that unflatten raises an error if the given iterable has 
+           more elements than the model"""
+
+        reshaped = np.reshape(flat_dummy_array, (16, 2, 2))
+
+        with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
+            unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
 
 
 class BasicTest(BaseTest):
@@ -76,26 +115,6 @@ class BasicTest(BaseTest):
     def setUp(self):
         self.dev1 = qml.device("default.qubit", wires=1)
         self.dev2 = qml.device("default.qubit", wires=2)
-
-    def test_unflatten(self):
-        "Tests that _unflatten successfully unflattens multidimensional arrays."
-        self.logTestName()
-        flat = a
-        for s in a_shapes:
-            reshaped = np.reshape(flat, s)
-            unflattened = np.array([x for x in unflatten(flat, reshaped)])
-
-            self.assertEqual(unflattened.shape, reshaped.shape)
-            self.assertAllEqual(unflattened, reshaped)
-
-        with self.assertRaisesRegex(TypeError, "Unsupported type in the model"):
-            model = lambda x: x  # not a valid model for unflatten
-            unflatten(flat, model)
-
-        with self.assertRaisesRegex(
-            ValueError, "Flattened iterable has more elements than the model"
-        ):
-            unflatten(np.concatenate([flat, flat]), reshaped)
 
     def test_op_successors(self):
         "Tests QNode._op_successors()."
