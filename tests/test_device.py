@@ -76,7 +76,7 @@ class TestDeviceSupportedLogic:
         assert not mock_device_with_observables.supports_observable(qml.PauliY)
 
     def test_supports_operation_exception(self, mock_device):
-        """check that a the function device.supports_operation raises proper errors
+        """check that device.supports_operation raises proper errors
            if the argument is of the wrong type"""
 
         with pytest.raises(
