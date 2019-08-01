@@ -183,7 +183,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, observables):
+    def execute(self, queue, observables, parameters=None):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -193,6 +193,10 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
             observables (Iterable[~.operation.Observable]): observables to measure and return
+            parameters (dict[int->list[(int, int)]]): Mapping from free parameter index to the list of
+                :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
+                The first element of the tuple is the index of the Operation in the program queue,
+                the second the index of the parameter within the Operation.
 
         Returns:
             array[float]: measured value(s)
@@ -200,6 +204,7 @@ class Device(abc.ABC):
         self.check_validity(queue, observables)
         self._op_queue = queue
         self._obs_queue = observables
+        self._parameters = parameters
 
         results = []
 
@@ -228,6 +233,7 @@ class Device(abc.ABC):
 
             self._op_queue = None
             self._obs_queue = None
+            self._parameters = None
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
@@ -265,6 +271,24 @@ class Device(abc.ABC):
         """
         if self._obs_queue is None:
             raise ValueError("Cannot access the observable value queue outside of the execution context!")
+
+        return self._obs_queue
+
+    @property
+    def parameters(self):
+        """Mapping from free parameter index to the list of
+        :class:`Operations <~.Operation>` in the device queue that depend on it.
+
+        Note that this property can only be accessed within the execution context
+        of :meth:`~.execute`.
+
+        Returns:
+            dict[int->list[(int, int)]]: the first element of the tuple is the index
+            of the Operation in the program queue, the second the index of the parameter
+            within the Operation.
+        """
+        if self._parameters is None:
+            raise ValueError("Cannot access the free parameter mapping outside of the execution context!")
 
         return self._obs_queue
 
