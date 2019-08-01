@@ -31,4 +31,5 @@ def test_about(capfd):
     assert pennylane.version().replace("-", ".") in pl_version_match
     assert "Numpy version" in out
     assert "Scipy version" in out
-    assert "Installed devices" in out
+    assert "default.qubit" in out
+    assert "default.gaussian" in out

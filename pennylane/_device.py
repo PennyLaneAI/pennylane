@@ -184,7 +184,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, observables, parameters=None):
+    def execute(self, queue, observables, parameters):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
