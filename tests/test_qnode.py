@@ -14,8 +14,6 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
-import logging as log
-import unittest
 from unittest.mock import Mock, PropertyMock, patch
 import math
 
@@ -23,20 +21,10 @@ import autograd
 import pytest
 from autograd import numpy as np
 from pennylane._device import Device, DeviceError
-from pennylane.plugins.default_qubit import CNOT, CRotx, CRoty, CRotz, I, Rotx, Roty, Rotz, Y, Z
 from pennylane.qnode import QNode, QuantumFunctionError, _flatten, unflatten
 
 from defaults import BaseTest
 from defaults import pennylane as qml
-
-log.getLogger("defaults")
-
-
-def expZ(state):
-    return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
-
-
-thetas = np.linspace(-2 * np.pi, 2 * np.pi, 7)
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 
@@ -171,8 +159,8 @@ class TestQNodeOperationQueue:
     # once _op_successors has been upgraded to return only strict successors using a DAG
     # add a test that checks that the strict ordering is used
     # successors = q._op_successors(2, only=None)
-    # self.assertTrue(q.ops[4] in successors)
-    # self.assertTrue(q.ops[5] not in successors)
+    # assert q.ops[4] in successors
+    # assert q.ops[5] not in successors
 
 
 @pytest.fixture(scope="function")
@@ -441,7 +429,10 @@ class TestQNodeJacobianExceptions:
 class TestQNodeParameters:
     """Tests the handling of parameters in the QNode"""
 
-    @pytest.mark.parametrize("x,y", zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7)**2/11))
+    @pytest.mark.parametrize(
+        "x,y",
+        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+    )
     def test_fanout(self, qubit_device_1_wire, tol, x, y):
         """Tests that qnodes can compute the correct function when the 
            same parameter is used in multiple gates."""
@@ -453,7 +444,7 @@ class TestQNodeParameters:
             return qml.expval(qml.PauliZ(0))
 
         def analytic_expval(x, y):
-            return math.cos(x)**2 - math.cos(y) * math.sin(x)**2
+            return math.cos(x) ** 2 - math.cos(y) * math.sin(x) ** 2
 
         node = qml.QNode(circuit, qubit_device_1_wire)
 
@@ -486,7 +477,7 @@ class TestQNodeParameters:
         computed_grad = cost_grad(*args)
 
         assert np.isclose(cost(*args), cost_target, atol=tol, rtol=0)
-        
+
         assert np.allclose(computed_grad[0], grad_target[0], atol=tol, rtol=0)
         assert np.allclose(computed_grad[1], grad_target[1], atol=tol, rtol=0)
         assert np.allclose(computed_grad[2], grad_target[2], atol=tol, rtol=0)
@@ -518,7 +509,7 @@ class TestQNodeParameters:
         computed_grad = cost_grad(*args)
 
         assert np.isclose(cost(*args), cost_target, atol=tol, rtol=0)
-        
+
         assert np.allclose(computed_grad[0], grad_target[0], atol=tol, rtol=0)
         assert np.allclose(computed_grad[1], grad_target[1], atol=tol, rtol=0)
         assert np.allclose(computed_grad[2], grad_target[2], atol=tol, rtol=0)
@@ -551,23 +542,13 @@ class TestQNodeParameters:
         computed_grad = cost_grad(*args)
 
         assert np.isclose(cost(*args), cost_target, atol=tol, rtol=0)
-        
+
         assert np.allclose(computed_grad[0], grad_target[0], atol=tol, rtol=0)
         assert np.allclose(computed_grad[1], grad_target[1], atol=tol, rtol=0)
         assert np.allclose(computed_grad[2], grad_target[2], atol=tol, rtol=0)
 
-class BasicTest(BaseTest):
-    """Qnode basic tests.
-    """
-
-    def setUp(self):
-        self.dev1 = qml.device("default.qubit", wires=1)
-        self.dev2 = qml.device("default.qubit", wires=2)
-
-    def test_array_parameters_evaluate(self):
-        "Test that array parameters gives same result as positional arguments."
-        self.logTestName()
-
+    def test_array_parameters_evaluate(self, qubit_device_2_wires, tol):
+        """Tests that array parameters gives same result as positional arguments."""
         a, b, c = 0.5, 0.54, 0.3
 
         def ansatz(x, y, z):
@@ -576,15 +557,15 @@ class BasicTest(BaseTest):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        @qml.qnode(self.dev2)
+        @qml.qnode(qubit_device_2_wires)
         def circuit1(x, y, z):
             return ansatz(x, y, z)
 
-        @qml.qnode(self.dev2)
+        @qml.qnode(qubit_device_2_wires)
         def circuit2(x, array):
             return ansatz(x, array[0], array[1])
 
-        @qml.qnode(self.dev2)
+        @qml.qnode(qubit_device_2_wires)
         def circuit3(array):
             return ansatz(*array)
 
@@ -594,11 +575,14 @@ class BasicTest(BaseTest):
         array_res = circuit2(a, np.array([b, c]))
         array_grad = circuit2.jacobian([a, np.array([b, c])])
 
+        assert np.allclose(positional_res, array_res, atol=tol, rtol=0)
+        assert np.allclose(positional_grad, array_grad, atol=tol, rtol=0)
+
         list_res = circuit2(a, [b, c])
         list_grad = circuit2.jacobian([a, [b, c]])
 
-        self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
-        self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
+        assert np.allclose(positional_res, list_res, atol=tol, rtol=0)
+        assert np.allclose(positional_grad, list_grad, atol=tol, rtol=0)
 
         array_res = circuit3(np.array([a, b, c]))
         array_grad = circuit3.jacobian([np.array([a, b, c])])
@@ -606,16 +590,15 @@ class BasicTest(BaseTest):
         list_res = circuit3([a, b, c])
         list_grad = circuit3.jacobian([[a, b, c]])
 
-        self.assertAllAlmostEqual(positional_res, array_res, delta=self.tol)
-        self.assertAllAlmostEqual(positional_grad, array_grad, delta=self.tol)
+        assert np.allclose(positional_res, array_res, atol=tol, rtol=0)
+        assert np.allclose(positional_grad, array_grad, atol=tol, rtol=0)
 
-    def test_multiple_expectation_different_wires(self):
-        "Tests that qnodes return multiple expectation values."
-        self.logTestName()
+    def test_multiple_expectation_different_wires(self, qubit_device_2_wires, tol):
+        """Tests that qnodes return multiple expectation values."""
 
         a, b, c = 0.5, 0.54, 0.3
 
-        @qml.qnode(self.dev2)
+        @qml.qnode(qubit_device_2_wires)
         def circuit(x, y, z):
             qml.RX(x, wires=[0])
             qml.RZ(y, wires=[0])
@@ -624,53 +607,48 @@ class BasicTest(BaseTest):
             qml.RX(z, wires=[0])
             return qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(1))
 
+        def analytic_expval(a, b, c):
+            return [-1 * math.cos(a) * math.cos(b) * math.sin(c), math.cos(a)]
+
         res = circuit(a, b, c)
+        analytic_res = analytic_expval(a, b, c)
 
-        out_state = (
-            np.kron(Rotx(c), I)
-            @ np.kron(Roty(b), I)
-            @ CNOT
-            @ np.kron(Rotz(b), I)
-            @ np.kron(Rotx(a), I)
-            @ np.array([1, 0, 0, 0])
-        )
+        assert np.allclose(res, analytic_res, atol=tol, rtol=0)
 
-        ex0 = np.vdot(out_state, np.kron(Y, I) @ out_state)
-        ex1 = np.vdot(out_state, np.kron(I, Z) @ out_state)
-        ex = np.array([ex0, ex1])
-        self.assertAllAlmostEqual(ex, res, delta=self.tol)
 
-    def test_multiple_keywordargs_used(self):
-        "Tests that qnodes use multiple keyword arguments."
-        self.logTestName()
+class TestQNodeKeywordArguments:
+    """Tests that the qnode properly handles keyword arguments."""
+
+    def test_multiple_keywordargs_used(self, qubit_device_2_wires, tol):
+        """Tests that qnodes use multiple keyword arguments."""
 
         def circuit(w, x=None, y=None):
             qml.RX(x, wires=[0])
             qml.RX(y, wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        circuit = qml.QNode(circuit, self.dev2)
+        node = qml.QNode(circuit, qubit_device_2_wires)
 
-        c = circuit(1.0, x=np.pi, y=np.pi)
-        self.assertAllAlmostEqual(c, [-1.0, -1.0], delta=self.tol)
+        c = node(1.0, x=np.pi, y=np.pi)
 
-    def test_multidimensional_keywordargs_used(self):
-        "Tests that qnodes use multi-dimensional keyword arguments."
-        self.logTestName()
+        assert np.allclose(c, [-1.0, -1.0], atol=tol, rtol=0)
+
+    def test_multidimensional_keywordargs_used(self, qubit_device_2_wires, tol):
+        """Tests that qnodes use multi-dimensional keyword arguments."""
 
         def circuit(w, x=None):
             qml.RX(x[0], wires=[0])
             qml.RX(x[1], wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        circuit = qml.QNode(circuit, self.dev2)
+        node = qml.QNode(circuit, qubit_device_2_wires)
 
-        c = circuit(1.0, x=[np.pi, np.pi])
-        self.assertAllAlmostEqual(c, [-1.0, -1.0], delta=self.tol)
+        c = node(1.0, x=[np.pi, np.pi])
 
-    def test_keywordargs_for_wires(self):
-        "Tests that wires can be passed as keyword arguments."
-        self.logTestName()
+        assert np.allclose(c, [-1.0, -1.0], atol=tol, rtol=0)
+
+    def test_keywordargs_for_wires(self, qubit_device_2_wires, tol):
+        """Tests that wires can be passed as keyword arguments."""
 
         default_q = 0
 
@@ -678,60 +656,62 @@ class BasicTest(BaseTest):
             qml.RX(x, wires=[q])
             return qml.expval(qml.PauliZ(q))
 
-        circuit = qml.QNode(circuit, self.dev2)
+        node = qml.QNode(circuit, qubit_device_2_wires)
 
-        c = circuit(np.pi, q=1)
-        self.assertEqual(circuit.queue[0].wires, [1])
-        self.assertAlmostEqual(c, -1.0, delta=self.tol)
+        c = node(np.pi, q=1)
 
-        c = circuit(np.pi)
-        self.assertEqual(circuit.queue[0].wires, [default_q])
-        self.assertAlmostEqual(c, -1.0, delta=self.tol)
+        assert node.queue[0].wires == [1]
+        assert np.isclose(c, -1.0, atol=tol, rtol=0)
 
-    def test_keywordargs_used(self):
-        "Tests that qnodes use keyword arguments."
-        self.logTestName()
+        c = node(np.pi)
+
+        assert node.queue[0].wires == [default_q]
+        assert np.isclose(c, -1.0, atol=tol, rtol=0)
+
+    def test_keywordargs_used(self, qubit_device_1_wire, tol):
+        """Tests that qnodes use keyword arguments."""
 
         def circuit(w, x=None):
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        circuit = qml.QNode(circuit, self.dev1)
+        node = qml.QNode(circuit, qubit_device_1_wire)
 
-        c = circuit(1.0, x=np.pi)
-        self.assertAlmostEqual(c, -1.0, delta=self.tol)
+        c = node(1.0, x=np.pi)
 
-    def test_keywordarg_updated_in_multiple_calls(self):
-        "Tests that qnodes update keyword arguments in consecutive calls."
-        self.logTestName()
+        assert np.isclose(c, -1.0, atol=tol, rtol=0)
 
-        def circuit(w, x=None):
-            qml.RX(w, wires=[0])
-            qml.RX(x, wires=[1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        circuit = qml.QNode(circuit, self.dev2)
-
-        c1 = circuit(0.1, x=0.0)
-        c2 = circuit(0.1, x=np.pi)
-        self.assertTrue(c1[1] != c2[1])
-
-    def test_keywordarg_passes_through_classicalnode(self):
-        "Tests that qnodes' keyword arguments pass through classical nodes."
-        self.logTestName()
+    def test_keywordarg_updated_in_multiple_calls(self, qubit_device_2_wires, tol):
+        """Tests that qnodes update keyword arguments in consecutive calls."""
 
         def circuit(w, x=None):
             qml.RX(w, wires=[0])
             qml.RX(x, wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        circuit = qml.QNode(circuit, self.dev2)
+        node = qml.QNode(circuit, qubit_device_2_wires)
 
-        def classnode(w, x=None):
-            return circuit(w, x=x)
+        c1 = node(0.1, x=0.0)
+        c2 = node(0.1, x=np.pi)
 
-        c = classnode(0.0, x=np.pi)
-        self.assertAllAlmostEqual(c, [1.0, -1.0], delta=self.tol)
+        assert c1[1] != c2[1]
+
+    def test_keywordarg_passes_through_classicalnode(self, qubit_device_2_wires, tol):
+        """Tests that qnodes' keyword arguments pass through classical nodes."""
+
+        def circuit(w, x=None):
+            qml.RX(w, wires=[0])
+            qml.RX(x, wires=[1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        node = qml.QNode(circuit, qubit_device_2_wires)
+
+        def classical_node(w, x=None):
+            return node(w, x=x)
+
+        c = classical_node(0.0, x=np.pi)
+
+        assert np.allclose(c, [1.0, -1.0], atol=tol, rtol=0)
 
 
 class TestQNodeGradients:
