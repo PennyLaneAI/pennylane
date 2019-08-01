@@ -15,9 +15,7 @@
 Unit tests for the :mod:`pennylane.interface.tfe` QNode interface.
 """
 
-import unittest
-import logging as log
-log.getLogger('defaults')
+import pytest
 
 import numpy as np
 
@@ -25,12 +23,10 @@ try:
     import tensorflow as tf
     import tensorflow.contrib.eager as tfe
     tf.enable_eager_execution()
-    tf_support = True
 except ImportError as e:
-    tf_support = False
+    pass
 
-
-from defaults import pennylane as qml, BaseTest
+import pennylane as qml
 
 from pennylane.qnode import _flatten, unflatten, QNode, QuantumFunctionError
 from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, Y, Z
@@ -40,116 +36,129 @@ from pennylane._device import DeviceError
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
+@pytest.fixture()
+def skip_if_no_tf_support(tf_support):
+    if not tf_support:
+        pytest.skip("Skipped, no tfe support")   
 
-class TFEQNodeTests(BaseTest):
+
+@pytest.mark.usefixtures("skip_if_no_tf_support")
+class TestTFEQNodeExceptions():
     """TFEQNode basic tests."""
-    def setUp(self):
-        if not tf_support:
-            self.skipTest('TFE interface not tested')
 
-        self.dev1 = qml.device('default.qubit', wires=1)
-        self.dev2 = qml.device('default.qubit', wires=2)
-
-    def test_qnode_fail(self):
-        """Tests that QNode initialization failures correctly raise exceptions."""
-        self.logTestName()
-        par = tfe.Variable(0.5)
-
-        #---------------------------------------------------------
-        ## faulty quantum functions
-
-        # qfunc must return only Expectations
-        @qml.qnode(self.dev2, interface='tfe')
+    def test_qnode_fails_on_wrong_return_type(self, qubit_device_2_wires):
+        """The qfunc must return only Expectations"""
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def qf(x):
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0)), 0.3
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'must return either'):
-            qf(par)
+        with pytest.raises(QuantumFunctionError, match='must return either'):
+            qf(tfe.Variable(0.5))
 
-        # all EVs must be returned...
-        @qml.qnode(self.dev2, interface='tfe')
+    def test_qnode_fails_on_expval_not_returned(self, qubit_device_2_wires):
+        """All expectation values in the qfunc must be returned"""
+
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def qf(x):
             qml.RX(x, wires=[0])
             ex = qml.expval(qml.PauliZ(1))
             return qml.expval(qml.PauliZ(0))
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'All measured observables'):
-            qf(par)
+        with pytest.raises(QuantumFunctionError, match='All measured observables'):
+            qf(tfe.Variable(0.5))
 
-        # ...in the correct order
-        @qml.qnode(self.dev2, interface='tfe')
+    def test_qnode_fails_on_wrong_expval_order(self, qubit_device_2_wires):
+        """Expvals must be returned in the order they were created in"""
+
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def qf(x):
             qml.RX(x, wires=[0])
             ex = qml.expval(qml.PauliZ(1))
             return qml.expval(qml.PauliZ(0)), ex
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'All measured observables'):
-            qf(par)
+        with pytest.raises(QuantumFunctionError, match='All measured observables'):
+            qf(tfe.Variable(0.5))
 
-        # gates must precede EVs
-        @qml.qnode(self.dev2, interface='tfe')
+    def test_qnode_fails_on_gates_after_measurements(self, qubit_device_2_wires):
+        """Gates have to precede measurements"""
+
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def qf(x):
             qml.RX(x, wires=[0])
             ev = qml.expval(qml.PauliZ(1))
             qml.RY(0.5, wires=[0])
             return ev
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'gates must precede'):
-            qf(par)
+        with pytest.raises(QuantumFunctionError, match='gates must precede'):
+            qf(tfe.Variable(0.5))
 
-        # a wire cannot be measured more than once
-        @qml.qnode(self.dev2, interface='tfe')
+    def test_qnode_fails_on_multiple_measurements_of_same_wire(self, qubit_device_2_wires):
+        """A wire can only be measured once"""
+        
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def qf(x):
             qml.RX(x, wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliX(0))
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'can only be measured once'):
-            qf(par)
+        with pytest.raises(QuantumFunctionError, match='can only be measured once'):
+            qf(tfe.Variable(0.5))
 
-        # device must have enough wires for the qfunc
-        @qml.qnode(self.dev2, interface='tfe')
+    def test_qnode_fails_on_qfunc_with_too_many_wires(self, qubit_device_2_wires):
+        """The device must have sufficient wires for the qfunc"""
+
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def qf(x):
             qml.RX(x, wires=[0])
             qml.CNOT(wires=[0, 2])
             return qml.expval(qml.PauliZ(0))
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'applied to invalid wire'):
-            qf(par)
+        with pytest.raises(QuantumFunctionError, match='applied to invalid wire'):
+            qf(tfe.Variable(0.5))
 
-        # CV and discrete ops must not be mixed
-        @qml.qnode(self.dev1, interface='tfe')
+    def test_qnode_fails_on_combination_of_cv_and_qbit_ops(self, qubit_device_1_wire):
+        """CV and discrete operations must not be mixed"""
+        
+        @qml.qnode(qubit_device_1_wire, interface='tfe')
         def qf(x):
             qml.RX(x, wires=[0])
             qml.Displacement(0.5, 0, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        with self.assertRaisesRegex(QuantumFunctionError, 'Continuous and discrete'):
-            qf(par)
+        with pytest.raises(QuantumFunctionError, match='Continuous and discrete'):
+            qf(tfe.Variable(0.5))
 
-        # default plugin cannot execute CV operations, neither gates...
-        @qml.qnode(self.dev1, interface='tfe')
+    def test_qnode_fails_for_cv_ops_on_qubit_device(self, qubit_device_1_wire):
+        """A qubit device cannot execute CV operations"""
+
+        @qml.qnode(qubit_device_1_wire, interface='tfe')
         def qf(x):
             qml.Displacement(0.5, 0, wires=[0])
             return qml.expval(qml.X(0))
 
-        with self.assertRaisesRegex(DeviceError, 'Gate [a-zA-Z]+ not supported on device'):
-            qf(par)
+        with pytest.raises(DeviceError, match='Gate [a-zA-Z]+ not supported on device'):
+            qf(tfe.Variable(0.5))
 
-        # ...nor observables
-        @qml.qnode(self.dev1, interface='tfe')
+    def test_qnode_fails_for_cv_observables_on_qubit_device(self, qubit_device_1_wire):
+        """A qubit device cannot measure CV observables"""
+
+        @qml.qnode(qubit_device_1_wire, interface='tfe')
         def qf(x):
             return qml.expval(qml.X(0))
 
-        with self.assertRaisesRegex(DeviceError, 'Observable [a-zA-Z]+ not supported on device'):
-            qf(par)
+        with pytest.raises(DeviceError, match='Observable [a-zA-Z]+ not supported on device'):
+            qf(tfe.Variable(0.5))
 
-    def test_qnode_fanout(self):
+
+@pytest.mark.usefixtures("skip_if_no_tf_support")
+class TestTFEQNodeParameterHandling:
+    """Test that the TFEQNode properly handles the parameters of qfuncs"""
+
+    def test_qnode_fanout(self, qubit_device_1_wire, tol):
         """Tests that qnodes can compute the correct function when the same parameter is used in multiple gates."""
-        self.logTestName()
 
-        @qml.qnode(self.dev1, interface='tfe')
+        @qml.qnode(qubit_device_1_wire, interface='tfe')
         def circuit(reused_param, other_param):
             qml.RX(reused_param, wires=[0])
             qml.RZ(other_param, wires=[0])
@@ -167,26 +176,75 @@ class TFEQNodeTests(BaseTest):
                 zero_state = np.array([1.,0.])
                 final_state = (Rx @ Rz @ Rx @ zero_state)
                 y_true = expZ(final_state)
-                self.assertAlmostEqual(y_eval, y_true, delta=self.tol)
 
-    def test_qnode_array_parameters(self):
-        "Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow."
-        self.logTestName()
+                assert np.allclose(y_eval, y_true, atol=tol, rtol=0)
 
-        @qml.qnode(self.dev1, interface='tfe')
-        def circuit_n1s(dummy1, array, dummy2):
+    def test_qnode_array_parameters_scalar_return(self, qubit_device_1_wire, tol):
+        """Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow.
+           Test case for a circuit that returns a scalar."""
+
+        # The objective of this test is not to check if the results are correctly calculated, 
+        # but to check that the interoperability of the different return types works.
+        @qml.qnode(qubit_device_1_wire, interface='tfe')
+        def circuit(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], wires=0)
             qml.RY(-0.5 * array[1,1], wires=0)
             return qml.expval(qml.PauliX(0))  # returns a scalar
 
-        @qml.qnode(self.dev1, interface='tfe')
-        def circuit_n1v(dummy1, array, dummy2):
+        grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
+        cost_target = 1.03257
+
+        args = (tfe.Variable(0.46), tfe.Variable([[2., 3., 0.3], [7., 4., 2.1]]), tfe.Variable(-0.13))
+
+        def cost(x, array, y):
+            c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
+            
+            return c +0.5*array[0,0] +x -0.4*y
+
+        with tf.GradientTape() as tape:
+            cost_res = cost(*args)
+            grad_res = np.array([i.numpy() for i in tape.gradient(cost_res, [args[0], args[2]])])
+
+        assert np.allclose(cost_res.numpy(), cost_target, atol=tol, rtol=0)
+        assert np.allclose(grad_res, np.fromiter(grad_target[::2], dtype=np.float32), atol=tol, rtol=0)
+
+    def test_qnode_array_parameters_1_vector_return(self, qubit_device_1_wire, tol):
+        """Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow
+           Test case for a circuit that returns a 1-vector."""
+
+        # The objective of this test is not to check if the results are correctly calculated, 
+        # but to check that the interoperability of the different return types works.
+        @qml.qnode(qubit_device_1_wire, interface='tfe')
+        def circuit(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], wires=0)
             qml.RY(-0.5 * array[1,1], wires=0)
             return qml.expval(qml.PauliX(0)),  # note the comma, returns a 1-vector
 
-        @qml.qnode(self.dev2, interface='tfe')
-        def circuit_nn(dummy1, array, dummy2):
+        grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
+        cost_target = 1.03257
+
+        args = (tfe.Variable(0.46), tfe.Variable([[2., 3., 0.3], [7., 4., 2.1]]), tfe.Variable(-0.13))
+
+        def cost(x, array, y):
+            c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
+            c = c[0]  # get a scalar
+            return c +0.5*array[0,0] +x -0.4*y
+
+        with tf.GradientTape() as tape:
+            cost_res = cost(*args)
+            grad_res = np.array([i.numpy() for i in tape.gradient(cost_res, [args[0], args[2]])])
+
+        assert np.allclose(cost_res.numpy(), cost_target, atol=tol, rtol=0)
+        assert np.allclose(grad_res, np.fromiter(grad_target[::2], dtype=np.float32), atol=tol, rtol=0)
+
+    def test_qnode_array_parameters_2_vector_return(self, qubit_device_2_wires, tol):
+        """Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow
+           Test case for a circuit that returns a 2-vector."""
+
+        # The objective of this test is not to check if the results are correctly calculated, 
+        # but to check that the interoperability of the different return types works.
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
+        def circuit(dummy1, array, dummy2):
             qml.RY(0.5 * array[0,1], wires=0)
             qml.RY(-0.5 * array[1,1], wires=0)
             qml.RY(array[1,0], wires=1)
@@ -195,27 +253,23 @@ class TFEQNodeTests(BaseTest):
         grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
         cost_target = 1.03257
 
-        for circuit in [circuit_n1s, circuit_n1v, circuit_nn]:
+        args = (tfe.Variable(0.46), tfe.Variable([[2., 3., 0.3], [7., 4., 2.1]]), tfe.Variable(-0.13))
 
-            args = (tfe.Variable(0.46), tfe.Variable([[2., 3., 0.3], [7., 4., 2.1]]), tfe.Variable(-0.13))
+        def cost(x, array, y):
+            c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
+            c = c[0]  # get a scalar
+            return c +0.5*array[0,0] +x -0.4*y
 
-            def cost(x, array, y):
-                c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
-                if c.shape != tf.TensorShape([]):
-                    c = c[0]  # get a scalar
-                return c +0.5*array[0,0] +x -0.4*y
+        with tf.GradientTape() as tape:
+            cost_res = cost(*args)
+            grad_res = np.array([i.numpy() for i in tape.gradient(cost_res, [args[0], args[2]])])
 
-            with tf.GradientTape() as tape:
-                cost_res = cost(*args)
-                grad_res = np.array([i.numpy() for i in tape.gradient(cost_res, [args[0], args[2]])])
+        assert np.allclose(cost_res.numpy(), cost_target, atol=tol, rtol=0)
+        assert np.allclose(grad_res, np.fromiter(grad_target[::2], dtype=np.float32), atol=tol, rtol=0)
 
-            self.assertAllAlmostEqual(cost_res.numpy(), cost_target, delta=self.tol)
-            self.assertAllAlmostEqual(grad_res, np.fromiter(grad_target[::2], dtype=np.float32), delta=self.tol)
 
-    def test_array_parameters_evaluate(self):
-        "Test that array parameters gives same result as positional arguments."
-        self.logTestName()
-
+    def test_array_parameters_evaluate(self, qubit_device_2_wires, tol):
+        """Test that array parameters gives same result as positional arguments."""
         a, b, c = tf.constant(0.5), tf.constant(0.54), tf.constant(0.3)
 
         def ansatz(x, y, z):
@@ -224,31 +278,30 @@ class TFEQNodeTests(BaseTest):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        @qml.qnode(self.dev2, interface='tfe')
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def circuit1(x, y, z):
             return ansatz(x, y, z)
 
-        @qml.qnode(self.dev2, interface='tfe')
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def circuit2(x, array):
             return ansatz(x, array[0], array[1])
 
-        @qml.qnode(self.dev2, interface='tfe')
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def circuit3(array):
             return ansatz(*array)
 
         positional_res = circuit1(a, b, c)
         array_res1 = circuit2(a, tfe.Variable([b, c]))
         array_res2 = circuit3(tfe.Variable([a, b, c]))
-        self.assertAllAlmostEqual(positional_res, array_res1, delta=self.tol)
-        self.assertAllAlmostEqual(positional_res, array_res2, delta=self.tol)
 
-    def test_multiple_expectation_different_wires(self):
-        "Tests that qnodes return multiple expectation values."
-        self.logTestName()
+        assert np.allclose(positional_res.numpy(), array_res1.numpy(), atol=tol, rtol=0)
+        assert np.allclose(positional_res.numpy(), array_res2.numpy(), atol=tol, rtol=0)
 
-        a, b, c = tf.constant(0.5), tf.constant(0.54), tf.constant(0.3)
+    def test_multiple_expectation_different_wires(self, qubit_device_2_wires, tol):
+        """Tests that qnodes return multiple expectation values."""
+        a, b, c = tfe.Variable(0.5), tfe.Variable(0.54), tfe.Variable(0.3)
 
-        @qml.qnode(self.dev2, interface='tfe')
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def circuit(x, y, z):
             qml.RX(x, wires=[0])
             qml.RZ(y, wires=[0])
@@ -265,115 +318,106 @@ class TFEQNodeTests(BaseTest):
         ex0 = np.vdot(out_state, np.kron(Y, I) @ out_state)
         ex1 = np.vdot(out_state, np.kron(I, Z) @ out_state)
         ex = np.array([ex0, ex1])
-        self.assertAllAlmostEqual(ex, res.numpy(), delta=self.tol)
 
-    def test_multiple_keywordargs_used(self):
-        "Tests that qnodes use multiple keyword arguments."
-        self.logTestName()
+        assert np.allclose(ex, res.numpy(), atol=tol, rtol=0)
 
+    def test_multiple_keywordargs_used(self, qubit_device_2_wires, tol):
+        """Tests that qnodes use multiple keyword arguments."""
+
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def circuit(w, x=None, y=None):
             qml.RX(x, wires=[0])
             qml.RX(y, wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        circuit = qml.QNode(circuit, self.dev2).to_tfe()
-
         c = circuit(tf.constant(1.), x=np.pi, y=np.pi)
-        self.assertAllAlmostEqual(c.numpy(), [-1., -1.], delta=self.tol)
 
-    def test_multidimensional_keywordargs_used(self):
-        "Tests that qnodes use multi-dimensional keyword arguments."
-        self.logTestName()
+        assert np.allclose(c.numpy(), [-1., -1.], atol=tol, rtol=0)
 
+    def test_multidimensional_keywordargs_used(self, qubit_device_2_wires, tol):
+        """Tests that qnodes use multi-dimensional keyword arguments."""
         def circuit(w, x=None):
             qml.RX(x[0], wires=[0])
             qml.RX(x[1], wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+        circuit = qml.QNode(circuit, qubit_device_2_wires).to_tfe()
 
         c = circuit(tf.constant(1.), x=[np.pi, np.pi])
-        self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
+        assert np.allclose(c.numpy(), [-1., -1.], atol=tol, rtol=0)
 
-    def test_keywordargs_for_wires(self):
-        "Tests that wires can be passed as keyword arguments."
-        self.logTestName()
-
+    def test_keywordargs_for_wires(self, qubit_device_2_wires, tol):
+        """Tests that wires can be passed as keyword arguments."""
         default_q = 0
 
         def circuit(x, q=default_q):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(q))
 
-        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+        circuit = qml.QNode(circuit, qubit_device_2_wires).to_tfe()
 
         c = circuit(tf.constant(np.pi), q=1)
-        self.assertAlmostEqual(c, 1., delta=self.tol)
+        assert np.allclose(c, 1., atol=tol, rtol=0)
 
         c = circuit(tf.constant(np.pi))
-        self.assertAlmostEqual(c, -1., delta=self.tol)
+        assert np.allclose(c.numpy(), -1., atol=tol, rtol=0)
 
-    def test_keywordargs_used(self):
-        "Tests that qnodes use keyword arguments."
-        self.logTestName()
+    def test_keywordargs_used(self, qubit_device_1_wire, tol):
+        """Tests that qnodes use keyword arguments."""
 
         def circuit(w, x=None):
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        circuit = qml.QNode(circuit, self.dev1).to_tfe()
+        circuit = qml.QNode(circuit, qubit_device_1_wire).to_tfe()
 
         c = circuit(tf.constant(1.), x=np.pi)
-        self.assertAlmostEqual(c, -1., delta=self.tol)
+        assert np.allclose(c.numpy(), -1., atol=tol, rtol=0)
 
-    def test_mixture_numpy_tensors(self):
-        "Tests that qnodes work with python types and tensors."
-        self.logTestName()
+    def test_mixture_numpy_tensors(self, qubit_device_2_wires, tol):
+        """Tests that qnodes work with python types and tensors."""
 
-        @qml.qnode(self.dev2, interface='tfe')
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def circuit(w, x, y):
             qml.RX(x, wires=[0])
             qml.RX(y, wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         c = circuit(tf.constant(1.), np.pi, np.pi).numpy()
-        self.assertAllAlmostEqual(c, [-1., -1.], delta=self.tol)
+        assert np.allclose(c, [-1., -1.], atol=tol, rtol=0)
 
-    def test_keywordarg_updated_in_multiple_calls(self):
-        "Tests that qnodes update keyword arguments in consecutive calls."
-        self.logTestName()
+    def test_keywordarg_updated_in_multiple_calls(self, qubit_device_2_wires):
+        """Tests that qnodes update keyword arguments in consecutive calls."""
 
         def circuit(w, x=None):
             qml.RX(w, wires=[0])
             qml.RX(x, wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+        circuit = qml.QNode(circuit, qubit_device_2_wires).to_tfe()
 
         c1 = circuit(tf.constant(0.1), x=tf.constant(0.))
         c2 = circuit(tf.constant(0.1), x=np.pi)
-        self.assertTrue(c1[1] != c2[1])
+        assert c1[1] != c2[1]
 
-    def test_keywordarg_passes_through_classicalnode(self):
-        "Tests that qnodes' keyword arguments pass through classical nodes."
-        self.logTestName()
+    def test_keywordarg_passes_through_classicalnode(self, qubit_device_2_wires, tol):
+        """Tests that qnodes' keyword arguments pass through classical nodes."""
 
         def circuit(w, x=None):
             qml.RX(w, wires=[0])
             qml.RX(x, wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+        circuit = qml.QNode(circuit, qubit_device_2_wires).to_tfe()
 
         def classnode(w, x=None):
             return circuit(w, x=x)
 
         c = classnode(tf.constant(0.), x=np.pi)
-        self.assertAllAlmostEqual(c, [1., -1.], delta=self.tol)
+        assert np.allclose(c.numpy(), [1., -1.], atol=tol, rtol=0)
 
-    def test_keywordarg_gradient(self):
-        "Tests that qnodes' keyword arguments work with gradients"
-        self.logTestName()
+    def test_keywordarg_gradient(self, qubit_device_2_wires, tol):
+        """Tests that qnodes' keyword arguments work with gradients"""
 
         def circuit(x, y, input_state=np.array([0, 0])):
             qml.BasisState(input_state, wires=[0, 1])
@@ -381,7 +425,7 @@ class TFEQNodeTests(BaseTest):
             qml.RY(y, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        circuit = qml.QNode(circuit, self.dev2).to_tfe()
+        circuit = qml.QNode(circuit, qubit_device_2_wires).to_tfe()
 
         x = 0.543
         y = 0.45632
@@ -395,37 +439,31 @@ class TFEQNodeTests(BaseTest):
             c = circuit(x_t, y_t, input_state=np.array([0, 0]))
             grads = np.array(tape.gradient(c, [x_t, y_t]))
 
-        self.assertAllAlmostEqual(grads, -expected_grad, delta=self.tol)
+        assert np.allclose(grads, -expected_grad, atol=tol, rtol=0)
 
         # test third basis state against analytic result
         with tf.GradientTape() as tape:
             c = circuit(x_t, y_t, input_state=np.array([1, 0]))
             grads = np.array(tape.gradient(c, [x_t, y_t]))
 
-        self.assertAllAlmostEqual(grads, expected_grad, delta=self.tol)
+        assert np.allclose(grads, expected_grad, atol=tol, rtol=0)
 
         # test first basis state via the default keyword argument against analytic result
         with tf.GradientTape() as tape:
             c = circuit(x_t, y_t)
             grads = np.array(tape.gradient(c, [x_t, y_t]))
 
-        self.assertAllAlmostEqual(grads, -expected_grad, delta=self.tol)
+        assert np.allclose(grads, -expected_grad, atol=tol, rtol=0)
 
 
-class IntegrationTests(BaseTest):
+@pytest.mark.usefixtures("skip_if_no_tf_support")
+class TestIntegration():
     """Integration tests to ensure the TensorFlow QNode agrees with the NumPy QNode"""
 
-    def setUp(self):
-        if not tf_support:
-            self.skipTest('TFE interface not tested')
+    def test_qnode_evaluation_agrees(self, qubit_device_2_wires, tol):
+        """Tests that simple example is consistent."""
 
-    def test_qnode_evaluation_agrees(self):
-        "Tests that simple example is consistent."
-        self.logTestName()
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev, interface='autograd')
+        @qml.qnode(qubit_device_2_wires, interface='autograd')
         def circuit(phi, theta):
             qml.RX(phi[0], wires=0)
             qml.RY(phi[1], wires=1)
@@ -433,7 +471,7 @@ class IntegrationTests(BaseTest):
             qml.PhaseShift(theta[0], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev, interface='tfe')
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def circuit_tfe(phi, theta):
             qml.RX(phi[0], wires=0)
             qml.RY(phi[1], wires=1)
@@ -449,15 +487,12 @@ class IntegrationTests(BaseTest):
 
         autograd_eval = circuit(phi, theta)
         tfe_eval = circuit_tfe(phi_t, theta_t)
-        self.assertAllAlmostEqual(autograd_eval, tfe_eval.numpy(), delta=self.tol)
+        assert np.allclose(autograd_eval, tfe_eval.numpy(), atol=tol, rtol=0)
 
-    def test_qnode_gradient_agrees(self):
-        "Tests that simple gradient example is consistent."
-        self.logTestName()
+    def test_qnode_gradient_agrees(self, qubit_device_2_wires, tol):
+        """Tests that simple gradient example is consistent."""
 
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev, interface='autograd')
+        @qml.qnode(qubit_device_2_wires, interface='autograd')
         def circuit(phi, theta):
             qml.RX(phi[0], wires=0)
             qml.RY(phi[1], wires=1)
@@ -465,7 +500,7 @@ class IntegrationTests(BaseTest):
             qml.PhaseShift(theta[0], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev, interface='tfe')
+        @qml.qnode(qubit_device_2_wires, interface='tfe')
         def circuit_tfe(phi, theta):
             qml.RX(phi[0], wires=0)
             qml.RY(phi[1], wires=1)
@@ -485,16 +520,5 @@ class IntegrationTests(BaseTest):
         dcircuit = tfe.gradients_function(circuit_tfe)
         tfe_grad = dcircuit(phi_t, theta_t)
 
-        self.assertAllAlmostEqual(autograd_grad[0], tfe_grad[0], delta=self.tol)
-        self.assertAllAlmostEqual(autograd_grad[1], tfe_grad[1], delta=self.tol)
-
-
-if __name__ == '__main__':
-    print('Testing PennyLane version ' + qml.version() + ', QNode TFE interface.')
-    # run the tests in this file
-    suite = unittest.TestSuite()
-    for t in (TFEQNodeTests, IntegrationTests):
-        ttt = unittest.TestLoader().loadTestsFromTestCase(t)
-        suite.addTests(ttt)
-
-    unittest.TextTestRunner().run(suite)
+        assert np.allclose(autograd_grad[0], tfe_grad[0], atol=tol, rtol=0)
+        assert np.allclose(autograd_grad[1], tfe_grad[1], atol=tol, rtol=0)

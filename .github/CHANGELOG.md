@@ -1,13 +1,37 @@
 # Release 0.5.0-dev
 
+### New features since last release
+
+* The method `Device.supported` that listed all the supported operations and observables
+  was replaced with two separate methods `Device.supports_observable` and `Device.supports_operation`.
+  The methods can now be called with string arguments (`dev.supports_observable('PauliX')`) and with
+  class information arguments (`dev.supports_observable(qml.PauliX)`).
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
+
+* Sampling support: QNodes can now return a specified number of samples
+  from a given observable via the top-level `pennylane.sample()` function.
+  To support this on plugin devices, there is a new `Device.sample` method.
+
+  Calculating gradients of QNodes that involve sampling is not possible.
+  [#256](https://github.com/XanaduAI/pennylane/pull/256)
+
 * Added controlled rotation gates to PennyLane operations and `default.qubit` plugin.
   [#251](https://github.com/XanaduAI/pennylane/pull/251)
+
+### Breaking changes
+
+* The method `Device.supported` was removed.
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
+
+* The following CV observables were renamed to comply with the new Operation/Observable
+  scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.
+  [#243](https://github.com/XanaduAI/pennylane/pull/243)
 
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz
+Aroosa Ijaz, Johannes Jakob Meyer.
 
 
 
@@ -114,8 +138,6 @@ Aroosa Ijaz
 This release contains contributions from:
 
 Shahnawaz Ahmed, riveSunder, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Maria Schuld.
-
-
 
 # Release 0.3.1
 

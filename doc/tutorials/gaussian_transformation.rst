@@ -60,7 +60,7 @@ After initializing the device, we can construct our quantum node. As before, we 
     def mean_photon_gaussian(mag_alpha, phase_alpha, phi):
         qml.Displacement(mag_alpha, phase_alpha, wires=0)
         qml.Rotation(phi, wires=0)
-        return qml.expval(qml.MeanPhoton(0))
+        return qml.expval(qml.NumberOperator(0))
 
 Notice that we have broken up the complex number :math:`\alpha` into two real numbers ``mag_alpha`` and ``phase_alpha``, which form a polar representation of :math:`\alpha`. This is so that the notion of a gradient is clear and well-defined.
 
