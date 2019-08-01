@@ -120,6 +120,7 @@ class Device(abc.ABC):
 
         self._op_queue = None
         self._obs_queue = None
+        self._parameters = None
 
     def __repr__(self):
         """String representation."""
@@ -290,7 +291,7 @@ class Device(abc.ABC):
         if self._parameters is None:
             raise ValueError("Cannot access the free parameter mapping outside of the execution context!")
 
-        return self._obs_queue
+        return self._parameters
 
     def pre_apply(self):
         """Called during :meth:`execute` before the individual operations are executed."""
