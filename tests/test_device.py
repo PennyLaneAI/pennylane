@@ -378,6 +378,63 @@ class TestObservables:
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
 
+class TestParameters:
+    """Test for checking device parameter mappings"""
+
+    @pytest.fixture(scope="function")
+    def mock_device(self):
+        with patch.multiple(
+            Device,
+            __abstractmethods__=set(),
+            operations=PropertyMock(return_value=["PauliY", "RX", "Rot"]),
+            observables=PropertyMock(return_value=["PauliZ"]),
+            short_name=PropertyMock(return_value="MockDevice"),
+            expval=MagicMock(return_value=0),
+            var=MagicMock(return_value=0),
+            sample=MagicMock(return_value=[0]),
+            apply=MagicMock()
+        ):
+            yield Device()
+
+    def test_parameters_accessed_outside_execution_context(self, mock_device):
+        """Tests that a call to parameters outside the execution context raises the correct error"""
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot access the free parameter mapping outside of the execution context!",
+        ):
+            mock_device.parameters
+
+    def test_parameters_available_at_pre_measure(self, mock_device):
+        """Tests that the parameter mapping is available when pre_measure is called and that accessing
+           Device.parameters raises no error"""
+
+
+        p0 = 0.54
+        p1 = -0.32
+
+        queue = [
+            qml.RX(p0, wires=0, do_queue=False),
+            qml.PauliY(wires=1, do_queue=False),
+            qml.Rot(0.432, 0.123, p1, wires=2, do_queue=False),
+        ]
+
+        parameters = {0: (0, 0), 1: (2, 3)}
+
+        observables = [
+            qml.expval(qml.PauliZ(0, do_queue=False)),
+            qml.var(qml.PauliZ(1, do_queue=False)),
+            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+        ]
+
+        p_mapping = {}
+
+        with patch.object(Device, "pre_measure", lambda self: p_mapping.update(self.parameters)):
+            mock_device.execute(queue, observables, parameters=parameters)
+
+        assert p_mapping == parameters
+
+
 class TestDeviceInit:
     """Tests for device loader in __init__.py"""
 
