@@ -61,7 +61,7 @@ import warnings
 import pennylane as qml
 
 from .qnode import QNode, QuantumFunctionError
-from .operation import Observable
+from .operation import Observable, Tensor
 
 
 class ExpvalFactory:
@@ -72,47 +72,60 @@ class ExpvalFactory:
     """
 
     def __call__(self, *ops):
-        wires = []
-        for obs in ops:
-            if not isinstance(obs, Observable):
+        if len(ops) == 1:
+            # single observable
+            op = ops[0]
+            if not isinstance(op, Observable):
                 raise QuantumFunctionError(
                     "{} is not an observable: cannot be used with expval".format(
-                        obs.name
+                        op.name
                     )
                 )
 
             if QNode._current_context is not None:
                 # delete operations from QNode queue
-                QNode._current_context.queue.remove(obs)
+                QNode._current_context.queue.remove(op)
 
             # set return type to be an expectation value
-            obs.return_type = "expectation"
+            op.return_type = "expectation"
 
-            if len(obs.wires) == 1:
-                wires.append(obs.wires)
-            else:
-                raise QuantumFunctionError(
-                    "Only single wire observables can be tensored."
-                )
-
-        if len(ops) == 1:
-            # Single observable
             if QNode._current_context is not None:
                 # add observable to QNode observable queue
-                QNode._current_context._append_op(*ops)
+                QNode._current_context._append_op(op)
+
+            return op
+
         else:
-            # Tensor observable. Expand as a multi-qubit Hermitian observable
-            flat_wires = [i for sub in wires for i in sub]
-            num_wires = QNode._current_context.num_wires
+            # tensor of observables
+            tensor_ops = Tensor()
+            tensor_ops.return_type = "expectation"
 
-            # tensored_matrix =
+            for op in ops:
+                if len(op.wires) > 1:
+                    raise QuantumFunctionError(
+                        "Only single wire observables can be tensored."
+                    )
 
-            if QNode._current_context is not None:
-                # add observable to QNode tensor observable queue
-                pass
-                # QNode._current_context._append_tensorop(qml.Hermitian(tensored_matrix,
-                #                                         wires=wires))
-        return ops
+                if not isinstance(op, Observable):
+                    raise QuantumFunctionError(
+                        "{} is not an observable: cannot be used with expval".format(
+                            op.name
+                        )
+                    )
+
+                if QNode._current_context is not None:
+                    # delete operations from QNode queue
+                    QNode._current_context.queue.remove(op)
+
+                # set return type to be an expectation value
+                op.return_type = "expectation"
+                tensor_ops.append(op, wire=op.wires)
+
+        # if QNode._current_context is not None:
+        #     # add observable to QNode observable queue
+        #     print(type(tensor_ops))
+        #     QNode._current_context._append_op(tensor_ops)
+        #     return ops
 
     def __getattr__(self, name):
         # This to allow backwards compatibility with the previous
@@ -190,7 +203,9 @@ def sample(op, n=None):
         if QNode._current_context is not None:
             n = QNode._current_context.device.shots
         else:
-            raise QuantumFunctionError("Could not find a bound device to determine the default number of samples.")
+            raise QuantumFunctionError(
+                "Could not find a bound device to determine the default number of samples."
+            )
 
     if n == 0:
         raise ValueError("Calling sample with n = 0 is not possible.")

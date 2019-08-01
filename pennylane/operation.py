@@ -672,3 +672,26 @@ class CVObservable(CV, Observable):
         p = self.parameters
         U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
         return self.heisenberg_expand(U, num_wires)
+
+
+class Tensor:
+    """Tensor wrapper for operations and observables.
+
+    :class:`Tensor` is used to wrap tensors of observables.
+
+    Args:
+        ops (list of Observable): Quantum observable or a list of observables.
+    """
+
+    # pylint: disable=abstract-method
+    return_type = None
+
+    def __init__(self):
+        self.ops = []
+        self.wires = []
+
+    def append(self, op, wire):
+        """Add operations to a tensor list
+        """
+        self.ops.append(op)
+        self.wires.append(wire)

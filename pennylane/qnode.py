@@ -293,6 +293,7 @@ class QNode:
         # pylint: disable=too-many-branches,too-many-statements
         self.queue = []
         self.ev = []  # temporary queue for EVs
+        self.ev_tensor = []  # temporary queue for tensored EVs
 
         if kwargs is None:
             kwargs = {}
