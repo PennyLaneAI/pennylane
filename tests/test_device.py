@@ -92,7 +92,7 @@ class TestDeviceSupportedLogic:
             mock_device.supports_operation(Device)
 
     def test_supports_observable_exception(self, mock_device):
-        """check that a the function device.supports_observable raises proper errors
+        """check that device.supports_observable raises proper errors
            if the argument is of the wrong type"""
 
         with pytest.raises(
