@@ -16,7 +16,7 @@ Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
 import pytest
 import unittest
-from unittest.mock import PropertyMock, patch
+from unittest.mock import Mock, PropertyMock, patch
 import logging as log
 
 log.getLogger("defaults")
@@ -110,14 +110,6 @@ class TestHelperMethods:
 
 
 @pytest.fixture(scope="function")
-def mock_device():
-    """A mock instance of the abstract Device class"""
-
-    with patch.multiple(Device, __abstractmethods__=set()):
-        yield Device()
-
-
-@pytest.fixture(scope="function")
 def opqueue_test_node(mock_device):
     """Provides a circuit for the subsequent tests of the operation queue"""
 
@@ -182,6 +174,154 @@ class TestQNodeOperationQueue:
     # self.assertTrue(q.ops[5] not in successors)
 
 
+
+@pytest.fixture(scope="function")
+def operable_mock_device():
+    """A mock instance of the abstract Device class that can support
+       qfuncs."""
+
+    with patch.multiple(
+        Device,
+        __abstractmethods__=set(),
+        operations=PropertyMock(return_value=["RX", "RY", "CNOT"]),
+        observables=PropertyMock(return_value=["PauliX", "PauliY", "PauliZ"]),
+        reset=Mock(),
+    ):
+        yield Device()
+
+class TestQNodeExceptions:
+    """Tests that QNode raises proper errors"""
+
+    def test_current_context_modified_outside_construct(self, mock_device, monkeypatch):
+        """Tests that the QNode properly raises an error if the _current_context
+           was modified outside of construct"""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(wires=0))
+
+        node = qml.QNode(circuit, mock_device)
+
+        monkeypatch.setattr(QNode, "_current_context", node)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="QNode._current_context must not be modified outside this method.",
+        ):
+            node.construct([0.0])
+
+    def test_return_of_non_observable(self, operable_mock_device):
+        """Tests that the QNode properly raises an error if the qfunc returns something
+           besides observables."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(wires=0)), 0.3
+
+        node = qml.QNode(circuit, operable_mock_device)
+
+        with pytest.raises(QuantumFunctionError, match="must return either"):
+            node(0.5)
+
+    def test_observable_not_returned(self, operable_mock_device):
+        """Tests that the QNode properly raises an error if the qfunc does not
+           return all observables."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            ex = qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.PauliZ(wires=0))
+
+        node = qml.QNode(circuit, operable_mock_device)
+
+        with pytest.raises(QuantumFunctionError, match="All measured observables"):
+            node(0.5)
+
+    def test_observable_order_violated(self, operable_mock_device):
+        """Tests that the QNode properly raises an error if the qfunc does not
+           return all observables in the correct order."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            ex = qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.PauliZ(wires=0)), ex
+
+        node = qml.QNode(circuit, operable_mock_device)
+
+        with pytest.raises(QuantumFunctionError, match="All measured observables"):
+            node(0.5)
+
+    def test_operations_after_observables(self, operable_mock_device):
+        """Tests that the QNode properly raises an error if the qfunc contains
+           operations after observables."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            ex = qml.expval(qml.PauliZ(wires=1))
+            qml.RY(0.5, wires=[0])
+            return qml.expval(qml.PauliZ(wires=0))
+
+        node = qml.QNode(circuit, operable_mock_device)
+
+        with pytest.raises(QuantumFunctionError, match="gates must precede"):
+            node(0.5)
+
+    def test_multiple_measurements_on_same_wire(self, operable_mock_device):
+        """Tests that the QNode properly raises an error if the same wire
+           is measured multiple times."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliX(0))
+
+        node = qml.QNode(circuit, operable_mock_device)
+
+        with pytest.raises(QuantumFunctionError, match="can only be measured once"):
+            node(0.5)
+
+    def test_operation_on_nonexistant_wire(self, operable_mock_device):
+        """Tests that the QNode properly raises an error if an operation 
+           is applied to a non-existant wire."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 2])
+            return qml.expval(qml.PauliZ(0))
+
+        node = qml.QNode(circuit, operable_mock_device)
+
+        with pytest.raises(QuantumFunctionError, match="applied to invalid wire"):
+            node(0.5)
+
+    def test_observable_on_nonexistant_wire(self, operable_mock_device):
+        """Tests that the QNode properly raises an error if an observable 
+           is measured on a non-existant wire."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
+
+        node = qml.QNode(circuit, operable_mock_device)
+
+        with pytest.raises(QuantumFunctionError, match="applied to invalid wire"):
+            node(0.5)
+
+    def test_mixing_of_cv_and_qubit_operations(self, operable_mock_device):
+        """Tests that the QNode properly raises an error if qubit and 
+           CV operations are mixed in the same qfunc."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.Displacement(0.5, 0, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = qml.QNode(circuit, operable_mock_device)
+
+        with pytest.raises(QuantumFunctionError, match="Continuous and discrete"):
+            node(0.5)
+
+
 class BasicTest(BaseTest):
     """Qnode basic tests.
     """
@@ -189,116 +329,6 @@ class BasicTest(BaseTest):
     def setUp(self):
         self.dev1 = qml.device("default.qubit", wires=1)
         self.dev2 = qml.device("default.qubit", wires=2)
-
-    def test_qnode_fail(self):
-        "Tests that QNode initialization failures correctly raise exceptions."
-        self.logTestName()
-        par = 0.5
-
-        # ---------------------------------------------------------
-        ## QNode internal issues
-
-        # current context should not be set before `construct` is called
-        def qf(x):
-            return qml.expval(qml.PauliZ(wires=0))
-
-        qnode = QNode(qf, self.dev1)
-        QNode._current_context = qnode
-        with self.assertRaisesRegex(
-            QuantumFunctionError, "QNode._current_context must not be modified outside this method."
-        ):
-            qnode.construct([0.0])
-        QNode._current_context = None
-
-        # ---------------------------------------------------------
-        ## faulty quantum functions
-
-        # qfunc must return only Expectations
-        @qml.qnode(self.dev2)
-        def qf(x):
-            qml.RX(x, wires=[0])
-            return qml.expval(qml.PauliZ(wires=0)), 0.3
-
-        with self.assertRaisesRegex(QuantumFunctionError, "must return either"):
-            qf(par)
-
-        # all EVs must be returned...
-        @qml.qnode(self.dev2)
-        def qf(x):
-            qml.RX(x, wires=[0])
-            ex = qml.expval(qml.PauliZ(wires=1))
-            return qml.expval(qml.PauliZ(0))
-
-        with self.assertRaisesRegex(QuantumFunctionError, "All measured observables"):
-            qf(par)
-
-        # ...in the correct order
-        @qml.qnode(self.dev2)
-        def qf(x):
-            qml.RX(x, wires=[0])
-            ex = qml.expval(qml.PauliZ(wires=1))
-            return qml.expval(qml.PauliZ(0)), ex
-
-        with self.assertRaisesRegex(QuantumFunctionError, "All measured observables"):
-            qf(par)
-
-        # gates must precede EVs
-        @qml.qnode(self.dev2)
-        def qf(x):
-            qml.RX(x, wires=[0])
-            ev = qml.expval(qml.PauliZ(wires=1))
-            qml.RY(0.5, wires=[0])
-            return ev
-
-        with self.assertRaisesRegex(QuantumFunctionError, "gates must precede"):
-            qf(par)
-
-        # a wire cannot be measured more than once
-        @qml.qnode(self.dev2)
-        def qf(x):
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliX(0))
-
-        with self.assertRaisesRegex(QuantumFunctionError, "can only be measured once"):
-            qf(par)
-
-        # device must have enough wires for the qfunc
-        @qml.qnode(self.dev2)
-        def qf(x):
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 2])
-            return qml.expval(qml.PauliZ(0))
-
-        with self.assertRaisesRegex(QuantumFunctionError, "applied to invalid wire"):
-            qf(par)
-
-        # CV and discrete ops must not be mixed
-        @qml.qnode(self.dev1)
-        def qf(x):
-            qml.RX(x, wires=[0])
-            qml.Displacement(0.5, 0, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        with self.assertRaisesRegex(QuantumFunctionError, "Continuous and discrete"):
-            qf(par)
-
-        # default plugin cannot execute CV operations, neither gates...
-        @qml.qnode(self.dev1)
-        def qf(x):
-            qml.Displacement(0.5, 0, wires=[0])
-            return qml.expval(qml.X(0))
-
-        with self.assertRaisesRegex(DeviceError, "Gate [a-zA-Z]+ not supported on device"):
-            qf(par)
-
-        # ...nor observables
-        @qml.qnode(self.dev1)
-        def qf(x):
-            return qml.expval(qml.X(wires=0))
-
-        with self.assertRaisesRegex(DeviceError, "Observable [a-zA-Z]+ not supported on device"):
-            qf(par)
 
     def test_jacobian_fail(self):
         "Tests that QNode.jacobian failures correctly raise exceptions."

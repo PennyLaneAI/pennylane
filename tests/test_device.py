@@ -22,13 +22,6 @@ from pennylane import Device, DeviceError
 
 
 @pytest.fixture(scope="function")
-def mock_device():
-    """A mock instance of the abstract Device class"""
-    with patch.multiple(Device, __abstractmethods__=set()):
-        yield Device()
-
-
-@pytest.fixture(scope="function")
 def mock_device_with_operations():
     """A mock instance of the abstract Device class with non-empty operations"""
 
