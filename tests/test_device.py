@@ -28,9 +28,6 @@ def mock_device():
         yield Device()
 
 
-mock_device_operations = ["PauliX", "PauliZ", "CNOT"]
-
-
 @pytest.fixture(scope="function")
 def mock_device_with_operations():
     """A mock instance of the abstract Device class with non-empty operations"""
@@ -38,12 +35,9 @@ def mock_device_with_operations():
     with patch.multiple(
         Device,
         __abstractmethods__=set(),
-        operations=PropertyMock(return_value=mock_device_operations),
+        operations=PropertyMock(return_value=["PauliX", "PauliZ", "CNOT"]),
     ):
         yield Device()
-
-
-mock_device_observables = ["PauliX", "PauliZ"]
 
 
 @pytest.fixture(scope="function")
@@ -53,7 +47,7 @@ def mock_device_with_observables():
     with patch.multiple(
         Device,
         __abstractmethods__=set(),
-        observables=PropertyMock(return_value=mock_device_observables),
+        observables=PropertyMock(return_value=["PauliX", "PauliZ"]),
     ):
         yield Device()
 
