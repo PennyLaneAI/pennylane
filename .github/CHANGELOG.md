@@ -2,12 +2,6 @@
 
 ### New features since last release
 
-* The method `Device.supported` that listed all the supported operations and observables
-  was replaced with two separate methods `Device.supports_observable` and `Device.supports_operation`.
-  The methods can now be called with string arguments (`dev.supports_observable('PauliX')`) and with
-  class information arguments (`dev.supports_observable(qml.PauliX)`).
-  [#276](https://github.com/XanaduAI/pennylane/pull/276)
-
 * Sampling support: QNodes can now return a specified number of samples
   from a given observable via the top-level `pennylane.sample()` function.
   To support this on plugin devices, there is a new `Device.sample` method.
@@ -27,13 +21,46 @@
   scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.
   [#243](https://github.com/XanaduAI/pennylane/pull/243)
 
+### Improvements
+
+* Introduces two enumerations: `Any` and `All`, representing any number of wires
+  and all wires in the system respectively. They can be imported from
+  `pennylane.operation`, and can be used when defining the `Operation.num_wires`
+  class attribute of operations.
+
+  As part of this change:
+
+  - `All` is equivalent to the integer 0, for backwards compatibility with the
+    existing test suite
+
+  - `Any` is equivalent to the integer -1 to allow numeric comparison
+    operators to continue working
+
+  - An additional validation is now added to the `Operation` class,
+    which will alert the user that an operation with `num_wires = All`
+    is being incorrectly.
+
+  [#277](https://github.com/XanaduAI/pennylane/pull/277)
+
+* The method `Device.supported` that listed all the supported operations and observables
+  was replaced with two separate methods `Device.supports_observable` and `Device.supports_operation`.
+  The methods can now be called with string arguments (`dev.supports_observable('PauliX')`) and with
+  class information arguments (`dev.supports_observable(qml.PauliX)`).
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
+
+### Bug fixes
+
+* Fixed a bug where a `PolyXP` observable would fail if applied to subsets
+  of wires on `default.gaussian`.
+  [#277](https://github.com/XanaduAI/pennylane/pull/277)
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
 
 Aroosa Ijaz, Johannes Jakob Meyer.
 
-
+---
 
 # Release 0.4.0
 
@@ -81,7 +108,7 @@ Aroosa Ijaz, Johannes Jakob Meyer.
   - New random initialization functions supporting the templates available
     in the new submodule `pennylane.init`.
 
-  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly 
+  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly
     distributed over the wires
 
   - Add various embedding strategies
