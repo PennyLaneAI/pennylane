@@ -2,6 +2,11 @@
 
 ### New features since last release
 
+* Adds a `Device.parameters` property, so that devices can view a dictionary mapping free
+  parameters to operation parameters. This will allow plugin devices to take advantage
+  of parametric compilation.
+  [#283](https://github.com/XanaduAI/pennylane/pull/283)
+
 * The method `Device.supported` that listed all the supported operations and observables
   was replaced with two separate methods `Device.supports_observable` and `Device.supports_operation`.
   The methods can now be called with string arguments (`dev.supports_observable('PauliX')`) and with
@@ -31,7 +36,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Johannes Jakob Meyer.
+Aroosa Ijaz, Josh Izaac, Johannes Jakob Meyer.
 
 
 
@@ -81,7 +86,7 @@ Aroosa Ijaz, Johannes Jakob Meyer.
   - New random initialization functions supporting the templates available
     in the new submodule `pennylane.init`.
 
-  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly 
+  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly
     distributed over the wires
 
   - Add various embedding strategies
