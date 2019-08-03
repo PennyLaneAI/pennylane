@@ -75,7 +75,7 @@ class TestExceptions(BaseTest):
         @qml.qnode(dev)
         def circuit():
             return qml.sample(qml.NumberOperator(0), 10)
-        
+
         with self.assertRaisesRegex(NotImplementedError, "Sampling is not supported in default.gaussian"):
             res = circuit()
 
@@ -567,8 +567,8 @@ class TestDefaultGaussianIntegration(BaseTest):
         for g in all_gates - gates:
             op = getattr(qml.ops, g)
 
-            if op.num_wires == 0:
-                wires = [0]
+            if op.num_wires <= 0:
+                wires = list(range(2))
             else:
                 wires = list(range(op.num_wires))
 
@@ -598,8 +598,8 @@ class TestDefaultGaussianIntegration(BaseTest):
         for g in all_obs - obs:
             op = getattr(qml.ops, g)
 
-            if op.num_wires == 0:
-                wires = [0]
+            if op.num_wires <= 0:
+                wires = list(range(2))
             else:
                 wires = list(range(op.num_wires))
 
@@ -673,11 +673,11 @@ class TestDefaultGaussianIntegration(BaseTest):
 
         for g, qop in dev._operation_map.items():
             log.debug('\tTesting gate %s...', g)
-            self.assertTrue(dev.supported(g))
+            self.assertTrue(dev.supports_operation(g))
             dev.reset()
 
             op = getattr(qml.ops, g)
-            if op.num_wires == 0:
+            if op.num_wires <= 0:
                 wires = list(range(2))
             else:
                 wires = list(range(op.num_wires))

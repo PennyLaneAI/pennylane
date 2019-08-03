@@ -753,7 +753,7 @@ class QNode:
         for op in self.ops:
             check_op(op)
 
-        ret = self.device.execute(self.queue, self.ev)
+        ret = self.device.execute(self.queue, self.ev, self.variable_ops)
         return self.output_conversion(ret)
 
     def metric_tensor(self, *args, **kwargs):
@@ -815,7 +815,7 @@ class QNode:
         Variable.kwarg_values = keyword_values
 
         self.device.reset()
-        ret = self.device.execute(self.queue, obs)
+        ret = self.device.execute(self.queue, obs, self.variable_ops)
         return ret
 
     def jacobian(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):

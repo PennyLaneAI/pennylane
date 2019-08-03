@@ -39,7 +39,8 @@ user interface:
 .. autosummary::
     short_name
     capabilities
-    supported
+    supports_operation
+    supports_observable
     execute
     reset
 
@@ -89,6 +90,7 @@ Code details
 import abc
 
 import autograd.numpy as np
+from pennylane.operation import Operation, Observable
 
 
 class DeviceError(Exception):
@@ -118,6 +120,7 @@ class Device(abc.ABC):
 
         self._op_queue = None
         self._obs_queue = None
+        self._parameters = None
 
     def __repr__(self):
         """String representation."""
@@ -181,7 +184,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, observables):
+    def execute(self, queue, observables, parameters={}):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -191,6 +194,10 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
             observables (Iterable[~.operation.Observable]): observables to measure and return
+            parameters (dict[int->list[(int, int)]]): Mapping from free parameter index to the list of
+                :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
+                The first element of the tuple is the index of the Operation in the program queue,
+                the second the index of the parameter within the Operation.
 
         Returns:
             array[float]: measured value(s)
@@ -198,6 +205,8 @@ class Device(abc.ABC):
         self.check_validity(queue, observables)
         self._op_queue = queue
         self._obs_queue = observables
+        self._parameters = {}
+        self._parameters.update(parameters)
 
         results = []
 
@@ -226,6 +235,7 @@ class Device(abc.ABC):
 
             self._op_queue = None
             self._obs_queue = None
+            self._parameters = None
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
@@ -266,6 +276,24 @@ class Device(abc.ABC):
 
         return self._obs_queue
 
+    @property
+    def parameters(self):
+        """Mapping from free parameter index to the list of
+        :class:`Operations <~.Operation>` in the device queue that depend on it.
+
+        Note that this property can only be accessed within the execution context
+        of :meth:`~.execute`.
+
+        Returns:
+            dict[int->list[(int, int)]]: the first element of the tuple is the index
+            of the Operation in the program queue, the second the index of the parameter
+            within the Operation.
+        """
+        if self._parameters is None:
+            raise ValueError("Cannot access the free parameter mapping outside of the execution context!")
+
+        return self._parameters
+
     def pre_apply(self):
         """Called during :meth:`execute` before the individual operations are executed."""
         pass
@@ -301,16 +329,38 @@ class Device(abc.ABC):
 
         return MockContext()
 
-    def supported(self, name):
-        """Checks if an operation or observable is supported by this device.
+    def supports_operation(self, operation):
+        """Checks if an operation is supported by this device.
 
         Args:
-            name (str): name of the operation or observable
+            operation (Operation,str): operation to be checked
 
         Returns:
-            bool: True iff it is supported
+            bool: ``True`` iff supplied operation is supported
         """
-        return name in self.operations.union(self.observables)
+        if isinstance(operation, type) and issubclass(operation, Operation):
+            return operation.__name__ in self.operations
+        if isinstance(operation, str):
+            return operation in self.operations
+
+        raise ValueError("The given operation must either be a pennylane.Operation class or a string.")
+
+    def supports_observable(self, observable):
+        """Checks if an observable is supported by this device.
+
+        Args:
+            operation (Observable,str): observable to be checked
+
+        Returns:
+            bool: ``True`` iff supplied observable is supported
+        """
+        if isinstance(observable, type) and issubclass(observable, Observable):
+            return observable.__name__ in self.observables
+        if isinstance(observable, str):
+            return observable in self.observables
+
+        raise ValueError("The given operation must either be a pennylane.Observable class or a string.")
+
 
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.

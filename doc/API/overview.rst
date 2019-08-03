@@ -68,7 +68,7 @@ You must further tell PennyLane about the operations and observables that your d
 
     operations = {"CNOT", "PauliX"}
 
-  This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+  This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supports_operation`.
 
 * :attr:`~.Device.observables`: set of the supported PennyLane observables as strings, e.g.,
 
@@ -76,7 +76,7 @@ You must further tell PennyLane about the operations and observables that your d
 
     observables = {"QuadOperator", "NumberOperator", "X", "P"}
 
-  This is used to decide whether an observable is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+  This is used to decide whether an observable is supported by your device in the default implementation of the public method :meth:`~.Device.supports_observable`.
 
 * :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user — this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
 
