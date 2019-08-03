@@ -491,6 +491,10 @@ class QNode:
             does not support differentiating with respect to keyword arguments. Instead,
             keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
         """
+        if not self.ops or not self.cache:
+            # construct the circuit
+            self.construct(args, kwargs)
+
         # convert the queue to a DAG
         G = to_DiGraph(self.queue, self.ev)
 

@@ -15,7 +15,7 @@
 Unit tests for the :mod:`pennylane.qnode` decorator.
 """
 # pylint: disable=protected-access,cell-var-from-loop
-import pytest
+import numpy as np
 
 import pennylane as qml
 
@@ -43,9 +43,11 @@ class TestMethodBinding:
 
         assert qnode.jacobian(0.5) == circuit.jacobian(0.5)
 
-    def test_subcircuits(self):
-        """Test binding of subcircuit methods"""
+    def test_metric_tensor(self, tol):
+        """Test binding of metric tensor methods"""
         dev = qml.device('default.qubit', wires=1)
+
+        a, b = 0.4, 0.1
 
         @qml.qnode(dev)
         def circuit(a, b):
@@ -53,17 +55,20 @@ class TestMethodBinding:
             qml.RY(b, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        assert hasattr(circuit, 'construct_subcircuits')
-        assert hasattr(circuit, 'subcircuits')
+        assert hasattr(circuit, 'metric_tensor')
 
-        assert not circuit.subcircuits
+        def circuit2(a, b):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
 
-        params = [0.4, 0.1]
-        circuit(*params)
-        circuit.construct_subcircuits([params])
+        qnode = qml.QNode(circuit2, dev)
 
-        assert circuit.subcircuits[(0,)]['queue'] == []
-        assert isinstance(circuit.subcircuits[(0,)]['observable'][0], qml.PauliX)
+        # check that both QNode constructions agree
+        res = circuit.metric_tensor(a, b)
+        res2 = qnode.metric_tensor(a, b)
+        assert np.allclose(res, res2, atol=tol, rtol=0)
 
-        assert isinstance(circuit.subcircuits[(1,)]['queue'][0], qml.RX)
-        assert isinstance(circuit.subcircuits[(1,)]['observable'][0], qml.PauliY)
+        # check metric tensor is correct
+        expected = np.array([1, np.cos(a)**2])/4
+        assert np.allclose(res, expected, atol=tol, rtol=0)

@@ -1006,7 +1006,7 @@ class TestQNodeGradients:
 
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
-        
+
 
     def test_controlled_RZ_gradient(self, tol):
         """Test gradient of controlled RZ gate"""
@@ -1050,7 +1050,7 @@ class TestQNodeGradients:
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
-        
+
 
 class TestQNodeVariance:
     """Qnode variance tests."""
@@ -1222,43 +1222,44 @@ class TestQNodeVariance:
             circuit.jacobian([1.], method='A')
 
 
-class TestSubcircuits:
-    """Tests for subcircuit construction and evaluation"""
+class TestMetricTensor:
+    """Tests for metric tensor subcircuit construction and evaluation"""
 
     def test_no_generator(self):
         """Test exception is raised if subcircuit contains an
         operation with no generator"""
         dev = qml.device('default.qubit', wires=1)
 
-        @qml.qnode(dev)
         def circuit(a):
             qml.Rot(a, 0, 0, wires=0)
             return qml.expval(qml.PauliX(0))
 
+        circuit = qml.QNode(circuit, dev)
+
         with pytest.raises(QuantumFunctionError, match="has no defined generator"):
-            circuit.construct_subcircuits([1])
+            circuit.construct_metric_tensor([1])
 
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
         opeation with generator that corresponds to no expectation value"""
         dev = qml.device('default.qubit', wires=1)
 
-        @qml.qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev)
 
         with monkeypatch.context() as m:
             m.setattr('pennylane.RX.generator', [qml.RX, 1])
 
             with pytest.raises(QuantumFunctionError, match="no corresponding expectation value"):
-                circuit.construct_subcircuits([1])
+                circuit.construct_metric_tensor([1])
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
         dev = qml.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
         def circuit(a, b, c):
             qml.RX(a, wires=0)
             qml.RY(b, wires=0)
@@ -1266,8 +1267,10 @@ class TestSubcircuits:
             qml.PhaseShift(c, wires=1)
             return qml.expval(qml.PauliX(0))
 
-        circuit.construct_subcircuits([1, 1, 1])
-        res = circuit.subcircuits
+        circuit = qml.QNode(circuit, dev)
+
+        circuit.construct_metric_tensor([1, 1, 1])
+        res = circuit._metric_tensor_subcircuits
 
         # first parameter subcircuit
         assert len(res[(0,)]['queue']) == 0
@@ -1291,7 +1294,6 @@ class TestSubcircuits:
         when a layer structure exists"""
         dev = qml.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
         def circuit(params):
             # section 1
             qml.RX(params[0], wires=0)
@@ -1313,9 +1315,11 @@ class TestSubcircuits:
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliX(0))
 
+        circuit = qml.QNode(circuit, dev)
+
         params = np.ones([8])
-        circuit.construct_subcircuits([params])
-        res = circuit.subcircuits
+        circuit.construct_metric_tensor([params])
+        res = circuit._metric_tensor_subcircuits
 
         # this circuit should split into 4 independent
         # sections or layers when constructing subcircuits
@@ -1350,8 +1354,43 @@ class TestSubcircuits:
         assert isinstance(layer['observable'][1], qml.PauliY)
         assert isinstance(layer['observable'][2], qml.PauliZ)
 
-    def test_evaluate_subcircuit(self, tol):
+    def test_evaluate_subcircuits(self, tol):
         """Test subcircuits evaluate correctly"""
+        dev = qml.device('default.qubit', wires=2)
+
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        # construct subcircuits
+        circuit = qml.QNode(circuit, dev)
+        circuit.construct_metric_tensor([1, 1, 1])
+
+        a = 0.432
+        b = 0.12
+        c = -0.432
+
+        # evaluate subcircuits
+        circuit.metric_tensor(a, b, c)
+
+        # first parameter subcircuit
+        assert circuit._metric_tensor_subcircuits[(0,)]['result'] == 0.25
+
+        # second parameter subcircuit
+        res = circuit._metric_tensor_subcircuits[(1,)]['result']
+        expected = np.cos(a)**2/4
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # third parameter subcircuit
+        res = circuit._metric_tensor_subcircuits[(2,)]['result']
+        expected = (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/16
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_evaluate_metric_tensor(self, tol):
+        """Test metric tensor evaluate correctly"""
         dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
@@ -1362,28 +1401,16 @@ class TestSubcircuits:
             qml.PhaseShift(c, wires=1)
             return qml.expval(qml.PauliX(0))
 
-        # construct subcircuits
-        circuit.construct_subcircuits([1, 1, 1])
-
         a = 0.432
         b = 0.12
         c = -0.432
 
-        # evaluate subcircuits
-        circuit(a, b, c)
+        # evaluate metric tensor
+        g = circuit.metric_tensor(a, b, c)
 
-        # first parameter subcircuit
-        assert circuit.subcircuits[(0,)]['result'] == 0.25
-
-        # second parameter subcircuit
-        res = circuit.subcircuits[(1,)]['result']
-        expected = np.cos(a)**2/4
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # third parameter subcircuit
-        res = circuit.subcircuits[(2,)]['result']
-        expected = (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/16
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        # check that the metric tensor is correct
+        expected = np.array([1, np.cos(a)**2, (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/4])/4
+        assert np.allclose(g, expected, atol=tol, rtol=0)
 
 
 class TestQNodeCacheing:
