@@ -18,6 +18,8 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 import logging as log
 
 import pytest
+import cmath
+import math
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -292,7 +294,7 @@ class TestStateFunctions:
 
     def test_hermitian_exceptions(self):
         """Tests that the hermitian function raises the proper errors."""
-        
+
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
             hermitian(H[1:])
@@ -303,6 +305,55 @@ class TestStateFunctions:
         with pytest.raises(ValueError, match="must be Hermitian"):
             hermitian(H2)
 
+
+class TestOperatorMatrices:
+    """Tests that get_operator_matrix returns the correct matrix."""
+
+    @pytest.mark.parametrize("name,expected", [
+        ("PauliX", np.array([[0, 1], [1, 0]])),
+        ("PauliY", np.array([[0, -1j], [1j, 0]])),
+        ("PauliZ", np.array([[1, 0], [0, -1]])),
+        ("Hadamard", np.array([[1, 1], [1, -1]])/np.sqrt(2)),
+        ("CNOT", np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])),
+        ("SWAP", np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])),
+        ("CZ", np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])),
+    ])
+    def test_get_operator_matrix_no_parameters(self, qubit_device_2_wires, tol, name, expected):
+        """Tests that get_operator_matrix returns the correct matrix."""
+
+        res = qubit_device_2_wires._get_operator_matrix(name, ())
+
+        assert np.allclose(res, expected, atol=tol, rtol=0) 
+
+    @pytest.mark.parametrize("name,expected,par", [
+        ('PhaseShift', lambda phi: np.array([[1, 0], [0, np.exp(1j*phi)]]), [0.223]),
+        ('RX', lambda phi: np.array([[math.cos(phi/2), -1j*math.sin(phi/2)], [-1j*math.sin(phi/2), math.cos(phi/2)]]), [0.223]),
+        ('RY', lambda phi: np.array([[math.cos(phi/2), -math.sin(phi/2)], [math.sin(phi/2), math.cos(phi/2)]]), [0.223]),
+        ('RZ', lambda phi: np.array([[cmath.exp(-1j*phi/2), 0], [0, cmath.exp(1j*phi/2)]]), [0.223]),
+        ('Rot', lambda phi, theta, omega: np.array([[cmath.exp(-1j*(phi+omega)/2)*math.cos(theta/2), -cmath.exp(1j*(phi-omega)/2)*math.sin(theta/2)], [cmath.exp(-1j*(phi-omega)/2)*math.sin(theta/2), cmath.exp(1j*(phi+omega)/2)*math.cos(theta/2)]]), [0.223, 0.153, 1.212]),
+        ('CRX', lambda phi: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, math.cos(phi/2), -1j*math.sin(phi/2)], [0, 0, -1j*math.sin(phi/2), math.cos(phi/2)]]), [0.223]),
+        ('CRY', lambda phi: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, math.cos(phi/2), -math.sin(phi/2)], [0, 0, math.sin(phi/2), math.cos(phi/2)]]), [0.223]),
+        ('CRZ', lambda phi: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, cmath.exp(-1j*phi/2), 0], [0, 0, 0, cmath.exp(1j*phi/2)]]), [0.223]),
+        ('CRot', lambda phi, theta, omega: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, cmath.exp(-1j*(phi+omega)/2)*math.cos(theta/2), -cmath.exp(1j*(phi-omega)/2)*math.sin(theta/2)], [0, 0, cmath.exp(-1j*(phi-omega)/2)*math.sin(theta/2), cmath.exp(1j*(phi+omega)/2)*math.cos(theta/2)]]), [0.223, 0.153, 1.212]),
+        ('QubitUnitary', lambda U: np.asarray(U), [np.array([[0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j], [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j]])]),
+        ('Hermitian', lambda H: np.asarray(H), [np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])]),
+        # Identity will always return a 2x2 Identity, but is still parameterized
+        ('Identity', lambda n: np.eye(2), [2])
+    ])
+    def test_get_operator_matrix_with_parameters(self, qubit_device_2_wires, tol, name, expected, par):
+        """Tests that get_operator_matrix returns the correct matrix building functions."""
+
+        res = qubit_device_2_wires._get_operator_matrix(name, par)
+
+        assert np.allclose(res, expected(*par), atol=tol, rtol=0) 
+
+    @pytest.mark.parametrize("name", ["BasisState", "QubitStateVector"])
+    def test_get_operator_matrix_none(self, qubit_device_2_wires, tol, name):
+        """Tests that get_operator_matrix returns none for direct state manipulations."""
+
+        res = qubit_device_2_wires._get_operator_matrix(name, ())
+
+        assert res is None
 
 class TestDefaultQubitDevice:
     """Test the default qubit device. The test ensures that the device is properly
@@ -317,42 +368,6 @@ class TestDefaultQubitDevice:
         """Test that default qubit device supports all PennyLane discrete observables."""
         
         assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_2_wires._observable_map)
-
-    def test_get_operator_matrix(self, qubit_device_2_wires, tol):
-        """Test the the correct matrix is returned given an operation name"""
-
-        for name, fn in {
-            **qubit_device_2_wires._operation_map,
-            **qubit_device_2_wires._observable_map,
-        }.items():
-            try:
-                op = getattr(qml.ops, name)
-            except AttributeError:
-                op = getattr(qml.expval, name)
-
-            p = [0.432423, -0.12312, 0.324][: op.num_params]
-
-            if name == "QubitStateVector":
-                p = [np.array([1, 0, 0, 0])]
-            elif name == "QubitUnitary":
-                p = [U]
-            elif name == "Hermitian":
-                p = [H]
-
-            res = qubit_device_2_wires._get_operator_matrix(name, p)
-
-            if callable(fn):
-                # if the default.qubit is an operation accepting parameters,
-                # initialise it using the parameters generated above.
-                expected = fn(*p)
-            else:
-                # otherwise, the operation is simply an array.
-                expected = fn
-
-            if expected is None:
-                assert res is None
-            else:
-                assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_apply(self, qubit_device_2_wires, tol):
         """Test the application of gates to a state"""
