@@ -15,14 +15,12 @@
 Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
-import unittest
 import logging as log
 
 import pytest
 
+import pennylane as qml
 from pennylane import numpy as np
-
-from defaults import pennylane as qml, BaseTest
 from pennylane.plugins.default_qubit import (
     spectral_decomposition,
     I,
