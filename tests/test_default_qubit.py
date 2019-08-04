@@ -166,7 +166,7 @@ class TestAuxillaryFunctions:
     def test_arbitrary_rotation(self, tol):
         """Test arbitrary single qubit rotation is correct"""
         
-        # test identity for theta=0
+        # test identity for phi,theta,omega=0
         assert np.allclose(Rot3(0, 0, 0), np.identity(2), atol=tol, rtol=0)
 
         # expected result
@@ -266,6 +266,9 @@ class TestStateFunctions:
         # verify equivalent to input state
         assert np.allclose(out, U, atol=tol, rtol=0)
 
+    def test_unitary_exceptions(self):
+        """Tests that the unitary function raises the proper errors."""
+
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
             unitary(U[1:])
@@ -277,7 +280,7 @@ class TestStateFunctions:
             unitary(U3)
 
     def test_hermitian(self, tol):
-        """Test that the Hermitian function produces the correct output."""
+        """Test that the hermitian function produces the correct output."""
         
         out = hermitian(H)
 
@@ -287,6 +290,9 @@ class TestStateFunctions:
         # verify equivalent to input state
         assert np.allclose(out, H, atol=tol, rtol=0)
 
+    def test_hermitian_exceptions(self):
+        """Tests that the hermitian function raises the proper errors."""
+        
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
             hermitian(H[1:])
