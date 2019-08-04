@@ -355,136 +355,125 @@ class TestOperatorMatrices:
 
         assert res is None
 
-class TestDefaultQubitDevice:
-    """Test the default qubit device. The test ensures that the device is properly
-    applying qubit operations and calculating the correct observables."""
-
-    def test_operation_map(self, qubit_device_2_wires):
-        """Test that default qubit device supports all PennyLane discrete gates."""
-        
-        assert set(qml.ops._qubit__ops__) ==  set(qubit_device_2_wires._operation_map)
-
-    def test_observable_map(self, qubit_device_2_wires):
-        """Test that default qubit device supports all PennyLane discrete observables."""
-        
-        assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_2_wires._observable_map)
+class TestApply:
+    """Tests that operations are applied correctly or that the proper errors are raised."""
 
     @pytest.mark.parametrize("name,input,expected_output", [
-        ("PauliX", np.array([1, 0]), np.array([0, 1])),
-        ("PauliX", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/math.sqrt(2), 1/math.sqrt(2)])),
-        ("PauliY", np.array([1, 0]), np.array([0, 1j])),
-        ("PauliY", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([-1j/math.sqrt(2), 1j/math.sqrt(2)])),
-        ("PauliZ", np.array([1, 0]), np.array([1, 0])),
-        ("PauliZ", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/math.sqrt(2), -1/math.sqrt(2)])),
-        ("Hadamard", np.array([1, 0]), np.array([1/math.sqrt(2), 1/math.sqrt(2)])),
-        ("Hadamard", np.array([1/math.sqrt(2), -1/math.sqrt(2)]), np.array([0, 1])),
+        ("PauliX", [1, 0], np.array([0, 1])),
+        ("PauliX", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/math.sqrt(2)]),
+        ("PauliY", [1, 0], [0, 1j]),
+        ("PauliY", [1/math.sqrt(2), 1/math.sqrt(2)], [-1j/math.sqrt(2), 1j/math.sqrt(2)]),
+        ("PauliZ", [1, 0], [1, 0]),
+        ("PauliZ", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1/math.sqrt(2)]),
+        ("Hadamard", [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)]),
+        ("Hadamard", [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1]),
     ])
     def test_apply_operation_single_wire_no_parameters(self, qubit_device_1_wire, tol, name, input, expected_output):
         """Tests that applying an operation yields the expected output state for single wire
            operations that have no parameters."""
 
-        qubit_device_1_wire._state = input        
+        qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply(name, wires=[0], par=[])
 
-        assert np.allclose(qubit_device_1_wire._state, expected_output, atol=tol, rtol=0) 
+        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0) 
 
     @pytest.mark.parametrize("name,input,expected_output", [
-        ("CNOT", np.array([1, 0, 0, 0]), np.array([1, 0, 0, 0])),
-        ("CNOT", np.array([0, 0, 1, 0]), np.array([0, 0, 0, 1])),
-        ("CNOT", np.array([1/math.sqrt(2), 0, 0, 1/math.sqrt(2)]), np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0])),
-        ("SWAP", np.array([1, 0, 0, 0]), np.array([1, 0, 0, 0])),
-        ("SWAP", np.array([0, 0, 1, 0]), np.array([0, 1, 0, 0])),
-        ("SWAP", np.array([1/math.sqrt(2), 0, -1/math.sqrt(2), 0]), np.array([1/math.sqrt(2), -1/math.sqrt(2), 0, 0])),
-        ("CZ", np.array([1, 0, 0, 0]), np.array([1, 0, 0, 0])),
-        ("CZ", np.array([0, 0, 0, 1]), np.array([0, 0, 0, -1])),
-        ("CZ", np.array([1/math.sqrt(2), 0, 0, -1/math.sqrt(2)]), np.array([1/math.sqrt(2), 0, 0, 1/math.sqrt(2)])),
+        ("CNOT", [1, 0, 0, 0], [1, 0, 0, 0]),
+        ("CNOT", [0, 0, 1, 0], [0, 0, 0, 1]),
+        ("CNOT", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], [1/math.sqrt(2), 0, 1/math.sqrt(2), 0]),
+        ("SWAP", [1, 0, 0, 0], [1, 0, 0, 0]),
+        ("SWAP", [0, 0, 1, 0], [0, 1, 0, 0]),
+        ("SWAP", [1/math.sqrt(2), 0, -1/math.sqrt(2), 0], [1/math.sqrt(2), -1/math.sqrt(2), 0, 0]),
+        ("CZ", [1, 0, 0, 0], [1, 0, 0, 0]),
+        ("CZ", [0, 0, 0, 1], [0, 0, 0, -1]),
+        ("CZ", [1/math.sqrt(2), 0, 0, -1/math.sqrt(2)], [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)]),
     ])
     def test_apply_operation_two_wires_no_parameters(self, qubit_device_2_wires, tol, name, input, expected_output):
         """Tests that applying an operation yields the expected output state for two wire
            operations that have no parameters."""
 
-        qubit_device_2_wires._state = input        
+        qubit_device_2_wires._state = np.array(input)        
         qubit_device_2_wires.apply(name, wires=[0,1], par=[])
 
-        assert np.allclose(qubit_device_2_wires._state, expected_output, atol=tol, rtol=0) 
+        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0) 
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("BasisState", np.array([1, 0, 0, 0]), np.array([0, 0, 1, 0]), [[1, 0]]),
-        ("BasisState", np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0]), np.array([0, 0, 1, 0]), [[1, 0]]),
-        ("BasisState", np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0]), np.array([0, 0, 0, 1]), [[1, 1]]),
-        ("QubitStateVector", np.array([1, 0, 0, 0]), np.array([0, 0, 1, 0]), [[0, 0, 1, 0]]),
-        ("QubitStateVector", np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0]), np.array([0, 0, 1, 0]), [np.array([0, 0, 1, 0])]),
-        ("QubitStateVector", np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0]), np.array([0, 0, 0, 1]), [np.array([0, 0, 0, 1])]),
-        ("QubitStateVector", np.array([1, 0, 0, 0]), np.array([1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)]), [np.array([1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)])]),
-        ("QubitStateVector", np.array([1, 0, 0, 0]), np.array([1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)]), [np.array([1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)])]),
+        ("BasisState", [1, 0, 0, 0], [0, 0, 1, 0], [[1, 0]]),
+        ("BasisState", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 1, 0], [[1, 0]]),
+        ("BasisState", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 0, 1], [[1, 1]]),
+        ("QubitStateVector", [1, 0, 0, 0], [0, 0, 1, 0], [[0, 0, 1, 0]]),
+        ("QubitStateVector", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 1, 0], [[0, 0, 1, 0]]),
+        ("QubitStateVector", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 0, 1], [[0, 0, 0, 1]]),
+        ("QubitStateVector", [1, 0, 0, 0], [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)]]),
+        ("QubitStateVector", [1, 0, 0, 0], [1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)]]),
     ])  
     def test_apply_operation_state_preparation(self, qubit_device_2_wires, tol, name, input, expected_output, par):
         """Tests that applying an operation yields the expected output state for single wire
            operations that have no parameters."""
 
-        qubit_device_2_wires._state = input 
+        qubit_device_2_wires._state = np.array(input) 
         qubit_device_2_wires.apply(name, wires=[0,1], par=par)
 
-        assert np.allclose(qubit_device_2_wires._state, expected_output, atol=tol, rtol=0)
+        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("PhaseShift", np.array([1, 0]), np.array([1, 0]), [math.pi/2]),
-        ("PhaseShift", np.array([0, 1]), np.array([0, 1j]), [math.pi/2]),
-        ("PhaseShift", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/math.sqrt(2), 1/2 + 1j/2]), [math.pi/4]),
-        ("RX", np.array([1, 0]), np.array([1/math.sqrt(2), -1j*1/math.sqrt(2)]), [math.pi/2]),
-        ("RX", np.array([1, 0]), np.array([0, -1j]), [math.pi]),
-        ("RX", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/2 - 1j/2, 1/2 -1j/2]), [math.pi/2]),
-        ("RY", np.array([1, 0]), np.array([1/math.sqrt(2), 1/math.sqrt(2)]), [math.pi/2]),
-        ("RY", np.array([1, 0]), np.array([0, 1]), [math.pi]),
-        ("RY", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([0, 1]), [math.pi/2]),
-        ("RZ", np.array([1, 0]), np.array([1/math.sqrt(2) - 1j/math.sqrt(2), 0]), [math.pi/2]),
-        ("RZ", np.array([0, 1]), np.array([0, 1j]), [math.pi]),
-        ("RZ", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/2 - 1j/2, 1/2 + 1j/2]), [math.pi/2]),
-        ("Rot", np.array([1, 0]), np.array([1/math.sqrt(2) - 1j/math.sqrt(2), 0]), [math.pi/2, 0, 0]),
-        ("Rot", np.array([1, 0]), np.array([1/math.sqrt(2), 1/math.sqrt(2)]), [0, math.pi/2, 0]),
-        ("Rot", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/2 - 1j/2, 1/2 + 1j/2]), [0, 0, math.pi/2]),
-        ("Rot", np.array([1, 0]), np.array([-1j/math.sqrt(2), -1/math.sqrt(2)]), [math.pi/2, -math.pi/2, math.pi/2]),
-        ("Rot", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/2 + 1j/2, -1/2 + 1j/2]), [-math.pi/2, math.pi, math.pi]),
-        ("QubitUnitary", np.array([1, 0]), np.array([1j/math.sqrt(2), 1j/math.sqrt(2)]), [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
-        ("QubitUnitary", np.array([0, 1]), np.array([1j/math.sqrt(2), -1j/math.sqrt(2)]), [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
-        ("QubitUnitary", np.array([1/math.sqrt(2), -1/math.sqrt(2)]), np.array([0, 1j]), [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
+        ("PhaseShift", [1, 0], [1, 0], [math.pi/2]),
+        ("PhaseShift", [0, 1], [0, 1j], [math.pi/2]),
+        ("PhaseShift", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/2 + 1j/2], [math.pi/4]),
+        ("RX", [1, 0], [1/math.sqrt(2), -1j*1/math.sqrt(2)], [math.pi/2]),
+        ("RX", [1, 0], [0, -1j], [math.pi]),
+        ("RX", [1/math.sqrt(2), 1/math.sqrt(2)], [1/2 - 1j/2, 1/2 -1j/2], [math.pi/2]),
+        ("RY", [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)], [math.pi/2]),
+        ("RY", [1, 0], [0, 1], [math.pi]),
+        ("RY", [1/math.sqrt(2), 1/math.sqrt(2)], [0, 1], [math.pi/2]),
+        ("RZ", [1, 0], [1/math.sqrt(2) - 1j/math.sqrt(2), 0], [math.pi/2]),
+        ("RZ", [0, 1], [0, 1j], [math.pi]),
+        ("RZ", [1/math.sqrt(2), 1/math.sqrt(2)], [1/2 - 1j/2, 1/2 + 1j/2], [math.pi/2]),
+        ("Rot", [1, 0], [1/math.sqrt(2) - 1j/math.sqrt(2), 0], [math.pi/2, 0, 0]),
+        ("Rot", [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)], [0, math.pi/2, 0]),
+        ("Rot", [1/math.sqrt(2), 1/math.sqrt(2)], [1/2 - 1j/2, 1/2 + 1j/2], [0, 0, math.pi/2]),
+        ("Rot", [1, 0], [-1j/math.sqrt(2), -1/math.sqrt(2)], [math.pi/2, -math.pi/2, math.pi/2]),
+        ("Rot", [1/math.sqrt(2), 1/math.sqrt(2)], [1/2 + 1j/2, -1/2 + 1j/2], [-math.pi/2, math.pi, math.pi]),
+        ("QubitUnitary", [1, 0], [1j/math.sqrt(2), 1j/math.sqrt(2)], [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
+        ("QubitUnitary", [0, 1], [1j/math.sqrt(2), -1j/math.sqrt(2)], [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
+        ("QubitUnitary", [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1j], [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
     ])
     def test_apply_operation_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, input, expected_output, par):
         """Tests that applying an operation yields the expected output state for single wire
            operations that have no parameters."""
 
-        qubit_device_1_wire._state = input        
+        qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply(name, wires=[0], par=par)
 
-        assert np.allclose(qubit_device_1_wire._state, expected_output, atol=tol, rtol=0) 
+        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0) 
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("CRX", np.array([0, 1, 0, 0]), np.array([0, 1, 0, 0]), [math.pi/2]),
-        ("CRX", np.array([0, 0, 0, 1]), np.array([0, 0, -1j, 0]), [math.pi]),
-        ("CRX", np.array([0, 1/math.sqrt(2), 1/math.sqrt(2), 0]), np.array([0, 1/math.sqrt(2), 1/2, -1j/2]), [math.pi/2]),
-        ("CRY", np.array([0, 0, 0, 1]), np.array([0, 0, -1/math.sqrt(2), 1/math.sqrt(2)]), [math.pi/2]),
-        ("CRY", np.array([0, 0, 0, 1]), np.array([0, 0, -1, 0]), [math.pi]),
-        ("CRY", np.array([1/math.sqrt(2), 1/math.sqrt(2), 0, 0]), np.array([1/math.sqrt(2), 1/math.sqrt(2), 0, 0]), [math.pi/2]),
-        ("CRZ", np.array([0, 0, 0, 1]), np.array([0, 0, 0, 1/math.sqrt(2) + 1j/math.sqrt(2)]), [math.pi/2]),
-        ("CRZ", np.array([0, 0, 0, 1]), np.array([0, 0, 0, 1j]), [math.pi]),
-        ("CRZ", np.array([1/math.sqrt(2), 1/math.sqrt(2), 0, 0]), np.array([1/math.sqrt(2), 1/math.sqrt(2), 0, 0]), [math.pi/2]),
-        ("CRot", np.array([0, 0, 0, 1]), np.array([0, 0, 0, 1/math.sqrt(2) + 1j/math.sqrt(2)]), [math.pi/2, 0, 0]),
-        ("CRot", np.array([0, 0, 0, 1]), np.array([0, 0, -1/math.sqrt(2), 1/math.sqrt(2)]), [0, math.pi/2, 0]),
-        ("CRot", np.array([0, 0, 1/math.sqrt(2), 1/math.sqrt(2)]), np.array([0, 0, 1/2 - 1j/2, 1/2 + 1j/2]), [0, 0, math.pi/2]),
-        ("CRot", np.array([0, 0, 0, 1]), np.array([0, 0, 1/math.sqrt(2), 1j/math.sqrt(2)]), [math.pi/2, -math.pi/2, math.pi/2]),
-        ("CRot", np.array([0, 1/math.sqrt(2), 1/math.sqrt(2), 0]), np.array([0, 1/math.sqrt(2), 0, -1/2 + 1j/2]), [-math.pi/2, math.pi, math.pi]),
-        ("QubitUnitary", np.array([1, 0, 0, 0]), np.array([1, 0, 0, 0]), [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
-        ("QubitUnitary", np.array([0, 1, 0, 0]), np.array([0, 1/math.sqrt(2), 1/math.sqrt(2), 0]), [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
-        ("QubitUnitary", np.array([1/2, 1/2, -1/2, 1/2]), np.array([1/2, 0, 1/math.sqrt(2), 1/2]), [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
+        ("CRX", [0, 1, 0, 0], [0, 1, 0, 0], [math.pi/2]),
+        ("CRX", [0, 0, 0, 1], [0, 0, -1j, 0], [math.pi]),
+        ("CRX", [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), 1/2, -1j/2], [math.pi/2]),
+        ("CRY", [0, 0, 0, 1], [0, 0, -1/math.sqrt(2), 1/math.sqrt(2)], [math.pi/2]),
+        ("CRY", [0, 0, 0, 1], [0, 0, -1, 0], [math.pi]),
+        ("CRY", [1/math.sqrt(2), 1/math.sqrt(2), 0, 0], [1/math.sqrt(2), 1/math.sqrt(2), 0, 0], [math.pi/2]),
+        ("CRZ", [0, 0, 0, 1], [0, 0, 0, 1/math.sqrt(2) + 1j/math.sqrt(2)], [math.pi/2]),
+        ("CRZ", [0, 0, 0, 1], [0, 0, 0, 1j], [math.pi]),
+        ("CRZ", [1/math.sqrt(2), 1/math.sqrt(2), 0, 0], [1/math.sqrt(2), 1/math.sqrt(2), 0, 0], [math.pi/2]),
+        ("CRot", [0, 0, 0, 1], [0, 0, 0, 1/math.sqrt(2) + 1j/math.sqrt(2)], [math.pi/2, 0, 0]),
+        ("CRot", [0, 0, 0, 1], [0, 0, -1/math.sqrt(2), 1/math.sqrt(2)], [0, math.pi/2, 0]),
+        ("CRot", [0, 0, 1/math.sqrt(2), 1/math.sqrt(2)], [0, 0, 1/2 - 1j/2, 1/2 + 1j/2], [0, 0, math.pi/2]),
+        ("CRot", [0, 0, 0, 1], [0, 0, 1/math.sqrt(2), 1j/math.sqrt(2)], [math.pi/2, -math.pi/2, math.pi/2]),
+        ("CRot", [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), 0, -1/2 + 1j/2], [-math.pi/2, math.pi, math.pi]),
+        ("QubitUnitary", [1, 0, 0, 0], [1, 0, 0, 0], [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
+        ("QubitUnitary", [0, 1, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
+        ("QubitUnitary", [1/2, 1/2, -1/2, 1/2], [1/2, 0, 1/math.sqrt(2), 1/2], [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
     ])
     def test_apply_operation_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, input, expected_output, par):
         """Tests that applying an operation yields the expected output state for single wire
            operations that have no parameters."""
 
-        qubit_device_2_wires._state = input        
+        qubit_device_2_wires._state = np.array(input)        
         qubit_device_2_wires.apply(name, wires=[0,1], par=par)
 
-        assert np.allclose(qubit_device_2_wires._state, expected_output, atol=tol, rtol=0) 
+        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0) 
 
     def test_apply_errors(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
@@ -507,6 +496,22 @@ class TestDefaultQubitDevice:
             match="The default.qubit plugin can apply BasisState only to all of the 2 wires."
         ):
             qubit_device_2_wires.apply("BasisState", wires=[0, 1, 2], par=[np.array([0, 1])])
+
+class TestDefaultQubitDevice:
+    """Test the default qubit device. The test ensures that the device is properly
+    applying qubit operations and calculating the correct observables."""
+
+    def test_operation_map(self, qubit_device_2_wires):
+        """Test that default qubit device supports all PennyLane discrete gates."""
+        
+        assert set(qml.ops._qubit__ops__) ==  set(qubit_device_2_wires._operation_map)
+
+    def test_observable_map(self, qubit_device_2_wires):
+        """Test that default qubit device supports all PennyLane discrete observables."""
+        
+        assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_2_wires._observable_map)
+
+    
 
     def test_ev(self, qubit_device_2_wires, tol):
         """Test that expectation values are calculated correctly"""
