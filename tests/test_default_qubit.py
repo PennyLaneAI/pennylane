@@ -348,7 +348,7 @@ class TestOperatorMatrices:
         assert np.allclose(res, expected(*par), atol=tol, rtol=0) 
 
     @pytest.mark.parametrize("name", ["BasisState", "QubitStateVector"])
-    def test_get_operator_matrix_none(self, qubit_device_2_wires, tol, name):
+    def test_get_operator_matrix_none(self, qubit_device_2_wires, name):
         """Tests that get_operator_matrix returns none for direct state manipulations."""
 
         res = qubit_device_2_wires._get_operator_matrix(name, ())
@@ -368,6 +368,87 @@ class TestDefaultQubitDevice:
         """Test that default qubit device supports all PennyLane discrete observables."""
         
         assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_2_wires._observable_map)
+
+    @pytest.mark.parametrize("name,input,expected_output", [
+        ("PauliX", np.array([1, 0]), np.array([0, 1])),
+        ("PauliX", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/math.sqrt(2), 1/math.sqrt(2)])),
+        ("PauliY", np.array([1, 0]), np.array([0, 1j])),
+        ("PauliY", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([-1j/math.sqrt(2), 1j/math.sqrt(2)])),
+        ("PauliZ", np.array([1, 0]), np.array([1, 0])),
+        ("PauliZ", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/math.sqrt(2), -1/math.sqrt(2)])),
+        ("Hadamard", np.array([1, 0]), np.array([1/math.sqrt(2), 1/math.sqrt(2)])),
+        ("Hadamard", np.array([1/math.sqrt(2), -1/math.sqrt(2)]), np.array([0, 1])),
+    ])
+    def test_apply_operation_single_wire_no_parameters(self, qubit_device_1_wire, tol, name, input, expected_output):
+        """Tests that applying an operation yields the expected output state for single wire
+           operations that have no parameters."""
+
+        qubit_device_1_wire._state = input        
+        qubit_device_1_wire.apply(name, wires=[0], par=[])
+
+        assert np.allclose(qubit_device_1_wire._state, expected_output, atol=tol, rtol=0) 
+
+    @pytest.mark.parametrize("name,input,expected_output", [
+        ("CNOT", np.array([1, 0, 0, 0]), np.array([1, 0, 0, 0])),
+        ("CNOT", np.array([0, 0, 1, 0]), np.array([0, 0, 0, 1])),
+        ("CNOT", np.array([1/math.sqrt(2), 0, 0, 1/math.sqrt(2)]), np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0])),
+        ("SWAP", np.array([1, 0, 0, 0]), np.array([1, 0, 0, 0])),
+        ("SWAP", np.array([0, 0, 1, 0]), np.array([0, 1, 0, 0])),
+        ("SWAP", np.array([1/math.sqrt(2), 0, -1/math.sqrt(2), 0]), np.array([1/math.sqrt(2), -1/math.sqrt(2), 0, 0])),
+        ("CZ", np.array([1, 0, 0, 0]), np.array([1, 0, 0, 0])),
+        ("CZ", np.array([0, 0, 0, 1]), np.array([0, 0, 0, -1])),
+        ("CZ", np.array([1/math.sqrt(2), 0, 0, -1/math.sqrt(2)]), np.array([1/math.sqrt(2), 0, 0, 1/math.sqrt(2)])),
+    ])
+    def test_apply_operation_two_wires_no_parameters(self, qubit_device_2_wires, tol, name, input, expected_output):
+        """Tests that applying an operation yields the expected output state for two wire
+           operations that have no parameters."""
+
+        qubit_device_2_wires._state = input        
+        qubit_device_2_wires.apply(name, wires=[0,1], par=[])
+
+        assert np.allclose(qubit_device_2_wires._state, expected_output, atol=tol, rtol=0) 
+
+    @pytest.mark.parametrize("name,input,expected_output,par", [
+        ("BasisState", np.array([1, 0, 0, 0]), np.array([0, 0, 1, 0]), [[1, 0]]),
+        ("BasisState", np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0]), np.array([0, 0, 1, 0]), [[1, 0]]),
+        ("BasisState", np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0]), np.array([0, 0, 0, 1]), [[1, 1]]),
+        ("QubitStateVector", np.array([1, 0, 0, 0]), np.array([0, 0, 1, 0]), [[0, 0, 1, 0]]),
+        ("QubitStateVector", np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0]), np.array([0, 0, 1, 0]), [np.array([0, 0, 1, 0])]),
+        ("QubitStateVector", np.array([1/math.sqrt(2), 0, 1/math.sqrt(2), 0]), np.array([0, 0, 0, 1]), [np.array([0, 0, 0, 1])]),
+        ("QubitStateVector", np.array([1, 0, 0, 0]), np.array([1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)]), [np.array([1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)])]),
+        ("QubitStateVector", np.array([1, 0, 0, 0]), np.array([1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)]), [np.array([1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)])]),
+    ])  
+    def test_apply_operation_state_preparation(self, qubit_device_2_wires, tol, name, input, expected_output, par):
+        """Tests that applying an operation yields the expected output state for single wire
+           operations that have no parameters."""
+
+        qubit_device_2_wires._state = input 
+        qubit_device_2_wires.apply(name, wires=[0,1], par=par)
+
+        assert np.allclose(qubit_device_2_wires._state, expected_output, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("name,input,expected_output,par", [
+        ("PhaseShift", np.array([1, 0]), np.array([1, 0]), [math.pi/2]),
+        ("PhaseShift", np.array([0, 1]), np.array([0, 1j]), [math.pi/2]),
+        ("PhaseShift", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/math.sqrt(2), 1/2 + 1j/2]), [math.pi/4]),
+        ("RX", np.array([1, 0]), np.array([1/math.sqrt(2), -1j*1/math.sqrt(2)]), [math.pi/2]),
+        ("RX", np.array([1, 0]), np.array([0, -1j]), [math.pi]),
+        ("RX", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/2 - 1j/2, 1/2 -1j/2]), [math.pi/2]),
+        ("RY", np.array([1, 0]), np.array([1/math.sqrt(2), 1/math.sqrt(2)]), [math.pi/2]),
+        ("RY", np.array([1, 0]), np.array([0, 1]), [math.pi]),
+        ("RY", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([0, 1]), [math.pi/2]),
+        ("RZ", np.array([1, 0]), np.array([1/math.sqrt(2) - 1j/math.sqrt(2), 0]), [math.pi/2]),
+        ("RZ", np.array([0, 1]), np.array([0, 1j]), [math.pi]),
+        ("RZ", np.array([1/math.sqrt(2), 1/math.sqrt(2)]), np.array([1/2 - 1j/2, 1/2 + 1j/2]), [math.pi/2]),
+    ])
+    def test_apply_operation_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, input, expected_output, par):
+        """Tests that applying an operation yields the expected output state for single wire
+           operations that have no parameters."""
+
+        qubit_device_1_wire._state = input        
+        qubit_device_1_wire.apply(name, wires=[0], par=par)
+
+        assert np.allclose(qubit_device_1_wire._state, expected_output, atol=tol, rtol=0) 
 
     def test_apply(self, qubit_device_2_wires, tol):
         """Test the application of gates to a state"""
