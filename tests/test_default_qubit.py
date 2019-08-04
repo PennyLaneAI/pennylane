@@ -497,6 +497,57 @@ class TestApply:
         ):
             qubit_device_2_wires.apply("BasisState", wires=[0, 1, 2], par=[np.array([0, 1])])
 
+
+class TestExpval:
+    """Tests that expectation values are properly calculated or that the proper errors are raised."""
+
+    @pytest.mark.parametrize("name,input,expected_output", [
+        ("PauliX", [1/math.sqrt(2), 1/math.sqrt(2)], 1),
+        ("PauliX", [1/math.sqrt(2), -1/math.sqrt(2)], -1),
+        ("PauliX", [1, 0], 0),
+        ("PauliY", [1/math.sqrt(2), 1j/math.sqrt(2)], 1),
+        ("PauliY", [1/math.sqrt(2), -1j/math.sqrt(2)], -1),
+        ("PauliY", [1, 0], 0),
+        ("PauliZ", [1, 0], 1),
+        ("PauliZ", [0, 1], -1),
+        ("PauliZ", [1/math.sqrt(2), 1/math.sqrt(2)], 0),
+        ("Hadamard", [1, 0], 1/math.sqrt(2)),
+        ("Hadamard", [0, 1], -1/math.sqrt(2)),
+        ("Hadamard", [1/math.sqrt(2), 1/math.sqrt(2)], 1/math.sqrt(2)),
+    ])
+    def test_expval_single_wire_no_parameters(self, qubit_device_1_wire, tol, name, input, expected_output):
+        """Tests that expectation values are properly calculated for single-wire observables without parameters."""
+
+        qubit_device_1_wire._state = np.array(input)
+        res = qubit_device_1_wire.ev(qubit_device_1_wire._observable_map[name], wires=[0])
+
+        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+
+    @pytest.mark.parametrize("name,input,expected_output,par", [
+        ("Identity", [1, 0], 1, []),
+        ("Identity", [0, 1], 1, []),
+        ("Identity", [1/math.sqrt(2), -1/math.sqrt(2)], 1, []),
+        ("Hermitian", [1, 0], 1, [[[1, 1j], [-1j, 1]]]),
+        ("Hermitian", [0, 1], 1, [[[1, 1j], [-1j, 1]]]),
+        ("Hermitian", [1/math.sqrt(2), -1/math.sqrt(2)], 1, [[[1, 1j], [-1j, 1]]]),
+    ])
+    def test_expval_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, input, expected_output, par):
+        """Tests that expectation values are properly calculated for single-wire observables with parameters."""
+
+        qubit_device_1_wire._state = np.array(input)
+        res = qubit_device_1_wire.ev(qubit_device_1_wire._observable_map[name](*par), wires=[0])
+
+        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+
+    def test_expval_warnings(self, qubit_device_1_wire):
+        """Tests that expval raises a warning if the given observable is complex."""
+        
+        qubit_device_1_wire.reset()
+
+        # text warning raised if matrix is complex
+        with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
+            qubit_device_1_wire.ev(np.array([[1+1j, 0], [0, 1+1j]]), wires=[0])
+
 class TestDefaultQubitDevice:
     """Test the default qubit device. The test ensures that the device is properly
     applying qubit operations and calculating the correct observables."""
@@ -510,57 +561,6 @@ class TestDefaultQubitDevice:
         """Test that default qubit device supports all PennyLane discrete observables."""
         
         assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_2_wires._observable_map)
-
-    
-
-    def test_ev(self, qubit_device_2_wires, tol):
-        """Test that expectation values are calculated correctly"""
-
-        # loop through all supported observables
-        for name, fn in qubit_device_2_wires._observable_map.items():
-            log.debug("\tTesting %s observable...", name)
-
-            # start in the state |00>
-            qubit_device_2_wires._state = np.array([1, 0, 1, 1]) / np.sqrt(3)
-
-            # get the equivalent pennylane operation class
-            op = getattr(qml.ops, name)
-
-            if op.par_domain == "A":
-                # the parameter is an array
-                p = [H]
-            else:
-                # the parameter is a float
-                p = [0.432423, -0.12312, 0.324][: op.num_params]
-
-            if callable(fn):
-                # if the default.qubit is an operation accepting parameters,
-                # initialise it using the parameters generated above.
-                O = fn(*p)
-            else:
-                # otherwise, the operation is simply an array.
-                O = fn
-
-            # calculate the expected output
-            if op.num_wires == 1 or op.num_wires <= 0:
-                expected_out = qubit_device_2_wires._state.conj() @ np.kron(O, I) @ qubit_device_2_wires._state
-            elif op.num_wires == 2:
-                expected_out = qubit_device_2_wires._state.conj() @ O @ qubit_device_2_wires._state
-            else:
-                raise NotImplementedError(
-                    "Test for operations with num_wires="
-                    + str(op.num_wires)
-                    + " not implemented."
-                )
-
-            res = qubit_device_2_wires.ev(O, wires=[0])
-
-            # verify the device is now in the expected state
-            assert np.allclose(res, expected_out, atol=tol, rtol=0)
-
-            # text warning raised if matrix is complex
-            with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
-                qubit_device_2_wires.ev(H + 1j, [0])
 
     def test_var_pauliz(self, qubit_device_2_wires, tol):
         """Test that variance of PauliZ is the same as I-<Z>^2"""
