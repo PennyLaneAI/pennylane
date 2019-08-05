@@ -26,7 +26,7 @@ from pennylane import Configuration
 log.getLogger('defaults')
 
 config_path = 'default_config.toml'
-    
+
 @pytest.fixture(scope="function")
 def default_config():
     return Configuration(name=config_path)
@@ -41,7 +41,7 @@ class TestConfigurationFileInteraction:
     def test_loading_current_directory(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from the current directory."""
-        
+
         monkeypatch.chdir(".")
         monkeypatch.setenv("PENNYLANE_CONF", "")
         config = Configuration(name=config_path)
@@ -76,12 +76,12 @@ class TestConfigurationFileInteraction:
 
     def test_not_found_warning(self, caplog):
         """Test that a warning is raised if no configuration file found."""
-        
+
         caplog.clear()
         caplog.set_level(log.INFO)
 
         Configuration("noconfig")
-        
+
         assert len(caplog.records) == 1
         assert caplog.records[0].message == "No PennyLane configuration file found."
 
@@ -146,7 +146,7 @@ class TestProperties:
         # test false if no config is loaded
         config = Configuration('noconfig')
 
-        assert not config   
+        assert not config
         assert default_config
 
 class TestPennyLaneInit:

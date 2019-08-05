@@ -87,7 +87,7 @@ Classes
 Code details
 ^^^^^^^^^^^^
 """
-# pylint: disable=attribute-defined-outside-init
+# pylint: disable=attribute-defined-outside-init,too-many-arguments
 import numpy as np
 
 from scipy.special import factorial as fac
@@ -556,7 +556,7 @@ def set_state(state, wire, mu, cov):
 #========================================================
 
 
-def photon_number(mu, cov, wires, params, hbar=2.):
+def photon_number(mu, cov, wires, params, total_wires, hbar=2.):
     r"""Calculates the mean photon number for a given one-mode state.
 
     Args:
@@ -564,6 +564,7 @@ def photon_number(mu, cov, wires, params, hbar=2.):
         cov (array): :math:`2\times 2` covariance matrix
         wires (Sequence[int]): wires to calculate the expectation for
         params (None): no parameters are used for this expectation value
+        total_wires (int): total number of wires in the system
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -588,7 +589,7 @@ def homodyne(phi=None):
         value and variance.
     """
     if phi is not None:
-        def _homodyne(mu, cov, wires, params, hbar=2.):
+        def _homodyne(mu, cov, wires, params, total_wires, hbar=2.):
             """Arbitrary angle homodyne expectation."""
             # pylint: disable=unused-argument
             rot = rotation(phi)
@@ -597,7 +598,7 @@ def homodyne(phi=None):
             return muphi[0], covphi[0, 0]
         return _homodyne
 
-    def _homodyne(mu, cov, wires, params, hbar=2.):
+    def _homodyne(mu, cov, wires, params, total_wires, hbar=2.):
         """Arbitrary angle homodyne expectation."""
         # pylint: disable=unused-argument
         rot = rotation(params[0])
@@ -607,17 +608,18 @@ def homodyne(phi=None):
     return _homodyne
 
 
-def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
+def poly_quad_expectations(mu, cov, wires, params, total_wires, hbar=2.):
     r"""Calculates the expectation and variance for an arbitrary
     polynomial of quadrature operators.
 
     Args:
-        mu (array): length-2 vector of means
-        cov (array): :math:`2\times 2` covariance matrix
+        mu (array): vector of means
+        cov (array): covariance matrix
         wires (Sequence[int]): wires to calculate the expectation for
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
             and quadratic coefficients of the quadrature operators
             :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`
+        total_wires (int): total number of wires in the system
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -625,11 +627,10 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
         tuple: the mean and variance of the quadrature-polynomial observable
     """
     Q = params[0]
-    N = len(mu)//2
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
     op = qml.ops.PolyXP(Q, wires=wires, do_queue=False)
-    Q = op.heisenberg_obs(N)
+    Q = op.heisenberg_obs(total_wires)
 
     if Q.ndim == 1:
         d = np.r_[Q[1::2], Q[2::2]]
@@ -651,14 +652,14 @@ def poly_quad_expectations(mu, cov, wires, params, hbar=2.):
     ex = np.trace(A @ cov) + k2
     var = 2*np.trace(A @ cov @ A @ cov) + d2.T @ cov @ d2
 
-    modes = np.arange(2*N).reshape(2, -1).T
+    modes = np.arange(2*total_wires).reshape(2, -1).T
     groenewald_correction = np.sum([np.linalg.det(hbar*A[:, m][n]) for m in modes for n in modes])
     var -= groenewald_correction
 
     return ex, var
 
 
-def fock_expectation(mu, cov, wires, params, hbar=2.):
+def fock_expectation(mu, cov, wires, params, total_wires, hbar=2.):
     r"""Calculates the expectation and variance of a Fock state probability.
 
     Args:
@@ -666,6 +667,7 @@ def fock_expectation(mu, cov, wires, params, hbar=2.):
         cov (array): :math:`2N\times 2N` covariance matrix
         wires (Sequence[int]): wires to calculate the expectation for
         params (Sequence[int]): the Fock state to return the expectation value for
+        total_wires (int): total number of wires in the system
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -814,9 +816,12 @@ class DefaultGaussian(Device):
         return S2
 
     def expval(self, observable, wires, par):
-        mu, cov = self.reduced_state(wires)
+        if observable == "PolyXP":
+            mu, cov = self._state
+        else:
+            mu, cov = self.reduced_state(wires)
 
-        ev, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
+        ev, var = self._observable_map[observable](mu, cov, wires, par, self.num_wires, hbar=self.hbar)
 
         if self.shots != 0:
             # estimate the ev
@@ -828,7 +833,7 @@ class DefaultGaussian(Device):
 
     def var(self, observable, wires, par):
         mu, cov = self.reduced_state(wires)
-        _, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar)
+        _, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar, total_wires=self.num_wires)
         return var
 
     def sample(self, observable, wires, par, n=None):

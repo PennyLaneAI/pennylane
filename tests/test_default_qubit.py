@@ -480,14 +480,14 @@ class TestDefaultQubitDevice(BaseTest):
                 O = fn
 
             # calculate the expected output
-            if op.num_wires == 1 or op.num_wires == 0:
+            if op.num_wires == 1 or op.num_wires <= 0:
                 expected_out = self.dev._state.conj() @ np.kron(O, I) @ self.dev._state
             elif op.num_wires == 2:
                 expected_out = self.dev._state.conj() @ O @ self.dev._state
             else:
                 raise NotImplementedError(
                     "Test for operations with num_wires="
-                    + op.num_wires
+                    + str(op.num_wires)
                     + " not implemented."
                 )
 
@@ -783,7 +783,7 @@ class TestDefaultQubitIntegration(BaseTest):
             dev.reset()
 
             op = getattr(qml.ops, g)
-            if op.num_wires == 0:
+            if op.num_wires <= 0:
                 if g == "BasisState" or g == "QubitStateVector":
                     wires = [0, 1]
                 else:
@@ -847,7 +847,7 @@ class TestDefaultQubitIntegration(BaseTest):
             dev.reset()
 
             op = getattr(qml.ops, g)
-            if op.num_wires == 0:
+            if op.num_wires < 0:
                 wires = [0]
             else:
                 wires = list(range(op.num_wires))
