@@ -430,7 +430,7 @@ class TestQNodeParameters:
         assert np.isclose(node(x, y), analytic_expval(x, y), atol=tol, rtol=0)
 
     def test_array_parameters_scalar_return(self, qubit_device_1_wire, tol):
-        """Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow.
+        """Test that QNode can take arrays as input arguments, and that they interact properly with Autograd.
            Test case for a circuit that returns a scalar."""
 
         def circuit(dummy1, array, dummy2):
