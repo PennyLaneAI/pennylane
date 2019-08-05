@@ -137,6 +137,7 @@ from collections.abc import Sequence
 import inspect
 import itertools
 import copy
+import warnings
 
 import numbers
 
@@ -156,6 +157,10 @@ from .variable import Variable
 
 
 Command = namedtuple("Command", ["name", "op"])
+
+
+class CommutationError(Exception):
+    """Error to raise if two operators don't commute"""
 
 
 def expand(U, wires, num_wires):
@@ -570,9 +575,10 @@ class QNode:
                 layer_ops[layer]["pidx"].append(param_idx)
 
         # iterate through each layer
-        for _, ops_pidx in layer_ops.items():
+        for _, v in layer_ops.items():
             # for the layer, get the ops and parameter indices
-            ops, param_idx = ops_pidx.values()
+            ops = v["ops"]
+            param_idx = v["pidx"]
 
             # get the ops in this layer
             curr_ops = [op for n, op in G.nodes(data="op") if n in ops]
@@ -635,10 +641,9 @@ class QNode:
                 obs2 = first_order[j]
                 second_order.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
 
-
             # generate the unitary operation to project to
             # the shared eigenbasis of all observables
-            V = np.identity(8)
+            V = np.identity(2**self.num_wires)
 
             for _, term in first_order:
                 _, S = linalg.eigh(V.conj().T @ term @ V)
@@ -876,31 +881,47 @@ class QNode:
 
             s = np.array(circuit['scale'])
             V = circuit['eigenbasis']
-            unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
-            self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
-
-            probs = np.abs(self.device._state) ** 2
-
-            first_order_ev = np.zeros([len(params)])
-            second_order_ev = np.zeros([len(params), len(params)])
-
-            for idx, term in circuit['first_order']:
-                Lambda = np.diag(V @ term @ V.conj().T).real
-                first_order_ev[idx] = Lambda @ probs
-
-            for idx, term in circuit['second_order']:
-                Lambda = np.diag(V @ term @ V.conj().T).real
-                second_order_ev[idx] = Lambda @ probs
-                second_order_ev[idx[1], idx[0]] = second_order_ev[idx]
-
-            g = np.zeros([len(params), len(params)])
 
             for i, j in itertools.product(range(len(params)), repeat=2):
-                g[i, j] = s[i] * s[j] * (second_order_ev[i, j] - first_order_ev[i] * first_order_ev[j])
+                A = circuit['first_order'][i][1]
+                B = circuit['first_order'][j][1]
+                commute = np.all(A @ B - B @ A == 0)
 
-            row = np.array(params).reshape(-1, 1)
-            col = np.array(params).reshape(1, -1)
-            tensor[row, col] = g
+                if not commute:
+                    warnings.warn("Operators do not commute, doing diagonal approximation")
+                    break
+
+            if commute:
+                # block diagonal approximation
+                unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
+                self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
+
+                probs = np.abs(self.device._state) ** 2
+
+                first_order_ev = np.zeros([len(params)])
+                second_order_ev = np.zeros([len(params), len(params)])
+
+                for idx, term in circuit['first_order']:
+                    Lambda = np.diag(V @ term @ V.conj().T).real
+                    first_order_ev[idx] = Lambda @ probs
+
+                for idx, term in circuit['second_order']:
+                    Lambda = np.diag(V @ term @ V.conj().T).real
+                    second_order_ev[idx] = Lambda @ probs
+                    second_order_ev[idx[1], idx[0]] = second_order_ev[idx]
+
+                g = np.zeros([len(params), len(params)])
+
+                for i, j in itertools.product(range(len(params)), repeat=2):
+                    g[i, j] = s[i] * s[j] * (second_order_ev[i, j] - first_order_ev[i] * first_order_ev[j])
+
+                row = np.array(params).reshape(-1, 1)
+                col = np.array(params).reshape(1, -1)
+                tensor[row, col] = g
+            else:
+                # diagonal approximation
+                res = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
+                tensor[np.array(params)] = res
 
         return tensor
 

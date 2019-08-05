@@ -67,14 +67,14 @@ class QGTOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-        grad_flat = list(_flatten(grad))
-        x_flat = _flatten(x)
+        grad_flat = np.array(list(_flatten(grad)))
+        x_flat = np.array(list(_flatten(x)))
 
         # inverse metric tensor
         # note: in the cases where np.abs(self.metric_tensor) > self.tol, we
         # should raise a warning to let the user know that tol should be reduced
-        G_inv = np.where(np.abs(self.metric_tensor) > self.tol, 1 / self.metric_tensor, 0)
+        G_inv = np.linalg.pinv(self.metric_tensor)
 
-        x_new_flat = [e - self._stepsize * g * d for e, g, d in zip(x_flat, G_inv, grad_flat)]
+        x_new_flat = x_flat - self._stepsize * G_inv @ grad_flat
 
         return unflatten(x_new_flat, x)
