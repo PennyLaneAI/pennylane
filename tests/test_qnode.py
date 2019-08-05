@@ -462,7 +462,7 @@ class TestQNodeParameters:
         assert np.allclose(computed_grad[2], grad_target[2], atol=tol, rtol=0)
 
     def test_qnode_array_parameters_1_vector_return(self, qubit_device_1_wire, tol):
-        """Test that QNode can take arrays as input arguments, and that they interact properly with TensorFlow.
+        """Test that QNode can take arrays as input arguments, and that they interact properly with Autograd.
            Test case for a circuit that returns a 1-vector."""
 
         def circuit(dummy1, array, dummy2):
