@@ -25,25 +25,23 @@ from pennylane._device import Device
 from pennylane.qnode import QNode, QuantumFunctionError, _flatten, unflatten
 
 flat_dummy_array = np.linspace(-1, 1, 64)
+test_shapes = [
+    (64,),
+    (64, 1),
+    (32, 2),
+    (16, 4),
+    (8, 8),
+    (16, 2, 2),
+    (8, 2, 2, 2),
+    (4, 2, 2, 2, 2),
+    (2, 2, 2, 2, 2, 2),
+]
 
 
 class TestHelperMethods:
     """Tests the internal helper methods of QNode"""
 
-    @pytest.mark.parametrize(
-        "shape",
-        [
-            (64,),
-            (64, 1),
-            (32, 2),
-            (16, 4),
-            (8, 8),
-            (16, 2, 2),
-            (8, 2, 2, 2),
-            (4, 2, 2, 2, 2),
-            (2, 2, 2, 2, 2, 2),
-        ],
-    )
+    @pytest.mark.parametrize("shape", test_shapes)
     def test_flatten(self, shape):
         """Tests that _flatten successfully flattens multidimensional arrays."""
 
@@ -53,20 +51,7 @@ class TestHelperMethods:
         assert flattened.shape == flat_dummy_array.shape
         assert np.array_equal(flattened, flat_dummy_array)
 
-    @pytest.mark.parametrize(
-        "shape",
-        [
-            (64,),
-            (64, 1),
-            (32, 2),
-            (16, 4),
-            (8, 8),
-            (16, 2, 2),
-            (8, 2, 2, 2),
-            (4, 2, 2, 2, 2),
-            (2, 2, 2, 2, 2, 2),
-        ],
-    )
+    @pytest.mark.parametrize("shape", test_shapes)
     def test_unflatten(self, shape):
         """Tests that _unflatten successfully unflattens multidimensional arrays."""
 
