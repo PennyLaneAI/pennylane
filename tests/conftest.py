@@ -76,7 +76,7 @@ def qubit_device_1_wire():
 @pytest.fixture(scope="function")
 def qubit_device_2_wires():
     return qml.device('default.qubit', wires=2)
-    
+
 
 @pytest.fixture(scope="function")
 def qubit_device_3_wires():
@@ -127,4 +127,3 @@ def tf_support():
 def seed(request):
     """Different seeds."""
     return request.param
-

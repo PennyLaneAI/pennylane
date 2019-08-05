@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from setuptools import setup
-# from sphinx.setup_command import BuildDoc
 
 with open("pennylane/_version.py") as f:
 	version = f.readlines()[-1].split()[-1].strip("\"'")
@@ -37,7 +36,7 @@ info = {
     'version': version,
     'maintainer': 'Xanadu Inc.',
     'maintainer_email': 'nathan@xanadu.ai',
-    'url': 'http://xanadu.ai',
+    'url': 'https://github.com/XanaduAI/pennylane',
     'license': 'Apache License 2.0',
     'packages': [
                     'pennylane',

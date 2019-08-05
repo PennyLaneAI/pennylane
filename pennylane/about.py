@@ -56,8 +56,8 @@ def about():
     """
     plugin_devices = iter_entry_points("pennylane.plugins")
     _internal.main(["show", "pennylane"])
+    print("Platform info:           {}".format(platform.platform(aliased=True)))
     print("Python version:          {0}.{1}.{2}".format(*sys.version_info[0:3]))
-    print("Platform info:           {}{}".format(platform.system(), platform.machine()))
     print("Numpy version:           {}".format(numpy.__version__))
     print("Scipy version:           {}".format(scipy.__version__))
 
