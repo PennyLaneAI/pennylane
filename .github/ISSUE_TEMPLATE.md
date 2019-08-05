@@ -9,7 +9,7 @@ in the template.
 If making a feature request, delete the following template and describe, in detail,
 the feature and why it is needed.
 
-For general technical details. check out our documentation:
+For general technical details check out our documentation:
 https://pennylane.readthedocs.io
 
 -------------------------------------------------------------------------------------------------------------
