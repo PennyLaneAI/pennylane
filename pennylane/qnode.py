@@ -135,6 +135,7 @@ Code details
 from collections import namedtuple
 from collections.abc import Sequence
 import inspect
+import itertools
 import copy
 
 import numbers
@@ -145,6 +146,8 @@ import autograd.numpy as np
 import autograd.extend as ae
 import autograd.builtins
 
+from scipy import linalg
+
 import pennylane
 import pennylane.operation
 
@@ -153,6 +156,52 @@ from .variable import Variable
 
 
 Command = namedtuple("Command", ["name", "op"])
+
+
+def expand(U, wires, num_wires):
+    r"""Expand a multi-qubit operator into a full system operator.
+
+    Args:
+        U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
+        wires (Sequence[int]): Target subsystems (order matters! the
+            left-most Hilbert space is at index 0).
+
+    Returns:
+        array: :math:`2^N\times 2^N` matrix. The full system operator.
+    """
+    if num_wires == 1:
+        # total number of wires is 1, simply return the matrix
+        return U
+
+    N = num_wires
+    wires = np.asarray(wires)
+
+    if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
+        raise ValueError("Invalid target subsystems provided in 'wires' argument.")
+
+    if U.shape != (2 ** len(wires), 2 ** len(wires)):
+        raise ValueError("Matrix parameter must be of size (2**len(wires), 2**len(wires))")
+
+    # generate N qubit basis states via the cartesian product
+    tuples = np.array(list(itertools.product([0, 1], repeat=N)))
+
+    # wires not acted on by the operator
+    inactive_wires = list(set(range(N)) - set(wires))
+
+    # expand U to act on the entire system
+    U = np.kron(U, np.identity(2 ** len(inactive_wires)))
+
+    # move active wires to beginning of the list of wires
+    rearranged_wires = np.array(list(wires) + inactive_wires)
+
+    # convert to computational basis
+    # i.e., converting the list of basis state bit strings into
+    # a list of decimal numbers that correspond to the computational
+    # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
+    perm = np.ravel_multi_index(tuples[:, rearranged_wires].T, [2] * N)
+
+    # permute U to take into account rearranged wires
+    return U[:, perm][perm]
 
 
 def to_DiGraph(queue, observables):
@@ -538,6 +587,7 @@ class QNode:
             queue = [op for _, op in ancestors if op not in curr_ops]
 
             obs = []
+            first_order = []
             scale = []
 
             # for each operator, get the generator
@@ -555,9 +605,21 @@ class QNode:
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
                     variance = pennylane.var(pennylane.Hermitian(gen, w, do_queue=False))
+                    first_order.append((w[0], expand(gen, w, self.num_wires)))
+
                 elif issubclass(gen, pennylane.operation.Observable):
                     # generator is an existing PennyLane operation
                     variance = pennylane.var(gen(w, do_queue=False))
+
+                    if issubclass(gen, pennylane.ops.PauliX):
+                        mat = np.array([[0, 1], [1, 0]])
+                    elif issubclass(gen, pennylane.ops.PauliY):
+                        mat = np.array([[0, -1j], [1j, 0]])
+                    elif issubclass(gen, pennylane.ops.PauliZ):
+                        mat = np.array([[1, 0], [0, -1]])
+
+                    first_order.append((w[0], expand(mat, w, self.num_wires)))
+
                 else:
                     raise QuantumFunctionError(
                         "Can't generate metric tensor, generator {}"
@@ -567,9 +629,29 @@ class QNode:
                 obs.append(variance)
                 scale.append(s)
 
+            second_order = []
+            for i, j in itertools.product(range(self.num_wires), repeat=2):
+                obs1 = first_order[i]
+                obs2 = first_order[j]
+                second_order.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
+
+
+            # generate the unitary operation to project to
+            # the shared eigenbasis of all observables
+            V = np.identity(8)
+
+            for _, term in first_order:
+                _, S = linalg.eigh(V.conj().T @ term @ V)
+                V = V @ S
+
+            V = V.conj().T
+
             self._metric_tensor_subcircuits[tuple(param_idx)] = {
                 "queue": queue,
                 "observable": obs,
+                "first_order": first_order,
+                "second_order": second_order,
+                "eigenbasis": V,
                 "result": None,
                 "scale": scale,
             }
@@ -786,14 +868,39 @@ class QNode:
         if not self._metric_tensor_subcircuits:
             self.construct_metric_tensor(args, **kwargs)
 
-        tensor = np.zeros([self.num_variables])
+        tensor = np.zeros([self.num_variables, self.num_variables])
 
         # execute any constructed metric tensor subcircuits
         for params, circuit in self._metric_tensor_subcircuits.items():
             self.device.reset()
+
             s = np.array(circuit['scale'])
-            circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
-            tensor[np.array(params)] = circuit['result']
+            V = circuit['eigenbasis']
+            unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
+            self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
+
+            probs = np.abs(self.device._state) ** 2
+
+            first_order_ev = np.zeros([len(params)])
+            second_order_ev = np.zeros([len(params), len(params)])
+
+            for idx, term in circuit['first_order']:
+                Lambda = np.diag(V @ term @ V.conj().T).real
+                first_order_ev[idx] = Lambda @ probs
+
+            for idx, term in circuit['second_order']:
+                Lambda = np.diag(V @ term @ V.conj().T).real
+                second_order_ev[idx] = Lambda @ probs
+                second_order_ev[idx[1], idx[0]] = second_order_ev[idx]
+
+            g = np.zeros([len(params), len(params)])
+
+            for i, j in itertools.product(range(len(params)), repeat=2):
+                g[i, j] = s[i] * s[j] * (second_order_ev[i, j] - first_order_ev[i] * first_order_ev[j])
+
+            row = np.array(params).reshape(-1, 1)
+            col = np.array(params).reshape(1, -1)
+            tensor[row, col] = g
 
         return tensor
 
