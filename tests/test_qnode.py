@@ -78,25 +78,24 @@ class TestHelperMethods:
             unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
 
 
-@pytest.fixture(scope="function")
-def opqueue_test_node(mock_device):
-    """Provides a circuit for the subsequent tests of the operation queue"""
-
-    def circuit(x):
-        qml.RX(x, wires=[0])
-        qml.CNOT(wires=[0, 1])
-        qml.RY(0.4, wires=[0])
-        qml.RZ(-0.2, wires=[1])
-        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
-
-    node = qml.QNode(circuit, mock_device)
-    node.construct([1.0])
-
-    return node
-
-
 class TestQNodeOperationQueue:
     """Tests that the QNode operation queue is properly filled and interacted with"""
+
+    @pytest.fixture(scope="function")
+    def opqueue_test_node(self, mock_device):
+        """Provides a circuit for the subsequent tests of the operation queue"""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1])
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+        node = qml.QNode(circuit, mock_device)
+        node.construct([1.0])
+
+        return node
 
     def test_operation_ordering(self, opqueue_test_node):
         """Tests that the ordering of the operations is correct"""
