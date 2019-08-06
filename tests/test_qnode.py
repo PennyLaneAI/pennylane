@@ -21,11 +21,12 @@ log.getLogger('defaults')
 
 import autograd
 from autograd import numpy as np
+from scipy.linalg import block_diag
 
 from defaults import pennylane as qml, BaseTest
 
 from pennylane.qnode import _flatten, unflatten, QNode, QuantumFunctionError
-from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, Y, Z
+from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, X, Y, Z
 from pennylane._device import DeviceError
 
 
@@ -1390,7 +1391,7 @@ class TestMetricTensor:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_evaluate_diag_metric_tensor(self, tol):
-        """Test metric tensor evaluate correctly"""
+        """Test that a diagonal metric tensor evaluates correctly"""
         dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
@@ -1411,6 +1412,172 @@ class TestMetricTensor:
         # check that the metric tensor is correct
         expected = np.array([1, np.cos(a)**2, (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/4])/4
         assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
+
+    def test_evaluate_block_diag_metric_tensor(self, tol):
+        """Test that a block diagonal metric tensor evaluates correctly,
+        by comparing it to a known analytic result as well as numerical
+        computation."""
+        dev = qml.device('default.qubit', wires=3)
+
+        def non_parametrized_layer(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.RZ(a, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(b, wires=1)
+            qml.Hadamard(wires=0)
+
+        a = 0.5
+        b = 0.1
+        c = 0.5
+
+        @qml.qnode(dev)
+        def final(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            qml.RY(f, wires=1)
+            qml.RZ(g, wires=2)
+            qml.RX(h, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        x, y, z, h, g, f = params
+
+        G = final.metric_tensor(x, y, z, h, g, f)
+
+        # ============================================
+        # Test block diag metric tensor of first layer is correct.
+        # We do this by comparing against the known analytic result.
+        # First layer include the non_parametrized_layer,
+        # followed by observables corresponding to generators of:
+        #   qml.RX(x, wires=0)
+        #   qml.RY(y, wires=1)
+        #   qml.RZ(z, wires=2)
+
+        G1 = np.zeros([3, 3])
+
+        # diag elements
+        G1[0, 0] = np.sin(a)**2/4
+        G1[1, 1] = (
+            16 * np.cos(a) ** 2 * np.sin(b) ** 3 * np.cos(b) * np.sin(2 * c)
+            + np.cos(2 * b) * (2 - 8 * np.cos(a) ** 2 * np.sin(b) ** 2 * np.cos(2 * c))
+            + np.cos(2 * (a - b))
+            + np.cos(2 * (a + b))
+            - 2 * np.cos(2 * a)
+            + 14
+        ) / 64
+        G1[2, 2] = (3-np.cos(2*a)-2*np.cos(a)**2*np.cos(2*(b+c)))/16
+
+        # off diag elements
+        G1[0, 1] = np.sin(a)**2 * np.sin(b) * np.cos(b+c)/4
+        G1[0, 2] = np.sin(a)**2 * np.cos(b+c)/4
+        G1[1, 2] = -np.sin(b) * (
+            np.cos(2 * (a - b - c))
+            + np.cos(2 * (a + b + c))
+            + 2 * np.cos(2 * a)
+            + 2 * np.cos(2 * (b + c))
+            - 6
+        ) / 32
+
+        G1[1, 0] = G1[0, 1]
+        G1[2, 0] = G1[0, 2]
+        G1[2, 1] = G1[1, 2]
+
+        assert np.allclose(G[:3, :3], G1, atol=tol, rtol=0)
+
+        # =============================================
+        # Test block diag metric tensor of second layer is correct.
+        # We do this by computing the required expectation values
+        # numerically.
+        # The second layer includes the non_parametrized_layer,
+        # RX, RY, RZ gates (x, y, z params), a 2nd non_parametrized_layer,
+        # followed by the qml.RY(f, wires=2) operation.
+        #
+        # Observable is simply generator of:
+        #   qml.RY(f, wires=2)
+        #
+        # Note: since this layer only consists of a single parameter,
+        # only need to compute a single diagonal element.
+
+        @qml.qnode(dev)
+        def layer2_diag(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            qml.RY(f, wires=2)
+            return qml.var(qml.PauliX(1))
+
+        G2 = layer2_diag(x, y, z, h, g, f)/4
+        assert np.allclose(G[3:4, 3:4], G2, atol=tol, rtol=0)
+
+        # =============================================
+        # Test block diag metric tensor of third layer is correct.
+        # We do this by computing the required expectation values
+        # numerically using multiple circuits.
+        # The second layer includes the non_parametrized_layer,
+        # RX, RY, RZ gates (x, y, z params), and a 2nd non_parametrized_layer.
+        #
+        # Observables are the generators of:
+        #   qml.RY(f, wires=1)
+        #   qml.RZ(g, wires=2)
+        G3 = np.zeros([2, 2])
+
+        @qml.qnode(dev)
+        def layer3_diag(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def layer3_off_diag_first_order(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            return qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def layer3_off_diag_second_order(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            return qml.expval(qml.Hermitian(np.kron(Z, Y), wires=[2, 1]))
+
+        # calculate the diagonal terms
+        varK0, varK1 = layer3_diag(x, y, z, h, g, f)
+        G3[0, 0] = varK0/4
+        G3[1, 1] = varK1/4
+
+        # calculate the off-diagonal terms
+        exK0, exK1 = layer3_off_diag_first_order(x, y, z, h, g, f)
+        exK01 = layer3_off_diag_second_order(x, y, z, h, g, f)
+
+        G3[0, 1] = (exK01 - exK0*exK1)/4
+        G3[1, 0] = (exK01 - exK0*exK1)/4
+
+        assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
+
+        # ============================================
+        # Finally, double check that the entire metric
+        # tensor is as computed.
+
+        G_expected = block_diag(G1, G2, G3)
+        assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
 
 class TestQNodeCacheing:

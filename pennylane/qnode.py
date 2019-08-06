@@ -411,7 +411,9 @@ class QNode:
         layer = 0
         layer_ops = {0: {"ops": [], "pidx": []}}
 
-        for param_idx, gate_param_tuple in self.variable_ops.items():
+        variable_ops_sorted = sorted(list(self.variable_ops.items()), key=lambda x: x[1][0][0])
+
+        for param_idx, gate_param_tuple in variable_ops_sorted:
             # iterate over all parameters
             for op_idx, _ in gate_param_tuple:
                 # get all dependents of the existing parameter
@@ -777,8 +779,8 @@ class QNode:
 
                 row = np.array(params).reshape(-1, 1)
                 col = np.array(params).reshape(1, -1)
-                tensor[row, col] = g
                 circuit['result'] = np.diag(g)
+                tensor[row, col] = g
             else:
                 # diagonal approximation
                 circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
