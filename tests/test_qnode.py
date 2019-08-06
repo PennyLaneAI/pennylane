@@ -1292,7 +1292,7 @@ class TestMetricTensor:
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
         when a layer structure exists"""
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device('default.qubit', wires=3)
 
         def circuit(params):
             # section 1
@@ -1389,7 +1389,7 @@ class TestMetricTensor:
         expected = (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/16
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_evaluate_metric_tensor(self, tol):
+    def test_evaluate_diag_metric_tensor(self, tol):
         """Test metric tensor evaluate correctly"""
         dev = qml.device('default.qubit', wires=2)
 
@@ -1410,7 +1410,7 @@ class TestMetricTensor:
 
         # check that the metric tensor is correct
         expected = np.array([1, np.cos(a)**2, (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/4])/4
-        assert np.allclose(g, expected, atol=tol, rtol=0)
+        assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
 
 
 class TestQNodeCacheing:

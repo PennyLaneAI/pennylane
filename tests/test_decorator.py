@@ -70,5 +70,5 @@ class TestMethodBinding:
         assert np.allclose(res, res2, atol=tol, rtol=0)
 
         # check metric tensor is correct
-        expected = np.array([1, np.cos(a)**2])/4
+        expected = np.diag(np.array([1, np.cos(a)**2])/4)
         assert np.allclose(res, expected, atol=tol, rtol=0)

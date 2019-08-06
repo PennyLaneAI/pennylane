@@ -132,16 +132,13 @@ QNode internal methods
 Code details
 ~~~~~~~~~~~~
 """
-from collections import namedtuple
 from collections.abc import Sequence
-import inspect
 import itertools
 import copy
 import warnings
 
-import numbers
-
 import networkx as nx
+import numbers
 
 import autograd.numpy as np
 import autograd.extend as ae
@@ -152,114 +149,8 @@ from scipy import linalg
 import pennylane
 import pennylane.operation
 
-from pennylane.utils import _flatten, unflatten
+from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, to_DiGraph
 from .variable import Variable
-
-
-Command = namedtuple("Command", ["name", "op"])
-
-
-class CommutationError(Exception):
-    """Error to raise if two operators don't commute"""
-
-
-def expand(U, wires, num_wires):
-    r"""Expand a multi-qubit operator into a full system operator.
-
-    Args:
-        U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
-        wires (Sequence[int]): Target subsystems (order matters! the
-            left-most Hilbert space is at index 0).
-
-    Returns:
-        array: :math:`2^N\times 2^N` matrix. The full system operator.
-    """
-    if num_wires == 1:
-        # total number of wires is 1, simply return the matrix
-        return U
-
-    N = num_wires
-    wires = np.asarray(wires)
-
-    if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
-        raise ValueError("Invalid target subsystems provided in 'wires' argument.")
-
-    if U.shape != (2 ** len(wires), 2 ** len(wires)):
-        raise ValueError("Matrix parameter must be of size (2**len(wires), 2**len(wires))")
-
-    # generate N qubit basis states via the cartesian product
-    tuples = np.array(list(itertools.product([0, 1], repeat=N)))
-
-    # wires not acted on by the operator
-    inactive_wires = list(set(range(N)) - set(wires))
-
-    # expand U to act on the entire system
-    U = np.kron(U, np.identity(2 ** len(inactive_wires)))
-
-    # move active wires to beginning of the list of wires
-    rearranged_wires = np.array(list(wires) + inactive_wires)
-
-    # convert to computational basis
-    # i.e., converting the list of basis state bit strings into
-    # a list of decimal numbers that correspond to the computational
-    # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
-    perm = np.ravel_multi_index(tuples[:, rearranged_wires].T, [2] * N)
-
-    # permute U to take into account rearranged wires
-    return U[:, perm][perm]
-
-
-def to_DiGraph(queue, observables):
-    """Convert a queue and observables to a directed acyclic graph.
-
-    The resulting graph has nodes representing quantum operations,
-    and edges representing dependent/successor operations.
-
-    Each node is labelled by an integer corresponding to the position
-    in the queue; note attributes are used to store information about the node:
-
-    * ``'name'`` *(str)*: name of the quantum operation (e.g., ``'PauliZ'``)
-
-    * ``'op'`` *(Operation or Observable)*: modes the operation acts on
-
-    Args:
-        queue (list[Operation]): the quantum operations to apply
-        observables (list[Observable]): the quantum observables to measure
-
-    Returns:
-        networkx.DiGraph: the directed acyclic graph representing
-        the quantum program
-    """
-    grid = {}
-
-    for idx, op in enumerate(queue + observables):
-        cmd = Command(name=op.name, op=op)
-
-        for q in set(op.wires):
-            # Add cmd to the grid to the end of the line r.ind.
-            if q not in grid:
-                # add a new line to the circuit
-                grid[q] = []
-
-            grid[q].append([idx, cmd])
-
-    G = nx.DiGraph()
-
-    for q, cmds in grid.items():
-        if cmds:
-            # add the first operation on the wire that does not depend on anything
-            attrs = cmds[0][1]._asdict()
-            G.add_node(cmds[0][0], **attrs)
-
-        for i in range(1, len(cmds)):
-            # add the edge between the operations, and the operation nodes themselves
-            if cmds[i][0] not in G:
-                attrs = cmds[i][1]._asdict()
-                G.add_node(cmds[i][0], **attrs)
-
-            G.add_edge(cmds[i - 1][0], cmds[i][0])
-
-    return G
 
 
 def pop_jacobian_kwargs(kwargs):
@@ -289,42 +180,6 @@ def pop_jacobian_kwargs(kwargs):
 
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
-
-
-def _inv_dict(d):
-    """Reverse a dictionary mapping.
-
-    Returns multimap where the keys are the former values,
-    and values are sets of the former keys.
-
-    Args:
-        d (dict[a->b]): mapping to reverse
-
-    Returns:
-        dict[b->set[a]]: reversed mapping
-    """
-    ret = {}
-    for k, v in d.items():
-        ret.setdefault(v, set()).add(k)
-    return ret
-
-
-def _get_default_args(func):
-    """Get the default arguments of a function.
-
-    Args:
-        func (function): a valid Python function
-
-    Returns:
-        dict: dictionary containing the argument name and tuple
-        (positional idx, default value)
-    """
-    signature = inspect.signature(func)
-    return {
-        k: (idx, v.default)
-        for idx, (k, v) in enumerate(signature.parameters.items())
-        if v.default is not inspect.Parameter.empty
-    }
 
 
 class QNode:
@@ -598,7 +453,7 @@ class QNode:
 
             # for each operator, get the generator
             # and convert it to a variance
-            for op in curr_ops:
+            for n, op in enumerate(curr_ops):
                 gen, s = op.generator
                 w = op.wires
 
@@ -611,7 +466,7 @@ class QNode:
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
                     variance = pennylane.var(pennylane.Hermitian(gen, w, do_queue=False))
-                    first_order.append((w[0], expand(gen, w, self.num_wires)))
+                    first_order.append((n, expand(gen, w, self.num_wires)))
 
                 elif issubclass(gen, pennylane.operation.Observable):
                     # generator is an existing PennyLane operation
@@ -624,7 +479,7 @@ class QNode:
                     elif issubclass(gen, pennylane.ops.PauliZ):
                         mat = np.array([[1, 0], [0, -1]])
 
-                    first_order.append((w[0], expand(mat, w, self.num_wires)))
+                    first_order.append((n, expand(mat, w, self.num_wires)))
 
                 else:
                     raise QuantumFunctionError(
@@ -636,7 +491,7 @@ class QNode:
                 scale.append(s)
 
             second_order = []
-            for i, j in itertools.product(range(self.num_wires), repeat=2):
+            for i, j in itertools.product(range(len(first_order)), repeat=2):
                 obs1 = first_order[i]
                 obs2 = first_order[j]
                 second_order.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
@@ -851,8 +706,13 @@ class QNode:
         """Evaluate the value of the metric tensor.
 
         Args:
-            obs  (Iterable[Obserable]): observables to measure
-            args (array[float]): circuit input parameters
+            args : qfunc positional arguments
+            kwargs : qfunc keyword arguments
+
+        Keyword Args:
+            diag_approx (bool): if ``True``, forces the diagonal
+                approximation. Default ``False`` will only use the diagonal
+                approximation if all observables in a layer do not commute.
 
         Returns:
             array[float]: measured values
@@ -918,10 +778,11 @@ class QNode:
                 row = np.array(params).reshape(-1, 1)
                 col = np.array(params).reshape(1, -1)
                 tensor[row, col] = g
+                circuit['result'] = np.diag(g)
             else:
                 # diagonal approximation
-                res = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
-                tensor[np.array(params)] = res
+                circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
+                tensor[np.array(params)] = circuit['result']
 
         return tensor
 

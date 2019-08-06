@@ -69,7 +69,7 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = [1 / 4, np.cos(theta[0]) ** 2 / 4]
+            exp = np.diag([1 / 4, np.cos(theta[0]) ** 2 / 4])
             assert np.allclose(res, exp, atol=0.01, rtol=0)
 
         # check final cost
