@@ -77,6 +77,8 @@ Classes
 Code details
 ^^^^^^^^^^^^
 """
+from collections import OrderedDict
+import itertools
 import warnings
 
 import numpy as np
@@ -482,3 +484,12 @@ class DefaultQubit(Device):
     @property
     def observables(self):
         return set(self._observable_map.keys())
+
+    def probability(self):
+        if self._state is None:
+            return None
+
+        states = itertools.product(range(2), repeat=self.num_wires)
+        probs = np.abs(self._state)**2
+
+        return OrderedDict(zip(states, probs))

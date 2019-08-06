@@ -744,10 +744,14 @@ class QNode:
             s = np.array(circuit['scale'])
             V = circuit['eigenbasis']
 
-            for i, j in itertools.product(range(len(params)), repeat=2):
-                A = circuit['first_order'][i][1]
-                B = circuit['first_order'][j][1]
-                commute = np.all(A @ B - B @ A == 0)
+            for i, j, k, l in itertools.product(range(len(params)), repeat=4):
+                n1 = i*len(params) + j
+                n2 = k*len(params) + l
+
+                A = circuit['second_order'][n1][1]
+                B = circuit['second_order'][n2][1]
+
+                commute = np.allclose(A @ B, B @ A)
 
                 if not commute:
                     warnings.warn("Operators do not commute, doing diagonal approximation")
@@ -758,7 +762,7 @@ class QNode:
                 unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
                 self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
 
-                probs = np.abs(self.device._state) ** 2
+                probs = list(self.device.probability().values())
 
                 first_order_ev = np.zeros([len(params)])
                 second_order_ev = np.zeros([len(params), len(params)])
@@ -784,7 +788,7 @@ class QNode:
             else:
                 # diagonal approximation
                 circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
-                tensor[np.array(params)] = circuit['result']
+                tensor[np.array(params), np.array(params)] = circuit['result']
 
         return tensor
 

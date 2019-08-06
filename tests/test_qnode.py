@@ -21,7 +21,7 @@ log.getLogger('defaults')
 
 import autograd
 from autograd import numpy as np
-from scipy.linalg import block_diag
+from scipy.linalg import block_diag, expm
 
 from defaults import pennylane as qml, BaseTest
 
