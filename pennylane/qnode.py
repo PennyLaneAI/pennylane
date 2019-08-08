@@ -152,6 +152,8 @@ import pennylane.operation
 from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, to_DiGraph
 from .variable import Variable
 
+import time
+
 
 def pop_jacobian_kwargs(kwargs):
     """Remove QNode.jacobian specific keyword arguments from a dictionary.
@@ -508,6 +510,15 @@ class QNode:
 
             V = V.conj().T
 
+            # calculate eigenvalues
+            for i, (idx, term) in enumerate(first_order):
+                Lambda = np.diag(V @ term @ V.conj().T).real
+                first_order[i] = (idx, Lambda)
+
+            for i, (idx, term) in enumerate(second_order):
+                Lambda = np.diag(V @ term @ V.conj().T).real
+                second_order[i] = (idx, Lambda)
+
             self._metric_tensor_subcircuits[tuple(param_idx)] = {
                 "queue": queue,
                 "observable": obs,
@@ -747,6 +758,7 @@ class QNode:
 
             if not diag_approx:
                 # block diagonal approximation
+
                 unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
                 self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
                 probs = list(self.device.probability().values())
@@ -754,12 +766,10 @@ class QNode:
                 first_order_ev = np.zeros([len(params)])
                 second_order_ev = np.zeros([len(params), len(params)])
 
-                for idx, term in circuit['first_order']:
-                    Lambda = np.diag(V @ term @ V.conj().T).real
+                for idx, Lambda in circuit['first_order']:
                     first_order_ev[idx] = Lambda @ probs
 
-                for idx, term in circuit['second_order']:
-                    Lambda = np.diag(V @ term @ V.conj().T).real
+                for idx, Lambda in circuit['second_order']:
                     second_order_ev[idx] = Lambda @ probs
                     second_order_ev[idx[1], idx[0]] = second_order_ev[idx]
 
@@ -772,6 +782,7 @@ class QNode:
                 col = np.array(params).reshape(1, -1)
                 circuit['result'] = np.diag(g)
                 tensor[row, col] = g
+
             else:
                 # diagonal approximation
                 circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
