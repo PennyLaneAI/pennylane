@@ -31,18 +31,22 @@ class QGTOptimizer(GradientDescentOptimizer):
 
     Args:
         stepsize (float): the user-defined stepsize parameter :math:`\eta`
-        tol (float): tolerance used for inverse
+        diag_approx (bool): if ``True``, forces the diagonal approximation
     """
-    def __init__(self, stepsize=0.01, tol=1e-6):
+    def __init__(self, stepsize=0.01, diag_approx=False):
         self._stepsize = stepsize
-        self.tol = tol
+        self.diag_approx = diag_approx
+        self.metric_tensor = None
 
-    def step(self, qnode, x):
+    def step(self, qnode, x, recompute_tensor=True):
         """Update x with one step of the optimizer.
 
         Args:
             qnode (QNode): the QNode for optimization
             x (array): NumPy array containing the current values of the variables to be updated
+            recompute_tensor (bool): whether or not the metric tensor should
+                be recomputed. If not, the metric tensor from the previous
+                optimization step is used.
 
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
@@ -50,8 +54,10 @@ class QGTOptimizer(GradientDescentOptimizer):
         if not hasattr(qnode, "metric_tensor"):
             raise ValueError("Objective function must be a QNode")
 
+        if recompute_tensor or self.metric_tensor is None:
+            self.metric_tensor = qnode.metric_tensor(x, diag_approx=self.diag_approx)
+
         g = self.compute_grad(qnode, x)
-        self.metric_tensor = qnode.metric_tensor(x)
         x_out = self.apply_grad(g, x)
         return x_out
 
@@ -70,9 +76,7 @@ class QGTOptimizer(GradientDescentOptimizer):
         grad_flat = np.array(list(_flatten(grad)))
         x_flat = np.array(list(_flatten(x)))
 
-        # inverse metric tensor
-        # note: in the cases where np.abs(self.metric_tensor) > self.tol, we
-        # should raise a warning to let the user know that tol should be reduced
+        # pseudo-inverse metric tensor
         G_inv = np.linalg.pinv(self.metric_tensor)
 
         x_new_flat = x_flat - self._stepsize * G_inv @ grad_flat

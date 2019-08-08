@@ -712,13 +712,14 @@ class QNode:
             kwargs : qfunc keyword arguments
 
         Keyword Args:
-            diag_approx (bool): if ``True``, forces the diagonal
-                approximation. Default ``False`` will only use the diagonal
-                approximation if all observables in a layer do not commute.
+            diag_approx (bool): If ``True``, forces the diagonal
+                approximation. Default is ``False``.
 
         Returns:
             array[float]: measured values
         """
+        diag_approx = kwargs.pop("diag_approx", False)
+
         if not self.ops or not self.cache:
             # construct the circuit
             self.construct(args, kwargs)
@@ -744,24 +745,10 @@ class QNode:
             s = np.array(circuit['scale'])
             V = circuit['eigenbasis']
 
-            for i, j, k, l in itertools.product(range(len(params)), repeat=4):
-                n1 = i*len(params) + j
-                n2 = k*len(params) + l
-
-                A = circuit['second_order'][n1][1]
-                B = circuit['second_order'][n2][1]
-
-                commute = np.allclose(A @ B, B @ A)
-
-                if not commute:
-                    warnings.warn("Operators do not commute, doing diagonal approximation")
-                    break
-
-            if commute:
+            if not diag_approx:
                 # block diagonal approximation
                 unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
                 self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
-
                 probs = list(self.device.probability().values())
 
                 first_order_ev = np.zeros([len(params)])
