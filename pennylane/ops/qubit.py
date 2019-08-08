@@ -71,7 +71,7 @@ Code details
 ~~~~~~~~~~~~
 """
 
-from pennylane.operation import Observable, Operation
+from pennylane.operation import All, Any, Observable, Operation
 
 
 class Hadamard(Observable, Operation):
@@ -241,7 +241,8 @@ class RX(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}R_x(\phi) = \frac{1}{2}\left[R_x(\phi+\pi/2) - R_x(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_x(\phi)) = \frac{1}{2}\left[f(R_x(\phi+\pi/2)) - f(R_x(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R_x(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -266,7 +267,8 @@ class RY(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}R_y(\phi) = \frac{1}{2}\left[R_y(\phi+\pi/2) - R_y(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = \frac{1}{2}\left[f(R_y(\phi+\pi/2)) - f(R_y(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R_y(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -291,7 +293,8 @@ class RZ(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}R_z(\phi) = \frac{1}{2}\left[R_z(\phi+\pi/2) - R_z(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_z(\phi)) = \frac{1}{2}\left[f(R_z(\phi+\pi/2)) - f(R_z(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R_z(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -316,7 +319,8 @@ class PhaseShift(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}R_\phi(\phi) = \frac{1}{2}\left[R_\phi(\phi+\pi/2) - R_\phi(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_\phi(\phi)) = \frac{1}{2}\left[f(R_\phi(\phi+\pi/2)) - f(R_\phi(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R_{\phi}(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -341,7 +345,8 @@ class Rot(Operation):
 
     * Number of wires: 1
     * Number of parameters: 3
-    * Gradient recipe: :math:`\frac{d}{d\phi}R(\phi) = \frac{1}{2}\left[R(\phi+\pi/2) - R(\phi-\pi/2)\right]`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R(\phi, \theta, \omega)) = \frac{1}{2}\left[f(R(\phi+\pi/2, \theta, \omega)) - f(R(\phi-\pi/2, \theta, \omega))\right]`
+      where :math:`f` is an expectation value depending on :math:`R(\phi, \theta, \omega)`.
       This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
 
     Args:
@@ -372,7 +377,8 @@ class CRX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}CR_x(\phi) = \frac{1}{2}\left[CR_x(\phi+\pi/2) - CR_x(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_x(\phi)) = \frac{1}{2}\left[f(CR_x(\phi+\pi/2)) - f(CR_x(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -401,7 +407,8 @@ class CRY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}CR_y(\phi) = \frac{1}{2}\left[CR_y(\phi+\pi/2) - CR_y(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_y(\phi)) = \frac{1}{2}\left[f(CR_y(\phi+\pi/2)) - f(CR_y(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -430,7 +437,8 @@ class CRZ(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}CR_z(\phi) = \frac{1}{2}\left[CR_z(\phi+\pi/2) - CR_z(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_z(\phi)) = \frac{1}{2}\left[f(CR_z(\phi+\pi/2)) - f(CR_z(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -459,7 +467,9 @@ class CRot(Operation):
 
     * Number of wires: 2
     * Number of parameters: 3
-    * Gradient recipe: :math:`\frac{d}{d\phi}CR(\phi) = \frac{1}{2}\left[CR(\phi+\pi/2) - CR(\phi-\pi/2)\right]`. This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(CR(\phi, \theta, \omega)) = \frac{1}{2}\left[f(CR(\phi+\pi/2, \theta, \omega)) - f(CR(\phi-\pi/2, \theta, \omega))\right]`
+      where :math:`f` is an expectation value depending on :math:`CR(\phi, \theta, \omega)`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -480,22 +490,22 @@ class CRot(Operation):
 
 class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
-    Apply an arbitrary unitary matrix
+    Apply an arbitrary fixed unitary matrix.
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: The operation can act on any number of wires.
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: None
 
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = 0
+    num_wires = Any
     par_domain = "A"
-    grad_method = "F"
+    grad_method = None
 
 
 # =============================================================================
@@ -509,7 +519,7 @@ class BasisState(Operation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: All (applied to the entire system)
     * Number of parameters: 1
     * Gradient recipe: None (integer parameters not supported)
 
@@ -520,7 +530,7 @@ class BasisState(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = 0
+    num_wires = Any
     par_domain = "A"
     grad_method = None
 
@@ -531,18 +541,18 @@ class QubitStateVector(Operation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: All (applied to the entire system)
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: None
 
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = 0
+    num_wires = All
     par_domain = "A"
-    grad_method = "F"
+    grad_method = None
 
 
 # =============================================================================
@@ -564,11 +574,17 @@ class Hermitian(Observable):
     If acting on :math:`N` wires, then the matrix :math:`A` must be of size
     :math:`2^N\times 2^N`.
 
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
     Args:
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
     grad_method = "F"

@@ -27,7 +27,7 @@ def circuit(var):
     qml.FockState(1, wires=0)
     qml.Beamsplitter(var[0], var[1], wires=[0, 1])
 
-    return qml.expval(qml.MeanPhoton(0))
+    return qml.expval(qml.NumberOperator(0))
 
 
 def objective(var):
