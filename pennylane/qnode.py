@@ -703,11 +703,10 @@ class QNode:
 
         def check_op(op):
             """Make sure only existing wires are referenced."""
-            pass
-            # for w in op.wires:
-            #     if w < 0 or w >= self.num_wires:
-            #         raise QuantumFunctionError("Operation {} applied to invalid wire {} "
-            #                                    "on device with {} wires.".format(op.name, w, self.num_wires))
+            for w in op.wires:
+                if w < 0 or w >= self.num_wires:
+                    raise QuantumFunctionError("Operation {} applied to invalid wire {} "
+                                               "on device with {} wires.".format(op.name, w, self.num_wires))
 
         # check every gate/preparation and ev measurement
         for op in self.ops:
