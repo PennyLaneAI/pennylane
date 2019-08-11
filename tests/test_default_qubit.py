@@ -548,6 +548,31 @@ class TestExpval:
         with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
             qubit_device_1_wire.ev(np.array([[1+1j, 0], [0, 1+1j]]), wires=[0])
 
+class TestVar:
+    """Tests that variances are properly calculated or that the proper errors are raised."""
+
+    @pytest.mark.parametrize("name,input,expected_output", [
+        ("PauliX", [1/math.sqrt(2), 1/math.sqrt(2)], 0),
+        ("PauliX", [1/math.sqrt(2), -1/math.sqrt(2)], 0),
+        ("PauliX", [1, 0], 1),
+        ("PauliY", [1/math.sqrt(2), 1j/math.sqrt(2)], 0),
+        ("PauliY", [1/math.sqrt(2), -1j/math.sqrt(2)], 0),
+        ("PauliY", [1, 0], 1),
+        ("PauliZ", [1, 0], 0),
+        ("PauliZ", [0, 1], 0),
+        ("PauliZ", [1/math.sqrt(2), 1/math.sqrt(2)], 1),
+        ("Hadamard", [1, 0], 1/2),
+        ("Hadamard", [0, 1], 1/2),
+        ("Hadamard", [1/math.sqrt(2), 1/math.sqrt(2)], 1/2),
+    ])
+    def test_var_single_wire_no_parameters(self, qubit_device_1_wire, tol, name, input, expected_output):
+        """Tests that variances are properly calculated for single-wire observables without parameters."""
+
+        qubit_device_1_wire._state = np.array(input)
+        res = qubit_device_1_wire.var(name, wires=[0], par=[])
+
+        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+
 class TestDefaultQubitDevice:
     """Test the default qubit device. The test ensures that the device is properly
     applying qubit operations and calculating the correct observables."""
