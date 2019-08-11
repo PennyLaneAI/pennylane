@@ -549,7 +549,7 @@ class TestExpval:
             qubit_device_1_wire.ev(np.array([[1+1j, 0], [0, 1+1j]]), wires=[0])
 
 class TestVar:
-    """Tests that variances are properly calculated or that the proper errors are raised."""
+    """Tests that variances are properly calculated."""
 
     @pytest.mark.parametrize("name,input,expected_output", [
         ("PauliX", [1/math.sqrt(2), 1/math.sqrt(2)], 0),
@@ -589,77 +589,8 @@ class TestVar:
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0) 
 
-class TestDefaultQubitDevice:
-    """Test the default qubit device. The test ensures that the device is properly
-    applying qubit operations and calculating the correct observables."""
-
-    def test_operation_map(self, qubit_device_2_wires):
-        """Test that default qubit device supports all PennyLane discrete gates."""
-        
-        assert set(qml.ops._qubit__ops__) ==  set(qubit_device_2_wires._operation_map)
-
-    def test_observable_map(self, qubit_device_2_wires):
-        """Test that default qubit device supports all PennyLane discrete observables."""
-        
-        assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_2_wires._observable_map)
-
-    def test_var_pauliz(self, qubit_device_2_wires, tol):
-        """Test that variance of PauliZ is the same as I-<Z>^2"""
-
-        # Explicitly resetting is necessary as the internal
-        # state is set to None in __init__ and only properly
-        # initialized during reset
-        qubit_device_2_wires.reset()
-
-        phi = 0.543
-        theta = 0.6543
-        qubit_device_2_wires.apply('RX', wires=[0], par=[phi])
-        qubit_device_2_wires.apply('RY', wires=[0], par=[theta])
-
-        var = qubit_device_2_wires.var('PauliZ', [0], [])
-        mean = qubit_device_2_wires.expval('PauliZ', [0], [])
-
-        assert np.isclose(var, 1-mean**2, atol=tol, rtol=0)
-
-    def test_var_pauliz_rotated_state(self, qubit_device_2_wires, tol):
-        """test correct variance for <Z> of a rotated state"""
-
-        # Explicitly resetting is necessary as the internal
-        # state is set to None in __init__ and only properly
-        # initialized during reset
-        qubit_device_2_wires.reset()
-
-        phi = 0.543
-        theta = 0.6543
-        qubit_device_2_wires.apply('RX', wires=[0], par=[phi])
-        qubit_device_2_wires.apply('RY', wires=[0], par=[theta])
-        var = qubit_device_2_wires.var('PauliZ', [0], [])
-        expected = 0.25*(3-np.cos(2*theta)-2*np.cos(theta)**2*np.cos(2*phi))
-
-        assert np.isclose(var, expected, atol=tol, rtol=0)
-
-    def test_var_hermitian_rotated_state(self, qubit_device_2_wires, tol):
-        """test correct variance for <H> of a rotated state"""
-
-        # Explicitly resetting is necessary as the internal
-        # state is set to None in __init__ and only properly
-        # initialized during reset
-        qubit_device_2_wires.reset()
-
-        phi = 0.543
-        theta = 0.6543
-
-        H = np.array([[4, -1+6j], [-1-6j, 2]])
-        qubit_device_2_wires.apply('RX', wires=[0], par=[phi])
-        qubit_device_2_wires.apply('RY', wires=[0], par=[theta])
-        var = qubit_device_2_wires.var('Hermitian', [0], [H])
-        expected = 0.5*(2*np.sin(2*theta)*np.cos(phi)**2+24*np.sin(phi)\
-                    *np.cos(phi)*(np.sin(theta)-np.cos(theta))+35*np.cos(2*phi)+39)
-
-        assert np.isclose(var, expected, atol=tol, rtol=0)
-
     def test_var_estimate(self):
-        """Test that variance is not analytically calculated"""
+        """Test that the variance is not analytically calculated"""
 
         dev = qml.device("default.qubit", wires=1, shots=3)
 
@@ -672,6 +603,9 @@ class TestDefaultQubitDevice:
         # With 3 samples we are guaranteed to see a difference between
         # an estimated variance an an analytically calculated one
         assert var != 1.0
+
+class TestSample:
+    """Tests that samples are properly calculated."""
 
     def test_sample_dimensions(self, qubit_device_2_wires):
         """Tests if the samples returned by the sample function have
@@ -717,13 +651,13 @@ class TestDefaultQubitDevice:
         """Tests if the sampling raises an error for sample size n=0"""
 
         with pytest.raises(
-            ValueError,  match="Calling sample with n = 0 is not possible."
+            ValueError, match="Calling sample with n = 0 is not possible."
         ):
             qubit_device_2_wires.sample('PauliZ', [0], [], n = 0)
 
         # self.def.shots = 0, so this should also fail
         with pytest.raises(
-            ValueError,  match="Calling sample with n = 0 is not possible."
+            ValueError, match="Calling sample with n = 0 is not possible."
         ):
             qubit_device_2_wires.sample('PauliZ', [0], [])
 
@@ -744,7 +678,20 @@ class TestDefaultQubitDevice:
             qubit_device_2_wires.sample('PauliZ', [0], [], n = 12.3)
 
 
+class TestMaps:
+    """Tests the maps for operations and observables."""
 
+    def test_operation_map(self, qubit_device_2_wires):
+        """Test that default qubit device supports all PennyLane discrete gates."""
+        
+        assert set(qml.ops._qubit__ops__) ==  set(qubit_device_2_wires._operation_map)
+
+    def test_observable_map(self, qubit_device_2_wires):
+        """Test that default qubit device supports all PennyLane discrete observables."""
+        
+        assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_2_wires._observable_map)
+
+    
 class TestDefaultQubitIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
