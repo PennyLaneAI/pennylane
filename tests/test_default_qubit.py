@@ -519,7 +519,7 @@ class TestExpval:
         """Tests that expectation values are properly calculated for single-wire observables without parameters."""
 
         qubit_device_1_wire._state = np.array(input)
-        res = qubit_device_1_wire.ev(qubit_device_1_wire._observable_map[name], wires=[0])
+        res = qubit_device_1_wire.expval(name, wires=[0], par=[])
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0) 
 
@@ -535,7 +535,7 @@ class TestExpval:
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
         qubit_device_1_wire._state = np.array(input)
-        res = qubit_device_1_wire.ev(qubit_device_1_wire._observable_map[name](*par), wires=[0])
+        res = qubit_device_1_wire.expval(name, wires=[0], par=par)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0) 
 
@@ -570,6 +570,22 @@ class TestVar:
 
         qubit_device_1_wire._state = np.array(input)
         res = qubit_device_1_wire.var(name, wires=[0], par=[])
+
+        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+
+    @pytest.mark.parametrize("name,input,expected_output,par", [
+        ("Identity", [1, 0], 0, []),
+        ("Identity", [0, 1], 0, []),
+        ("Identity", [1/math.sqrt(2), -1/math.sqrt(2)], 0, []),
+        ("Hermitian", [1, 0], 1, [[[1, 1j], [-1j, 1]]]),
+        ("Hermitian", [0, 1], 1, [[[1, 1j], [-1j, 1]]]),
+        ("Hermitian", [1/math.sqrt(2), -1/math.sqrt(2)], 1, [[[1, 1j], [-1j, 1]]]),
+    ])
+    def test_var_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, input, expected_output, par):
+        """Tests that expectation values are properly calculated for single-wire observables with parameters."""
+
+        qubit_device_1_wire._state = np.array(input)
+        res = qubit_device_1_wire.var(name, wires=[0], par=par)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0) 
 
