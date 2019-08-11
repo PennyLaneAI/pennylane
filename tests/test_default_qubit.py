@@ -14,34 +14,18 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
+import cmath
 # pylint: disable=protected-access,cell-var-from-loop
 import logging as log
-
-import pytest
-import cmath
 import math
 
 import pennylane as qml
+import pytest
 from pennylane import numpy as np
-from pennylane.plugins.default_qubit import (
-    spectral_decomposition,
-    I,
-    X,
-    Z,
-    CNOT,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    Rot3,
-    CRotx,
-    CRoty,
-    CRotz,
-    CRot3,
-    unitary,
-    hermitian,
-    DefaultQubit,
-)
+from pennylane.plugins.default_qubit import (CNOT, CRot3, CRotx, CRoty, CRotz,
+                                             DefaultQubit, I, Rot3, Rotx, Roty,
+                                             Rotz, Rphi, X, Z, hermitian,
+                                             spectral_decomposition, unitary)
 
 log.getLogger("defaults")
 
@@ -107,7 +91,7 @@ class TestAuxillaryFunctions:
 
     def test_spectral_decomposition(self, tol):
         """Test that the correct spectral decomposition is returned."""
-        
+
         a, P = spectral_decomposition(H)
 
         # verify that H = \sum_k a_k P_k
@@ -115,7 +99,7 @@ class TestAuxillaryFunctions:
 
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
-        
+
         # test identity for theta=0
         assert np.allclose(Rphi(0), np.identity(2), atol=tol, rtol=0)
 
@@ -126,7 +110,7 @@ class TestAuxillaryFunctions:
 
     def test_x_rotation(self, tol):
         """Test x rotation is correct"""
-        
+
         # test identity for theta=0
         assert np.allclose(Rotx(0), np.identity(2), atol=tol, rtol=0)
 
@@ -140,7 +124,7 @@ class TestAuxillaryFunctions:
 
     def test_y_rotation(self, tol):
         """Test y rotation is correct"""
-        
+
         # test identity for theta=0
         assert np.allclose(Roty(0), np.identity(2), atol=tol, rtol=0)
 
@@ -154,7 +138,7 @@ class TestAuxillaryFunctions:
 
     def test_z_rotation(self, tol):
         """Test z rotation is correct"""
-        
+
         # test identity for theta=0
         assert np.allclose(Rotz(0), np.identity(2), atol=tol, rtol=0)
 
@@ -167,7 +151,7 @@ class TestAuxillaryFunctions:
 
     def test_arbitrary_rotation(self, tol):
         """Test arbitrary single qubit rotation is correct"""
-        
+
         # test identity for phi,theta,omega=0
         assert np.allclose(Rot3(0, 0, 0), np.identity(2), atol=tol, rtol=0)
 
@@ -188,7 +172,7 @@ class TestAuxillaryFunctions:
 
     def test_C_x_rotation(self, tol):
         """Test controlled x rotation is correct"""
-        
+
         # test identity for theta=0
         assert np.allclose(CRotx(0), np.identity(4), atol=tol, rtol=0)
 
@@ -202,7 +186,7 @@ class TestAuxillaryFunctions:
 
     def test_C_y_rotation(self, tol):
         """Test controlled y rotation is correct"""
-        
+
         # test identity for theta=0
         assert np.allclose(CRoty(0), np.identity(4), atol=tol, rtol=0)
 
@@ -216,7 +200,7 @@ class TestAuxillaryFunctions:
 
     def test_C_z_rotation(self, tol):
         """Test controlled z rotation is correct"""
-        
+
         # test identity for theta=0
         assert np.allclose(CRotz(0), np.identity(4), atol=tol, rtol=0)
 
@@ -230,13 +214,13 @@ class TestAuxillaryFunctions:
 
     def test_controlled_arbitrary_rotation(self, tol):
         """Test controlled arbitrary rotation is correct"""
-        
+
         # test identity for phi,theta,omega=0
-        assert np.allclose(CRot3(0,0,0), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(CRot3(0, 0, 0), np.identity(4), atol=tol, rtol=0)
 
         # test identity for phi,theta,omega=pi
         expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
-        assert np.allclose(CRot3(np.pi,np.pi,np.pi), expected, atol=tol, rtol=0)
+        assert np.allclose(CRot3(np.pi, np.pi, np.pi), expected, atol=tol, rtol=0)
 
         def arbitrary_Crotation(x, y, z):
             """controlled arbitrary single qubit rotation"""
@@ -259,7 +243,7 @@ class TestStateFunctions:
 
     def test_unitary(self, tol):
         """Test that the unitary function produces the correct output."""
-        
+
         out = unitary(U)
 
         # verify output type
@@ -323,7 +307,7 @@ class TestOperatorMatrices:
 
         res = qubit_device_2_wires._get_operator_matrix(name, ())
 
-        assert np.allclose(res, expected, atol=tol, rtol=0) 
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,expected,par", [
         ('PhaseShift', lambda phi: np.array([[1, 0], [0, np.exp(1j*phi)]]), [0.223]),
@@ -345,7 +329,7 @@ class TestOperatorMatrices:
 
         res = qubit_device_2_wires._get_operator_matrix(name, par)
 
-        assert np.allclose(res, expected(*par), atol=tol, rtol=0) 
+        assert np.allclose(res, expected(*par), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name", ["BasisState", "QubitStateVector"])
     def test_get_operator_matrix_none(self, qubit_device_2_wires, name):
@@ -375,7 +359,7 @@ class TestApply:
         qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply(name, wires=[0], par=[])
 
-        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0) 
+        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output", [
         ("CNOT", [1, 0, 0, 0], [1, 0, 0, 0]),
@@ -392,10 +376,10 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
            operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input)        
-        qubit_device_2_wires.apply(name, wires=[0,1], par=[])
+        qubit_device_2_wires._state = np.array(input)
+        qubit_device_2_wires.apply(name, wires=[0, 1], par=[])
 
-        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0) 
+        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
         ("BasisState", [1, 0, 0, 0], [0, 0, 1, 0], [[1, 0]]),
@@ -406,13 +390,13 @@ class TestApply:
         ("QubitStateVector", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 0, 1], [[0, 0, 0, 1]]),
         ("QubitStateVector", [1, 0, 0, 0], [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)]]),
         ("QubitStateVector", [1, 0, 0, 0], [1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)]]),
-    ])  
+    ])
     def test_apply_operation_state_preparation(self, qubit_device_2_wires, tol, name, input, expected_output, par):
         """Tests that applying an operation yields the expected output state for single wire
            operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input) 
-        qubit_device_2_wires.apply(name, wires=[0,1], par=par)
+        qubit_device_2_wires._state = np.array(input)
+        qubit_device_2_wires.apply(name, wires=[0, 1], par=par)
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -445,7 +429,7 @@ class TestApply:
         qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply(name, wires=[0], par=par)
 
-        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0) 
+        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
         ("CRX", [0, 1, 0, 0], [0, 1, 0, 0], [math.pi/2]),
@@ -462,24 +446,24 @@ class TestApply:
         ("CRot", [0, 0, 1/math.sqrt(2), 1/math.sqrt(2)], [0, 0, 1/2 - 1j/2, 1/2 + 1j/2], [0, 0, math.pi/2]),
         ("CRot", [0, 0, 0, 1], [0, 0, 1/math.sqrt(2), 1j/math.sqrt(2)], [math.pi/2, -math.pi/2, math.pi/2]),
         ("CRot", [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), 0, -1/2 + 1j/2], [-math.pi/2, math.pi, math.pi]),
-        ("QubitUnitary", [1, 0, 0, 0], [1, 0, 0, 0], [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
-        ("QubitUnitary", [0, 1, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
-        ("QubitUnitary", [1/2, 1/2, -1/2, 1/2], [1/2, 0, 1/math.sqrt(2), 1/2], [np.array([[1, 0, 0, 0],[0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
+        ("QubitUnitary", [1, 0, 0, 0], [1, 0, 0, 0], [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
+        ("QubitUnitary", [0, 1, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
+        ("QubitUnitary", [1/2, 1/2, -1/2, 1/2], [1/2, 0, 1/math.sqrt(2), 1/2], [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
     ])
     def test_apply_operation_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, input, expected_output, par):
         """Tests that applying an operation yields the expected output state for single wire
            operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input)        
-        qubit_device_2_wires.apply(name, wires=[0,1], par=par)
+        qubit_device_2_wires._state = np.array(input)
+        qubit_device_2_wires.apply(name, wires=[0, 1], par=par)
 
-        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0) 
+        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
     def test_apply_errors(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
-        
+
         with pytest.raises(
-            ValueError, 
+            ValueError,
             match=r"State vector must be of length 2\*\*wires."
         ):
             p = [np.array([1, 0, 1, 1, 1]) / np.sqrt(3)]
@@ -667,13 +651,13 @@ class TestSample:
         """
 
         with pytest.raises(
-            ValueError,  match="The number of samples must be a positive integer."
+            ValueError, match="The number of samples must be a positive integer."
         ):
             qubit_device_2_wires.sample('PauliZ', [0], [], n = -12)
 
         qubit_device_2_wires.shots = 0
         with pytest.raises(
-            ValueError,  match="The number of samples must be a positive integer."
+            ValueError, match="The number of samples must be a positive integer."
         ):
             qubit_device_2_wires.sample('PauliZ', [0], [], n = 12.3)
 
