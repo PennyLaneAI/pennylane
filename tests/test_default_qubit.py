@@ -778,18 +778,17 @@ class TestDefaultQubitIntegration:
             circuit(*x)
 
     def test_qubit_circuit(self, qubit_device_1_wire, tol):
-        """Test that the default qubit plugin provides correct result for simple circuit"""
+        """Test that the default qubit plugin provides correct result for a simple circuit"""
 
         p = 0.543
 
         @qml.qnode(qubit_device_1_wire)
         def circuit(x):
-            """Test quantum function"""
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
-        # <0|RX(p)^\dagger.PauliY.RX(p)|0> = -sin(p)
         expected = -np.sin(p)
+
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_qubit_identity(self, qubit_device_1_wire, tol):
@@ -825,68 +824,89 @@ class TestDefaultQubitIntegration:
 
         assert np.isclose(np.mean(runs), -np.sin(p), atol=tol, rtol=0)
 
-    def test_supported_gates(self, qubit_device_2_wires):
+    @pytest.mark.parametrize("name,expected_output", [
+        ("PauliX", -1),
+        ("PauliY", -1),
+        ("PauliZ", 1),
+        ("Hadamard", 0),
+    ])
+    def test_supported_gate_single_wire_no_parameters(self, qubit_device_1_wire, tol, name, expected_output):
+        """Tests supported gates that act on a single wire that are not parameterized"""
+
+        op = getattr(qml.ops, name)
+
+        assert qubit_device_1_wire.supports_operation(name)
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            op(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    
+    @pytest.mark.parametrize("gate", set(DefaultQubit._operation_map))
+    def test_supported_gates(self, qubit_device_2_wires, gate):
         """Test that all supported gates work correctly"""
         
         a = 0.312
         b = 0.123
 
-        for g, qop in qubit_device_2_wires._operation_map.items():
-            log.debug("\tTesting gate %s...", g)
-            assert qubit_device_2_wires.supports_operation(g)
-            qubit_device_2_wires.reset()
+        log.debug("\tTesting gate %s...", g)
+        assert qubit_device_2_wires.supports_operation(g)
+        qubit_device_2_wires.reset()
 
-            op = getattr(qml.ops, g)
-            if op.num_wires <= 0:
-                if g == "BasisState" or g == "QubitStateVector":
-                    wires = [0, 1]
-                else:
-                    wires = [0]
+        op = getattr(qml.ops, g)
+        if op.num_wires <= 0:
+            if g == "BasisState" or g == "QubitStateVector":
+                wires = [0, 1]
             else:
-                wires = list(range(op.num_wires))
+                wires = [0]
+        else:
+            wires = list(range(op.num_wires))
 
-            @qml.qnode(qubit_device_2_wires)
-            def circuit(*x):
-                """Reference quantum function"""
-                op(*x, wires=wires)
-                return qml.expval(qml.PauliX(0))
+        @qml.qnode(qubit_device_2_wires)
+        def circuit(*x):
+            """Reference quantum function"""
+            op(*x, wires=wires)
+            return qml.expval(qml.PauliX(0))
 
-            # compare to reference result
-            def reference(*x):
-                """reference circuit"""
-                if callable(qop):
-                    # if the default.qubit is an operation accepting parameters,
-                    # initialise it using the parameters generated above.
-                    O = qop(*x)
-                else:
-                    # otherwise, the operation is simply an array.
-                    O = qop
+        # compare to reference result
+        def reference(*x):
+            """reference circuit"""
+            if callable(qop):
+                # if the default.qubit is an operation accepting parameters,
+                # initialise it using the parameters generated above.
+                O = qop(*x)
+            else:
+                # otherwise, the operation is simply an array.
+                O = qop
 
-                # calculate the expected output
-                if op.num_wires == 1 or g == "QubitUnitary":
-                    out_state = np.kron(O @ np.array([1, 0]), np.array([1, 0]))
-                elif g == "QubitStateVector":
-                    out_state = x[0]
-                elif g == "BasisState":
-                    out_state = np.array([0, 0, 0, 1])
-                else:
-                    out_state = O @ qubit_device_2_wires._state
-
-                expectation = out_state.conj() @ np.kron(X, np.identity(2)) @ out_state
-                return expectation
-
-            if g == "QubitStateVector":
-                p = np.array([1, 0, 0, 1]) / np.sqrt(2)
-                assert np.array_equal(circuit(p), reference(p))
+            # calculate the expected output
+            if op.num_wires == 1 or g == "QubitUnitary":
+                out_state = np.kron(O @ np.array([1, 0]), np.array([1, 0]))
+            elif g == "QubitStateVector":
+                out_state = x[0]
             elif g == "BasisState":
-                p = np.array([1, 1])
-                assert np.array_equal(circuit(p), reference(p))
-            elif g == "QubitUnitary":
-                assert np.array_equal(circuit(U), reference(U))
-            elif op.num_params == 1:
-                assert np.array_equal(circuit(a), reference(a))
-            elif op.num_params == 2:
-                assert np.array_equal(circuit(a, b))
+                out_state = np.array([0, 0, 0, 1])
+            else:
+                out_state = O @ qubit_device_2_wires._state
+
+            expectation = out_state.conj() @ np.kron(X, np.identity(2)) @ out_state
+            return expectation
+
+        if g == "QubitStateVector":
+            p = np.array([1, 0, 0, 1]) / np.sqrt(2)
+            assert np.array_equal(circuit(p), reference(p))
+        elif g == "BasisState":
+            p = np.array([1, 1])
+            assert np.array_equal(circuit(p), reference(p))
+        elif g == "QubitUnitary":
+            assert np.array_equal(circuit(U), reference(U))
+        elif op.num_params == 1:
+            assert np.array_equal(circuit(a), reference(a))
+        elif op.num_params == 2:
+            assert np.array_equal(circuit(a, b))
 
     def test_supported_observables(self, qubit_device_2_wires, tol):
         """Test that all supported observables work correctly"""
