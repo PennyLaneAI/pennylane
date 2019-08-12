@@ -524,13 +524,15 @@ class TestExpval:
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("Hermitian", [0, 0, 0, 1], 1, [[[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]]]),
+        ("Hermitian", [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], 5/3, [[[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]]]),
         ("Hermitian", [0, 0, 0, 1], 0, [[[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]]),
         ("Hermitian", [1/math.sqrt(2), 0, -1/math.sqrt(2), 0], 1, [[[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]]]),
         ("Hermitian", [1/math.sqrt(3), -1/math.sqrt(3), 1/math.sqrt(6), 1/math.sqrt(6)], 1, [[[1, 1j, 0, .5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-.5j, 0, 1j, 1]]]),
+        ("Hermitian", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], 1, [[[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]]),
+        ("Hermitian", [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], -1, [[[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]]),
     ])
     def test_expval_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, input, expected_output, par):
-        """Tests that expectation values are properly calculated for single-wire observables with parameters."""
+        """Tests that expectation values are properly calculated for two-wire observables with parameters."""
 
         qubit_device_2_wires._state = np.array(input)
         res = qubit_device_2_wires.expval(name, wires=[0, 1], par=par)
@@ -585,7 +587,22 @@ class TestVar:
         qubit_device_1_wire._state = np.array(input)
         res = qubit_device_1_wire.var(name, wires=[0], par=par)
 
-        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+        assert np.isclose(res, expected_output, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("name,input,expected_output,par", [
+        ("Hermitian", [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], 11/9, [[[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]]]),
+        ("Hermitian", [0, 0, 0, 1], 1, [[[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]]),
+        ("Hermitian", [1/math.sqrt(2), 0, -1/math.sqrt(2), 0], 1, [[[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]]]),
+        ("Hermitian", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], 0, [[[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]]),
+        ("Hermitian", [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], 0, [[[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]]),
+    ])
+    def test_var_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, input, expected_output, par):
+        """Tests that variances are properly calculated for two-wire observables with parameters."""
+
+        qubit_device_2_wires._state = np.array(input)
+        res = qubit_device_2_wires.var(name, wires=[0, 1], par=par)
+
+        assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     def test_var_estimate(self):
         """Test that the variance is not analytically calculated"""
