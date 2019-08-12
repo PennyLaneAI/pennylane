@@ -91,7 +91,7 @@ Code details
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane.operation import CVOperation, CVObservable
+from pennylane.operation import Any, CVOperation, CVObservable
 
 
 def _rotation(phi, bare=False):
@@ -567,9 +567,9 @@ class Interferometer(CVOperation):
 
     **Details:**
 
-    * None (applied to the entire subsystem)
+    * Number of wires: Any
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: None
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -584,7 +584,7 @@ class Interferometer(CVOperation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_params = 1
-    num_wires = 0
+    num_wires = Any
     par_domain = "A"
     grad_method = None
     grad_recipe = None
@@ -709,16 +709,16 @@ class GaussianState(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire subsystem)
+    * Number of wires: Any
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: None
 
     Args:
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 2
     par_domain = "A"
     grad_method = "F"
@@ -750,7 +750,7 @@ class FockStateVector(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire subsystem)
+    * Number of wires: Any
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -758,7 +758,7 @@ class FockStateVector(CVOperation):
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
     grad_method = "F"
@@ -770,7 +770,7 @@ class FockDensityMatrix(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire subsystem)
+    * Number of wires: Any
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -778,7 +778,7 @@ class FockDensityMatrix(CVOperation):
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
     grad_method = "F"
@@ -973,7 +973,7 @@ class PolyXP(CVObservable):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: Any
     * Number of parameters: 1
     * Observable order: 2nd order in the quadrature operators
     * Heisenberg representation: :math:`A`
@@ -981,7 +981,7 @@ class PolyXP(CVObservable):
     Args:
         q (array[float]): expansion coefficients
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
 
@@ -1021,7 +1021,7 @@ class FockStateProjector(CVObservable):
 
     **Details:**
 
-    * Number of wires: None (applied to any subset of wires)
+    * Number of wires: Any
     * Number of parameters: 1
     * Observable order: None (non-Gaussian)
 
@@ -1035,7 +1035,7 @@ class FockStateProjector(CVObservable):
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
 

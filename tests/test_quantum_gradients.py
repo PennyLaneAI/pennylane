@@ -304,7 +304,7 @@ class CVGradientTest(BaseTest):
                 U = np.array([[0.51310276+0.81702166j, 0.13649626+0.22487759j],
                               [0.26300233+0.00556194j, -0.96414101-0.03508489j]])
 
-                if cls.num_wires == 0:
+                if cls.num_wires <= 0:
                     w = list(range(2))
                 else:
                     w = list(range(cls.num_wires))
@@ -533,7 +533,7 @@ class QubitGradientTest(BaseTest):
             return qml.sample(qml.PauliZ(0), 1), qml.sample(qml.PauliX(1), 1)
 
         with self.assertRaisesRegex(
-            qml.QuantumFunctionError, 
+            qml.QuantumFunctionError,
             "Circuits that include sampling can not be differentiated."
         ):
             grad_fn = autograd.jacobian(circuit)

@@ -71,7 +71,7 @@ Code details
 ~~~~~~~~~~~~
 """
 
-from pennylane.operation import Observable, Operation
+from pennylane.operation import All, Any, Observable, Operation
 
 
 class Hadamard(Observable, Operation):
@@ -503,7 +503,7 @@ class QubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = 0
+    num_wires = Any
     par_domain = "A"
     grad_method = None
 
@@ -519,7 +519,7 @@ class BasisState(Operation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: All (applied to the entire system)
     * Number of parameters: 1
     * Gradient recipe: None (integer parameters not supported)
 
@@ -530,7 +530,7 @@ class BasisState(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = 0
+    num_wires = Any
     par_domain = "A"
     grad_method = None
 
@@ -541,7 +541,7 @@ class QubitStateVector(Operation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: All (applied to the entire system)
     * Number of parameters: 1
     * Gradient recipe: None
 
@@ -550,7 +550,7 @@ class QubitStateVector(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = 0
+    num_wires = All
     par_domain = "A"
     grad_method = None
 
@@ -574,11 +574,17 @@ class Hermitian(Observable):
     If acting on :math:`N` wires, then the matrix :math:`A` must be of size
     :math:`2^N\times 2^N`.
 
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
     Args:
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
     grad_method = "F"

@@ -15,6 +15,7 @@
 Pytest configuration file for PennyLane test suite.
 """
 import pytest
+from unittest.mock import PropertyMock, patch
 import os
 import numpy as np
 import pennylane as qml
@@ -76,7 +77,7 @@ def qubit_device_1_wire():
 @pytest.fixture(scope="function")
 def qubit_device_2_wires():
     return qml.device('default.qubit', wires=2)
-    
+
 
 @pytest.fixture(scope="function")
 def qubit_device_3_wires():
@@ -128,3 +129,9 @@ def seed(request):
     """Different seeds."""
     return request.param
 
+@pytest.fixture(scope="function")
+def mock_device():
+    """A mock instance of the abstract Device class"""
+
+    with patch.multiple(qml.Device, __abstractmethods__=set()):
+        yield qml.Device()
