@@ -837,8 +837,30 @@ class DefaultGaussian(Device):
         return var
 
     def sample(self, observable, wires, par, n=None):
-        raise NotImplementedError("Sampling is not supported in default.gaussian, "
-                                  "please install PennyLane-SF or another plugin capable of sampling")
+        if n is None:
+            n = self.shots
+        if n <= 0 or not isinstance(n, int):
+            raise ValueError("The number of samples must be a positive integer.")
+
+        if len(wires) != 1:
+            raise ValueError("Only one mode can be measured in homodyne.")
+
+        if observable == "X":
+            phi = 0.0
+        elif observable == "P":
+            phi = np.pi/2
+        elif observable == "QuadOperator":
+            phi = par[0]
+        else:
+            raise NotImplementedError("Sampling for this observable is not implemented.")
+        mu, cov = self.reduced_state(wires)
+        rot = rotation(phi)
+        muphi = rot.T @ mu
+        covphi = rot.T @ cov @ rot
+        stdphi = np.sqrt(covphi[0,0])
+        meanphi = muphi[0]
+        return np.random.normal(meanphi, stdphi, n)
+
 
     def reset(self):
         """Reset the device"""

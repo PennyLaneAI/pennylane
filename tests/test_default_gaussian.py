@@ -64,6 +64,7 @@ def prep_par(par, op):
     return par
 
 class TestExceptions(BaseTest):
+
     """Tests that default.gaussian throws the correct error messages"""
 
     def test_sample_exception(self):
@@ -76,7 +77,7 @@ class TestExceptions(BaseTest):
         def circuit():
             return qml.sample(qml.NumberOperator(0), 10)
 
-        with self.assertRaisesRegex(NotImplementedError, "Sampling is not supported in default.gaussian"):
+        with self.assertRaisesRegex(NotImplementedError, "Sampling for this observable is not implemented."):
             res = circuit()
 
 class TestAuxillaryFunctions(BaseTest):
@@ -533,7 +534,53 @@ class TestDefaultGaussianDevice(BaseTest):
         expected = self.dev._state
         self.assertAllAlmostEqual(res[0], expected[0], delta=self.tol)
         self.assertAllAlmostEqual(res[1], expected[1], delta=self.tol)
+    def test_samples_coherent(self):
+        """Test that sampled values are calculated correctly by comparing with first and second moments"""
+        self.logTestName()
+        n_samples = 1000000
+        dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
+        # test correct mean and variance for Homodyne P measurement
+        alpha = 0.324-0.59j
+        dev.apply('CoherentState', wires=[0], par=[alpha])
+        samples = dev.sample('P', [0], [], n_samples)
+        mean = samples.mean()
+        std = samples.var()
+
+        self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=1000*self.tol)
+        self.assertAlmostEqual(std, hbar/2, delta=1000*self.tol)
+
+        # test correct mean and variance for Homodyne measurement
+        samples = dev.sample('P', [0], [], n_samples)
+        mean = samples.mean()
+        std = samples.var()
+
+        self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=1000*self.tol)
+        self.assertAlmostEqual(std, hbar/2, delta=1000*self.tol)
+
+    def test_samples_squeezed(self):
+        """Test that sampled values are calculated correctly by comparing with first and second moments"""
+        self.logTestName()
+        n_samples = 1000000
+        dev = qml.device('default.gaussian', wires=1, hbar=hbar)
+
+        # test correct mean and variance for Homodyne P measurement
+        r = 1.0
+        phi = 0.0
+        dev.apply('SqueezedState', wires=[0], par=[r,phi])
+        samples = dev.sample('P', [0], [], n_samples)
+        mean = samples.mean()
+        std = samples.var()
+
+        self.assertAlmostEqual(mean, 0.0, delta=1000*self.tol)
+        self.assertAlmostEqual(std, hbar*np.exp(2*r)/2, delta=1000*self.tol)
+        # test correct mean and variance for Homodyne measurement
+        samples = dev.sample('P', [0], [], n_samples)
+        mean = samples.mean()
+        std = samples.var()
+
+        self.assertAlmostEqual(mean, 0.0, delta=1000*self.tol)
+        self.assertAlmostEqual(std, hbar*np.exp(2*r)/2, delta=1000*self.tol)
 
 class TestDefaultGaussianIntegration(BaseTest):
     """Integration tests for default.gaussian. This test ensures it integrates
