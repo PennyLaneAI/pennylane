@@ -869,7 +869,7 @@ class DefaultGaussian(Device):
         rot = rotation(phi)
         muphi = rot.T @ mu
         covphi = rot.T @ cov @ rot
-        stdphi = np.sqrt(covphi[0,0])
+        stdphi = np.sqrt(covphi[0, 0])
         meanphi = muphi[0]
         return np.random.normal(meanphi, stdphi, n)
 
