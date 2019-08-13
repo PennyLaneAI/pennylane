@@ -572,15 +572,15 @@ class TestDefaultGaussianDevice(BaseTest):
         mean = samples.mean()
         std = samples.var()
 
-        self.assertAlmostEqual(mean, 0.0, delta=1000*self.tol)
-        self.assertAlmostEqual(std, hbar*np.exp(2*r)/2, delta=1000*self.tol)
+        self.assertAlmostEqual(mean, 0.0, delta=10000*self.tol)
+        self.assertAlmostEqual(std, hbar*np.exp(2*r)/2, delta=10000*self.tol)
         # test correct mean and variance for Homodyne measurement
         samples = dev.sample('P', [0], [], n_samples)
         mean = samples.mean()
         std = samples.var()
 
-        self.assertAlmostEqual(mean, 0.0, delta=1000*self.tol)
-        self.assertAlmostEqual(std, hbar*np.exp(2*r)/2, delta=1000*self.tol)
+        self.assertAlmostEqual(mean, 0.0, delta=10000*self.tol)
+        self.assertAlmostEqual(std, hbar*np.exp(2*r)/2, delta=10000*self.tol)
 
 class TestDefaultGaussianIntegration(BaseTest):
     """Integration tests for default.gaussian. This test ensures it integrates
