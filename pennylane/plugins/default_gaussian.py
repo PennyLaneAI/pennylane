@@ -873,7 +873,6 @@ class DefaultGaussian(Device):
         meanphi = muphi[0]
         return np.random.normal(meanphi, stdphi, n)
 
-
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
