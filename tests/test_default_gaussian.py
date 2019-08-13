@@ -64,7 +64,6 @@ def prep_par(par, op):
     return par
 
 class TestExceptions(BaseTest):
-
     """Tests that default.gaussian throws the correct error messages"""
 
     def test_sample_exception(self):
