@@ -842,7 +842,7 @@ class DefaultGaussian(Device):
 
         Args:
             observable (string): Observable to be measured
-            wires (int of Sequence[int]): indices of the requested wires
+            wires (int or Sequence[int]): indices of the requested wires
             par (list): Parameters for the observable
             n (int): Number of samples to be generates
 
