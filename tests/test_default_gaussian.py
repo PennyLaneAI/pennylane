@@ -533,6 +533,7 @@ class TestDefaultGaussianDevice(BaseTest):
         expected = self.dev._state
         self.assertAllAlmostEqual(res[0], expected[0], delta=self.tol)
         self.assertAllAlmostEqual(res[1], expected[1], delta=self.tol)
+
     def test_samples_coherent(self):
         """Test that sampled values are calculated correctly by comparing with first and second moments"""
         self.logTestName()
