@@ -110,7 +110,7 @@ Code details
 ^^^^^^^^^^^^
 """
 import abc
-from enum import IntEnum
+from enum import Enum, IntEnum
 import numbers
 from collections.abc import Sequence
 
@@ -132,6 +132,7 @@ class Wires(IntEnum):
     Any = -1
     All = 0
 
+
 All = Wires.All
 """IntEnum: An enumeration which represents all wires in the
 subsystem. It is equivalent to an integer with value 0."""
@@ -139,6 +140,32 @@ subsystem. It is equivalent to an integer with value 0."""
 Any = Wires.Any
 """IntEnum: An enumeration which represents any wires in the
 subsystem. It is equivalent to an integer with value -1."""
+
+
+#=============================================================================
+# ObservableReturnTypes types
+#=============================================================================
+
+class ObservableReturnTypes(Enum):
+    """Enumeration class to
+    represent the type of
+    return types of an observable."""
+    Sample = 1
+    Variance = 2
+    Expectation = 3
+
+
+Sample = ObservableReturnTypes.Sample
+"""Enum: An enumeration which represents sampling an observable."""
+
+Variance = ObservableReturnTypes.Variance
+"""Enum: An enumeration which represents returning the variance of
+an observable on specified wires."""
+
+Expectation = ObservableReturnTypes.Expectation
+"""Enum: An enumeration which represents returning the expectation
+value of an observable on specified wires."""
+
 
 #=============================================================================
 # Class property

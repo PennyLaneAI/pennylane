@@ -90,7 +90,7 @@ Code details
 import abc
 
 import autograd.numpy as np
-from pennylane.operation import Operation, Observable
+from pennylane.operation import Operation, Observable, Sample, Variance, Expectation
 
 
 class DeviceError(Exception):
@@ -221,11 +221,11 @@ class Device(abc.ABC):
             self.pre_measure()
 
             for obs in observables:
-                if obs.return_type == "expectation":
+                if obs.return_type == Expectation:
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == "variance":
+                elif obs.return_type == Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == "sample":
+                elif obs.return_type == Sample:
                     if not hasattr(obs, "num_samples"):
                         raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
 
@@ -239,9 +239,9 @@ class Device(abc.ABC):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(obs.return_type == "sample" for obs in observables):
+            if all(obs.return_type == Sample for obs in observables):
                 return np.asarray(results)
-            if any(obs.return_type == "sample" for obs in observables):
+            if any(obs.return_type == Sample for obs in observables):
                 return np.asarray(results, dtype="object")
 
             return np.asarray(results)
