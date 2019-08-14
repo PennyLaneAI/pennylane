@@ -502,11 +502,11 @@ class QNode:
 
             # generate the unitary operation to project to
             # the shared eigenbasis of all observables
-            V = np.identity(2**self.num_wires)
+            V = np.identity(2**self.num_wires, dtype=np.complex128)
 
             for _, term in first_order:
                 _, S = linalg.eigh(V.conj().T @ term @ V)
-                V = V @ S
+                V = np.round(V @ S, 15)
 
             V = V.conj().T
 
