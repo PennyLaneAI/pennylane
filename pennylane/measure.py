@@ -59,10 +59,9 @@ Code details
 import warnings
 
 import pennylane as qml
-from pennylane.operation import Sample, Variance, Expectation
 
 from .qnode import QNode, QuantumFunctionError
-from .operation import Observable
+from .operation import Observable, Sample, Variance, Expectation
 
 
 class ExpvalFactory:

@@ -235,6 +235,7 @@ class Device(abc.ABC):
                 elif obs.return_type == Sample:
                     if not hasattr(obs, "num_samples"):
                         raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
                 elif obs.return_type is None:
                     raise ObservableError("The return type is not specified for observable {}".format(obs.name))
                 else:
