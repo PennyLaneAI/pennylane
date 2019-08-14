@@ -164,7 +164,7 @@ class TestVar:
             res = circuit()
 
     def test_observable_return_type_is_variance(self):
-        """Test that the return type of the observable is Variance"""
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
