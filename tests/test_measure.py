@@ -128,8 +128,23 @@ class TestDeprecatedExpval:
             with pytest.raises(AttributeError, match="has no observable 'R'"):
                 res = circuit()
 
-    def test_expval_factory_return_type_is_expectation(self):
+    def test_expval_factory_getattr_return_type_is_expectation(self):
+        """Test that the named attribute of the :class:`ExpvalFactory`
+        contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
         assert qml.expval.__getattr__('Hermitian').__dict__["return_type"] == Expectation
+
+    def test_expval_factory_call_return_type_is_expectation(self):
+        """Test that the function call operator of the :class:`ExpvalFactory`
+        contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.PauliZ(0)
+            assert qml.expval.__call__(res).__dict__["return_type"] == Expectation
+            return res
+
+        circuit()
 
 
 class TestVar:

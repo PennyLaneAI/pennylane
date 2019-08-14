@@ -371,18 +371,6 @@ class TestObservables:
         with pytest.raises(DeviceError, match="Number of samples not specified for observable"):
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
-    def test_observable_error_none_as_return_type(self, mock_device_with_paulis_and_methods):
-        """Check that an error is raised if the return type of an observable is None"""
-
-        queue = [qml.PauliX(wires=0, do_queue=False)]
-
-        # Make a observable without specifying a return operation upon measuring
-        obs = qml.PauliZ(0, do_queue=False)
-        observables = [obs]
-
-        with pytest.raises(ObservableError, match="The return type is not specified for observable"):
-            mock_device_with_paulis_and_methods.execute(queue, observables)
-
     def test_unsupported_observable_return_type_raise_error(self, mock_device_with_paulis_and_methods):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
