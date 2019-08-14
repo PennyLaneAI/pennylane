@@ -266,6 +266,8 @@ class QNode:
                 self.queue.append(op)
             else:
                 self.ev.append(op)
+        elif isinstance(op, pennylane.operation.Tensor):
+            self.ev.append(op)
         else:
             if self.ev:
                 raise QuantumFunctionError('State preparations and gates must precede measured observables.')
@@ -293,7 +295,6 @@ class QNode:
         # pylint: disable=too-many-branches,too-many-statements
         self.queue = []
         self.ev = []  # temporary queue for EVs
-        self.ev_tensor = []  # temporary queue for tensored EVs
 
         if kwargs is None:
             kwargs = {}
@@ -370,6 +371,17 @@ class QNode:
             self.output_dim = len(res)
 
             res = tuple(res)
+
+        elif isinstance(res, pennylane.operation.Tensor):
+            # for Tensor observables values
+            # (i.e., lists, tuples, etc) are supported in the QNode return statement.
+
+            # Device already returns the correct numpy array,
+            # so no further conversion is required
+            self.output_conversion = np.asarray
+            self.output_dim = 1
+
+            res = (res,)
         else:
             raise QuantumFunctionError("A quantum function must return either a single measured observable "
                                        "or a nonempty sequence of measured observables.")

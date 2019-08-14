@@ -119,13 +119,12 @@ class ExpvalFactory:
 
                 # set return type to be an expectation value
                 op.return_type = "expectation"
-                tensor_ops.append(op, wire=op.wires)
+                tensor_ops.append(op)
 
-        # if QNode._current_context is not None:
-        #     # add observable to QNode observable queue
-        #     print(type(tensor_ops))
-        #     QNode._current_context._append_op(tensor_ops)
-        #     return ops
+            if QNode._current_context is not None:
+                # add observable to QNode observable queue
+                QNode._current_context._append_op(tensor_ops)
+                return tensor_ops
 
     def __getattr__(self, name):
         # This to allow backwards compatibility with the previous

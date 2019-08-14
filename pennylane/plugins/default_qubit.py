@@ -283,6 +283,19 @@ def identity(*_):
     """
     return np.identity(2)
 
+def tensor(*args):
+    """Constructs the tensor matrix for observables.
+    
+    Args: 
+        tensor (:class:`Tensor`): A tensor object storing all operations.
+
+    Returns:
+        array: The matrix for the given tensor.
+    """
+    pass
+
+
+
 #========================================================
 #  device
 #========================================================
@@ -301,6 +314,7 @@ class DefaultQubit(Device):
     pennylane_requires = '0.5'
     version = '0.4.0'
     author = 'Xanadu Inc.'
+    tensor_observables = True
 
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
@@ -324,7 +338,7 @@ class DefaultQubit(Device):
         'CRX': CRotx,
         'CRY': CRoty,
         'CRZ': CRotz,
-        'CRot': CRot3
+        'CRot': CRot3,
     }
 
     _observable_map = {
@@ -333,7 +347,8 @@ class DefaultQubit(Device):
         'PauliZ': Z,
         'Hadamard': H,
         'Hermitian': hermitian,
-        'Identity': identity
+        'Identity': identity,
+        'Tensor': tensor,
     }
 
     def __init__(self, wires, *, shots=0):

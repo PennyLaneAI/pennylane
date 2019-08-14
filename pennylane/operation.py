@@ -713,10 +713,14 @@ class Tensor:
 
     def __init__(self):
         self.ops = []
+        self.params = None
         self.wires = []
+        self.name = "Tensor"
+        self.parameters = None
 
-    def append(self, op, wire):
+    def append(self, op):
         """Add operations to a tensor list
         """
         self.ops.append(op)
-        self.wires.append(wire)
+        for w in op.wires:
+            self.wires.append(w)

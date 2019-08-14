@@ -91,17 +91,17 @@ class TestExpval:
         ):
             res = circuit()
 
-    # def test_tensored_observables(self):
-    #     """Test expval calculations for a tensor of observables."""
-    #     dev = qml.device("default.qubit", wires=2)
+    def test_tensored_observables(self):
+        """Test expval calculations for a tensor of observables."""
+        dev = qml.device("default.qubit", wires=2)
 
-    #     @qml.qnode(dev)
-    #     def circuit():
-    #         qml.PauliZ(wires=0)
-    #         return qml.expval(qml.PauliZ(wires=[0]), qml.PauliY(1))
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliZ(wires=0)
+            return qml.expval(qml.PauliX(wires=[0]), qml.PauliY(1))
 
-    #     res = circuit()
-        # assert dev.tensor_ev == []
+        res = circuit()
+        assert res == 0.
 
 
 class TestDeprecatedExpval:

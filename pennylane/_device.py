@@ -90,7 +90,7 @@ Code details
 import abc
 
 import autograd.numpy as np
-from pennylane.operation import Operation, Observable
+from pennylane.operation import Operation, Observable, Tensor
 
 
 class DeviceError(Exception):
@@ -376,8 +376,11 @@ class Device(abc.ABC):
                 raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
         for o in observables:
-            if o.name not in self.observables:
+            if isinstance(o, Observable) and (o.name not in self.observables):
                 raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
+
+            if isinstance(o, Tensor) and (self.tensor_observables is False):
+                raise DeviceError("Tensor observables {} not supported on device {}".format(o.ops, self.short_name))
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
