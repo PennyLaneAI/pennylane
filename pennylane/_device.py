@@ -91,18 +91,12 @@ import abc
 
 import autograd.numpy as np
 from pennylane.operation import Operation, Observable, Sample, Variance, Expectation
+from .qnode import QuantumFunctionError
 
 
 class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
-    """
-    pass
-
-
-class ObservableError(Exception):
-    """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an observable
-    whose the return_type attribute is not one of the supported values upon measuring.
     """
     pass
 
@@ -237,7 +231,7 @@ class Device(abc.ABC):
                         raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
                     results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
                 elif obs.return_type is not None:
-                    raise ObservableError("Unsupported return type specified for observable {}".format(obs.name))
+                    raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
             self.post_measure()
 

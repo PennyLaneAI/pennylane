@@ -18,8 +18,9 @@ from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import pytest
 import pennylane as qml
-from pennylane import Device, DeviceError, ObservableError
+from pennylane import Device, DeviceError
 from pennylane.operation import Sample, Variance, Expectation
+from pennylane.qnode import QuantumFunctionError
 
 
 @pytest.fixture(scope="function")
@@ -381,7 +382,7 @@ class TestObservables:
         obs.return_type = "SomeUnsupportedReturnType"
         observables = [obs]
 
-        with pytest.raises(ObservableError, match="Unsupported return type specified for observable"):
+        with pytest.raises(QuantumFunctionError, match="Unsupported return type specified for observable"):
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
     def test_supported_observable_return_types(self, mock_device_with_paulis_and_methods):
