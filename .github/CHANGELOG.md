@@ -2,6 +2,11 @@
 
 ### New features since last release
 
+* Adds a `Device.parameters` property, so that devices can view a dictionary mapping free
+  parameters to operation parameters. This will allow plugin devices to take advantage
+  of parametric compilation.
+  [#283](https://github.com/XanaduAI/pennylane/pull/283)
+
 * Sampling support: QNodes can now return a specified number of samples
   from a given observable via the top-level `pennylane.sample()` function.
   To support this on plugin devices, there is a new `Device.sample` method.
@@ -58,7 +63,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Johannes Jakob Meyer.
+Aroosa Ijaz, Josh Izaac, Johannes Jakob Meyer.
 
 ---
 
