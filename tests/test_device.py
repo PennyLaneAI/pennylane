@@ -16,8 +16,8 @@ Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
-import pennylane as qml
 import pytest
+import pennylane as qml
 from pennylane import Device, DeviceError, ObservableError
 from pennylane.operation import Sample, Variance, Expectation
 
