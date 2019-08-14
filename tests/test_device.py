@@ -19,6 +19,7 @@ from unittest.mock import MagicMock, Mock, PropertyMock, patch
 import pennylane as qml
 import pytest
 from pennylane import Device, DeviceError, ObservableError
+from pennylane.operation import Sample, Variance, Expectation
 
 
 @pytest.fixture(scope="function")
@@ -394,6 +395,34 @@ class TestObservables:
 
         with pytest.raises(ObservableError, match="Unsupported return type specified for observable"):
             mock_device_with_paulis_and_methods.execute(queue, observables)
+
+    def test_supported_observable_return_types(self, mock_device_with_paulis_and_methods):
+        """Check that an no error is raised if the return types of observables are supported"""
+
+        queue = [qml.PauliX(wires=0, do_queue=False)]
+
+        # Make observables with specifying supported return types
+
+        obs1 = qml.PauliZ(0, do_queue=False)
+        obs2 = qml.PauliZ(1, do_queue=False)
+        obs3 = qml.PauliZ(2, do_queue=False)
+
+        obs1.return_type = Expectation
+        obs2.return_type = Variance
+        obs3.return_type = Sample
+        obs3.num_samples = 1
+
+        observables = [obs1,
+                       obs2,
+                       obs3,
+        ]
+
+        # The methods expval, var and sample are MagicMock'ed in the fixture
+        mock_device_with_paulis_and_methods.execute(queue, observables)
+
+        mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
+        mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
+        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [], 1)
 
 
 class TestParameters:
