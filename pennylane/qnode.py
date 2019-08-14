@@ -143,7 +143,6 @@ import autograd.extend as ae
 import autograd.builtins
 
 import pennylane.operation
-from pennylane.operation import Sample, Variance, Expectation
 
 from pennylane.utils import _flatten, unflatten
 from .variable import Variable
@@ -351,7 +350,7 @@ class QNode:
 
         # quantum circuit function return validation
         if isinstance(res, pennylane.operation.Observable):
-            if res.return_type == Sample:
+            if res.return_type == pennylane.operation.Sample:
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
                 self.output_conversion = np.squeeze
@@ -496,7 +495,7 @@ class QNode:
                         if x.ev_order is None:
                             return 'F'
                         if x.ev_order == 2:
-                            if x.return_type == Variance:
+                            if x.return_type == pennylane.operation.Variance:
                                 # second order observables don't support
                                 # analytic diff of variances
                                 return 'F'
@@ -680,7 +679,7 @@ class QNode:
             # construct the circuit
             self.construct(params, circuit_kwargs)
 
-        sample_ops = [e for e in self.ev if e.return_type == Sample]
+        sample_ops = [e for e in self.ev if e.return_type == pennylane.operation.Sample]
         if sample_ops:
             names = [str(e) for e in sample_ops]
             raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
@@ -726,7 +725,7 @@ class QNode:
             else:
                 y0 = None
 
-        variances = any(e.return_type == Variance for e in self.ev)
+        variances = any(e.return_type == pennylane.operation.Variance for e in self.ev)
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
@@ -908,20 +907,20 @@ class QNode:
 
         # boolean mask: elements are True where the
         # return type is a variance, False for expectations
-        where_var = [e.return_type == Variance for e in self.ev]
+        where_var = [e.return_type == pennylane.operation.Variance for e in self.ev]
 
         for i, e in enumerate(self.ev):
             # iterate through all observables
             # here, i is the index of the observable
             # and e is the observable
 
-            if e.return_type != Variance:
+            if e.return_type != pennylane.operation.Variance:
                 # if the expectation value is not a variance
                 # continue on to the next loop iteration
                 continue
 
             # temporarily convert return type to expectation
-            self.ev[i].return_type = Expectation
+            self.ev[i].return_type = pennylane.operation.Expectation
 
             # analytic derivative of <A^2>
             # For involutory observables (A^2 = I),

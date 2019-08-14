@@ -110,7 +110,7 @@ from pennylane.about import about
 
 
 from .configuration import Configuration
-from ._device import Device, DeviceError
+from ._device import Device, DeviceError, ObservableError
 from .measure import expval, var, sample
 from .ops import *
 from .optimize import *

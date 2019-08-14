@@ -17,6 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.qnode import QuantumFunctionError
+from pennylane.operation import Sample, Variance, Expectation
 
 
 def test_no_measure(tol):
@@ -64,6 +65,17 @@ class TestExpval:
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
+    def test_observable_return_type_is_expectation(self):
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.expval(qml.PauliZ(0))
+            assert res.return_type == Expectation
+            return res
+
+        circuit()
 
 class TestDeprecatedExpval:
     """Tests for the deprecated expval attribute getter.
@@ -116,6 +128,9 @@ class TestDeprecatedExpval:
             with pytest.raises(AttributeError, match="has no observable 'R'"):
                 res = circuit()
 
+    def test_expval_factory_return_type_is_expectation(self):
+        assert qml.expval.__getattr__('Hermitian').__dict__["return_type"] == Expectation
+
 
 class TestVar:
     """Tests for the var function"""
@@ -147,6 +162,18 @@ class TestVar:
 
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
+
+    def test_observable_return_type_is_variance(self):
+        """Test that the return type of the observable is Variance"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.var(qml.PauliZ(0))
+            assert res.return_type == Variance
+            return res
+
+        circuit()
 
 
 class TestSample:
@@ -333,3 +360,16 @@ class TestSample:
 
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             sample = circuit()
+
+    def test_observable_return_type_is_sample(self):
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.sample(qml.PauliZ(0))
+            assert res.return_type == Sample
+            return res
+
+        circuit()

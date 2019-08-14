@@ -100,6 +100,13 @@ class DeviceError(Exception):
     pass
 
 
+class ObservableError(Exception):
+    """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an observable
+    whose the return_type attribute is not one of the supported values upon measuring.
+    """
+    pass
+
+
 class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
@@ -228,8 +235,10 @@ class Device(abc.ABC):
                 elif obs.return_type == Sample:
                     if not hasattr(obs, "num_samples"):
                         raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
-
-                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
+                elif obs.return_type is None:
+                    raise ObservableError("The return type is not specified for observable {}".format(obs.name))
+                else:
+                    raise ObservableError("Unsupported return type specified for observable {}".format(obs.name))
 
             self.post_measure()
 
