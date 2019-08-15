@@ -43,7 +43,7 @@ Any classical computation in the model can then make use of arbitrary NumPy
 functions, while retaining support for automatic differentiation. For an example,
 see the :ref:`hybrid computation tutorial <plugins_hybrid>`.
 
-However, PennyLane has the ability to contruct quantum nodes can also be used in conjunction
+However, PennyLane has the ability to contruct quantum nodes that can also be used in conjunction
 with other classical machine learning libraries; in such a case, the QNode is modified such that
 
 1. It accepts and returns the correct object types expected by the classical
