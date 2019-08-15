@@ -515,7 +515,7 @@ def gaussian_state(mu, cov, hbar=2.):
             relation :math:`[\x,\p]=i\hbar`
 
     Returns:
-        array: the thermal state
+        tuple: the mean and covariance matrix of the Gaussian state
     """
     # pylint: disable=unused-argument
     return mu, cov
