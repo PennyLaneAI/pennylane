@@ -67,7 +67,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Josh Izaac, Johannes Jakob Meyer.
+Aroosa Ijaz, Josh Izaac, Johannes Jakob Meyer, Roeland Wiersema.
 
 ---
 
