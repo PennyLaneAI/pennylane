@@ -386,7 +386,7 @@ class TestObservables:
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
     def test_supported_observable_return_types(self, mock_device_with_paulis_and_methods):
-        """Check that an no error is raised if the return types of observables are supported"""
+        """Check that no error is raised if the return types of observables are supported"""
 
         queue = [qml.PauliX(wires=0, do_queue=False)]
 

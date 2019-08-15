@@ -419,7 +419,7 @@ class DeveloperTests(BaseTest):
             DummyOp(0.54, 0, do_queue=False)
 
     def test_observable_return_type_none(self):
-        """Test exception raised if no return type is specified"""
+        """Check that the return_type of an observable is initially None"""
         self.logTestName()
 
         class DummyObserv(oo.Observable):
