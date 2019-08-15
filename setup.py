@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/env python3
-import sys
-import os
 from setuptools import setup
-# from sphinx.setup_command import BuildDoc
 
 with open("pennylane/_version.py") as f:
 	version = f.readlines()[-1].split()[-1].strip("\"'")
@@ -40,7 +36,7 @@ info = {
     'version': version,
     'maintainer': 'Xanadu Inc.',
     'maintainer_email': 'nathan@xanadu.ai',
-    'url': 'http://xanadu.ai',
+    'url': 'https://github.com/XanaduAI/pennylane',
     'license': 'Apache License 2.0',
     'packages': [
                     'pennylane',

@@ -24,7 +24,7 @@ from pennylane import numpy as np
 
 from defaults import pennylane as qml, BaseTest
 from pennylane.plugins.default_qubit import (
-    spectral_decomposition_qubit,
+    spectral_decomposition,
     I,
     X,
     Z,
@@ -34,6 +34,10 @@ from pennylane.plugins.default_qubit import (
     Roty,
     Rotz,
     Rot3,
+    CRotx,
+    CRoty,
+    CRotz,
+    CRot3,
     unitary,
     hermitian,
     DefaultQubit,
@@ -101,11 +105,11 @@ def prep_par(par, op):
 class TestAuxillaryFunctions(BaseTest):
     """Test auxillary functions."""
 
-    def test_spectral_decomposition_qubit(self):
+    def test_spectral_decomposition(self):
         """Test that the correct spectral decomposition is returned."""
         self.logTestName()
 
-        a, P = spectral_decomposition_qubit(H)
+        a, P = spectral_decomposition(H)
 
         # verify that H = \sum_k a_k P_k
         self.assertAllAlmostEqual(H, np.einsum("i,ijk->jk", a, P), delta=self.tol)
@@ -190,6 +194,79 @@ class TestAuxillaryFunctions(BaseTest):
             Rot3(a, b, c), arbitrary_rotation(a, b, c), delta=self.tol
         )
 
+    def test_C_x_rotation(self):
+        """Test controlled x rotation is correct"""
+        self.logTestName()
+
+        # test identity for theta=0
+        self.assertAllAlmostEqual(CRotx(0), np.identity(4), delta=self.tol)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1j/np.sqrt(2)], [0, 0, -1j/np.sqrt(2), 1/np.sqrt(2)]])
+        self.assertAllAlmostEqual(CRotx(np.pi / 2), expected, delta=self.tol)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, -1j, 0]])
+        self.assertAllAlmostEqual(CRotx(np.pi), expected, delta=self.tol)
+
+    def test_C_y_rotation(self):
+        """Test controlled y rotation is correct"""
+        self.logTestName()
+
+        # test identity for theta=0
+        self.assertAllAlmostEqual(CRoty(0), np.identity(4), delta=self.tol)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1/np.sqrt(2)], [0, 0, 1/np.sqrt(2), 1/np.sqrt(2)]])
+        self.assertAllAlmostEqual(CRoty(np.pi / 2), expected, delta=self.tol)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
+        self.assertAllAlmostEqual(CRoty(np.pi), expected, delta=self.tol)
+
+    def test_C_z_rotation(self):
+        """Test controlled z rotation is correct"""
+        self.logTestName()
+
+        # test identity for theta=0
+        self.assertAllAlmostEqual(CRotz(0), np.identity(4), delta=self.tol)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j * np.pi / 4), 0], [0, 0, 0, np.exp(1j * np.pi / 4)]])
+        self.assertAllAlmostEqual(CRotz(np.pi / 2), expected, delta=self.tol)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])
+        self.assertAllAlmostEqual(CRotz(np.pi), expected, delta=self.tol)
+
+    def test_controlled_arbitrary_rotation(self):
+        """Test controlled arbitrary rotation is correct"""
+        self.logTestName()
+
+        # test identity for phi,theta,omega=0
+        self.assertAllAlmostEqual(CRot3(0,0,0), np.identity(4), delta=self.tol)
+
+        # test identity for phi,theta,omega=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
+        self.assertAllAlmostEqual(CRot3(np.pi,np.pi,np.pi), expected, delta=self.tol)
+
+        def arbitrary_Crotation(x, y, z):
+            """controlled arbitrary single qubit rotation"""
+            c = np.cos(y / 2)
+            s = np.sin(y / 2)
+            return np.array(
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
+                    [0, 0, np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c]
+                ]
+            )
+
+        a, b, c = 0.432, -0.152, 0.9234
+        self.assertAllAlmostEqual(
+            CRot3(a, b, c), arbitrary_Crotation(a, b, c), delta=self.tol
+        )
 
 class TestStateFunctions(BaseTest):
     """Arbitrary state and operator tests."""
@@ -403,14 +480,14 @@ class TestDefaultQubitDevice(BaseTest):
                 O = fn
 
             # calculate the expected output
-            if op.num_wires == 1 or op.num_wires == 0:
+            if op.num_wires == 1 or op.num_wires <= 0:
                 expected_out = self.dev._state.conj() @ np.kron(O, I) @ self.dev._state
             elif op.num_wires == 2:
                 expected_out = self.dev._state.conj() @ O @ self.dev._state
             else:
                 raise NotImplementedError(
                     "Test for operations with num_wires="
-                    + op.num_wires
+                    + str(op.num_wires)
                     + " not implemented."
                 )
 
@@ -466,6 +543,93 @@ class TestDefaultQubitDevice(BaseTest):
         expected = 0.5*(2*np.sin(2*theta)*np.cos(phi)**2+24*np.sin(phi)\
                     *np.cos(phi)*(np.sin(theta)-np.cos(theta))+35*np.cos(2*phi)+39)
         self.assertAlmostEqual(var, expected, delta=self.tol)
+
+    def test_var_estimate(self):
+        """Test that variance is not analytically calculated"""
+        self.logTestName()
+
+        dev = qml.device('default.qubit', wires=1, shots=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.var(qml.PauliX(0))
+
+        var = circuit()
+
+        # With 3 samples we are guaranteed to see a difference between
+        # an estimated variance an an analytically calculated one
+        self.assertTrue(var != 1.0)
+
+    def test_sample_dimensions(self):
+        """Tests if the samples returned by the sample function have
+        the correct dimensions
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        self.dev.apply('RX', wires=[0], par=[1.5708])
+        self.dev.apply('RX', wires=[1], par=[1.5708])
+
+        s1 = self.dev.sample('PauliZ', [0], [], 10)
+        self.assertAllEqual(s1.shape, (10,))
+
+        s2 = self.dev.sample('PauliZ', [1], [], 12)
+        self.assertAllEqual(s2.shape, (12,))
+
+        s3 = self.dev.sample('CZ', [0,1], [], 17)
+        self.assertAllEqual(s3.shape, (17,))
+
+    def test_sample_values(self):
+        """Tests if the samples returned by sample have
+        the correct values
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        self.dev.apply('RX', wires=[0], par=[1.5708])
+
+        s1 = self.dev.sample('PauliZ', [0], [], 10)
+
+        # s1 should only contain 1 and -1, which is guaranteed if
+        # they square to 1
+        self.assertAllAlmostEqual(s1**2, 1, delta=self.tol)
+
+    def test_sample_exception_analytic_mode(self):
+        """Tests if the sampling raises an error for sample size n=0
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        with self.assertRaisesRegex(
+            ValueError, "Calling sample with n = 0 is not possible."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = 0)
+
+        # self.def.shots = 0, so this should also fail
+        with self.assertRaisesRegex(
+            ValueError, "Calling sample with n = 0 is not possible."
+        ):
+            self.dev.sample('PauliZ', [0], [])
+
+    def test_sample_exception_wrong_n(self):
+        """Tests if the sampling raises an error for sample size n<0
+        or non-integer n
+        """
+        self.logTestName()
+        self.dev.reset()
+
+        with self.assertRaisesRegex(
+            ValueError, "The number of samples must be a positive integer."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = -12)
+
+        # self.def.shots = 0, so this should also fail
+        with self.assertRaisesRegex(
+            ValueError, "The number of samples must be a positive integer."
+        ):
+            self.dev.sample('PauliZ', [0], [], n = 12.3)
+
+
 
 class TestDefaultQubitIntegration(BaseTest):
     """Integration tests for default.qubit. This test ensures it integrates
@@ -615,12 +779,12 @@ class TestDefaultQubitIntegration(BaseTest):
 
         for g, qop in dev._operation_map.items():
             log.debug("\tTesting gate %s...", g)
-            self.assertTrue(dev.supported(g))
+            self.assertTrue(dev.supports_operation(g))
             dev.reset()
 
             op = getattr(qml.ops, g)
-            if op.num_wires == 0:
-                if g == "BasisState":
+            if op.num_wires <= 0:
+                if g == "BasisState" or g == "QubitStateVector":
                     wires = [0, 1]
                 else:
                     wires = [0]
@@ -679,11 +843,11 @@ class TestDefaultQubitIntegration(BaseTest):
 
         for g, qop in dev._observable_map.items():
             log.debug("\tTesting observable %s...", g)
-            self.assertTrue(dev.supported(g))
+            self.assertTrue(dev.supports_observable(g))
             dev.reset()
 
             op = getattr(qml.ops, g)
-            if op.num_wires == 0:
+            if op.num_wires < 0:
                 wires = [0]
             else:
                 wires = list(range(op.num_wires))
@@ -711,9 +875,9 @@ class TestDefaultQubitIntegration(BaseTest):
                 return expectation
 
             if op.num_params == 0:
-                self.assertAllEqual(circuit(), reference())
+                self.assertAllAlmostEqual(circuit(), reference(), delta=self.tol)
             elif g == "Hermitian":
-                self.assertAllEqual(circuit(H), reference(H))
+                self.assertAllAlmostEqual(circuit(H), reference(H), delta=self.tol)
 
     def test_two_qubit_observable(self):
         """Tests expval for two-qubit observables """

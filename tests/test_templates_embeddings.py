@@ -195,7 +195,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits))
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=features)
@@ -210,18 +210,16 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits))
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
-        assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**len(wires), ' \
-                                        'which is 4; got 5.'
+        assert excinfo.value.args[0] == "AmplitudeEmbedding requires the size of feature vector to be smaller than or equal to 2**len(wires), which is 4; got 5."
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8)])
-        assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**len(wires), ' \
-                                        'which is 4; got 2.'
+        assert excinfo.value.args[0] == 'AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), which is 4; got 2.'
 
     def test_amplitude_embedding_exception_wiresnolist(self):
         """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() raises an exception if ``wires`` is not
@@ -232,7 +230,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=3)
+            AmplitudeEmbedding(features=x, wires=3, pad=False, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
@@ -253,7 +251,7 @@ class TestSqueezingEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             SqueezingEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1)
-            return [qml.expval(qml.MeanPhoton(wires=0)), qml.expval(qml.MeanPhoton(wires=1))]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
 
@@ -270,7 +268,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='phase', c=1)
             Beamsplitter(pi/2, 0, wires=[0, 1])
             SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1)
-            return [qml.expval(qml.MeanPhoton(wires=0)), qml.expval(qml.MeanPhoton(wires=1))]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
 
@@ -336,7 +334,7 @@ class TestDisplacementEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             DisplacementEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1.)
-            return [qml.expval(qml.MeanPhoton(wires=0)), qml.expval(qml.MeanPhoton(wires=1))]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [0.01, 1.44], atol=0.001)
 
@@ -353,7 +351,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='phase', c=1.)
             Beamsplitter(pi/2, 0, wires=[0, 1])
             DisplacementEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1.)
-            return [qml.expval(qml.MeanPhoton(wires=0)), qml.expval(qml.MeanPhoton(wires=1))]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [0.089327, 2.724715], atol=0.01)
 

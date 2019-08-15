@@ -41,7 +41,7 @@ The quantum circuit function encapsulated by the QNode must be of the following 
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        return expval(qml.PauliZ(0))
+        return qml.expval(qml.PauliZ(0))
 
 Quantum circuit functions are a restricted subset of Python functions, adhering to the following
 constraints:
@@ -90,7 +90,7 @@ For example:
                 qml.RZ(x, wires=0)
                 qml.CNOT(wires=[0,1])
                 qml.RY(y, wires=1)
-                return expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0))
 
             result = my_quantum_function(np.pi/4, 0.7)
 
@@ -350,14 +350,24 @@ class QNode:
 
         # quantum circuit function return validation
         if isinstance(res, pennylane.operation.Observable):
-            self.output_type = float
+            if res.return_type == "sample":
+                # Squeezing ensures that there is only one array of values returned
+                # when only a single-mode sample is requested
+                self.output_conversion = np.squeeze
+            else:
+                self.output_conversion = float
+
             self.output_dim = 1
             res = (res,)
         elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
+
+            # Device already returns the correct numpy array,
+            # so no further conversion is required
+            self.output_conversion = np.asarray
             self.output_dim = len(res)
-            self.output_type = np.asarray
+
             res = tuple(res)
         else:
             raise QuantumFunctionError("A quantum function must return either a single measured observable "
@@ -583,8 +593,8 @@ class QNode:
         for op in self.ops:
             check_op(op)
 
-        ret = self.device.execute(self.queue, self.ev)
-        return self.output_type(ret)
+        ret = self.device.execute(self.queue, self.ev, self.variable_ops)
+        return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, **kwargs):
         """Evaluate the value of the given observables.
@@ -608,7 +618,7 @@ class QNode:
         Variable.kwarg_values = keyword_values
 
         self.device.reset()
-        ret = self.device.execute(self.queue, obs)
+        ret = self.device.execute(self.queue, obs, self.variable_ops)
         return ret
 
     def jacobian(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
@@ -657,6 +667,8 @@ class QNode:
             number of free parameters, and ``n_out`` is the number of expectation values returned
             by the QNode.
         """
+        # pylint: disable=too-many-statements
+
         # in QNode.construct we need to be able to (essentially) apply the unpacking operator to params
         if isinstance(params, numbers.Number):
             params = (params,)
@@ -666,6 +678,12 @@ class QNode:
         if not self.ops or not self.cache:
             # construct the circuit
             self.construct(params, circuit_kwargs)
+
+        sample_ops = [e for e in self.ev if e.return_type == "sample"]
+        if sample_ops:
+            names = [str(e) for e in sample_ops]
+            raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
+                                       "The following observable include sampling: {}".format('; '.join(names)))
 
         flat_params = np.array(list(_flatten(params)))
 
