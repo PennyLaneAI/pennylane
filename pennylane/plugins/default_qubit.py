@@ -80,7 +80,7 @@ Code details
 import warnings
 
 import numpy as np
-from scipy.linalg import expm, eigh
+from scipy.linalg import eigh
 
 from pennylane import Device
 
@@ -151,7 +151,7 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    return expm(-1j * theta/2 * X)
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * X
 
 
 def Roty(theta):
@@ -162,7 +162,7 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    return expm(-1j * theta/2 * Y)
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Y
 
 
 def Rotz(theta):
@@ -173,7 +173,7 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    return expm(-1j * theta/2 * Z)
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Z
 
 
 def Rot3(a, b, c):
