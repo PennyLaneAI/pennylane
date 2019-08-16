@@ -50,10 +50,10 @@ as well as the conventions chosen for their implementation.
     ops/cv
 
 
-General observables
--------------------
+General operations
+------------------
 
-Observables that can be used on both qubit and CV devices.
+Operations and observables that can be used on both qubit and CV devices.
 """
 #pylint: disable=too-few-public-methods,function-redefined
 
