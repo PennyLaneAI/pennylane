@@ -310,8 +310,8 @@ dev = qml.device("default.qubit", wires=2)
 # cascade of rotations around the z axis).
 #
 # The circuit is coded according to the scheme in `Möttönen, et al.
-# (2004) <https://arxiv.org/abs/quant-ph/0407010>`__, or - as presented
-# for positive vectors only - in `Schuld and Petruccione
+# (2004) <https://arxiv.org/abs/quant-ph/0407010>`__, or—as presented
+# for positive vectors only—in `Schuld and Petruccione
 # (2018) <https://link.springer.com/book/10.1007/978-3-319-96424-9>`__. We
 # had to also decompose controlled Y-axis rotations into more basic
 # circuits following `Nielsen and Chuang
@@ -468,7 +468,7 @@ Y = data[:, -1]
 # with the dimensions (dim1, dim2). Some of them still separate the
 # classes well, while others are less informative.
 #
-# *Note: To run the following cell you need the matplotlib library.*
+# *Note: To run the following code you need the matplotlib library.*
 
 import matplotlib.pyplot as plt
 

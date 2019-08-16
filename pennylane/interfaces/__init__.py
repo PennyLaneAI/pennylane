@@ -20,7 +20,7 @@
 
 .. currentmodule:: pennylane.interfaces
 
-PennyLane now provides support for additional classical
+PennyLane provides support for additional classical
 machine learning interfaces, specifically PyTorch and TensorFlow eager execution mode.
 
 Depending on the classical machine learning interface chosen,

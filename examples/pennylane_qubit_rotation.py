@@ -118,7 +118,7 @@ from pennylane import numpy as np
 # PennyLane supports devices using both the qubit model of quantum computation and devices
 # using the CV model of quantum computation. In fact, even a hybrid computation containing
 # both qubit and CV quantum nodes is possible; see the
-# :ref:`hybrid computation example <hybrid_computation_example>` in the next tutorial for more details.
+# :ref:`hybrid computation example <hybrid_computation_example>` for more details.
 #
 # For this tutorial, we are using the qubit model, so let's initialize the ``'default.qubit'`` device
 # provided by PennyLane; a simple pure-state qubit simulator.

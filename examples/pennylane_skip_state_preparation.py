@@ -101,7 +101,7 @@ dev = qml.device("forest.qvm", device="3q-pyqvm", shots=1000)
 # When defining the qnode, we introduce as input a Hermitian operator
 # :math:`A` that specifies the expectation value being evaluated. This
 # choice later allows us to easily evaluate several expectation values
-# without having to define a new qnode each time. Useful!
+# without having to define a new qnode each time. 
 
 @qml.qnode(dev)
 def circuit(params, A=None):
