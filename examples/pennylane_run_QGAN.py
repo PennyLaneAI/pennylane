@@ -210,7 +210,7 @@ for it in range(200):
 # At the optimum of the generator, the probability for the discriminator
 # to be fooled should be close to 1.
 
-print(prob_fake_true(disc_weights))
+print(prob_fake_true(gen_weights, disc_weights))
 
 
 ##############################################################################

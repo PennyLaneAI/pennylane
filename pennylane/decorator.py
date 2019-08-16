@@ -19,7 +19,8 @@ The QNode decorator
 
 **Module name:** :mod:`pennylane.decorator`
 
-Decorator for converting a quantum circuit function containing PennyLane quantum
+The standard way for creating 'quantum nodes' or QNodes is the provided
+`qnode` decorator. This decorator converts a quantum circuit function containing PennyLane quantum
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
 This decorator is provided for convenience, and allows a quantum circuit function to be
@@ -30,11 +31,6 @@ Note that the decorator completely replaces the Python-defined
 function with a :mod:`QNode <pennylane.qnode>` of the same name - as such, the original
 function is no longer accessible (but is accessible via the
 :attr:`~.QNode.func` attribute).
-
-
-.. raw:: html
-
-    <h3>Example</h3>
 
 .. code-block:: python
 
@@ -83,12 +79,16 @@ build a hybrid computation. For example,
         qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)
 
-.. autofunction:: qnode
-
 .. automodule:: pennylane.interfaces
    :members:
    :private-members:
    :inherited-members:
+
+.. raw:: html
+
+    <h2>Code details</h2>
+
+.. autofunction:: pennylane.decorator.qnode
 """
 # pylint: disable=redefined-outer-name
 from functools import wraps, lru_cache

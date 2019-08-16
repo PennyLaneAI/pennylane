@@ -162,7 +162,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/init
-   code/decorator
+   Creating QNodes <code/decorator>
    code/ops
    code/measure
    code/templates

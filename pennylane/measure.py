@@ -52,6 +52,7 @@ Summary
 .. autosummary::
    expval
    var
+   sample
 
 Code details
 ^^^^^^^^^^^^

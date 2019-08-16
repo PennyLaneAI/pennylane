@@ -16,8 +16,6 @@
 
     <h2>Classical interfaces</h2>
 
-**Module name:** :mod:`pennylane.interfaces`
-
 .. currentmodule:: pennylane.interfaces
 
 PennyLane provides support for additional classical
@@ -59,7 +57,7 @@ with other classical machine learning libraries; in such a case, the QNode is mo
     :maxdepth: 1
     :hidden:
 
-    Creating QNodes <self>
+    self
 
 .. rst-class:: contents local topic
 

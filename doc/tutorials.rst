@@ -13,6 +13,10 @@ interesting QML problems in PennyLane!
 
 :html:`<h3>Learn the PennyLane basics</h3>`
 
+The following tutorials introduce the core PennyLane concepts, including QNodes,
+plugins, and devices, via simple and easy to follow quantum machine learning
+examples.
+
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to rotate a qubit.
     :figure: ../examples/figures/bloch.png
@@ -24,14 +28,13 @@ interesting QML problems in PennyLane!
     :description: :ref:`gaussian_transformation`
 
 .. customgalleryitem::
-    :tooltip: Multiple expectation values, Jacobians, and keyword arguments.
-    :description: :ref:`advanced_features`
-
-
-.. customgalleryitem::
     :tooltip: Use quantum machine learning in a multi-device quantum algorithm.
     :figure: ../examples/figures/photon_redirection.png
     :description: :ref:`plugins_hybrid`
+
+.. customgalleryitem::
+    :tooltip: Multiple expectation values, Jacobians, and keyword arguments.
+    :description: :ref:`advanced_features`
 
 .. customgalleryitem::
     :tooltip: Extend PyTorch with real quantum computing power.
@@ -42,6 +45,9 @@ interesting QML problems in PennyLane!
 
 
 :html:`<h3>Quantum machine learning algorithms</h3>`
+
+Take a deeper dive into quantum machine learning, exploring cutting edge algorithms
+using PennyLane and near term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: Do arbitrary state preparation on a real quantum computer.
@@ -73,13 +79,13 @@ interesting QML problems in PennyLane!
     :hidden:
     :maxdepth: 2
 
-    tutorials/pennylane_qubit_rotation
-    tutorials/pennylane_gaussian_transformation
-    tutorials/pennylane_advanced_usage
-    tutorials/pennylane_skip_plugins_hybrid
-    tutorials/pennylane_skip_pytorch_noise
-    tutorials/pennylane_skip_state_preparation
-    tutorials/pennylane_QGAN
-    tutorials/pennylane_skip_variational_classifier
-    tutorials/pennylane_skip_quantum_neural_net
-    tutorials/pennylane_variational_quantum_eigensolver
+    tutorials/pennylane_run_qubit_rotation
+    tutorials/pennylane_run_gaussian_transformation
+    tutorials/pennylane_plugins_hybrid
+    tutorials/pennylane_run_advanced_usage
+    tutorials/pennylane_pytorch_noise
+    tutorials/pennylane_state_preparation
+    tutorials/pennylane_run_QGAN
+    tutorials/pennylane_variational_classifier
+    tutorials/pennylane_quantum_neural_net
+    tutorials/pennylane_run_variational_quantum_eigensolver

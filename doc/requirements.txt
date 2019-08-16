@@ -1,9 +1,9 @@
 autograd
 numpy
 scipy
-tensorflow==1.12
-https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp35-cp35m-linux_x86_64.whl
-torchvision
+tensorflow==1.13.2
+https://download.pytorch.org/whl/cpu/torch-1.2.0+cpu-cp35-cp35m-manylinux1_x86_64.whl
+https://download.pytorch.org/whl/cpu/torchvision-0.4.0+cpu-cp35-cp35m-manylinux1_x86_64.whl
 toml
 appdirs
 sphinxcontrib-bibtex

@@ -907,9 +907,9 @@ div.topic.contents {
 div.topic.contents > ul {
     padding-left: 20px;
     padding-left: 20px;
-    /*max-height: 100px;*/
+    max-height: 200px;
     display: flex;
-    /*flex-direction: column;*/
+    flex-direction: column;
     flex-wrap: wrap;
 }
 
