@@ -592,11 +592,11 @@ class Interferometer(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         N = len(p[0])
-        X = p[0].real
-        Y = p[0].imag
+        A = p[0].real
+        B = p[0].imag
 
         rows = np.arange(2 * N).reshape(2, -1).T.flatten()
-        S = np.vstack([np.hstack([X, -Y]), np.hstack([Y, X])])[:, rows][rows]
+        S = np.vstack([np.hstack([A, -B]), np.hstack([B, A])])[:, rows][rows]
 
         M = np.eye(2 * N + 1)
         M[1 : 2 * N + 1, 1 : 2 * N + 1] = S
