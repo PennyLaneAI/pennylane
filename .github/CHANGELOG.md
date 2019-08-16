@@ -61,6 +61,7 @@
   Variance and Expectation. These new values can be assigned to the `return_type`
   attribute of an `Observable`.
   [#290](https://github.com/XanaduAI/pennylane/pull/290)
+
 ### Bug fixes
 
 * Fixed a bug where a `PolyXP` observable would fail if applied to subsets
