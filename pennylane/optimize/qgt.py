@@ -13,9 +13,6 @@
 # limitations under the License.
 """QGT optimizer"""
 #pylint: disable=too-many-branches
-from collections import Sequence
-
-import autograd
 import autograd.numpy as np
 
 from pennylane.utils import _flatten, unflatten
@@ -74,7 +71,7 @@ class QGTOptimizer(GradientDescentOptimizer):
             quantum gradient tensor
     """
     def __init__(self, stepsize=0.01, diag_approx=False):
-        self._stepsize = stepsize
+        super().__init__(stepsize)
         self.diag_approx = diag_approx
         self.metric_tensor = None
 
@@ -91,6 +88,7 @@ class QGTOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
+        # pylint: disable=arguments-differ
         if not hasattr(qnode, "metric_tensor"):
             raise ValueError("Objective function must be a QNode")
 

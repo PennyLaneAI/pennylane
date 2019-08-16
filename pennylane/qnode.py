@@ -133,11 +133,8 @@ Code details
 ~~~~~~~~~~~~
 """
 from collections.abc import Sequence
-import itertools
 import copy
-import warnings
-
-import networkx as nx
+import itertools
 import numbers
 
 import autograd.numpy as np
@@ -145,14 +142,13 @@ import autograd.extend as ae
 import autograd.builtins
 
 from scipy import linalg
+import networkx as nx
 
 import pennylane
 import pennylane.operation
 
 from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, to_DiGraph
 from .variable import Variable
-
-import time
 
 
 def pop_jacobian_kwargs(kwargs):
@@ -402,6 +398,7 @@ class QNode:
             does not support differentiating with respect to keyword arguments. Instead,
             keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
         """
+        # pylint: disable=too-many-statements
         if not self.ops or not self.cache:
             # construct the circuit
             self.construct(args, kwargs)
