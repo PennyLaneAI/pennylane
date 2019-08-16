@@ -53,6 +53,10 @@
   class information arguments (`dev.supports_observable(qml.PauliX)`).
   [#276](https://github.com/XanaduAI/pennylane/pull/276)
 
+* The one-qubit rotations in `pennylane.plugins.default_qubit` no longer depend on Scipy's `expm`. Instead 
+  they are calculated with Euler's formula.
+  [#292](https://github.com/XanaduAI/pennylane/pull/292)
+
 ### Bug fixes
 
 * Fixed a bug where a `PolyXP` observable would fail if applied to subsets
@@ -63,7 +67,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Josh Izaac, Johannes Jakob Meyer.
+Aroosa Ijaz, Josh Izaac, Johannes Jakob Meyer, Roeland Wiersema.
 
 ---
 
