@@ -14,8 +14,20 @@
 """
 .. _qnode_decorator:
 
+Creating QNodes
+===============
+
+:ref:`QNodes <quantum_nodes>` form part of the core structure of PennyLane --- they are used
+to encapsulate a quantum function that runs on a quantum hardware device.
+
+By defining QNodes, either via the :mod:`QNode decorator <pennylane.decorator>`
+or the :mod:`QNode class <pennylane.qnode>`, dispatching them to devices, and
+combining them with classical processing, it is easy to create arbitrary
+classical-quantum hybrid computations.
+
+
 The QNode decorator
-===================
+-------------------
 
 **Module name:** :mod:`pennylane.decorator`
 
@@ -78,6 +90,10 @@ build a hybrid computation. For example,
 
         qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)
+
+
+Machine learning interfaces
+---------------------------
 
 .. automodule:: pennylane.interfaces
    :members:
