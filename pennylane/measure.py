@@ -95,7 +95,7 @@ class ExpvalFactory:
 
             return op
 
-        else:
+        if len(ops) > 1:
             # tensor of observables
             tensor_ops = Tensor()
             tensor_ops.return_type = "expectation"

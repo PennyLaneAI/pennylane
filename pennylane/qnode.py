@@ -142,8 +142,7 @@ import autograd.numpy as np
 import autograd.extend as ae
 import autograd.builtins
 
-import pennylane.operation
-
+import pennylane
 from pennylane.utils import _flatten, unflatten
 from .variable import Variable
 

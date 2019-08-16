@@ -472,7 +472,7 @@ class DefaultQubit(Device):
             if isinstance(observable, Tensor):
                 # unpack the observable matrix
                 # TODO: merge the matrix generator functions
-                A = self._get_tensor_operator_matrix(observable, par)
+                A = self._get_tensor_operator_matrix(observable)
                 ev = self.ev(A, wires)
             else:
                 A = self._get_operator_matrix(observable, par)
@@ -527,7 +527,7 @@ class DefaultQubit(Device):
             return A
         return A(*par)
 
-    def _get_tensor_operator_matrix(self, tensor, par):
+    def _get_tensor_operator_matrix(self, tensor):
         """Get the operator matrix for a given tensor of operations.
 
         Args:
