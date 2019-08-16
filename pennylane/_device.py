@@ -222,11 +222,11 @@ class Device(abc.ABC):
             self.pre_measure()
 
             for obs in observables:
-                if obs.return_type == Expectation:
+                if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == Variance:
+                elif obs.return_type is Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == Sample:
+                elif obs.return_type is Sample:
                     if not hasattr(obs, "num_samples"):
                         raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
                     results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
@@ -241,9 +241,9 @@ class Device(abc.ABC):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(obs.return_type == Sample for obs in observables):
+            if all(obs.return_type is Sample for obs in observables):
                 return np.asarray(results)
-            if any(obs.return_type == Sample for obs in observables):
+            if any(obs.return_type is Sample for obs in observables):
                 return np.asarray(results, dtype="object")
 
             return np.asarray(results)

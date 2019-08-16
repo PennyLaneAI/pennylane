@@ -72,7 +72,7 @@ class TestExpval:
         @qml.qnode(dev)
         def circuit():
             res = qml.expval(qml.PauliZ(0))
-            assert res.return_type == Expectation
+            assert res.return_type is Expectation
             return res
 
         circuit()
@@ -131,7 +131,7 @@ class TestDeprecatedExpval:
     def test_expval_factory_getattr_return_type_is_expectation(self):
         """Test that the named attribute of the :class:`ExpvalFactory`
         contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
-        assert qml.expval.__getattr__('Hermitian').__dict__["return_type"] == Expectation
+        assert qml.expval.__getattr__('Hermitian').__dict__["return_type"] is Expectation
 
     def test_expval_factory_call_return_type_is_expectation(self):
         """Test that the function call operator of the :class:`ExpvalFactory`
@@ -141,7 +141,7 @@ class TestDeprecatedExpval:
         @qml.qnode(dev)
         def circuit():
             res = qml.PauliZ(0)
-            assert qml.expval.__call__(res).__dict__["return_type"] == Expectation
+            assert qml.expval.__call__(res).__dict__["return_type"] is Expectation
             return res
 
         circuit()
@@ -185,7 +185,7 @@ class TestVar:
         @qml.qnode(dev)
         def circuit():
             res = qml.var(qml.PauliZ(0))
-            assert res.return_type == Variance
+            assert res.return_type is Variance
             return res
 
         circuit()
@@ -384,7 +384,7 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             res = qml.sample(qml.PauliZ(0))
-            assert res.return_type == Sample
+            assert res.return_type is Sample
             return res
 
         circuit()
