@@ -866,6 +866,97 @@ class TestDefaultQubitIntegration:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
+    # This test is ran with two Z expvals
+    @pytest.mark.parametrize("name,par,expected_output", [
+        ("BasisState", [0, 0], [1, 1]),
+        ("BasisState", [1, 0], [-1, 1]),
+        ("BasisState", [0, 1], [1, -1]),
+        ("QubitStateVector", [1, 0, 0, 0], [1, 1]),
+        ("QubitStateVector", [0, 0, 1, 0], [-1, 1]),
+        ("QubitStateVector", [0, 1, 0, 0], [1, -1]),
+    ])
+    def test_supported_state_preparation(self, qubit_device_2_wires, tol, name, par, expected_output):
+        """Tests supported state preparations"""
+
+        op = getattr(qml.ops, name)
+
+        assert qubit_device_2_wires.supports_operation(name)
+
+        @qml.qnode(qubit_device_2_wires)
+        def circuit():
+            op(np.array(par), wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    # This test is ran on the state |0> with one Z expvals
+    @pytest.mark.parametrize("name,par,expected_output", [
+        ("PhaseShift", [math.pi/2], 1),
+        ("PhaseShift", [-math.pi/4], 1),
+        ("RX", [math.pi/2], 0),
+        ("RX", [-math.pi/4], 1/math.sqrt(2)),
+        ("RY", [math.pi/2], 0),
+        ("RY", [-math.pi/4], 1/math.sqrt(2)),
+        ("RZ", [math.pi/2], 1),
+        ("RZ", [-math.pi/4], 1),
+        ("Rot", [math.pi/2, 0, 0], 1),
+        ("Rot", [0, math.pi/2, 0], 0),
+        ("Rot", [0, 0, math.pi/2], 1),
+        ("Rot", [math.pi/2, -math.pi/4, -math.pi/4], 1/math.sqrt(2)),
+        ("Rot", [-math.pi/4, math.pi/2, math.pi/4], 0),
+        ("Rot", [-math.pi/4, math.pi/4, math.pi/2], 1/math.sqrt(2)),
+        ("QubitUnitary", [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])], 0),
+        ("QubitUnitary", [np.array([[-1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), 1j/math.sqrt(2)]])], 0),
+    ])
+    def test_supported_gate_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, par, expected_output):
+        """Tests supported gates that act on a single wire that are parameterized"""
+    
+        op = getattr(qml.ops, name)
+
+        assert qubit_device_1_wire.supports_operation(name)
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            op(*par, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    # This test is ran against the state |Phi+> with two Z expvals
+    @pytest.mark.parametrize("name,par,expected_output", [
+        ("CRX", [0], [-1/2, -1/2]),
+        ("CRX", [-math.pi], [-1/2, 1]),
+        ("CRX", [math.pi/2], [-1/2, 1/4]),
+        ("CRY", [0], [-1/2, -1/2]),
+        ("CRY", [-math.pi], [-1/2, 1]),
+        ("CRY", [math.pi/2], [-1/2, 1/4]),
+        ("CRZ", [0], [-1/2, -1/2]),
+        ("CRZ", [-math.pi], [-1/2, -1/2]),
+        ("CRZ", [math.pi/2], [-1/2, -1/2]),
+        ("CRot", [math.pi/2, 0, 0], [-1/2, -1/2]),
+        ("CRot", [0, math.pi/2, 0], [-1/2, 1/4]),
+        ("CRot", [0, 0, math.pi/2], [-1/2, -1/2]),
+        ("CRot", [math.pi/2, 0, -math.pi], [-1/2, -1/2]),
+        ("CRot", [0, math.pi/2, -math.pi], [-1/2, 1/4]),
+        ("CRot", [-math.pi, 0, math.pi/2], [-1/2, -1/2]),
+        ("QubitUnitary", [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])], [-1/2, -1/2]),
+        ("QubitUnitary", [np.array([[-1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, -1]])], [-1/2, -1/2]),
+    ])
+    def test_supported_gate_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, par, expected_output):
+        """Tests supported gates that act on two wires wires that are parameterized"""
+    
+        op = getattr(qml.ops, name)
+
+        assert qubit_device_2_wires.supports_operation(name)
+
+        @qml.qnode(qubit_device_2_wires)
+        def circuit():
+            qml.QubitStateVector(np.array([1/2, 0, 0, math.sqrt(3)/2]), wires=[0, 1])
+            op(*par, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
+
     
     
 
