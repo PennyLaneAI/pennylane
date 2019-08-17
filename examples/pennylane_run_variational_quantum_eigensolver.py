@@ -16,7 +16,7 @@ circuit to minimize the squared energy expectation for a Hamiltonian
     \langle \psi_v | H | \psi_v \rangle^2  =( 0.1 \langle \psi_{v} | X_2 |
     \psi_v \rangle + 0.5 \langle \psi_v | Y_2 | \psi_v \rangle )^2.
 
-Here, :math:`|\psi`\_v\rangle` is the state
+Here, :math:`|\psi_v\rangle` is the state
 obtained after applying a quantum circuit to an initial state
 :math:`|0\rangle`. The quantum circuit depends on trainable variables
 :math:`v = \{v_1, v_2\}`, and :math:`X_2`, :math:`Y_2` denote the
