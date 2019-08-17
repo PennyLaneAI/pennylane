@@ -9,7 +9,7 @@ consider the simple case of **qubit rotation** the PennyLane version of the 'Hel
 example.
 
 The task at hand is to optimize two rotation gates in order to flip a single
-qubit from state :math:`\ket{0}` to state :math:`\ket{1}`.
+qubit from state :math:`\left|0\right\rangle` to state :math:`\left|1\right\rangle`.
 
 
 The quantum circuit
@@ -56,13 +56,13 @@ of the Pauli-Z operator
 Using the above to calculate the exact expectation value, we find that
 
 .. math::
-    \braketT{\psi}{\sigma_z}{\psi}
-    = \braketT{0}{R_x(\phi_1)^\dagger R_y(\phi_2)^\dagger \sigma_z  R_y(\phi_2) R_x(\phi_1)}{0}
+    \langle \psi \mid \sigma_z \mid \psi \rangle
+    = \langle 0 \mid R_x(\phi_1)^\dagger R_y(\phi_2)^\dagger \sigma_z  R_y(\phi_2) R_x(\phi_1) \mid 0 \rangle
     = \cos(\phi_1)\cos(\phi_2).
 
 Depending on the circuit parameters :math:`\phi_1` and :math:`\phi_2`, the
-output expectation lies between :math:`1` (if :math:`\ket{\psi} = \ket{0}`)
-and :math:`-1` (if :math:`\ket{\psi} = \ket{1}`).
+output expectation lies between :math:`1` (if :math:`\left|\psi\right\rangle = \left|0\right\rangle`)
+and :math:`-1` (if :math:`\left|\psi\right\rangle = \left|1\right\rangle`).
 
 Let's see how we can easily implement and optimize this circuit using PennyLane.
 """
@@ -296,8 +296,8 @@ print(dcircuit(0.54, 0.12))
 #
 # Next, let's make use of PennyLane's built-in optimizers to optimize the two circuit
 # parameters :math:`\phi_1` and :math:`\phi_2` such that the qubit, originally in state
-# :math:`\ket{0}`, is rotated to be in state :math:`\ket{1}`. This is equivalent to measuring a
-# Pauli-Z expectation value of :math:`-1`, since the state :math:`\ket{1}` is an eigenvector
+# :math:`\left|0\right\rangle`, is rotated to be in state :math:`\left|1\right\rangle`. This is equivalent to measuring a
+# Pauli-Z expectation value of :math:`-1`, since the state :math:`\left|1\right\rangle` is an eigenvector
 # of the Pauli-Z matrix with eigenvalue :math:`\lambda=-1`.
 #
 # In other words, the optimization procedure will find the weights
@@ -352,10 +352,10 @@ print("Optimized rotation angles: {}".format(params))
 ################################################################################
 # We can see that the optimization converges after approximately 40 steps.
 #
-# Substituting this into the theoretical result :math:`\braketT{\psi}{\sigma_z}{\psi} = \cos\phi_1\cos\phi_2`,
+# Substituting this into the theoretical result :math:`\langle \psi \mid \sigma_z \mid \psi \rangle = \cos\phi_1\cos\phi_2`,
 # we can verify that this is indeed one possible value of the circuit parameters that
-# produces :math:`\braketT{\psi}{\sigma_z}{\psi}=-1`, resulting in the qubit being rotated
-# to the state :math:`\ket{1}`.
+# produces :math:`\langle \psi \mid \sigma_z \mid \psi \rangle=-1`, resulting in the qubit being rotated
+# to the state :math:`\left|1\right\rangle`.
 #
 # .. note::
 #

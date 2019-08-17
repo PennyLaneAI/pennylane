@@ -36,7 +36,7 @@ What is this circuit doing?
    albeit a rotation (by angle :math:`\phi`) instead of a displacement.
 
 4. **Finally, we measure the mean photon number** :math:`\langle\hat{n}\rangle =
-   \langle\ad\a\rangle`. This quantity, which tells us the average amount of photons in the final state, is proportional to the energy of the photonic system.
+   \langle\hat{a}^\dagger \hat{a}\rangle`. This quantity, which tells us the average amount of photons in the final state, is proportional to the energy of the photonic system.
 
 The aim of this tutorial is to optimize the circuit parameters :math:`(\alpha, \phi)`
 such that the mean photon number is equal to one. The rotation gate is actually a

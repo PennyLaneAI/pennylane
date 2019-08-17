@@ -57,8 +57,8 @@ print(circuit1(np.pi / 2))
 # .. note::
 #
 #     It is important to emphasize that the expectation values in ``circuit`` are both **local**,
-#     i.e., this circuit is evaluating :math:`\braket{\sigma_z}_0` and :math:`\braket{\sigma_z}_1`,
-#     not :math:`\braket{\sigma_z\otimes \sigma_z}_{01}` (where the subscript denotes which wires the
+#     i.e., this circuit is evaluating :math:`\left\langle \sigma_z\right\rangle_0` and :math:`\left\langle \sigma_z\right\rangle_1`,
+#     not :math:`\left\langle \sigma_z\otimes \sigma_z\right\rangle_{01}` (where the subscript denotes which wires the
 #     observable is located on).
 #
 # We may even mix different return types, for example expectation values and variances:
