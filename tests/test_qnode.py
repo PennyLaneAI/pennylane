@@ -25,61 +25,7 @@ from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CR
 
 import pennylane as qml
 from pennylane._device import Device
-from pennylane.qnode import QNode, QuantumFunctionError, _flatten, unflatten
-
-
-flat_dummy_array = np.linspace(-1, 1, 64)
-test_shapes = [
-    (64,),
-    (64, 1),
-    (32, 2),
-    (16, 4),
-    (8, 8),
-    (16, 2, 2),
-    (8, 2, 2, 2),
-    (4, 2, 2, 2, 2),
-    (2, 2, 2, 2, 2, 2),
-]
-
-
-class TestHelperMethods:
-    """Tests the internal helper methods of QNode"""
-
-    @pytest.mark.parametrize("shape", test_shapes)
-    def test_flatten(self, shape):
-        """Tests that _flatten successfully flattens multidimensional arrays."""
-
-        reshaped = np.reshape(flat_dummy_array, shape)
-        flattened = np.array([x for x in _flatten(reshaped)])
-
-        assert flattened.shape == flat_dummy_array.shape
-        assert np.array_equal(flattened, flat_dummy_array)
-
-    @pytest.mark.parametrize("shape", test_shapes)
-    def test_unflatten(self, shape):
-        """Tests that _unflatten successfully unflattens multidimensional arrays."""
-
-        reshaped = np.reshape(flat_dummy_array, shape)
-        unflattened = np.array([x for x in unflatten(flat_dummy_array, reshaped)])
-
-        assert unflattened.shape == reshaped.shape
-        assert np.array_equal(unflattened, reshaped)
-
-    def test_unflatten_error_unsupported_model(self):
-        """Tests that unflatten raises an error if the given model is not supported"""
-
-        with pytest.raises(TypeError, match="Unsupported type in the model"):
-            model = lambda x: x  # not a valid model for unflatten
-            unflatten(flat_dummy_array, model)
-
-    def test_unflatten_error_too_many_elements(self):
-        """Tests that unflatten raises an error if the given iterable has
-           more elements than the model"""
-
-        reshaped = np.reshape(flat_dummy_array, (16, 2, 2))
-
-        with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
-            unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
+from pennylane.qnode import QNode, QuantumFunctionError
 
 
 class TestQNodeOperationQueue:
@@ -1744,6 +1690,131 @@ class TestMetricTensor:
 
         G3[0, 1] = (exK01 - exK0*exK1)/4
         G3[1, 0] = (exK01 - exK0*exK1)/4
+
+        assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
+
+        # ============================================
+        # Finally, double check that the entire metric
+        # tensor is as computed.
+
+        G_expected = block_diag(G1, G2, G3)
+        assert np.allclose(G, G_expected, atol=tol, rtol=0)
+
+    def test_evaluate_diag_approx_metric_tensor(self, tol):
+        """Test that a block diagonal metric tensor under the
+        diagonal approximation evaluates correctly."""
+        dev = qml.device('default.qubit', wires=3)
+
+        def non_parametrized_layer(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.RZ(a, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(b, wires=1)
+            qml.Hadamard(wires=0)
+
+        a = 0.5
+        b = 0.1
+        c = 0.5
+
+        @qml.qnode(dev)
+        def final(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            qml.RY(f, wires=1)
+            qml.RZ(g, wires=2)
+            qml.RX(h, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        x, y, z, h, g, f = params
+
+        G = final.metric_tensor(x, y, z, h, g, f, diag_approx=True)
+
+        # ============================================
+        # Test block diag metric tensor of first layer is correct.
+        # We do this by comparing against the known analytic result.
+        # First layer include the non_parametrized_layer,
+        # followed by observables corresponding to generators of:
+        #   qml.RX(x, wires=0)
+        #   qml.RY(y, wires=1)
+        #   qml.RZ(z, wires=2)
+
+        G1 = np.zeros([3, 3])
+
+        # diag elements
+        G1[0, 0] = np.sin(a)**2/4
+        G1[1, 1] = (
+            16 * np.cos(a) ** 2 * np.sin(b) ** 3 * np.cos(b) * np.sin(2 * c)
+            + np.cos(2 * b) * (2 - 8 * np.cos(a) ** 2 * np.sin(b) ** 2 * np.cos(2 * c))
+            + np.cos(2 * (a - b))
+            + np.cos(2 * (a + b))
+            - 2 * np.cos(2 * a)
+            + 14
+        ) / 64
+        G1[2, 2] = (3-np.cos(2*a)-2*np.cos(a)**2*np.cos(2*(b+c)))/16
+
+        assert np.allclose(G[:3, :3], G1, atol=tol, rtol=0)
+
+        # =============================================
+        # Test metric tensor of second layer is correct.
+        # We do this by computing the required expectation values
+        # numerically.
+        # The second layer includes the non_parametrized_layer,
+        # RX, RY, RZ gates (x, y, z params), a 2nd non_parametrized_layer,
+        # followed by the qml.RY(f, wires=2) operation.
+        #
+        # Observable is simply generator of:
+        #   qml.RY(f, wires=2)
+        #
+        # Note: since this layer only consists of a single parameter,
+        # only need to compute a single diagonal element.
+
+        @qml.qnode(dev)
+        def layer2_diag(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            qml.RY(f, wires=2)
+            return qml.var(qml.PauliX(1))
+
+        G2 = layer2_diag(x, y, z, h, g, f)/4
+        assert np.allclose(G[3:4, 3:4], G2, atol=tol, rtol=0)
+
+        # =============================================
+        # Test block diag metric tensor of third layer is correct.
+        # We do this by computing the required expectation values
+        # numerically using multiple circuits.
+        # The second layer includes the non_parametrized_layer,
+        # RX, RY, RZ gates (x, y, z params), and a 2nd non_parametrized_layer.
+        #
+        # Observables are the generators of:
+        #   qml.RY(f, wires=1)
+        #   qml.RZ(g, wires=2)
+        G3 = np.zeros([2, 2])
+
+        @qml.qnode(dev)
+        def layer3_diag(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
+
+        # calculate the diagonal terms
+        varK0, varK1 = layer3_diag(x, y, z, h, g, f)
+        G3[0, 0] = varK0/4
+        G3[1, 1] = varK1/4
 
         assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
 

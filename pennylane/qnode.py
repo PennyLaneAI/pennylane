@@ -97,13 +97,6 @@ For example:
 
 .. currentmodule:: pennylane.qnode
 
-Auxiliary functions
--------------------
-
-.. autosummary::
-   _inv_dict
-   _get_default_args
-
 
 QNode methods
 -------------
@@ -392,6 +385,10 @@ class QNode:
                 Here we are not concerned with their values, but with their structure.
                 Each free param is replaced with a :class:`~.variable.Variable` instance.
 
+        Keyword Args:
+            diag_approx (bool): If ``True``, forces the diagonal
+                approximation. Default is ``False``.
+
         .. note::
 
             Additional keyword arguments may be passed to the quantum circuit function, however PennyLane
@@ -399,6 +396,8 @@ class QNode:
             keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
         """
         # pylint: disable=too-many-statements
+        diag_approx = kwargs.pop("diag_approx", False)
+
         if not self.ops or not self.cache:
             # construct the circuit
             self.construct(args, kwargs)
@@ -450,6 +449,8 @@ class QNode:
 
             obs = []
             first_order = []
+            second_order = []
+            V = None
             scale = []
 
             # for each operator, get the generator
@@ -467,20 +468,23 @@ class QNode:
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
                     variance = pennylane.var(pennylane.Hermitian(gen, w, do_queue=False))
-                    first_order.append((n, expand(gen, w, self.num_wires)))
+
+                    if not diag_approx:
+                        first_order.append((n, expand(gen, w, self.num_wires)))
 
                 elif issubclass(gen, pennylane.operation.Observable):
                     # generator is an existing PennyLane operation
                     variance = pennylane.var(gen(w, do_queue=False))
 
-                    if issubclass(gen, pennylane.ops.PauliX):
-                        mat = np.array([[0, 1], [1, 0]])
-                    elif issubclass(gen, pennylane.ops.PauliY):
-                        mat = np.array([[0, -1j], [1j, 0]])
-                    elif issubclass(gen, pennylane.ops.PauliZ):
-                        mat = np.array([[1, 0], [0, -1]])
+                    if not diag_approx:
+                        if issubclass(gen, pennylane.ops.PauliX):
+                            mat = np.array([[0, 1], [1, 0]])
+                        elif issubclass(gen, pennylane.ops.PauliY):
+                            mat = np.array([[0, -1j], [1j, 0]])
+                        elif issubclass(gen, pennylane.ops.PauliZ):
+                            mat = np.array([[1, 0], [0, -1]])
 
-                    first_order.append((n, expand(mat, w, self.num_wires)))
+                        first_order.append((n, expand(mat, w, self.num_wires)))
 
                 else:
                     raise QuantumFunctionError(
@@ -491,30 +495,30 @@ class QNode:
                 obs.append(variance)
                 scale.append(s)
 
-            second_order = []
-            for i, j in itertools.product(range(len(first_order)), repeat=2):
-                obs1 = first_order[i]
-                obs2 = first_order[j]
-                second_order.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
+            if not diag_approx:
+                for i, j in itertools.product(range(len(first_order)), repeat=2):
+                    obs1 = first_order[i]
+                    obs2 = first_order[j]
+                    second_order.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
 
-            # generate the unitary operation to project to
-            # the shared eigenbasis of all observables
-            V = np.identity(2**self.num_wires, dtype=np.complex128)
+                # generate the unitary operation to project to
+                # the shared eigenbasis of all observables
+                V = np.identity(2**self.num_wires, dtype=np.complex128)
 
-            for _, term in first_order:
-                _, S = linalg.eigh(V.conj().T @ term @ V)
-                V = np.round(V @ S, 15)
+                for _, term in first_order:
+                    _, S = linalg.eigh(V.conj().T @ term @ V)
+                    V = np.round(V @ S, 15)
 
-            V = V.conj().T
+                V = V.conj().T
 
-            # calculate eigenvalues
-            for i, (idx, term) in enumerate(first_order):
-                Lambda = np.diag(V @ term @ V.conj().T).real
-                first_order[i] = (idx, Lambda)
+                # calculate eigenvalues
+                for i, (idx, term) in enumerate(first_order):
+                    Lambda = np.diag(V @ term @ V.conj().T).real
+                    first_order[i] = (idx, Lambda)
 
-            for i, (idx, term) in enumerate(second_order):
-                Lambda = np.diag(V @ term @ V.conj().T).real
-                second_order[i] = (idx, Lambda)
+                for i, (idx, term) in enumerate(second_order):
+                    Lambda = np.diag(V @ term @ V.conj().T).real
+                    second_order[i] = (idx, Lambda)
 
             self._metric_tensor_subcircuits[tuple(param_idx)] = {
                 "queue": queue,
@@ -742,7 +746,7 @@ class QNode:
         Variable.kwarg_values = keyword_values
 
         if not self._metric_tensor_subcircuits:
-            self.construct_metric_tensor(args, **kwargs)
+            self.construct_metric_tensor(args, diag_approx=diag_approx, **kwargs)
 
         tensor = np.zeros([self.num_variables, self.num_variables])
 
