@@ -101,7 +101,7 @@ dev = qml.device("forest.qvm", device="3q-pyqvm", shots=1000)
 # When defining the qnode, we introduce as input a Hermitian operator
 # :math:`A` that specifies the expectation value being evaluated. This
 # choice later allows us to easily evaluate several expectation values
-# without having to define a new qnode each time. 
+# without having to define a new qnode each time.
 
 @qml.qnode(dev)
 def circuit(params, A=None):
@@ -167,35 +167,3 @@ for l in range(3):
 # print results
 print("Target Bloch vector = ", bloch_v)
 print("Output Bloch vector = ", output_bloch_v)
-
-
-##############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#    Cost after 0 steps is 1.3770
-#    Cost after 10 steps is 0.8878
-#    Cost after 20 steps is 0.6018
-#    Cost after 30 steps is 0.6690
-#    Cost after 40 steps is 0.5798
-#    Cost after 50 steps is 0.4378
-#    Cost after 60 steps is 0.3798
-#    Cost after 70 steps is 0.2890
-#    Cost after 80 steps is 0.2098
-#    Cost after 90 steps is 0.0562
-#    Cost after 100 steps is 0.0670
-#    Cost after 110 steps is 0.0518
-#    Cost after 120 steps is 0.0662
-#    Cost after 130 steps is 0.0730
-#    Cost after 140 steps is 0.0882
-#    Cost after 150 steps is 0.0378
-#    Cost after 160 steps is 0.0390
-#    Cost after 170 steps is 0.1218
-#    Cost after 180 steps is 0.1590
-#    Cost after 190 steps is 0.0862
-#    Cost after 200 steps is 0.0650
-#    Target Bloch vector =  [-0.36599498  0.42259141 -0.08639547]
-#    Output Bloch vector =  [-0.384  0.468 -0.096]

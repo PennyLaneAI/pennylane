@@ -156,7 +156,7 @@ dev_fock = qml.device("strawberryfields.fock", wires=2, cutoff_dim=2)
 def photon_redirection(params):
     qml.FockState(1, wires=0)
     qml.Beamsplitter(params[0], params[1], wires=[0, 1])
-    return qml.expval(qml.MeanPhoton(1))
+    return qml.expval(qml.NumberOperator(1))
 
 
 ##############################################################################
@@ -185,15 +185,6 @@ init_params = np.array([0.01, 0.01])
 print(cost(init_params))
 
 ##############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     -9.999666671111085e-05
-
-##############################################################################
 # Here, we choose the values of :math:`\theta` and :math:`\phi` to be very close to zero;
 # this results in :math:`B(\theta,\phi)\approx I`, and the output of the quantum
 # circuit will be very close to :math:`\ket{1, 0}` — i.e., the circuit leaves the photon in the first mode.
@@ -209,15 +200,6 @@ print(cost(init_params))
 
 dphoton_redirection = qml.grad(photon_redirection, argnum=0)
 print(dphoton_redirection([0.0, 0.0]))
-
-##############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     [0.0, 0.0]
 
 ##############################################################################
 # Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit
@@ -239,15 +221,6 @@ for i in range(steps):
         print("Cost after step {:5d}: {: .7f}".format(i + 1, cost(params)))
 
 print("Optimized rotation angles: {}".format(params))
-
-##############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     Optimized rotation angles: [ 1.57079633  0.01      ]
 
 
 ##############################################################################
@@ -289,7 +262,7 @@ def photon_redirection(params):
     """The photon redirection QNode"""
     qml.FockState(1, wires=0)
     qml.Beamsplitter(params[0], params[1], wires=[0, 1])
-    return qml.expval(qml.MeanPhoton(1))
+    return qml.expval(qml.NumberOperator(1))
 
 
 def squared_difference(x, y):
@@ -359,31 +332,12 @@ for i in range(steps):
 print("Optimized rotation angles: {}".format(params))
 
 ##############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     Optimized rotation angles: [ 1.20671364  0.01      ]
-
-##############################################################################
 # Substituting this into the photon redirection QNode shows that it now produces
 # the same output as the qubit rotation QNode:
 
 result = [1.20671364, 0.01]
 print(photon_redirection(result))
 print(qubit_rotation(0.5, 0.1))
-
-##############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     0.8731983021146449
-#     0.8731983044562817
 
 ##############################################################################
 # This is just a simple example of the kind of hybrid computation that can be carried

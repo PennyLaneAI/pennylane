@@ -3,9 +3,13 @@ appdirs
 autograd
 numpy
 pygments-github-lexers
+pennylane-sf
+pennylane-forest
+pyquil
 scipy
 sphinxcontrib-bibtex
 sphinx_gallery
+strawberryfields
 tensorflow==1.13.2
 toml
 torch==1.2.0+cpu

@@ -23,13 +23,14 @@ you may be able to offload the classical portion of your hybrid model
 onto an accelerator, such as a GPU or TPU.
 
 By default, QNodes make use of the wrapped version of NumPy provided
-by PennyLane (via `autograd <https://github.com/HIPS/autograd>`_):
+by PennyLane (via `autograd <https://github.com/HIPS/autograd>`_). By
+importing NumPy from PennyLane,
 
 .. code-block:: python
 
     from pennylane import numpy as np
 
-Any classical computation in the model can then make use of arbitrary NumPy
+any classical computation in the model can then make use of arbitrary NumPy
 functions, while retaining support for automatic differentiation. For an example,
 see the :ref:`hybrid computation tutorial <plugins_hybrid>`.
 

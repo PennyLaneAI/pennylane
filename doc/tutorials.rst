@@ -80,11 +80,11 @@ using PennyLane and near-term quantum hardware.
 
     tutorials/pennylane_run_qubit_rotation
     tutorials/pennylane_run_gaussian_transformation
-    tutorials/pennylane_plugins_hybrid
+    tutorials/pennylane_run_plugins_hybrid
     tutorials/pennylane_run_advanced_usage
     tutorials/pennylane_pytorch_noise
-    tutorials/pennylane_state_preparation
+    tutorials/pennylane_run_state_preparation
     tutorials/pennylane_run_QGAN
-    tutorials/pennylane_variational_classifier
+    tutorials/pennylane_run_variational_classifier
     tutorials/pennylane_quantum_neural_net
     tutorials/pennylane_run_variational_quantum_eigensolver
