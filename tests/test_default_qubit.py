@@ -16,18 +16,15 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
 import cmath
 # pylint: disable=protected-access,cell-var-from-loop
-import logging as log
 import math
 
-import pennylane as qml
 import pytest
+import pennylane as qml
 from pennylane import numpy as np
-from pennylane.plugins.default_qubit import (CNOT, CRot3, CRotx, CRoty, CRotz,
-                                             DefaultQubit, I, Rot3, Rotx, Roty,
-                                             Rotz, Rphi, X, Z, hermitian,
+from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
+                                             Rot3, Rotx, Roty, Rotz, 
+                                             Rphi, Z, hermitian,
                                              spectral_decomposition, unitary)
-
-log.getLogger("defaults")
 
 
 U = np.array(
@@ -641,7 +638,7 @@ class TestSample:
         s2 = qubit_device_2_wires.sample('PauliZ', [1], [], 12)
         assert np.array_equal(s2.shape, (12,))
 
-        s3 = qubit_device_2_wires.sample('CZ', [0,1], [], 17)
+        s3 = qubit_device_2_wires.sample('CZ', [0, 1], [], 17)
         assert np.array_equal(s3.shape, (17,))
 
     def test_sample_values(self, qubit_device_2_wires, tol):
@@ -668,7 +665,7 @@ class TestSample:
         with pytest.raises(
             ValueError, match="Calling sample with n = 0 is not possible."
         ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n = 0)
+            qubit_device_2_wires.sample('PauliZ', [0], [], n=0)
 
         # self.def.shots = 0, so this should also fail
         with pytest.raises(
@@ -684,13 +681,13 @@ class TestSample:
         with pytest.raises(
             ValueError, match="The number of samples must be a positive integer."
         ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n = -12)
+            qubit_device_2_wires.sample('PauliZ', [0], [], n=-12)
 
         qubit_device_2_wires.shots = 0
         with pytest.raises(
             ValueError, match="The number of samples must be a positive integer."
         ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n = 12.3)
+            qubit_device_2_wires.sample('PauliZ', [0], [], n=12.3)
 
 
 class TestMaps:
@@ -715,9 +712,9 @@ class TestDefaultQubitIntegration:
         """Test that the default plugin loads correctly"""
         
         dev = qml.device("default.qubit", wires=2)
-        assert dev.num_wires ==  2
-        assert dev.shots ==  0
-        assert dev.short_name ==  "default.qubit"
+        assert dev.num_wires == 2
+        assert dev.shots == 0
+        assert dev.short_name == "default.qubit"
 
     def test_args(self):
         """Test that the plugin requires correct arguments"""
