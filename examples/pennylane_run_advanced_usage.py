@@ -5,7 +5,11 @@ r"""
 Advanced Usage
 ==============
 
-In the previous three introductory tutorials (:ref:`qubit rotation <qubit_rotation>`, :ref:`Gaussian transformation <gaussian_transformation>`, and :ref:`plugins & hybrid computation <plugins_hybrid>`) we explored the basic concepts of PennyLane, including qubit- and CV-model quantum computations, gradient-based optimization, and the construction of hybrid classical-quantum computations.
+In the previous three introductory tutorials (:ref:`qubit rotation <qubit_rotation>`,
+:ref:`Gaussian transformation <gaussian_transformation>`, and
+:ref:`plugins & hybrid computation <plugins_hybrid>`) we explored the basic concepts of
+PennyLane, including qubit- and CV-model quantum computations, gradient-based optimization,
+and the construction of hybrid classical-quantum computations.
 
 In this tutorial, we will highlight some of the more advanced features of Pennylane.
 """

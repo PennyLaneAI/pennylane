@@ -17,7 +17,7 @@ following dependencies:
   machine (QVM) and quilc quantum compiler. Once installed, the QVM and quilc can be
   started by running the commands ``quilc -S`` and ``qvm -S`` in separate terminal windows.
 
-* `PennyLane-Forest plugin <https://github.com/rigetti/pennylane-forest>`_, in order
+* `PennyLane-Forest plugin <https://pennylane-forest.readthedocs.io>`_, in order
   to access the QVM as a PennyLane device. This can be installed via pip:
 
   .. code-block:: bash

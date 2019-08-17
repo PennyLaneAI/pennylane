@@ -5,7 +5,7 @@ Plugins and Hybrid computation
 ==============================
 
 This tutorial introduces the notion of hybrid computation by combining several PennyLane
-plugins. We first introduce PennyLane's `Strawberry Fields plugin <https://github.com/XanaduAI/pennylane-sf>`_
+plugins. We first introduce PennyLane's `Strawberry Fields plugin <https://pennylane-sf.readthedocs.io>`_
 and use it to explore a non-Gaussian photonic circuit. We then combine this photonic circuit with a
 qubit circuit — along with some classical processing — to create and optimize a fully hybrid computation.
 Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` and
@@ -14,8 +14,8 @@ Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` 
 .. note::
 
     To follow along with this tutorial on your own computer, you will require the
-    `PennyLane-SF plugin <https://github.com/XanaduAI/pennylane-sf>`_, in order to access the
-    `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`_ Fock backend using
+    `PennyLane-SF plugin <https://pennylane-sf.readthedocs.io>`_, in order to access the
+    `Strawberry Fields <https://strawberryfields.readthedocs.io>`_ Fock backend using
     PennyLane. It can be installed via pip:
 
     .. code-block:: bash
@@ -116,7 +116,7 @@ Therefore, we can see that:
 #
 # For this circuit, we will be using the ``'strawberryfields.fock'`` device to construct
 # a QNode. This allows the underlying quantum computation to be performed using the
-# `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`_ Fock backend.
+# `Strawberry Fields <https://strawberryfields.readthedocs.io>`_ Fock backend.
 #
 # As usual, we begin by importing PennyLane and the wrapped version of NumPy provided by PennyLane:
 

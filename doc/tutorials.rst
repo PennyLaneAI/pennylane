@@ -6,9 +6,8 @@
 Tutorials
 =========
 
-These step-by-step tutorials provided a gentle introduction to the basics of PennyLane. Once you have
-worked your way through the QuickStart tutorials, you will be ready to implement your own
-interesting QML problems in PennyLane!
+The following tutorials introduce the core PennyLane concepts, including QNodes,
+plugins, and devices, via simple and easy to follow examples.
 
 
 :html:`<h3>Learn the PennyLane basics</h3>`
@@ -45,8 +44,8 @@ plugins, and devices, via simple and easy-to-follow examples.
 
 :html:`<h3>Quantum machine learning algorithms</h3>`
 
-Take a deeper dive into quantum machine learning, exploring cutting edge algorithms
-using PennyLane and near-term quantum hardware.
+Take a deeper dive into quantum machine learning by exploring cutting edge
+algorithms using PennyLane and near term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: Do arbitrary state preparation on a real quantum computer.

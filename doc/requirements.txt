@@ -3,7 +3,7 @@ appdirs
 autograd
 numpy
 pygments-github-lexers
-pennylane-sf
+git+git://github.com/XanaduAI/pennylane-sf.git#egg=PennyLane_SF
 pennylane-forest
 pyquil
 scipy
