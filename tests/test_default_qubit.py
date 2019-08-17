@@ -922,7 +922,7 @@ class TestDefaultQubitIntegration:
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
-    # This test is ran against the state |Phi+> with two Z expvals
+    # This test is ran against the state 1/2|00>+sqrt(3)/2|11> with two Z expvals
     @pytest.mark.parametrize("name,par,expected_output", [
         ("CRX", [0], [-1/2, -1/2]),
         ("CRX", [-math.pi], [-1/2, 1]),
@@ -957,65 +957,74 @@ class TestDefaultQubitIntegration:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("name,state,expected_output", [
+        ("PauliX", [1/math.sqrt(2), 1/math.sqrt(2)], 1),
+        ("PauliX", [1/math.sqrt(2), -1/math.sqrt(2)], -1),
+        ("PauliX", [1, 0], 0),
+        ("PauliY", [1/math.sqrt(2), 1j/math.sqrt(2)], 1),
+        ("PauliY", [1/math.sqrt(2), -1j/math.sqrt(2)], -1),
+        ("PauliY", [1, 0], 0),
+        ("PauliZ", [1, 0], 1),
+        ("PauliZ", [0, 1], -1),
+        ("PauliZ", [1/math.sqrt(2), 1/math.sqrt(2)], 0),
+        ("Hadamard", [1, 0], 1/math.sqrt(2)),
+        ("Hadamard", [0, 1], -1/math.sqrt(2)),
+        ("Hadamard", [1/math.sqrt(2), 1/math.sqrt(2)], 1/math.sqrt(2)),
+    ])
+    def test_supported_observable_single_wire_no_parameters(self, qubit_device_1_wire, tol, name, state, expected_output):
+        """Tests supported observables on single wires without parameters."""
+
+        obs = getattr(qml.ops, name)
+
+        assert qubit_device_1_wire.supports_observable(name)
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.QubitStateVector(np.array(state), wires=[0])
+            return qml.expval(obs(wires=[0]))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
     
+    @pytest.mark.parametrize("name,state,expected_output,par", [
+        ("Identity", [1, 0], 1, []),
+        ("Identity", [0, 1], 1, []),
+        ("Identity", [1/math.sqrt(2), -1/math.sqrt(2)], 1, []),
+        ("Hermitian", [1, 0], 1, [np.array([[1, 1j], [-1j, 1]])]),
+        ("Hermitian", [0, 1], 1, [np.array([[1, 1j], [-1j, 1]])]),
+        ("Hermitian", [1/math.sqrt(2), -1/math.sqrt(2)], 1, [np.array([[1, 1j], [-1j, 1]])]),
+    ])
+    def test_supported_observable_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, state, expected_output, par):
+        """Tests supported observables on single wires with parameters."""
+
+        obs = getattr(qml.ops, name)
+
+        assert qubit_device_1_wire.supports_observable(name)
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.QubitStateVector(np.array(state), wires=[0])
+            return qml.expval(obs(*par, wires=[0]))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
     
+    @pytest.mark.parametrize("name,state,expected_output,par", [
+        ("Hermitian", [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], 5/3, [np.array([[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]])]),
+        ("Hermitian", [0, 0, 0, 1], 0, [np.array([[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])]),
+        ("Hermitian", [1/math.sqrt(2), 0, -1/math.sqrt(2), 0], 1, [np.array([[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]])]),
+        ("Hermitian", [1/math.sqrt(3), -1/math.sqrt(3), 1/math.sqrt(6), 1/math.sqrt(6)], 1, [np.array([[1, 1j, 0, .5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-.5j, 0, 1j, 1]])]),
+        ("Hermitian", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], 1, [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])]),
+        ("Hermitian", [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], -1, [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])]),
+    ])
+    def test_supported_observable_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, state, expected_output, par):
+        """Tests supported observables on two wires with parameters."""
 
-    def test_supported_observables(self, qubit_device_2_wires, tol):
-        """Test that all supported observables work correctly"""
-        
-        a = 0.312
+        obs = getattr(qml.ops, name)
 
-        for g, qop in qubit_device_2_wires._observable_map.items():
-            log.debug("\tTesting observable %s...", g)
-            assert qubit_device_2_wires.supports_observable(g)
-            qubit_device_2_wires.reset()
-
-            op = getattr(qml.ops, g)
-            if op.num_wires < 0:
-                wires = [0]
-            else:
-                wires = list(range(op.num_wires))
-
-            @qml.qnode(qubit_device_2_wires)
-            def circuit(*x):
-                """Reference quantum function"""
-                qml.RX(a, wires=0)
-                return qml.expval(op(*x, wires=wires))
-
-            # compare to reference result
-            def reference(*x):
-                """reference circuit"""
-                if callable(qop):
-                    # if the default.qubit is an operation accepting parameters,
-                    # initialise it using the parameters generated above.
-                    O = qop(*x)
-                else:
-                    # otherwise, the operation is simply an array.
-                    O = qop
-
-                # calculate the expected output
-                out_state = np.kron(Rotx(a) @ np.array([1, 0]), np.array([1, 0]))
-                expectation = out_state.conj() @ np.kron(O, np.identity(2)) @ out_state
-                return expectation
-
-            if op.num_params == 0:
-                assert np.allclose(circuit(), reference(), atol=tol, rtol=0)
-            elif g == "Hermitian":
-                assert np.allclose(circuit(H), reference(H), atol=tol, rtol=0)
-
-    def test_two_qubit_observable(self, qubit_device_2_wires, tol):
-        """Tests expval for two-qubit observables """
+        assert qubit_device_2_wires.supports_observable(name)
 
         @qml.qnode(qubit_device_2_wires)
-        def circuit(x, target_observable=None):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            qml.RZ(x[2], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hermitian(target_observable, wires=[0, 1]))
+        def circuit():
+            qml.QubitStateVector(np.array(state), wires=[0, 1])
+            return qml.expval(obs(*par, wires=[0, 1]))
 
-        target_state = 1 / np.sqrt(2) * np.array([1, 0, 0, 1])
-        target_herm_op = np.outer(target_state.conj(), target_state)
-        weights = np.array([0.5, 0.1, 0.2])
-        expval = circuit(weights, target_observable=target_herm_op)
-        assert np.isclose(expval, 0.590556, atol=tol, rtol=0)
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
