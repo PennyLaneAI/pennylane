@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.utils` module.
 """
+# pylint: disable=no-self-use,too-many-arguments,protected-access
 import pytest
 
 import numpy as np
@@ -108,7 +109,7 @@ class TestArgumentHelpers:
         """Test that empty dict is returned if function has
         no default arguments"""
 
-        def dummy_func(a, b):
+        def dummy_func(a, b): # pylint: disable=unused-argument
             pass
 
         res = pu._get_default_args(dummy_func)
@@ -117,7 +118,7 @@ class TestArgumentHelpers:
     def test_get_default_args(self):
         """Test that default arguments are correctly extracted"""
 
-        def dummy_func(a, b, c=8, d=[0, 0.65], e=np.array([4]), f=None):
+        def dummy_func(a, b, c=8, d=[0, 0.65], e=np.array([4]), f=None):  # pylint: disable=unused-argument,dangerous-default-value
             pass
 
         res = pu._get_default_args(dummy_func)
@@ -138,7 +139,7 @@ class TestArgumentHelpers:
         test_data = {"c": 8, "d": [0, 0.65], "e": "hi", "f": None, "g": 8}
 
         with pytest.raises(TypeError, match="unhashable type"):
-            res = pu._inv_dict(test_data)
+            pu._inv_dict(test_data)
 
 
 class TestExpand:
@@ -190,14 +191,14 @@ class TestExpand:
         expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_invalid_wires(self, tol):
+    def test_expand_invalid_wires(self):
         """test exception raised if unphysical subsystems provided."""
         with pytest.raises(
             ValueError, match="Invalid target subsystems provided in 'wires' argument."
         ):
             pu.expand(U2, [-1, 5], 4)
 
-    def test_expand_invalid_matrix(self, tol):
+    def test_expand_invalid_matrix(self):
         """test exception raised if incorrect sized matrix provided/"""
         with pytest.raises(ValueError, match="Matrix parameter must be of size"):
             pu.expand(U, [0, 1], 4)
@@ -270,7 +271,7 @@ class TestDiGraph:
 
         res = pu.to_DiGraph(queue, obs)
         assert len(res) == 2
-        assert len(res.edges()) == 0
+        assert not res.edges()
 
     def test_dependence(self):
         """Test a more complex example containing operations
