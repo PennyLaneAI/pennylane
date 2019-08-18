@@ -206,7 +206,7 @@ def to_DiGraph(queue, observables):
 
     * ``'name'`` *(str)*: name of the quantum operation (e.g., ``'PauliZ'``)
 
-    * ``'op'`` *(Operation or Observable)*: modes the operation acts on
+    * ``'op'`` *(Operation or Observable)*: the quantum operation/observable object
 
     Args:
         queue (list[Operation]): the quantum operations to apply
