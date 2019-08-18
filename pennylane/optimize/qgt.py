@@ -73,7 +73,7 @@ class QGTOptimizer(GradientDescentOptimizer):
     def __init__(self, stepsize=0.01, diag_approx=False):
         super().__init__(stepsize)
         self.diag_approx = diag_approx
-        self.metric_tensor = None
+        self.metric_tensor_inv = None
 
     def step(self, qnode, x, recompute_tensor=True):
         """Update x with one step of the optimizer.
@@ -93,7 +93,9 @@ class QGTOptimizer(GradientDescentOptimizer):
             raise ValueError("Objective function must be a QNode")
 
         if recompute_tensor or self.metric_tensor is None:
-            self.metric_tensor = qnode.metric_tensor(x, diag_approx=self.diag_approx)
+            # pseudo-inverse metric tensor
+            metric_tensor = qnode.metric_tensor(x, diag_approx=self.diag_approx)
+            self.metric_tensor_inv = np.linalg.pinv(metric_tensor)
 
         g = self.compute_grad(qnode, x)
         x_out = self.apply_grad(g, x)
@@ -113,10 +115,5 @@ class QGTOptimizer(GradientDescentOptimizer):
         """
         grad_flat = np.array(list(_flatten(grad)))
         x_flat = np.array(list(_flatten(x)))
-
-        # pseudo-inverse metric tensor
-        G_inv = np.linalg.pinv(self.metric_tensor)
-
-        x_new_flat = x_flat - self._stepsize * G_inv @ grad_flat
-
+        x_new_flat = x_flat - self._stepsize * self.metric_tensor_inv @ grad_flat
         return unflatten(x_new_flat, x)

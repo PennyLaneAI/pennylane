@@ -65,12 +65,14 @@ class TestOptimize:
 
         # optimization for 200 steps total
         for t in range(num_steps):
-            theta = opt.step(circuit, theta)
+            theta_new = opt.step(circuit, theta)
 
             # check metric tensor
-            res = opt.metric_tensor
-            exp = np.diag([1 / 4, np.cos(theta[0]) ** 2 / 4])
+            res = opt.metric_tensor_inv
+            exp = np.diag([4, 4 / (np.cos(theta[0])**2)])
             assert np.allclose(res, exp, atol=0.01, rtol=0)
+
+            theta = theta_new
 
         # check final cost
         assert np.allclose(circuit(theta), -0.9963791, atol=0.001, rtol=0)
