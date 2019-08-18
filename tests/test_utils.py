@@ -35,7 +35,7 @@ test_shapes = [
     (2, 2, 2, 2, 2, 2),
 ]
 
-# pyquil specific global variables and functions
+# global variables and functions
 I = np.identity(2)
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])

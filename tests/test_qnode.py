@@ -1363,7 +1363,7 @@ class TestMetricTensor:
 
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
-        opeation with generator that corresponds to no expectation value"""
+        operation with generator that corresponds to no expectation value"""
         dev = qml.device('default.qubit', wires=1)
 
         def circuit(a):
