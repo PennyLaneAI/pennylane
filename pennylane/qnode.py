@@ -166,7 +166,7 @@ def pop_jacobian_kwargs(kwargs):
     circuit_kwargs = {}
     circuit_kwargs.update(kwargs)
 
-    for k in ('h', 'order', 'shots', 'force_order2'):
+    for k in ("h", "order", "shots", "force_order2"):
         circuit_kwargs.pop(k, None)
 
     return circuit_kwargs
@@ -224,8 +224,11 @@ class QNode:
             and this circuit structure (i.e., the placement of templates, gates, measurements, etc.) will be cached for all further executions. The circuit parameters can still change with every call. Only activate this
             feature if your quantum circuit structure will never change.
     """
+
     # pylint: disable=too-many-instance-attributes
-    _current_context = None  #: QNode: for building Operation sequences by executing quantum circuit functions
+    _current_context = (
+        None
+    )  #: QNode: for building Operation sequences by executing quantum circuit functions
 
     def __init__(self, func, device, cache=False):
         self.func = func
@@ -269,7 +272,9 @@ class QNode:
             self.ev.append(op)
         else:
             if self.ev:
-                raise QuantumFunctionError('State preparations and gates must precede measured observables.')
+                raise QuantumFunctionError(
+                    "State preparations and gates must precede measured observables."
+                )
             self.queue.append(op)
 
     def construct(self, args, kwargs=None):
@@ -332,7 +337,9 @@ class QNode:
         if QNode._current_context is None:
             QNode._current_context = self
         else:
-            raise QuantumFunctionError('QNode._current_context must not be modified outside this method.')
+            raise QuantumFunctionError(
+                "QNode._current_context must not be modified outside this method."
+            )
         # generate the program queue by executing the quantum circuit function
         try:
             if self.cache:
@@ -346,7 +353,7 @@ class QNode:
             # remove the context
             QNode._current_context = None
 
-        #----------------------------------------------------------
+        # ----------------------------------------------------------
         # check the validity of the circuit
 
         # quantum circuit function return validation
@@ -360,7 +367,11 @@ class QNode:
 
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
+        elif (
+            isinstance(res, Sequence)
+            and res
+            and all(isinstance(x, pennylane.operation.Observable) for x in res)
+        ):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
 
@@ -382,47 +393,56 @@ class QNode:
 
             res = (res,)
         else:
-            raise QuantumFunctionError("A quantum function must return either a single measured observable "
-                                       "or a nonempty sequence of measured observables.")
+            raise QuantumFunctionError(
+                "A quantum function must return either a single measured observable "
+                "or a nonempty sequence of measured observables."
+            )
 
         # check that all returned observables have a return_type specified
         for x in res:
             if x.return_type is None:
-                raise QuantumFunctionError("Observable '{}' does not have the measurement "
-                                           "type specified.")
+                raise QuantumFunctionError(
+                    "Observable '{}' does not have the measurement " "type specified."
+                )
 
         # check that all ev's are returned, in the correct order
         if res != tuple(self.ev):
-            raise QuantumFunctionError("All measured observables must be returned in the "
-                                       "order they are measured.")
+            raise QuantumFunctionError(
+                "All measured observables must be returned in the " "order they are measured."
+            )
 
         self.ev = list(res)  #: list[Observable]: returned observables
         self.ops = self.queue + self.ev  #: list[Operation]: combined list of circuit operations
 
         # classify the circuit contents
-        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
+        temp = [
+            isinstance(op, pennylane.operation.CV)
+            for op in self.ops
+            if not isinstance(op, pennylane.ops.Identity)
+        ]
         if all(temp):
-            self.type = 'CV'
+            self.type = "CV"
         elif not True in temp:
-            self.type = 'qubit'
+            self.type = "qubit"
         else:
-            raise QuantumFunctionError("Continuous and discrete operations are not "
-                                       "allowed in the same quantum circuit.")
+            raise QuantumFunctionError(
+                "Continuous and discrete operations are not " "allowed in the same quantum circuit."
+            )
 
-        #----------------------------------------------------------
+        # ----------------------------------------------------------
 
         # map each free variable to the operations which depend on it
         self.variable_ops = {}
         for k, op in enumerate(self.ops):
             for idx, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
-                    if p.name is None: # ignore keyword arguments
+                    if p.name is None:  # ignore keyword arguments
                         self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
         #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
 
-    def _op_successors(self, o_idx, only='G'):
+    def _op_successors(self, o_idx, only="G"):
         """Successors of the given operation in the quantum circuit.
 
         Args:
@@ -436,7 +456,7 @@ class QNode:
         Returns:
             list[Operation]: successors in a topological order
         """
-        succ = self.ops[o_idx+1:]
+        succ = self.ops[o_idx + 1 :]
         # TODO at some point we may wish to upgrade to a DAG description of the circuit instead
         # of a simple queue, in which case,
         #
@@ -447,9 +467,9 @@ class QNode:
         #   succ = nx.dfs_preorder_nodes(self.DAG, op)
         #
         # if it is in a topological order? the docs aren't clear.
-        if only == 'E':
+        if only == "E":
             return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
-        if only == 'G':
+        if only == "G":
             return list(filter(lambda x: not isinstance(x, pennylane.operation.Observable), succ))
         return succ
 
@@ -493,45 +513,47 @@ class QNode:
                 return op.grad_method
 
             # for CV ops it is more complicated
-            if op.grad_method == 'A':
+            if op.grad_method == "A":
                 # op is Gaussian and has the heisenberg_* methods
                 # check that all successor ops are also Gaussian
                 # TODO when we upgrade to a DAG: a non-Gaussian successor is OK if it
                 # isn't succeeded by any observables?
-                successors = self._op_successors(o_idx, 'G')
+                successors = self._op_successors(o_idx, "G")
 
                 if all(x.supports_heisenberg for x in successors):
                     # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-                    ev_successors = self._op_successors(o_idx, 'E')
+                    ev_successors = self._op_successors(o_idx, "E")
                     for x in ev_successors:
                         if x.ev_order is None:
-                            return 'F'
+                            return "F"
                         if x.ev_order == 2:
-                            if x.return_type == 'variance':
+                            if x.return_type == "variance":
                                 # second order observables don't support
                                 # analytic diff of variances
-                                return 'F'
-                            op.grad_method = 'A2'  # bit of a hack
-                    return 'A'
+                                return "F"
+                            op.grad_method = "A2"  # bit of a hack
+                    return "A"
 
-                return 'F'
+                return "F"
 
             return op.grad_method  # 'F' or None
 
         # indices of operations that depend on the free parameter idx
         ops = self.variable_ops[idx]
         temp = [best_for_op(k) for k, _ in ops]
-        if all(k == 'A' for k in temp):
-            return 'A'
+        if all(k == "A" for k in temp):
+            return "A"
         elif None in temp:
             return None
 
-        return 'F'
+        return "F"
 
     def __call__(self, *args, **kwargs):
         """Wrapper for :meth:`~.QNode.evaluate`."""
         # pylint: disable=no-member
-        args = autograd.builtins.tuple(args)  # prevents autograd boxed arguments from going through to evaluate
+        args = autograd.builtins.tuple(
+            args
+        )  # prevents autograd boxed arguments from going through to evaluate
         return self.evaluate(args, **kwargs)  # args as one tuple
 
     @ae.primitive
@@ -568,7 +590,9 @@ class QNode:
 
         # temporarily store keyword arguments
         keyword_values = {}
-        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()})
+        keyword_values.update(
+            {k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()}
+        )
         keyword_values.update({k: np.array(list(_flatten(v))) for k, v in kwargs.items()})
 
         # Try and insert kwargs-as-positional back into the kwargs dictionary.
@@ -592,14 +616,18 @@ class QNode:
         # check that no wires are measured more than once
         m_wires = list(w for ex in self.ev for w in ex.wires)
         if len(m_wires) != len(set(m_wires)):
-            raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
+            raise QuantumFunctionError(
+                "Each wire in the quantum circuit can only be measured once."
+            )
 
         def check_op(op):
             """Make sure only existing wires are referenced."""
             for w in op.wires:
                 if w < 0 or w >= self.num_wires:
-                    raise QuantumFunctionError("Operation {} applied to invalid wire {} "
-                                               "on device with {} wires.".format(op.name, w, self.num_wires))
+                    raise QuantumFunctionError(
+                        "Operation {} applied to invalid wire {} "
+                        "on device with {} wires.".format(op.name, w, self.num_wires)
+                    )
 
         # check every gate/preparation and ev measurement
         for op in self.ops:
@@ -622,7 +650,9 @@ class QNode:
         """
         # temporarily store keyword arguments
         keyword_values = {}
-        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()})
+        keyword_values.update(
+            {k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()}
+        )
         keyword_values.update({k: np.array(list(_flatten(v))) for k, v in kwargs.items()})
 
         # temporarily store the free parameter values in the Variable class
@@ -633,7 +663,7 @@ class QNode:
         ret = self.device.execute(self.queue, obs, self.variable_ops)
         return ret
 
-    def jacobian(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
+    def jacobian(self, params, which=None, *, method="B", h=1e-7, order=1, **kwargs):
         """Compute the Jacobian of the QNode.
 
         Returns the Jacobian of the parametrized quantum circuit encapsulated in the QNode.
@@ -694,8 +724,10 @@ class QNode:
         sample_ops = [e for e in self.ev if e.return_type == "sample"]
         if sample_ops:
             names = [str(e) for e in sample_ops]
-            raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
-                                       "The following observable include sampling: {}".format('; '.join(names)))
+            raise QuantumFunctionError(
+                "Circuits that include sampling can not be differentiated. "
+                "The following observable include sampling: {}".format("; ".join(names))
+            )
 
         flat_params = np.array(list(_flatten(params)))
 
@@ -703,41 +735,46 @@ class QNode:
             which = range(len(flat_params))
         else:
             if min(which) < 0 or max(which) >= self.num_variables:
-                raise ValueError("Tried to compute the gradient wrt. free parameters {} "
-                                 "(this node has {} free parameters).".format(which, self.num_variables))
+                raise ValueError(
+                    "Tried to compute the gradient wrt. free parameters {} "
+                    "(this node has {} free parameters).".format(which, self.num_variables)
+                )
             if len(which) != len(set(which)):  # set removes duplicates
                 raise ValueError("Parameter indices must be unique.")
 
         # check if the method can be used on the requested parameters
         mmap = _inv_dict(self.grad_method_for_par)
+
         def check_method(m):
             """Intersection of ``which`` with free params whose best grad method is m."""
             return mmap.get(m, set()).intersection(which)
 
         bad = check_method(None)
         if bad:
-            raise ValueError('Cannot differentiate wrt parameter(s) {}.'.format(bad))
+            raise ValueError("Cannot differentiate wrt parameter(s) {}.".format(bad))
 
-        if method in ('A', 'F'):
-            if method == 'A':
-                bad = check_method('F')
+        if method in ("A", "F"):
+            if method == "A":
+                bad = check_method("F")
                 if bad:
-                    raise ValueError("The analytic gradient method cannot be "
-                                     "used with the parameter(s) {}.".format(bad))
+                    raise ValueError(
+                        "The analytic gradient method cannot be "
+                        "used with the parameter(s) {}.".format(bad)
+                    )
             method = {k: method for k in which}
-        elif method == 'B':
+        elif method == "B":
             method = self.grad_method_for_par
         else:
-            raise ValueError('Unknown gradient method.')
+            raise ValueError("Unknown gradient method.")
 
-        if 'F' in method.values():
+        if "F" in method.values():
             if order == 1:
                 # the value of the circuit at params, computed only once here
                 y0 = np.asarray(self.evaluate(params, **circuit_kwargs))
             else:
                 y0 = None
 
-        variances = any(e.return_type == 'variance' for e in self.ev)
+        variances = any(e.return_type == "variance" for e in self.ev)
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
@@ -748,15 +785,15 @@ class QNode:
                 continue
 
             par_method = method[k]
-            if par_method == 'A':
+            if par_method == "A":
                 if variances:
                     grad[:, i] = self._pd_analytic_var(flat_params, k, **kwargs)
                 else:
                     grad[:, i] = self._pd_analytic(flat_params, k, **kwargs)
-            elif par_method == 'F':
+            elif par_method == "F":
                 grad[:, i] = self._pd_finite_diff(flat_params, k, h, order, y0, **kwargs)
             else:
-                raise ValueError('Unknown gradient method.')
+                raise ValueError("Unknown gradient method.")
 
         return grad
 
@@ -781,18 +818,17 @@ class QNode:
             # shift one parameter by h
             shift_params[idx] += h
             y = np.asarray(self.evaluate(shift_params, **circuit_kwargs))
-            return (y-y0) / h
+            return (y - y0) / h
         elif order == 2:
             # symmetric difference
             # shift one parameter by +-h/2
-            shift_params[idx] += 0.5*h
+            shift_params[idx] += 0.5 * h
             y2 = np.asarray(self.evaluate(shift_params, **circuit_kwargs))
-            shift_params[idx] = params[idx] -0.5*h
+            shift_params[idx] = params[idx] - 0.5 * h
             y1 = np.asarray(self.evaluate(shift_params, **circuit_kwargs))
-            return (y2-y1) / h
+            return (y2 - y1) / h
         else:
-            raise ValueError('Order must be 1 or 2.')
-
+            raise ValueError("Order must be 1 or 2.")
 
     def _pd_analytic(self, params, idx, force_order2=False, **kwargs):
         """Partial derivative of the node using the analytic method.
@@ -840,15 +876,15 @@ class QNode:
             shift /= orig.mult
 
             # shifted parameter values
-            shift_p1 = np.r_[params, params[idx] +shift]
-            shift_p2 = np.r_[params, params[idx] -shift]
+            shift_p1 = np.r_[params, params[idx] + shift]
+            shift_p2 = np.r_[params, params[idx] - shift]
 
-            if not force_order2 and op.grad_method != 'A2':
+            if not force_order2 and op.grad_method != "A2":
                 # basic analytic method, for discrete gates and gaussian CV gates succeeded by order-1 observables
                 # evaluate the circuit in two points with shifted parameter values
                 y2 = np.asarray(self.evaluate(shift_p1, **circuit_kwargs))
                 y1 = np.asarray(self.evaluate(shift_p2, **circuit_kwargs))
-                pd += (y2-y1) * multiplier
+                pd += (y2 - y1) * multiplier
             else:
                 # order-2 method, for gaussian CV gates succeeded by order-2 observables
                 # evaluate transformed observables at the original parameter point
@@ -857,7 +893,7 @@ class QNode:
                 Z2 = op.heisenberg_tr(w)
                 Variable.free_param_values = shift_p2
                 Z1 = op.heisenberg_tr(w)
-                Z = (Z2-Z1) * multiplier  # derivative of the operation
+                Z = (Z2 - Z1) * multiplier  # derivative of the operation
 
                 unshifted_params = np.r_[params, params[idx]]
                 Variable.free_param_values = unshifted_params
@@ -865,9 +901,9 @@ class QNode:
                 Z = Z @ Z0
 
                 # conjugate Z with all the following operations
-                B = np.eye(1 +2*w)
+                B = np.eye(1 + 2 * w)
                 B_inv = B.copy()
-                for BB in self._op_successors(o_idx, 'G'):
+                for BB in self._op_successors(o_idx, "G"):
                     temp = BB.heisenberg_tr(w)
                     B = temp @ B
                     temp = BB.heisenberg_tr(w, inverse=True)
@@ -883,13 +919,13 @@ class QNode:
                     # When library uses a DAG representation for circuits, uncomment following if statement
 
                     ## if ex is not a successor of op, multiplying by Z should do nothing.
-                    #if ex not in ev_successors:
+                    # if ex not in ev_successors:
                     #    return ex
                     q = ex.heisenberg_obs(w)
                     qp = q @ Z
                     if q.ndim == 2:
                         # 2nd order observable
-                        qp = qp +qp.T
+                        qp = qp + qp.T
                     return pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
 
                 # transform the observables
@@ -926,21 +962,21 @@ class QNode:
             # here, i is the index of the observable
             # and e is the observable
 
-            if e.return_type != 'variance':
+            if e.return_type != "variance":
                 # if the expectation value is not a variance
                 # continue on to the next loop iteration
                 continue
 
             # temporarily convert return type to expectation
-            self.ev[i].return_type = 'expectation'
+            self.ev[i].return_type = "expectation"
 
             # analytic derivative of <A^2>
             # For involutory observables (A^2 = I),
             # then d<I>/dp = 0
             pdA2 = 0
 
-            if self.type == 'qubit':
-                if e.__class__.__name__ == 'Hermitian':
+            if self.type == "qubit":
+                if e.__class__.__name__ == "Hermitian":
                     # since arbitrary Hermitian observables
                     # are not guaranteed to be involutory, need to take them into
                     # account separately to calculate d<A^2>/dp
@@ -953,7 +989,9 @@ class QNode:
                         old = copy.deepcopy(e)
 
                         # replace the Hermitian variance with <A^2> expectation
-                        self.ev[i] = pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False))
+                        self.ev[i] = pennylane.expval(
+                            pennylane.ops.Hermitian(A @ A, w, do_queue=False)
+                        )
 
                         # calculate the analytic derivative of <A^2>
                         pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, **kwargs))
@@ -961,7 +999,7 @@ class QNode:
                         # restore the original Hermitian variance
                         self.ev[i] = old
 
-            elif self.type == 'CV':
+            elif self.type == "CV":
                 # need to calculate d<A^2>/dp
                 # make a copy of the original variance
                 old = copy.deepcopy(e)
@@ -970,7 +1008,7 @@ class QNode:
                 # get the heisenberg representation
                 # This will be a real 1D vector representing the
                 # first order observable in the basis [I, x, p]
-                A = e._heisenberg_rep(old.parameters) # pylint: disable=protected-access
+                A = e._heisenberg_rep(old.parameters)  # pylint: disable=protected-access
 
                 # make this a row vector by adding an extra dimension
                 A = np.expand_dims(A, axis=0)
@@ -985,7 +1023,9 @@ class QNode:
                 self.ev[i] = pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False))
 
                 # calculate the analytic derivative of <A^2>
-                pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))
+                pdA2 = np.asarray(
+                    self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs)
+                )
 
                 # restore the original observable
                 self.ev[i] = old
@@ -1011,17 +1051,18 @@ class QNode:
 
         # return the variance shift rule where where_var==True,
         # otherwise return the expectation parameter shift rule
-        return np.where(where_var, pdA2-2*evA*pdA, pdA)
+        return np.where(where_var, pdA2 - 2 * evA * pdA, pdA)
 
     def to_torch(self):
         """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
         """
         # Placing slow imports here, in case the user does not use the Torch interface
-        try: # pragma: no cover
+        try:  # pragma: no cover
             from .interfaces.torch import TorchQNode
-        except ImportError: # pragma: no cover
-            raise QuantumFunctionError("PyTorch not found. Please install "
-                                       "PyTorch to enable the TorchQNode interface.") from None
+        except ImportError:  # pragma: no cover
+            raise QuantumFunctionError(
+                "PyTorch not found. Please install " "PyTorch to enable the TorchQNode interface."
+            ) from None
 
         return TorchQNode(self)
 
@@ -1029,16 +1070,18 @@ class QNode:
         """Convert the standard PennyLane QNode into a :func:`~.TFEQNode`.
         """
         # Placing slow imports here, in case the user does not use the TF interface
-        try: # pragma: no cover
+        try:  # pragma: no cover
             from .interfaces.tfe import TFEQNode
-        except ImportError: # pragma: no cover
-            raise QuantumFunctionError("TensorFlow with eager execution mode not found. Please install "
-                                       "the latest version of TensorFlow to enable the TFEQNode interface.") from None
+        except ImportError:  # pragma: no cover
+            raise QuantumFunctionError(
+                "TensorFlow with eager execution mode not found. Please install "
+                "the latest version of TensorFlow to enable the TFEQNode interface."
+            ) from None
 
         return TFEQNode(self)
 
 
-#def QNode_vjp(ans, self, params, *args, **kwargs):
+# def QNode_vjp(ans, self, params, *args, **kwargs):
 def QNode_vjp(ans, self, args, **kwargs):
     """Returns the vector Jacobian product operator for a QNode, as a function
     of the QNode evaluation for specific argnums at the specified parameter values.

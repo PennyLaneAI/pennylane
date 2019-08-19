@@ -280,9 +280,7 @@ class Operation(abc.ABC):
         if self.num_wires == All:
             if do_queue:
                 if set(wires) != set(range(QNode._current_context.num_wires)):
-                    raise ValueError(
-                        "Operation {} must act on all wires".format(self.name)
-                    )
+                    raise ValueError("Operation {} must act on all wires".format(self.name))
 
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
@@ -293,9 +291,7 @@ class Operation(abc.ABC):
         if len(params) != self.num_params:
             raise ValueError(
                 "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(
-                    self.name, params, self.num_params
-                )
+                "{} parameters passed, {} expected.".format(self.name, params, self.num_params)
             )
 
         # check the validity of the params
@@ -324,9 +320,7 @@ class Operation(abc.ABC):
                     len(self.grad_recipe) == self.num_params
                 ), "Gradient recipe must have one entry for each parameter!"
         else:
-            assert (
-                self.grad_recipe is None
-            ), "Gradient recipe is only used by the A method!"
+            assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
 
         # apply the operation on the given wires
         if not isinstance(wires, Sequence):
@@ -356,22 +350,14 @@ class Operation(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
-        if (
-            self.num_wires != All
-            and self.num_wires != Any
-            and len(wires) != self.num_wires
-        ):
+        if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
             raise ValueError(
                 "{}: wrong number of wires. "
-                "{} wires given, {} expected.".format(
-                    self.name, len(wires), self.num_wires
-                )
+                "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
             )
 
         if len(set(wires)) != len(wires):
-            raise ValueError(
-                "{}: wires must be unique, got {}.".format(self.name, wires)
-            )
+            raise ValueError("{}: wires must be unique, got {}.".format(self.name, wires))
 
         return wires
 
@@ -401,37 +387,27 @@ class Operation(abc.ABC):
             if flattened:
                 if isinstance(p, np.ndarray):
                     raise TypeError(
-                        "{}: Flattened array parameter expected, got {}.".format(
-                            self.name, type(p)
-                        )
+                        "{}: Flattened array parameter expected, got {}.".format(self.name, type(p))
                     )
             else:
                 if not isinstance(p, np.ndarray):
                     raise TypeError(
-                        "{}: Array parameter expected, got {}.".format(
-                            self.name, type(p)
-                        )
+                        "{}: Array parameter expected, got {}.".format(self.name, type(p))
                     )
         elif self.par_domain in ("R", "N"):
             if not isinstance(p, numbers.Real):
                 raise TypeError(
-                    "{}: Real scalar parameter expected, got {}.".format(
-                        self.name, type(p)
-                    )
+                    "{}: Real scalar parameter expected, got {}.".format(self.name, type(p))
                 )
 
             if self.par_domain == "N":
                 if not isinstance(p, numbers.Integral):
                     raise TypeError(
-                        "{}: Natural number parameter expected, got {}.".format(
-                            self.name, type(p)
-                        )
+                        "{}: Natural number parameter expected, got {}.".format(self.name, type(p))
                     )
                 if p < 0:
                     raise TypeError(
-                        "{}: Natural number parameter expected, got {}.".format(
-                            self.name, p
-                        )
+                        "{}: Natural number parameter expected, got {}.".format(self.name, p)
                     )
         else:
             raise ValueError(
@@ -466,18 +442,13 @@ class Operation(abc.ABC):
             list[float]: parameter values
         """
         temp = list(_flatten(self.params))
-        temp_val = [
-            self.check_domain(x.val, True) if isinstance(x, Variable) else x
-            for x in temp
-        ]
+        temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
         return _unflatten(temp_val, self.params)[0]
 
     def queue(self):
         """Append the operation to a QNode queue."""
         if QNode._current_context is None:
-            raise QuantumFunctionError(
-                "Quantum operations can only be used inside a qfunc."
-            )
+            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         QNode._current_context._append_op(self)
         return (
@@ -560,9 +531,7 @@ class CV:
             raise ValueError("Only order-1 and order-2 arrays supported.")
 
         if U_dim != 1 + 2 * nw:
-            raise ValueError(
-                "{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim)
-            )
+            raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
         if num_wires == 0 or list(self.wires) == list(range(num_wires)):
             # no expansion necessary (U is a full-system matrix in the correct order)
@@ -606,9 +575,7 @@ class CV:
                 W[0, d1] = U[0, s1]
 
                 for k2, w2 in enumerate(self.wires):
-                    W[d1, loc(w2)] = U[
-                        s1, loc(k2)
-                    ]  # block k1, k2 in U goes to w1, w2 in W.
+                    W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
         return W
 
     @staticmethod

@@ -154,7 +154,7 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * X
+    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * X
 
 
 def Roty(theta):
@@ -165,7 +165,7 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Y
+    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Y
 
 
 def Rotz(theta):
@@ -176,7 +176,7 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Z
+    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Z
 
 
 def Rot3(a, b, c):
@@ -396,11 +396,7 @@ class DefaultQubit(Device):
                 self._state = state
             else:
                 raise ValueError("State vector must be of length 2**wires.")
-            if (
-                wires is not None
-                and wires != []
-                and list(wires) != list(range(self.num_wires))
-            ):
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
                 raise ValueError(
                     "The default.qubit plugin can apply QubitStateVector only to all of the {} wires.".format(
                         self.num_wires
@@ -418,11 +414,7 @@ class DefaultQubit(Device):
                         self.num_wires
                     )
                 )
-            if (
-                wires is not None
-                and wires != []
-                and list(wires) != list(range(self.num_wires))
-            ):
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
                 raise ValueError(
                     "The default.qubit plugin can apply BasisState only to all of the {} wires.".format(
                         self.num_wires
@@ -553,9 +545,7 @@ class DefaultQubit(Device):
 
         if np.abs(expectation.imag) > tolerance:
             warnings.warn(
-                "Nonvanishing imaginary part {} in expectation value.".format(
-                    expectation.imag
-                ),
+                "Nonvanishing imaginary part {} in expectation value.".format(expectation.imag),
                 RuntimeWarning,
             )
         return expectation.real

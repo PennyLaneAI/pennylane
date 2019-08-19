@@ -114,9 +114,7 @@ class Device(abc.ABC):
 
     # pylint: disable=too-many-public-methods
     _capabilities = {}  #: dict[str->*]: plugin capabilities
-    _circuits = (
-        {}
-    )  #: dict[str->Circuit]: circuit templates associated with this API class
+    _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
 
     def __init__(self, wires=1, shots=0):
         self.num_wires = wires
@@ -128,9 +126,7 @@ class Device(abc.ABC):
 
     def __repr__(self):
         """String representation."""
-        return "{}.\nInstance: ".format(
-            self.__module__, self.__class__.__name__, self.name
-        )
+        return "{}.\nInstance: ".format(self.__module__, self.__class__.__name__, self.name)
 
     def __str__(self):
         """Verbose string representation."""
@@ -240,17 +236,11 @@ class Device(abc.ABC):
                 elif obs.return_type == "sample":
                     if not hasattr(obs, "num_samples"):
                         raise DeviceError(
-                            "Number of samples not specified for observable {}".format(
-                                obs.name
-                            )
+                            "Number of samples not specified for observable {}".format(obs.name)
                         )
 
                     results.append(
-                        np.array(
-                            self.sample(
-                                obs.name, obs.wires, obs.parameters, obs.num_samples
-                            )
-                        )
+                        np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples))
                     )
 
             self.post_measure()
@@ -279,9 +269,7 @@ class Device(abc.ABC):
             list[~.operation.Operation]
         """
         if self._op_queue is None:
-            raise ValueError(
-                "Cannot access the operation queue outside of the execution context!"
-            )
+            raise ValueError("Cannot access the operation queue outside of the execution context!")
 
         return self._op_queue
 
@@ -413,14 +401,10 @@ class Device(abc.ABC):
         for o in observables:
             if isinstance(o, Observable) and (o.name not in self.observables):
                 raise DeviceError(
-                    "Observable {} not supported on device {}".format(
-                        o.name, self.short_name
-                    )
+                    "Observable {} not supported on device {}".format(o.name, self.short_name)
                 )
 
-            if isinstance(o, Tensor) and (
-                self.capabilities()["tensor_observables"] is False
-            ):
+            if isinstance(o, Tensor) and (self.capabilities()["tensor_observables"] is False):
                 raise DeviceError(
                     "Tensor observables {} not supported on device {}".format(
                         o.ops, self.short_name
@@ -466,9 +450,7 @@ class Device(abc.ABC):
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
         """
         raise NotImplementedError(
-            "Returning variances from QNodes not currently supported by {}".format(
-                self.short_name
-            )
+            "Returning variances from QNodes not currently supported by {}".format(self.short_name)
         )
 
     def sample(self, observable, wires, par, n=None):
@@ -488,9 +470,7 @@ class Device(abc.ABC):
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
         raise NotImplementedError(
-            "Returning samples from QNodes not currently supported by {}".format(
-                self.short_name
-            )
+            "Returning samples from QNodes not currently supported by {}".format(self.short_name)
         )
 
     @abc.abstractmethod

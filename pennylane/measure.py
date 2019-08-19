@@ -77,9 +77,7 @@ class ExpvalFactory:
             op = ops[0]
             if not isinstance(op, Observable):
                 raise QuantumFunctionError(
-                    "{} is not an observable: cannot be used with expval".format(
-                        op.name
-                    )
+                    "{} is not an observable: cannot be used with expval".format(op.name)
                 )
 
             if QNode._current_context is not None:
@@ -102,15 +100,11 @@ class ExpvalFactory:
 
             for op in ops:
                 if len(op.wires) > 1:
-                    raise QuantumFunctionError(
-                        "Only single wire observables can be tensored."
-                    )
+                    raise QuantumFunctionError("Only single wire observables can be tensored.")
 
                 if not isinstance(op, Observable):
                     raise QuantumFunctionError(
-                        "{} is not an observable: cannot be used with expval".format(
-                            op.name
-                        )
+                        "{} is not an observable: cannot be used with expval".format(op.name)
                     )
 
                 if QNode._current_context is not None:
@@ -145,9 +139,7 @@ class ExpvalFactory:
             return type(name, (obs_class,), {"return_type": "expectation"})
 
         if name in qml.ops.__all_ops__:  # pylint: disable=no-member
-            raise AttributeError(
-                "{} is not an observable: cannot be used with expval".format(name)
-            )
+            raise AttributeError("{} is not an observable: cannot be used with expval".format(name))
 
         raise AttributeError("module 'pennylane' has no observable '{}'".format(name))
 
