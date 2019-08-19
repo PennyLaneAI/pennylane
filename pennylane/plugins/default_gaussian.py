@@ -841,7 +841,7 @@ class DefaultGaussian(Device):
         r"""Returns n samples of the given observable in wires.
 
         Args:
-            observable (string): Observable to be measured
+            observable (string): observable to be measured
             wires (int or Sequence[int]): indices of the requested wires
             par (list): parameters for the observable
             n (int): number of samples to be generated
