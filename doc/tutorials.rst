@@ -42,7 +42,7 @@ plugins, and devices, via simple and easy-to-follow examples.
 
 :html:`<h3>Quantum machine learning algorithms</h3>`
 
-Take a deeper dive into quantum machine learning by exploring cutting edge
+Take a deeper dive into quantum machine learning by exploring cutting-edge
 algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
