@@ -838,17 +838,6 @@ class DefaultGaussian(Device):
 
 
     def sample(self, observable, wires, par, n=None):
-        r"""Returns n samples of the given observable in wires.
-
-        Args:
-            observable (string): observable to be measured
-            wires (int or Sequence[int]): indices of the requested wires
-            par (list): parameters for the observable
-            n (int): number of samples to be generated
-
-        Returns:
-            array[float]: samples
-        """
         if n is None:
             n = self.shots
         if n <= 0 or not isinstance(n, int):
