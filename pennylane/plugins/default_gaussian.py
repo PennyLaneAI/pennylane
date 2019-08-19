@@ -847,7 +847,7 @@ class DefaultGaussian(Device):
             n (int): number of samples to be generated
 
         Returns:
-            array: samples
+            array[float]: samples
         """
         if n is None:
             n = self.shots
@@ -864,7 +864,7 @@ class DefaultGaussian(Device):
         elif observable == "QuadOperator":
             phi = par[0]
         else:
-            raise NotImplementedError("Sampling for this observable is not implemented.")
+            raise NotImplementedError("default.gaussian does not support sampling {}".format(observable))
         mu, cov = self.reduced_state(wires)
         rot = rotation(phi)
         muphi = rot.T @ mu

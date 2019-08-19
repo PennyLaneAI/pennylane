@@ -535,7 +535,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAllAlmostEqual(res[1], expected[1], delta=self.tol)
 
     def test_samples_coherent(self):
-        """Test that sampled values are calculated correctly by comparing with first and second moments"""
+        """Test that sampled values are calculated correctly for a coherent state by comparing with first and second moments"""
         self.logTestName()
         n_samples = 1000000
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
@@ -559,7 +559,7 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAlmostEqual(std, hbar/2, delta=1000*self.tol)
 
     def test_samples_squeezed(self):
-        """Test that sampled values are calculated correctly by comparing with first and second moments"""
+        """Test that sampled values are calculated correctly for a squeezed state by comparing with first and second moments"""
         self.logTestName()
         n_samples = 1000000
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
