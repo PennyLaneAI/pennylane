@@ -7,13 +7,11 @@ Tutorials
 =========
 
 The following tutorials introduce the core PennyLane concepts, including QNodes,
-plugins, and devices, via simple and easy to follow examples.
+plugins, and devices, via simple and easy-to-follow examples.
 
 
 :html:`<h3>Learn the PennyLane basics</h3>`
 
-The following tutorials introduce the core PennyLane concepts, including QNodes,
-plugins, and devices, via simple and easy-to-follow examples.
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to rotate a qubit.
@@ -45,7 +43,7 @@ plugins, and devices, via simple and easy-to-follow examples.
 :html:`<h3>Quantum machine learning algorithms</h3>`
 
 Take a deeper dive into quantum machine learning by exploring cutting edge
-algorithms using PennyLane and near term quantum hardware.
+algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: Do arbitrary state preparation on a real quantum computer.
