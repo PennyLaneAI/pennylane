@@ -6,11 +6,11 @@
 Tutorials
 =========
 
+:html:`<h3>Learn the PennyLane basics</h3>`
+
+
 The following tutorials introduce the core PennyLane concepts, including QNodes,
 plugins, and devices, via simple and easy-to-follow examples.
-
-
-:html:`<h3>Learn the PennyLane basics</h3>`
 
 
 .. customgalleryitem::
