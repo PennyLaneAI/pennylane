@@ -548,11 +548,10 @@ class TestRandomLayers:
     def rots(self, request):
         return request.param
 
-    def test_random_layers_seed(self, n_layers, tol, seed):
-        """Test that pennylane.templates.layers.RandomLayers() gets deterministic when using seed."""
+    def test_random_layers_seed_deterministic(self, n_layers, tol, seed):
+        """Test that pennylane.templates.layers.RandomLayers() acts deterministically when using fixed seed."""
         n_rots = 1
         n_wires = 2
-        impr = CNOT
         dev = qml.device('default.qubit', wires=n_wires)
         weights = np.random.randn(n_layers, n_rots)
 
@@ -568,6 +567,46 @@ class TestRandomLayers:
         qnode2 = qml.QNode(circuit2, dev)
 
         assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
+
+    def test_random_layers_no_seed_deterministic(self, n_layers, tol):
+        """Test that pennylane.templates.layers.RandomLayers() acts deterministically when using no seed."""
+        n_rots = 1
+        n_wires = 2
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_layers, n_rots)
+
+        def circuit1(weights):
+            RandomLayers(weights=weights, wires=range(n_wires))
+            return qml.expval(qml.PauliZ(0))
+
+        def circuit2(weights):
+            RandomLayers(weights=weights, wires=range(n_wires))
+            return qml.expval(qml.PauliZ(0))
+
+        qnode1 = qml.QNode(circuit1, dev)
+        qnode2 = qml.QNode(circuit2, dev)
+
+        assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
+
+    def test_random_layers_two_seeds_different(self, n_layers, tol):
+        """Test that pennylane.templates.layers.RandomLayers() does not have the same output for two different seeds."""
+        n_rots = 10
+        n_wires = 2
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_layers, n_rots)
+
+        def circuit1(weights):
+            RandomLayers(weights=weights, wires=range(n_wires), seed=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def circuit2(weights):
+            RandomLayers(weights=weights, wires=range(n_wires), seed=1)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode1 = qml.QNode(circuit1, dev)
+        qnode2 = qml.QNode(circuit2, dev)
+
+        assert not np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
     def test_random_layers_nlayers(self, n_layers):
         """Test that  pennylane.templates.layers.RandomLayers() picks the correct number of gates."""
