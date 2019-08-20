@@ -17,8 +17,8 @@
 PennyLane provides support for various classical
 machine learning interfaces, including Autograd/NumPy, PyTorch,
 and TensorFlow. The interfaces have access to gradients of a QNode, and
-can therefore integrate quantum computations into the machine learning-library
-pipeline for machine learning and optimization.
+can therefore integrate quantum computations into a larger machine learning
+or optimization pipeline.
 
 Depending on the classical machine learning interface chosen,
 you may be able to offload the classical portion of your hybrid model

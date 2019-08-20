@@ -14,8 +14,8 @@
 """
 .. _library_overview:
 
-Library overview
-================
+Overview
+========
 
 The PennyLane codebase contains a number of complementary components.
 These can be roughly separated into a user-interface, supported core

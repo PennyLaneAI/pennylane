@@ -14,8 +14,8 @@
 """
 .. _qnode_decorator:
 
-Creating and using QNodes
-=========================
+Quantum circuits
+================
 
 :ref:`QNodes <quantum_nodes>` form part of the core structure of PennyLane --- they are used
 to encapsulate a quantum function that runs on a quantum hardware device.

@@ -6,7 +6,7 @@
 Tutorials
 =========
 
-:html:`<h3>Learn the PennyLane basics</h3>`
+:html:`<h3>Learn PennyLane</h3>`
 
 
 The following tutorials introduce the core PennyLane concepts, including QNodes,
@@ -40,7 +40,7 @@ plugins, and devices, via simple and easy-to-follow examples.
 :html:`<div style='clear:both'></div>`
 
 
-:html:`<h3>Quantum machine learning algorithms</h3>`
+:html:`<h3>Quantum machine learning with PennyLane</h3>`
 
 Take a deeper dive into quantum machine learning by exploring cutting-edge
 algorithms using PennyLane and near-term quantum hardware.
