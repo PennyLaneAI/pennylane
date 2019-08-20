@@ -238,8 +238,8 @@ def jacobian(func, argnum):
             a combination of quantum and classical nodes. The output of the computation
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
-        argnum (int): which argument to take the gradient
-            with respect to. If the argument is a NumPy array, then the Jacobian
+        argnum (int or Sequence[int]): which argument to take the gradient
+            with respect to. If a sequence is given, the Jacobian matrix
             corresponding to all input elements and all output elements is returned.
 
     Returns:
@@ -247,7 +247,10 @@ def jacobian(func, argnum):
         function with respect to the arguments in argnum
     """
     # pylint: disable=no-value-for-parameter
-    return _jacobian(func, argnum)
+    if isinstance(argnum, int):
+        return _jacobian(func, argnum)
+    return lambda *args, **kwargs: numpy.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
+
 
 
 def version():
