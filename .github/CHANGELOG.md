@@ -57,6 +57,9 @@
   they are calculated with Euler's formula.
   [#292](https://github.com/XanaduAI/pennylane/pull/292)
 
+* Changed the signature of the `RandomLayer` and `RandomLayers` templates to have a fixed seed by default.
+  [#258](https://github.com/XanaduAI/pennylane/pull/258)
+
 ### Bug fixes
 
 * Fixed a bug where a `PolyXP` observable would fail if applied to subsets
@@ -67,7 +70,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Josh Izaac, Johannes Jakob Meyer, Roeland Wiersema.
+Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Roeland Wiersema.
 
 ---
 

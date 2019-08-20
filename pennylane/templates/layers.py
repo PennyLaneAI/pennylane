@@ -134,12 +134,14 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
         imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
 
 
-def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=None):
+def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
     r"""A sequence of layers of type :func:`RandomLayer()`.
 
     The number of layers :math:`L` and the number :math:`k` of rotations per layer is inferred from the first
     and second dimension of ``weights``. The type of imprimitive (two-qubit) gate and rotations distributed
     randomly in the circuit can be chosen explicitly.
+
+    See :func:`RandomLayer` for details on the randomised behaviour.
 
     Args:
         weights (array[float]): array of weights of shape ``(L, k)``,
@@ -162,7 +164,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
                     seed=seed)
 
 
-def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=None):
+def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
     r"""A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
@@ -175,6 +177,15 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
         :align: center
         :width: 60%
         :target: javascript:void(0);
+
+    .. note::
+        Using the default seed (or any other fixed integer seed) generates one and the same circuit in every
+        quantum node. To generate different circuit architectures, either use a different random seed, or use ``seed=None``
+        together with the ``cache=False`` option when creating a quantum node.
+
+    .. warning::
+        If you use a random number generator anywhere inside the quantum function without the ``cache=False`` option,
+        a new random circuit architecture will be created every time the quantum node is evaluated.
 
     Args:
         weights (array[float]): array of weights of shape ``(k,)``
