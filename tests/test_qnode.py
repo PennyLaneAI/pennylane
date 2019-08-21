@@ -923,6 +923,10 @@ class TestQNodeGradients:
 
         assert np.allclose(self.expected_jacobian(a, b, c), res, atol=tol, rtol=0)
 
+        #compare with what we get if argnum is a list
+        res2 = qml.jacobian(circuit, argnum=[0, 1, 2])(a, b, c)
+        assert np.allclose(res, res2, atol=tol, rtol=0)
+
     def test_multiple_expectation_jacobian_array(self, tol):
         """Tests that qnodes using an array argument return correct gradients
         for multiple expectation values."""
