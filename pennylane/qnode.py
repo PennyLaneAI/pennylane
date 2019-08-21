@@ -140,7 +140,7 @@ import networkx as nx
 import pennylane
 import pennylane.operation
 
-from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, to_DiGraph
+from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, to_DiGraph, get_layers
 from .variable import Variable
 
 
@@ -404,49 +404,9 @@ class QNode:
 
         # convert the queue to a DAG
         G = to_DiGraph(self.queue, self.ev)
+        layers = get_layers(self.variable_ops, G)
 
-        # keep track of the layer number
-        layer = 0
-        layer_ops = {0: {"ops": [], "pidx": []}}
-
-        variable_ops_sorted = sorted(list(self.variable_ops.items()), key=lambda x: x[1][0][0])
-
-        for param_idx, gate_param_tuple in variable_ops_sorted:
-            # iterate over all parameters
-            for op_idx, _ in gate_param_tuple:
-                # get all dependents of the existing parameter
-                sub = set(nx.dag.topological_sort(G.subgraph(nx.dag.ancestors(G, op_idx)).copy()))
-
-                # check if any of the dependents are in the
-                # existing layer
-                if set(layer_ops[layer]["ops"]) & sub:
-                    # operation depends on previous layer,
-                    # start a new layer count
-                    layer += 1
-
-                # store the parameters and ops indices for the layer
-                layer_ops.setdefault(layer, {"ops": [], "pidx": []})
-                layer_ops[layer]["ops"].append(op_idx)
-                layer_ops[layer]["pidx"].append(param_idx)
-
-        # iterate through each layer
-        for _, v in layer_ops.items():
-            # for the layer, get the ops and parameter indices
-            ops = v["ops"]
-            param_idx = v["pidx"]
-
-            # get the ops in this layer
-            curr_ops = [op for n, op in G.nodes(data="op") if n in ops]
-
-            # get all ancestor operations
-            ancestors = set()
-            for o in ops:
-                subG = G.subgraph(nx.dag.ancestors(G, o))
-                ancestors |= set(subG.nodes(data="op"))
-
-            ancestors = sorted(ancestors, key=lambda x: x[0])
-            queue = [op for _, op in ancestors if op not in curr_ops]
-
+        for queue, curr_ops, param_idx, _ in layers:
             obs = []
             scale = []
 

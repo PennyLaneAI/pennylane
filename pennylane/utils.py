@@ -34,6 +34,7 @@ across the PennyLane submodules.
     _get_default_args
     expand
     to_DiGraph
+    get_layers
 
 .. raw:: html
 
@@ -195,6 +196,10 @@ def expand(U, wires, num_wires):
     return U[:, perm][perm]
 
 
+################################################
+# Graph functions
+
+
 def to_DiGraph(queue, observables):
     """Convert a queue and observables to a directed acyclic graph.
 
@@ -258,3 +263,87 @@ def to_DiGraph(queue, observables):
             G.add_edge(cmds[i - 1][0], cmds[i][0])
 
     return G
+
+
+def get_layers(parameters, G):
+    """Given a directed acyclic graph representing the quantum
+    circuit, identifies and returns an iterable containing
+    the parametrized layers.
+
+    Args:
+        parameters (dict[int->list[(int, int)]]): Specifies the free parameters
+            of the quantum circuit. The dictionary key is the parameter index.
+            The first element of the value tuple is the operation index,
+            the second the index of the parameter within the operation.
+        G (nx.DiGraph): directed acyclic graph representing
+            the quantum circuit
+
+    Returns:
+        Iterable[tuple[list, list, tuple]]: an iterable that returns a tuple
+        ``(pre_queue, layer, param_idx)`` at each iteration.
+
+        * ``pre_queue`` (*list[Operation]*): all operations that precede the layer
+
+        * ``layer`` (*list[Operation]*): the parametrized gates in the layer
+
+        * ``param_idx`` (*tuple[int]*): The integer indices corresponding
+          to the free parameters of this layer, in the order they appear in
+          this layer.
+
+        * ``post_queue`` (*list[Operation,Observable]*): all operations that succeed the layer
+    """
+    # keep track of the layer number
+    layer = 0
+    layer_ops = {0: {"ops": [], "pidx": []}}
+
+    variable_ops_sorted = sorted(list(parameters.items()), key=lambda x: x[1][0][0])
+
+    for param_idx, gate_param_tuple in variable_ops_sorted:
+        # iterate over all parameters
+        for op_idx, _ in gate_param_tuple:
+            # get all dependents of the existing parameter
+            sub = set(nx.dag.topological_sort(G.subgraph(nx.dag.ancestors(G, op_idx)).copy()))
+
+            # check if any of the dependents are in the
+            # existing layer
+            if set(layer_ops[layer]["ops"]) & sub:
+                # operation depends on previous layer,
+                # start a new layer count
+                layer += 1
+
+            # store the parameters and ops indices for the layer
+            layer_ops.setdefault(layer, {"ops": [], "pidx": []})
+            layer_ops[layer]["ops"].append(op_idx)
+            layer_ops[layer]["pidx"].append(param_idx)
+
+    # iterate through each layer
+    for _, v in layer_ops.items():
+        # for the layer, get the ops and parameter indices
+        ops = v["ops"]
+        param_idx = v["pidx"]
+
+        # get the ops in this layer
+        curr_ops = [op for n, op in G.nodes(data="op") if n in ops]
+
+        # get all ancestor operations
+        ancestors = set()
+        for o in ops:
+            subG = G.subgraph(nx.dag.ancestors(G, o))
+            ancestors |= set(subG.nodes(data="op"))
+
+        ancestors = sorted(ancestors, key=lambda x: x[0])
+        queue = [op for _, op in ancestors if op not in curr_ops]
+
+        # get all descendent operations
+        descendants = set()
+        for o in ops:
+            subG = G.subgraph(nx.dag.descendants(G, o))
+            descendants |= set(subG.nodes(data="op"))
+
+        ancestors = sorted(ancestors, key=lambda x: x[0])
+        pre_queue = [op for _, op in ancestors if op not in curr_ops]
+
+        descendants = sorted(descendants, key=lambda x: x[0])
+        post_queue = [op for _, op in descendants if op not in curr_ops]
+
+        yield pre_queue, curr_ops, tuple(param_idx), post_queue
