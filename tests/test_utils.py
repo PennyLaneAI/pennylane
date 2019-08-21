@@ -258,7 +258,7 @@ class TestExpand:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-class TestDiGraph:
+class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
 
     def test_no_dependence(self):
@@ -269,7 +269,7 @@ class TestDiGraph:
 
         obs = []
 
-        res = pu.to_DiGraph(queue, obs)
+        res = pu.CircuitGraph(queue, obs).graph
         assert len(res) == 2
         assert not res.edges()
 
@@ -292,7 +292,8 @@ class TestDiGraph:
             qml.expval(qml.Hermitian(np.identity(4), wires=[1, 2], do_queue=False)),
         ]
 
-        res = pu.to_DiGraph(queue, obs)
+        circuit = pu.CircuitGraph(queue, obs)
+        res = circuit.graph
         assert len(res) == 9
 
         nodes = res.nodes().data()

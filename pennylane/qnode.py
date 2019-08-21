@@ -140,7 +140,7 @@ import networkx as nx
 import pennylane
 import pennylane.operation
 
-from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, to_DiGraph, get_layers
+from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, CircuitGraph
 from .variable import Variable
 
 
@@ -403,10 +403,10 @@ class QNode:
             self.construct(args, kwargs)
 
         # convert the queue to a DAG
-        G = to_DiGraph(self.queue, self.ev)
-        layers = get_layers(self.variable_ops, G)
+        circuit = CircuitGraph(self.queue, self.ev, self.variable_ops)
+        G = circuit.graph
 
-        for queue, curr_ops, param_idx, _ in layers:
+        for queue, curr_ops, param_idx, _ in circuit.iterate_layers():
             obs = []
             scale = []
 

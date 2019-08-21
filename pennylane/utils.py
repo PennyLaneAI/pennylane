@@ -200,8 +200,9 @@ def expand(U, wires, num_wires):
 # Graph functions
 
 
-def to_DiGraph(queue, observables):
-    """Convert a queue and observables to a directed acyclic graph.
+class CircuitGraph:
+    """Represents a queue of operations and observables
+    as a directed acyclic graph.
 
     The resulting graph has nodes representing quantum operations,
     and edges representing dependent/successor operations.
@@ -216,134 +217,147 @@ def to_DiGraph(queue, observables):
     Args:
         queue (list[Operation]): the quantum operations to apply
         observables (list[Observable]): the quantum observables to measure
-
-    Returns:
-        networkx.DiGraph: the directed acyclic graph representing
-        the quantum program
-    """
-    grid = {}
-    # dict[int, list[int, Command]]: dictionary representing the quantum circuit
-    # as a grid. Here, the key is the wire number, and the value is a list
-    # containing the operation index (that is, where in the queue it occured)
-    # as well as a Command object containing the operation/observable itself.
-
-    for idx, op in enumerate(queue + observables):
-        cmd = Command(name=op.name, op=op)
-
-        for w in set(op.wires):
-            if w not in grid:
-                # wire is not already in the grid;
-                # add the corresponding wire to the grid
-                grid[w] = []
-
-            # Add the operation to the grid, to the end of the specified wire
-            grid[w].append([idx, cmd])
-
-    G = nx.DiGraph()
-
-    # iterate over each wire in the grid
-    for _, cmds in grid.items():
-        if cmds:
-            # Add the first operation on the wire to the graph
-            # This operation does not depend on any others
-            attrs = cmds[0][1]._asdict()
-            G.add_node(cmds[0][0], **attrs)
-
-        for i in range(1, len(cmds)):
-            # For subsequent operations on the wire:
-
-            if cmds[i][0] not in G:
-                # add them to the graph if they are not already
-                # in the graph (multi-qubit operations might already have been placed)
-                attrs = cmds[i][1]._asdict()
-                G.add_node(cmds[i][0], **attrs)
-
-            # create an edge between this operation and the
-            # previous operation
-            G.add_edge(cmds[i - 1][0], cmds[i][0])
-
-    return G
-
-
-def get_layers(parameters, G):
-    """Given a directed acyclic graph representing the quantum
-    circuit, identifies and returns an iterable containing
-    the parametrized layers.
-
-    Args:
         parameters (dict[int->list[(int, int)]]): Specifies the free parameters
             of the quantum circuit. The dictionary key is the parameter index.
             The first element of the value tuple is the operation index,
             the second the index of the parameter within the operation.
-        G (nx.DiGraph): directed acyclic graph representing
-            the quantum circuit
-
-    Returns:
-        Iterable[tuple[list, list, tuple]]: an iterable that returns a tuple
-        ``(pre_queue, layer, param_idx)`` at each iteration.
-
-        * ``pre_queue`` (*list[Operation]*): all operations that precede the layer
-
-        * ``layer`` (*list[Operation]*): the parametrized gates in the layer
-
-        * ``param_idx`` (*tuple[int]*): The integer indices corresponding
-          to the free parameters of this layer, in the order they appear in
-          this layer.
-
-        * ``post_queue`` (*list[Operation,Observable]*): all operations that succeed the layer
     """
-    # keep track of the layer number
-    layer = 0
-    layer_ops = {0: {"ops": [], "pidx": []}}
 
-    variable_ops_sorted = sorted(list(parameters.items()), key=lambda x: x[1][0][0])
+    def __init__(self, queue, observables, parameters=None):
+        self.parameters = parameters or {}
+        self._grid = {}
+        # dict[int, list[int, Command]]: dictionary representing the quantum circuit
+        # as a grid. Here, the key is the wire number, and the value is a list
+        # containing the operation index (that is, where in the queue it occured)
+        # as well as a Command object containing the operation/observable itself.
 
-    for param_idx, gate_param_tuple in variable_ops_sorted:
-        # iterate over all parameters
-        for op_idx, _ in gate_param_tuple:
-            # get all dependents of the existing parameter
-            sub = set(nx.dag.topological_sort(G.subgraph(nx.dag.ancestors(G, op_idx)).copy()))
+        for idx, op in enumerate(queue + observables):
+            cmd = Command(name=op.name, op=op)
 
-            # check if any of the dependents are in the
-            # existing layer
-            if set(layer_ops[layer]["ops"]) & sub:
-                # operation depends on previous layer,
-                # start a new layer count
-                layer += 1
+            for w in set(op.wires):
+                if w not in self._grid:
+                    # wire is not already in the grid;
+                    # add the corresponding wire to the grid
+                    self._grid[w] = []
 
-            # store the parameters and ops indices for the layer
-            layer_ops.setdefault(layer, {"ops": [], "pidx": []})
-            layer_ops[layer]["ops"].append(op_idx)
-            layer_ops[layer]["pidx"].append(param_idx)
+                # Add the operation to the grid, to the end of the specified wire
+                self._grid[w].append([idx, cmd])
 
-    # iterate through each layer
-    for _, v in layer_ops.items():
-        # for the layer, get the ops and parameter indices
-        ops = v["ops"]
-        param_idx = v["pidx"]
+        self._graph = nx.DiGraph()
 
-        # get the ops in this layer
-        curr_ops = [op for n, op in G.nodes(data="op") if n in ops]
+        # iterate over each wire in the grid
+        for _, cmds in self._grid.items():
+            if cmds:
+                # Add the first operation on the wire to the graph
+                # This operation does not depend on any others
+                attrs = cmds[0][1]._asdict()
+                self._graph.add_node(cmds[0][0], **attrs)
 
-        # get all ancestor operations
-        ancestors = set()
-        for o in ops:
-            subG = G.subgraph(nx.dag.ancestors(G, o))
-            ancestors |= set(subG.nodes(data="op"))
+            for i in range(1, len(cmds)):
+                # For subsequent operations on the wire:
 
-        ancestors = sorted(ancestors, key=lambda x: x[0])
-        queue = [op for _, op in ancestors if op not in curr_ops]
+                if cmds[i][0] not in self._graph:
+                    # add them to the graph if they are not already
+                    # in the graph (multi-qubit operations might already have been placed)
+                    attrs = cmds[i][1]._asdict()
+                    self._graph.add_node(cmds[i][0], **attrs)
 
-        # get all descendent operations
-        descendants = set()
-        for o in ops:
-            subG = G.subgraph(nx.dag.descendants(G, o))
-            descendants |= set(subG.nodes(data="op"))
+                # create an edge between this operation and the
+                # previous operation
+                self._graph.add_edge(cmds[i - 1][0], cmds[i][0])
 
-        ancestors = sorted(ancestors, key=lambda x: x[0])
-        pre_queue = [op for _, op in ancestors if op not in curr_ops]
+    @property
+    def graph(self):
+        """The graph representation of the quantum program.
 
-        descendants = sorted(descendants, key=lambda x: x[0])
-        post_queue = [op for _, op in descendants if op not in curr_ops]
+        Returns:
+            networkx.DiGraph: the directed acyclic graph representing
+            the quantum program
+        """
+        return self._graph
 
-        yield pre_queue, curr_ops, tuple(param_idx), post_queue
+    def layers(self):
+        """Identifies and returns an dictionary describing the
+        layer structure of the circuit.
+
+        Returns:
+            dict[int, tuple[list, list]]: a mapping from the layer
+            number to a tuple containing the list of operation
+            indices in the layer, and the list of parameter indices
+            used within the layer.
+        """
+        # keep track of the layer number
+        layer = 0
+        layer_ops = {0: {"ops": [], "pidx": []}}
+
+        variable_ops_sorted = sorted(list(self.parameters.items()), key=lambda x: x[1][0][0])
+
+        for param_idx, gate_param_tuple in variable_ops_sorted:
+            # iterate over all parameters
+            for op_idx, _ in gate_param_tuple:
+                # get all dependents of the existing parameter
+                sub = set(nx.dag.topological_sort(self.graph.subgraph(nx.dag.ancestors(self.graph, op_idx)).copy()))
+
+                # check if any of the dependents are in the
+                # existing layer
+                if set(layer_ops[layer]["ops"]) & sub:
+                    # operation depends on previous layer,
+                    # start a new layer count
+                    layer += 1
+
+                # store the parameters and ops indices for the layer
+                layer_ops.setdefault(layer, {"ops": [], "pidx": []})
+                layer_ops[layer]["ops"].append(op_idx)
+                layer_ops[layer]["pidx"].append(param_idx)
+
+        return layer_ops
+
+    def iterate_layers(self):
+        """Identifies and returns an iterable containing
+        the parametrized layers.
+
+        Returns:
+            Iterable[tuple[list, list, tuple]]: an iterable that returns a tuple
+            ``(pre_queue, layer, param_idx)`` at each iteration.
+
+            * ``pre_queue`` (*list[Operation]*): all operations that precede the layer
+
+            * ``layer`` (*list[Operation]*): the parametrized gates in the layer
+
+            * ``param_idx`` (*tuple[int]*): The integer indices corresponding
+              to the free parameters of this layer, in the order they appear in
+              this layer.
+
+            * ``post_queue`` (*list[Operation,Observable]*): all operations that succeed the layer
+        """
+        # iterate through each layer
+        for _, v in self.layers().items():
+            # for the layer, get the ops and parameter indices
+            ops = v["ops"]
+            param_idx = v["pidx"]
+
+            # get the ops in this layer
+            curr_ops = [op for n, op in self.graph.nodes(data="op") if n in ops]
+
+            # get all ancestor operations
+            ancestors = set()
+            for o in ops:
+                subG = self.graph.subgraph(nx.dag.ancestors(self.graph, o))
+                ancestors |= set(subG.nodes(data="op"))
+
+            ancestors = sorted(ancestors, key=lambda x: x[0])
+            queue = [op for _, op in ancestors if op not in curr_ops]
+
+            # get all descendent operations
+            descendants = set()
+            for o in ops:
+                subG = self.graph.subgraph(nx.dag.descendants(self.graph, o))
+                descendants |= set(subG.nodes(data="op"))
+
+            ancestors = sorted(ancestors, key=lambda x: x[0])
+            pre_queue = [op for _, op in ancestors if op not in curr_ops]
+
+            descendants = sorted(descendants, key=lambda x: x[0])
+            post_queue = [op for _, op in descendants if op not in curr_ops]
+
+            yield pre_queue, curr_ops, tuple(param_idx), post_queue
