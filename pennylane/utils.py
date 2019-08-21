@@ -217,32 +217,44 @@ def to_DiGraph(queue, observables):
         the quantum program
     """
     grid = {}
+    # dict[int, list[int, Command]]: dictionary representing the quantum circuit
+    # as a grid. Here, the key is the wire number, and the value is a list
+    # containing the operation index (that is, where in the queue it occured)
+    # as well as a Command object containing the operation/observable itself.
 
     for idx, op in enumerate(queue + observables):
         cmd = Command(name=op.name, op=op)
 
-        for q in set(op.wires):
-            # Add cmd to the grid to the end of the line r.ind.
-            if q not in grid:
-                # add a new line to the circuit
-                grid[q] = []
+        for w in set(op.wires):
+            if w not in grid:
+                # wire is not already in the grid;
+                # add the corresponding wire to the grid
+                grid[w] = []
 
-            grid[q].append([idx, cmd])
+            # Add the operation to the grid, to the end of the specified wire
+            grid[w].append([idx, cmd])
 
     G = nx.DiGraph()
 
-    for q, cmds in grid.items():
+    # iterate over each wire in the grid
+    for _, cmds in grid.items():
         if cmds:
-            # add the first operation on the wire that does not depend on anything
+            # Add the first operation on the wire to the graph
+            # This operation does not depend on any others
             attrs = cmds[0][1]._asdict()
             G.add_node(cmds[0][0], **attrs)
 
         for i in range(1, len(cmds)):
-            # add the edge between the operations, and the operation nodes themselves
+            # For subsequent operations on the wire:
+
             if cmds[i][0] not in G:
+                # add them to the graph if they are not already
+                # in the graph (multi-qubit operations might already have been placed)
                 attrs = cmds[i][1]._asdict()
                 G.add_node(cmds[i][0], **attrs)
 
+            # create an edge between this operation and the
+            # previous operation
             G.add_edge(cmds[i - 1][0], cmds[i][0])
 
     return G

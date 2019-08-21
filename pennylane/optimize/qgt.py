@@ -14,6 +14,7 @@
 """QGT optimizer"""
 #pylint: disable=too-many-branches
 import autograd.numpy as np
+from scipy import linalg
 
 from pennylane.utils import _flatten, unflatten
 
@@ -29,7 +30,11 @@ class QGTOptimizer(GradientDescentOptimizer):
     of the quantum geometric tensor :math:`G`:
 
     .. math::
-        x^{(t+1)} = x^{(t)} - \eta G(f(x^{(t)})^{-1} \nabla f(x^{(t)}).
+        x^{(t+1)} = x^{(t)} - \eta G(f(x^{(t)})^{-1} \nabla f(x^{(t)}),
+
+    where :math:`f(x^{(t)}) = \langle 0 | U(x^{(t))^\dagger \hat{B} U(x^{(t)) | 0 \rangle`
+    is an expectation value of some observable measured on the variational
+    quantum circuit :math:`U(x^{(t))`.
 
     Consider a quantum node represented by the variational quantum circuit
 
@@ -46,9 +51,9 @@ class QGTOptimizer(GradientDescentOptimizer):
 
     .. math::
 
-        G_{ij} = \langle 0 \mid V^{-1} K_i K_j V \mid 0\rangle
-        - \langle 0 \mid V^{-1} K_i V \mid 0\rangle\right
-        \langle 0 \mid V^{-1} K_j V \mid 0\rangle\right
+        G_{ij} = \langle 0 | V^{-1} K_i K_j V | 0\rangle
+        - \langle 0 | V^{-1} K_i V | 0\rangle\right
+        \langle 0 | V^{-1} K_j V | 0\rangle\right
 
     For parametric layer :math:`\ell` in the variational quantum circuit
     containing $n$ parameters, an :math:`n\times n` block diagonal submatrix
@@ -57,9 +62,18 @@ class QGTOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        As the quantum geometric tensor is computed by evaluating subcircuits
-        of the original quantum node, the QGT optimizer
-        **only supports single QNodes** as objective functions.
+        The QGT optimizer **only supports single QNodes** as objective functions.
+
+        In particular:
+
+        * For hybrid classical-quantum models, the "mixed geometry" of the model
+          makes it unclear which metric should be used for which parameter.
+          For example, parameters of quantum nodes are better suited to
+          one metric (such as the QGT), whereas others (e.g., parameters of classical nodes)
+          are likely better suited to another metric.
+
+        * For multi-QNode models, we don't know what geometry is appropriate
+          if a parameter is shared amongst several QNodes.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
@@ -95,7 +109,7 @@ class QGTOptimizer(GradientDescentOptimizer):
         if recompute_tensor or self.metric_tensor is None:
             # pseudo-inverse metric tensor
             metric_tensor = qnode.metric_tensor(x, diag_approx=self.diag_approx)
-            self.metric_tensor_inv = np.linalg.pinv(metric_tensor)
+            self.metric_tensor_inv = linalg.pinv(metric_tensor)
 
         g = self.compute_grad(qnode, x)
         x_out = self.apply_grad(g, x)

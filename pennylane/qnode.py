@@ -448,10 +448,13 @@ class QNode:
             queue = [op for _, op in ancestors if op not in curr_ops]
 
             obs = []
-            first_order = []
-            second_order = []
-            V = None
             scale = []
+
+            Ki_matrices = []
+            KiKj_matrices = []
+            Ki_ev = []
+            KiKj_ev = []
+            V = None
 
             # for each operator, get the generator
             # and convert it to a variance
@@ -470,7 +473,7 @@ class QNode:
                     variance = pennylane.var(pennylane.Hermitian(gen, w, do_queue=False))
 
                     if not diag_approx:
-                        first_order.append((n, expand(gen, w, self.num_wires)))
+                        Ki_matrices.append((n, expand(gen, w, self.num_wires)))
 
                 elif issubclass(gen, pennylane.operation.Observable):
                     # generator is an existing PennyLane operation
@@ -484,48 +487,53 @@ class QNode:
                         elif issubclass(gen, pennylane.ops.PauliZ):
                             mat = np.array([[1, 0], [0, -1]])
 
-                        first_order.append((n, expand(mat, w, self.num_wires)))
+                        Ki_matrices.append((n, expand(mat, w, self.num_wires)))
 
                 else:
                     raise QuantumFunctionError(
                         "Can't generate metric tensor, generator {}"
-                        "has no corresponding expectation value".format(gen)
+                        "has no corresponding observable".format(gen)
                     )
 
                 obs.append(variance)
                 scale.append(s)
 
             if not diag_approx:
-                for i, j in itertools.product(range(len(first_order)), repeat=2):
-                    obs1 = first_order[i]
-                    obs2 = first_order[j]
-                    second_order.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
+                # In order to compute the block diagonal portion of the metric tensor,
+                # we need to compute 'second order' <psi|K_i K_j|psi> terms.
+
+                for i, j in itertools.product(range(len(Ki_matrices)), repeat=2):
+                    # compute the matrices representing all K_i K_j terms
+                    obs1 = Ki_matrices[i]
+                    obs2 = Ki_matrices[j]
+                    KiKj_matrices.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
+
+                V = np.identity(2**self.num_wires, dtype=np.complex128)
 
                 # generate the unitary operation to rotate to
                 # the shared eigenbasis of all observables
-                V = np.identity(2**self.num_wires, dtype=np.complex128)
-
-                for _, term in first_order:
+                for _, term in Ki_matrices:
                     _, S = linalg.eigh(V.conj().T @ term @ V)
                     V = np.round(V @ S, 15)
 
                 V = V.conj().T
 
-                # calculate eigenvalues
-                for i, (idx, term) in enumerate(first_order):
-                    Lambda = np.diag(V @ term @ V.conj().T).real
-                    first_order[i] = (idx, Lambda)
+                # calculate the eigenvalues for
+                # each observable in the shared eigenbasis
+                for idx, term in Ki_matrices:
+                    eigs = np.diag(V @ term @ V.conj().T).real
+                    Ki_ev.append((idx, eigs))
 
-                for i, (idx, term) in enumerate(second_order):
-                    Lambda = np.diag(V @ term @ V.conj().T).real
-                    second_order[i] = (idx, Lambda)
+                for idx, term in KiKj_matrices:
+                    eigs = np.diag(V @ term @ V.conj().T).real
+                    KiKj_ev.append((idx, eigs))
 
             self._metric_tensor_subcircuits[tuple(param_idx)] = {
                 "queue": queue,
                 "observable": obs,
-                "first_order": first_order,
-                "second_order": second_order,
-                "eigenbasis": V,
+                "Ki_expectations": Ki_ev,
+                "KiKj_expectations": KiKj_ev,
+                "eigenbasis_matrix": V,
                 "result": None,
                 "scale": scale,
             }
@@ -755,7 +763,7 @@ class QNode:
             self.device.reset()
 
             s = np.array(circuit['scale'])
-            V = circuit['eigenbasis']
+            V = circuit['eigenbasis_matrix']
 
             if not diag_approx:
                 # block diagonal approximation
@@ -767,10 +775,10 @@ class QNode:
                 first_order_ev = np.zeros([len(params)])
                 second_order_ev = np.zeros([len(params), len(params)])
 
-                for idx, Lambda in circuit['first_order']:
+                for idx, Lambda in circuit['Ki_expectations']:
                     first_order_ev[idx] = Lambda @ probs
 
-                for idx, Lambda in circuit['second_order']:
+                for idx, Lambda in circuit['KiKj_expectations']:
                     second_order_ev[idx] = Lambda @ probs
                     second_order_ev[idx[1], idx[0]] = second_order_ev[idx]
 

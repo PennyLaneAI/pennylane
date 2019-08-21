@@ -1367,7 +1367,7 @@ class TestMetricTensor:
 
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
-        operation with generator that corresponds to an object that is not an observable```
+        operation with generator object that is not an observable"""
         dev = qml.device('default.qubit', wires=1)
 
         def circuit(a):
@@ -1379,7 +1379,7 @@ class TestMetricTensor:
         with monkeypatch.context() as m:
             m.setattr('pennylane.RX.generator', [qml.RX, 1])
 
-            with pytest.raises(QuantumFunctionError, match="no corresponding expectation value"):
+            with pytest.raises(QuantumFunctionError, match="no corresponding observable"):
                 circuit.construct_metric_tensor([1])
 
     def test_construct_subcircuit(self):
@@ -1503,7 +1503,9 @@ class TestMetricTensor:
         circuit.metric_tensor(a, b, c)
 
         # first parameter subcircuit
-        assert np.allclose(circuit._metric_tensor_subcircuits[(0,)]['result'], 0.25, atol=tol, rtol=0)
+        res = circuit._metric_tensor_subcircuits[(0,)]['result']
+        expected = 0.25
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # second parameter subcircuit
         res = circuit._metric_tensor_subcircuits[(1,)]['result']
