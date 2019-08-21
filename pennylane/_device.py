@@ -439,7 +439,7 @@ class Device(abc.ABC):
         raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
 
     def probability(self):
-        """Return the full state probability from the last run of the device.
+        """Return the full state probability of each computational basis state from the last run of the device.
 
         Returns:
             OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state

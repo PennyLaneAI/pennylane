@@ -1367,7 +1367,7 @@ class TestMetricTensor:
 
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
-        operation with generator that corresponds to no expectation value"""
+        operation with generator that corresponds to an object that is not an observable```
         dev = qml.device('default.qubit', wires=1)
 
         def circuit(a):
@@ -1580,7 +1580,7 @@ class TestMetricTensor:
         # ============================================
         # Test block diag metric tensor of first layer is correct.
         # We do this by comparing against the known analytic result.
-        # First layer include the non_parametrized_layer,
+        # First layer includes the non_parametrized_layer,
         # followed by observables corresponding to generators of:
         #   qml.RX(x, wires=0)
         #   qml.RY(y, wires=1)
@@ -1705,7 +1705,7 @@ class TestMetricTensor:
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
     def test_evaluate_diag_approx_metric_tensor(self, tol):
-        """Test that a block diagonal metric tensor under the
+        """Test that a metric tensor under the
         diagonal approximation evaluates correctly."""
         dev = qml.device('default.qubit', wires=3)
 
@@ -1745,7 +1745,7 @@ class TestMetricTensor:
         # ============================================
         # Test block diag metric tensor of first layer is correct.
         # We do this by comparing against the known analytic result.
-        # First layer include the non_parametrized_layer,
+        # First layer includes the non_parametrized_layer,
         # followed by observables corresponding to generators of:
         #   qml.RX(x, wires=0)
         #   qml.RY(y, wires=1)

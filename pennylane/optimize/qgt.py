@@ -22,11 +22,11 @@ from .gradient_descent import GradientDescentOptimizer
 
 class QGTOptimizer(GradientDescentOptimizer):
     r"""Optimizer with adaptive learning rate, via calculation
-    of the quantum gradient tensor.
+    of the quantum geometric tensor.
 
-    The QGT optimizer uses a step-dependent learning rate,
+    The QGT optimizer uses a step- and parameter-dependent learning rate,
     with the learning rate dependent on the pseudo-inverse
-    of the quantum gradient tensor :math:`G`:
+    of the quantum geometric tensor :math:`G`:
 
     .. math::
         x^{(t+1)} = x^{(t)} - \eta G(f(x^{(t)})^{-1} \nabla f(x^{(t)}).
@@ -42,7 +42,7 @@ class QGTOptimizer(GradientDescentOptimizer):
     is the *generator* of the parametrized operation :math:`X(\theta_i)` corresponding
     to the :math:`i`-th parameter).
 
-    The quantum gradient tensor element is thus given by:
+    The quantum geometric tensor element is thus given by:
 
     .. math::
 
@@ -52,18 +52,18 @@ class QGTOptimizer(GradientDescentOptimizer):
 
     For parametric layer :math:`\ell` in the variational quantum circuit
     containing $n$ parameters, an :math:`n\times n` block diagonal submatrix
-    of the quantum gradient tensor :math:`G_{ij}^{(\ell)}` is computed
+    of the quantum geometric tensor :math:`G_{ij}^{(\ell)}` is computed
     by directly querying the quantum device.
 
     .. note::
 
-        As the quantum gradient tensor is computed by evaluating subcircuits
+        As the quantum geometric tensor is computed by evaluating subcircuits
         of the original quantum node, the QGT optimizer
         **only supports single QNodes** as objective functions.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
-        diag_approx (bool): if ``True``, forces a diagonal approximation
+        diag_approx (bool): If ``True``, forces a diagonal approximation
             where the calculated metric tensor only contains diagonal
             elements :math:`G_{ii}`. In some cases, this may reduce the
             time taken per optimization step.
@@ -81,7 +81,7 @@ class QGTOptimizer(GradientDescentOptimizer):
         Args:
             qnode (QNode): the QNode for optimization
             x (array): NumPy array containing the current values of the variables to be updated
-            recompute_tensor (bool): whether or not the metric tensor should
+            recompute_tensor (bool): Whether or not the metric tensor should
                 be recomputed. If not, the metric tensor from the previous
                 optimization step is used.
 

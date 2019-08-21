@@ -46,8 +46,8 @@ class TestOptimize:
     """Test basic optimization integration"""
 
     def test_qubit_rotation(self):
-        """Test qubit rotation has the correct QGT tensor
-        after first step, and correct cost after 200 steps"""
+        """Test qubit rotation has the correct QGT value
+        every step, and correct cost after 200 steps"""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)

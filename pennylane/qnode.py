@@ -501,7 +501,7 @@ class QNode:
                     obs2 = first_order[j]
                     second_order.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
 
-                # generate the unitary operation to project to
+                # generate the unitary operation to rotate to
                 # the shared eigenbasis of all observables
                 V = np.identity(2**self.num_wires, dtype=np.complex128)
 

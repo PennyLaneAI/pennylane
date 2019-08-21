@@ -135,7 +135,7 @@ class TestArgumentHelpers:
         assert res == expected
 
     def test_inv_dict_unhashable_key(self):
-        """Test _inv_dict raises an exception if a value is unhashable inverts a dictionary"""
+        """Test _inv_dict raises an exception if a value is unhashable in the dictionary to be inverted```
         test_data = {"c": 8, "d": [0, 0.65], "e": "hi", "f": None, "g": 8}
 
         with pytest.raises(TypeError, match="unhashable type"):

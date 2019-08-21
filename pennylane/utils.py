@@ -202,7 +202,7 @@ def to_DiGraph(queue, observables):
     and edges representing dependent/successor operations.
 
     Each node is labelled by an integer corresponding to the position
-    in the queue; note attributes are used to store information about the node:
+    in the queue; node attributes are used to store information about the node:
 
     * ``'name'`` *(str)*: name of the quantum operation (e.g., ``'PauliZ'``)
 
