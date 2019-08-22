@@ -22,6 +22,8 @@ import numpy as np
 import pennylane as qml
 import pennylane.utils as pu
 
+from pennylane.operation import Sample, Variance, Expectation
+
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 test_shapes = [
@@ -334,13 +336,13 @@ class TestCircuitGraph:
         # PauliX is measured on the output of the second CNOT
         assert nodes[7]["name"] == "PauliX"
         assert nodes[7]["op"] == obs[0]
-        assert nodes[7]["op"].return_type == "expectation"
+        assert nodes[7]["op"].return_type == Expectation
         assert (5, 7) in res.edges()
 
         # Hermitian is measured on the output of the second CNOT and the PauliX
         assert nodes[8]["name"] == "Hermitian"
         assert nodes[8]["op"] == obs[1]
-        assert nodes[8]["op"].return_type == "expectation"
+        assert nodes[8]["op"].return_type == Expectation
         assert (5, 8) in res.edges()
         assert (6, 8) in res.edges()
 
