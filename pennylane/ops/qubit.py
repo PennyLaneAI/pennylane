@@ -537,7 +537,7 @@ class BasisState(Operation):
 
 class QubitStateVector(Operation):
     r"""QubitStateVector(state, wires)
-    Prepare subsystems using the given ket vector in the Fock basis.
+    Prepare subsystems using the given ket vector in the computational basis.
 
     **Details:**
 

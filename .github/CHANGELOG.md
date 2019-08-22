@@ -62,6 +62,9 @@
   attribute of an `Observable`.
   [#290](https://github.com/XanaduAI/pennylane/pull/290)
 
+* Changed the signature of the `RandomLayer` and `RandomLayers` templates to have a fixed seed by default.
+  [#258](https://github.com/XanaduAI/pennylane/pull/258)
+
 ### Bug fixes
 
 * Fixed a bug where a `PolyXP` observable would fail if applied to subsets
@@ -72,7 +75,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Antal Száva, Aroosa Ijaz, Josh Izaac, Johannes Jakob Meyer, Roeland Wiersema.
+Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 ---
 
