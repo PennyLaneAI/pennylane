@@ -135,7 +135,6 @@ import autograd.extend as ae
 import autograd.builtins
 
 from scipy import linalg
-import networkx as nx
 
 import pennylane
 import pennylane.operation
@@ -404,7 +403,6 @@ class QNode:
 
         # convert the queue to a DAG
         circuit = CircuitGraph(self.queue, self.ev, self.variable_ops)
-        G = circuit.graph
 
         for queue, curr_ops, param_idx, _ in circuit.iterate_layers():
             obs = []
