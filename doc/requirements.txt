@@ -1,10 +1,16 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
+appdirs
 autograd
 numpy
-scipy
-tensorflow==1.12
-https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp35-cp35m-linux_x86_64.whl
-torchvision
-toml
-appdirs
-sphinxcontrib-bibtex
 pygments-github-lexers
+git+git://github.com/XanaduAI/pennylane-sf.git#egg=PennyLane_SF
+pennylane-forest
+pyquil
+scipy
+sphinxcontrib-bibtex
+sphinx_gallery
+strawberryfields
+tensorflow==1.13.2
+toml
+torch==1.2.0+cpu
+torchvision==0.4.0+cpu

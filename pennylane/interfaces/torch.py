@@ -21,11 +21,6 @@ PyTorch interface
 
 .. currentmodule:: pennylane.interfaces.torch
 
-.. warning::
-
-    This interface is **experimental**. If you find any bugs, please report them
-    on our GitHub issues page: https://github.com/XanaduAI/pennylane
-
 
 Using the PyTorch interface
 ---------------------------

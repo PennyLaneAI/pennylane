@@ -33,9 +33,13 @@ as well as the conventions chosen for their implementation.
     conversion between the two conventions takes places automatically
     by the plugin device.
 
+.. raw:: html
 
-Architecture-specific operations
---------------------------------
+    <style>
+    div.topic.contents > ul {
+        max-height: 100px;
+    }
+    </style>
 
 .. rst-class:: contents local topic
 
@@ -46,10 +50,10 @@ Architecture-specific operations
     ops/cv
 
 
-General observables
--------------------
+General operations
+------------------
 
-Observables that can be used on both qubit and CV devices.
+Operations and observables that can be used on both qubit and CV devices.
 """
 #pylint: disable=too-few-public-methods,function-redefined
 

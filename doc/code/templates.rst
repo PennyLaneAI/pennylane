@@ -38,11 +38,8 @@ The following templates of each type are available:
     templates/embeddings
 
 
-Creating initial parameters
----------------------------
-
 Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**. To illustrate how these can be used, let us use a hypothetical parameter initialization function ``my_init_fun()`` and its corresponding hypothetical template ``MyTemplate()``, which takes three parameter arrays. The two can be combined in the following two ways: 
+**randomly initialized** arrays for the trainable **parameters**. To illustrate how these can be used, let us use a hypothetical parameter initialization function ``my_init_fun()`` and its corresponding hypothetical template ``MyTemplate()``, which takes three parameter arrays. The two can be combined in the following two ways:
 
 1. Dereference the list when feeding it into the template:
 
@@ -63,6 +60,8 @@ Each trainable template has a dedicated function in :mod:`pennylane.init` which 
 
 The following parameter initialization methods are available:
 
+
+.. rst-class:: contents local topic
 
 .. toctree::
     :maxdepth: 3

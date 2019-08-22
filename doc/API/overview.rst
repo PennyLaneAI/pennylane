@@ -1,7 +1,7 @@
 .. _developer_overview:
 
-Overview of the developer API
-=============================
+Building a plugin
+=================
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
@@ -202,8 +202,8 @@ where
 * :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'`` method. This is a list with one tuple per operation parameter. For parameter :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in a gradient recipe of
 
   .. math:: \frac{d}{d\phi_k}f(O(\phi_k)) = c_k\left[f(O(\phi_k+s_k))-f(O(\phi_k-s_k))\right].
-  
-  where :math:`f` is an expectation value that depends on :math:`O(\phi_k)`, an example being 
+
+  where :math:`f` is an expectation value that depends on :math:`O(\phi_k)`, an example being
 
   .. math:: f(O(\phi_k)) = \braket{0 | O^{\dagger}(\phi_k) \hat{B} O(\phi_k) | 0}
 
