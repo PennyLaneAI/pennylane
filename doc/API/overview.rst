@@ -103,9 +103,9 @@ When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execut
         self.pre_measure()
 
         for obs in observables:
-            if obs.return_type == "expectation":
+            if obs.return_type is Expectation:
                 results.append(self.expval(obs.name, obs.wires, obs.parameters))
-            elif obs.return_type == "variance":
+            elif obs.return_type is Variance:
                 results.append(self.var(obs.name, obs.wires, obs.parameters))
 
         self.post_measure()
