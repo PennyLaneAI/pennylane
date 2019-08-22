@@ -61,7 +61,7 @@ import warnings
 import pennylane as qml
 
 from .qnode import QNode, QuantumFunctionError
-from .operation import Observable
+from .operation import Observable, Sample, Variance, Expectation
 
 
 class ExpvalFactory:
@@ -82,7 +82,7 @@ class ExpvalFactory:
             QNode._current_context.queue.remove(op)
 
         # set return type to be an expectation value
-        op.return_type = "expectation"
+        op.return_type = Expectation
 
         if QNode._current_context is not None:
             # add observable to QNode observable queue
@@ -106,7 +106,7 @@ class ExpvalFactory:
 
         if name in qml.ops.__all_obs__:  # pylint: disable=no-member
             obs_class = getattr(qml.ops, name)
-            return type(name, (obs_class,), {"return_type": "expectation"})
+            return type(name, (obs_class,), {"return_type": Expectation})
 
         if name in qml.ops.__all_ops__:  # pylint: disable=no-member
             raise AttributeError("{} is not an observable: cannot be used with expval".format(name))
@@ -138,7 +138,7 @@ def var(op):
         QNode._current_context.queue.remove(op)
 
     # set return type to be a variance
-    op.return_type = "variance"
+    op.return_type = Variance
 
     if QNode._current_context is not None:
         # add observable to QNode observable queue
@@ -176,7 +176,7 @@ def sample(op, n=None):
         QNode._current_context.queue.remove(op)
 
     # set return type to be a sample
-    op.return_type = "sample"
+    op.return_type = Sample
 
     # attach the number of samples to the operation object
     op.num_samples = n
