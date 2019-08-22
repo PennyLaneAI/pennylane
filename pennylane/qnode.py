@@ -735,11 +735,18 @@ class QNode:
                 first_order_ev = np.zeros([len(params)])
                 second_order_ev = np.zeros([len(params), len(params)])
 
-                for idx, Lambda in circuit['Ki_expectations']:
-                    first_order_ev[idx] = Lambda @ probs
+                for idx, ev in circuit['Ki_expectations']:
+                    first_order_ev[idx] = ev @ probs
 
-                for idx, Lambda in circuit['KiKj_expectations']:
-                    second_order_ev[idx] = Lambda @ probs
+                for idx, ev in circuit['KiKj_expectations']:
+                    # idx is a 2-tuple (i, j), representing
+                    # generators K_i, K_j
+                    second_order_ev[idx] = ev @ probs
+
+                    # since K_i and K_j are assumed to commute,
+                    # <psi|K_j K_i|psi> = <psi|K_i K_j|psi>,
+                    # and thus the matrix of second-order expectations
+                    # is symmetric
                     second_order_ev[idx[1], idx[0]] = second_order_ev[idx]
 
                 g = np.zeros([len(params), len(params)])

@@ -38,7 +38,9 @@ class TestExceptions:
         opt = qml.QGTOptimizer()
         params = 0.5
 
-        with pytest.raises(ValueError, match="Objective function must be a QNode"):
+        with pytest.raises(
+            ValueError, match="Objective function must be encoded as a single QNode"
+        ):
             opt.step(cost, params)
 
 
@@ -59,8 +61,8 @@ class TestOptimize:
 
         def gradient(params):
             """Returns the gradient of the above circuit"""
-            da = -np.sin(params[0])*np.cos(params[1])
-            db = -np.cos(params[0])*np.sin(params[1])
+            da = -np.sin(params[0]) * np.cos(params[1])
+            db = -np.cos(params[0]) * np.sin(params[1])
             return np.array([da, db])
 
         eta = 0.01
@@ -76,12 +78,12 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor_inv
-            exp = np.diag([4, 4 / (np.cos(theta[0])**2)])
+            exp = np.diag([4, 4 / (np.cos(theta[0]) ** 2)])
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update
             dtheta = eta * exp @ gradient(theta)
-            assert np.allclose(dtheta, theta-theta_new, atol=tol, rtol=0)
+            assert np.allclose(dtheta, theta - theta_new, atol=tol, rtol=0)
 
             theta = theta_new
 

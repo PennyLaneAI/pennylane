@@ -1400,15 +1400,18 @@ class TestMetricTensor:
 
         # first parameter subcircuit
         assert len(res[(0,)]['queue']) == 0
+        assert res[(0,)]['scale'] == [-0.5]
         assert isinstance(res[(0,)]['observable'][0], qml.PauliX)
 
         # second parameter subcircuit
         assert len(res[(1,)]['queue']) == 1
+        assert res[(1,)]['scale'] == [-0.5]
         assert isinstance(res[(1,)]['queue'][0], qml.RX)
         assert isinstance(res[(1,)]['observable'][0], qml.PauliY)
 
         # third parameter subcircuit
         assert len(res[(2,)]['queue']) == 3
+        assert res[(2,)]['scale'] == [1]
         assert isinstance(res[(2,)]['queue'][0], qml.RX)
         assert isinstance(res[(2,)]['queue'][1], qml.RY)
         assert isinstance(res[(2,)]['queue'][2], qml.CNOT)
@@ -1476,6 +1479,15 @@ class TestMetricTensor:
         layer = res[(5, 6, 7)]
         assert len(layer['queue']) == 9
         assert len(layer['observable']) == 3
+        assert isinstance(layer['queue'][0], qml.RX)
+        assert isinstance(layer['queue'][1], qml.RY)
+        assert isinstance(layer['queue'][2], qml.CNOT)
+        assert isinstance(layer['queue'][3], qml.CNOT)
+        assert isinstance(layer['queue'][4], qml.RX)
+        assert isinstance(layer['queue'][5], qml.RY)
+        assert isinstance(layer['queue'][6], qml.RZ)
+        assert isinstance(layer['queue'][7], qml.CNOT)
+        assert isinstance(layer['queue'][8], qml.CNOT)
         assert isinstance(layer['observable'][0], qml.PauliX)
         assert isinstance(layer['observable'][1], qml.PauliY)
         assert isinstance(layer['observable'][2], qml.PauliZ)
@@ -1540,10 +1552,10 @@ class TestMetricTensor:
         expected = np.array([1, np.cos(a)**2, (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/4])/4
         assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
 
-    def test_evaluate_block_diag_metric_tensor(self, tol):
-        """Test that a block diagonal metric tensor evaluates correctly,
-        by comparing it to a known analytic result as well as numerical
-        computation."""
+    @pytest.fixture
+    def sample_circuit(self):
+        """Sample variational circuit fixture used in the
+        next couple of tests"""
         dev = qml.device('default.qubit', wires=3)
 
         def non_parametrized_layer(a, b, c):
@@ -1574,10 +1586,18 @@ class TestMetricTensor:
             qml.RX(h, wires=1)
             return qml.expval(qml.PauliX(0))
 
+        return dev, final, non_parametrized_layer, a, b, c
+
+    def test_evaluate_block_diag_metric_tensor(self, sample_circuit, tol):
+        """Test that a block diagonal metric tensor evaluates correctly,
+        by comparing it to a known analytic result as well as numerical
+        computation."""
+        dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
+
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = final.metric_tensor(x, y, z, h, g, f)
+        G = circuit.metric_tensor(x, y, z, h, g, f)
 
         # ============================================
         # Test block diag metric tensor of first layer is correct.
@@ -1706,43 +1726,14 @@ class TestMetricTensor:
         G_expected = block_diag(G1, G2, G3)
         assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
-    def test_evaluate_diag_approx_metric_tensor(self, tol):
+    def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
         """Test that a metric tensor under the
         diagonal approximation evaluates correctly."""
-        dev = qml.device('default.qubit', wires=3)
-
-        def non_parametrized_layer(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.RX(c, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            qml.RZ(a, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(b, wires=1)
-            qml.Hadamard(wires=0)
-
-        a = 0.5
-        b = 0.1
-        c = 0.5
-
-        @qml.qnode(dev)
-        def final(x, y, z, h, g, f):
-            non_parametrized_layer(a, b, c)
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.RZ(z, wires=2)
-            non_parametrized_layer(a, b, c)
-            qml.RY(f, wires=1)
-            qml.RZ(g, wires=2)
-            qml.RX(h, wires=1)
-            return qml.expval(qml.PauliX(0))
-
+        dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
-        G = final.metric_tensor(x, y, z, h, g, f, diag_approx=True)
+        G = circuit.metric_tensor(x, y, z, h, g, f, diag_approx=True)
 
         # ============================================
         # Test block diag metric tensor of first layer is correct.

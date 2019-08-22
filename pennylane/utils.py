@@ -33,8 +33,7 @@ across the PennyLane submodules.
     _inv_dict
     _get_default_args
     expand
-    to_DiGraph
-    get_layers
+    CircuitGraph
 
 .. raw:: html
 
@@ -50,9 +49,6 @@ import autograd.numpy as np
 import networkx as nx
 
 from pennylane.variable import Variable
-
-
-Command = namedtuple("Command", ["name", "op"])
 
 
 def _flatten(x):
@@ -200,19 +196,13 @@ def expand(U, wires, num_wires):
 # Graph functions
 
 
+Command = namedtuple("Command", ["name", "op", "return_type"])
+Layer = namedtuple("Layer", ["op_idx", "param_idx"])
+
+
 class CircuitGraph:
     """Represents a queue of operations and observables
     as a directed acyclic graph.
-
-    The resulting graph has nodes representing quantum operations,
-    and edges representing dependent/successor operations.
-
-    Each node is labelled by an integer corresponding to the position
-    in the queue; node attributes are used to store information about the node:
-
-    * ``'name'`` *(str)*: name of the quantum operation (e.g., ``'PauliZ'``)
-
-    * ``'op'`` *(Operation or Observable)*: the quantum operation/observable object
 
     Args:
         queue (list[Operation]): the quantum operations to apply
@@ -224,15 +214,19 @@ class CircuitGraph:
     """
 
     def __init__(self, queue, observables, parameters=None):
+        self.queue = queue
+        self.observables = observables
         self.parameters = parameters or {}
+
         self._grid = {}
-        # dict[int, list[int, Command]]: dictionary representing the quantum circuit
-        # as a grid. Here, the key is the wire number, and the value is a list
-        # containing the operation index (that is, where in the queue it occured)
-        # as well as a Command object containing the operation/observable itself.
+        """dict[int, list[int, Command]]: dictionary representing the quantum circuit
+        as a grid. Here, the key is the wire number, and the value is a list
+        containing the operation index (that is, where in the queue it occured)
+        as well as a Command object containing the operation/observable itself.
+        """
 
         for idx, op in enumerate(queue + observables):
-            cmd = Command(name=op.name, op=op)
+            cmd = Command(name=op.name, op=op, return_type=getattr(op, "return_type", None))
 
             for w in set(op.wires):
                 if w not in self._grid:
@@ -270,25 +264,117 @@ class CircuitGraph:
     def graph(self):
         """The graph representation of the quantum program.
 
+        The resulting graph has nodes representing quantum operations,
+        and edges representing dependent/successor operations.
+
+        Each node is labelled by an integer corresponding to the position
+        in the queue; node attributes are used to store information about the node:
+
+        * ``'name'`` *(str)*: name of the quantum operation (e.g., ``'PauliZ'``)
+
+        * ``'op'`` *(Operation or Observable)*: the quantum operation/observable object
+
+        * ``'return_type'`` *(str)*: The observable return type. If an operation,
+          the return type is simply ``None``.
+
         Returns:
             networkx.DiGraph: the directed acyclic graph representing
             the quantum program
         """
         return self._graph
 
-    def layers(self):
-        """Identifies and returns an dictionary describing the
-        layer structure of the circuit.
+    def get_wire(self, wire):
+        """The operation indices on the given wire.
+
+        Args:
+            wire (int): the wire to examine
 
         Returns:
-            dict[int, tuple[list, list]]: A mapping from the layer
-            number to a tuple containing the list of operation
-            indices in the layer, and the list of parameter indices
-            used within the layer.
+            list (int): all operation indices on the wire,
+            in temporal order
+        """
+        return list(zip(*self._grid[wire]))[0]
+
+    def ancestors(self, ops):
+        """Returns all ancestor operations of a given set of operations.
+
+        Args:
+            ops (Iterable[int]): a given set of operations labelled by integer
+                position in the queue
+
+        Returns:
+            set[int]: integer position of all operations
+            in the queue that are ancestors of the given operations
+        """
+        ancestors = set()
+
+        for o in ops:
+            subG = self.graph.subgraph(nx.dag.ancestors(self.graph, o))
+            ancestors |= set(subG.nodes())
+
+        return ancestors - set(ops)
+
+    def descendants(self, ops):
+        """Returns all descendant operations of a given set of operations.
+
+        Args:
+            ops (Iterable[int]): a given set of operations labelled by integer
+                position in the queue
+
+        Returns:
+            set[int]: integer position of all operations
+            in the queue that are descendants of the given operations
+        """
+        descendants = set()
+
+        for o in ops:
+            subG = self.graph.subgraph(nx.dag.descendants(self.graph, o))
+            descendants |= set(subG.nodes())
+
+        return descendants - set(ops)
+
+    def get_ops(self, ops):
+        """Given a set of operation indices, return the operation objects.
+
+        Args:
+            ops (Iterable[int]): a given set of operations labelled by integer
+                position in the queue
+
+        Returns:
+            List[Operation, Observable]: operations or observables
+            corresponding to given integer positions in the queue
+        """
+        return [self.graph.nodes(data="op")[i] for i in ops]
+
+    def get_names(self, ops):
+        """Given a set of operation indices, return the operation names.
+
+        Args:
+            ops (Iterable[int]): a given set of operations labelled by integer
+                position in the queue
+
+        Returns:
+            List[str]: operations or observables
+            corresponding to given integer positions in the queue
+        """
+        return [self.graph.nodes(data="name")[i] for i in ops]
+
+    def layers(self):
+        """Identifies and returns a metadata list describing the
+        layer structure of the circuit.
+
+        Each layer is a named tuple containing:
+
+        * ``op_idx`` *(list[int])*: the list of operation indices in the layer
+
+        * ``param_idx`` *(list[int])*: the list of parameter indices used within the layer
+
+        Returns:
+            list[Layer]: a list of layers
         """
         # keep track of the layer number
         layer = 0
-        layer_ops = {0: {"ops": [], "pidx": []}}
+        layer_ops = {0: ([], [])}
 
         variable_ops_sorted = sorted(list(self.parameters.items()), key=lambda x: x[1][0][0])
 
@@ -300,24 +386,24 @@ class CircuitGraph:
 
                 # check if any of the dependents are in the
                 # existing layer
-                if set(layer_ops[layer]["ops"]) & sub:
+                if set(layer_ops[layer][0]) & sub:
                     # operation depends on previous layer,
                     # start a new layer count
                     layer += 1
 
                 # store the parameters and ops indices for the layer
-                layer_ops.setdefault(layer, {"ops": [], "pidx": []})
-                layer_ops[layer]["ops"].append(op_idx)
-                layer_ops[layer]["pidx"].append(param_idx)
+                layer_ops.setdefault(layer, ([], []))
+                layer_ops[layer][0].append(op_idx)
+                layer_ops[layer][1].append(param_idx)
 
-        return layer_ops
+        return [Layer(*k) for _, k in sorted(list(layer_ops.items()))]
 
     def iterate_layers(self):
         """Identifies and returns an iterable containing
         the parametrized layers.
 
         Returns:
-            Iterable[tuple[list, list, tuple]]: an iterable that returns a tuple
+            Iterable[tuple[list, list, tuple, list]]: an iterable that returns a tuple
             ``(pre_queue, layer, param_idx, post_queue)`` at each iteration.
 
             * ``pre_queue`` (*list[Operation]*): all operations that precede the layer
@@ -328,36 +414,14 @@ class CircuitGraph:
               to the free parameters of this layer, in the order they appear in
               this layer.
 
-            * ``post_queue`` (*list[Operation,Observable]*): all operations that succeed the layer
+            * ``post_queue`` (*list[Operation, Observable]*): all operations that succeed the layer
         """
         # iterate through each layer
-        for _, v in self.layers().items():
-            # for the layer, get the ops and parameter indices
-            ops = v["ops"]
-            param_idx = v["pidx"]
+        for ops, param_idx in self.layers():
 
             # get the ops in this layer
-            curr_ops = [op for n, op in self.graph.nodes(data="op") if n in ops]
+            layer = self.get_ops(ops)
+            pre_queue = self.get_ops(self.ancestors(ops))
+            post_queue = self.get_ops(self.descendants(ops))
 
-            # get all ancestor operations
-            ancestors = set()
-            for o in ops:
-                subG = self.graph.subgraph(nx.dag.ancestors(self.graph, o))
-                ancestors |= set(subG.nodes(data="op"))
-
-            ancestors = sorted(ancestors, key=lambda x: x[0])
-            queue = [op for _, op in ancestors if op not in curr_ops]
-
-            # get all descendent operations
-            descendants = set()
-            for o in ops:
-                subG = self.graph.subgraph(nx.dag.descendants(self.graph, o))
-                descendants |= set(subG.nodes(data="op"))
-
-            ancestors = sorted(ancestors, key=lambda x: x[0])
-            pre_queue = [op for _, op in ancestors if op not in curr_ops]
-
-            descendants = sorted(descendants, key=lambda x: x[0])
-            post_queue = [op for _, op in descendants if op not in curr_ops]
-
-            yield pre_queue, curr_ops, tuple(param_idx), post_queue
+            yield pre_queue, layer, tuple(param_idx), post_queue
