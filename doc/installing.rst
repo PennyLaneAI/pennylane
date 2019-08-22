@@ -35,10 +35,12 @@ Installation of PennyLane, as well as all required Python packages mentioned abo
 
 Make sure you are using the Python 3 version of pip.
 
-Alternatively, you can install PennyLane from the source code by navigating to the top-level directory and running
+Alternatively, you can install PennyLane from the source code on Github by navigating to an appropriate installation directory on your system and running
 ::
 
-	$ python setup.py install
+	$ git clone https://github.com/XanaduAI/pennylane
+        $ cd pennylane
+        $ pip install -e .
 
 
 Software tests
@@ -61,12 +63,13 @@ Documentation
 To build the documentation, the following additional packages are required:
 
 * `Sphinx <http://sphinx-doc.org/>`_ >=1.5
+* `Sphinx-Gallery <https://sphinx-gallery.github.io/>`_ >=0.3
 * `sphinxcontrib-bibtex <https://sphinxcontrib-bibtex.readthedocs.io/en/latest/>`_ >=0.3.6
 
 These can both be installed via ``pip``:
 ::
 
-	$ python3 -m pip install sphinx sphinxcontrib-bibtex
+	$ python3 -m pip install sphinx sphinx_gallery sphinxcontrib-bibtex
 
 To build the HTML documentation, go to the top-level directory and run
 ::

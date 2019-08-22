@@ -52,6 +52,7 @@ Summary
 .. autosummary::
    expval
    var
+   sample
 
 Code details
 ^^^^^^^^^^^^
@@ -148,7 +149,7 @@ def var(op):
 
 
 def sample(op, n=None):
-    r"""Returns a sample of the supplied observable.
+    r"""Sample from the supplied observable.
 
     Args:
         op (Observable): a quantum observable object

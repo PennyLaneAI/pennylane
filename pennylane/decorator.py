@@ -14,12 +14,25 @@
 """
 .. _qnode_decorator:
 
+Quantum circuits
+================
+
+:ref:`QNodes <quantum_nodes>` form part of the core structure of PennyLane --- they are used
+to encapsulate a quantum function that runs on a quantum hardware device.
+
+By defining QNodes, either via the :mod:`QNode decorator <pennylane.decorator>`
+or the :mod:`QNode class <pennylane.qnode>`, dispatching them to devices, and
+combining them with classical processing, it is easy to create arbitrary
+classical-quantum hybrid computations.
+
+
 The QNode decorator
-===================
+-------------------
 
 **Module name:** :mod:`pennylane.decorator`
 
-Decorator for converting a quantum circuit function containing PennyLane quantum
+The standard way for creating 'quantum nodes' or QNodes is the provided
+`qnode` decorator. This decorator converts a quantum circuit function containing PennyLane quantum
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
 This decorator is provided for convenience, and allows a quantum circuit function to be
@@ -30,11 +43,6 @@ Note that the decorator completely replaces the Python-defined
 function with a :mod:`QNode <pennylane.qnode>` of the same name - as such, the original
 function is no longer accessible (but is accessible via the
 :attr:`~.QNode.func` attribute).
-
-
-.. raw:: html
-
-    <h3>Example</h3>
 
 .. code-block:: python
 
@@ -83,30 +91,20 @@ build a hybrid computation. For example,
         qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)
 
-.. raw:: html
 
-    <h3>Classical interface support (experimental)</h3>
+Machine learning interfaces
+---------------------------
 
-To try one of the new classical machine learning interfaces,
-you can specify the ``interface`` keyword argument when using the QNode decorator.
-
-Current classical interfaces include:
-
-* :ref:`PyTorch <torch_qnode>`: ``interface='torch'``
-* :ref:`TensorFlow eager execution <tf_qnode>`: ``interface='tfe'``
-
-If not specified, the standard NumPy/autograd classical interface,
-
-.. code-block:: python
-
-    from pennylane import numpy as np
-
-is used, which enhances standard NumPy functions with automatic differentiation
-via the `Autograd <https://github.com/HIPS/autograd>`_ package.
+.. automodule:: pennylane.interfaces
+   :members:
+   :private-members:
+   :inherited-members:
 
 .. raw:: html
 
-    <h3>Code details</h3>
+    <h2>Code details</h2>
+
+.. autofunction:: pennylane.decorator.qnode
 """
 # pylint: disable=redefined-outer-name
 from functools import wraps, lru_cache
