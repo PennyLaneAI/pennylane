@@ -57,6 +57,11 @@
   they are calculated with Euler's formula.
   [#292](https://github.com/XanaduAI/pennylane/pull/292)
 
+* Creates an `ObservableReturnTypes` enumeration class introducing the Sample, 
+  Variance and Expectation. These new values can be assigned to the `return_type`
+  attribute of an `Observable`.
+  [#290](https://github.com/XanaduAI/pennylane/pull/290)
+
 * Changed the signature of the `RandomLayer` and `RandomLayers` templates to have a fixed seed by default.
   [#258](https://github.com/XanaduAI/pennylane/pull/258)
 
@@ -70,7 +75,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Roeland Wiersema.
+Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 ---
 

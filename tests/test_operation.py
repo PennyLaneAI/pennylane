@@ -418,6 +418,19 @@ class DeveloperTests(BaseTest):
         with self.assertRaisesRegex(ValueError, "Must specify the wires"):
             DummyOp(0.54, 0, do_queue=False)
 
+    def test_observable_return_type_none(self):
+        """Check that the return_type of an observable is initially None"""
+        self.logTestName()
+
+        class DummyObserv(oo.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'N'
+            grad_method = None
+
+        self.assertEqual(DummyObserv(0, wires=[1], do_queue=False).return_type, None)
+
 
 if __name__ == '__main__':
     print('Testing PennyLane version ' + pennylane.version() + ', Operation class.')
