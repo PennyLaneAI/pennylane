@@ -281,7 +281,7 @@ class CircuitGraph:
         layer structure of the circuit.
 
         Returns:
-            dict[int, tuple[list, list]]: a mapping from the layer
+            dict[int, tuple[list, list]]: A mapping from the layer
             number to a tuple containing the list of operation
             indices in the layer, and the list of parameter indices
             used within the layer.
@@ -318,7 +318,7 @@ class CircuitGraph:
 
         Returns:
             Iterable[tuple[list, list, tuple]]: an iterable that returns a tuple
-            ``(pre_queue, layer, param_idx)`` at each iteration.
+            ``(pre_queue, layer, param_idx, post_queue)`` at each iteration.
 
             * ``pre_queue`` (*list[Operation]*): all operations that precede the layer
 

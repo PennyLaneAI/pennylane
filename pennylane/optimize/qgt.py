@@ -104,7 +104,7 @@ class QGTOptimizer(GradientDescentOptimizer):
         """
         # pylint: disable=arguments-differ
         if not hasattr(qnode, "metric_tensor"):
-            raise ValueError("Objective function must be a QNode")
+            raise ValueError("Objective function must be encoded as a single QNode")
 
         if recompute_tensor or self.metric_tensor is None:
             # pseudo-inverse metric tensor
