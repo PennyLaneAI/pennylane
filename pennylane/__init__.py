@@ -14,8 +14,8 @@
 """
 .. _library_overview:
 
-Library overview
-================
+Overview
+========
 
 The PennyLane codebase contains a number of complementary components.
 These can be roughly separated into a user-interface, supported core
@@ -38,7 +38,6 @@ on the user-interface of PennyLane, have a look at our tutorials.
 
 * Optimization methods: :mod:`pennylane.optimize`
 * Configuration: :mod:`pennylane.Configuration <pennylane.configuration>`
-* Utilities: :mod:`pennylane.utils <pennylane.utils>`
 * NumPy with support for automatic differentiation: :mod:`pennylane.numpy <pennylane.numpy>`
 
 **Core operations**
@@ -60,6 +59,7 @@ for QNodes, or supporting new operations and expectations. For more
 details, see :ref:`developer_overview`.
 
 * The base Device class: :mod:`pennylane.Device <pennylane._device>`
+* Utilities: :mod:`pennylane.utils <pennylane.utils>`
 * Symbolic quantum operations: :mod:`pennylane.operation`
 * Quantum circuit parameters: :mod:`pennylane.variable`
 

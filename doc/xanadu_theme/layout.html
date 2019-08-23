@@ -211,6 +211,25 @@
             </div>
             {% endblock %}
             <div class="document clearer body">
+
+              {% if 'tutorials/' in pagename %}
+                <div class="pennylane-call-to-action-links">
+                  <div id="tutorial-type">{{ pagename }}</div>
+                  <div id="download-python-link">
+                    <i class="fab fa-python"></i>&nbsp;
+                    <div class="call-to-action-desktop-view">Download Python script</div>
+                  </div>
+                  <div id="download-notebook-link">
+                    <i class="fas fa-download"></i>&nbsp;
+                    <div class="call-to-action-desktop-view">Download Notebook</div>
+                  </div>
+                  <div id="github-view-link">
+                    <i class="fab fa-github"></i>&nbsp;
+                    <div class="call-to-action-desktop-view">View on GitHub</div>
+                  </div>
+                </div>
+              {% endif %}
+
               {% block body %} {% endblock %}
             </div>
             {%- block bottom_rel_links %}
@@ -280,6 +299,24 @@
             setTimeout(function () { $(element).removeClass("css-transitions-only-after-page-load") }, 10);
         });
     });
+</script>
+<script type="text/javascript">
+var downloadNote = $(".sphx-glr-download-link-note.admonition.note");
+if (downloadNote.length >= 1) {
+    var tutorialUrlArray = $("#tutorial-type").text().split('/');
+        tutorialUrlArray[0] = "examples"
+
+    var githubLink = "https://github.com/XanaduAI/pennylane/blob/master/" + tutorialUrlArray.join("/") + ".py",
+        pythonLink = $(".reference.download")[0].href,
+        notebookLink = $(".reference.download")[1].href,
+        notebookDownloadPath = notebookLink.split('_downloads')[1].split('/').pop();
+
+    $("#download-python-link").wrap("<a href=" + pythonLink + " data-behavior='call-to-action-event' data-response='Download Python script' download target='_blank'/>");
+    $("#download-notebook-link").wrap("<a href=" + notebookLink + " data-behavior='call-to-action-event' data-response='Download Notebook' download target='_blank'/>");
+    $("#github-view-link").wrap("<a href=" + githubLink + " data-behavior='call-to-action-event' data-response='View on Github' target='_blank'/>");
+} else {
+    $(".pennylane-call-to-action-links").hide();
+}
 </script>
 {%- block footer_wrapper %}
   <div class="footer">

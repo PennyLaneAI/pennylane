@@ -20,6 +20,7 @@ import sys, os, re
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('_ext'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath('.')), 'doc'))
 
 # -- General configuration ------------------------------------------------
 
@@ -39,17 +40,32 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
-    'edit_on_github'
-    # 'nbsphinx'
+    'edit_on_github',
+    'sphinx_gallery.gen_gallery'
 ]
 
-# nbsphinx settings
+from glob import glob
+import shutil
+import os
+import warnings
 
-exclude_patterns = ['_build', '**.ipynb_checkpoints', 'tutorials/.ipynb_checkpoints', '*-checkpoint.ipynb']
-nbsphinx_execute = 'never'
-nbsphinx_epilog = """
-.. note:: :download:`Click here <../{{env.docname}}.ipynb>` to download this gallery page as an interactive Jupyter notebook.
-"""
+sphinx_gallery_conf = {
+    # path to your example scripts
+    'examples_dirs': '../examples',
+    # path where to save gallery generated examples
+    'gallery_dirs': 'tutorials',
+    # build files that start 'pennylane_run'
+    'filename_pattern': r'pennylane_run',
+    # first notebook cell in generated Jupyter notebooks
+    'first_notebook_cell': "%matplotlib inline",
+    # thumbnail size
+    'thumbnail_size': (400, 400),
+}
+
+# Remove warnings that occur when generating the the tutorials
+warnings.filterwarnings("ignore", category=UserWarning, message=r"Matplotlib is currently using agg")
+warnings.filterwarnings("ignore", category=FutureWarning, message=r"Passing \(type, 1\) or '1type' as a synonym of type is deprecated.+")
+warnings.filterwarnings("ignore", category=UserWarning, message=r".+?Compilation using quilc will not be available\.")
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates', 'xanadu_theme']
@@ -68,7 +84,7 @@ project = 'PennyLane'
 copyright = """
     Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, Carsten Blank, Keri McKiernan, and Nathan Killoran. <br>
 PennyLane: Automatic differentiation of hybrid quantum-classical computations. arXiv:1811.04968, 2018.<br>
-&copy; Copyright 2018, Xanadu Quantum Technologies Inc."""
+&copy; Copyright 2018-2019, Xanadu Quantum Technologies Inc."""
 author = 'Xanadu Inc.'
 
 add_module_names = False
@@ -335,4 +351,10 @@ autodoc_member_order = 'bysource'
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
 
+from custom_directives import IncludeDirective, GalleryItemDirective, CustomGalleryItemDirective
 
+def setup(app):
+    app.add_directive('includenodoc', IncludeDirective)
+    app.add_directive('galleryitem', GalleryItemDirective)
+    app.add_directive('customgalleryitem', CustomGalleryItemDirective)
+    app.add_stylesheet('xanadu_gallery.css')

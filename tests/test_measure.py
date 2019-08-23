@@ -17,6 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.qnode import QuantumFunctionError
+from pennylane.operation import Sample, Variance, Expectation
 
 
 def test_no_measure(tol):
@@ -64,6 +65,17 @@ class TestExpval:
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
+    def test_observable_return_type_is_expectation(self):
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.expval(qml.PauliZ(0))
+            assert res.return_type is Expectation
+            return res
+
+        circuit()
 
 class TestDeprecatedExpval:
     """Tests for the deprecated expval attribute getter.
@@ -116,6 +128,19 @@ class TestDeprecatedExpval:
             with pytest.raises(AttributeError, match="has no observable 'R'"):
                 res = circuit()
 
+    def test_expval_factory_getattr_return_type_is_expectation(self):
+        """Test that the named attribute of the :class:`ExpvalFactory`
+        contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
+        with pytest.warns(DeprecationWarning, match="is deprecated"):
+            obs = qml.expval.PauliZ(0, do_queue=False)
+
+        assert obs.return_type is Expectation
+
+    def test_expval_factory_call_return_type_is_expectation(self):
+        """Test that the function call operator of the :class:`ExpvalFactory`
+        contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
+        obs = qml.expval(qml.PauliZ(0, do_queue=False))
+        assert obs.return_type is Expectation
 
 class TestVar:
     """Tests for the var function"""
@@ -147,6 +172,18 @@ class TestVar:
 
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
+
+    def test_observable_return_type_is_variance(self):
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.var(qml.PauliZ(0))
+            assert res.return_type is Variance
+            return res
+
+        circuit()
 
 
 class TestSample:
@@ -236,7 +273,7 @@ class TestSample:
 
         result = circuit()
 
-        # If the sample dimensions are not equal we expect the 
+        # If the sample dimensions are not equal we expect the
         # output to be an array of dtype="object"
         assert isinstance(result, np.ndarray)
         assert result.dtype == np.dtype("object")
@@ -246,7 +283,7 @@ class TestSample:
         assert np.array_equal(result[2].shape, (3*n_sample,))
 
     def test_sample_output_type_in_combination(self, tol):
-        """Test the return type and shape of sampling multiple works 
+        """Test the return type and shape of sampling multiple works
            in combination with expvals and vars"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -268,7 +305,7 @@ class TestSample:
         assert np.array_equal(result[2].shape, (n_sample,))
 
     def test_sample_default_n(self, tol):
-        """Test the return type and shape of sampling multiple works 
+        """Test the return type and shape of sampling multiple works
            in combination with expvals and vars"""
 
         n_shots = 10
@@ -282,7 +319,7 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert np.array_equal(result.shape, (n_shots,))
-        
+
     def test_sample_exception_device_context_missing(self):
         """Tests if the sampling raises an error when using a default
            sample number but the underlying device can't be accessed"""
@@ -333,3 +370,16 @@ class TestSample:
 
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             sample = circuit()
+
+    def test_observable_return_type_is_sample(self):
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.sample(qml.PauliZ(0))
+            assert res.return_type is Sample
+            return res
+
+        circuit()
