@@ -274,8 +274,8 @@ class CircuitGraph:
 
         * ``'op'`` *(Operation or Observable)*: the quantum operation/observable object
 
-        * ``'return_type'`` *(str)*: The observable return type. If an operation,
-          the return type is simply ``None``.
+        * ``'return_type'`` *(pennylane.operation.ObservableReturnTypes)*: The observable
+          return type. If an operation, the return type is simply ``None``.
 
         Returns:
             networkx.DiGraph: the directed acyclic graph representing
