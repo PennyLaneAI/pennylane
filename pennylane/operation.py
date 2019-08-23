@@ -110,6 +110,7 @@ Code details
 ^^^^^^^^^^^^
 """
 import abc
+from enum import Enum, IntEnum
 import numbers
 from collections.abc import Sequence
 
@@ -118,6 +119,52 @@ import autograd.numpy as np
 from .qnode import QNode, QuantumFunctionError
 from .utils import _flatten, _unflatten
 from .variable import Variable
+
+
+#=============================================================================
+# Wire types
+#=============================================================================
+
+class Wires(IntEnum):
+    """Integer enumeration class
+    to represent the number of wires
+    an operation acts on"""
+    Any = -1
+    All = 0
+
+
+All = Wires.All
+"""IntEnum: An enumeration which represents all wires in the
+subsystem. It is equivalent to an integer with value 0."""
+
+Any = Wires.Any
+"""IntEnum: An enumeration which represents any wires in the
+subsystem. It is equivalent to an integer with value -1."""
+
+
+#=============================================================================
+# ObservableReturnTypes types
+#=============================================================================
+
+class ObservableReturnTypes(Enum):
+    """Enumeration class to
+    represent the type of
+    return types of an observable."""
+    Sample = 1
+    Variance = 2
+    Expectation = 3
+
+
+Sample = ObservableReturnTypes.Sample
+"""Enum: An enumeration which represents sampling an observable."""
+
+Variance = ObservableReturnTypes.Variance
+"""Enum: An enumeration which represents returning the variance of
+an observable on specified wires."""
+
+Expectation = ObservableReturnTypes.Expectation
+"""Enum: An enumeration which represents returning the expectation
+value of an observable on specified wires."""
 
 
 #=============================================================================
@@ -178,6 +225,11 @@ class Operation(abc.ABC):
 
     * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
+
+    Finally, there are some additional optional class attributes
+    that may be set, and used by certain quantum optimizers:
+
+    * :attr:`~.Operation.generator`
 
     Args:
         args (tuple[float, int, array, Variable]): operation parameters
@@ -243,6 +295,31 @@ class Operation(abc.ABC):
         """
         return self._grad_recipe
 
+    @property
+    def generator(self):
+        r"""Generator of the operation.
+
+        A length-2 list ``[generator, scaling_factor]``, where
+
+        * ``generator`` is an existing PennyLane
+          operation class or :math:`2\times 2` Hermitian array
+          that acts as the generator of the current operation
+
+        * ``scaling_factor`` represents a scaling factor applied
+          to the generator operation
+
+        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
+        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
+        of operator :math:`U(\theta)`:
+
+        .. code-block:: python
+
+            generator = [PauliX, 0.7]
+
+        Default is ``[None, 1]``, indicating the operation has no generator.
+        """
+        return [None, 1]
+
     @grad_recipe.setter
     def grad_recipe(self, value):
         """Setter for the grad_recipe property"""
@@ -251,6 +328,11 @@ class Operation(abc.ABC):
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
+
+        if self.num_wires == All:
+            if do_queue:
+                if set(wires) != set(range(QNode._current_context.num_wires)):
+                    raise ValueError("Operation {} must act on all wires".format(self.name))
 
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
@@ -311,7 +393,7 @@ class Operation(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
-        if self.num_wires != 0 and len(wires) != self.num_wires:
+        if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
             raise ValueError("{}: wrong number of wires. "
                              "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
 

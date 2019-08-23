@@ -29,8 +29,8 @@ operations and observables (:mod:`'default.qubit' <pennylane.plugins.default_qub
 and  one supporting CV operations and observables
 (:mod:`'default.gaussian' <pennylane.plugins.default_gaussian>`).
 
-These reference plugins provide a very basic built-in qubit and CV circuit
-simulator that can be used with PennyLane without the need for additional
+These reference plugins provide basic built-in qubit and CV circuit
+simulators that can be used with PennyLane without the need for additional
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
 

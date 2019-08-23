@@ -77,12 +77,12 @@ Observables
 -----------
 
 .. autosummary::
-    MeanPhoton
+    NumberOperator
     X
     P
-    Homodyne
+    QuadOperator
     PolyXP
-    NumberState
+    FockStateProjector
 
 
 Code details
@@ -91,7 +91,7 @@ Code details
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane.operation import CVOperation, CVObservable
+from pennylane.operation import Any, CVOperation, CVObservable
 
 
 def _rotation(phi, bare=False):
@@ -132,7 +132,8 @@ class Rotation(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{dr}R(r) = \frac{1}{2} \left[R(\phi+\pi/2) - R(\phi-\pi/2)\right]`
+    * Gradient recipe: :math:`\frac{d}{dr}f(R(r)) = \frac{1}{2} \left[f(R(\phi+\pi/2)) - f(R(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R(r)`.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -167,8 +168,9 @@ class Squeezing(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}S(r,\phi) = \frac{1}{2\sinh s} \left[S(r+s, \phi) - S(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{dr}f(S(r,\phi)) = \frac{1}{2\sinh s} \left[f(S(r+s, \phi)) - f(S(r-s, \phi))\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`S(r,\phi)`.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -212,8 +214,9 @@ class Displacement(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}D(a,\phi) = \frac{1}{2s} \left[D(a+s, \phi) - D(a-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default)
+    * Gradient recipe: :math:`\frac{d}{da}f(D(a,\phi)) = \frac{1}{2s} \left[f(D(a+s, \phi)) - f(D(a-s, \phi))\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`D(a,\phi)`.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix} 1 & 0 & 0 \\ 2a\cos\phi & 1 & 0 \\ 2a\sin\phi & 0 & 1\end{bmatrix}
@@ -250,7 +253,8 @@ class Beamsplitter(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}B(r,\phi) = \frac{1}{2} \left[B(\theta+\pi/2, \phi) - B(\theta-\pi/2, \phi)\right]`
+    * Gradient recipe: :math:`\frac{d}{d \theta}f(B(\theta,\phi)) = \frac{1}{2} \left[f(B(\theta+\pi/2, \phi)) - f(B(\theta-\pi/2, \phi))\right]`
+      where :math:`f` is an expectation value depending on :math:`B(\theta,\phi)`.
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -302,8 +306,9 @@ class TwoModeSqueezing(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{dr}f(S_2(r,\phi)) = \frac{1}{2\sinh s} \left[f(S_2(r+s, \phi)) - f(S_2(r-s, \phi))\right]`,
+      where :math:`s` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`S_2(r,\phi)`.
 
     * Heisenberg representation:
 
@@ -352,9 +357,9 @@ class QuadraticPhase(CVOperation):
 
     * Number of wires: 1
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{ds}f(P(s)) = \frac{1}{2 a} \left[f(P(s+a)) - f(P(s-a))\right]`,
+      where :math:`a` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`P(s)`.
 
     * Heisenberg representation:
 
@@ -395,9 +400,9 @@ class ControlledAddition(CVOperation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{ds}f(\text{CX}(s)) = \frac{1}{2 a} \left[f(\text{CX}(s+a)) - f(\text{CX}(s-a))\right]`,
+      where :math:`a` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`\text{CX}(s)`.
 
     * Heisenberg representation:
 
@@ -434,16 +439,16 @@ class ControlledPhase(CVOperation):
     Controlled phase operation.
 
     .. math::
-           \text{CX}(s) =  \iint dx dy \: e^{i sxy/\hbar} \ket{x,y}\bra{x,y}
+           \text{CZ}(s) =  \iint dx dy \: e^{i sxy/\hbar} \ket{x,y}\bra{x,y}
            = e^{i s \: \hat{x} \otimes \hat{x}/\hbar}.
 
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
-    * Gradient recipe: :math:`\frac{d}{dr}S_2(r,\phi) = \frac{1}{2\sinh s} \left[S_2(r+s, \phi) - S_2(r-s, \phi)\right]`,
-      where :math:`s` is an arbitrary real number (:math:`0.1` by default).
+    * Gradient recipe: :math:`\frac{d}{ds}f(\text{CZ}(s)) = \frac{1}{2 a} \left[f(\text{CZ}(s+a)) - f(\text{CZ}(s-a))\right]`,
+      where :math:`a` is an arbitrary real number (:math:`0.1` by default) and
+      :math:`f` is an expectation value depending on :math:`\text{CZ}(s)`.
 
     * Heisenberg representation:
 
@@ -562,9 +567,9 @@ class Interferometer(CVOperation):
 
     **Details:**
 
-    * None (applied to the entire subsystem)
+    * Number of wires: Any
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: None
     * Heisenberg representation:
 
       .. math:: M = \begin{bmatrix}
@@ -579,7 +584,7 @@ class Interferometer(CVOperation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_params = 1
-    num_wires = 0
+    num_wires = Any
     par_domain = "A"
     grad_method = None
     grad_recipe = None
@@ -587,11 +592,11 @@ class Interferometer(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         N = len(p[0])
-        X = p[0].real
-        Y = p[0].imag
+        A = p[0].real
+        B = p[0].imag
 
         rows = np.arange(2 * N).reshape(2, -1).T.flatten()
-        S = np.vstack([np.hstack([X, -Y]), np.hstack([Y, X])])[:, rows][rows]
+        S = np.vstack([np.hstack([A, -B]), np.hstack([B, A])])[:, rows][rows]
 
         M = np.eye(2 * N + 1)
         M[1 : 2 * N + 1, 1 : 2 * N + 1] = S
@@ -704,16 +709,16 @@ class GaussianState(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire subsystem)
+    * Number of wires: Any
     * Number of parameters: 1
-    * Gradient recipe: None (uses finite difference)
+    * Gradient recipe: None
 
     Args:
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 2
     par_domain = "A"
     grad_method = "F"
@@ -745,7 +750,7 @@ class FockStateVector(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire subsystem)
+    * Number of wires: Any
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -753,7 +758,7 @@ class FockStateVector(CVOperation):
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
     grad_method = "F"
@@ -765,7 +770,7 @@ class FockDensityMatrix(CVOperation):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire subsystem)
+    * Number of wires: Any
     * Number of parameters: 1
     * Gradient recipe: None (uses finite difference)
 
@@ -773,7 +778,7 @@ class FockDensityMatrix(CVOperation):
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
     grad_method = "F"
@@ -816,8 +821,8 @@ class CatState(CVOperation):
 # =============================================================================
 
 
-class MeanPhoton(CVObservable):
-    r"""pennylane.ops.MeanPhoton(wires)
+class NumberOperator(CVObservable):
+    r"""pennylane.ops.NumberOperator(wires)
     The photon number observable :math:`\langle \hat{n}\rangle`.
 
     The number operator is defined as
@@ -916,8 +921,8 @@ class P(CVObservable):
         return np.array([0, 0, 1])
 
 
-class Homodyne(CVObservable):
-    r"""pennylane.ops.Homodyne(phi, wires)
+class QuadOperator(CVObservable):
+    r"""pennylane.ops.QuadOperator(phi, wires)
     The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
     When used with the :func:`~.expval` function, the expectation
@@ -968,7 +973,7 @@ class PolyXP(CVObservable):
 
     **Details:**
 
-    * Number of wires: None (applied to the entire system)
+    * Number of wires: Any
     * Number of parameters: 1
     * Observable order: 2nd order in the quadrature operators
     * Heisenberg representation: :math:`A`
@@ -976,7 +981,7 @@ class PolyXP(CVObservable):
     Args:
         q (array[float]): expansion coefficients
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
 
@@ -988,8 +993,8 @@ class PolyXP(CVObservable):
         return p[0]
 
 
-class NumberState(CVObservable):
-    r"""pennylane.ops.NumberState(n, wires)
+class FockStateProjector(CVObservable):
+    r"""pennylane.ops.FockStateProjector(n, wires)
     The number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable
@@ -1010,13 +1015,13 @@ class NumberState(CVObservable):
 
     .. note::
 
-        If ``expval(NumberState)`` is applied to a subset of wires,
+        If ``expval(FockStateProjector)`` is applied to a subset of wires,
         the unaffected wires are traced out prior to the expectation value
         calculation.
 
     **Details:**
 
-    * Number of wires: None (applied to any subset of wires)
+    * Number of wires: Any
     * Number of parameters: 1
     * Observable order: None (non-Gaussian)
 
@@ -1025,12 +1030,12 @@ class NumberState(CVObservable):
             observable :math:`\ket{n}\bra{n}=\ket{n_0, n_1, \dots, n_P}\bra{n_0, n_1, \dots, n_P}`.
 
             For example, to return the observable :math:`\ket{0,4,2}\bra{0,4,2}` acting on
-            wires 0, 1, and 3 of a QNode, you would call ``NumberState(np.array([0, 4, 2], wires=[0, 1, 3]))``.
+            wires 0, 1, and 3 of a QNode, you would call ``FockStateProjector(np.array([0, 4, 2], wires=[0, 1, 3]))``.
 
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 1
     par_domain = "A"
 
@@ -1063,7 +1068,7 @@ ops = {
 }
 
 
-obs = {"Homodyne", "MeanPhoton", "P", "X", "PolyXP", "NumberState"}
+obs = {"QuadOperator", "NumberOperator", "P", "X", "PolyXP", "FockStateProjector"}
 
 
 __all__ = list(ops | obs)

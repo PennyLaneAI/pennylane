@@ -47,21 +47,25 @@ extensions = [
 from glob import glob
 import shutil
 import os
+import warnings
 
 sphinx_gallery_conf = {
     # path to your example scripts
     'examples_dirs': '../examples',
     # path where to save gallery generated examples
     'gallery_dirs': 'tutorials',
-    # build files that start 'tutorial_' and don't contain 'skip'
-    'filename_pattern': r'pennylane_(?!skip)',
+    # build files that start 'pennylane_run'
+    'filename_pattern': r'pennylane_run',
     # first notebook cell in generated Jupyter notebooks
-    'first_notebook_cell': ("# This cell is added by sphinx-gallery\n"
-                            "# It can be customized to whatever you like\n"
-                            "%matplotlib inline"),
+    'first_notebook_cell': "%matplotlib inline",
     # thumbnail size
     'thumbnail_size': (400, 400),
 }
+
+# Remove warnings that occur when generating the the tutorials
+warnings.filterwarnings("ignore", category=UserWarning, message=r"Matplotlib is currently using agg")
+warnings.filterwarnings("ignore", category=FutureWarning, message=r"Passing \(type, 1\) or '1type' as a synonym of type is deprecated.+")
+warnings.filterwarnings("ignore", category=UserWarning, message=r".+?Compilation using quilc will not be available\.")
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates', 'xanadu_theme']
@@ -80,7 +84,7 @@ project = 'PennyLane'
 copyright = """
     Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, Carsten Blank, Keri McKiernan, and Nathan Killoran. <br>
 PennyLane: Automatic differentiation of hybrid quantum-classical computations. arXiv:1811.04968, 2018.<br>
-&copy; Copyright 2018, Xanadu Quantum Technologies Inc."""
+&copy; Copyright 2018-2019, Xanadu Quantum Technologies Inc."""
 author = 'Xanadu Inc.'
 
 add_module_names = False

@@ -4,7 +4,7 @@ build:
     image: latest
 
 python:
-    version: 3.5
+    version: 3.6
 
 # Don't build any extra formats
 formats:

@@ -50,6 +50,7 @@ Available optimizers
    MomentumOptimizer
    NesterovMomentumOptimizer
    RMSPropOptimizer
+   QGTOptimizer
 
 Code details
 ~~~~~~~~~~~~
@@ -63,6 +64,8 @@ from .gradient_descent import GradientDescentOptimizer
 from .momentum import MomentumOptimizer
 from .nesterov_momentum import NesterovMomentumOptimizer
 from .rms_prop import RMSPropOptimizer
+from .qgt import QGTOptimizer
+
 
 # Optimizers to display in the docs
 __all__ = [
@@ -71,5 +74,6 @@ __all__ = [
     'GradientDescentOptimizer',
     'MomentumOptimizer',
     'NesterovMomentumOptimizer',
-    'RMSPropOptimizer'
+    'RMSPropOptimizer',
+    'QGTOptimizer'
 ]

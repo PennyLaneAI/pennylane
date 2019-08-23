@@ -33,6 +33,14 @@ as well as the conventions chosen for their implementation.
     conversion between the two conventions takes places automatically
     by the plugin device.
 
+.. raw:: html
+
+    <style>
+    div.topic.contents > ul {
+        max-height: 100px;
+    }
+    </style>
+
 .. rst-class:: contents local topic
 
 .. toctree::
@@ -42,16 +50,17 @@ as well as the conventions chosen for their implementation.
     ops/cv
 
 
-General observables
--------------------
+General operations
+------------------
 
-Observables that can be used on both qubit and CV devices.
+Operations and observables that can be used on both qubit and CV devices.
 """
 #pylint: disable=too-few-public-methods,function-redefined
 
+from pennylane.operation import Any, Observable, CVObservable
+
 from .cv import *
 from .qubit import *
-
 
 from .cv import __all__ as _cv__all__
 from .cv import ops as _cv__ops__
@@ -60,8 +69,6 @@ from .cv import obs as _cv__obs__
 from .qubit import __all__ as _qubit__all__
 from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
-
-from pennylane.operation import Observable, CVObservable
 
 
 class Identity(CVObservable, Observable):
@@ -76,7 +83,7 @@ class Identity(CVObservable, Observable):
     corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
-    num_wires = 0
+    num_wires = Any
     num_params = 0
     par_domain = None
     grad_method = None

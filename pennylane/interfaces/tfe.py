@@ -21,11 +21,6 @@ TensorFlow eager interface
 
 .. currentmodule:: pennylane.interfaces.tfe
 
-.. warning::
-
-    This interface is **experimental**. If you find any bugs, please report them
-    on our GitHub issues page: https://github.com/XanaduAI/pennylane
-
 Using the TensorFlow interface
 ------------------------------
 

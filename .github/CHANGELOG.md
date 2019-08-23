@@ -1,4 +1,85 @@
-# Release 0.4.0dev0
+# Release 0.5.0-dev
+
+### New features since last release
+
+* Adds a `Device.parameters` property, so that devices can view a dictionary mapping free
+  parameters to operation parameters. This will allow plugin devices to take advantage
+  of parametric compilation.
+  [#283](https://github.com/XanaduAI/pennylane/pull/283)
+
+* Sampling support: QNodes can now return a specified number of samples
+  from a given observable via the top-level `pennylane.sample()` function.
+  To support this on plugin devices, there is a new `Device.sample` method.
+
+  Calculating gradients of QNodes that involve sampling is not possible.
+  [#256](https://github.com/XanaduAI/pennylane/pull/256)
+
+* Added controlled rotation gates to PennyLane operations and `default.qubit` plugin.
+  [#251](https://github.com/XanaduAI/pennylane/pull/251)
+
+### Breaking changes
+
+* The method `Device.supported` was removed.
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
+
+* The following CV observables were renamed to comply with the new Operation/Observable
+  scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.
+  [#243](https://github.com/XanaduAI/pennylane/pull/243)
+
+### Improvements
+
+* Introduces two enumerations: `Any` and `All`, representing any number of wires
+  and all wires in the system respectively. They can be imported from
+  `pennylane.operation`, and can be used when defining the `Operation.num_wires`
+  class attribute of operations.
+
+  As part of this change:
+
+  - `All` is equivalent to the integer 0, for backwards compatibility with the
+    existing test suite
+
+  - `Any` is equivalent to the integer -1 to allow numeric comparison
+    operators to continue working
+
+  - An additional validation is now added to the `Operation` class,
+    which will alert the user that an operation with `num_wires = All`
+    is being incorrectly.
+
+  [#277](https://github.com/XanaduAI/pennylane/pull/277)
+
+* The method `Device.supported` that listed all the supported operations and observables
+  was replaced with two separate methods `Device.supports_observable` and `Device.supports_operation`.
+  The methods can now be called with string arguments (`dev.supports_observable('PauliX')`) and with
+  class information arguments (`dev.supports_observable(qml.PauliX)`).
+  [#276](https://github.com/XanaduAI/pennylane/pull/276)
+
+* The one-qubit rotations in `pennylane.plugins.default_qubit` no longer depend on Scipy's `expm`. Instead 
+  they are calculated with Euler's formula.
+  [#292](https://github.com/XanaduAI/pennylane/pull/292)
+
+* Creates an `ObservableReturnTypes` enumeration class introducing the Sample, 
+  Variance and Expectation. These new values can be assigned to the `return_type`
+  attribute of an `Observable`.
+  [#290](https://github.com/XanaduAI/pennylane/pull/290)
+
+* Changed the signature of the `RandomLayer` and `RandomLayers` templates to have a fixed seed by default.
+  [#258](https://github.com/XanaduAI/pennylane/pull/258)
+
+### Bug fixes
+
+* Fixed a bug where a `PolyXP` observable would fail if applied to subsets
+  of wires on `default.gaussian`.
+  [#277](https://github.com/XanaduAI/pennylane/pull/277)
+
+### Contributors
+
+This release contains contributions from (in alphabetical order):
+
+Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
+
+---
+
+# Release 0.4.0
 
 ### New features since last release
 
@@ -44,7 +125,7 @@
   - New random initialization functions supporting the templates available
     in the new submodule `pennylane.init`.
 
-  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly 
+  - Added a random circuit template (`RandomLayers()`), in which rotations and 2-qubit gates are randomly
     distributed over the wires
 
   - Add various embedding strategies
@@ -101,8 +182,6 @@
 This release contains contributions from:
 
 Shahnawaz Ahmed, riveSunder, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Maria Schuld.
-
-
 
 # Release 0.3.1
 

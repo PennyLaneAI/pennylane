@@ -14,12 +14,25 @@
 """
 .. _qnode_decorator:
 
+Quantum circuits
+================
+
+:ref:`QNodes <quantum_nodes>` form part of the core structure of PennyLane --- they are used
+to encapsulate a quantum function that runs on a quantum hardware device.
+
+By defining QNodes, either via the :mod:`QNode decorator <pennylane.decorator>`
+or the :mod:`QNode class <pennylane.qnode>`, dispatching them to devices, and
+combining them with classical processing, it is easy to create arbitrary
+classical-quantum hybrid computations.
+
+
 The QNode decorator
-===================
+-------------------
 
 **Module name:** :mod:`pennylane.decorator`
 
-Decorator for converting a quantum circuit function containing PennyLane quantum
+The standard way for creating 'quantum nodes' or QNodes is the provided
+`qnode` decorator. This decorator converts a quantum circuit function containing PennyLane quantum
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
 This decorator is provided for convenience, and allows a quantum circuit function to be
@@ -30,11 +43,6 @@ Note that the decorator completely replaces the Python-defined
 function with a :mod:`QNode <pennylane.qnode>` of the same name - as such, the original
 function is no longer accessible (but is accessible via the
 :attr:`~.QNode.func` attribute).
-
-
-.. raw:: html
-
-    <h3>Example</h3>
 
 .. code-block:: python
 
@@ -61,7 +69,7 @@ build a hybrid computation. For example,
     def qfunc2(x, y):
         qml.Displacement(x, 0, wires=0)
         qml.Beamsplitter(y, 0, wires=[0, 1])
-        return qml.expval(qml.MeanPhoton(0))
+        return qml.expval(qml.NumberOperator(0))
 
     def hybrid_computation(x, y):
         return np.sin(qfunc1(y))*np.exp(-qfunc2(x+y, x)**2)
@@ -83,12 +91,19 @@ build a hybrid computation. For example,
         qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)
 
-.. autofunction:: qnode
+Machine learning interfaces
+---------------------------
 
 .. automodule:: pennylane.interfaces
    :members:
    :private-members:
    :inherited-members:
+
+.. raw:: html
+
+    <h2>Code details</h2>
+
+.. autofunction:: pennylane.decorator.qnode
 """
 # pylint: disable=redefined-outer-name
 from functools import wraps, lru_cache
@@ -138,6 +153,7 @@ def qnode(device, interface='numpy', cache=False):
 
         # bind the jacobian method to the wrapped function
         wrapper.jacobian = qnode.jacobian
+        wrapper.metric_tensor = qnode.metric_tensor
 
         # bind the qnode attributes to the wrapped function
         wrapper.__dict__.update(qnode.__dict__)

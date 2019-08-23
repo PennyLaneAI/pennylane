@@ -1,7 +1,7 @@
 .. _developer_overview:
 
-Overview of the developer API
-=============================
+Building a plugin
+=================
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we will walk through the steps for creating your own PennyLane plugin. In addition, we also provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic Gaussian continuous-variable simulations.
 
@@ -68,15 +68,15 @@ You must further tell PennyLane about the operations and observables that your d
 
     operations = {"CNOT", "PauliX"}
 
-  This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+  This is used to decide whether an operation is supported by your device in the default implementation of the public method :meth:`~.Device.supports_operation`.
 
 * :attr:`~.Device.observables`: set of the supported PennyLane observables as strings, e.g.,
 
   .. code-block:: python
 
-    observables = {"Homodyne", "MeanPhoton", "X", "P"}
+    observables = {"QuadOperator", "NumberOperator", "X", "P"}
 
-  This is used to decide whether an observable is supported by your device in the default implementation of the public method :meth:`~.Device.supported`.
+  This is used to decide whether an observable is supported by your device in the default implementation of the public method :meth:`~.Device.supports_observable`.
 
 * :attr:`~.Device._capabilities`: (optional) a dictionary containing information about the capabilities of the device. At the moment, only the key ``'model'`` is supported, which may return either ``'qubit'`` or ``'CV'``. Alternatively, you may use this class dictionary to return additional information to the user — this is accessible from the PennyLane frontend via the public method :meth:`~.Device.capabilities`.
 
@@ -103,9 +103,9 @@ When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execut
         self.pre_measure()
 
         for obs in observables:
-            if obs.return_type == "expectation":
+            if obs.return_type is Expectation:
                 results.append(self.expval(obs.name, obs.wires, obs.parameters))
-            elif obs.return_type == "variance":
+            elif obs.return_type is Variance:
                 results.append(self.var(obs.name, obs.wires, obs.parameters))
 
         self.post_measure()
@@ -201,7 +201,13 @@ where
 
 * :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'`` method. This is a list with one tuple per operation parameter. For parameter :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in a gradient recipe of
 
-  .. math:: \frac{d}{d\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
+  .. math:: \frac{d}{d\phi_k}f(O(\phi_k)) = c_k\left[f(O(\phi_k+s_k))-f(O(\phi_k-s_k))\right].
+
+  where :math:`f` is an expectation value that depends on :math:`O(\phi_k)`, an example being
+
+  .. math:: f(O(\phi_k)) = \braket{0 | O^{\dagger}(\phi_k) \hat{B} O(\phi_k) | 0}
+
+  which is the simple expectation value of the operator :math:`\hat{B}` evolved via the gate :math:`O(\phi_k)`.
 
 Note that if ``grad_recipe = None``, the default gradient recipe is :math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
 
