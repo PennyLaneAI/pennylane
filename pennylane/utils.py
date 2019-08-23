@@ -283,7 +283,7 @@ class CircuitGraph:
         """
         return self._graph
 
-    def get_wire(self, wire):
+    def get_op_indices(self, wire):
         """The operation indices on the given wire.
 
         Args:
