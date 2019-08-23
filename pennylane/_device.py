@@ -64,6 +64,7 @@ The following methods and attributes must be defined for all devices:
 In addition, the following may also be optionally defined:
 
 .. autosummary::
+    probability
     pre_apply
     post_apply
     pre_measure
@@ -438,6 +439,16 @@ class Device(abc.ABC):
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
         raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
+
+    def probability(self):
+        """Return the full state probability of each computational basis state from the last run of the device.
+
+        Returns:
+            OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
+            to the resulting probability. The dictionary should be sorted such that the
+            state tuples are in lexicographical order.
+        """
+        raise NotImplementedError("Returning probability not currently supported by {}".format(self.short_name))
 
     @abc.abstractmethod
     def reset(self):

@@ -97,13 +97,6 @@ For example:
 
 .. currentmodule:: pennylane.qnode
 
-Auxiliary functions
--------------------
-
-.. autosummary::
-   _inv_dict
-   _get_default_args
-
 
 QNode methods
 -------------
@@ -133,18 +126,20 @@ Code details
 ~~~~~~~~~~~~
 """
 from collections.abc import Sequence
-import inspect
 import copy
-
+import itertools
 import numbers
 
 import autograd.numpy as np
 import autograd.extend as ae
 import autograd.builtins
 
+from scipy import linalg
+
+import pennylane
 import pennylane.operation
 
-from pennylane.utils import _flatten, unflatten
+from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, CircuitGraph
 from .variable import Variable
 
 
@@ -175,42 +170,6 @@ def pop_jacobian_kwargs(kwargs):
 
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
-
-
-def _inv_dict(d):
-    """Reverse a dictionary mapping.
-
-    Returns multimap where the keys are the former values,
-    and values are sets of the former keys.
-
-    Args:
-        d (dict[a->b]): mapping to reverse
-
-    Returns:
-        dict[b->set[a]]: reversed mapping
-    """
-    ret = {}
-    for k, v in d.items():
-        ret.setdefault(v, set()).add(k)
-    return ret
-
-
-def _get_default_args(func):
-    """Get the default arguments of a function.
-
-    Args:
-        func (function): a valid Python function
-
-    Returns:
-        dict: dictionary containing the argument name and tuple
-        (positional idx, default value)
-    """
-    signature = inspect.signature(func)
-    return {
-        k: (idx, v.default)
-        for idx, (k, v) in enumerate(signature.parameters.items())
-        if v.default is not inspect.Parameter.empty
-    }
 
 
 class QNode:
@@ -244,6 +203,8 @@ class QNode:
         The first element of the tuple is the index of the Operation in the program queue,
         the second the index of the parameter within the Operation.
         """
+
+        self._metric_tensor_subcircuits = {}
 
     def __str__(self):
         """String representation"""
@@ -389,6 +350,7 @@ class QNode:
 
         # classify the circuit contents
         temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
+
         if all(temp):
             self.type = 'CV'
         elif not True in temp:
@@ -409,6 +371,130 @@ class QNode:
 
         #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
+
+    def construct_metric_tensor(self, args, **kwargs):
+        """Create metric tensor subcircuits for each parameter.
+
+        If the parameter appears in a gate :math:`G`, the subcircuit contains
+        all gates which precede :math:`G`, and :math:`G` is replaced by the variance
+        value of its generator.
+
+        Args:
+            args (tuple): Represent the free parameters passed to the circuit.
+                Here we are not concerned with their values, but with their structure.
+                Each free param is replaced with a :class:`~.variable.Variable` instance.
+
+        Keyword Args:
+            diag_approx (bool): If ``True``, forces the diagonal
+                approximation. Default is ``False``.
+
+        .. note::
+
+            Additional keyword arguments may be passed to the quantum circuit function, however PennyLane
+            does not support differentiating with respect to keyword arguments. Instead,
+            keyword arguments are useful for providing data or 'placeholders' to the quantum circuit function.
+        """
+        # pylint: disable=too-many-statements
+        diag_approx = kwargs.pop("diag_approx", False)
+
+        if not self.ops or not self.cache:
+            # construct the circuit
+            self.construct(args, kwargs)
+
+        # convert the queue to a DAG
+        circuit = CircuitGraph(self.queue, self.ev, self.variable_ops)
+
+        for queue, curr_ops, param_idx, _ in circuit.iterate_layers():
+            obs = []
+            scale = []
+
+            Ki_matrices = []
+            KiKj_matrices = []
+            Ki_ev = []
+            KiKj_ev = []
+            V = None
+
+            # for each operator, get the generator
+            # and convert it to a variance
+            for n, op in enumerate(curr_ops):
+                gen, s = op.generator
+                w = op.wires
+
+                if gen is None:
+                    raise QuantumFunctionError("Can't generate metric tensor, operation {}"
+                                               "has no defined generator".format(op))
+
+                # get the observable corresponding
+                # to the generator of the current operation
+                if isinstance(gen, np.ndarray):
+                    # generator is a Hermitian matrix
+                    variance = pennylane.var(pennylane.Hermitian(gen, w, do_queue=False))
+
+                    if not diag_approx:
+                        Ki_matrices.append((n, expand(gen, w, self.num_wires)))
+
+                elif issubclass(gen, pennylane.operation.Observable):
+                    # generator is an existing PennyLane operation
+                    variance = pennylane.var(gen(w, do_queue=False))
+
+                    if not diag_approx:
+                        if issubclass(gen, pennylane.ops.PauliX):
+                            mat = np.array([[0, 1], [1, 0]])
+                        elif issubclass(gen, pennylane.ops.PauliY):
+                            mat = np.array([[0, -1j], [1j, 0]])
+                        elif issubclass(gen, pennylane.ops.PauliZ):
+                            mat = np.array([[1, 0], [0, -1]])
+
+                        Ki_matrices.append((n, expand(mat, w, self.num_wires)))
+
+                else:
+                    raise QuantumFunctionError(
+                        "Can't generate metric tensor, generator {}"
+                        "has no corresponding observable".format(gen)
+                    )
+
+                obs.append(variance)
+                scale.append(s)
+
+            if not diag_approx:
+                # In order to compute the block diagonal portion of the metric tensor,
+                # we need to compute 'second order' <psi|K_i K_j|psi> terms.
+
+                for i, j in itertools.product(range(len(Ki_matrices)), repeat=2):
+                    # compute the matrices representing all K_i K_j terms
+                    obs1 = Ki_matrices[i]
+                    obs2 = Ki_matrices[j]
+                    KiKj_matrices.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
+
+                V = np.identity(2**self.num_wires, dtype=np.complex128)
+
+                # generate the unitary operation to rotate to
+                # the shared eigenbasis of all observables
+                for _, term in Ki_matrices:
+                    _, S = linalg.eigh(V.conj().T @ term @ V)
+                    V = np.round(V @ S, 15)
+
+                V = V.conj().T
+
+                # calculate the eigenvalues for
+                # each observable in the shared eigenbasis
+                for idx, term in Ki_matrices:
+                    eigs = np.diag(V @ term @ V.conj().T).real
+                    Ki_ev.append((idx, eigs))
+
+                for idx, term in KiKj_matrices:
+                    eigs = np.diag(V @ term @ V.conj().T).real
+                    KiKj_ev.append((idx, eigs))
+
+            self._metric_tensor_subcircuits[tuple(param_idx)] = {
+                "queue": queue,
+                "observable": obs,
+                "Ki_expectations": Ki_ev,
+                "KiKj_expectations": KiKj_ev,
+                "eigenbasis_matrix": V,
+                "result": None,
+                "scale": scale,
+            }
 
     def _op_successors(self, o_idx, only='G'):
         """Successors of the given operation in the quantum circuit.
@@ -595,6 +681,88 @@ class QNode:
 
         ret = self.device.execute(self.queue, self.ev, self.variable_ops)
         return self.output_conversion(ret)
+
+    def metric_tensor(self, *args, **kwargs):
+        """Evaluate the value of the metric tensor.
+
+        Args:
+            args : qfunc positional arguments
+            kwargs : qfunc keyword arguments
+
+        Keyword Args:
+            diag_approx (bool): If ``True``, forces the diagonal
+                approximation. Default is ``False``.
+
+        Returns:
+            array[float]: measured values
+        """
+        diag_approx = kwargs.pop("diag_approx", False)
+
+        if not self.ops or not self.cache:
+            # construct the circuit
+            self.construct(args, kwargs)
+
+        # temporarily store keyword arguments
+        keyword_values = {}
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in self.keyword_defaults.items()})
+        keyword_values.update({k: np.array(list(_flatten(v))) for k, v in kwargs.items()})
+
+        # temporarily store the free parameter values in the Variable class
+        Variable.free_param_values = np.array(list(_flatten(args)))
+        Variable.kwarg_values = keyword_values
+
+        if not self._metric_tensor_subcircuits:
+            self.construct_metric_tensor(args, diag_approx=diag_approx, **kwargs)
+
+        tensor = np.zeros([self.num_variables, self.num_variables])
+
+        # execute any constructed metric tensor subcircuits
+        for params, circuit in self._metric_tensor_subcircuits.items():
+            self.device.reset()
+
+            s = np.array(circuit['scale'])
+            V = circuit['eigenbasis_matrix']
+
+            if not diag_approx:
+                # block diagonal approximation
+
+                unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
+                self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
+                probs = list(self.device.probability().values())
+
+                first_order_ev = np.zeros([len(params)])
+                second_order_ev = np.zeros([len(params), len(params)])
+
+                for idx, ev in circuit['Ki_expectations']:
+                    first_order_ev[idx] = ev @ probs
+
+                for idx, ev in circuit['KiKj_expectations']:
+                    # idx is a 2-tuple (i, j), representing
+                    # generators K_i, K_j
+                    second_order_ev[idx] = ev @ probs
+
+                    # since K_i and K_j are assumed to commute,
+                    # <psi|K_j K_i|psi> = <psi|K_i K_j|psi>,
+                    # and thus the matrix of second-order expectations
+                    # is symmetric
+                    second_order_ev[idx[1], idx[0]] = second_order_ev[idx]
+
+                g = np.zeros([len(params), len(params)])
+
+                for i, j in itertools.product(range(len(params)), repeat=2):
+                    g[i, j] = s[i] * s[j] * (second_order_ev[i, j] - first_order_ev[i] * first_order_ev[j])
+
+                row = np.array(params).reshape(-1, 1)
+                col = np.array(params).reshape(1, -1)
+                circuit['result'] = np.diag(g)
+                tensor[row, col] = g
+
+            else:
+                # diagonal approximation
+                circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
+                tensor[np.array(params), np.array(params)] = circuit['result']
+
+        return tensor
 
     def evaluate_obs(self, obs, args, **kwargs):
         """Evaluate the value of the given observables.

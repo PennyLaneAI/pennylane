@@ -131,21 +131,16 @@ class TestDeprecatedExpval:
     def test_expval_factory_getattr_return_type_is_expectation(self):
         """Test that the named attribute of the :class:`ExpvalFactory`
         contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
-        assert qml.expval.__getattr__('Hermitian').__dict__["return_type"] is Expectation
+        with pytest.warns(DeprecationWarning, match="is deprecated"):
+            obs = qml.expval.PauliZ(0, do_queue=False)
+
+        assert obs.return_type is Expectation
 
     def test_expval_factory_call_return_type_is_expectation(self):
         """Test that the function call operator of the :class:`ExpvalFactory`
         contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            res = qml.PauliZ(0)
-            assert qml.expval.__call__(res).__dict__["return_type"] is Expectation
-            return res
-
-        circuit()
-
+        obs = qml.expval(qml.PauliZ(0, do_queue=False))
+        assert obs.return_type is Expectation
 
 class TestVar:
     """Tests for the var function"""
@@ -278,7 +273,7 @@ class TestSample:
 
         result = circuit()
 
-        # If the sample dimensions are not equal we expect the 
+        # If the sample dimensions are not equal we expect the
         # output to be an array of dtype="object"
         assert isinstance(result, np.ndarray)
         assert result.dtype == np.dtype("object")
@@ -288,7 +283,7 @@ class TestSample:
         assert np.array_equal(result[2].shape, (3*n_sample,))
 
     def test_sample_output_type_in_combination(self, tol):
-        """Test the return type and shape of sampling multiple works 
+        """Test the return type and shape of sampling multiple works
            in combination with expvals and vars"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -310,7 +305,7 @@ class TestSample:
         assert np.array_equal(result[2].shape, (n_sample,))
 
     def test_sample_default_n(self, tol):
-        """Test the return type and shape of sampling multiple works 
+        """Test the return type and shape of sampling multiple works
            in combination with expvals and vars"""
 
         n_shots = 10
@@ -324,7 +319,7 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert np.array_equal(result.shape, (n_shots,))
-        
+
     def test_sample_exception_device_context_missing(self):
         """Tests if the sampling raises an error when using a default
            sample number but the underlying device can't be accessed"""
