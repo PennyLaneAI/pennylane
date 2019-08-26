@@ -6,7 +6,7 @@
 Quantum embeddings
 ===================
 
-A *Quantum Embedding* represents classical data as quantum states in a Hilbert space via a *quantum feature map*. An embedding takes a classical datapoint :math:`x` and translates it into a set of gate parameters in a quantum circuit, creating a quantum state :math:`| \psi_x \rangle`. This process is a crucial part of designing quantum algorithms and affects their computational power—for more details, see :cite:`schuld2018supervised` and :cite:`schuld2018quantum`. 
+A *Quantum Embedding* represents classical data as quantum states in a Hilbert space via a *quantum feature map*. It takes a classical datapoint :math:`x` and translates it into a set of gate parameters in a quantum circuit, creating a quantum state :math:`| \psi_x \rangle`. This process is a crucial part of designing quantum algorithms and affects their computational power—for more details, see :cite:`schuld2018supervised` and :cite:`schuld2018quantum`. 
 
 Let's consider classical input data consisting of :math:`M` examples, with :math:`N` features each, 
 
