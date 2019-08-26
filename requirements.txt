@@ -1,5 +1,6 @@
 numpy
 scipy
+networkx
 autograd
 toml
 appdirs

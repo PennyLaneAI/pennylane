@@ -29,7 +29,7 @@ body {
   width: 300px;
   overflow: hidden;
   /*background: #fafafa;*/
-  background: #333;
+  background: #efefef;
 }
 
 #right-column {
@@ -38,6 +38,7 @@ body {
   background-color: #fff;
   max-width: 900px;
   float: left;
+  width: 100%;
 }
 
 a.headerlink {
@@ -321,7 +322,7 @@ div.sphinxsidebar h4 {
 
 div.sphinxsidebar p {
   padding: 0px 21px;
-  color: #666;
+  color: #457b4c;
   text-transform: uppercase;
   font-size: 12px;
   font-weight: bold;
@@ -333,7 +334,7 @@ div.sphinxsidebar p {
 .sidebar-toc {
   font-size: 15px;
   position: absolute;
-  background-color: #333;
+  background-color: #efefef;
   width: 300px;
 }
 
@@ -346,7 +347,7 @@ div.sphinxsidebar .sidebar-toc ul {
 div.sphinxsidebar .sidebar-toc a {
   font-family: "Lato", "Helvetica Neue", Helvetica, Arial, sans-serif;
   /*color: #444;*/
-  color: #ddd;
+  color: #606060;
   text-decoration: none;
 }
 
@@ -389,7 +390,7 @@ div.sphinxsidebar .sidebar-toc a {
 }
 
 .sidebar-toc ul li.toctree-l2 {
-  background-color: #494949;
+  background-color: #f9f9f9;
 }
 
 .sidebar-toc ul li.toctree-l3 a {
@@ -906,9 +907,9 @@ div.topic.contents {
 div.topic.contents > ul {
     padding-left: 20px;
     padding-left: 20px;
-    /*max-height: 100px;*/
+    max-height: 200px;
     display: flex;
-    /*flex-direction: column;*/
+    flex-direction: column;
     flex-wrap: wrap;
 }
 

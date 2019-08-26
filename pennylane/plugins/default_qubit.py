@@ -25,18 +25,17 @@ The default plugin is meant to be used as a template for writing PennyLane devic
 plugins for new qubit-based backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
-:mod:`qubit operations <pennylane.ops.qubit>` and
-:mod:`expectations <pennylane.expval.qubit>`, and provides a very simple pure state
+:mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 
 The following is the technical documentation of the implementation of the plugin. You will
 not need to read and understand this to use this plugin.
 
-Auxillary functions
+Auxiliary functions
 -------------------
 
 .. autosummary::
-    spectral_decomposition_qubit
+    spectral_decomposition
     unitary
     hermitian
 
@@ -56,8 +55,12 @@ Gates and operations
     CNOT
     SWAP
     CZ
+    CRotx
+    CRoty
+    CRotz
+    CRot3
 
-Expectations
+Observables
 ------------
 
 .. autosummary::
@@ -74,11 +77,12 @@ Classes
 Code details
 ^^^^^^^^^^^^
 """
+from collections import OrderedDict
 import itertools
 import warnings
 
 import numpy as np
-from scipy.linalg import expm, eigh
+from scipy.linalg import eigh
 
 from pennylane import Device
 
@@ -91,19 +95,19 @@ tolerance = 1e-10
 #  utilities
 #========================================================
 
-def spectral_decomposition_qubit(A):
-    r"""Spectral decomposition of a :math:`2\times 2` Hermitian matrix.
+def spectral_decomposition(A):
+    r"""Spectral decomposition of a Hermitian matrix.
 
     Args:
-        A (array): :math:`2\times 2` Hermitian matrix
+        A (array): Hermitian matrix
 
     Returns:
         (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
-        such that :math:`A = \sum_k a_k P_k`.
+            such that :math:`A = \sum_k a_k P_k`.
     """
     d, v = eigh(A)
     P = []
-    for k in range(2):
+    for k in range(d.shape[0]):
         temp = v[:, k]
         P.append(np.outer(temp, temp.conj()))
     return d, P
@@ -149,7 +153,7 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    return expm(-1j * theta/2 * X)
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * X
 
 
 def Roty(theta):
@@ -160,7 +164,7 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    return expm(-1j * theta/2 * Y)
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Y
 
 
 def Rotz(theta):
@@ -171,7 +175,7 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    return expm(-1j * theta/2 * Z)
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Z
 
 
 def Rot3(a, b, c):
@@ -183,6 +187,51 @@ def Rot3(a, b, c):
         array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
     return Rotz(c) @ (Roty(b) @ Rotz(a))
+
+
+def CRotx(theta):
+    r"""Two-qubit controlled rotation about the x axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1j*np.sin(theta/2)], [0, 0, -1j*np.sin(theta/2), np.cos(theta/2)]])
+
+
+def CRoty(theta):
+    r"""Two-qubit controlled rotation about the y axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
+
+
+def CRotz(theta):
+    r"""Two-qubit controlled rotation about the z axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
+
+
+def CRot3(a, b, c):
+    r"""Arbitrary two-qubit controlled rotation using three Euler angles.
+
+    Args:
+        a,b,c (float): rotation angles
+    Returns:
+        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
+    """
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
+
 
 
 #========================================================
@@ -229,7 +278,7 @@ def hermitian(*args):
     return A
 
 def identity(*_):
-    """Identity matrix for expectations.
+    """Identity matrix observable.
 
     Returns:
         array: 2x2 identity matrix
@@ -251,8 +300,8 @@ class DefaultQubit(Device):
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
-    pennylane_requires = '0.3'
-    version = '0.3.0'
+    pennylane_requires = '0.5'
+    version = '0.4.0'
     author = 'Xanadu Inc.'
 
     # Note: BasisState and QubitStateVector don't
@@ -273,10 +322,14 @@ class DefaultQubit(Device):
         'RX': Rotx,
         'RY': Roty,
         'RZ': Rotz,
-        'Rot': Rot3
+        'Rot': Rot3,
+        'CRX': CRotx,
+        'CRY': CRoty,
+        'CRZ': CRotz,
+        'CRot': CRot3
     }
 
-    _expectation_map = {
+    _observable_map = {
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
@@ -300,6 +353,8 @@ class DefaultQubit(Device):
                 self._state = state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError("The default.qubit plugin can apply QubitStateVector only to all of the {} wires.".format(self.num_wires))
             return
         if operation == 'BasisState':
             n = len(par[0])
@@ -316,55 +371,101 @@ class DefaultQubit(Device):
             return
 
         A = self._get_operator_matrix(operation, par)
+        self._state = self.mat_vec_product(A, self._state, wires)
 
-        # apply unitary operations
-        U = self.expand(A, wires)
+    def mat_vec_product(self, mat, vec, wires):
+        r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
-        self._state = U @ self._state
+        Args:
+            mat (array): matrix to multiply
+            vec (array): state vector to multiply
+            wires (Sequence[int]): target subsystems
 
-    def expval(self, expectation, wires, par):
-        # measurement/expectation value <psi|A|psi>
-        A = self._get_operator_matrix(expectation, par)
+        Returns:
+            array: output vector after applying ``mat`` to input ``vec`` on specified subsystems
+        """
+
+        # TODO: use multi-index vectors/matrices to represent states/gates internally
+        mat = np.reshape(mat, [2] * len(wires) * 2)
+        vec = np.reshape(vec, [2] * self.num_wires)
+        axes = (np.arange(len(wires), 2 * len(wires)), wires)
+        tdot = np.tensordot(mat, vec, axes=axes)
+
+        # tensordot causes the axes given in `wires` to end up in the first positions
+        # of the resulting tensor. This corresponds to a (partial) transpose of
+        # the correct output state
+        # We'll need to invert this permutation to put the indices in the correct place
+        unused_idxs = [idx for idx in range(self.num_wires) if idx not in wires]
+        perm = wires + unused_idxs
+        inv_perm = np.argsort(perm) # argsort gives inverse permutation
+        state_multi_index = np.transpose(tdot, inv_perm)
+        return np.reshape(state_multi_index, 2 ** self.num_wires)
+
+    def expval(self, observable, wires, par):
         if self.shots == 0:
             # exact expectation value
+            A = self._get_operator_matrix(observable, par)
             ev = self.ev(A, wires)
         else:
             # estimate the ev
-            # sample Bernoulli distribution n_eval times / binomial distribution once
-            a, P = spectral_decomposition_qubit(A)
-            p0 = self.ev(P[0], wires)  # probability of measuring a[0]
-            n0 = np.random.binomial(self.shots, p0)
-            ev = (n0*a[0] +(self.shots-n0)*a[1]) / self.shots
+            ev = np.mean(self.sample(observable, wires, par, self.shots))
 
         return ev
 
+    def var(self, observable, wires, par):
+        if self.shots == 0:
+            # exact expectation value
+            A = self._get_operator_matrix(observable, par)
+            var = self.ev(A@A, wires) - self.ev(A, wires)**2
+        else:
+            # estimate the ev
+            var = np.var(self.sample(observable, wires, par, self.shots))
+
+        return var
+
+    def sample(self, observable, wires, par, n=None):
+        if n is None:
+            n = self.shots
+
+        if n == 0:
+            raise ValueError("Calling sample with n = 0 is not possible.")
+        if n < 0 or not isinstance(n, int):
+            raise ValueError("The number of samples must be a positive integer.")
+
+        A = self._get_operator_matrix(observable, par)
+        a, P = spectral_decomposition(A)
+
+        p = np.zeros(a.shape)
+        for idx, Pi in enumerate(P):
+            p[idx] = self.ev(Pi, wires)
+
+        return np.random.choice(a, n, p=p)
+
     def _get_operator_matrix(self, operation, par):
-        """Get the operator matrix for a given operation or expectation.
+        """Get the operator matrix for a given operation or observable.
 
         Args:
-          operation    (str): name of the operation/expectation
+          operation    (str): name of the operation/observable
           par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        A = {**self._operation_map, **self._expectation_map}[operation]
+        A = {**self._operation_map, **self._observable_map}[operation]
         if not callable(A):
             return A
         return A(*par)
 
     def ev(self, A, wires):
-        r"""Evaluates a one-qubit expectation in the current state.
+        r"""Expectation value of observable on specified wires.
 
-        Args:
-          A (array): :math:`2\times 2` Hermitian matrix corresponding to the expectation
-          wires (Sequence[int]): target subsystem
-
-        Returns:
+         Args:
+          A (array[float]): the observable matrix as array
+          wires (Sequence[int]): target subsystems
+         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        A = self.expand(A, wires)
-
-        expectation = np.vdot(self._state, A @ self._state)
+        As = self.mat_vec_product(A, self._state, wires)
+        expectation = np.vdot(self._state, As)
 
         if np.abs(expectation.imag) > tolerance:
             warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expectation.imag), RuntimeWarning)
@@ -376,51 +477,19 @@ class DefaultQubit(Device):
         self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
 
-    def expand(self, U, wires):
-        r"""Expand a multi-qubit operator into a full system operator.
-
-        Args:
-          U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
-          wires (Sequence[int]): Target subsystems (order matters!)
-
-        Returns:
-          array: :math:`2^N\times 2^N` matrix. The full system operator.
-        """
-        if self.num_wires == 1:
-            # total number of wires is 1, simply return the matrix
-            return U
-
-        N = self.num_wires
-        wires = np.asarray(wires)
-
-        if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
-            raise ValueError("Invalid target subsystems provided in 'wires' argument.")
-
-        # generate N qubit basis states via the cartesian product
-        tuples = np.array(list(itertools.product([0, 1], repeat=N)))
-
-        # wires not acted on by the operator
-        inactive_wires = list(set(range(N))-set(wires))
-
-        # expand U to act on the entire system
-        U = np.kron(U, np.identity(2**len(inactive_wires)))
-
-        # move active wires to beginning of the list of wires
-        rearanged_wires = np.array(list(wires)+inactive_wires)
-
-        # convert to computational basis
-        # i.e., converting the list of basis state bit strings into
-        # a list of decimal numbers that correspond to the computational
-        # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
-        perm = np.ravel_multi_index(tuples[:, rearanged_wires].T, [2]*N)
-
-        # permute U to take into account rearranged wires
-        return U[:, perm][perm]
-
     @property
     def operations(self):
         return set(self._operation_map.keys())
 
     @property
-    def expectations(self):
-        return set(self._expectation_map.keys())
+    def observables(self):
+        return set(self._observable_map.keys())
+
+    def probability(self):
+        if self._state is None:
+            return None
+
+        states = itertools.product(range(2), repeat=self.num_wires)
+        probs = np.abs(self._state)**2
+
+        return OrderedDict(zip(states, probs))

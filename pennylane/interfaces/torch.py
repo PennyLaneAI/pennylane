@@ -21,11 +21,6 @@ PyTorch interface
 
 .. currentmodule:: pennylane.interfaces.torch
 
-.. warning::
-
-    This interface is **experimental**. If you find any bugs, please report them
-    on our GitHub issues page: https://github.com/XanaduAI/pennylane
-
 
 Using the PyTorch interface
 ---------------------------
@@ -55,7 +50,7 @@ specify the ``interface='torch'`` keyword argument:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0), qml.expval.Hadamard(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
 The QNode ``circuit()`` is now a PyTorch-capable QNode, accepting ``torch.tensor`` objects
 as input, and returning ``torch.tensor`` objects. Subclassing from ``torch.autograd.Function``,
@@ -83,7 +78,7 @@ using different classical interfaces:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0), qml.expval.Hadamard(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
     qnode1 = qml.QNode(circuit, dev1)
     qnode2 = qml.QNode(circuit, dev2)
@@ -121,7 +116,7 @@ For example:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
     phi = Variable(torch.tensor([0.5, 0.1]), requires_grad=True)
     theta = Variable(torch.tensor(0.2), requires_grad=True)
@@ -163,7 +158,7 @@ we can do the following:
         qml.RZ(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.RX(theta, wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
     def cost(phi, theta):
         return torch.abs(circuit(phi, theta) - 0.5)**2

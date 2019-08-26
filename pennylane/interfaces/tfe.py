@@ -21,11 +21,6 @@ TensorFlow eager interface
 
 .. currentmodule:: pennylane.interfaces.tfe
 
-.. warning::
-
-    This interface is **experimental**. If you find any bugs, please report them
-    on our GitHub issues page: https://github.com/XanaduAI/pennylane
-
 Using the TensorFlow interface
 ------------------------------
 
@@ -61,7 +56,7 @@ specify the ``interface='tfe'`` keyword argument:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0), qml.expval.Hadamard(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
 The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tfe.Variable`` objects
 as input, and returning ``tf.Tensor`` objects.
@@ -89,7 +84,7 @@ using different classical interfaces:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0), qml.expval.Hadamard(1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
     qnode1 = qml.QNode(circuit, dev1)
     qnode2 = qml.QNode(circuit, dev2)
@@ -123,7 +118,7 @@ For example:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
     phi = tfe.Variable([0.5, 0.1])
     theta = tfe.Variable(0.2)
@@ -167,7 +162,7 @@ result in an expectation value of 0.5, we can do the following:
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
     phi = tfe.Variable([0.5, 0.1], dtype=tf.float64)
     theta = tfe.Variable(0.2, dtype=tf.float64)

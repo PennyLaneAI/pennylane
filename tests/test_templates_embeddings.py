@@ -41,7 +41,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='X')
             qml.PauliX(wires=0)
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='X')
-            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
         target = [1, -1, 0, 1, 1]
@@ -59,7 +59,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Y')
             qml.PauliX(wires=0)
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Y')
-            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
         target = [-1, -1, 0, 1, 1]
@@ -76,7 +76,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
             qml.PauliX(wires=0)
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='Z')
-            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
         target = [-1, 1, 1, 1, 1]
@@ -96,7 +96,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation=strategy)
             qml.PauliX(wires=0)
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation=strategy)
-            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         with pytest.raises(ValueError, match='Number of features to embed cannot be larger than number of '
                                              'wires, which is 1; got 4.'):
@@ -112,7 +112,7 @@ class TestAngleEmbd:
         @qml.qnode(dev)
         def circuit(x=None):
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='A')
-            return [qml.expval.PauliZ(i) for i in range(n_subsystems)]
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         with pytest.raises(ValueError, match='Rotation has to be `X`, `Y` or `Z`; got A.'):
             circuit(x=[1])
@@ -127,7 +127,7 @@ class TestAngleEmbd:
         @qml.qnode(dev)
         def circuit(x=None):
             AngleEmbedding(features=x, wires=3, rotation='A')
-            return qml.expval.PauliZ(0)
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
             circuit(x=[1])
@@ -146,7 +146,7 @@ class TestBasisEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             BasisEmbedding(features=x, wires=range(2))
-            return [qml.expval.PauliZ(i) for i in range(n_qubits)]
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=state)
         assert np.allclose(res, [1, -1])
@@ -161,7 +161,7 @@ class TestBasisEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             BasisEmbedding(features=x, wires=range(2))
-            return qml.expval.PauliZ(0)
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match='Number of bits to embed cannot be larger than '
                                              'number of wires, which is 2; got 3.'):
@@ -177,7 +177,7 @@ class TestBasisEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             BasisEmbedding(features=x, wires=3)
-            return qml.expval.PauliZ(0)
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
             circuit(x=[1])
@@ -195,8 +195,8 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits))
-            return [qml.expval.PauliZ(i) for i in range(n_qubits)]
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=features)
         assert np.allclose(res, [1, -1])
@@ -210,18 +210,16 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits))
-            return qml.expval.PauliZ(0)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
-        assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**len(wires), ' \
-                                        'which is 4; got 5.'
+        assert excinfo.value.args[0] == "AmplitudeEmbedding requires the size of feature vector to be smaller than or equal to 2**len(wires), which is 4; got 5."
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8)])
-        assert excinfo.value.args[0] == 'AmplitudeEmbedding requires a feature vector of size 2**len(wires), ' \
-                                        'which is 4; got 2.'
+        assert excinfo.value.args[0] == 'AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), which is 4; got 2.'
 
     def test_amplitude_embedding_exception_wiresnolist(self):
         """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() raises an exception if ``wires`` is not
@@ -232,8 +230,8 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=3)
-            return qml.expval.PauliZ(0)
+            AmplitudeEmbedding(features=x, wires=3, pad=False, normalize=False)
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
             circuit(x=[1])
@@ -253,7 +251,7 @@ class TestSqueezingEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             SqueezingEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1)
-            return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
 
@@ -270,7 +268,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='phase', c=1)
             Beamsplitter(pi/2, 0, wires=[0, 1])
             SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1)
-            return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
 
@@ -284,7 +282,7 @@ class TestSqueezingEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             SqueezingEmbedding(features=x, wires=range(n_wires), method='phase')
-            return [qml.expval.X(i) for i in range(n_wires)]
+            return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match='Number of features to embed cannot be larger than number of wires, '
                                              'which is 2; got 3.'):
@@ -300,7 +298,7 @@ class TestSqueezingEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             SqueezingEmbedding(features=x, wires=range(n_wires), method='A')
-            return [qml.expval.X(i) for i in range(n_wires)]
+            return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[1, 2])
@@ -316,7 +314,7 @@ class TestSqueezingEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             SqueezingEmbedding(features=x, wires=3, method='A')
-            return qml.expval.X(0)
+            return qml.expval(qml.X(0))
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
             circuit(x=[1])
@@ -336,7 +334,7 @@ class TestDisplacementEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             DisplacementEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1.)
-            return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [0.01, 1.44], atol=0.001)
 
@@ -353,7 +351,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='phase', c=1.)
             Beamsplitter(pi/2, 0, wires=[0, 1])
             DisplacementEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1.)
-            return [qml.expval.MeanPhoton(wires=0), qml.expval.MeanPhoton(wires=1)]
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
         assert np.allclose(circuit(x=features), [0.089327, 2.724715], atol=0.01)
 
@@ -367,7 +365,7 @@ class TestDisplacementEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             DisplacementEmbedding(features=x, wires=range(n_wires), method='phase')
-            return [qml.expval.X(i) for i in range(n_wires)]
+            return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match='Number of features to embed cannot be larger than number of wires, '
                                              'which is 2; got 3.'):
@@ -383,7 +381,7 @@ class TestDisplacementEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             DisplacementEmbedding(features=x, wires=range(n_wires), method='A')
-            return [qml.expval.X(i) for i in range(n_wires)]
+            return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[1, 2])
@@ -399,7 +397,7 @@ class TestDisplacementEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             DisplacementEmbedding(features=x, wires=3, method='A')
-            return qml.expval.X(0)
+            return qml.expval(qml.X(0))
 
         with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
             circuit(x=[1])

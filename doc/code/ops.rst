@@ -1,11 +1,9 @@
 .. _operations:
 
-Core operations
-===============
+Quantum operations
+==================
 
 **Module name:** :mod:`pennylane.ops`
 
 .. automodule:: pennylane.ops
-   :members:
-   :private-members:
-   :inherited-members:
+	:members: Identity

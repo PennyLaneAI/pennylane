@@ -134,6 +134,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    installing
    plugins
    research
+   Get Help<https://discuss.pennylane.ai/>
 
 .. toctree::
    :maxdepth: 1
@@ -148,68 +149,45 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    concepts/concept_embeddings
    zreferences
 
-
 .. toctree::
    :maxdepth: 1
-   :caption: Tutorials
+   :caption: Quickstart
    :hidden:
 
-   tutorials/qubit_rotation
-   tutorials/gaussian_transformation
-   tutorials/plugins_hybrid
-   tutorials/pytorch_noise
-   tutorials/advanced_usage
-   tutorials/notebooks
+   tutorials
 
 
 .. toctree::
    :maxdepth: 1
-   :caption: Library details
+   :caption: User documentation
    :hidden:
 
    code/init
-   code/qnode
    code/decorator
+   code/ops
+   code/measure
+   code/templates
    code/optimize
    code/configuration
-   code/utils
 
 .. toctree::
    :maxdepth: 1
-   :caption: Classical interfaces
+   :caption: Plugin API
    :hidden:
 
-   code/interfaces
-   code/interfaces/numpy
-   code/interfaces/torch
-   code/interfaces/tfe
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Supported operations
-   :hidden:
-
-   code/ops
-   code/expval
-   code/templates
+   API/overview
+   API/device
+   API/reference_plugins
 
 .. toctree::
    :maxdepth: 1
    :caption: Developer API
    :hidden:
 
-   API/overview
-   API/device
+   API/qnode
+   API/utils
    API/operation
    API/variable
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Reference plugins
-   :hidden:
-
-   plugins/default_qubit
-   plugins/default_gaussian
 
 
 :html:`<h2>Indices and tables</h2>`

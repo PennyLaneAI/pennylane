@@ -38,11 +38,8 @@ The following templates of each type are available:
     templates/embeddings
 
 
-Creating initial parameters
----------------------------
-
 Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**. To illustrate how these can be used, let us use a hypothetical parameter initialization function ``my_init_fun()`` and its corresponding hypothetical template ``MyTemplate()``, which takes three parameter arrays. The two can be combined in the following two ways: 
+**randomly initialized** arrays for the trainable **parameters**. To illustrate how these can be used, let us use a hypothetical parameter initialization function ``my_init_fun()`` and its corresponding hypothetical template ``MyTemplate()``, which takes three parameter arrays. The two can be combined in the following two ways:
 
 1. Dereference the list when feeding it into the template:
 
@@ -63,6 +60,8 @@ Each trainable template has a dedicated function in :mod:`pennylane.init` which 
 
 The following parameter initialization methods are available:
 
+
+.. rst-class:: contents local topic
 
 .. toctree::
     :maxdepth: 3
@@ -95,7 +94,7 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
     def circuit(pars, x=None):
         qml.BasisState(x, wires=range(n_wires))
         StronglyEntanglingLayers(*pars, wires=range(n_wires))
-        return qml.expval.PauliZ(0)
+        return qml.expval(qml.PauliZ(0))
 
 
     pars = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires, mean=0, std=0.1)
@@ -116,8 +115,8 @@ template :func:`~.StronglyEntanglingLayers` in the following way:
     Most parameter generating methods have a 'normal' and a 'uniform' version, sampling the angle parameters
     of rotation gates either from a normal or uniform distribution.
 
-Templates can contain each other. An example is the handy :class:`~.Interferometer` template. It constructs
-arbitrary interferometers in terms of elementary :class:`~.Beamsplitter` operations, by providing lists of
+Templates can contain each other. An example is the handy :class:`~layers.Interferometer` template. It constructs
+arbitrary interferometers in terms of elementary :class:`~pennylane.ops.Beamsplitter` operations, by providing lists of
 transmittivity and phase angles. A :func:`~.CVNeuralNetLayer` template — implementing the continuous-variable neural
 network architecture from :cite:`killoran2018continuous` — contains two such interferometers. But it can also
 be used (and optimized) independently:
@@ -145,7 +144,7 @@ be used (and optimized) independently:
         for w in range(n_wires):
             qml.Squeezing(r[w][0], r[w][1], wires=w)
         Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(n_wires))
-        return [qml.expval.MeanPhoton(wires=w) for w in range(n_wires)]
+        return [qml.expval(qml.NumberOperator(wires=w)) for w in range(n_wires)]
 
 
     j = qml.jacobian(circuit, 0)
@@ -178,7 +177,7 @@ the :func:`~.interferometer_uniform` function.
         for w in range(n_wires):
             qml.Squeezing(r[w][0], r[w][1], wires=w)
         Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(n_wires))
-        return [qml.expval.MeanPhoton(wires=w) for w in range(n_wires)]
+        return [qml.expval(qml.NumberOperator(wires=w)) for w in range(n_wires)]
 
 
     j = qml.jacobian(circuit, 0)

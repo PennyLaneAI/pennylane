@@ -89,7 +89,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     Keyword Args:
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
     """
 
     if ranges is None:
@@ -120,7 +120,7 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
 
     Keyword Args:
         r (int): range of the imprimitive gates of this layer, defaults to 1
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
     """
     if len(wires) < 2:
         raise ValueError("StronglyEntanglingLayer requires at least two wires or subsystems to apply "
@@ -134,12 +134,14 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
         imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
 
 
-def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=None):
+def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
     r"""A sequence of layers of type :func:`RandomLayer()`.
 
     The number of layers :math:`L` and the number :math:`k` of rotations per layer is inferred from the first
     and second dimension of ``weights``. The type of imprimitive (two-qubit) gate and rotations distributed
     randomly in the circuit can be chosen explicitly.
+
+    See :func:`RandomLayer` for details on the randomised behaviour.
 
     Args:
         weights (array[float]): array of weights of shape ``(L, k)``,
@@ -148,7 +150,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation
             gates (default 0.3)
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
@@ -162,7 +164,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
                     seed=seed)
 
 
-def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=None):
+def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
     r"""A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
@@ -176,13 +178,22 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
         :width: 60%
         :target: javascript:void(0);
 
+    .. note::
+        Using the default seed (or any other fixed integer seed) generates one and the same circuit in every
+        quantum node. To generate different circuit architectures, either use a different random seed, or use ``seed=None``
+        together with the ``cache=False`` option when creating a quantum node.
+
+    .. warning::
+        If you use a random number generator anywhere inside the quantum function without the ``cache=False`` option,
+        a new random circuit architecture will be created every time the quantum node is evaluated.
+
     Args:
         weights (array[float]): array of weights of shape ``(k,)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~.CNOT`
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
@@ -219,7 +230,7 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
 
     .. note::
 
-       The CV neural network architecture includes :class:`~.Kerr` operations.
+       The CV neural network architecture includes :class:`~pennylane.ops.Kerr` operations.
        Make sure to use a suitable device, such as the :code:`strawberryfields.fock`
        device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
@@ -227,14 +238,14 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
         theta_1 (array[float]): length :math:`(L, K)` array of transmittivity angles for first interferometer
         phi_1 (array[float]): length :math:`(L, K)` array of phase angles for first interferometer
         varphi_1 (array[float]): length :math:`(L, M)` array of rotation angles to apply after first interferometer
-        r (array[float]): length :math:`(L, M)` array of squeezing amounts for :class:`~.Squeezing` operations
-        phi_r (array[float]): length :math:`(L, M)` array of squeezing angles for :class:`~.Squeezing` operations
+        r (array[float]): length :math:`(L, M)` array of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
+        phi_r (array[float]): length :math:`(L, M)` array of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
         theta_2 (array[float]): length :math:`(L, K)` array of transmittivity angles for second interferometer
         phi_2 (array[float]): length :math:`(L, K)` array of phase angles for second interferometer
         varphi_2 (array[float]): length :math:`(L, M)` array of rotation angles to apply after second interferometer
-        a (array[float]): length :math:`(L, M)` array of displacement magnitudes for :class:`~.Displacement` operations
-        phi_a (array[float]): length :math:`(L, M)` array of displacement angles for :class:`~.Displacement` operations
-        k (array[float]): length :math:`(L, M)` array of kerr parameters for :class:`~.Kerr` operations
+        a (array[float]): length :math:`(L, M)` array of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
+        phi_a (array[float]): length :math:`(L, M)` array of displacement angles for :class:`~pennylane.ops.Displacement` operations
+        k (array[float]): length :math:`(L, M)` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Sequence[int]): sequence of mode indices that the template acts on
     """
 
@@ -268,7 +279,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
 
     .. note::
 
-       The CV neural network architecture includes :class:`~.Kerr` operations.
+       The CV neural network architecture includes :class:`~pennylane.ops.Kerr` operations.
        Make sure to use a suitable device, such as the :code:`strawberryfields.fock`
        device of the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin.
 
@@ -276,14 +287,14 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
         theta_1 (array[float]): length :math:`(K, )` array of transmittivity angles for first interferometer
         phi_1 (array[float]): length :math:`(K, )` array of phase angles for first interferometer
         varphi_1 (array[float]): length :math:`(M, )` array of rotation angles to apply after first interferometer
-        r (array[float]): length :math:`(M, )` array of squeezing amounts for :class:`~.Squeezing` operations
-        phi_r (array[float]): length :math:`(M, )` array of squeezing angles for :class:`~.Squeezing` operations
+        r (array[float]): length :math:`(M, )` array of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
+        phi_r (array[float]): length :math:`(M, )` array of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
         theta_2 (array[float]): length :math:`(K, )` array of transmittivity angles for second interferometer
         phi_2 (array[float]): length :math:`(K, )` array of phase angles for second interferometer
         varphi_2 (array[float]): length :math:`(M, )` array of rotation angles to apply after second interferometer
-        a (array[float]): length :math:`(M, )` array of displacement magnitudes for :class:`~.Displacement` operations
-        phi_a (array[float]): length :math:`(M, )` array of displacement angles for :class:`~.Displacement` operations
-        k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~.Kerr` operations
+        a (array[float]): length :math:`(M, )` array of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
+        phi_a (array[float]): length :math:`(M, )` array of displacement angles for :class:`~pennylane.ops.Displacement` operations
+        k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Sequence[int]): sequence of mode indices that the template acts on
     """
     Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
@@ -300,7 +311,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
 
 
 def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='pennylane'):
-    r"""General linear interferometer, an array of beam splitters and phase shifters.
+    r"""General linear interferometer, an array of beamsplitters and phase shifters.
 
     For :math:`M` wires, the general interferometer is specified by
     providing :math:`M(M-1)/2` transmittivity angles :math:`\theta` and the same number of
@@ -339,8 +350,8 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
           :width: 30%
           :target: javascript:void(0);
 
-    In both schemes, the network of :class:`~.Beamsplitter` operations is followed by
-    :math:`M` (or :math:`M-1`) local :class:`Rotation` Operations. In the latter case, the
+    In both schemes, the network of :class:`~pennylane.ops.Beamsplitter` operations is followed by
+    :math:`M` (or :math:`M-1`) local :class:`~pennylane.ops.Rotation` Operations. In the latter case, the
     rotation on the last wire is left out.
 
     The rectangular decomposition is generally advantageous, as it has a lower
@@ -367,7 +378,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
 
         If an interferometer consistent with the convention from :cite:`clements2016optimal`
         is needed, the optional keyword argument ``beamsplitter='clements'`` can be specified. This
-        will result in each :class:`~.Beamsplitter` being preceded by a :class:`Rotation` and
+        will result in each :class:`~pennylane.ops.Beamsplitter` being preceded by a :class:`~pennylane.ops.Rotation` and
         thus increase the number of elementary operations in the circuit.
 
     Args:

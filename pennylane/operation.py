@@ -24,27 +24,28 @@ Operation base classes
 ----------------------
 
 This module contains the symbolic base class for performing quantum operations
-and measuring expectation values in PennyLane.
+and measuring observables in PennyLane.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
   for example a unitary quantum gate. Each instance of these subclasses
   represents an application of the operation with given parameter values to
   a given sequence of wires (subsystems).
 
-* Each  :class:`~.Expectation` subclass represents a type of expectation value,
-  for example the expectation value of an observable. Each instance of these
-  subclasses represents an instruction to evaluate and return the respective
-  expectation value for the given parameter values on a sequence of wires
-  (subsystems).
+* Each  :class:`~.Observable` subclass represents a type of physical observable.
+  Each instance of these subclasses represents an instruction to measure and
+  return the respective result for the given parameter values on a
+  sequence of wires (subsystems).
 
 Differentiation
 ^^^^^^^^^^^^^^^
 
-In general, an :class:`Operation` is differentiable (at least using the finite difference method) with respect to a parameter iff
+In general, an :class:`Operation` is differentiable (at least using the finite-difference
+method) with respect to a parameter iff
 
 * the domain of that parameter is continuous.
 
-For an :class:`Operation` to be differentiable with respect to a parameter using the analytic method of differentiation, it must satisfy an additional constraint:
+For an :class:`Operation` to be differentiable with respect to a parameter using the
+analytic method of differentiation, it must satisfy an additional constraint:
 
 * the parameter domain must be real.
 
@@ -65,15 +66,15 @@ Summary
 
 .. autosummary::
    Operation
-   Expectation
+   Observable
 
 
 CV Operation base classes
 -------------------------
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
-:class:`~.CVOperation` or :class:`~.CVExpectation` classes instead of :class:`~.Operation`
-and :class:`~.Expectation`.
+:class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
+and :class:`~.Observable`.
 
 Differentiation
 ^^^^^^^^^^^^^^^
@@ -86,16 +87,16 @@ the operation given its list of parameters, namely:
   operation on the vector of quadrature operators :math:`\mathbf{r}` for the given parameter
   values.
 
-* For Gaussian CV Expectations this method should return a real vector (first-order observables)
+* For Gaussian CV Observables this method should return a real vector (first-order observables)
   or symmetric matrix (second-order observables) of coefficients of the quadrature
   operators :math:`\x` and :math:`\p`.
 
-PennyLane uses the convention :math:`\mathbf{r} = (\I, \x, \p)` for single-mode operations and expectations
-and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode operations and expectations.
+PennyLane uses the convention :math:`\mathbf{r} = (\I, \x, \p)` for single-mode operations and observables
+and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode operations and observables.
 
 .. note::
-    Non-Gaussian CV operations and expectations are currently only supported via
-    the finite difference method of gradient computation.
+    Non-Gaussian CV operations and observables are currently only supported via
+    the finite-difference method of gradient computation.
 
 Summary
 ^^^^^^^
@@ -103,12 +104,13 @@ Summary
 .. autosummary::
    CV
    CVOperation
-   CVExpectation
+   CVObservable
 
 Code details
 ^^^^^^^^^^^^
 """
 import abc
+from enum import Enum, IntEnum
 import numbers
 from collections.abc import Sequence
 
@@ -120,11 +122,57 @@ from .variable import Variable
 
 
 #=============================================================================
+# Wire types
+#=============================================================================
+
+class Wires(IntEnum):
+    """Integer enumeration class
+    to represent the number of wires
+    an operation acts on"""
+    Any = -1
+    All = 0
+
+
+All = Wires.All
+"""IntEnum: An enumeration which represents all wires in the
+subsystem. It is equivalent to an integer with value 0."""
+
+Any = Wires.Any
+"""IntEnum: An enumeration which represents any wires in the
+subsystem. It is equivalent to an integer with value -1."""
+
+
+#=============================================================================
+# ObservableReturnTypes types
+#=============================================================================
+
+class ObservableReturnTypes(Enum):
+    """Enumeration class to
+    represent the type of
+    return types of an observable."""
+    Sample = 1
+    Variance = 2
+    Expectation = 3
+
+
+Sample = ObservableReturnTypes.Sample
+"""Enum: An enumeration which represents sampling an observable."""
+
+Variance = ObservableReturnTypes.Variance
+"""Enum: An enumeration which represents returning the variance of
+an observable on specified wires."""
+
+Expectation = ObservableReturnTypes.Expectation
+"""Enum: An enumeration which represents returning the expectation
+value of an observable on specified wires."""
+
+
+#=============================================================================
 # Class property
 #=============================================================================
 
 
-class ClassPropertyDescriptor(object): # pragma: no cover
+class ClassPropertyDescriptor: # pragma: no cover
     """Allows a class property to be defined"""
     # pylint: disable=too-few-public-methods
     def __init__(self, fget, fset=None):
@@ -177,6 +225,11 @@ class Operation(abc.ABC):
 
     * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
+
+    Finally, there are some additional optional class attributes
+    that may be set, and used by certain quantum optimizers:
+
+    * :attr:`~.Operation.generator`
 
     Args:
         args (tuple[float, int, array, Variable]): operation parameters
@@ -242,6 +295,31 @@ class Operation(abc.ABC):
         """
         return self._grad_recipe
 
+    @property
+    def generator(self):
+        r"""Generator of the operation.
+
+        A length-2 list ``[generator, scaling_factor]``, where
+
+        * ``generator`` is an existing PennyLane
+          operation class or :math:`2\times 2` Hermitian array
+          that acts as the generator of the current operation
+
+        * ``scaling_factor`` represents a scaling factor applied
+          to the generator operation
+
+        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
+        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
+        of operator :math:`U(\theta)`:
+
+        .. code-block:: python
+
+            generator = [PauliX, 0.7]
+
+        Default is ``[None, 1]``, indicating the operation has no generator.
+        """
+        return [None, 1]
+
     @grad_recipe.setter
     def grad_recipe(self, value):
         """Setter for the grad_recipe property"""
@@ -250,6 +328,11 @@ class Operation(abc.ABC):
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
+
+        if self.num_wires == All:
+            if do_queue:
+                if set(wires) != set(range(QNode._current_context.num_wires)):
+                    raise ValueError("Operation {} must act on all wires".format(self.name))
 
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
@@ -310,7 +393,7 @@ class Operation(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
-        if self.num_wires != 0 and len(wires) != self.num_wires:
+        if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
             raise ValueError("{}: wrong number of wires. "
                              "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
 
@@ -393,21 +476,21 @@ class Operation(abc.ABC):
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         QNode._current_context._append_op(self)
-        return self  # so pre-constructed Expectation instances can be queued and returned in a single statement
+        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
 #=============================================================================
-# Base Expectation class
+# Base Observable class
 #=============================================================================
 
 
-class Expectation(Operation):
-    """Base class for expectation value measurements supported by a device.
+class Observable(Operation):
+    """Base class for observables supported by a device.
 
-    :class:`Expectation` is used to describe Hermitian quantum observables.
+    :class:`Observable` is used to describe Hermitian quantum observables.
 
     As with :class:`~.Operation`, the following class attributes must be
-    defined for all expectations:
+    defined for all observables:
 
     * :attr:`~.Operation.num_params`
     * :attr:`~.Operation.num_wires`
@@ -421,16 +504,18 @@ class Expectation(Operation):
     * :attr:`~.Operation.grad_recipe`
 
     Args:
-        args (tuple[float, int, array, Variable]): Expectation parameters
+        args (tuple[float, int, array, Variable]): observable parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
         do_queue (bool): Indicates whether the operation should be immediately
-            pushed into a :class:`QNode` circuit queue. This flag is useful if
-            there is some reason to run an Expectation outside of a QNode context.
+            pushed into a :class:`QNode` observable queue. This flag is useful if
+            there is some reason to call an observable outside of a QNode context.
     """
     # pylint: disable=abstract-method
+    return_type = None
+
     def __init__(self, *args, wires=None, do_queue=True):
         # extract the arguments
         if wires is not None:
@@ -444,7 +529,7 @@ class Expectation(Operation):
 
 
 #=============================================================================
-# CV Operations and expectations
+# CV Operations and observables
 #=============================================================================
 
 
@@ -491,7 +576,7 @@ class CV:
             for k, w in enumerate(self.wires):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
-            if isinstance(self, Expectation):
+            if isinstance(self, Observable):
                 W = np.zeros((dim, dim))
             else:
                 W = np.eye(dim)
@@ -629,8 +714,8 @@ class CVOperation(CV, Operation):
         return self.heisenberg_expand(U, num_wires)
 
 
-class CVExpectation(CV, Expectation):
-    r"""Base class for continuous-variable expectation value measurements.
+class CVObservable(CV, Observable):
+    r"""Base class for continuous-variable observables.
 
     The class attribute :attr:`~.ev_order` can be defined to indicate
     to PennyLane whether the corresponding CV observable is a polynomial in the

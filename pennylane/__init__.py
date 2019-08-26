@@ -14,8 +14,8 @@
 """
 .. _library_overview:
 
-Library overview
-================
+Overview
+========
 
 The PennyLane codebase contains a number of complementary components.
 These can be roughly separated into a user-interface, supported core
@@ -24,31 +24,33 @@ operations, and a developer API.
 Software components
 -------------------
 
-**User interface**
-
 The main user-interface to PennyLane. These are the functions and
 classes that will be used by a majority of users. For a good introduction
 on the user-interface of PennyLane, have a look at our tutorials.
 
+**Basic functionality**
+
 * The device loader: :func:`pennylane.device`
 * The quantum node object: :mod:`pennylane.QNode <pennylane.qnode>`
 * The QNode decorator: :mod:`pennylane.qnode <pennylane.decorator>`
+
+**Extra modules**
+
 * Optimization methods: :mod:`pennylane.optimize`
 * Configuration: :mod:`pennylane.Configuration <pennylane.configuration>`
-* Utilities: :mod:`pennylane.utils <pennylane.utils>`
 * NumPy with support for automatic differentiation: :mod:`pennylane.numpy <pennylane.numpy>`
 
 **Core operations**
 
-The main operations and expectations supported by PennyLane.
-Each of these operations/expectations supports a method
-of automatic differentiation (either analytically or numerically).
+The main operations and observables supported by PennyLane.
+Each of the operations supports a method
+of computing gradients (either analytically or numerically).
 
 The conventions used in defining these operations are also
 provided here.
 
-* Supported operations: :mod:`pennylane.ops`
-* Supported expectations: :mod:`pennylane.expval`
+* Supported operations and observables: :mod:`pennylane.ops`
+* Supported measurement types: :mod:`pennylane.measure`
 
 **Developer API**
 
@@ -57,6 +59,7 @@ for QNodes, or supporting new operations and expectations. For more
 details, see :ref:`developer_overview`.
 
 * The base Device class: :mod:`pennylane.Device <pennylane._device>`
+* Utilities: :mod:`pennylane.utils <pennylane.utils>`
 * Symbolic quantum operations: :mod:`pennylane.operation`
 * Quantum circuit parameters: :mod:`pennylane.variable`
 
@@ -70,7 +73,6 @@ Summary
     ~_device.Device
     ~_device.DeviceError
     device
-    expval
     grad
     jacobian
     ~autograd.numpy
@@ -83,9 +85,9 @@ Summary
 
 .. note::
 
-    All individual operations (contained in :mod:`~.ops`) and optimizers
+    All individual operations and observables (contained in :mod:`~.ops`),
+    measurements (contained in :mod:`~.measure`), and optimizers
     (contained in :mod:`~.optimize`) may also be imported directly from PennyLane.
-    Expectation values, however, must be accessed via the :mod:`~.expval` module.
 
 Code details
 ~~~~~~~~~~~~
@@ -100,7 +102,6 @@ from autograd import jacobian as _jacobian
 from semantic_version import Version, Spec
 
 import pennylane.operation
-import pennylane.expval
 
 import pennylane.init
 import pennylane.templates.layers
@@ -110,6 +111,7 @@ from pennylane.about import about
 
 from .configuration import Configuration
 from ._device import Device, DeviceError
+from .measure import expval, var, sample
 from .ops import *
 from .optimize import *
 from .qnode import QNode, QuantumFunctionError
@@ -236,8 +238,8 @@ def jacobian(func, argnum):
             a combination of quantum and classical nodes. The output of the computation
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
-        argnum (int): which argument to take the gradient
-            with respect to. If the argument is a NumPy array, then the Jacobian
+        argnum (int or Sequence[int]): which argument to take the gradient
+            with respect to. If a sequence is given, the Jacobian matrix
             corresponding to all input elements and all output elements is returned.
 
     Returns:
@@ -245,7 +247,10 @@ def jacobian(func, argnum):
         function with respect to the arguments in argnum
     """
     # pylint: disable=no-value-for-parameter
-    return _jacobian(func, argnum)
+    if isinstance(argnum, int):
+        return _jacobian(func, argnum)
+    return lambda *args, **kwargs: numpy.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
+
 
 
 def version():

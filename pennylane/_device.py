@@ -39,7 +39,8 @@ user interface:
 .. autosummary::
     short_name
     capabilities
-    supported
+    supports_operation
+    supports_observable
     execute
     reset
 
@@ -55,17 +56,19 @@ The following methods and attributes must be defined for all devices:
     version
     author
     operations
-    expectations
+    observables
     apply
     expval
+    var
 
 In addition, the following may also be optionally defined:
 
 .. autosummary::
+    probability
     pre_apply
     post_apply
-    pre_expval
-    post_expval
+    pre_measure
+    post_measure
     execution_context
 
 
@@ -88,6 +91,8 @@ Code details
 import abc
 
 import autograd.numpy as np
+from pennylane.operation import Operation, Observable, Sample, Variance, Expectation
+from .qnode import QuantumFunctionError
 
 
 class DeviceError(Exception):
@@ -116,7 +121,8 @@ class Device(abc.ABC):
         self.shots = shots
 
         self._op_queue = None
-        self._expval_queue = None
+        self._obs_queue = None
+        self._parameters = None
 
     def __repr__(self):
         """String representation."""
@@ -161,11 +167,11 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractproperty
-    def expectations(self):
-        """Get the supported set of expectations.
+    def observables(self):
+        """Get the supported set of observables.
 
         Returns:
-            set[str]: the set of PennyLane expectation names the device supports
+            set[str]: the set of PennyLane observable names the device supports
         """
         raise NotImplementedError
 
@@ -180,38 +186,68 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, expectation):
-        """Execute a queue of quantum operations on the device and then measure the given expectation values.
+    def execute(self, queue, observables, parameters={}):
+        """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
-        :meth:`pre_apply`, :meth:`apply`, :meth:`post_apply`, :meth:`pre_expval`,
-        :meth:`expval`, :meth:`post_expval`, and :meth:`execution_context`.
+        :meth:`pre_apply`, :meth:`apply`, :meth:`post_apply`, :meth:`pre_measure`,
+        :meth:`expval`, :meth:`var`, :meth:`sample`, :meth:`post_measure`, and :meth:`execution_context`.
 
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
-            expectation (Iterable[~.operation.Expectation]): expectations to evaluate and return
+            observables (Iterable[~.operation.Observable]): observables to measure and return
+            parameters (dict[int->list[(int, int)]]): Mapping from free parameter index to the list of
+                :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
+                The first element of the tuple is the index of the Operation in the program queue,
+                the second the index of the parameter within the Operation.
 
         Returns:
-            array[float]: expectation value(s)
+            array[float]: measured value(s)
         """
-        self.check_validity(queue, expectation)
+        self.check_validity(queue, observables)
         self._op_queue = queue
-        self._expval_queue = expectation
+        self._obs_queue = observables
+        self._parameters = {}
+        self._parameters.update(parameters)
+
+        results = []
 
         with self.execution_context():
             self.pre_apply()
+
             for operation in queue:
                 self.apply(operation.name, operation.wires, operation.parameters)
+
             self.post_apply()
 
-            self.pre_expval()
-            expectations = [self.expval(e.name, e.wires, e.parameters) for e in expectation]
-            self.post_expval()
+            self.pre_measure()
+
+            for obs in observables:
+                if obs.return_type is Expectation:
+                    results.append(self.expval(obs.name, obs.wires, obs.parameters))
+                elif obs.return_type is Variance:
+                    results.append(self.var(obs.name, obs.wires, obs.parameters))
+                elif obs.return_type is Sample:
+                    if not hasattr(obs, "num_samples"):
+                        raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
+                elif obs.return_type is not None:
+                    raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
+
+            self.post_measure()
 
             self._op_queue = None
-            self._expval_queue = None
+            self._obs_queue = None
+            self._parameters = None
 
-            return np.array(expectations)
+            # Ensures that a combination with sample does not put
+            # expvals and vars in superfluous arrays
+            if all(obs.return_type is Sample for obs in observables):
+                return np.asarray(results)
+            if any(obs.return_type is Sample for obs in observables):
+                return np.asarray(results, dtype="object")
+
+            return np.asarray(results)
 
     @property
     def op_queue(self):
@@ -229,19 +265,37 @@ class Device(abc.ABC):
         return self._op_queue
 
     @property
-    def expval_queue(self):
-        """The expectation values to be measured and returned.
+    def obs_queue(self):
+        """The observables to be measured and returned.
 
         Note that this property can only be accessed within the execution context
         of :meth:`~.execute`.
 
         Returns:
-            list[~.operation.Expectation]
+            list[~.operation.Observable]
         """
-        if self._expval_queue is None:
-            raise ValueError("Cannot access the expectation value queue outside of the execution context!")
+        if self._obs_queue is None:
+            raise ValueError("Cannot access the observable value queue outside of the execution context!")
 
-        return self._expval_queue
+        return self._obs_queue
+
+    @property
+    def parameters(self):
+        """Mapping from free parameter index to the list of
+        :class:`Operations <~.Operation>` in the device queue that depend on it.
+
+        Note that this property can only be accessed within the execution context
+        of :meth:`~.execute`.
+
+        Returns:
+            dict[int->list[(int, int)]]: the first element of the tuple is the index
+            of the Operation in the program queue, the second the index of the parameter
+            within the Operation.
+        """
+        if self._parameters is None:
+            raise ValueError("Cannot access the free parameter mapping outside of the execution context!")
+
+        return self._parameters
 
     def pre_apply(self):
         """Called during :meth:`execute` before the individual operations are executed."""
@@ -251,12 +305,12 @@ class Device(abc.ABC):
         """Called during :meth:`execute` after the individual operations have been executed."""
         pass
 
-    def pre_expval(self):
-        """Called during :meth:`execute` before the individual expectations are executed."""
+    def pre_measure(self):
+        """Called during :meth:`execute` before the individual observables are measured."""
         pass
 
-    def post_expval(self):
-        """Called during :meth:`execute` after the individual expectations have been executed."""
+    def post_measure(self):
+        """Called during :meth:`execute` after the individual observables have been measured."""
         pass
 
     def execution_context(self):
@@ -269,7 +323,7 @@ class Device(abc.ABC):
         source of :meth:`.Device.execute` for more details).
         """
         # pylint: disable=no-self-use
-        class MockContext(object): # pylint: disable=too-few-public-methods
+        class MockContext: # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute()."""
             def __enter__(self):
                 pass
@@ -278,31 +332,55 @@ class Device(abc.ABC):
 
         return MockContext()
 
-    def supported(self, name):
-        """Checks if an operation or expectation is supported by this device.
+    def supports_operation(self, operation):
+        """Checks if an operation is supported by this device.
 
         Args:
-            name (str): name of the operation or expectation
+            operation (Operation,str): operation to be checked
 
         Returns:
-            bool: True iff it is supported
+            bool: ``True`` iff supplied operation is supported
         """
-        return name in self.operations.union(self.expectations)
+        if isinstance(operation, type) and issubclass(operation, Operation):
+            return operation.__name__ in self.operations
+        if isinstance(operation, str):
+            return operation in self.operations
 
-    def check_validity(self, queue, expectations):
-        """Checks whether the operations and expectations in queue are all supported by the device.
+        raise ValueError("The given operation must either be a pennylane.Operation class or a string.")
+
+    def supports_observable(self, observable):
+        """Checks if an observable is supported by this device.
 
         Args:
-            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended to be applied in the device
-            expectations (Iterable[~.operation.Expectation]): expectations which are intended to be evaluated in the device
+            operation (Observable,str): observable to be checked
+
+        Returns:
+            bool: ``True`` iff supplied observable is supported
+        """
+        if isinstance(observable, type) and issubclass(observable, Observable):
+            return observable.__name__ in self.observables
+        if isinstance(observable, str):
+            return observable in self.observables
+
+        raise ValueError("The given operation must either be a pennylane.Observable class or a string.")
+
+
+    def check_validity(self, queue, observables):
+        """Checks whether the operations and observables in queue are all supported by the device.
+
+        Args:
+            queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
+                to be applied on the device
+            expectations (Iterable[~.operation.Observable]): observables which are intended
+                to be evaluated on the device
         """
         for o in queue:
             if o.name not in self.operations:
                 raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
-        for e in expectations:
-            if e.name not in self.expectations:
-                raise DeviceError("Expectation {} not supported on device {}".format(e.name, self.short_name))
+        for o in observables:
+            if o.name not in self.observables:
+                raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
@@ -318,20 +396,59 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def expval(self, expectation, wires, par):
-        """Return the expectation value of an expectation.
-
-        For plugin developers: this function should return the expectation value of the given expectation on the device.
+    def expval(self, observable, wires, par):
+        r"""Returns the expectation value of observable on specified wires.
 
         Args:
-            expectation (str): name of the expectation
-            wires (Sequence[int]): subsystems the expectation value is to be measured on
-            par (tuple): parameters for the observable
+          observable (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par (tuple[float]): parameter values
 
         Returns:
-            float: expectation value
-        """
+          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+            """
         raise NotImplementedError
+
+    def var(self, observable, wires, par):
+        r"""Returns the variance of observable on specified wires.
+
+        Args:
+          observable (str): name of the observable
+          wires (Sequence[int]): target subsystems
+          par (tuple[float]): parameter values
+
+        Returns:
+            float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
+        """
+        raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
+
+    def sample(self, observable, wires, par, n=None):
+        """Return a sample of an observable.
+
+        For plugin developers: this function should return the result of an evaluation
+        of the given observable on the device.
+
+        Args:
+            observable (str): name of the observable
+            wires (Sequence[int]): subsystems the observable is to be measured on
+            par (tuple): parameters for the observable
+            n (int): Number of samples that should be obtained. Defaults to the
+                number of shots given as a parameter to the corresponding Device.
+
+        Returns:
+            array[float]: samples in an array of dimension ``(n, num_wires)``
+        """
+        raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
+
+    def probability(self):
+        """Return the full state probability of each computational basis state from the last run of the device.
+
+        Returns:
+            OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
+            to the resulting probability. The dictionary should be sorted such that the
+            state tuples are in lexicographical order.
+        """
+        raise NotImplementedError("Returning probability not currently supported by {}".format(self.short_name))
 
     @abc.abstractmethod
     def reset(self):
