@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
+Embeddings
+==========
+
 **Module name:** :mod:`pennylane.templates.embeddings`
 
 .. currentmodule:: pennylane.templates.embeddings

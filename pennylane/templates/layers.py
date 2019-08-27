@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
+Layers
+======
+
 **Module name:** :mod:`pennylane.templates.layers`
 
 .. currentmodule:: pennylane.templates.layers

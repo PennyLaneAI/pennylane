@@ -21,7 +21,6 @@ PennyLane conceptually distinguishes two types of templates, **layer architectur
 
 Layer templates
 ---------------
-
 Layer architectures, found in :mod:`pennylane.templates.layers`, define sequences of gates that are repeated like the layers in a neural network. They usually contain only trainable parameters.
 
 The following layer templates are available:
@@ -29,7 +28,7 @@ The following layer templates are available:
 .. rst-class:: contents local topic
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     templates/layers
 
@@ -43,7 +42,7 @@ The following embedding templates are available:
 .. rst-class:: contents local topic
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     templates/embeddings
 
@@ -58,7 +57,7 @@ The following parameter initialization functions are available:
 .. rst-class:: contents local topic
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 2-3
 
     templates/init_parameters
 
