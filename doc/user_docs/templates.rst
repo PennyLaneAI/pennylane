@@ -57,7 +57,7 @@ The following parameter initialization functions are available:
 .. rst-class:: contents local topic
 
 .. toctree::
-    :maxdepth: 2-3
+    :maxdepth: 3
 
     templates/init_parameters
 
