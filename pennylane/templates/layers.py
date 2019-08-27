@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Layers
-======
-
 **Module name:** :mod:`pennylane.templates.layers`
 
 .. currentmodule:: pennylane.templates.layers
@@ -27,11 +24,10 @@ Most templates in this module have a ``Layer`` version that implements a single 
 version which calls the single layer multiple times, possibly using different hyperparameters for the
 sequence in each call.
 
-
 Qubit architectures
 -------------------
 
-Strongly entangling circuit
+Strongly Entangling Circuit
 ***************************
 
 .. autosummary::
@@ -39,7 +35,7 @@ Strongly entangling circuit
     StronglyEntanglingLayers
     StronglyEntanglingLayer
 
-Random circuit
+Random Circuit
 **************
 
 .. autosummary::
@@ -50,7 +46,7 @@ Random circuit
 Continuous-variable architectures
 ---------------------------------
 
-Continuous-variable quantum neural network
+Continuous-Variable Quantum Neural Network
 ******************************************
 
 .. autosummary::

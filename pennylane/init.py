@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Parameter Initializations
-=========================
-
 **Module name:** :mod:`pennylane.init`
 
 .. currentmodule:: pennylane.init
@@ -25,16 +22,16 @@ be used as initial parameters of trainable templates.
 The methods return lists of numpy arrays, and the arrays have the correct shape to be fed in as the first positional
 arguments in the templates.
 
-.. note::
+.. warning::
 
     For the use of PennyLane in combination with PyTorch or TensorFlow, the numpy arrays have to be converted to
-    *trainable* tensors.
+    *trainable tensors*.
 
 Qubit architectures
 -------------------
 
-Strongly entangling circuit
-***************************
+Initializations for Strongly Entangling Circuit
+***********************************************
 
 .. autosummary::
 
@@ -43,8 +40,8 @@ Strongly entangling circuit
     strong_ent_layer_uniform
     strong_ent_layer_normal
 
-Random circuit
-**************
+Initializations for Random Circuit
+**********************************
 
 .. autosummary::
 
@@ -56,8 +53,8 @@ Random circuit
 Continuous-variable architectures
 ---------------------------------
 
-Continuous-variable quantum neural network
-******************************************
+Initializations for CV Neural Network
+*************************************
 
 .. autosummary::
 
@@ -66,8 +63,8 @@ Continuous-variable quantum neural network
     cvqnn_layer_uniform
     cvqnn_layer_normal
 
-Interferometer
-**************
+Initializations for Interferometer
+**********************************
 
 .. autosummary::
 

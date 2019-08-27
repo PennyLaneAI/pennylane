@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Embeddings
-==========
-
 **Module name:** :mod:`pennylane.templates.embeddings`
 
 .. currentmodule:: pennylane.templates.embeddings
@@ -26,18 +23,43 @@ The features are associated with gate parameters, implicitly mapping them into t
 Qubit architectures
 -------------------
 
+Amplitude Embedding
+*******************
+
+.. autosummary::
+
+    AmplitudeEmbedding
+
+Angle Embedding
+***************
+
 .. autosummary::
 
     AngleEmbedding
-    AmplitudeEmbedding
+
+
+Basis Embedding
+***************
+
+.. autosummary::
+
     BasisEmbedding
 
 Continuous-variable architectures
 ---------------------------------
 
+Squeezing Embedding
+*******************
+
 .. autosummary::
 
     SqueezingEmbedding
+
+Displacement Embedding
+**********************
+
+.. autosummary::
+
     DisplacementEmbedding
 
 Code details
