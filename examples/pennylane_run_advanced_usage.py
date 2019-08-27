@@ -6,8 +6,43 @@ Advanced Usage
 ==============
 
 In the introductory tutorials, we explored the basic concepts of
-PennyLane, including qubit- and CV-model quantum computations and gradient-based optimization. Here, we will highlight some of the more advanced features of Pennylane.
+PennyLane, including qubit- and CV-model quantum computations and gradient-based optimization. Here, we will highlight some of the more advanced features of PennyLane.
 """
+##############################################################################
+# Multiple measurements
+# ---------------------
+#
+# PennyLane supports measurements on multiple wires at the same time given we measure only
+# one observable per wire - as we saw in various examples in the introductory tutorials. Let
+# us look at another example:
+
+import pennylane as qml
+from pennylane import numpy as np
+
+dev = qml.device("default.qubit", wires=2)
+
+@qml.qnode(dev)
+def multiple():
+    qml.Hadamard(wires=0)
+    qml.SWAP(wires=[0, 1])
+    qml.Hadamard(wires=1)
+    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+##############################################################################
+
+print(multiple())
+
+##############################################################################
+# This outcome is expected, as the quantum function ``multiple`` starts and ends in the state :math:`\ket{00}`. Notice that the two expectation values are returned as a NumPy array with ``shape=(2,)``.
+#
+# We may even mix different return types, for example expectation values and variances:
+
+@qml.qnode(dev)
+def circuit1(param):
+    qml.RX(param, wires=0)
+    qml.CNOT(wires=[0, 1])
+    return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+
 
 ##############################################################################
 # Keyword arguments
