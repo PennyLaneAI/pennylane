@@ -102,7 +102,7 @@ def circuit_Y(var):
 ##############################################################################
 # Objective
 # ~~~~~~~~~
-
+#
 # The cost function to be optimized in VQE is simply a linear combination
 # of the expectations, which defines the expectation of the Hamiltonian we
 # are interested in. In our case, we square this cost function to provide
@@ -267,7 +267,7 @@ plt.show()
 ##############################################################################
 # 3. Optimizing classical and quantum parameters
 # ----------------------------------------------
-
+#
 # Finally, we can optimize *classical* and *quantum* weights together by
 # combining the two approaches from above.
 
@@ -306,3 +306,5 @@ var = [0.3, 2.5, 0.3, 2.5]
 for it in range(10):
     var = opt.step(cost, var)
     print("Cost after step {:5d}: {: 0.7f}".format(it + 1, cost(var)))
+
+##############################################################################

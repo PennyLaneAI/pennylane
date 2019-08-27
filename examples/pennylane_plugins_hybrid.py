@@ -8,8 +8,7 @@ This tutorial introduces the notion of hybrid computation by combining several P
 plugins. We first introduce PennyLane's `Strawberry Fields plugin <https://pennylane-sf.readthedocs.io>`_
 and use it to explore a non-Gaussian photonic circuit. We then combine this photonic circuit with a
 qubit circuit — along with some classical processing — to create and optimize a fully hybrid computation.
-Be sure to read through the introductory :ref:`qubit rotation <qubit_rotation>` and
-:ref:`Gaussian transformation <gaussian_transformation>` tutorials before attempting this tutorial.
+Be sure to read through the introductory tutorials before attempting this tutorial.
 
 .. note::
 
@@ -33,14 +32,12 @@ We first consider a photonic circuit which is similar in spirit to the
 
 .. figure:: ../../examples/figures/photon_redirection.png
     :align: center
-    :width: 30%
+    :width: 40%
     :target: javascript:void(0);
 
 Breaking this down, step-by-step:
 
-1. **We start the computation with two qumode subsystems**. In PennyLane, we use the
-   shorthand 'wires' to refer to quantum subsystems, whether they are qumodes, qubits, or
-   any other kind of quantum register.
+1. **We start the computation with two qumode subsystems**. 
 
 2. **Prepare the state** :math:`\left|1,0\right\rangle`. That is, the first wire (wire 0) is prepared
    in a single-photon state, while the second
@@ -50,19 +47,20 @@ Breaking this down, step-by-step:
 3. **Both wires are then incident on a beamsplitter**, with free parameters :math:`\theta`and :math:`\phi`.
    Here, we have the convention that the beamsplitter transmission amplitude is :math:`t=\cos\theta`,
    and the reflection amplitude is
-   :math:`r=e^{i\phi}\sin\theta`. See :ref:`operations` for a full list of operation conventions.
+   :math:`r=e^{i\phi}\sin\theta`.
 
-4. **Finally, we measure the mean photon number** :math:`\left\langle \hat{n}\right\rangle` of the second wire, where
+4. **Finally, we measure the mean photon number** :math:`\braket{\hat{n}}` of the second wire, where
 
    .. math:: \hat{n} = \ad\a
 
-   is the number operator, acting on the Fock basis number states, such that :math:`\hat{n}\left|n\right\rangle = n\left|n\right\rangle`.
+   is the number operator, acting on the Fock basis number states, such that :math:`\hat{n}\ket{n} = n\ket{n}`.
 
-The aim of this tutorial is to optimize the beamsplitter parameters :math:`(\theta, \phi)` such
+
+Now, let's optimize the beamsplitter parameters :math:`(\theta, \phi)` such
 that the expected photon number of the second wire is **maximized**. Since the beamsplitter
-is a passive optical element that preserves the total photon number, this to the output
-state :math:`\left|0,1\right\rangle` — i.e., when the incident photon from the first wire has been
-'redirected' to the second wire.
+is a passive optical element that preserves the total photon number, this leads to the output
+state :math:`\ket{0,1}` — i.e., when the incident photon from the first wire has been
+'redirected' to the second wire. This time, however, we use PennyLane to find the optimum parameters rather than working them out ourselves.
 
 .. _photon_redirection_calc:
 
@@ -185,6 +183,15 @@ init_params = np.array([0.01, 0.01])
 print(cost(init_params))
 
 ##############################################################################
+# .. rst-class:: sphx-glr-script-out
+#
+#  Out:
+#
+#  .. code-block:: none
+#
+#     -9.999666671111085e-05
+
+##############################################################################
 # Here, we choose the values of :math:`\theta` and :math:`\phi` to be very close to zero;
 # this results in :math:`B(\theta,\phi)\approx I`, and the output of the quantum
 # circuit will be very close to :math:`\left|1, 0\right\rangle` — i.e., the circuit leaves the photon in the first mode.
@@ -200,6 +207,15 @@ print(cost(init_params))
 
 dphoton_redirection = qml.grad(photon_redirection, argnum=0)
 print(dphoton_redirection([0.0, 0.0]))
+
+##############################################################################
+# .. rst-class:: sphx-glr-script-out
+#
+#  Out:
+#
+#  .. code-block:: none
+#
+#     [0.0, 0.0]
 
 ##############################################################################
 # Now, let's use the :class:`~.GradientDescentOptimizer`, and update the circuit
@@ -222,11 +238,20 @@ for i in range(steps):
 
 print("Optimized rotation angles: {}".format(params))
 
+##############################################################################
+# .. rst-class:: sphx-glr-script-out
+#
+#  Out:
+#
+#  .. code-block:: none
+#
+#     Optimized rotation angles: [ 1.57079633  0.01      ]
+
 
 ##############################################################################
 # Comparing this to the :ref:`exact calculation <photon_redirection_calc>` above,
 # this is close to the optimum value of :math:`\theta=\pi/2`, while the value of
-# :math:`\phi` has not changed — consistent with the fact that :math:`\left\langle \hat{n}_1\right\rangle`
+# :math:`\phi` has not changed — consistent with the fact that :math:`\braket{\hat{n}_1}`
 # is independent of :math:`\phi`.
 #
 # .. _hybrid_computation_example:
@@ -332,12 +357,31 @@ for i in range(steps):
 print("Optimized rotation angles: {}".format(params))
 
 ##############################################################################
+# .. rst-class:: sphx-glr-script-out
+#
+#  Out:
+#
+#  .. code-block:: none
+#
+#     Optimized rotation angles: [ 1.20671364  0.01      ]
+
+##############################################################################
 # Substituting this into the photon redirection QNode shows that it now produces
 # the same output as the qubit rotation QNode:
 
 result = [1.20671364, 0.01]
 print(photon_redirection(result))
 print(qubit_rotation(0.5, 0.1))
+
+##############################################################################
+# .. rst-class:: sphx-glr-script-out
+#
+#  Out:
+#
+#  .. code-block:: none
+#
+#     0.8731983021146449
+#     0.8731983044562817
 
 ##############################################################################
 # This is just a simple example of the kind of hybrid computation that can be carried

@@ -4,22 +4,64 @@
 Quantum Generative Adversarial Network
 ======================================
 
+A QGAN is the quantum version of a *Generative Adversarial Network*.
+These are a particular kind of deep learning model used to generate
+real-looking synthetic data (such as images).
+
+.. figure:: ../../examples/figures/biggan.png
+    :align: center
+    :width: 60%
+    :target: javascript:void(0);
+
+GANs have a unique structure, consisting of two models:
+
+* the generator: its goal is to produce realistic-looking data samples.
+
+* the discriminator: its goal is distinguish fake data produced by the generator from real data.
+
+Training of GANs proceeds as follows:
+
+1. “Real” data is captured in some *training dataset*.
+
+2. The *generator* produces “fake” data by starting with a random input
+   vector and transforming it into an output.
+
+3. The *discriminator* is fed samples of both real and fake data and
+   must decide which label to assign (‘real’ or ‘fake’).
+
+4. Training consists of alternating steps:
+   (i) the generator is frozen and the discriminator is trained to distinguish real from fake. 
+   (ii) the discriminator is frozen and the generator is trained to fool the
+   discriminator. The gradient of the discriminator’s output provides a
+   training signal for the generator to improve its fake generated data.
+
+5. Eventually, this training method should converge to a stage where the
+   generator is producing realistic data and the discriminator can’t
+   tell real from fake.
+
+.. note:: 
+    Training is done via the *gradient descent* algorithm,
+    updating only the weights associated with the generator (or vice versa)
+    at each step. There is no internal structure imposed on the generator or
+    discriminator models except that they are differentiable.
+
+.. figure:: ../../examples/figures/gan.png
+    :align: center
+    :width: 90%
+    :target: javascript:void(0);
+
 This demo constructs a Quantum Generative Adversarial Network (QGAN)
 (`Lloyd and Weedbrook
 (2018) <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.121.040502>`__,
 `Dallaire-Demers and Killoran
 (2018) <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.98.012324>`__)
-using two subcircuits, a *generator* and a *discriminator*. The
-generator attempts to generate synthetic quantum data to match a pattern
-of “real” data, while the discriminator, tries to discern real data from
-fake data. The gradient of the discriminator’s output provides a
-training signal for the generator to improve its fake generated data.
+using two subcircuits, a *generator* and a *discriminator*.
 """
 
 ##############################################################################
 # Imports
 # ~~~~~~~
-
+#
 # As usual, we import PennyLane, the PennyLane-provided version of NumPy,
 # and an optimizer.
 
@@ -28,8 +70,7 @@ from pennylane import numpy as np
 from pennylane.optimize import GradientDescentOptimizer
 
 ##############################################################################
-# We also declare a 3-qubit device.
-
+# instantiate a 3-qubit device
 
 dev = qml.device("default.qubit", wires=3)
 
@@ -44,7 +85,8 @@ dev = qml.device("default.qubit", wires=3)
 #
 # For this simple example, our real data will be a qubit that has been
 # rotated (from the starting state :math:`\left|0\right\rangle`) to some
-# arbitrary, but fixed, state.
+# arbitrary, but fixed, state. We will use the
+# PennyLane :mod:`Rot <pennylane.ops.qubit.Rot>` operation.
 
 
 def real(phi, theta, omega):
@@ -90,7 +132,7 @@ def discriminator(w):
 ##############################################################################
 # We create two QNodes. One where the real data source is wired up to the
 # discriminator, and one where the generator is connected to the
-# discriminator.
+# discriminator. They can both be run on the same device.
 
 
 @qml.qnode(dev)
@@ -111,10 +153,12 @@ def gen_disc_circuit(gen_weights, disc_weights):
 # Cost
 # ~~~~
 #
-# There are two ingredients to the cost here. The first is the probability
-# that the discriminator correctly classifies real data as real. The
-# second ingredient is the probability that the discriminator classifies
-# fake data (i.e., a state prepared by the generator) as real.
+# There are two ingredients to the cost here:
+#
+# 1. the probability that the discriminator correctly **classifies real
+#    data as real.**
+# 2. the probability that the discriminator **classifies fake data (i.e.,
+#    a state prepared by the generator) as real.**
 #
 # The discriminator’s objective is to maximize the probability of
 # correctly classifying real data, while minimizing the probability of
@@ -126,26 +170,29 @@ def gen_disc_circuit(gen_weights, disc_weights):
 
 def prob_real_true(disc_weights):
     true_disc_output = real_disc_circuit(phi, theta, omega, disc_weights)
-    # convert to probability
+    # convert from expectation of Pauli-Z [-1,1] to probability [0,1]
     prob_real_true = (true_disc_output + 1) / 2
     return prob_real_true
 
 
 def prob_fake_true(gen_weights, disc_weights):
     fake_disc_output = gen_disc_circuit(gen_weights, disc_weights)
-    # convert to probability
+    # convert from expectation of Pauli-Z [-1,1] to probability [0,1]
     prob_fake_true = (fake_disc_output + 1) / 2
     return prob_fake_true  # generator wants to minimize this prob
 
 
 def disc_cost(disc_weights):
     cost = prob_fake_true(gen_weights, disc_weights) - prob_real_true(disc_weights)
-    return cost
+    return cost 
+    # this ensures that prob_fake_true is minimized and prob_real_true is
+    # maximized to get the minimum (largest negative 0-1=-1) cost
 
 
 def gen_cost(gen_weights):
     return -prob_fake_true(gen_weights, disc_weights)
-
+    # -ve sign ensures that gen_cost is minimum when prob_fake_true is close
+    # to 1 and the generator was able to fool the discriminator as intended
 
 ##############################################################################
 # Optimization
@@ -210,7 +257,7 @@ for it in range(200):
 # At the optimum of the generator, the probability for the discriminator
 # to be fooled should be close to 1.
 
-print(prob_fake_true(gen_weights, disc_weights))
+print(prob_real_true(disc_weights))
 
 
 ##############################################################################

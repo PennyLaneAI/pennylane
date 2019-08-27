@@ -5,71 +5,9 @@ r"""
 Advanced Usage
 ==============
 
-In the previous three introductory tutorials (:ref:`qubit rotation <qubit_rotation>`,
-:ref:`Gaussian transformation <gaussian_transformation>`, and
-:ref:`plugins & hybrid computation <plugins_hybrid>`) we explored the basic concepts of
-PennyLane, including qubit- and CV-model quantum computations, gradient-based optimization,
-and the construction of hybrid classical-quantum computations.
-
-In this tutorial, we will highlight some of the more advanced features of Pennylane.
+In the introductory tutorials, we explored the basic concepts of
+PennyLane, including qubit- and CV-model quantum computations and gradient-based optimization. Here, we will highlight some of the more advanced features of Pennylane.
 """
-
-##############################################################################
-# Multiple measurements
-# ---------------------
-#
-# In all the previous examples, we considered quantum functions with only single expectation values.
-# In fact, PennyLane supports the return of multiple measurements, up to one per wire.
-#
-# As usual, we begin by importing PennyLane and the PennyLane-provided version of NumPy, and
-# set up a 2-wire qubit device for computations:
-
-import pennylane as qml
-from pennylane import numpy as np
-
-dev = qml.device("default.qubit", wires=2)
-
-##############################################################################
-# We will start with a simple example circuit, which generates a two-qubit entangled state,
-# then evaluates the expectation value of the Pauli Z operator on each wire.
-
-
-@qml.qnode(dev)
-def circuit1(param):
-    qml.RX(param, wires=0)
-    qml.CNOT(wires=[0, 1])
-    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-
-##############################################################################
-# The degree of entanglement of the qubits is determined by the value of ``param``. For a value of
-# :math:`\frac{\pi}{2}`, they are maximally entangled. In this case, the reduced states on each
-# subsystem are completely mixed, and local expectation values — like those we are measuring —
-# will average to zero.
-
-print(circuit1(np.pi / 2))
-
-##############################################################################
-# Notice that the output of the circuit is a NumPy array with ``shape=(2,)``, i.e., a two-dimensional
-# vector. These two dimensions match the number of expectation values returned in our quantum
-# function ``circuit1``.
-#
-# .. note::
-#
-#     It is important to emphasize that the expectation values in ``circuit`` are both **local**,
-#     i.e., this circuit is evaluating :math:`\left\langle \sigma_z\right\rangle_0` and :math:`\left\langle \sigma_z\right\rangle_1`,
-#     not :math:`\left\langle \sigma_z\otimes \sigma_z\right\rangle_{01}` (where the subscript denotes which wires the
-#     observable is located on).
-#
-# We may even mix different return types, for example expectation values and variances:
-
-
-@qml.qnode(dev)
-def circuit1(param):
-    qml.RX(param, wires=0)
-    qml.CNOT(wires=[0, 1])
-    return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
-
 
 ##############################################################################
 # Keyword arguments
@@ -96,7 +34,10 @@ def circuit1(param):
 # For example, let's create a quantum node that accepts two arguments; a differentiable
 # circuit parameter ``param``, and a fixed circuit parameter ``fixed``:
 
+import pennylane as qml
+from pennylane import numpy as np
 
+dev = qml.device('default.qubit', wires=2)
 @qml.qnode(dev)
 def circuit3(param, fixed=None):
     qml.RX(fixed, wires=0)
@@ -142,3 +83,40 @@ print(circuit3(0.1, fixed=0.4))
 # --> 136         value = self.kwarg_values[self.name][self.idx] * self.mult
 #     137         return value
 # TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+#
+# QNodes from different interfaces on one Device
+# -----------------------------------------------
+#
+# PennyLane does not only provide the flexibility of having multiple quantum nodes on one device,
+# it also allows these nodes to have different interfaces. Let's look at the following simple
+# example:
+
+dev1 = qml.device('default.qubit', wires=1)
+def circuit(phi):
+    qml.RX(phi, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+##############################################################################
+# Now, we construct multiple QNodes on the same device and change the interface of one of them 
+# from NumPy to PyTorch: 
+
+qnode1 = qml.QNode(circuit, dev1)
+qnode2 = qml.QNode(circuit, dev1)
+qnode1_torch = qnode1.to_torch()
+
+##############################################################################
+# Let's define the cost function. Notice that we can pass the QNode as an argument too. This 
+# avoids duplication of code. 
+   
+def cost(qnode, phi):
+    return qnode(phi)
+
+##############################################################################
+# Now we can call the cost function as follows:
+
+print(cost(qnode1, np.pi))
+
+print(cost(qnode2, np.pi))
+
+print(cost(qnode1_torch, np.pi))
+

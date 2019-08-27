@@ -1,36 +1,38 @@
 r"""
 .. _state_preparation:
 
-State preparation tutorial
-==========================
+State preparation in Forest SDK
+================================
 
-In this notebook, we build and optimize a circuit to prepare arbitrary
-single-qubit states, including mixed states. Along the way, we also show
+In this tutorial, we build and optimize a circuit to prepare arbitrary
+single-qubit states, including mixed states, using the *Forest* plugin. Along the way, we also show
 how to:
 
 1. Construct compact expressions for circuits composed of many layers.
+
 2. Succintly evaluate expectation values of many observables.
+
 3. Estimate expectation values from repeated measurements, as in real
    hardware.
-"""
 
-##############################################################################
-# The most general state of a qubit is represented in terms of a positive
-# semi-definite density matrix :math:`\rho` with unit trace. The density
-# matrix can be uniquely described in terms of its three-dimensional
-# *Bloch vector* :math:`\vec{a}=(a_x, a_y, a_z)` as:
-#
-# .. math:: \rho=\frac{1}{2}(\mathbb{1}+a_x\sigma_x+a_y\sigma_y+a_z\sigma_z),
-#
-# where :math:`\sigma_x, \sigma_y, \sigma_z` are the Pauli matrices. Any
-# Bloch vector corresponds to a valid density matrix as long as
-# :math:`\|\vec{a}\|\leq 1`.
-#
-# The *purity* of a state is defined as :math:`p=\text{Tr}(\rho^2)`, which
-# for a qubit is bounded as :math:`1/2\leq p\geq 1`. The state is pure if
-# :math:`p=1` and maximally mixed if :math:`p=1/2`. In this example, we
-# select the target state by choosing a random Bloch vector and
-# renormalizing it to have a specified purity.
+The most general state of a qubit is represented in terms of a positive
+semi-definite density matrix :math:`\rho` with unit trace. The density
+matrix can be uniquely described in terms of its three-dimensional
+*Bloch vector* :math:`\vec{a}=(a_x, a_y, a_z)` as:
+
+.. math:: \rho=\frac{1}{2}(\mathbb{1}+a_x\sigma_x+a_y\sigma_y+a_z\sigma_z),
+
+where :math:`\sigma_x, \sigma_y, \sigma_z` are the Pauli matrices. Any
+Bloch vector corresponds to a valid density matrix as long as
+:math:`\|\vec{a}\|\leq 1`.
+
+The *purity* of a state is defined as :math:`p=\text{Tr}(\rho^2)`, which
+for a qubit is bounded as :math:`1/2\leq p\geq 1`. The state is pure if
+:math:`p=1` and maximally mixed if :math:`p=1/2`. In this example, we
+select the target state by choosing a random Bloch vector and
+renormalize it to have a specified purity.
+
+"""
 
 import pennylane as qml
 from pennylane import numpy as np

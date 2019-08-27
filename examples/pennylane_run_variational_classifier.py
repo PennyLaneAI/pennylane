@@ -199,13 +199,13 @@ var_init = (0.01 * np.random.randn(num_layers, num_qubits, 3), 0.0)
 print(var_init)
 
 ##############################################################################
-# Next we create an optimizer and choose a batch size…
+# Next we create an optimizer and choose a batch size to train it:
 
 opt = NesterovMomentumOptimizer(0.5)
 batch_size = 5
 
 ##############################################################################
-# …and train the optimizer. We track the accuracy - the share of correctly
+# We track the accuracy - the share of correctly
 # classified data samples. For this we compute the outputs of the
 # variational classifier and turn them into predictions in
 # :math:`\{-1,1\}` by taking the sign of the output.
