@@ -9,7 +9,7 @@ Tutorials
 PennyLane basics
 ~~~~~~~~~~~~~~~~~~~
 
-These step-by-step tutorials provide a gentle introduction to the basics of PennyLane. In the last two examples, we put together everything we learn from the basic tutorials and consider PennyLane's version of the "Hello world!" example - qubit rotation and qumode displacement.
+These step-by-step tutorials provide a gentle introduction to the basics of PennyLane. In the last two examples, we put everything together and consider PennyLane's version of the "Hello world!" example - qubit rotation and the Gaussian transformation of a qumode.
 
 .. toctree::
     :hidden:
@@ -68,7 +68,7 @@ These step-by-step tutorials provide a gentle introduction to the basics of Penn
 Classical interfaces
 ~~~~~~~~~~~~~~~~~~~~~
 
-The following tutorials take an in-depth look at one and the same Ising model tutorial, implemented across different interfaces offered by PennyLane. 
+The following tutorials demonstrate how to optimise the energy of a simple Ising model using different interfaces offered by PennyLane. 
 
 .. toctree::
     :hidden:
@@ -99,16 +99,16 @@ The following tutorials take an in-depth look at one and the same Ising model tu
 Plugins and hybrid computation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The most powerful design feature of PennyLane is that it allows the user to run hybrid computations on a variety of different simulators and real quantum hardware. The following tutorials introduce the notion of hybrid computation by combining several PennyLane plugins.
+Plugins allow PennyLane to interact with a variety of quantum simulators and hardware. It also allows the user to run hybrid computations that combine different plugins and interfaces. The following tutorials showcase some examples in this regard.
 
 
 .. toctree::
     :hidden:
-    :maxdepth: 1
+    :maxdepth: 2
 
     tutorials/pennylane_plugins_hybrid
     tutorials/pennylane_pytorch_noise
-    tutorials/pennylane_run_state_preparation
+
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning in a multi-device quantum algorithm.
@@ -119,12 +119,6 @@ The most powerful design feature of PennyLane is that it allows the user to run 
     :tooltip: Extend PyTorch with real quantum computing power.
     :figure: ../examples/figures/bloch.gif
     :description: :ref:`pytorch_noise`
-
-.. customgalleryitem::
-    :tooltip: Do arbitrary state preparation on a real quantum computer.
-    :figure: ../examples/figures/state_prep.png
-    :description: :ref:`state_preparation`
-
 
 :html:`<div style='clear:both'></div>`
 
@@ -154,21 +148,27 @@ PennyLane provides a growing library of ready-to-use templates of common quantum
 
 :html:`<div style='clear:both'></div>`
 
-Quantum machine learning algorithms
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-PennyLane is desgined to do machine learning with quantum computers. These examples show PennyLane's implementation of some of the well-known algorithms from the recent research in quantum machine learning. This is, however, just to showcase how quantum machine learning with PennyLane *could* look like. In principle *any* technique where a quantum circuit is optimized and potentially run on a real device can be implemented in PennyLane.  
+Quantum machine learning with PennyLane
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+One goal of PennyLane is to enable machine learning with quantum computers. These examples show PennyLane's implementation of some of the well-known algorithms from the recent research in quantum machine learning. This is, however, just to showcase how quantum machine learning with PennyLane *could* look like. In principle, *any* technique where a quantum circuit is optimized and potentially run on a real device can be implemented in PennyLane.  
 
 
 .. toctree::
     :hidden:
     :maxdepth: 2
 
+    tutorials/pennylane_run_state_preparation
     tutorials/pennylane_run_QGAN
     tutorials/pennylane_run_variational_classifier
     tutorials/pennylane_quantum_neural_net
     tutorials/pennylane_run_variational_quantum_eigensolver
 
+.. customgalleryitem::
+    :tooltip: Do arbitrary state preparation on a real quantum computer.
+    :figure: ../examples/figures/state_prep.png
+    :description: :ref:`state_preparation`
 
 .. customgalleryitem::
     :tooltip: Use PennyLane to create a simple QGAN.
