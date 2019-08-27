@@ -17,49 +17,28 @@ quantum machine learning literature, such architectures are commonly known as an
 
     Templates are constructed out of **structured combinations** of the :mod:`quantum operations <pennylane.ops>` provided by PennyLane. This means that **template functions can only be used within a valid** :mod:`pennylane.qnode`.
 
-PennyLane conceptually distinguishes two types of templates, **layer architectures** and **input embeddings**.
+PennyLane conceptually distinguishes two types of templates, **layer architectures** and **input embeddings**:
 
-Layer templates
----------------
-Layer architectures, found in :mod:`pennylane.templates.layers`, define sequences of gates that are repeated like the layers in a neural network. They usually contain only trainable parameters.
+* Layer architectures, found in :mod:`pennylane.templates.layers`, define sequences of 
+  gates that are repeated like the layers in a neural network. They usually contain only trainable parameters.
+* Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state 
+  of the circuit. Hence, they take a feature vector as an argument. These embeddings can also depend on 
+  trainable parameters, in which case the embedding is learnable.
 
-The following layer templates are available:
 
-.. rst-class:: contents local topic
+Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
+**randomly initialized** arrays for the trainable **parameters**.
+
+The following templates and initializations are available:
+
 
 .. toctree::
     :maxdepth: 3
 
     templates/layers
-
-Embedding templates
--------------------
-
-Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state of the circuit. Hence, they take a feature vector as an argument. These embeddings can also depend on trainable parameters, in which case the embedding is learnable.
-
-The following embedding templates are available:
-
-.. rst-class:: contents local topic
-
-.. toctree::
-    :maxdepth: 3
-
     templates/embeddings
-
-Parameter initialization
-------------------------
-
-Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**.
-
-The following parameter initialization functions are available:
-
-.. rst-class:: contents local topic
-
-.. toctree::
-    :maxdepth: 3
-
     templates/init_parameters
+
 
 .. automodule:: pennylane.templates
    :members:
