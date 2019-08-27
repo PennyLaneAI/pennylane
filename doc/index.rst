@@ -161,6 +161,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: User documentation
    :hidden:
 
+   user_docs/summary
    user_docs/init
    user_docs/decorator
    user_docs/ops
