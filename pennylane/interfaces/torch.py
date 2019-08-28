@@ -17,12 +17,10 @@
 PyTorch QNode
 =============
 
-**Module names:** :mod:`pennylane.interfaces.torch` and :mod:`pennylane.qnode`
-
-.. currentmodule:: pennylane.interfaces.torch
-
-This module contains the :func:`TorchQNode` function which takes a basic QNode
-and returns a QNode that interfaces with PyTorch.
+A basic :class:`QNode` can be translated into a TorchQNode that interfaces
+with PyTorch, either by using the `interface='torch'` flag in the QNode Decorator, or
+ by calling the :func:`QNode.to_torch` function. Internally, the translation is executed by
+ the :func:`TorchQNode` function that returns the new quantum node object.
 
 .. note::
 
@@ -33,8 +31,8 @@ Relevant methods
 ----------------
 
 .. autosummary::
-    qnode.QNode.to_torch
-    interfaces.torch.TorchQNode
+    pennylane.qnode.QNode.to_torch
+    pennylane.interfaces.torch.TorchQNode
 
 Usage
 -----

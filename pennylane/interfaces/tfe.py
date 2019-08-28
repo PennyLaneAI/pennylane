@@ -18,12 +18,13 @@
 TensorFlow QNode
 ================
 
-**Module names:** :mod:`pennylane.interfaces.tfe` and :mod:`pennylane.qnode`
-
 .. currentmodule:: pennylane.interfaces.tfe
 
-This module contains the :func:`TFEQNode` function which takes a basic QNode
-and returns a QNode that interfaces with TensorFlow's Eager mode.
+A basic :class:`QNode` can be translated into a TFEQNode that interfaces
+with TensorFlow's Eager mode, either by using the `interface='tfe'` flag in the qnode decorator, or
+ by calling the :func:`QNode.to_tfe` function. Internally, the translation is executed by
+ the :func:`TFEQNode` function that returns the new quantum node object.
+
 
 .. note::
 
@@ -40,8 +41,8 @@ Relevant methods
 ----------------
 
 .. autosummary::
-    qnode.QNode.to_tfe
-    interfaces.tfe.TFEQNode
+    pennylane.qnode.QNode.to_tfe
+    pennylane.interfaces.tfe.TFEQNode
 
 Usage
 -----

@@ -11,12 +11,8 @@ or the :mod:`QNode class <pennylane.qnode>`, dispatching them to devices, and
 combining them with classical processing, it is easy to create arbitrary
 classical-quantum hybrid computations.
 
-Every interface - NumPy, Pytorch and Tensorflow - uses a different type of QNode. The basic or default QNode interfaces 
-with NumPy. 
-
-Instead of creating a QNode, one can convert a function with quantum operations into a QNode using the *QNode decorator*.
-
-The relevant classes and functions can be found here:
+Every interface - NumPy, Pytorch and Tensorflow - uses a different type of QNode.
+The basic or default QNode interfaces with NumPy.
 
 .. toctree::
     :maxdepth: 1
