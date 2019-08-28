@@ -306,6 +306,7 @@ class QNode:
             # remove the context
             QNode._current_context = None
 
+
         #----------------------------------------------------------
         # check the validity of the circuit
 
@@ -331,8 +332,9 @@ class QNode:
 
             res = tuple(res)
         else:
-            raise QuantumFunctionError("A quantum function must return either a single measured observable "
-                                       "or a nonempty sequence of measured observables.")
+            raise QuantumFunctionError(
+                "A quantum function must return either a single measured observable "
+                "or a nonempty sequence of measured observables.")
 
         # check that all returned observables have a return_type specified
         for x in res:
@@ -349,17 +351,18 @@ class QNode:
         self.ops = self.queue + self.ev  #: list[Operation]: combined list of circuit operations
 
         # classify the circuit contents
-        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
+        non_identity_ops = [op for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
 
-        if all(temp):
-            self.type = 'CV'
-        elif not True in temp:
-            self.type = 'qubit'
-        else:
+        # contains True if op is a CV, False if it is a discrete variable
+        are_cvs = [isinstance(op, pennylane.operation.CV) for op in non_identity_ops]
+
+        if not all(are_cvs) and any(are_cvs):
             raise QuantumFunctionError("Continuous and discrete operations are not "
                                        "allowed in the same quantum circuit.")
-
-        #----------------------------------------------------------
+        elif all(are_cvs):
+            self.type = 'CV'
+        elif not any(are_cvs):
+            self.type = 'qubit'
 
         # map each free variable to the operations which depend on it
         self.variable_ops = {}
@@ -368,6 +371,9 @@ class QNode:
                 if isinstance(p, Variable):
                     if p.name is None: # ignore keyword arguments
                         self.variable_ops.setdefault(p.idx, []).append((k, idx))
+
+        # generate directed acyclic graph
+        self.circuit = CircuitGraph(self.queue, self.ev, self.variable_ops)
 
         #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
@@ -401,10 +407,7 @@ class QNode:
             # construct the circuit
             self.construct(args, kwargs)
 
-        # convert the queue to a DAG
-        circuit = CircuitGraph(self.queue, self.ev, self.variable_ops)
-
-        for queue, curr_ops, param_idx, _ in circuit.iterate_layers():
+        for queue, curr_ops, param_idx, _ in self.circuit.iterate_layers():
             obs = []
             scale = []
 
@@ -510,17 +513,8 @@ class QNode:
         Returns:
             list[Operation]: successors in a topological order
         """
-        succ = self.ops[o_idx+1:]
-        # TODO at some point we may wish to upgrade to a DAG description of the circuit instead
-        # of a simple queue, in which case,
-        #
-        #   succ = nx.dag.topological_sort(self.DAG.subgraph(nx.dag.descendants(self.DAG, op)).copy())
-        #
-        # or maybe just
-        #
-        #   succ = nx.dfs_preorder_nodes(self.DAG, op)
-        #
-        # if it is in a topological order? the docs aren't clear.
+        succ = [self.ops[i] for i in self.circuit.descendants((o_idx,))]
+
         if only == 'E':
             return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
         if only == 'G':
