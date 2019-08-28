@@ -183,7 +183,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Developer API
    :hidden:
 
-   API/qnode
    API/utils
    API/operation
    API/variable

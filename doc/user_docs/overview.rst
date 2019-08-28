@@ -1,12 +1,31 @@
 .. _library_overview:
 
-.. currentmodule:: pennylane
-
 Overview
 ========
 
-The User Documentation is a reference that lists all methods of PennyLane
-for easy look-up.
+.. currentmodule:: pennylane
 
-This page presents a summary of *all* methods.
+The User Documentation is a reference for all methods
+that are relevant for a **user** of PennyLane.
+
+Here you can find information on the following building blocks of
+PennyLane:
+
+.. toctree::
+    :maxdepth: 2
+
+    qnode
+    ops
+    measure
+    templates
+    optimize
+    configuration
+
+If you are interested in developing PennyLane or if you want to know more about the
+code, visit the :ref:`Developer API <_developer_overview>`.
+If you want to write a plugin that connects PennyLane to hardware
+and simulator backends, visit the :ref:`Plugin API <_plugin_overview>`.
+
+For a summary of *all* modules, refer to the :ref:`modindex`, and all methods
+can be found in the :ref:`genindex`.
 

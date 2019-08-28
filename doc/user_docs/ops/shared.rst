@@ -3,7 +3,7 @@ Shared operations
 
 .. currentmodule:: pennylane.ops
 
-These operations can be used on both qubit and CV devices:
+This section contains operations that can be used on both qubit and CV devices.
 
 Gates
 -----
@@ -14,5 +14,4 @@ Gates
 Code details
 ~~~~~~~~~~~~
 
-.. autoclass:: pennylane.ops.Identity
-   :no-private-members:
+.. autoclass:: Identity

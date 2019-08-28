@@ -135,7 +135,7 @@ tensor(-5.5511e-17)
 .. _pytorch_optimize:
 
 Optimization using PyTorch
---------------------------
+**************************
 
 To optimize your hybrid classical-quantum model using the Torch interface,
 you **must** make use of the `PyTorch provided optimizers <https://pytorch.org/docs/stable/optim.html>`_,
