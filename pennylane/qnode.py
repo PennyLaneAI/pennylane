@@ -19,10 +19,6 @@
 Basic QNode
 ===========
 
-**Module name:** :mod:`pennylane.qnode`
-
-.. currentmodule:: pennylane.qnode
-
 The basic version of a quantum node is represented by the :class:`QNode` class
 and interfaces with NumPy. That means it can take standard numpy data structures,
 such as floats and arrays, as inputs, and returns numpy data structures.
@@ -38,7 +34,7 @@ The basic QNode class
 ---------------------
 
 .. autosummary::
-    QNode
+    pennylane.qnode.QNode
 
 Device Loader
 -------------
