@@ -14,6 +14,8 @@ classical-quantum hybrid computations.
 Every interface - NumPy, Pytorch and Tensorflow - uses a different type of QNode.
 The basic or default QNode interfaces with NumPy.
 
+.. rst-class:: contents local topic
+
 .. toctree::
     :maxdepth: 1
 
