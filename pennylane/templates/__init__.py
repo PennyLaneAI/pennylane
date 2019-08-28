@@ -14,8 +14,8 @@
 """
 .. _templates:
 
-Templates
-=========
+Circuit Templates
+=================
 
 **Module name:** :mod:`pennylane.templates`
 
@@ -42,17 +42,24 @@ PennyLane conceptually distinguishes two types of templates, **layer architectur
   trainable parameters, in which case the embedding is learnable.
 
 
-Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**.
+The following templates are available:
 
-The following templates and initializations are available:
-
+.. rst-class:: contents local topic
 
 .. toctree::
     :maxdepth: 3
 
     templates/layers
     templates/embeddings
+
+Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
+**randomly initialized** arrays for the trainable **parameters**:
+
+.. rst-class:: contents local topic
+
+.. toctree::
+    :maxdepth: 3
+
     templates/init_parameters
 
 """
