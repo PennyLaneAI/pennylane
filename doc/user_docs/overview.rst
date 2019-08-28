@@ -11,15 +11,33 @@ that are relevant for a **user** of PennyLane.
 Here you can find information on the following building blocks of
 PennyLane:
 
-.. toctree::
-    :maxdepth: 2
+* **Quantum Nodes**
 
-    qnode
-    ops
-    measure
-    templates
-    optimize
-    configuration
+  Summarises everything related to constructing and running a quantum circuit in PennyLane.
+
+* **Quantum operations**
+
+  Lists all operations allowed in a quantum circuit, such as gates and observables.
+
+* **Measurement outcomes**
+
+  Introduces the possible results to get from a measurement, i.e. expectation values,
+  variances and samples.
+
+* **Circuit templates**
+
+  Available subroutines, like layers and input embeddings, that PennyLane
+  creates for ease of use.
+
+* **Optimization methods**
+
+  Lists the optimizers that can be used for basic quantum nodes, such as
+  Gradient Descent and Adagrad.
+
+* **Configuration**
+
+  Shows how you can save your PennyLane configuration, for example the number
+  of shots for a device.
 
 If you are interested in developing PennyLane or if you want to know more about the
 code, visit the :ref:`Developer API <_developer_overview>`.

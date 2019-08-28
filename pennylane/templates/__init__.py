@@ -14,7 +14,7 @@
 """
 .. _templates:
 
-Circuit Templates
+Circuit templates
 =================
 
 **Module name:** :mod:`pennylane.templates`
