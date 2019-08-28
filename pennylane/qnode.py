@@ -13,6 +13,196 @@
 # limitations under the License.
 # pylint: disable=cell-var-from-loop,attribute-defined-outside-init,too-many-branches,too-many-arguments
 
+"""
+.. _basic_qnode:
+
+Basic QNode
+===========
+
+**Module name:** :mod:`pennylane.qnode`
+
+.. currentmodule:: pennylane.qnode
+
+The :class:`~qnode.QNode` class is used to construct quantum nodes,
+encapsulating a quantum function or :ref:`variational circuit <varcirc>` and the computational
+device it is executed on.
+
+The computational device is an instance of the :class:`~_device.Device`
+class, and can represent either a simulator or hardware device. They can be
+instantiated using the :func:`~device` loader. PennyLane comes included with
+some basic devices; additional devices can be installed as plugins
+(see :ref:`plugins` for more details).
+
+A typical example of how to create a QNode is the following:
+
+.. code-block:: python
+
+        def qfunc(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0,1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = qml.QNode(qfunc, dev)
+        result = qnode(0.543)
+
+PennyLane provides methods to compute gradients of quantum nodes, or functions of quantum nodes.
+
+The basic QNode class
+---------------------
+
+.. autosummary::
+    QNode
+
+Device Loader
+-------------
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    device
+
+The QNode Decorator
+-------------------
+
+.. autosummary::
+    qnode.decorator
+
+Gradients
+---------
+
+.. autosummary::
+    grad
+    jacobian
+
+
+Usage
+-----
+
+.. currentmodule:: pennylane.qnode
+
+Quantum functions
+*****************
+
+The quantum circuit function encapsulated by the QNode must be of the following form:
+
+.. code-block:: python
+
+    def my_quantum_function(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.RY(y, wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+Quantum circuit functions are a restricted subset of Python functions, adhering to the following
+constraints:
+
+* The body of the function must consist of only supported PennyLane
+  :mod:`operations <pennylane.ops>`, one per line.
+
+* The function must always return either a single or a tuple of
+  *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
+  to an :mod:`observable <pennylane.ops>`.
+
+* Classical processing of function arguments, either by arithmetic operations
+  or external functions, is not allowed. One current exception is simple scalar
+  multiplication.
+
+.. note::
+
+    The quantum operations cannot be used outside of a quantum circuit function, as all
+    :class:`Operations <pennylane.operation.Operation>` require a QNode in order to perform queuing on initialization.
+
+.. note::
+
+    Measured observables **must** come after all other operations at the end
+    of the circuit function as part of the return statement, and cannot appear in the middle.
+
+
+Device
+******
+
+The second ingredient of a QNode is a device. A device can be created using the Device Loader function:
+
+.. code-block:: python
+
+    device = qml.device('default.qubit', wires=2)
+
+Construction via the decorator
+******************************
+
+A 'quantum nodes' or QNodes is an object that wraps the quantum function and binds it to the device.
+
+The most convenient way for creating QNodes is the provided
+`qnode` decorator. This decorator converts a quantum circuit function containing PennyLane quantum
+operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
+
+.. note::
+    The decorator completely replaces the Python-defined function with
+    a :mod:`QNode <pennylane.qnode>` of the same name - as such, the original
+    function is no longer accessible (but is accessible via the :attr:`~.QNode.func` attribute).
+
+.. code-block:: python
+
+    dev1 = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev1)
+    def qfunc1(x):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.RY(x, wires=1)
+        return qml.expval(qml.PauliZ(0))
+
+    result = qfunc1(0.543)
+
+
+.. code-block:: python
+
+    dev2 = qml.device('default.gaussian', wires=2)
+
+    @qml.qnode(dev2)
+    def qfunc2(x, y):
+        qml.Displacement(x, 0, wires=0)
+        qml.Beamsplitter(y, 0, wires=[0, 1])
+        return qml.expval(qml.NumberOperator(0))
+
+    def hybrid_computation(x, y):
+        return np.sin(qfunc1(y))*np.exp(-qfunc2(x+y, x)**2)
+
+
+Explicit construction
+*********************
+
+A :class:`~.QNode` object can also be created explicitely.
+
+For example:
+
+.. code-block:: python
+
+    qnode = qml.QNode(my_quantum_function, device)
+    result = qnode(np.pi/4, 0.7)
+
+
+Quantum gradients using NumPy
+*****************************
+
+The gradient of a function of QNodes can be computed as follows:
+
+.. code-block:: python
+
+    def cost(x, y, s, t):
+        return  my_quantum_function(x, y) + qnode(s, t)
+
+    g = qml.grad(cost)
+
+A specific gradient is evaluated as:
+
+>>> g(1.1, 1.1, 0.7, -3.1)
+(array(-0.89120736), array(0.04158066))
+
+Code details
+~~~~~~~~~~~~
+"""
 from collections.abc import Sequence
 import copy
 import itertools

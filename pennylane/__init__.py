@@ -11,87 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-.. _library_overview:
 
-Overview
-========
-
-The PennyLane codebase contains a number of complementary components.
-These can be roughly separated into a user-interface, supported core
-operations, and a developer API.
-
-Software components
--------------------
-
-The main user-interface to PennyLane. These are the functions and
-classes that will be used by a majority of users. For a good introduction
-on the user-interface of PennyLane, have a look at our tutorials.
-
-**Basic functionality**
-
-* The device loader: :func:`pennylane.device`
-* The quantum node object: :mod:`pennylane.QNode <pennylane.qnode>`
-* The QNode decorator: :mod:`pennylane.qnode <pennylane.decorator>`
-
-**Extra modules**
-
-* Optimization methods: :mod:`pennylane.optimize`
-* Configuration: :mod:`pennylane.Configuration <pennylane.configuration>`
-* NumPy with support for automatic differentiation: :mod:`pennylane.numpy <pennylane.numpy>`
-
-**Core operations**
-
-The main operations and observables supported by PennyLane.
-Each of the operations supports a method
-of computing gradients (either analytically or numerically).
-
-The conventions used in defining these operations are also
-provided here.
-
-* Supported operations and observables: :mod:`pennylane.ops`
-* Supported measurement types: :mod:`pennylane.measure`
-
-**Developer API**
-
-Used to develop new plugins for PennyLane - providing new devices
-for QNodes, or supporting new operations and expectations. For more
-details, see :ref:`developer_overview`.
-
-* The base Device class: :mod:`pennylane.Device <pennylane._device>`
-* Utilities: :mod:`pennylane.utils <pennylane.utils>`
-* Symbolic quantum operations: :mod:`pennylane.operation`
-* Quantum circuit parameters: :mod:`pennylane.variable`
-
-Summary
--------
-
-.. autosummary::
-
-
-    ~configuration.Configuration
-    ~_device.Device
-    ~_device.DeviceError
-    device
-    grad
-    jacobian
-    ~autograd.numpy
-    ops
-    optimize
-    ~qnode.QNode
-    ~decorator.qnode
-    ~qnode.QuantumFunctionError
-    version
-
-.. note::
-
-    All individual operations and observables (contained in :mod:`~.ops`),
-    measurements (contained in :mod:`~.measure`), and optimizers
-    (contained in :mod:`~.optimize`) may also be imported directly from PennyLane.
-
-Code details
-~~~~~~~~~~~~
-"""
 import os
 from pkg_resources import iter_entry_points
 
@@ -209,9 +129,9 @@ def device(name, *args, **kwargs):
 
 
 def grad(func, argnum):
-    """Returns the gradient (as a callable function) of functions accessible within PennyLane.
+    """Returns the gradient as a callable function of (functions of) QNodes.
 
-    This is a wrapper around the :mod:`autograd.grad` function.
+    This is a wrapper around the :mod:`autograd.grad` functions.
 
     Args:
         func (function): a Python function or QNode that contains
@@ -228,8 +148,8 @@ def grad(func, argnum):
 
 
 def jacobian(func, argnum):
-    """Returns the Jacobian (as a callable function) of vector-valued
-    functions accessible within PennyLane.
+    """Returns the Jacobian as a callable function of vector-valued
+    (functions of) QNodes.
 
     This is a wrapper around the :mod:`autograd.jacobian` function.
 

@@ -11,7 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains optimizers for the standard :mod:`QNode` class, which uses the NumPy interface.
+r"""
+.. _optimization_methods:
+
+Optimization methods
+====================
+
+**Module name:** :mod:`pennylane.optimize`
+
+.. currentmodule:: pennylane.optimize
+
+This module contains optimizers for the standard :mod:`QNode` class, which uses the NumPy interface.
 
 An optimizer is a procedure that computes a new candidate for the trainable parameters in every step,
 following the negative gradient of a cost function.
@@ -19,7 +29,6 @@ following the negative gradient of a cost function.
 Since NumPy does not specifically focus on machine learning and optimization, this collection of
 optimizers is provided for convenience.
 
-.. currentmodule:: pennylane.optimize
 
 .. warning::
 

@@ -17,9 +17,9 @@ r"""
 CV quantum operations
 =====================
 
-.. currentmodule:: pennylane.ops.cv
-
 **Module name:** :mod:`pennylane.ops.cv`
+
+.. currentmodule:: pennylane.ops.cv
 
 This section contains the available built-in continuous-variable
 quantum operations supported by PennyLane, as well as their conventions.
@@ -122,7 +122,7 @@ def _rotation(phi, bare=False):
 
 class Rotation(CVOperation):
     r"""pennylane.Rotation(phi, wires)
-    Phase space rotation
+    Phase space rotation.
 
     .. math::
         R(\phi) = \exp\left(i \phi \ad \a\right)=\exp\left(i \frac{\phi}{2}

@@ -24,7 +24,6 @@ The relevant classes and functions can be found here:
     qnodes/numpy_qnode
     qnodes/torch_qnode
     qnodes/tfe_qnode
-    qnodes/decorator
 
 
 

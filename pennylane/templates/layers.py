@@ -65,7 +65,7 @@ Interferometer
     Interferometer
 
 Code details
-^^^^^^^^^^^^
+~~~~~~~~~~~~
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Sequence
