@@ -1,10 +1,10 @@
 .. role:: html(raw)
    :format: html
 
-.. _introduction:
+.. _overview:
 
-Introduction
-============
+Overview
+========
 
 The main principle underlying PennyLane is to make the interface between the quantum and classical worlds seamless. A quantum computing device should not be viewed as a competitor to a classical computer, but rather as an *accelerator*. Integrating both types of information processing gives rise to **hybrid computation**.
 

@@ -141,7 +141,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Key concepts
    :hidden:
 
-   concepts/introduction
+   concepts/overview
    concepts/hybrid_computation
    concepts/quantum_nodes
    concepts/varcirc
@@ -153,7 +153,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Quickstart
    :hidden:
 
-   quickstart/howto
+   quickstart/intro
    quickstart/tutorials
 
 
