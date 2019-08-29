@@ -49,6 +49,7 @@ import autograd.numpy as np
 import networkx as nx
 
 from pennylane.variable import Variable
+from pennylane import operation
 
 
 def _flatten(x):
@@ -215,7 +216,7 @@ class CircuitGraph:
 
     def __init__(self, queue, observables, parameters=None):
         self.queue = queue
-        self.observables = observables
+        self._observables = observables
         self.parameters = parameters or {}
 
         self._grid = {}
@@ -259,6 +260,13 @@ class CircuitGraph:
                 # create an edge between this operation and the
                 # previous operation
                 self._graph.add_edge(cmds[i - 1][0], cmds[i][0])
+
+    @property
+    def observables(self):
+        # TODO: use something better than len(self.queue) here, possibly index observables entirely
+        # differently.
+        indices = range(len(self.queue), len(self._observables + self.queue))
+        return [self.graph.node[i]["op"] for i in indices]
 
     @property
     def graph(self):
@@ -382,7 +390,8 @@ class CircuitGraph:
             # iterate over all parameters
             for op_idx, _ in gate_param_tuple:
                 # get all dependents of the existing parameter
-                sub = set(nx.dag.topological_sort(self.graph.subgraph(nx.dag.ancestors(self.graph, op_idx)).copy()))
+                sub = set(nx.dag.topological_sort(
+                    self.graph.subgraph(nx.dag.ancestors(self.graph, op_idx)).copy()))
 
                 # check if any of the dependents are in the
                 # existing layer
@@ -425,3 +434,12 @@ class CircuitGraph:
             post_queue = self.get_ops(self.descendants(ops))
 
             yield pre_queue, layer, tuple(param_idx), post_queue
+
+    def update_node(self, index, op):
+        if isinstance(op, operation.Observable):
+            # Very hacky, but it is to offset node indices by queue length as we index all
+            # operations consecutively.
+            index += len(self.queue)
+        cmd = Command(name=op.name, op=op, return_type=getattr(op, "return_type", None))
+        attrs = cmd._asdict()
+        nx.set_node_attributes(self._graph, {index: {**attrs}})

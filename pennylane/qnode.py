@@ -513,7 +513,7 @@ class QNode:
         Returns:
             list[Operation]: successors in a topological order
         """
-        succ = [self.ops[i] for i in self.circuit.descendants((o_idx,))]
+        succ = [self.circuit.graph.nodes[i]["op"] for i in self.circuit.descendants((o_idx,))]
 
         if only == 'E':
             return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
@@ -960,6 +960,7 @@ class QNode:
         Returns:
             float: partial derivative of the node.
         """
+
         # remove jacobian specific keyword arguments
         circuit_kwargs = pop_jacobian_kwargs(kwargs)
 
@@ -1024,17 +1025,13 @@ class QNode:
                     B_inv = B_inv @ temp
                 Z = B @ Z @ B_inv  # conjugation
 
-                # ev_successors = self._op_successors(o_idx, 'E')
+                ev_successors = self._op_successors(o_idx, 'E')
 
                 def tr_obs(ex):
                     """Transform the observable"""
-                    # TODO: At initial release, since we use a queue to represent circuit, all expectations values
-                    # are successors to all gates in the same circuit.
-                    # When library uses a DAG representation for circuits, uncomment following if statement
-
                     ## if ex is not a successor of op, multiplying by Z should do nothing.
-                    #if ex not in ev_successors:
-                    #    return ex
+                    if ex not in ev_successors:
+                        return ex
                     q = ex.heisenberg_obs(w)
                     qp = q @ Z
                     if q.ndim == 2:
@@ -1043,10 +1040,9 @@ class QNode:
                     return pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
 
                 # transform the observables
-                obs = list(map(tr_obs, self.ev))
+                obs = list(map(tr_obs, self.circuit.observables))
                 # measure transformed observables
-                temp = self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
-                pd += temp
+                pd += self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
 
             # restore the original parameter
             op.params[p_idx] = orig
@@ -1131,14 +1127,13 @@ class QNode:
                 A = np.kron(A, A.T)
 
                 # replace the first order observable var(A) with <A^2>
-                # in the return queue
-                self.ev[i] = pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False))
+                self.circuit.update_node(i, pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)))
 
                 # calculate the analytic derivative of <A^2>
                 pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))
 
                 # restore the original observable
-                self.ev[i] = old
+                self.circuit.update_node(i, old)
 
         # save original cache setting
         cache = self.cache
