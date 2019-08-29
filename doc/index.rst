@@ -154,6 +154,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    quickstart/intro
+   quickstart/interfaces
    quickstart/tutorials
 
 
@@ -163,7 +164,9 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    user_docs/overview
+   user_docs/init
    user_docs/qnode
+   user_docs/decorator
    user_docs/ops
    user_docs/measure
    user_docs/templates

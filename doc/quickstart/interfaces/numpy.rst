@@ -1,4 +1,4 @@
-.. _numpy_qnode:
+.. _numpy_interface:
 
 NumPy interface
 ***************

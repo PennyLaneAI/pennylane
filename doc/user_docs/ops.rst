@@ -1,2 +1,7 @@
+.. _ops:
+
 .. automodule:: pennylane.ops
-    :members:
+   :members:
+   :private-members:
+   :inherited-members:
+   :special-members:

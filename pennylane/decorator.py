@@ -12,6 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+pennylane.decorator
+===================
+
+.. currentmodule: pennylane.decorator
+
+This module contains the quantum node decorator, which turns a quantum function into
+a :class:`Qnode` object.
+
+The QNode decorator
+-------------------
+
+.. autosummary::
+    qnode
+
+Code details
+~~~~~~~~~~~~
+
+"""
 
 # pylint: disable=redefined-outer-name
 from functools import wraps, lru_cache

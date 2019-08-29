@@ -11,7 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+pennylane
+=========
 
+.. currentmodule: pennylane
+
+This is the highest-level module in PennyLane, containing the device loader and methods
+to compute derivatives of NumPy-interfacing quantum nodes.
+
+Device loader
+------------
+
+.. autosummary::
+    device
+
+Gradient methods
+----------------
+
+.. autosummary::
+    grad
+    jacobian
+
+Code details
+~~~~~~~~~~~~
+"""
 import os
 from pkg_resources import iter_entry_points
 
