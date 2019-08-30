@@ -1,0 +1,264 @@
+ 
+/*
+Sphinx-Gallery has compatible CSS to fix default sphinx themes
+Tested for Sphinx 1.3.1 for all themes: default, alabaster, sphinxdoc,
+scrolls, agogo, traditional, nature, haiku, pyramid
+Tested for Read the Docs theme 0.1.7 */
+.sphx-glr-thumbcontainer {
+  background: #fff;
+  border: solid #dedede 1px;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  box-shadow: none;
+  float: left;
+  margin: 5px;
+  min-height: 230px;
+  padding-top: 5px;
+  position: relative;
+  text-align: center;
+}
+.sphx-glr-thumbcontainer:hover {
+  border: solid #b4ddfc 1px;
+  box-shadow: 0 0 15px rgba(142, 176, 202, 0.5);
+}
+.sphx-glr-thumbcontainer a.internal {
+  bottom: 0;
+  display: block;
+  left: 0;
+  padding: 150px 10px 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* Next one is to avoid Sphinx traditional theme to cover all the
+thumbnail with its default link Background color */
+.sphx-glr-thumbcontainer a.internal:hover {
+  background-color: transparent;
+}
+
+.sphx-glr-thumbcontainer p {
+  margin: 0 0 .1em 0;
+}
+.sphx-glr-thumbcontainer .figure {
+  margin: 10px;
+  width: 160px;
+}
+.sphx-glr-thumbcontainer img {
+  display: inline;
+  max-height: 160px;
+  width: 160px;
+}
+.sphx-glr-thumbcontainer[tooltip]:hover:after {
+  background: rgba(0, 0, 0, 0.8);
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  color: #fff;
+  content: attr(tooltip);
+  left: 95%;
+  padding: 5px 15px;
+  position: absolute;
+  z-index: 98;
+  width: 220px;
+  bottom: 52%;
+}
+.sphx-glr-thumbcontainer[tooltip]:hover:before {
+  border: solid;
+  border-color: #333 transparent;
+  border-width: 18px 0 0 20px;
+  bottom: 58%;
+  content: '';
+  left: 85%;
+  position: absolute;
+  z-index: 99;
+}
+
+.highlight-pytb pre {
+  background-color: #ffe4e4;
+  border: 1px solid #f66;
+  margin-top: 10px;
+  padding: 7px;
+}
+
+.sphx-glr-script-out {
+  color: #888;
+  margin: 0;
+}
+.sphx-glr-script-out .highlight {
+  background-color: transparent;
+  margin-left: 2.5em;
+  margin-top: -1.4em;
+}
+.sphx-glr-script-out .highlight pre {
+  background-color: #fafae2;
+  border: 0;
+  max-height: 30em;
+  overflow: auto;
+  padding-left: 1ex;
+  margin: 0px;
+  word-break: break-word;
+}
+.sphx-glr-script-out + p {
+  margin-top: 1.8em;
+}
+blockquote.sphx-glr-script-out {
+  margin-left: 0pt;
+}
+
+div.sphx-glr-footer {
+    text-align: center;
+    margin-bottom: -40px;
+}
+
+div.binder-badge {
+  margin: 1em auto;
+  vertical-align: middle;
+}
+
+div.sphx-glr-download {
+  margin: 1em auto;
+  vertical-align: middle;
+}
+
+div.sphx-glr-download a {
+    background-color: #fff;
+    background-image: none;
+    border-radius: 0px;
+    border-bottom: 1px solid #c2c22d;
+    color: #000;
+    display: inline-block;
+    font-weight: bold;
+    padding: 0ex;
+    text-align: center;
+    border: none;
+}
+
+div.sphx-glr-download code.download {
+    display: inline;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    border: none;
+    background: none;
+    font-family: "Lato","proxima-nova","Helvetica Neue",Arial,sans-serif;
+
+}
+
+div.sphx-glr-download a:hover {
+    box-shadow: none;
+    text-decoration: none;
+    background-image: none;
+    background-color: #fff;
+    border-bottom: 1px solid #405c4d;
+}
+
+.sphx-glr-example-title > :target::before {
+  display: block;
+  content: "";
+  margin-top: -50px;
+  height: 50px;
+  visibility: hidden;
+}
+
+ul.sphx-glr-horizontal {
+  list-style: none;
+  padding: 0;
+}
+ul.sphx-glr-horizontal li {
+  display: inline;
+}
+ul.sphx-glr-horizontal img {
+  height: auto !important;
+}
+
+.sphx-glr-single-img {
+  margin: auto;
+  display: block;
+  max-width: 100%;
+}
+
+.sphx-glr-multi-img {
+  max-width: 42%;
+  height: auto;
+}
+
+p.sphx-glr-signature a.reference.external {
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  padding: 3px;
+  font-size: 75%;
+  text-align: right;
+  margin-left: auto;
+  display: table;
+}
+.sphx-glr-download-link-note {
+  display: none;
+}
+
+.container {
+  width: unset;
+}
+
+.sphx-glr-script-out .highlight pre {
+    background-color: #f7f7f7;
+}
+
+
+#tutorial-type {
+  display: none;
+}
+
+.pennylane-call-to-action-links {
+  padding-top: 25px;
+  display: flex;
+/*   justify-content: center; */
+}
+
+@media (min-width: 1100px) and (max-width: 1239px) {
+  .pennylane-call-to-action-links {
+    padding-top: rem(40px);
+  }
+ }
+
+.pennylane-call-to-action-links #tutorial-type {
+    display: none;
+  }
+
+.pennylane-call-to-action-links a {
+    padding-right: 20px;
+    color: #000;
+    cursor: pointer;
+}
+
+.pennylane-call-to-action-links a:hover {
+  color: #fdb104;
+  text-decoration: none;
+}
+
+#download-python-link,
+#download-notebook-link,
+#github-view-link {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #c3c3c3;
+  padding-right: 40px;
+  display: flex;
+  align-items: center;
+  color: #747474;
+}
+
+#download-python-link:hover,
+#download-notebook-link:hover,
+#github-view-link:hover {
+  border-bottom-color: #19b37b;
+  color: #19b37b;
+}
+
+.sphx-glr-download-link-note.admonition.note,
+.reference.download.internal,
+.sphx-glr-signature {
+  display: none;
+}
+

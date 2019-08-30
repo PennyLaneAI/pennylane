@@ -19,63 +19,13 @@ from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 from autograd import numpy as np
+from scipy.linalg import block_diag, expm
+
+from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, X, Y, Z
 
 import pennylane as qml
 from pennylane._device import Device
-from pennylane.qnode import QNode, QuantumFunctionError, _flatten, unflatten
-
-flat_dummy_array = np.linspace(-1, 1, 64)
-test_shapes = [
-    (64,),
-    (64, 1),
-    (32, 2),
-    (16, 4),
-    (8, 8),
-    (16, 2, 2),
-    (8, 2, 2, 2),
-    (4, 2, 2, 2, 2),
-    (2, 2, 2, 2, 2, 2),
-]
-
-
-class TestHelperMethods:
-    """Tests the internal helper methods of QNode"""
-
-    @pytest.mark.parametrize("shape", test_shapes)
-    def test_flatten(self, shape):
-        """Tests that _flatten successfully flattens multidimensional arrays."""
-
-        reshaped = np.reshape(flat_dummy_array, shape)
-        flattened = np.array([x for x in _flatten(reshaped)])
-
-        assert flattened.shape == flat_dummy_array.shape
-        assert np.array_equal(flattened, flat_dummy_array)
-
-    @pytest.mark.parametrize("shape", test_shapes)
-    def test_unflatten(self, shape):
-        """Tests that _unflatten successfully unflattens multidimensional arrays."""
-
-        reshaped = np.reshape(flat_dummy_array, shape)
-        unflattened = np.array([x for x in unflatten(flat_dummy_array, reshaped)])
-
-        assert unflattened.shape == reshaped.shape
-        assert np.array_equal(unflattened, reshaped)
-
-    def test_unflatten_error_unsupported_model(self):
-        """Tests that unflatten raises an error if the given model is not supported"""
-
-        with pytest.raises(TypeError, match="Unsupported type in the model"):
-            model = lambda x: x  # not a valid model for unflatten
-            unflatten(flat_dummy_array, model)
-
-    def test_unflatten_error_too_many_elements(self):
-        """Tests that unflatten raises an error if the given iterable has
-           more elements than the model"""
-
-        reshaped = np.reshape(flat_dummy_array, (16, 2, 2))
-
-        with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
-            unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
+from pennylane.qnode import QNode, QuantumFunctionError
 
 
 class TestQNodeOperationQueue:
@@ -1396,6 +1346,481 @@ class TestQNodeVariance:
 
         with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
             circuit.jacobian([1.0], method="A")
+
+
+class TestMetricTensor:
+    """Tests for metric tensor subcircuit construction and evaluation"""
+
+    def test_no_generator(self):
+        """Test exception is raised if subcircuit contains an
+        operation with no generator"""
+        dev = qml.device('default.qubit', wires=1)
+
+        def circuit(a):
+            qml.Rot(a, 0, 0, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev)
+
+        with pytest.raises(QuantumFunctionError, match="has no defined generator"):
+            circuit.construct_metric_tensor([1])
+
+    def test_generator_no_expval(self, monkeypatch):
+        """Test exception is raised if subcircuit contains an
+        operation with generator object that is not an observable"""
+        dev = qml.device('default.qubit', wires=1)
+
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev)
+
+        with monkeypatch.context() as m:
+            m.setattr('pennylane.RX.generator', [qml.RX, 1])
+
+            with pytest.raises(QuantumFunctionError, match="no corresponding observable"):
+                circuit.construct_metric_tensor([1])
+
+    def test_construct_subcircuit(self):
+        """Test correct subcircuits constructed"""
+        dev = qml.device('default.qubit', wires=2)
+
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev)
+
+        circuit.construct_metric_tensor([1, 1, 1])
+        res = circuit._metric_tensor_subcircuits
+
+        # first parameter subcircuit
+        assert len(res[(0,)]['queue']) == 0
+        assert res[(0,)]['scale'] == [-0.5]
+        assert isinstance(res[(0,)]['observable'][0], qml.PauliX)
+
+        # second parameter subcircuit
+        assert len(res[(1,)]['queue']) == 1
+        assert res[(1,)]['scale'] == [-0.5]
+        assert isinstance(res[(1,)]['queue'][0], qml.RX)
+        assert isinstance(res[(1,)]['observable'][0], qml.PauliY)
+
+        # third parameter subcircuit
+        assert len(res[(2,)]['queue']) == 3
+        assert res[(2,)]['scale'] == [1]
+        assert isinstance(res[(2,)]['queue'][0], qml.RX)
+        assert isinstance(res[(2,)]['queue'][1], qml.RY)
+        assert isinstance(res[(2,)]['queue'][2], qml.CNOT)
+        assert isinstance(res[(2,)]['observable'][0], qml.Hermitian)
+        assert np.all(res[(2,)]['observable'][0].params[0] == qml.PhaseShift.generator[0])
+
+    def test_construct_subcircuit_layers(self):
+        """Test correct subcircuits constructed
+        when a layer structure exists"""
+        dev = qml.device('default.qubit', wires=3)
+
+        def circuit(params):
+            # section 1
+            qml.RX(params[0], wires=0)
+            # section 2
+            qml.RY(params[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            # section 3
+            qml.RX(params[2], wires=0)
+            qml.RY(params[3], wires=1)
+            qml.RZ(params[4], wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            # section 4
+            qml.RX(params[5], wires=0)
+            qml.RY(params[6], wires=1)
+            qml.RZ(params[7], wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliX(0))
+
+        circuit = qml.QNode(circuit, dev)
+
+        params = np.ones([8])
+        circuit.construct_metric_tensor([params])
+        res = circuit._metric_tensor_subcircuits
+
+        # this circuit should split into 4 independent
+        # sections or layers when constructing subcircuits
+        assert len(res) == 4
+
+        # first layer subcircuit
+        assert len(res[(0,)]['queue']) == 0
+        assert isinstance(res[(0,)]['observable'][0], qml.PauliX)
+
+        # second layer subcircuit
+        assert len(res[(1,)]['queue']) == 1
+        assert isinstance(res[(1,)]['queue'][0], qml.RX)
+        assert isinstance(res[(1,)]['observable'][0], qml.PauliY)
+
+        # third layer subcircuit
+        layer = res[(2, 3, 4)]
+        assert len(layer['queue']) == 4
+        assert len(layer['observable']) == 3
+        assert isinstance(layer['queue'][0], qml.RX)
+        assert isinstance(layer['queue'][1], qml.RY)
+        assert isinstance(layer['queue'][2], qml.CNOT)
+        assert isinstance(layer['queue'][3], qml.CNOT)
+        assert isinstance(layer['observable'][0], qml.PauliX)
+        assert isinstance(layer['observable'][1], qml.PauliY)
+        assert isinstance(layer['observable'][2], qml.PauliZ)
+
+        # fourth layer subcircuit
+        layer = res[(5, 6, 7)]
+        assert len(layer['queue']) == 9
+        assert len(layer['observable']) == 3
+        assert isinstance(layer['queue'][0], qml.RX)
+        assert isinstance(layer['queue'][1], qml.RY)
+        assert isinstance(layer['queue'][2], qml.CNOT)
+        assert isinstance(layer['queue'][3], qml.CNOT)
+        assert isinstance(layer['queue'][4], qml.RX)
+        assert isinstance(layer['queue'][5], qml.RY)
+        assert isinstance(layer['queue'][6], qml.RZ)
+        assert isinstance(layer['queue'][7], qml.CNOT)
+        assert isinstance(layer['queue'][8], qml.CNOT)
+        assert isinstance(layer['observable'][0], qml.PauliX)
+        assert isinstance(layer['observable'][1], qml.PauliY)
+        assert isinstance(layer['observable'][2], qml.PauliZ)
+
+    def test_evaluate_subcircuits(self, tol):
+        """Test subcircuits evaluate correctly"""
+        dev = qml.device('default.qubit', wires=2)
+
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        # construct subcircuits
+        circuit = qml.QNode(circuit, dev)
+        circuit.construct_metric_tensor([1, 1, 1])
+
+        a = 0.432
+        b = 0.12
+        c = -0.432
+
+        # evaluate subcircuits
+        circuit.metric_tensor(a, b, c)
+
+        # first parameter subcircuit
+        res = circuit._metric_tensor_subcircuits[(0,)]['result']
+        expected = 0.25
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # second parameter subcircuit
+        res = circuit._metric_tensor_subcircuits[(1,)]['result']
+        expected = np.cos(a)**2/4
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # third parameter subcircuit
+        res = circuit._metric_tensor_subcircuits[(2,)]['result']
+        expected = (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/16
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_evaluate_diag_metric_tensor(self, tol):
+        """Test that a diagonal metric tensor evaluates correctly"""
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(c, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        a = 0.432
+        b = 0.12
+        c = -0.432
+
+        # evaluate metric tensor
+        g = circuit.metric_tensor(a, b, c)
+
+        # check that the metric tensor is correct
+        expected = np.array([1, np.cos(a)**2, (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/4])/4
+        assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
+
+    @pytest.fixture
+    def sample_circuit(self):
+        """Sample variational circuit fixture used in the
+        next couple of tests"""
+        dev = qml.device('default.qubit', wires=3)
+
+        def non_parametrized_layer(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.RZ(a, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(b, wires=1)
+            qml.Hadamard(wires=0)
+
+        a = 0.5
+        b = 0.1
+        c = 0.5
+
+        @qml.qnode(dev)
+        def final(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            qml.RY(f, wires=1)
+            qml.RZ(g, wires=2)
+            qml.RX(h, wires=1)
+            return qml.expval(qml.PauliX(0))
+
+        return dev, final, non_parametrized_layer, a, b, c
+
+    def test_evaluate_block_diag_metric_tensor(self, sample_circuit, tol):
+        """Test that a block diagonal metric tensor evaluates correctly,
+        by comparing it to a known analytic result as well as numerical
+        computation."""
+        dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
+
+        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        x, y, z, h, g, f = params
+
+        G = circuit.metric_tensor(x, y, z, h, g, f)
+
+        # ============================================
+        # Test block diag metric tensor of first layer is correct.
+        # We do this by comparing against the known analytic result.
+        # First layer includes the non_parametrized_layer,
+        # followed by observables corresponding to generators of:
+        #   qml.RX(x, wires=0)
+        #   qml.RY(y, wires=1)
+        #   qml.RZ(z, wires=2)
+
+        G1 = np.zeros([3, 3])
+
+        # diag elements
+        G1[0, 0] = np.sin(a)**2/4
+        G1[1, 1] = (
+            16 * np.cos(a) ** 2 * np.sin(b) ** 3 * np.cos(b) * np.sin(2 * c)
+            + np.cos(2 * b) * (2 - 8 * np.cos(a) ** 2 * np.sin(b) ** 2 * np.cos(2 * c))
+            + np.cos(2 * (a - b))
+            + np.cos(2 * (a + b))
+            - 2 * np.cos(2 * a)
+            + 14
+        ) / 64
+        G1[2, 2] = (3-np.cos(2*a)-2*np.cos(a)**2*np.cos(2*(b+c)))/16
+
+        # off diag elements
+        G1[0, 1] = np.sin(a)**2 * np.sin(b) * np.cos(b+c)/4
+        G1[0, 2] = np.sin(a)**2 * np.cos(b+c)/4
+        G1[1, 2] = -np.sin(b) * (
+            np.cos(2 * (a - b - c))
+            + np.cos(2 * (a + b + c))
+            + 2 * np.cos(2 * a)
+            + 2 * np.cos(2 * (b + c))
+            - 6
+        ) / 32
+
+        G1[1, 0] = G1[0, 1]
+        G1[2, 0] = G1[0, 2]
+        G1[2, 1] = G1[1, 2]
+
+        assert np.allclose(G[:3, :3], G1, atol=tol, rtol=0)
+
+        # =============================================
+        # Test block diag metric tensor of second layer is correct.
+        # We do this by computing the required expectation values
+        # numerically.
+        # The second layer includes the non_parametrized_layer,
+        # RX, RY, RZ gates (x, y, z params), a 2nd non_parametrized_layer,
+        # followed by the qml.RY(f, wires=2) operation.
+        #
+        # Observable is simply generator of:
+        #   qml.RY(f, wires=2)
+        #
+        # Note: since this layer only consists of a single parameter,
+        # only need to compute a single diagonal element.
+
+        @qml.qnode(dev)
+        def layer2_diag(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            qml.RY(f, wires=2)
+            return qml.var(qml.PauliX(1))
+
+        G2 = layer2_diag(x, y, z, h, g, f)/4
+        assert np.allclose(G[3:4, 3:4], G2, atol=tol, rtol=0)
+
+        # =============================================
+        # Test block diag metric tensor of third layer is correct.
+        # We do this by computing the required expectation values
+        # numerically using multiple circuits.
+        # The second layer includes the non_parametrized_layer,
+        # RX, RY, RZ gates (x, y, z params), and a 2nd non_parametrized_layer.
+        #
+        # Observables are the generators of:
+        #   qml.RY(f, wires=1)
+        #   qml.RZ(g, wires=2)
+        G3 = np.zeros([2, 2])
+
+        @qml.qnode(dev)
+        def layer3_diag(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def layer3_off_diag_first_order(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            return qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def layer3_off_diag_second_order(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            return qml.expval(qml.Hermitian(np.kron(Z, Y), wires=[2, 1]))
+
+        # calculate the diagonal terms
+        varK0, varK1 = layer3_diag(x, y, z, h, g, f)
+        G3[0, 0] = varK0/4
+        G3[1, 1] = varK1/4
+
+        # calculate the off-diagonal terms
+        exK0, exK1 = layer3_off_diag_first_order(x, y, z, h, g, f)
+        exK01 = layer3_off_diag_second_order(x, y, z, h, g, f)
+
+        G3[0, 1] = (exK01 - exK0*exK1)/4
+        G3[1, 0] = (exK01 - exK0*exK1)/4
+
+        assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
+
+        # ============================================
+        # Finally, double check that the entire metric
+        # tensor is as computed.
+
+        G_expected = block_diag(G1, G2, G3)
+        assert np.allclose(G, G_expected, atol=tol, rtol=0)
+
+    def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
+        """Test that a metric tensor under the
+        diagonal approximation evaluates correctly."""
+        dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
+        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        x, y, z, h, g, f = params
+
+        G = circuit.metric_tensor(x, y, z, h, g, f, diag_approx=True)
+
+        # ============================================
+        # Test block diag metric tensor of first layer is correct.
+        # We do this by comparing against the known analytic result.
+        # First layer includes the non_parametrized_layer,
+        # followed by observables corresponding to generators of:
+        #   qml.RX(x, wires=0)
+        #   qml.RY(y, wires=1)
+        #   qml.RZ(z, wires=2)
+
+        G1 = np.zeros([3, 3])
+
+        # diag elements
+        G1[0, 0] = np.sin(a)**2/4
+        G1[1, 1] = (
+            16 * np.cos(a) ** 2 * np.sin(b) ** 3 * np.cos(b) * np.sin(2 * c)
+            + np.cos(2 * b) * (2 - 8 * np.cos(a) ** 2 * np.sin(b) ** 2 * np.cos(2 * c))
+            + np.cos(2 * (a - b))
+            + np.cos(2 * (a + b))
+            - 2 * np.cos(2 * a)
+            + 14
+        ) / 64
+        G1[2, 2] = (3-np.cos(2*a)-2*np.cos(a)**2*np.cos(2*(b+c)))/16
+
+        assert np.allclose(G[:3, :3], G1, atol=tol, rtol=0)
+
+        # =============================================
+        # Test metric tensor of second layer is correct.
+        # We do this by computing the required expectation values
+        # numerically.
+        # The second layer includes the non_parametrized_layer,
+        # RX, RY, RZ gates (x, y, z params), a 2nd non_parametrized_layer,
+        # followed by the qml.RY(f, wires=2) operation.
+        #
+        # Observable is simply generator of:
+        #   qml.RY(f, wires=2)
+        #
+        # Note: since this layer only consists of a single parameter,
+        # only need to compute a single diagonal element.
+
+        @qml.qnode(dev)
+        def layer2_diag(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            qml.RY(f, wires=2)
+            return qml.var(qml.PauliX(1))
+
+        G2 = layer2_diag(x, y, z, h, g, f)/4
+        assert np.allclose(G[3:4, 3:4], G2, atol=tol, rtol=0)
+
+        # =============================================
+        # Test block diag metric tensor of third layer is correct.
+        # We do this by computing the required expectation values
+        # numerically using multiple circuits.
+        # The second layer includes the non_parametrized_layer,
+        # RX, RY, RZ gates (x, y, z params), and a 2nd non_parametrized_layer.
+        #
+        # Observables are the generators of:
+        #   qml.RY(f, wires=1)
+        #   qml.RZ(g, wires=2)
+        G3 = np.zeros([2, 2])
+
+        @qml.qnode(dev)
+        def layer3_diag(x, y, z, h, g, f):
+            non_parametrized_layer(a, b, c)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=2)
+            non_parametrized_layer(a, b, c)
+            return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
+
+        # calculate the diagonal terms
+        varK0, varK1 = layer3_diag(x, y, z, h, g, f)
+        G3[0, 0] = varK0/4
+        G3[1, 1] = varK1/4
+
+        assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
+
+        # ============================================
+        # Finally, double check that the entire metric
+        # tensor is as computed.
+
+        G_expected = block_diag(G1, G2, G3)
+        assert np.allclose(G, G_expected, atol=tol, rtol=0)
 
 
 class TestQNodeCacheing:
