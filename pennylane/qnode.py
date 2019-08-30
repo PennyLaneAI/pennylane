@@ -140,7 +140,6 @@ import pennylane
 import pennylane.operation
 
 from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, CircuitGraph
->>>>>>> e81c41ba750473088a4bf076eb8245994268adcd
 from .variable import Variable
 
 
