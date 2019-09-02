@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Parameter initialization
-========================
-
-**Module name:** :mod:`pennylane.init`
+pennylane.init
+==============
 
 .. currentmodule:: pennylane.init
 

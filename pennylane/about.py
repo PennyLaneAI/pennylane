@@ -12,34 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-About
-=====
-
-**Module name:** :mod:`pennylane.about`
+pennylane.about
+===============
 
 .. currentmodule:: pennylane.about
 
 A simple module to display all the details of the `pennylane` installation,
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 
-Behaviour
----------
-
-The module simply prints the information on screen and can be accessed as
-`pennylane.about()`
 
 Summary of methods
 ------------------
-
-.. currentmodule:: pennylane.about
 
 .. autosummary::
     about
 
 Code details
 ~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.about
 
 """
 import sys

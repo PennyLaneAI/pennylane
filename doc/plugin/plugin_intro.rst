@@ -1,4 +1,4 @@
-.. _developer_overview:
+.. _plugin_overview:
 
 Building a plugin
 =================

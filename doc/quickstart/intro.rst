@@ -6,19 +6,17 @@
 Introduction
 ============
 
-The :ref:`Key Concepts <overview>` section introduced the idea of *variational*
-or *parametrized quantum circuits* which can be optimized for a given task.
+This section is an introduction to how the concept of a :ref:`variational quantum circuit <overview>` is implemented in PennyLane.
 
-This section is an overview of how these concepts are implemented in PennyLane.
-It shows how to:
+It shows new PennyLane users how to:
 
 * Construct quantum circuits via **quantum functions**
 
-* Create **computational devices**
+* Define **computational devices**
 
-* Encapsulate quantum functions and devices in a **quantum node**
+* Combine quantum functions and devices to **quantum nodes**
 
-* Conveniently create quantum nodes using the **decorator**
+* Conveniently create quantum nodes using the quantum node **decorator**
 
 * Compute **gradients** of quantum nodes
 
@@ -26,15 +24,17 @@ It shows how to:
 
 * Save **configurations** for PennyLane
 
-More information about PennyLane's code base can be found in the :ref:`User Documentation <user_docs>`.
+More information about PennyLane's code base can be found in the :ref:`Code Documentation <library_overview>`.
 
 Quantum functions
 -----------------
 
-A quantum circuit is constructed as a special Python function, a *quantum (circuit) function*.
+A quantum circuit is constructed as a special Python function, a *quantum circuit function*, or *quantum function* in short.
 For example:
 
 .. code-block:: python
+
+    import pennylane as qml
 
     def my_quantum_function(x, y):
         qml.RZ(x, wires=0)
@@ -43,11 +43,11 @@ For example:
         return qml.expval(qml.PauliZ(1))
 
 
-Quantum circuit functions are a restricted subset of Python functions, adhering to the following
+Quantum functions are a restricted subset of Python functions, adhering to the following
 constraints:
 
 * The body of the function must consist of only supported PennyLane
-  :mod:`operations <pennylane.ops>`, one per line.
+  :mod:`operations <pennylane.ops>` or sequences of gates called :mod:`templates <pennylane.templates>`, using one instruction per line.
 
 * The function must always return either a single or a tuple of
   *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
@@ -75,14 +75,15 @@ To run - and later optimize - a quantum circuit, one needs to first specify a *c
 
 The device is an instance of the :class:`~_device.Device`
 class, and can represent either a simulator or hardware device. They can be
-instantiated using the :func:`~device` loader. PennyLane comes included with
-some basic devices; additional devices can be installed as plugins
-(see :ref:`plugins` for more details).
+instantiated using the :func:`~device` loader. 
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=2)
 
+PennyLane comes included with
+some basic devices; additional devices can be installed as plugins
+(see :ref:`plugins` for more details).
 
 Quantum nodes
 -------------
@@ -107,6 +108,8 @@ One or more :class:`QNodes` can be combined in standard python functions:
 
 .. code-block:: python
 
+    from pennylane import numpy as np
+
     def my_quantum_function2(x, y):
         qml.Displacement(x, 0, wires=0)
         qml.Beamsplitter(y, 0, wires=[0, 1])
@@ -116,18 +119,22 @@ One or more :class:`QNodes` can be combined in standard python functions:
 
     qnode2 = qml.QNode(my_quantum_function2, dev2)
 
-    def hybrid_computation(x, y):
-        return np.sin(qnode1(y))*np.exp(-qnode2(x+y, x)**2)
+    def hybrid_computation(a, b):
+        return np.sin(qnode1(a, b))*np.exp(-qnode2(a+b, a-b)**2)
 
 
-Note that `hybrid_computation` contains results from two different devices, one being a qubit-based
+Here, `hybrid_computation` contains results from two different devices, one being a qubit-based
 and the other a continuous-variable device.
+
+.. note::
+
+    The NumPy functions :func:`np.sin` and :func:`np.exp` have to be imported from PennyLane's NumPy library instead of the standard NumPy library. This allows PennyLane to automatically differentiate through these operations.
 
 The QNode decorator
 -------------------
 
 A more convenient - and in fact the recommended - way for creating `QNodes` is the provided
-`qnode` decorator. This decorator converts a quantum circuit function containing PennyLane quantum
+quantum node decorator. This decorator converts a quantum function containing PennyLane quantum
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
 .. note::
@@ -154,7 +161,7 @@ For example:
 Quantum gradients
 -----------------
 
-The gradient of the `QNodes` from above can be computed as follows:
+The gradient of the different `QNodes` defined previously can be computed as follows:
 
 .. code-block:: python
 
@@ -162,9 +169,7 @@ The gradient of the `QNodes` from above can be computed as follows:
     g2 = qml.grad(qnode1, [0])
     g3 = qml.grad(qfunc, [1])
 
-The first argument of :func:`grad` is the quantum node, and the second is a list of indices of the parameters
-we want to derive for. The result is a new function which computes gradients for specific values of the parameters,
-for example:
+The first argument of :func:`grad` is the quantum node, and the second is a list of indices of the parameters we want to derive for. The result is a new function which computes gradients for specific values of the parameters, for example:
 
 >>> x = 1.1
 >>> y = -2.2
@@ -181,7 +186,7 @@ We can also compute gradients of *functions of qnodes*:
 
     g4 = qml.grad(hybrid_computation, [0, 1])
 
-and evaluate
+To evaluate the gradient at a specific position, use:
 
 >>> g4(1.1, -2.2)
 (array(0.56350015), array(0.17825313))
@@ -189,84 +194,17 @@ and evaluate
 Optimization
 ------------
 
-PennyLane comes with a collection of optimizers for a basic `QNode`. They
+PennyLane comes with a collection of optimizers for a basic, NumPy-interfacing `QNode`. They
 can be found in the :mod:`pennylane.optimize` module.
 
+For other interfaces such as PyTorch and TensorFlow's Eager mode, read the next section on :ref:`interfaces <interfaces>`.
 
 
 
-Configuration
--------------
+Reusing configurations
+----------------------
 
-The settings for PennyLane can be stored in a configuration file for ease of use.
+The settings for PennyLane's devices, such as the shot number to measure an expectation, can be saved for ease of use.
 
-Behaviour
-*********
+[EXPLAIN!] 
 
-On first import, PennyLane attempts to load the configuration file `config.toml`, by
-scanning the following three directories in order of preference:
-
-1. The current directory
-2. The path stored in the environment variable ``PENNYLANE_CONF``
-3. The default user configuration directory:
-
-   * On Linux: ``~/.config/pennylane``
-   * On Windows: ``~C:\Users\USERNAME\AppData\Local\Xanadu\pennylane``
-   * On MacOS: ``~/Library/Preferences/pennylane``
-
-If no configuration file is found, a warning message will be displayed in the logs,
-and all device parameters will need to be passed as keyword arguments when
-loading the device.
-
-The user can access the initialized configuration via `pennylane.config`, view the
-loaded configuration filepath, print the configurations options, access and modify
-them via keys (i.e., ``pennylane.config['main.shots']``), and save/load new configuration files.
-
-Configuration files
-*******************
-
-The configuration file `config.toml` uses the `TOML standard <https://github.com/toml-lang/toml>`_,
-and has the following format:
-
-.. code-block:: toml
-
-    [main]
-    # Global PennyLane options.
-    # Affects every loaded plugin if applicable.
-    shots = 0
-
-    [strawberryfields.global]
-    # Options for the Strawberry Fields plugin
-    hbar = 1
-    shots = 100
-
-      [strawberryfields.fock]
-      # Options for the Strawberry Fields Fock plugin
-      cutoff_dim = 10
-      hbar = 0.5
-
-      [strawberryfields.gaussian]
-      # Indentation doesn't matter in TOML files,
-      # but helps provide clarity.
-
-    [projectq.global]
-    # Options for the Project Q plugin
-
-      [projectq.simulator]
-      gate_fusion = true
-
-      [projectq.ibm]
-      user = "johnsmith"
-      password = "secret123"
-      use_hardware = true
-      device = "ibmqx4"
-      num_runs = 1024
-
-Main PennyLane options, that are passed to all loaded devices, are provided under the ``[main]``
-section. Alternatively, options can be specified on a per-plugin basis, by setting the options under
-``[plugin.global]``.
-
-For example, in the above configuration file, the Strawberry Fields
-devices will be loaded with a default of ``shots = 100``, rather than ``shots = 0``. Finally,
-you can also specify settings on a device-by-device basis, by placing the options under the
-``[plugin.device]`` settings.

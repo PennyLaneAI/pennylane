@@ -12,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. _optimization_methods:
-
-Optimization methods
-====================
-
-**Module name:** :mod:`pennylane.optimize`
+pennylane.optimize
+==================
 
 .. currentmodule:: pennylane.optimize
 

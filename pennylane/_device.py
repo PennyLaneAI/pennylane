@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Device base class
+pennylane._device
 =================
-
-**Module name:** :mod:`pennylane._device`
 
 .. currentmodule:: pennylane._device
 
-This module contains the :class:`Device` abstract base class. To write a plugin containing a PennyLane-compatible device, :class:`Device`
+This module contains the :class:`Device` abstract base class.
+To write a plugin containing a PennyLane-compatible device, :class:`Device`
 must be subclassed, and the appropriate class attributes and methods
 implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
 :class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_

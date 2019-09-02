@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Circuit templates
-=================
-
-**Module name:** :mod:`pennylane.templates`
+pennylane.templates
+===================
 
 .. currentmodule:: pennylane.templates
 

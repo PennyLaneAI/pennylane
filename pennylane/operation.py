@@ -13,10 +13,8 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-Symbolic quantum operations
-===========================
-
-**Module name:** :mod:`pennylane.operation`
+pennylane.operation
+===================
 
 .. currentmodule:: pennylane.operation
 
