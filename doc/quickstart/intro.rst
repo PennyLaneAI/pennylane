@@ -18,13 +18,10 @@ It shows new PennyLane users how to:
 
 * Conveniently create quantum nodes using the quantum node **decorator**
 
-* Compute **gradients** of quantum nodes
-
-* **Optimize** hybrid computations that contain quantum nodes
-
-* Save **configurations** for PennyLane
-
-More information about PennyLane's code base can be found in the :ref:`Code Documentation <library_overview>`.
+More information about PennyLane's code base can be found in the
+:ref:`Code Documentation <library_overview>`.
+An introduction of how to use and optimize quantum nodes in larger hybrid computations
+is given in the next section on :ref:`interfaces <interfaces>`.
 
 Quantum functions
 -----------------
@@ -47,7 +44,7 @@ Quantum functions are a restricted subset of Python functions, adhering to the f
 constraints:
 
 * The body of the function must consist of only supported PennyLane
-  :mod:`operations <pennylane.ops>` or sequences of gates called :mod:`templates <pennylane.templates>`, using one instruction per line.
+  :mod:`operations <pennylane.ops>` or sequences of operations called :mod:`templates <pennylane.templates>`, using one instruction per line.
 
 * The function must always return either a single or a tuple of
   *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
@@ -82,16 +79,17 @@ instantiated using the :func:`~device` loader.
     dev = qml.device('default.qubit', wires=2)
 
 PennyLane comes included with
-some basic devices; additional devices can be installed as plugins
-(see :ref:`plugins` for more details).
+some basic devices such as the `default.qubit` simulator; additional devices can be installed
+as plugins (see :ref:`plugins` for more details). Note that the choice of a device significantly
+determines the speed of your computation.
 
 Quantum nodes
 -------------
 
 Together, a quantum function and a device are used to create a *quantum node* or
 :class:`QNode` object, which wraps the quantum function and binds it to the device.
-A quantum node is a subroutine executed by a quantum computer, which is part of a
-larger :ref:`hybrid computation <_hybrid_computation>`.
+A quantum node is a part of a larger :ref:`hybrid computation <_hybrid_computation>`, which
+is executed by a quantum computer.
 
 A `QNode` can be explicitly created as follows:
 
@@ -103,32 +101,6 @@ The `QNode` can be used to compute the result of a quantum circuit as if it was 
 function. It takes the same arguments as the original quantum function:
 
 >>> qnode(np.pi/4, 0.7)
-
-One or more :class:`QNodes` can be combined in standard python functions:
-
-.. code-block:: python
-
-    from pennylane import numpy as np
-
-    def my_quantum_function2(x, y):
-        qml.Displacement(x, 0, wires=0)
-        qml.Beamsplitter(y, 0, wires=[0, 1])
-        return qml.expval(qml.NumberOperator(0))
-
-    dev2 = qml.device('default.gaussian', wires=2)
-
-    qnode2 = qml.QNode(my_quantum_function2, dev2)
-
-    def hybrid_computation(a, b):
-        return np.sin(qnode1(a, b))*np.exp(-qnode2(a+b, a-b)**2)
-
-
-Here, `hybrid_computation` contains results from two different devices, one being a qubit-based
-and the other a continuous-variable device.
-
-.. note::
-
-    The NumPy functions :func:`np.sin` and :func:`np.exp` have to be imported from PennyLane's NumPy library instead of the standard NumPy library. This allows PennyLane to automatically differentiate through these operations.
 
 The QNode decorator
 -------------------
@@ -158,53 +130,18 @@ For example:
     result = qfunc(0.543)
 
 
-Quantum gradients
------------------
+Interfaces
+----------
 
-The gradient of the different `QNodes` defined previously can be computed as follows:
+Quantum nodes are typically used in :ref:`hybrid computations <hybrid_computation>`. That means
+that results of `QNodes` are further processed in classical functions, and that results from
+classical functions are fed into `QNodes`. The framework in which the `classical parts` of the
+hybrid computation are written is the *interface* with which PennyLane is used.
 
-.. code-block:: python
-
-    g1 = qml.grad(qnode, [0, 1])
-    g2 = qml.grad(qnode1, [0])
-    g3 = qml.grad(qfunc, [1])
-
-The first argument of :func:`grad` is the quantum node, and the second is a list of indices of the parameters we want to derive for. The result is a new function which computes gradients for specific values of the parameters, for example:
-
->>> x = 1.1
->>> y = -2.2
->>> g1(x, y)
-(array(0.56350015), array(0.17825313))
->>> g2(x, y)
-(array(0.56350015), array(0.17825313))
->>> g3(x, y)
-(array(0.56350015), array(0.17825313))
-
-We can also compute gradients of *functions of qnodes*:
-
-.. code-block:: python
-
-    g4 = qml.grad(hybrid_computation, [0, 1])
-
-To evaluate the gradient at a specific position, use:
-
->>> g4(1.1, -2.2)
-(array(0.56350015), array(0.17825313))
-
-Optimization
-------------
-
-PennyLane comes with a collection of optimizers for a basic, NumPy-interfacing `QNode`. They
-can be found in the :mod:`pennylane.optimize` module.
-
-For other interfaces such as PyTorch and TensorFlow's Eager mode, read the next section on :ref:`interfaces <interfaces>`.
-
-
-
-Reusing configurations
-----------------------
-
-The settings for PennyLane's devices, such as the shot number to measure an expectation, can be saved for ease of use.
-
-[EXPLAIN!] 
+In the above introduction to quantum nodes, we implicitly already used the default interface
+- the :ref:`NumPy interface <numpy_interface>`.
+NumPy-interfacing quantum nodes take NumPy datastructures, such as floats and arrays, and return
+similar data structures. They can be optimized using NumPy-based :ref:`optimization methods <optimize>`.
+Other PennyLane interfaces are :ref:`PyTorch <torch_interf>` and :ref:`TensorFlow's Eager
+mode <tf_interf>`.
 

@@ -164,18 +164,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/overview
-   code/init
-   code/qnode
-   code/decorator
-   code/ops
-   code/measure
-   code/templates
-   code/optimize
-   code/configuration
-   code/utils
-   code/operation
-   code/variable
-
 
 .. toctree::
    :maxdepth: 1

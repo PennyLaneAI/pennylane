@@ -1,11 +1,13 @@
+.. _tf_interf:
+
 TensorFlow interface
 --------------------
 
 To use quantum nodes :class:`QNode` in combination with TensorFlow's Eager mode, we have to make it
 compatible with TensorFlow. A TensorFlow-compatible quantum node can be created
 either by using the `interface='tfe'` flag in the qnode decorator, or
- by calling the :func:`QNode.to_tfe` function. Internally, the translation is executed by
- the :func:`TFEQNode` function that returns the new quantum node object.
+by calling the :func:`QNode.to_tfe` function. Internally, the translation is executed by
+the :func:`TFEQNode` function that returns the new quantum node object.
 
 .. note::
     To use the TensorFlow eager execution interface in PennyLane, you must first install TensorFlow.
@@ -24,7 +26,9 @@ Construction via the decorator
 The :ref:`QNode decorator <qnode_decorator>` is the recommended way for creating QNodes
 in PennyLane. The only change required to construct a TensorFlow-capable QNode is to
 specify the ``interface='tfe'`` keyword argument:
+
 .. code-block:: python
+
     dev = qml.device('default.qubit', wires=2)
     @qml.qnode(dev, interface='tfe')
     def circuit(phi, theta):
@@ -33,8 +37,10 @@ specify the ``interface='tfe'`` keyword argument:
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+
 The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tfe.Variable`` objects
 as input, and returning ``tf.Tensor`` objects.
+
 >>> phi = tfe.Variable([0.5, 0.1])
 >>> theta = tfe.Variable(0.2)
 >>> circuit(phi, theta)

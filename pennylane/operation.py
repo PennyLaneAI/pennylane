@@ -18,9 +18,6 @@ pennylane.operation
 
 .. currentmodule:: pennylane.operation
 
-Operation base classes
-----------------------
-
 This module contains the symbolic base class for performing quantum operations
 and measuring observables in PennyLane.
 
@@ -35,7 +32,7 @@ and measuring observables in PennyLane.
   sequence of wires (subsystems).
 
 Differentiation
-^^^^^^^^^^^^^^^
+---------------
 
 In general, an :class:`Operation` is differentiable (at least using the finite-difference
 method) with respect to a parameter iff
