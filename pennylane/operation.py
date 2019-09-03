@@ -405,6 +405,8 @@ class Operation(abc.ABC):
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
 
+        :class:`Variable` instances can represent any real scalars (but not arrays).
+
         Args:
             p (Number, array, Variable): parameter to check
             flattened (bool): True means p is an element of a flattened parameter
