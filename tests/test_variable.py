@@ -68,7 +68,7 @@ def test_variable_val():
 
 def test_keyword_variable():
     """
-    variable: Keyword Variable reference tests.\
+    variable: Keyword Variable reference tests.
     """
     n = 10
     m = nr.randn(n)  # parameter multipliers
@@ -103,7 +103,7 @@ def test_keyword_variable():
 
     # Check for a single kwarg_value
     Variable.kwarg_values = {"kw1": 1.0}
-    assert Variable(name="kw1").val == 1.0
+    assert Variable(0, name="kw1").val == 1.0
 
     # fixed values remain constant
     assert [(par_fixed[k] == par_fixed[k]) for k in range(n)]
