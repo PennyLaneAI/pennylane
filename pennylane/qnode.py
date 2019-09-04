@@ -567,21 +567,20 @@ class QNode:
             else:
                 # op is Gaussian and has the heisenberg_* methods
                 # A non-Gaussian successor is OK if it isn't succeeded by any observables
-                if not self._op_successors(o_idx, 'E'):
+                obs_successors = self._op_successors(o_idx, 'E')
+                if not obs_successors:
                     return 'A'
                 else:
                     # check that all successor ops are also Gaussian
-                    successors = self._op_successors(o_idx, 'G')
-                    if not all(x.supports_heisenberg for x in successors):
+                    if not all(x.supports_heisenberg for x in self._op_successors(o_idx, 'G')):
                         return 'F'
                     else:
                         # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-                        ev_successors = self._op_successors(o_idx, 'E')
-                        for x in ev_successors:
-                            if x.ev_order is None:
+                        for observable in obs_successors:
+                            if observable.ev_order is None:
                                 return 'F'
-                            if x.ev_order == 2:
-                                if x.return_type is pennylane.operation.Variance:
+                            if observable.ev_order == 2:
+                                if observable.return_type is pennylane.operation.Variance:
                                     # second order observables don't support
                                     # analytic diff of variances
                                     return 'F'

@@ -319,13 +319,8 @@ class CircuitGraph:
             set[int]: integer position of all operations
             in the queue that are ancestors of the given operations
         """
-        ancestors = set()
-
-        for o in ops:
-            subG = self.graph.subgraph(nx.dag.ancestors(self.graph, o))
-            ancestors |= set(subG.nodes())
-
-        return ancestors - set(ops)
+        subGs = [self.graph.subgraph(nx.dag.ancestors(self.graph, o)) for o in ops]
+        return set().union(*[set(subG.nodes()) for subG in subGs]) - set(ops)
 
     def descendants(self, ops):
         """Returns all descendant operations of a given set of operations.
@@ -338,13 +333,8 @@ class CircuitGraph:
             set[int]: integer position of all operations
             in the queue that are descendants of the given operations
         """
-        descendants = set()
-
-        for o in ops:
-            subG = self.graph.subgraph(nx.dag.descendants(self.graph, o))
-            descendants |= set(subG.nodes())
-
-        return descendants - set(ops)
+        subGs = [self.graph.subgraph(nx.dag.descendants(self.graph, o)) for o in ops]
+        return set().union(*[set(subG.nodes()) for subG in subGs]) - set(ops)
 
     def get_ops(self, ops):
         """Given a set of operation indices, return the operation objects.
