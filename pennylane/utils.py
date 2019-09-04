@@ -359,7 +359,7 @@ class CircuitGraph:
             List[Operation, Observable]: operations or observables
             corresponding to given integer positions in the queue
         """
-        return [self.graph.nodes(data="op")[i] for i in ops]
+        return [node["op"] for node in self.get_nodes(ops)]
 
     def get_names(self, ops):
         """Given a set of operation indices, return the operation names.
