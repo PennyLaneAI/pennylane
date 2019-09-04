@@ -556,45 +556,48 @@ class QNode:
         def best_for_op(o_idx):
             "Returns the best gradient method for the operation op."
             op = self.ops[o_idx]
+
             # for discrete operations, other ops do not affect the choice
             if not isinstance(op, pennylane.operation.CV):
                 return op.grad_method
 
             # for CV ops it is more complicated
-            if op.grad_method == 'A':
+            if op.grad_method != "A":
+                return op.grad_method
+            else:
                 # op is Gaussian and has the heisenberg_* methods
-                # check that all successor ops are also Gaussian
-                # TODO when we upgrade to a DAG: a non-Gaussian successor is OK if it
-                # isn't succeeded by any observables?
-                successors = self._op_successors(o_idx, 'G')
-
-                if all(x.supports_heisenberg for x in successors):
-                    # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-                    ev_successors = self._op_successors(o_idx, 'E')
-                    for x in ev_successors:
-                        if x.ev_order is None:
-                            return 'F'
-                        if x.ev_order == 2:
-                            if x.return_type is pennylane.operation.Variance:
-                                # second order observables don't support
-                                # analytic diff of variances
-                                return 'F'
-                            op.grad_method = 'A2'  # bit of a hack
+                # A non-Gaussian successor is OK if it isn't succeeded by any observables
+                if not self._op_successors(o_idx, 'E'):
                     return 'A'
-
-                return 'F'
-
-            return op.grad_method  # 'F' or None
+                else:
+                    # check that all successor ops are also Gaussian
+                    successors = self._op_successors(o_idx, 'G')
+                    if not all(x.supports_heisenberg for x in successors):
+                        return 'F'
+                    else:
+                        # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
+                        ev_successors = self._op_successors(o_idx, 'E')
+                        for x in ev_successors:
+                            if x.ev_order is None:
+                                return 'F'
+                            if x.ev_order == 2:
+                                if x.return_type is pennylane.operation.Variance:
+                                    # second order observables don't support
+                                    # analytic diff of variances
+                                    return 'F'
+                                op.grad_method = 'A2'  # bit of a hack
+                        return 'A'
 
         # indices of operations that depend on the free parameter idx
-        ops = self.variable_ops[idx]
-        temp = [best_for_op(k) for k, _ in ops]
-        if all(k == 'A' for k in temp):
-            return 'A'
-        elif None in temp:
-            return None
+        o_idxs = [o[0] for o in self.variable_ops[idx]]
+        methods = [best_for_op(o_idx) for o_idx in o_idxs]
 
-        return 'F'
+        if all(k == 'A' for k in methods):
+            return 'A'
+        elif None in methods:
+            return None
+        else:
+            return 'F'
 
     def __call__(self, *args, **kwargs):
         """Wrapper for :meth:`~.QNode.evaluate`."""
