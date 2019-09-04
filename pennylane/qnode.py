@@ -946,9 +946,8 @@ class QNode:
         else:
             raise ValueError('Order must be 1 or 2.')
 
-    def transform_observable(self, observable, w, Z):
+    def _transform_observable(self, observable, w, Z):
         """Transform the observable"""
-        ## if observable is not a successor of op, multiplying by Z should do nothing.
         q = observable.heisenberg_obs(w)
         qp = q @ Z
         if q.ndim == 2:
@@ -1039,11 +1038,10 @@ class QNode:
                 Z = B @ Z @ B_inv  # conjugation
 
                 # transform the observables
-                obs = [self.transform_observable(ob, w, Z) for ob in self.cg.observables]
+                obs = [self._transform_observable(ob, w, Z) for ob in self.cg.observables]
 
                 # measure transformed observables
-                value = self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
-                pd += value
+                pd += self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
 
             # restore the original parameter
             op.params[p_idx] = orig
