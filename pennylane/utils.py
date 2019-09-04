@@ -197,7 +197,7 @@ def expand(U, wires, num_wires):
 # Graph functions
 
 
-Command = namedtuple("Command", ["name", "op", "return_type"])
+Command = namedtuple("Command", ["name", "op", "return_type", "idx"])
 Layer = namedtuple("Layer", ["op_idx", "param_idx"])
 
 
@@ -215,7 +215,7 @@ class CircuitGraph:
     """
 
     def __init__(self, queue, observables, parameters=None):
-        self.queue = queue
+        self._queue = queue
         self._observables = observables
         self.parameters = parameters or {}
 
@@ -227,7 +227,8 @@ class CircuitGraph:
         """
 
         for idx, op in enumerate(queue + observables):
-            cmd = Command(name=op.name, op=op, return_type=getattr(op, "return_type", None))
+            cmd = Command(
+                name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx)
 
             for w in set(op.wires):
                 if w not in self._grid:
@@ -236,37 +237,41 @@ class CircuitGraph:
                     self._grid[w] = []
 
                 # Add the operation to the grid, to the end of the specified wire
-                self._grid[w].append([idx, cmd])
+                self._grid[w].append(cmd)
 
         self._graph = nx.DiGraph()
 
-        # iterate over each wire in the grid
-        for _, cmds in self._grid.items():
+        # Iterate over each wire in the grid
+        for cmds in self._grid.values():
             if cmds:
                 # Add the first operation on the wire to the graph
                 # This operation does not depend on any others
-                attrs = cmds[0][1]._asdict()
-                self._graph.add_node(cmds[0][0], **attrs)
+                self._graph.add_node(cmds[0].idx, **cmds[0]._asdict())
 
             for i in range(1, len(cmds)):
                 # For subsequent operations on the wire:
-
-                if cmds[i][0] not in self._graph:
-                    # add them to the graph if they are not already
+                if cmds[i].idx not in self._graph:
+                    # Add them to the graph if they are not already
                     # in the graph (multi-qubit operations might already have been placed)
-                    attrs = cmds[i][1]._asdict()
-                    self._graph.add_node(cmds[i][0], **attrs)
+                    self._graph.add_node(cmds[i].idx, **cmds[i]._asdict())
 
-                # create an edge between this operation and the
+                # Create an edge between this operation and the
                 # previous operation
-                self._graph.add_edge(cmds[i - 1][0], cmds[i][0])
+                self._graph.add_edge(cmds[i - 1].idx, cmds[i].idx)
 
     @property
     def observables(self):
-        # TODO: use something better than len(self.queue) here, possibly index observables entirely
-        # differently.
-        indices = range(len(self.queue), len(self._observables + self.queue))
-        return [self.graph.node[i]["op"] for i in indices]
+        nodes = sorted(
+            [node for node in self.graph.nodes.values() if node["return_type"]],
+            key=lambda node: node["idx"])
+        return [node["op"] for node in nodes]
+
+    @property
+    def operations(self):
+        nodes = sorted(
+            [node for node in self.graph.nodes.values() if not node["return_type"]],
+            key=lambda node: node["idx"])
+        return [node["op"] for node in nodes]
 
     @property
     def graph(self):
@@ -435,11 +440,11 @@ class CircuitGraph:
 
             yield pre_queue, layer, tuple(param_idx), post_queue
 
-    def update_node(self, index, op):
+    def update_node(self, idx, op):
         if isinstance(op, operation.Observable):
             # Very hacky, but it is to offset node indices by queue length as we index all
             # operations consecutively.
-            index += len(self.queue)
-        cmd = Command(name=op.name, op=op, return_type=getattr(op, "return_type", None))
+            idx += len(self._queue)
+        cmd = Command(name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx)
         attrs = cmd._asdict()
-        nx.set_node_attributes(self._graph, {index: {**attrs}})
+        nx.set_node_attributes(self._graph, {idx: {**attrs}})

@@ -373,7 +373,7 @@ class QNode:
                         self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
         # generate directed acyclic graph
-        self.circuit = CircuitGraph(self.queue, self.ev, self.variable_ops)
+        self.cg = CircuitGraph(self.queue, self.ev, self.variable_ops)
 
         #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
@@ -407,7 +407,7 @@ class QNode:
             # construct the circuit
             self.construct(args, kwargs)
 
-        for queue, curr_ops, param_idx, _ in self.circuit.iterate_layers():
+        for queue, curr_ops, param_idx, _ in self.cg.iterate_layers():
             obs = []
             scale = []
 
@@ -513,7 +513,7 @@ class QNode:
         Returns:
             list[Operation]: successors in a topological order
         """
-        succ = [self.circuit.graph.nodes[i]["op"] for i in self.circuit.descendants((o_idx,))]
+        succ = [self.cg.graph.nodes[i]["op"] for i in self.cg.descendants((o_idx,))]
 
         if only == 'E':
             return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
@@ -780,7 +780,7 @@ class QNode:
         Variable.kwarg_values = keyword_values
 
         self.device.reset()
-        ret = self.device.execute(self.queue, obs, self.variable_ops)
+        ret = self.device.execute(self.cg.operations, obs, self.variable_ops)
         return ret
 
     def jacobian(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
@@ -831,6 +831,7 @@ class QNode:
         """
         # pylint: disable=too-many-statements
 
+
         # in QNode.construct we need to be able to (essentially) apply the unpacking operator to params
         if isinstance(params, numbers.Number):
             params = (params,)
@@ -842,6 +843,7 @@ class QNode:
             self.construct(params, circuit_kwargs)
 
         sample_ops = [e for e in self.ev if e.return_type is pennylane.operation.Sample]
+
         if sample_ops:
             names = [str(e) for e in sample_ops]
             raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
@@ -891,6 +893,7 @@ class QNode:
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
+
 
         for i, k in enumerate(which):
             if k not in self.variable_ops:
@@ -942,6 +945,17 @@ class QNode:
             return (y2-y1) / h
         else:
             raise ValueError('Order must be 1 or 2.')
+
+    def transform_observable(self, observable, w, Z):
+        """Transform the observable"""
+        ## if observable is not a successor of op, multiplying by Z should do nothing.
+        q = observable.heisenberg_obs(w)
+        qp = q @ Z
+        if q.ndim == 2:
+            # 2nd order observable
+            qp = qp +qp.T
+        val = pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
+        return val
 
 
     def _pd_analytic(self, params, idx, force_order2=False, **kwargs):
@@ -1018,31 +1032,18 @@ class QNode:
                 # conjugate Z with all the following operations
                 B = np.eye(1 +2*w)
                 B_inv = B.copy()
+
                 for BB in self._op_successors(o_idx, 'G'):
-                    temp = BB.heisenberg_tr(w)
-                    B = temp @ B
-                    temp = BB.heisenberg_tr(w, inverse=True)
-                    B_inv = B_inv @ temp
+                    B = BB.heisenberg_tr(w) @ B
+                    B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
 
-                ev_successors = self._op_successors(o_idx, 'E')
-
-                def tr_obs(ex):
-                    """Transform the observable"""
-                    ## if ex is not a successor of op, multiplying by Z should do nothing.
-                    if ex not in ev_successors:
-                        return ex
-                    q = ex.heisenberg_obs(w)
-                    qp = q @ Z
-                    if q.ndim == 2:
-                        # 2nd order observable
-                        qp = qp +qp.T
-                    return pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
-
                 # transform the observables
-                obs = list(map(tr_obs, self.circuit.observables))
+                obs = [self.transform_observable(ob, w, Z) for ob in self.cg.observables]
+
                 # measure transformed observables
-                pd += self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
+                value = self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
+                pd += value
 
             # restore the original parameter
             op.params[p_idx] = orig
@@ -1127,13 +1128,13 @@ class QNode:
                 A = np.kron(A, A.T)
 
                 # replace the first order observable var(A) with <A^2>
-                self.circuit.update_node(i, pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)))
+                self.cg.update_node(i, pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)))
 
                 # calculate the analytic derivative of <A^2>
                 pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))
 
                 # restore the original observable
-                self.circuit.update_node(i, old)
+                self.cg.update_node(i, old)
 
         # save original cache setting
         cache = self.cache
