@@ -91,7 +91,7 @@ Code details
 import abc
 
 import autograd.numpy as np
-from pennylane.operation import Operation, Observable, Sample, Variance, Expectation
+from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
 from .qnode import QuantumFunctionError
 
 
@@ -371,7 +371,7 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
                 to be applied on the device
-            expectations (Iterable[~.operation.Observable]): observables which are intended
+            observables (Iterable[~.operation.Observable]): observables which are intended
                 to be evaluated on the device
         """
         for o in queue:
@@ -379,61 +379,60 @@ class Device(abc.ABC):
                 raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
         for o in observables:
-            if o.name not in self.observables:
-                raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
+
+            if isinstance(o, Tensor):
+                if self.capabilities()["tensor_observables"] is False:
+                    raise DeviceError("Tensor observables not supported on device {}".format(self.short_name))
+
+                for i in o.obs:
+                    if i.name not in self.observables:
+                        raise DeviceError("Observable {} not supported on device {}".format(i.name, self.short_name))
+            else:
+                if o.name not in self.observables:
+                    raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
 
     @abc.abstractmethod
-    def apply(self, operation, wires, par):
+    def apply(self, op):
         """Apply a quantum operation.
 
         For plugin developers: this function should apply the operation on the device.
 
         Args:
-            operation (str): name of the operation
+            op (str): name of the operation
             wires (Sequence[int]): subsystems the operation is applied on
             par (tuple): parameters for the operation
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def expval(self, observable, wires, par):
+    def expval(self, obs):
         r"""Returns the expectation value of observable on specified wires.
 
         Args:
-          observable (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par (tuple[float]): parameter values
+          obs (Observable): observable
 
         Returns:
           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
             """
         raise NotImplementedError
 
-    def var(self, observable, wires, par):
+    def var(self, obs):
         r"""Returns the variance of observable on specified wires.
 
         Args:
-          observable (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par (tuple[float]): parameter values
+          obs (Observable): observable
 
         Returns:
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
         """
         raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
-    def sample(self, observable, wires, par, n=None):
+    def sample(self, obs, n=None):
         """Return a sample of an observable.
 
-        For plugin developers: this function should return the result of an evaluation
-        of the given observable on the device.
-
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
-            n (int): Number of samples that should be obtained. Defaults to the
-                number of shots given as a parameter to the corresponding Device.
+          obs (Observable): observable
+          n (int): number of samples to retunr
 
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``

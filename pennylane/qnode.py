@@ -222,7 +222,7 @@ class QNode:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
         # EVs go to their own, temporary queue
-        if isinstance(op, pennylane.operation.Observable):
+        if isinstance(op, (pennylane.operation.Observable, pennylane.operation.Tensor)):
             if op.return_type is None:
                 self.queue.append(op)
             else:
@@ -310,7 +310,7 @@ class QNode:
         # check the validity of the circuit
 
         # quantum circuit function return validation
-        if isinstance(res, pennylane.operation.Observable):
+        if isinstance(res, (pennylane.operation.Observable, pennylane.operation.Tensor)):
             if res.return_type is pennylane.operation.Sample:
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
@@ -320,7 +320,7 @@ class QNode:
 
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
+        elif isinstance(res, Sequence) and res and all(isinstance(x, (pennylane.operation.Observable, pennylane.operation.Tensor)) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
 
@@ -664,13 +664,13 @@ class QNode:
         self.device.reset()
 
         # check that no wires are measured more than once
-        m_wires = list(w for ex in self.ev for w in ex.wires)
+        m_wires = list(_flatten(list(w for ex in self.ev for w in ex.wires)))
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
         def check_op(op):
             """Make sure only existing wires are referenced."""
-            for w in op.wires:
+            for w in _flatten(op.wires):
                 if w < 0 or w >= self.num_wires:
                     raise QuantumFunctionError("Operation {} applied to invalid wire {} "
                                                "on device with {} wires.".format(op.name, w, self.num_wires))
