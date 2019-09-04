@@ -336,6 +336,18 @@ class CircuitGraph:
         subGs = [self.graph.subgraph(nx.dag.descendants(self.graph, o)) for o in ops]
         return set().union(*[set(subG.nodes()) for subG in subGs]) - set(ops)
 
+    def get_nodes(self, ops):
+        """Given a set of operation indices, return the nodes corresponding to the indices.
+
+        Args:
+            ops (Iterable[int]): a given set of operations labelled by integer
+                position in the queue
+
+        Returns:
+            List[Node]: nodes corresponding to given integer positions in the queue
+        """
+        return [self.graph.nodes[i] for i in ops]
+
     def get_ops(self, ops):
         """Given a set of operation indices, return the operation objects.
 

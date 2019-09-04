@@ -553,11 +553,12 @@ class QNode:
         #
         # 5. Then run the standard discrete-case algorithm for determining the best gradient method
         # for every free parameter.
-        def best_for_op(o_idx):
+        def best_for_op(op_node):
             "Returns the best gradient method for the operation op."
-            op = self.ops[o_idx]
-
             # for discrete operations, other ops do not affect the choice
+            o_idx = op_node["idx"]
+            op = op_node["op"]
+
             if not isinstance(op, pennylane.operation.CV):
                 return op.grad_method
 
@@ -589,7 +590,8 @@ class QNode:
 
         # indices of operations that depend on the free parameter idx
         o_idxs = [o[0] for o in self.variable_ops[idx]]
-        methods = [best_for_op(o_idx) for o_idx in o_idxs]
+        op_nodes = self.cg.get_nodes(o_idxs)
+        methods = list(map(best_for_op, op_nodes))
 
         if all(k == 'A' for k in methods):
             return 'A'
