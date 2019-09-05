@@ -306,7 +306,6 @@ class QNode:
             # remove the context
             QNode._current_context = None
 
-
         #----------------------------------------------------------
         # check the validity of the circuit
 
@@ -835,7 +834,6 @@ class QNode:
         """
         # pylint: disable=too-many-statements
 
-
         # in QNode.construct we need to be able to (essentially) apply the unpacking operator to params
         if isinstance(params, numbers.Number):
             params = (params,)
@@ -898,7 +896,6 @@ class QNode:
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
-
 
         for i, k in enumerate(which):
             if k not in self.variable_ops:
@@ -977,7 +974,6 @@ class QNode:
         Returns:
             float: partial derivative of the node.
         """
-
         # remove jacobian specific keyword arguments
         circuit_kwargs = pop_jacobian_kwargs(kwargs)
 
@@ -992,7 +988,6 @@ class QNode:
             # which we can modify without affecting other Operations depending on the original.
             orig = op.params[p_idx]
             assert orig.idx == idx
-
 
             # reference to a new, temporary parameter with index n, otherwise identical with orig
             temp_var = copy.copy(orig)
@@ -1036,7 +1031,6 @@ class QNode:
                 # conjugate Z with all the following operations
                 B = np.eye(1 +2*w)
                 B_inv = B.copy()
-
                 for BB in self._op_successors(o_idx, 'G'):
                     B = BB.heisenberg_tr(w) @ B
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
