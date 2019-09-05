@@ -14,13 +14,9 @@
 """
 Unit tests for the :mod:`pennylane` :class:`GradientDescentOptimizer` subclasses.
 """
+import pytest
 
-import unittest
-import logging as log
-log.getLogger('defaults')
-
-from defaults import pennylane as qml, BaseTest
-
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.utils import _flatten
 from pennylane.optimize import (GradientDescentOptimizer,
@@ -104,425 +100,384 @@ def hybrid_fun_mdlist(var):
     return quant_fun_mdlist(var) + var[0][0]
 
 
-class BasicTest(BaseTest):
+@pytest.fixture(scope="function")
+def bunch():
+    class A:
+        sgd_opt = GradientDescentOptimizer(stepsize)
+        mom_opt = MomentumOptimizer(stepsize, momentum=gamma)
+        nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
+        adag_opt = AdagradOptimizer(stepsize)
+        rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
+        adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
+
+        fnames = ['test_function_1', 'test_function_2', 'test_function_3']
+        univariate_funcs = [np.sin,
+                            lambda x: np.exp(x / 10.),
+                            lambda x: x ** 2]
+        grad_uni_fns = [np.cos,
+                        lambda x: np.exp(x / 10.) / 10.,
+                        lambda x: 2 * x]
+        multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
+                              lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
+                              lambda x: np.sum([x_ ** 2 for x_ in x])]
+        grad_multi_funcs = [lambda x: np.array([np.cos(x[0]), -np.sin(x[1])]),
+                            lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                                                np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
+                            lambda x: np.array([2 * x_ for x_ in x])]
+        mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
+                           lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
+                           lambda x: np.sum([x_[0] ** 2 for x_ in x])]
+        grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
+                                                    [-np.sin(x[1, 0]), 1.              ]]),
+                                lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
+                                                     np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2)],
+                                                    [0., 0.]]),
+                                lambda x: np.array([[2 * x_[0], 0.] for x_ in x])]
+
+        class_fun = staticmethod(class_fun)
+        quant_fun = staticmethod(quant_fun)
+        hybrid_fun = staticmethod(hybrid_fun)
+        hybrid_fun_nested = staticmethod(hybrid_fun_nested)
+        hybrid_fun_flat = staticmethod(hybrid_fun_flat)
+        hybrid_fun_mdarr = staticmethod(hybrid_fun_mdarr)
+        hybrid_fun_mdlist = staticmethod(hybrid_fun_mdlist)
+
+        mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
+        mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
+        nested_list = [[[0.2], 0.3], [0.1, [0.4]], -0.1]
+        flat_list = [0.2, 0.3, 0.1, 0.4, -0.1]
+        multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
+        multid_list = [[0.1, 0.2], [-0.1, -0.4]]
+
+    return A()
+
+
+class TestOptimizer:
     """Basic optimizer tests.
     """
-    def setUp(self):
-        self.sgd_opt = GradientDescentOptimizer(stepsize)
-        self.mom_opt = MomentumOptimizer(stepsize, momentum=gamma)
-        self.nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
-        self.adag_opt = AdagradOptimizer(stepsize)
-        self.rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
-        self.adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
-
-        self.fnames = ['test_function_1', 'test_function_2', 'test_function_3']
-        self.univariate_funcs = [np.sin,
-                                 lambda x: np.exp(x / 10.),
-                                 lambda x: x ** 2]
-        self.grad_uni_fns = [np.cos,
-                             lambda x: np.exp(x / 10.) / 10.,
-                             lambda x: 2 * x]
-        self.multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
-                                   lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-                                   lambda x: np.sum([x_ ** 2 for x_ in x])]
-        self.grad_multi_funcs = [lambda x: np.array([np.cos(x[0]), -np.sin(x[1])]),
-                                 lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                                                     np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
-                                 lambda x: np.array([2 * x_ for x_ in x])]
-        self.mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
-                                lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
-                                lambda x: np.sum([x_[0] ** 2 for x_ in x])]
-        self.grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
-                                                         [-np.sin(x[1, 0]), 1.              ]]),
-                                     lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
-                                                          np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2)],
-                                                         [0., 0.]]),
-                                     lambda x: np.array([[2 * x_[0], 0.] for x_ in x])]
-
-        self.class_fun = class_fun
-        self.quant_fun = quant_fun
-        self.hybrid_fun = hybrid_fun
-        self.hybrid_fun_nested = hybrid_fun_nested
-        self.hybrid_fun_flat = hybrid_fun_flat
-        self.hybrid_fun_mdarr = hybrid_fun_mdarr
-        self.hybrid_fun_mdlist = hybrid_fun_mdlist
-
-        self.mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
-        self.mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
-        self.nested_list = [[[0.2], 0.3], [0.1, [0.4]], -0.1]
-        self.flat_list = [0.2, 0.3, 0.1, 0.4, -0.1]
-        self.multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
-        self.multid_list = [[0.1, 0.2], [-0.1, -0.4]]
-
-    def test_mixed_inputs_for_hybrid_optimization(self):
+    def test_mixed_inputs_for_hybrid_optimization(self, bunch, tol):
         """Tests that gradient descent optimizer treats parameters of mixed types the same
         for hybrid optimization tasks."""
-        self.logTestName()
 
-        hybrid_list = self.sgd_opt.step(self.hybrid_fun, self.mixed_list)
-        hybrid_tuple = self.sgd_opt.step(self.hybrid_fun, self.mixed_tuple)
+        hybrid_list = bunch.sgd_opt.step(bunch.hybrid_fun, bunch.mixed_list)
+        hybrid_tuple = bunch.sgd_opt.step(bunch.hybrid_fun, bunch.mixed_tuple)
 
-        self.assertAllAlmostEqual(hybrid_list[0], hybrid_tuple[0], delta=self.tol)
-        self.assertAllAlmostEqual(hybrid_list[1], hybrid_tuple[1], delta=self.tol)
-        self.assertAllAlmostEqual(hybrid_list[2], hybrid_tuple[2], delta=self.tol)
+        assert hybrid_list[0] == pytest.approx(hybrid_tuple[0], abs=tol)
+        assert hybrid_list[1] == pytest.approx(hybrid_tuple[1], abs=tol)
+        assert hybrid_list[2] == pytest.approx(hybrid_tuple[2], abs=tol)
 
-    def test_mixed_inputs_for_classical_optimization(self):
+    def test_mixed_inputs_for_classical_optimization(self, bunch, tol):
         """Tests that gradient descent optimizer treats parameters of mixed types the same
         for purely classical optimization tasks."""
-        self.logTestName()
 
-        class_list = self.sgd_opt.step(self.class_fun, self.mixed_list)
-        class_tuple = self.sgd_opt.step(self.class_fun, self.mixed_tuple)
+        class_list = bunch.sgd_opt.step(bunch.class_fun, bunch.mixed_list)
+        class_tuple = bunch.sgd_opt.step(bunch.class_fun, bunch.mixed_tuple)
 
-        self.assertAllAlmostEqual(class_list[0], class_tuple[0], delta=self.tol)
-        self.assertAllAlmostEqual(class_list[1], class_tuple[1], delta=self.tol)
-        self.assertAllAlmostEqual(class_list[2], class_tuple[2], delta=self.tol)
+        assert class_list[0] == pytest.approx(class_tuple[0], abs=tol)
+        assert class_list[1] == pytest.approx(class_tuple[1], abs=tol)
+        assert class_list[2] == pytest.approx(class_tuple[2], abs=tol)
 
-    def test_mixed_inputs_for_quantum_optimization(self):
+    def test_mixed_inputs_for_quantum_optimization(self, bunch, tol):
         """Tests that gradient descent optimizer treats parameters of mixed types the same
         for purely quantum optimization tasks."""
-        self.logTestName()
 
-        quant_list = self.sgd_opt.step(self.quant_fun, self.mixed_list)
-        quant_tuple = self.sgd_opt.step(self.quant_fun, self.mixed_tuple)
+        quant_list = bunch.sgd_opt.step(bunch.quant_fun, bunch.mixed_list)
+        quant_tuple = bunch.sgd_opt.step(bunch.quant_fun, bunch.mixed_tuple)
 
-        self.assertAllAlmostEqual(quant_list[0], quant_tuple[0], delta=self.tol)
-        self.assertAllAlmostEqual(quant_list[1], quant_tuple[1], delta=self.tol)
-        self.assertAllAlmostEqual(quant_list[2], quant_tuple[2], delta=self.tol)
+        assert quant_list[0] == pytest.approx(quant_tuple[0], abs=tol)
+        assert quant_list[1] == pytest.approx(quant_tuple[1], abs=tol)
+        assert quant_list[2] == pytest.approx(quant_tuple[2], abs=tol)
 
-    def test_nested_and_flat_returns_same_update(self):
+    def test_nested_and_flat_returns_same_update(self, bunch, tol):
         """Tests that gradient descent optimizer has the same output for
          nested and flat lists."""
-        self.logTestName()
 
-        nested = self.sgd_opt.step(self.hybrid_fun_nested, self.nested_list)
-        flat = self.sgd_opt.step(self.hybrid_fun_flat, self.flat_list)
+        nested = bunch.sgd_opt.step(bunch.hybrid_fun_nested, bunch.nested_list)
+        flat = bunch.sgd_opt.step(bunch.hybrid_fun_flat, bunch.flat_list)
 
-        self.assertAllAlmostEqual(flat, list(_flatten(nested)), delta=self.tol)
+        assert flat == pytest.approx(list(_flatten(nested)), abs=tol)
 
-    def test_array_and_list_return_same_update(self):
+    def test_array_and_list_return_same_update(self, bunch, tol):
         """Tests that gradient descent optimizer has the same output for
          lists and arrays."""
-        self.logTestName()
 
-        array = self.sgd_opt.step(self.hybrid_fun_mdarr, self.multid_array)
-        list = self.sgd_opt.step(self.hybrid_fun_mdlist, self.multid_list)
+        array = bunch.sgd_opt.step(bunch.hybrid_fun_mdarr, bunch.multid_array)
+        list = bunch.sgd_opt.step(bunch.hybrid_fun_mdlist, bunch.multid_list)
 
-        self.assertAllAlmostEqual(array, list, delta=self.tol)
+        assert array == pytest.approx(np.asarray(list), abs=tol)
 
-    def test_gradient_descent_optimizer_univar(self):
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_gradient_descent_optimizer_univar(self, x_start, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for uni-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x_start in x_vals:
-                    x_new = self.sgd_opt.step(f, x_start)
-                    x_correct = x_start - gradf(x_start) * stepsize
-                    self.assertAlmostEqual(x_new, x_correct, delta=self.tol)
+        # TODO parametrize this for also
+        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+            x_new = bunch.sgd_opt.step(f, x_start)
+            x_correct = x_start - gradf(x_start) * stepsize
+            assert x_new == pytest.approx(x_correct, abs=tol)
 
-    def test_gradient_descent_optimizer_multivar(self):
+    def test_gradient_descent_optimizer_multivar(self, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for multi-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    x_vec = x_vals[jdx:jdx+2]
-                    x_new = self.sgd_opt.step(f, x_vec)
-                    x_correct = x_vec - gradf(x_vec) * stepsize
-                    self.assertAllAlmostEqual(x_new, x_correct, delta=self.tol)
+        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+            for jdx in range(len(x_vals[:-1])):
+                x_vec = x_vals[jdx:jdx+2]
+                x_new = bunch.sgd_opt.step(f, x_vec)
+                x_correct = x_vec - gradf(x_vec) * stepsize
+                assert x_new == pytest.approx(x_correct, abs=tol)
 
-    def test_gradient_descent_optimizer_multivar_multidim(self):
+    def test_gradient_descent_optimizer_multivar_multidim(self, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for multi-variate functions and with higher dimensional inputs."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_mvar_mdim_funcs, self.mvar_mdim_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-3])):
-                    x_vec = x_vals[jdx:jdx+4]
-                    x_vec_multidim = np.reshape(x_vec, (2, 2))
-                    x_new = self.sgd_opt.step(f, x_vec_multidim)
-                    x_correct = x_vec_multidim - gradf(x_vec_multidim) * stepsize
-                    x_new_flat = x_new.flatten()
-                    x_correct_flat = x_correct.flatten()
-                    self.assertAllAlmostEqual(x_new_flat, x_correct_flat, delta=self.tol)
+        for gradf, f, name in zip(bunch.grad_mvar_mdim_funcs, bunch.mvar_mdim_funcs, bunch.fnames):
+            for jdx in range(len(x_vals[:-3])):
+                x_vec = x_vals[jdx:jdx+4]
+                x_vec_multidim = np.reshape(x_vec, (2, 2))
+                x_new = bunch.sgd_opt.step(f, x_vec_multidim)
+                x_correct = x_vec_multidim - gradf(x_vec_multidim) * stepsize
+                x_new_flat = x_new.flatten()
+                x_correct_flat = x_correct.flatten()
+                assert x_new_flat == pytest.approx(x_correct_flat, abs=tol)
 
-    def test_gradient_descent_optimizer_usergrad(self):
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_gradient_descent_optimizer_usergrad(self, x_start, bunch, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         using user-provided gradients."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_uni_fns[::-1], self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x_start in x_vals:
-                    x_new = self.sgd_opt.step(f, x_start, grad_fn=gradf)
-                    x_correct = x_start - gradf(x_start) * stepsize
-                    self.assertAlmostEqual(x_new, x_correct, delta=self.tol)
+        for gradf, f, name in zip(bunch.grad_uni_fns[::-1], bunch.univariate_funcs, bunch.fnames):
+            x_new = bunch.sgd_opt.step(f, x_start, grad_fn=gradf)
+            x_correct = x_start - gradf(x_start) * stepsize
+            assert x_new == pytest.approx(x_correct, abs=tol)
 
-    def test_momentum_optimizer_univar(self):
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_momentum_optimizer_univar(self, x_start, bunch, tol):
         """Tests that momentum optimizer takes one and two steps correctly
         for uni-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x_start in x_vals:
-                    self.mom_opt.reset()
+        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+            bunch.mom_opt.reset()
 
-                    x_onestep = self.mom_opt.step(f, x_start)
-                    x_onestep_target = x_start - gradf(x_start) * stepsize
-                    self.assertAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+            x_onestep = bunch.mom_opt.step(f, x_start)
+            x_onestep_target = x_start - gradf(x_start) * stepsize
+            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.mom_opt.step(f, x_onestep)
-                    momentum_term = gamma * gradf(x_start)
-                    x_twosteps_target = x_onestep - (gradf(x_onestep) + momentum_term) * stepsize
-                    self.assertAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+            x_twosteps = bunch.mom_opt.step(f, x_onestep)
+            momentum_term = gamma * gradf(x_start)
+            x_twosteps_target = x_onestep - (gradf(x_onestep) + momentum_term) * stepsize
+            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_momentum_optimizer_multivar(self):
+    def test_momentum_optimizer_multivar(self, bunch, tol):
         """Tests that momentum optimizer takes one and two steps correctly
         for multi-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    self.mom_opt.reset()
+        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+            for jdx in range(len(x_vals[:-1])):
+                bunch.mom_opt.reset()
 
-                    x_vec = x_vals[jdx:jdx + 2]
-                    x_onestep = self.mom_opt.step(f, x_vec)
-                    x_onestep_target = x_vec - gradf(x_vec) * stepsize
-                    self.assertAllAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+                x_vec = x_vals[jdx:jdx + 2]
+                x_onestep = bunch.mom_opt.step(f, x_vec)
+                x_onestep_target = x_vec - gradf(x_vec) * stepsize
+                assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.mom_opt.step(f, x_onestep)
-                    momentum_term = gamma * gradf(x_vec)
-                    x_twosteps_target = x_onestep - (gradf(x_onestep) + momentum_term) * stepsize
-                    self.assertAllAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+                x_twosteps = bunch.mom_opt.step(f, x_onestep)
+                momentum_term = gamma * gradf(x_vec)
+                x_twosteps_target = x_onestep - (gradf(x_onestep) + momentum_term) * stepsize
+                assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_nesterovmomentum_optimizer_univar(self):
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_nesterovmomentum_optimizer_univar(self, x_start, bunch, tol):
         """Tests that nesterov momentum optimizer takes one and two steps correctly
         for uni-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x_start in x_vals:
-                    self.nesmom_opt.reset()
+        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+            bunch.nesmom_opt.reset()
 
-                    x_onestep = self.nesmom_opt.step(f, x_start)
-                    x_onestep_target = x_start - gradf(x_start) * stepsize
-                    self.assertAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+            x_onestep = bunch.nesmom_opt.step(f, x_start)
+            x_onestep_target = x_start - gradf(x_start) * stepsize
+            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.nesmom_opt.step(f, x_onestep)
-                    momentum_term = gamma * gradf(x_start)
-                    shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
-                    x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
-                    self.assertAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+            x_twosteps = bunch.nesmom_opt.step(f, x_onestep)
+            momentum_term = gamma * gradf(x_start)
+            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
+            x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
+            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_nesterovmomentum_optimizer_multivar(self):
+    def test_nesterovmomentum_optimizer_multivar(self, bunch, tol):
         """Tests that nesterov momentum optimizer takes one and two steps correctly
         for multi-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    self.nesmom_opt.reset()
+        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+            for jdx in range(len(x_vals[:-1])):
+                bunch.nesmom_opt.reset()
 
-                    x_vec = x_vals[jdx:jdx + 2]
-                    x_onestep = self.nesmom_opt.step(f, x_vec)
-                    x_onestep_target = x_vec - gradf(x_vec) * stepsize
-                    self.assertAllAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+                x_vec = x_vals[jdx:jdx + 2]
+                x_onestep = bunch.nesmom_opt.step(f, x_vec)
+                x_onestep_target = x_vec - gradf(x_vec) * stepsize
+                assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.nesmom_opt.step(f, x_onestep)
-                    momentum_term = gamma * gradf(x_vec)
-                    shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
-                    x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
-                    self.assertAllAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+                x_twosteps = bunch.nesmom_opt.step(f, x_onestep)
+                momentum_term = gamma * gradf(x_vec)
+                shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
+                x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
+                assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_nesterovmomentum_optimizer_usergrad(self):
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_nesterovmomentum_optimizer_usergrad(self, x_start, bunch, tol):
         """Tests that nesterov momentum optimizer takes gradient-descent steps correctly
         using user-provided gradients."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_uni_fns[::-1], self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x_start in x_vals:
-                    self.nesmom_opt.reset()
+        for gradf, f, name in zip(bunch.grad_uni_fns[::-1], bunch.univariate_funcs, bunch.fnames):
+            bunch.nesmom_opt.reset()
 
-                    x_onestep = self.nesmom_opt.step(f, x_start, grad_fn=gradf)
-                    x_onestep_target = x_start - gradf(x_start) * stepsize
-                    self.assertAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+            x_onestep = bunch.nesmom_opt.step(f, x_start, grad_fn=gradf)
+            x_onestep_target = x_start - gradf(x_start) * stepsize
+            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.nesmom_opt.step(f, x_onestep, grad_fn=gradf)
-                    momentum_term = gamma * gradf(x_start)
-                    shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
-                    x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
-                    self.assertAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+            x_twosteps = bunch.nesmom_opt.step(f, x_onestep, grad_fn=gradf)
+            momentum_term = gamma * gradf(x_start)
+            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
+            x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
+            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_adagrad_optimizer_univar(self):
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_adagrad_optimizer_univar(self, x_start, bunch, tol):
         """Tests that adagrad optimizer takes one and two steps correctly
         for uni-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x_start in x_vals:
-                    self.adag_opt.reset()
+        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+            bunch.adag_opt.reset()
 
-                    x_onestep = self.adag_opt.step(f, x_start)
-                    past_grads = gradf(x_start)*gradf(x_start)
-                    adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-                    x_onestep_target = x_start - gradf(x_start) * adapt_stepsize
-                    self.assertAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+            x_onestep = bunch.adag_opt.step(f, x_start)
+            past_grads = gradf(x_start)*gradf(x_start)
+            adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
+            x_onestep_target = x_start - gradf(x_start) * adapt_stepsize
+            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.adag_opt.step(f, x_onestep)
-                    past_grads = gradf(x_start)*gradf(x_start) + gradf(x_onestep)*gradf(x_onestep)
-                    adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-                    x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
-                    self.assertAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+            x_twosteps = bunch.adag_opt.step(f, x_onestep)
+            past_grads = gradf(x_start)*gradf(x_start) + gradf(x_onestep)*gradf(x_onestep)
+            adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
+            x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
+            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_adagrad_optimizer_multivar(self):
+    def test_adagrad_optimizer_multivar(self, bunch, tol):
         """Tests that adagrad optimizer takes one and two steps correctly
         for multi-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    self.adag_opt.reset()
+        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+            for jdx in range(len(x_vals[:-1])):
+                bunch.adag_opt.reset()
 
-                    x_vec = x_vals[jdx:jdx + 2]
-                    x_onestep = self.adag_opt.step(f, x_vec)
-                    past_grads = gradf(x_vec)*gradf(x_vec)
-                    adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-                    x_onestep_target = x_vec - gradf(x_vec) * adapt_stepsize
-                    self.assertAllAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+                x_vec = x_vals[jdx:jdx + 2]
+                x_onestep = bunch.adag_opt.step(f, x_vec)
+                past_grads = gradf(x_vec)*gradf(x_vec)
+                adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
+                x_onestep_target = x_vec - gradf(x_vec) * adapt_stepsize
+                assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.adag_opt.step(f, x_onestep)
-                    past_grads = gradf(x_vec) * gradf(x_vec) + gradf(x_onestep) * gradf(x_onestep)
-                    adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
-                    x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
-                    self.assertAllAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+                x_twosteps = bunch.adag_opt.step(f, x_onestep)
+                past_grads = gradf(x_vec) * gradf(x_vec) + gradf(x_onestep) * gradf(x_onestep)
+                adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
+                x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
+                assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_rmsprop_optimizer_univar(self):
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_rmsprop_optimizer_univar(self, x_start, bunch, tol):
         """Tests that rmsprop optimizer takes one and two steps correctly
         for uni-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x_start in x_vals:
-                    self.rms_opt.reset()
+        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+            bunch.rms_opt.reset()
 
-                    x_onestep = self.rms_opt.step(f, x_start)
-                    past_grads = (1 - gamma) * gradf(x_start)*gradf(x_start)
-                    adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-                    x_onestep_target = x_start - gradf(x_start) * adapt_stepsize
-                    self.assertAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+            x_onestep = bunch.rms_opt.step(f, x_start)
+            past_grads = (1 - gamma) * gradf(x_start)*gradf(x_start)
+            adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
+            x_onestep_target = x_start - gradf(x_start) * adapt_stepsize
+            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.rms_opt.step(f, x_onestep)
-                    past_grads = (1 - gamma) * gamma * gradf(x_start)*gradf(x_start) \
-                                 + (1 - gamma) * gradf(x_onestep)*gradf(x_onestep)
-                    adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-                    x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
-                    self.assertAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+            x_twosteps = bunch.rms_opt.step(f, x_onestep)
+            past_grads = (1 - gamma) * gamma * gradf(x_start)*gradf(x_start) \
+                         + (1 - gamma) * gradf(x_onestep)*gradf(x_onestep)
+            adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
+            x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
+            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_rmsprop_optimizer_multivar(self):
+    def test_rmsprop_optimizer_multivar(self, bunch, tol):
         """Tests that rmsprop optimizer takes one and two steps correctly
         for multi-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    self.rms_opt.reset()
+        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+            for jdx in range(len(x_vals[:-1])):
+                bunch.rms_opt.reset()
 
-                    x_vec = x_vals[jdx:jdx + 2]
-                    x_onestep = self.rms_opt.step(f, x_vec)
-                    past_grads = (1 - gamma) * gradf(x_vec)*gradf(x_vec)
-                    adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
-                    x_onestep_target = x_vec - gradf(x_vec) * adapt_stepsize
-                    self.assertAllAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+                x_vec = x_vals[jdx:jdx + 2]
+                x_onestep = bunch.rms_opt.step(f, x_vec)
+                past_grads = (1 - gamma) * gradf(x_vec)*gradf(x_vec)
+                adapt_stepsize = stepsize/np.sqrt(past_grads + 1e-8)
+                x_onestep_target = x_vec - gradf(x_vec) * adapt_stepsize
+                assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.rms_opt.step(f, x_onestep)
-                    past_grads = (1 - gamma) * gamma * gradf(x_vec) * gradf(x_vec) \
-                                 + (1 - gamma) * gradf(x_onestep) * gradf(x_onestep)
-                    adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
-                    x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
-                    self.assertAllAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+                x_twosteps = bunch.rms_opt.step(f, x_onestep)
+                past_grads = (1 - gamma) * gamma * gradf(x_vec) * gradf(x_vec) \
+                             + (1 - gamma) * gradf(x_onestep) * gradf(x_onestep)
+                adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
+                x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
+                assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_adam_optimizer_univar(self):
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_adam_optimizer_univar(self, x_start, bunch, tol):
         """Tests that adam optimizer takes one and two steps correctly
         for uni-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_uni_fns, self.univariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for x_start in x_vals:
-                    self.adam_opt.reset()
+        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+            bunch.adam_opt.reset()
 
-                    x_onestep = self.adam_opt.step(f, x_start)
-                    adapted_stepsize = stepsize * np.sqrt(1 - delta)/(1 - gamma)
-                    firstmoment = gradf(x_start)
-                    secondmoment = gradf(x_start) * gradf(x_start)
-                    x_onestep_target = x_start - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
-                    self.assertAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+            x_onestep = bunch.adam_opt.step(f, x_start)
+            adapted_stepsize = stepsize * np.sqrt(1 - delta)/(1 - gamma)
+            firstmoment = gradf(x_start)
+            secondmoment = gradf(x_start) * gradf(x_start)
+            x_onestep_target = x_start - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
+            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.adam_opt.step(f, x_onestep)
-                    adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
-                    firstmoment = (gamma * gradf(x_start) + (1 - gamma) * gradf(x_onestep))
-                    secondmoment = (delta * gradf(x_start) * gradf(x_start) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
-                    x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
-                    self.assertAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+            x_twosteps = bunch.adam_opt.step(f, x_onestep)
+            adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
+            firstmoment = (gamma * gradf(x_start) + (1 - gamma) * gradf(x_onestep))
+            secondmoment = (delta * gradf(x_start) * gradf(x_start) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
+            x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
+            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_adam_optimizer_multivar(self):
+    def test_adam_optimizer_multivar(self, bunch, tol):
         """Tests that adam optimizer takes one and two steps correctly
         for multi-variate functions."""
-        self.logTestName()
 
-        for gradf, f, name in zip(self.grad_multi_funcs, self.multivariate_funcs, self.fnames):
-            with self.subTest(i=name):
-                for jdx in range(len(x_vals[:-1])):
-                    self.adam_opt.reset()
+        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+            for jdx in range(len(x_vals[:-1])):
+                bunch.adam_opt.reset()
 
-                    x_vec = x_vals[jdx:jdx + 2]
-                    x_onestep = self.adam_opt.step(f, x_vec)
-                    adapted_stepsize = stepsize * np.sqrt(1 - delta) / (1 - gamma)
-                    firstmoment = gradf(x_vec)
-                    secondmoment = gradf(x_vec) * gradf(x_vec)
-                    x_onestep_target = x_vec - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
-                    self.assertAllAlmostEqual(x_onestep, x_onestep_target, delta=self.tol)
+                x_vec = x_vals[jdx:jdx + 2]
+                x_onestep = bunch.adam_opt.step(f, x_vec)
+                adapted_stepsize = stepsize * np.sqrt(1 - delta) / (1 - gamma)
+                firstmoment = gradf(x_vec)
+                secondmoment = gradf(x_vec) * gradf(x_vec)
+                x_onestep_target = x_vec - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
+                assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                    x_twosteps = self.adam_opt.step(f, x_onestep)
-                    adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
-                    firstmoment = (gamma * gradf(x_vec) + (1 - gamma) * gradf(x_onestep))
-                    secondmoment = (delta * gradf(x_vec) * gradf(x_vec) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
-                    x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
-                    self.assertAllAlmostEqual(x_twosteps, x_twosteps_target, delta=self.tol)
+                x_twosteps = bunch.adam_opt.step(f, x_onestep)
+                adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
+                firstmoment = (gamma * gradf(x_vec) + (1 - gamma) * gradf(x_onestep))
+                secondmoment = (delta * gradf(x_vec) * gradf(x_vec) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
+                x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
+                assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     def test_update_stepsize(self):
         """Tests that the stepsize correctly updates"""
-        self.logTestName()
 
         eta = 0.5
         opt = AdamOptimizer(eta)
-        self.assertAlmostEqual(opt._stepsize, eta)
+        assert opt._stepsize == eta
 
         eta2 = 0.1
         opt.update_stepsize(eta2)
-        self.assertAlmostEqual(opt._stepsize, eta2)
-
-
-if __name__ == '__main__':
-    print('Testing PennyLane version ' + qml.version() + ', basic optimizers.')
-    # run the tests in this file
-    suite = unittest.TestSuite()
-    for t in (BasicTest,):
-        ttt = unittest.TestLoader().loadTestsFromTestCase(t)
-        suite.addTests(ttt)
-
-    unittest.TextTestRunner().run(suite)
+        assert opt._stepsize == eta2

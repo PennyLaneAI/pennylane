@@ -15,7 +15,6 @@
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
 import math
-from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 from autograd import numpy as np
@@ -93,19 +92,17 @@ class TestQNodeOperationQueue:
 
 
 @pytest.fixture(scope="function")
-def operable_mock_device_2_wires():
-    """A mock instance of the abstract Device class that can support
-       qfuncs."""
+def operable_mock_device_2_wires(monkeypatch):
+    """A mock instance of the abstract Device class that can support qfuncs."""
 
-    with patch.multiple(
-        Device,
-        __abstractmethods__=set(),
-        operations=PropertyMock(return_value=["RX", "RY", "CNOT"]),
-        observables=PropertyMock(return_value=["PauliX", "PauliY", "PauliZ"]),
-        reset=Mock(),
-        apply=Mock(),
-        expval=Mock(return_value=1),
-    ):
+    dev = Device
+    with monkeypatch.context() as m:
+        m.setattr(dev, '__abstractmethods__', frozenset())
+        m.setattr(dev, 'operations', ["RX", "RY", "CNOT"])
+        m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, 'reset', lambda self: None)
+        m.setattr(dev, 'apply', lambda self, x, y, z: None)
+        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
         yield Device(wires=2)
 
 
