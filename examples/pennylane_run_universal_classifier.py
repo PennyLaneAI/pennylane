@@ -112,15 +112,17 @@ the output state jump to either :math:`| 0 \rangle` or
 :math:`|1\rangle`. By repeating this process several times, we can
 compute the probability or overlap of our output to both labels and
 assign a class based on the label our output has a higher overlap. This
-is much like having a set of ouput neurons and selecting the one which
+is much like having a set of output neurons and selecting the one which
 has the highest value as the label.
 
-In Pennylane, we can define an observable (the expected output
-label) and make a circuit to return the fidelity using the
-`Hermitian <https://pennylane.readthedocs.io/en/latest/code/ops/qubit.html#pennylane.ops.qubit.Hermitian>`_
-operator. We can then define the cost function as the sum of the
-fidelities for all the data points after passing throuh the circuit
-and optimize the parameters :math:`(\vec \theta)` to minimize the cost.
+We can encode the output label as a particular quantum state that we want
+to end up in and use Pennylane to find the probability of ending up in that
+state after running the circuit. We construct an observable corresponding to
+the output label using the `Hermitian <https://pennylane.readthedocs.io/en/latest/code/ops/qubit.html#pennylane.ops.qubit.Hermitian>`_
+operator. The expectation value of the observable gives the overlap or fidelity.
+We can then define the cost function as the sum of the fidelities for all
+the data points after passing throuh the circuit and optimize the parameters
+:math:`(\vec \theta)` to minimize the cost.
 
 .. math::
 
@@ -130,27 +132,27 @@ and optimize the parameters :math:`(\vec \theta)` to minimize the cost.
 Now, we can use our favorite optimizer to maximize the sum of the
 fidelities over all data points (or batches of datapoints) and find the
 optimal weights for classification. Gradient based optimizers such as
-Adam can be used if we have a good model of the circuit and how noise
-might affect it. Or, we can use some gradient-free method such as LBFGS
-to evaluate the gradient and find the optimal weights where we can treat
-the quantum circuit as a black-box and the gradients are computed
+Adam (Kingma et. al., 2014) can be used if we have a good model of
+the circuit and how noise might affect it. Or, we can use some
+gradient-free method such as L-BFGS (Liu, Dong C., and Jorge Nocedal, 1989)
+to evaluate the gradient and find the optimal weights where we can
+treat the quantum circuit as a black-box and the gradients are computed
 numerically using a fixed number of function evalutaions and iterations.
+The L-BFGS method can be used with the PyTorch interface for Pennylane.
 
 Multiple qubits, entanglement and Deep Neural Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Universal Approximation Theorem declares a single hidden layered
-neural network to be capable of approximating any function to arbitrary
-accuracy. But in practice, it might require a large number of neurons in
-the single hidden layer and here is where Deep Neural Networks come into
-action. Deep Neural Networks proved to be better in practice and we have
-some intuitive idea why, read “Why does deep and cheap learning work so
-well?” by Henry W. Lin, Max Tegmark (MIT) and David Rolnick (2016).
+The Universal Approximation Theorem declares that a neural network with
+two or more hidden layers can serve as a universal function approximator.
+Recently, we have witnessed remarkable progress of learning algorithms using
+Deep Neural Networks.
 
-Pérez-Salinas et al. (2019) describe that in their approach the
+Pérez-Salinas et al. (2019) make a connection to Deep Neural Networks by
+describing that in their approach the
 “layers” :math:`L_i(\vec \theta_i, \vec x )` are analogous to the size
-of the intermediate hidden layer of the neural network. And what counts
-for deep (multiple layers of the neural network) relates to the number
+of the intermediate hidden layer of a neural network. And the concept of
+deep (multiple layers of the neural network) relates to the number
 of qubits. So, multiple qubits with entanglement between them could
 provide some quantum advantage over classical neural networks. But here,
 we will only implement a single qubit classifier.
@@ -170,19 +172,19 @@ from pennylane.optimize import AdamOptimizer, GradientDescentOptimizer
 import matplotlib.pyplot as plt
 
 
-# Make a dataset of points in and out of a circle
+# Make a dataset of points inside and outside of a circle
 def circle(samples, center=[0.0, 0.0], radius=np.sqrt(2/np.pi)):
     """
     Generates a dataset of points with 1/0 labels inside a given radius. 
     
     Args:
-        samples (int): number of samples to generate.
+        samples (int): number of samples to generate
         center (tuple): center of the circle
-        radius (float: radius of the circle.
+        radius (float: radius of the circle
 
     Returns:
-        Xvals (array of tuples): coordinates of points
-        Xvals (array of ints): classification labels
+        Xvals (array[tuple]): coordinates of points
+        Xvals (array[int]): classification labels
     """
     Xvals, yvals = [], []
 
@@ -201,8 +203,8 @@ def plot_data(x, y, fig=None, ax=None):
     Plot data with red/blue values for a binary classification.
     
     Args:
-        x (array of tuples): array of data points as tuples
-        y (array of ints): array of data points as tuples
+        x (array[tuple]): array of data points as tuples
+        y (array[int]): array of data points as tuples
     """
     if fig == None:
         fig, ax = plt.subplots(1, 1, figsize=(5, 5))
@@ -228,7 +230,7 @@ def density_matrix(state):
         state (array[complex]): array representing a quantum state vector
 
     Returns:
-        dm: (array[complex]): array representing the density matrix.
+        dm: (array[complex]): array representing the density matrix
     """
     return state * np.conj(state).T
 
@@ -241,7 +243,7 @@ state_labels = [label_0, label_1]
 # Simple classifier with data reloading and fidelity loss
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dev = qml.device("default.qubit", wires=1)
-# Use your own pennylane-plugin to run on some particular backend
+# Install any pennylane-plugin to run on some particular backend
 
 
 @qml.qnode(dev)
@@ -280,8 +282,8 @@ def cost(params, x, y, state_labels=None):
 
     Args:
         weights (array[float]): array of weights
-        x (array[float]): 2-d array of input vectors.
-        y (array[float]): 1-d array of targets.
+        x (array[float]): 2-d array of input vectors
+        y (array[float]): 1-d array of targets
         state_labels (array[float]): array of state representations for labels
         
     Returns:
@@ -305,8 +307,8 @@ def test(params, x, y, state_labels=None):
     
     Args:
         weights (array[float]): array of weights
-        x (array[float]): 2-d array of input vectors.
-        y (array[float]): 1-d array of targets.
+        x (array[float]): 2-d array of input vectors
+        y (array[float]): 1-d array of targets
         state_labels (array[float]): 1-d array of state representations for labels
         
     Returns:
@@ -327,12 +329,12 @@ def test(params, x, y, state_labels=None):
 def predicted_labels(states, state_labels=None):
     """
     Computes the label of the predicted state by selecting the one
-    with maximum fidelity
+    with maximum fidelity.
     
     Args:
         weights (array[float]): array of weights
-        x (array[float]): 2-d array of input vectors.
-        y (array[float]): 1-d array of targets.
+        x (array[float]): 2-d array of input vectors
+        y (array[float]): 1-d array of targets
         state_labels (array[float]): 1-d array of state representations for labels
         
     Returns:
@@ -348,13 +350,12 @@ def accuracy_score(y_true, y_pred):
     """Accuracy score.
 
     Args:
-        y_true (array[float]): 1-d array of targets.
+        y_true (array[float]): 1-d array of targets
         y_predicted (array[float]): 1-d array of predictions
         state_labels (array[float]): 1-d array of state representations for labels
 
     Returns:
-        score : float
-            The fraction of correctly classified samples.
+        score (float): the fraction of correctly classified samples
     """
     score = y_true == y_pred
     return score.sum() / len(y_true)
@@ -391,7 +392,7 @@ Xtest, y_test = circle(num_test)
 X_test = np.hstack((Xtest, np.zeros((Xtest.shape[0], 1))))
 
 
-# Train and evaluate the classifier using Adam optimizer
+# Train using Adam optimizer and evaluate the classifier
 num_layers = 3
 learning_rate = 0.7
 epochs = 30
@@ -472,3 +473,10 @@ qml.about()
 
 # [1] Pérez-Salinas, Adrián, et al. “Data re-uploading for a universal
 # quantum classifier.” arXiv preprint arXiv:1907.02085 (2019).
+
+# [2] Kingma, Diederik P., and Jimmy Ba. "Adam: A method for stochastic
+# optimization." arXiv preprint arXiv:1412.6980 (2014).
+
+# [3] Liu, Dong C., and Jorge Nocedal. "On the limited memory BFGS
+# method for large scale optimization." Mathematical programming 
+# 45.1-3 (1989): 503-528.
