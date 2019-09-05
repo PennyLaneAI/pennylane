@@ -171,7 +171,7 @@ import matplotlib.pyplot as plt
 
 
 # Make a dataset of points in and out of a circle
-def circle(samples, center=[0.0, 0.0], radius=0.7):
+def circle(samples, center=[0.0, 0.0], radius=np.sqrt(2/np.pi)):
     """
     Generates a dataset of points with 1/0 labels inside a given radius. 
     
@@ -233,8 +233,8 @@ def density_matrix(state):
     return state * np.conj(state).T
 
 
-label_0 = [[1.0 + 0.0j], [0.0 + 0.0j]]
-label_1 = [[0.0 + 0.0j], [1.0 + 0.0j]]
+label_0 = [[1], [0]]
+label_1 = [[0], [1]]
 state_labels = [label_0, label_1]
 
 
@@ -257,7 +257,6 @@ def qcircuit(var, x=None, y=None):
         float: fidelity between output state and input
     """
     for v in var:
-        qml.Rot(*x, wires=0)
         qml.Rot(*v, wires=0)
     return qml.expval(qml.Hermitian(y, wires=[0]))
 
@@ -276,7 +275,7 @@ def fidelity(state1, state2):
     return np.abs(np.dot(np.conj(state1), state2))
 
 
-def cost(weights, x, y, state_labels=None):
+def cost(params, x, y, state_labels=None):
     """Cost function to be minimized.
 
     Args:
@@ -292,14 +291,15 @@ def cost(weights, x, y, state_labels=None):
     loss = 0.0
     dm_labels = [density_matrix(s) for s in state_labels]
     for i in range(len(x)):
-        f = qcircuit(weights, x=x[i], y=dm_labels[y[i]])
-        loss = loss + (1 - f)
+        zvals = params[0] + params[1]*x[i]
+        f = qcircuit(zvals, x=x[i], y=dm_labels[y[i]])
+        loss = loss + (1 - f)**2
     return loss / len(x)
 
 
 # Utility functions for testing and creating batches
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def test(weights, x, y, state_labels=None):
+def test(params, x, y, state_labels=None):
     """
     Tests on a given set of data.
     
@@ -317,7 +317,8 @@ def test(weights, x, y, state_labels=None):
     output_states = []
     dm_labels = [density_matrix(s) for s in state_labels]
     for i in range(len(x)):
-        expectation = qcircuit(weights, x=x[i], y=dm_labels[y[i]])
+        zvals = params[0] + params[1]*x[i]
+        expectation = qcircuit(zvals, x=x[i], y=dm_labels[y[i]])
         output_states.append(dev._state)
     predicted = predicted_labels(output_states, state_labels)
     return predicted, output_states
@@ -381,7 +382,7 @@ def iterate_minibatches(inputs, targets, batch_size):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Generate training and test data
 num_training = 200
-num_test = 500
+num_test = 2000
 
 Xdata, y_train = circle(num_training)
 X_train = np.hstack((Xdata, np.zeros((Xdata.shape[0], 1))))
@@ -392,26 +393,28 @@ X_test = np.hstack((Xtest, np.zeros((Xtest.shape[0], 1))))
 
 # Train and evaluate the classifier using Adam optimizer
 num_layers = 3
-learning_rate = 0.5
-epochs = 10
-batch_size = 50
+learning_rate = 0.7
+epochs = 30
+batch_size = 16
 
 opt = AdamOptimizer(learning_rate, beta1=0.9, beta2=0.999)
 
 # initialize random weights
-weights = np.random.random(size=(num_layers, 3))
+weights = np.random.uniform(size=(num_layers, 3))
+biases = np.random.uniform(size=(num_layers, 3))
 
-predicted_train, states_train = test(weights, X_train, y_train, state_labels)
+params = np.array([weights, biases])
+
+predicted_train, states_train = test(params, X_train, y_train, state_labels)
 accuracy_train = accuracy_score(y_train, predicted_train)
 
-predicted_test, states_test = test(weights, X_test, y_test, state_labels)
+predicted_test, states_test = test(params, X_test, y_test, state_labels)
 accuracy_test = accuracy_score(y_test, predicted_test)
 
 # save predictions with random weights for comparision
 initial_predictions = predicted_test
 
-loss = cost(weights, X_test, y_test, state_labels)
-num_circuit_evaluations = 0
+loss = cost(params, X_test, y_test, state_labels)
 
 print(
     "Epoch: {:2d} | Cost: {:3f} | Train accuracy: {:3f} | Test Accuracy: {:3f}".format(
@@ -419,14 +422,13 @@ print(
 
 for it in range(epochs):
     for Xbatch, ybatch in iterate_minibatches(X_train, y_train, batch_size=batch_size):
-        weights = opt.step(lambda v: cost(v, Xbatch, ybatch, state_labels), weights)
-        num_circuit_evaluations += len(Xbatch)
+        params = opt.step(lambda v: cost(v, Xbatch, ybatch, state_labels), params)
 
-    predicted_train, states_train = test(weights, X_train, y_train, state_labels)
+    predicted_train, states_train = test(params, X_train, y_train, state_labels)
     accuracy_train = accuracy_score(y_train, predicted_train)
-    loss = cost(weights, X_train, y_train, state_labels)
+    loss = cost(params, X_train, y_train, state_labels)
 
-    predicted_test, states_test = test(weights, X_test, y_test, state_labels)
+    predicted_test, states_test = test(params, X_test, y_test, state_labels)
     accuracy_test = accuracy_score(y_test, predicted_test)
     res = [it + 1, loss, accuracy_train, accuracy_test]
     print(
@@ -438,16 +440,14 @@ for it in range(epochs):
 # Results
 # ~~~~~~~
 print("=====================================================================")
-print("Number of training data points: {}".format(len(X_train)))
-print("Number of test data points: {}".format(len(X_test)))
-print("Calls to circuit for training: {}".format(num_circuit_evaluations))
 print(
     "Cost: {:3f} | Train accuracy {:3f} | Test Accuracy : {:3f}".format(
         loss, accuracy_train, accuracy_test
     )
 )
-for i in range(len(weights)):
-    print("Trained weights for layer {}: {}".format(i, weights[i]))
+
+print("Weights {}:".format(params[1]))
+print("Biases {}:".format(params[0]))
 print("==========================================================================")
 
 fig, axes = plt.subplots(1, 3, figsize=(10, 3))
