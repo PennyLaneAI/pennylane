@@ -552,6 +552,8 @@ class QNode:
         #
         # 5. Then run the standard discrete-case algorithm for determining the best gradient method
         # for every free parameter.
+
+        # pylint: disable=too-many-statements
         def best_for_op(op_node):
             "Returns the best gradient method for the operation op."
             # for discrete operations, other ops do not affect the choice
@@ -564,28 +566,28 @@ class QNode:
             # for CV ops it is more complicated
             if op.grad_method != "A":
                 return op.grad_method
-            else:
-                # op is Gaussian and has the heisenberg_* methods
-                # A non-Gaussian successor is OK if it isn't succeeded by any observables
-                obs_successors = self._op_successors(o_idx, 'E')
-                if not obs_successors:
-                    return 'A'
-                else:
-                    # check that all successor ops are also Gaussian
-                    if not all(x.supports_heisenberg for x in self._op_successors(o_idx, 'G')):
+
+            # op is Gaussian and has the heisenberg_* methods
+            # A non-Gaussian successor is OK if it isn't succeeded by any observables
+            obs_successors = self._op_successors(o_idx, 'E')
+            if not obs_successors:
+                return 'A'
+
+            # check that all successor ops are also Gaussian
+            if not all(x.supports_heisenberg for x in self._op_successors(o_idx, 'G')):
+                return 'F'
+
+            # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
+            for observable in obs_successors:
+                if observable.ev_order is None:
+                    return 'F'
+                if observable.ev_order == 2:
+                    if observable.return_type is pennylane.operation.Variance:
+                        # second order observables don't support
+                        # analytic diff of variances
                         return 'F'
-                    else:
-                        # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-                        for observable in obs_successors:
-                            if observable.ev_order is None:
-                                return 'F'
-                            if observable.ev_order == 2:
-                                if observable.return_type is pennylane.operation.Variance:
-                                    # second order observables don't support
-                                    # analytic diff of variances
-                                    return 'F'
-                                op.grad_method = 'A2'  # bit of a hack
-                        return 'A'
+                    op.grad_method = 'A2'  # bit of a hack
+            return 'A'
 
         # indices of operations that depend on the free parameter idx
         o_idxs = [o[0] for o in self.variable_ops[idx]]
@@ -948,7 +950,8 @@ class QNode:
         else:
             raise ValueError('Order must be 1 or 2.')
 
-    def _transform_observable(self, observable, w, Z):
+    @staticmethod
+    def _transform_observable(observable, w, Z):
         """Transform the observable"""
         q = observable.heisenberg_obs(w)
         qp = q @ Z
@@ -1069,7 +1072,7 @@ class QNode:
         original_nodes = copy.deepcopy(applicable_nodes)
 
         for node in applicable_nodes:
-            e, i = node["op"], node["idx"]
+            e = node["op"]
 
             # temporarily convert return type to expectation
             e.return_type = pennylane.operation.Expectation
