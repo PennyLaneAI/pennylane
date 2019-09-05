@@ -260,10 +260,16 @@ class CircuitGraph:
 
     @property
     def observables(self):
+        """
+        Return a list of operations that have a return type.
+        """
         return [node["op"] for node in self.observable_nodes]
 
     @property
     def observable_nodes(self):
+        """
+        Return a list of nodes of operations that have a return type, sorted by "idx".
+        """
         nodes = sorted(
             [node for node in self.graph.nodes.values() if node["return_type"]],
             key=lambda node: node["idx"])
@@ -271,10 +277,16 @@ class CircuitGraph:
 
     @property
     def operations(self):
+        """
+        Return a list of operations that do not have a return type.
+        """
         return [node["op"] for node in self.operation_nodes]
 
     @property
     def operation_nodes(self):
+        """
+        Return a list of nodes of operations that do not have a return type, sorted by "idx".
+        """
         nodes = sorted(
             [node for node in self.graph.nodes.values() if not node["return_type"]],
             key=lambda node: node["idx"])
@@ -450,6 +462,12 @@ class CircuitGraph:
             yield pre_queue, layer, tuple(param_idx), post_queue
 
     def update_node(self, node, op):
+        """
+        Updates a given node with a new operation, op.
+
+        Args:
+            op (Operation): an operation to update the given node with
+        """
         cmd = Command(
             name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=node["idx"])
         nx.set_node_attributes(self._graph, {node["idx"]: {**cmd._asdict()}})
