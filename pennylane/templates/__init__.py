@@ -82,6 +82,6 @@ Parameter initializations
 -------------------------
 
 Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**:
+**randomly initialized** arrays for the trainable **parameters**.
 
 """

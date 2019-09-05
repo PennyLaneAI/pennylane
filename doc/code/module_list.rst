@@ -15,6 +15,7 @@ The code documentation for all modules and submodules can be found here:
     configuration
     decorator
     device
+    par_init
     interfaces
     interfaces/torch
     interfaces/tfe

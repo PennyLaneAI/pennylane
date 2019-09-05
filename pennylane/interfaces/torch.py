@@ -19,14 +19,22 @@ interfaces.torch
 
 .. currentmodule:: pennylane.interfaces.torch
 
-This module contains the :class:`TorchQNode` class to convert Numpy-interfacing quantum nodes with PyTorch
+This module contains the :func:`TorchQNode` function to convert Numpy-interfacing quantum nodes with PyTorch
 compatible quantum nodes.
 
 Summary
 -------
 
+The TorchQNode function
+***********************
+
 .. autosummary::
     TorchQNode
+
+Auxiliary functions
+*******************
+    args_to_numpy
+    kwargs_to_numpy
 
 Code details
 ------------

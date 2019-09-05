@@ -38,6 +38,12 @@ Gradient methods
     grad
     jacobian
 
+Auxiliary functions
+*******************
+
+.. autosummary::
+    version
+
 Code details
 ------------
 """
@@ -118,7 +124,7 @@ def device(name, *args, **kwargs):
             the device with
 
     Keyword Args:
-        config (pennylane.Configuration): an PennyLane configuration object
+        config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
     """
     if name in plugin_devices:

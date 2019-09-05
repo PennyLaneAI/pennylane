@@ -31,14 +31,6 @@ The Variable class
 .. autosummary::
     Variable
 
-Important attributes of the Variable class
-******************************************
-
-.. currentmodule:: pennylane.variable.Variable
-
-.. autosummary::
-    val
-
 Usage
 -----
 

@@ -52,12 +52,14 @@ The following modules are relevant for a typical **user** of PennyLane:
 Other modules
 -------------
 
-The following modules are contain lower-level functionality, which is not directly
-relevant for users:
+The following modules are contain lower-level functionality, which is relevant for developers:
 
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.about         |  Print basic information about PennyLane.                                            |
 | <about>`                      |                                                                                      |
++-------------------------------+--------------------------------------------------------------------------------------+
+| :ref:`pennylane.init          |  Contains parameter initialization functions                                         |
+| <par_init>`                   |                                                                                      |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane._device       |  Defines the abstract :class:`Device` class,                                         |
 | <device>`                     |  which plugins inherit from.                                                         |

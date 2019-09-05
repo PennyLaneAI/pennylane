@@ -33,16 +33,6 @@ The Configuration class
 .. autosummary::
     Configuration
 
-Configuration main methods
-**************************
-
-.. currentmodule:: pennylane.configuration.Configuration
-
-.. autosummary::
-    path
-    load
-    save
-
 Usage
 -----
 

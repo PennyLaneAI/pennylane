@@ -33,16 +33,6 @@ The QNode class
 .. autosummary::
     QNode
 
-Important methods of the QNode class
-************************************
-.. currentmodule:: pennylane.qnode.QNode
-
-.. autosummary::
-    evaluate
-    jacobian
-    to_torch
-    to_tfe
-
 Helper functions
 ****************
 .. currentmodule:: pennylane.qnode

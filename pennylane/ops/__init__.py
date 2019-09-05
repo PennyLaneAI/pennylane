@@ -42,10 +42,10 @@ The following built-in operations and observables for qubit and cv architectures
     ops/qubit
     ops/cv
 
-A shared operation is the Identity.
+The only operation shared by both devices is the Identity.
 
-Shared operations
------------------
+Summary of shared operations
+----------------------------
 
 .. autosummary::
     Identity

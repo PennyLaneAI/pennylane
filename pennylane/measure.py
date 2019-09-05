@@ -26,8 +26,8 @@ outcomes - expectation values, variances of expectations, and measurement sample
 Summary
 -------
 
-Functions for measurement outcomes
-**********************************
+Measurement outcome functions
+*****************************
 
 .. autosummary::
    expval

@@ -31,62 +31,10 @@ The Device class
 .. autosummary::
     Device
 
-Device attributes and methods
-*****************************
-
-.. currentmodule:: pennylane._device.Device
-
-User facing methods and attributes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    short_name
-    capabilities
-    supports_operation
-    supports_observable
-    execute
-    reset
-
-Abstract methods and attributes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These methods and attributes must be defined when coding a plugin:
-
-.. autosummary::
-    name
-    short_name
-    pennylane_requires
-    version
-    author
-    operations
-    observables
-    apply
-    expval
-    var
-
-In addition, the following may also be optionally defined:
-
-.. autosummary::
-    probability
-    pre_apply
-    post_apply
-    pre_measure
-    post_measure
-    execution_context
-
-
-Internal attributes and methods
-*******************************
-
-The following methods and attributes are used internally by the :class:`Device` class,
-to ensure correct operation and internal consistency.
-
-.. autosummary::
-    check_validity
-
 
 Code details
 ------------
+
 """
 # pylint: disable=too-many-format-args
 import abc

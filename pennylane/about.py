@@ -23,14 +23,14 @@ A simple module to display all the details of the `pennylane` installation,
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 
 
-Summary of methods
-------------------
+Summary
+-------
 
 .. autosummary::
     about
 
 Code details
-~~~~~~~~~~~~
+------------
 
 """
 import sys

@@ -26,20 +26,35 @@ This module contains base classes to define continuous-variable and discrete-var
 Summary
 -------
 
-Qubit Operations
-****************
+Qubit Operations classes
+************************
 
 .. autosummary::
    Operation
    Observable
 
-CV Operations
-*************
+CV Operations classes
+*********************
 
 .. autosummary::
    CV
    CVOperation
    CVObservable
+
+Auxiliary classes
+*****************
+
+.. autosummary::
+   ClassPropertyDescriptor
+   ObservableReturnTypes
+   Wires
+
+Auxiliary functions
+*******************
+
+.. autosummary::
+    classproperty
+
 
 Usage
 -----
