@@ -18,22 +18,24 @@ pennylane._device
 .. currentmodule:: pennylane._device
 
 This module contains the :class:`Device` abstract base class.
-To write a plugin containing a PennyLane-compatible device, :class:`Device`
-must be subclassed, and the appropriate class attributes and methods
-implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
-:class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
-and `ProjectQ <https://pennylane-pq.readthedocs.io/>`_ plugins.
+
+
+Summary
+-------
+
+The Device class
+****************
 
 .. autosummary::
     Device
 
 Device attributes and methods
------------------------------
+*****************************
 
 .. currentmodule:: pennylane._device.Device
 
-The following methods and attributes are accessible from the PennyLane
-user interface:
+User facing methods and attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     short_name
@@ -44,9 +46,9 @@ user interface:
     reset
 
 Abstract methods and attributes
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following methods and attributes must be defined for all devices:
+These methods and attributes must be defined when coding a plugin:
 
 .. autosummary::
     name
@@ -72,7 +74,7 @@ In addition, the following may also be optionally defined:
 
 
 Internal attributes and methods
--------------------------------
+*******************************
 
 The following methods and attributes are used internally by the :class:`Device` class,
 to ensure correct operation and internal consistency.
@@ -80,11 +82,9 @@ to ensure correct operation and internal consistency.
 .. autosummary::
     check_validity
 
-.. currentmodule:: pennylane._device
-
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 # pylint: disable=too-many-format-args
 import abc

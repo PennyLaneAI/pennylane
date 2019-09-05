@@ -12,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Default qubit plugin
-====================
-
-**Module name:** :mod:`pennylane.plugins.default_qubit`
-
-**Short name:** ``"default.qubit"``
+pennylane.plugins.default_qubit
+===============================
 
 .. currentmodule:: pennylane.plugins.default_qubit
 
@@ -28,19 +24,18 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 
-The following is the technical documentation of the implementation of the plugin. You will
-not need to read and understand this to use this plugin.
 
-Auxiliary functions
--------------------
+Summary
+-------
+
+The DefaultQubit device class
+*****************************
 
 .. autosummary::
-    spectral_decomposition
-    unitary
-    hermitian
+    DefaultQubit
 
 Gates and operations
---------------------
+********************
 
 .. autosummary::
     Rphi
@@ -61,21 +56,23 @@ Gates and operations
     CRot3
 
 Observables
-------------
+***********
 
 .. autosummary::
     X
     Y
     Z
 
-Classes
--------
+Auxiliary functions
+*******************
 
 .. autosummary::
-    DefaultQubit
+    spectral_decomposition
+    unitary
+    hermitian
 
 Code details
-^^^^^^^^^^^^
+------------
 """
 from collections import OrderedDict
 import itertools

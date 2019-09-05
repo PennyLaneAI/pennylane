@@ -25,7 +25,8 @@ A quick primer on terminology of PennyLane plugins in this section:
 Creating your device
 --------------------
 
-The first step in creating your PennyLane plugin is to create your device class. This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
+The first step in creating your PennyLane plugin is to create your device class.
+This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
 
 .. code-block:: python
 
@@ -56,6 +57,12 @@ Here, we have begun defining some important class attributes that allow PennyLan
 
 Defining all these attributes is mandatory.
 
+.. note::
+
+    For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
+    :class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
+    and `ProjectQ <https://pennylane-pq.readthedocs.io/>`_ plugins.
+
 
 Supporting operators and observables
 ------------------------------------
@@ -82,6 +89,15 @@ You must further tell PennyLane about the operations and observables that your d
 
 For a better idea of how to best implement :attr:`~.Device.operations` and :attr:`~.Device.observables`, refer to the two reference plugins.
 
+.. note::
+
+    When writing a plugin device for PennyLane, make sure that your plugin
+    supports as many of the PennyLane built-in operations as possible.
+
+    If the convention differs between the built-in PennyLane operation
+    and the corresponding operation in the targeted framework, ensure that the
+    conversion between the two conventions takes places automatically
+    by the plugin device.
 
 Applying operations
 -------------------

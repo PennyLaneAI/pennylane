@@ -21,7 +21,28 @@ This module contains the :class:`Configuration` class, which is used to
 load, store, save, and modify configuration options for PennyLane and all
 supported plugins and devices.
 
-The settings for PennyLane can be stored in a configuration file for ease of use.
+
+Summary
+-------
+
+The Configuration class
+***********************
+
+.. autosummary::
+    Configuration
+
+Configuration main methods
+**************************
+
+.. currentmodule:: pennylane.configuration.Configuration
+
+.. autosummary::
+    path
+    load
+    save
+
+Usage
+-----
 
 Behaviour
 *********
@@ -94,28 +115,9 @@ devices will be loaded with a default of ``shots = 100``, rather than ``shots = 
 you can also specify settings on a device-by-device basis, by placing the options under the
 ``[plugin.device]`` settings.
 
-Summary of methods
-------------------
-
-.. currentmodule:: pennylane.configuration.Configuration
-
-.. autosummary::
-    path
-    load
-    save
-
-Helper methods
---------------
-
-.. autosummary::
-    safe_set
-    safe_get
 
 Code details
-~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.configuration
-
+------------
 """
 import os
 import logging as log

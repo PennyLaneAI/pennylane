@@ -29,33 +29,57 @@ quantum machine learning literature, such architectures are commonly known as an
     provided by PennyLane. This means that **template functions can only be used within a
     valid** :mod:`pennylane.qnode`.
 
-PennyLane conceptually distinguishes two types of templates, **layer architectures** and **input embeddings**:
+PennyLane conceptually distinguishes two types of templates, **layer architectures** and **input embeddings**.
+Most templates are complemented by functions that provide an array of random **initial parameters**.
 
-* Layer architectures, found in :mod:`pennylane.templates.layers`, define sequences of
-  gates that are repeated like the layers in a neural network. They usually contain only trainable parameters.
-* Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state
-  of the circuit. Hence, they take a feature vector as an argument. These embeddings can also depend on
-  trainable parameters, in which case the embedding is learnable.
+Layer templates
+---------------
+
+Layer architectures, found in :mod:`pennylane.templates.layers`, define sequences of gates that are
+repeated like the layers in a neural network. They usually contain only trainable parameters.
+
+The following layer templates are available:
+
+.. currentmodule:: pennylane.templates.layers
+
++------------------------------------+-------------------------------------------------------------------+
+| :ref:`Strongly Entangling Circuit  | Consists of a block of single qubit rotations applied to every    |
+| <StronglyEntanglingLayer>`         | qubit, followed by a block of 2-qubit entangling gates            |
++------------------------------------+-------------------------------------------------------------------+
+| :ref:`Random Circuit               | Consists of randomly chosen single- and two-qubit gates applied   |
+| <RandomLayer>`                     | to randomly chosen qubits.                                        |
++------------------------------------+-------------------------------------------------------------------+
 
 
-The following templates are available:
+Embedding templates
+-------------------
 
-.. rst-class:: contents local topic
+Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state
+of the circuit. Hence, they take a feature vector as an argument. These embeddings can also depend of
+trainable parameters, in which case the embedding is learnable.
 
-.. toctree::
-    :maxdepth: 3
+The following embedding templates are available:
 
-    templates/layers
-    templates/embeddings
+.. currentmodule:: pennylane.templates.embeddings
+
++------------------------------------+-------------------------------------------------------------------+
+| :ref:`Amplitude Embedding          | Prepares a quantum state whose amplitude vector corresponds to    |
+| <AmplitudeEmbedding>`              | the input feature vector.                                         |
++------------------------------------+-------------------------------------------------------------------+
+| :ref:`Basis Embedding              | Prepares a computational basis state that corresponds to the      |
+| <BasisEmbedding>`                  | binary input sequence.                                            |
++------------------------------------+-------------------------------------------------------------------+
+| :ref:`Squeezing Embedding          | Encodes an input into the squeezing paparameters of quantum       |
+| <SqueezingEmbedding>`              | modes.                                                            |
++------------------------------------+-------------------------------------------------------------------+
+| :ref:`Displacement Embedding       | Encodes an input into the squeezing paparameters of quantum       |
+| <DisplacementEmbedding>`           | modes.                                                            |
++------------------------------------+-------------------------------------------------------------------+
+
+Parameter initializations
+-------------------------
 
 Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
 **randomly initialized** arrays for the trainable **parameters**:
-
-.. rst-class:: contents local topic
-
-.. toctree::
-    :maxdepth: 3
-
-    templates/init_parameters
 
 """

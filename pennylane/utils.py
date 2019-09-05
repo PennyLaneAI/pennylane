@@ -17,12 +17,14 @@ pennylane.utils
 
 .. currentmodule:: pennylane.utils
 
-This module contains utilities and auxiliary functions, which are shared
+This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 
-.. raw:: html
+Summary
+-------
 
-    <h3>Summary</h3>
+List of utility functions
+*************************
 
 .. autosummary::
     _flatten
@@ -33,9 +35,8 @@ across the PennyLane submodules.
     expand
     CircuitGraph
 
-.. raw:: html
-
-    <h3>Code details</h3>
+Code details
+------------
 """
 from collections import namedtuple
 from collections.abc import Iterable

@@ -20,6 +20,26 @@ pennylane.variable
 This module contains the :class:`Variable` class, which is used to track
 and identify :class:`~pennylane.qnode.QNode` parameters.
 
+Summary
+-------
+
+The Variable class
+******************
+
+.. autosummary::
+    Variable
+
+Important attributes of the Variable class
+******************************************
+
+.. currentmodule:: pennylane.variable.Variable
+
+.. autosummary::
+    val
+
+Usage
+-----
+
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
 method is called, which performs a 'just-in-time' circuit construction
@@ -62,10 +82,9 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     property automates the process of unpacking the Variable value.
     The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
 
+Code details
+------------
 
-.. raw:: html
-
-    <h3>Code details</h3>
 """
 from collections.abc import Sequence
 import copy

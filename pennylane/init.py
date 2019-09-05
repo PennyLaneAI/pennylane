@@ -12,27 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Parameter initialization
-========================
+pennylane.init
+==============
 
 .. currentmodule:: pennylane.init
 
-This module contains methods to create arrays of parameters that can \
-be used as initial parameters of trainable templates.
+This module contains methods to create arrays of parameters that can be
+used as initial parameters of trainable templates.
 
-The methods return lists of numpy arrays, and the arrays have the correct shape to be fed in as the first positional
-arguments in the templates.
 
-.. warning::
-
-    For the use of PennyLane in combination with PyTorch or TensorFlow, the numpy arrays have to be converted to
-    *trainable tensors*.
+Summary
+-------
 
 Qubit architectures
--------------------
+*******************
 
 Initializations for Strongly Entangling Circuit
-***********************************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -42,7 +38,7 @@ Initializations for Strongly Entangling Circuit
     strong_ent_layer_normal
 
 Initializations for Random Circuit
-**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -52,10 +48,10 @@ Initializations for Random Circuit
     random_layer_normal
 
 Continuous-variable architectures
----------------------------------
+*********************************
 
 Initializations for CV Neural Network
-*************************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -65,7 +61,7 @@ Initializations for CV Neural Network
     cvqnn_layer_normal
 
 Initializations for Interferometer
-**********************************
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -73,7 +69,7 @@ Initializations for Interferometer
     interferometer_normal
 
 Code details
-^^^^^^^^^^^^
+------------
 """
 # pylint: disable=too-many-arguments
 from math import pi

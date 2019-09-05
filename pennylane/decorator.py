@@ -14,12 +14,15 @@
 
 """
 pennylane.decorator
--------------------
+===================
 
 .. currentmodule: pennylane.decorator
 
 This module contains the quantum node decorator, which turns a quantum function into
 a :class:`Qnode` object.
+
+Summary
+-------
 
 The QNode decorator
 *******************
@@ -28,7 +31,7 @@ The QNode decorator
     qnode
 
 Code details
-~~~~~~~~~~~~
+------------
 
 """
 

@@ -3,9 +3,9 @@
 TensorFlow interface
 --------------------
 
-To use quantum nodes :class:`QNode` in combination with TensorFlow's Eager mode, we have to make it
+To use a quantum node in combination with TensorFlow's Eager mode, we have to make it
 compatible with TensorFlow. A TensorFlow-compatible quantum node can be created
-either by using the `interface='tfe'` flag in the qnode decorator, or
+either by using the ``'interface='tfe'`` flag in the qnode decorator, or
 by calling the :func:`QNode.to_tfe` function. Internally, the translation is executed by
 the :func:`TFEQNode` function that returns the new quantum node object.
 
@@ -13,6 +13,7 @@ the :func:`TFEQNode` function that returns the new quantum node object.
     To use the TensorFlow eager execution interface in PennyLane, you must first install TensorFlow.
     This interface **only** supports TensorFlow in eager execution mode! This can be set
     by running the following commands at the beginning of your PennyLane script/program:
+
     >>> import tensorflow as tf
     >>> import tensorflow.contrib.eager as tfe
     >>> tf.enable_eager_execution()

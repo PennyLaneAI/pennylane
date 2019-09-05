@@ -14,12 +14,8 @@
 # pylint: disable=inconsistent-return-statements
 """
 
-Default Gaussian plugin
-=======================
-
-**Module name:** :mod:`pennylane.plugins.default_gaussian`
-
-**Short name:** ``"default.gaussian"``
+pennylane.plugins.default_gaussian
+==================================
 
 .. currentmodule:: pennylane.plugins.default_gaussian
 
@@ -30,18 +26,17 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
 
-The following is the technical documentation of the implementation of the plugin. You will
-not need to read and understand this to use this plugin.
+Summary
+-------
 
-Auxillary functions
--------------------
+The DefaultGaussian device class
+********************************
 
 .. autosummary::
-    partitions
-    fock_prob
+    DefaultGaussian
 
 Gates and operations
---------------------
+********************
 
 .. autosummary::
     rotation
@@ -55,7 +50,7 @@ Gates and operations
     interferometer
 
 State preparation
------------------
+*****************
 
 .. autosummary::
     squeezed_cov
@@ -69,7 +64,7 @@ State preparation
 
 
 Observables
-------------
+***********
 
 .. autosummary::
     photon_number
@@ -78,14 +73,15 @@ Observables
     fock_expectation
 
 
-Classes
--------
+Auxillary functions
+*******************
 
 .. autosummary::
-    DefaultGaussian
+    partitions
+    fock_prob
 
 Code details
-^^^^^^^^^^^^
+------------
 """
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
 import numpy as np

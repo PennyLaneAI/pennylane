@@ -58,9 +58,9 @@ array([ 0.87758256,  0.68803733])
 Via the QNode class
 ^^^^^^^^^^^^^^^^^^^
 
-Sometimes, it is more convenient to instantiate a :class:`~.QNode` object directly, for example,
-if you would like to reuse the same quantum function across multiple devices, or even
-using different classical interfaces:
+In the :ref:`introduction <pl_intro>` it was shown how to instantiate a :class:`~.QNode`
+object directly, for example, if you would like to reuse the same quantum function across
+multiple devices, or even using different classical interfaces:
 
 .. code-block:: python
 

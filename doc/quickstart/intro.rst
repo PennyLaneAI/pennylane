@@ -6,7 +6,7 @@
 Introduction
 ============
 
-This section is an introduction to how the concept of a :ref:`variational quantum circuit <overview>` is implemented in PennyLane.
+This section is an introduction to how the concept of a :ref:`variational quantum circuit <varcirc>` is implemented in PennyLane.
 
 It shows new PennyLane users how to:
 
@@ -21,7 +21,8 @@ It shows new PennyLane users how to:
 More information about PennyLane's code base can be found in the
 :ref:`Code Documentation <library_overview>`.
 An introduction of how to use and optimize quantum nodes in larger hybrid computations
-is given in the next section on :ref:`interfaces <interfaces>`.
+is given in the section on :ref:`Interfaces <interfaces>`, and tutorials for different levels of users
+are provided in the :ref:`Tutorials <sphx_glr_tutorials>` section.
 
 Quantum functions
 -----------------
@@ -79,7 +80,7 @@ instantiated using the :func:`~device` loader.
     dev = qml.device('default.qubit', wires=2)
 
 PennyLane comes included with
-some basic devices such as the `default.qubit` simulator; additional devices can be installed
+some basic devices such as the ``'default.qubit'`` simulator; additional devices can be installed
 as plugins (see :ref:`plugins` for more details). Note that the choice of a device significantly
 determines the speed of your computation.
 
@@ -88,8 +89,6 @@ Quantum nodes
 
 Together, a quantum function and a device are used to create a *quantum node* or
 :class:`QNode` object, which wraps the quantum function and binds it to the device.
-A quantum node is a part of a larger :ref:`hybrid computation <_hybrid_computation>`, which
-is executed by a quantum computer.
 
 A `QNode` can be explicitly created as follows:
 
@@ -130,8 +129,8 @@ For example:
     result = qfunc(0.543)
 
 
-Interfaces
-----------
+Using QNodes
+------------
 
 Quantum nodes are typically used in :ref:`hybrid computations <hybrid_computation>`. That means
 that results of `QNodes` are further processed in classical functions, and that results from

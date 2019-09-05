@@ -1,4 +1,4 @@
-.. _utils:
+.. _plugins:
 
 .. automodule:: pennylane.plugins
    :members:

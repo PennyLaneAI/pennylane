@@ -15,8 +15,6 @@
 #pylint: disable=too-few-public-methods,function-redefined
 
 """
-.. _operations:
-
 pennylane.ops
 =============
 
@@ -24,23 +22,7 @@ pennylane.ops
 
 This module contains core quantum operations supported by PennyLane - such as gates, state preparations and observables.
 
-PennyLane supports a collection of built-in quantum operations,
-including both discrete-variable (DV) operations as used in the qubit model,
-and continuous-variable (CV) operations as used in the qumode model of quantum
-computation.
-
-Here, we summarize the built-in operations and observables supported by PennyLane,
-as well as the conventions chosen for their implementation.
-
-.. note::
-
-    When writing a plugin device for PennyLane, make sure that your plugin
-    supports as many of the PennyLane built-in operations defined here as possible.
-
-    If the convention differs between the built-in PennyLane operation
-    and the corresponding operation in the targeted framework, ensure that the
-    conversion between the two conventions takes places automatically
-    by the plugin device.
+The following built-in operations and observables for qubit and cv architectures are supported by PennyLane:
 
 .. raw:: html
 
@@ -57,8 +39,17 @@ as well as the conventions chosen for their implementation.
 
     ops/qubit
     ops/cv
-    ops/shared
 
+A shared operation is the Identity.
+
+Shared operations
+-----------------
+
+.. autosummary::
+    Identity
+
+Code details
+------------
 """
 
 from pennylane.operation import Any, Observable, CVObservable
@@ -94,6 +85,6 @@ class Identity(CVObservable, Observable):
     ev_order = None
 
 
-__all__ = _cv__all__ + _qubit__all__ + ["Identity"]
-__all_ops__ = list(_cv__ops__ | _qubit__ops__)
-__all_obs__ = list(_cv__obs__ | _qubit__obs__) + ["Identity"]
+# __all__ = _cv__all__ + _qubit__all__ + ["Identity"]
+# __all_ops__ = list(_cv__ops__ | _qubit__ops__)
+# __all_obs__ = list(_cv__obs__ | _qubit__obs__) + ["Identity"]

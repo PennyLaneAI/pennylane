@@ -21,14 +21,29 @@ pennylane.qnode
 
 This module contains the :class:`QNode` class and its helper functions.
 
-QNode class
------------
+Summary
+-------
+
+The QNode class
+***************
+.. currentmodule:: pennylane.qnode
 
 .. autosummary::
-    pennylane.qnode
+    QNode
 
-Helpers
--------
+Important methods of the QNode class
+************************************
+.. currentmodule:: pennylane.qnode.QNode
+
+.. autosummary::
+    evaluate
+    jacobian
+    to_torch
+    to_tfe
+
+Helper functions
+****************
+.. currentmodule:: pennylane.qnode
 
 .. autosummary::
     pop_jacobian_kwargs
@@ -36,7 +51,7 @@ Helpers
     QNode_vjp
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 from collections.abc import Sequence
 import copy

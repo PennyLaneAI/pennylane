@@ -19,13 +19,6 @@ pennylane.optimize
 
 This module contains optimizers for the standard :mod:`QNode` class, which uses the NumPy interface.
 
-An optimizer is a procedure that computes a new candidate for the trainable parameters in every step,
-following the negative gradient of a cost function.
-
-Since NumPy does not specifically focus on machine learning and optimization, this collection of
-optimizers is provided for convenience.
-
-
 .. warning::
 
   If using the :ref:`PennyLane PyTorch <torch_qnode>`
@@ -34,8 +27,11 @@ optimizers is provided for convenience.
   TensorFlow optimizers (found in the module ``tf.train``) should be used respectively.
 
 
+Summary
+-------
+
 Available optimizers
---------------------
+********************
 
 .. autosummary::
    AdagradOptimizer
@@ -47,7 +43,7 @@ Available optimizers
    QGTOptimizer
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 
 # Python optimizers that are available in PennyLane
