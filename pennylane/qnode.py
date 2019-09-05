@@ -662,7 +662,7 @@ class QNode:
         self.device.reset()
 
         # check that no wires are measured more than once
-        m_wires = list(w for ex in self.ev for w in ex.wires)
+        m_wires = list(w for ex in self.cg.observables for w in ex.wires)
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
@@ -677,7 +677,7 @@ class QNode:
         for op in self.ops:
             check_op(op)
 
-        ret = self.device.execute(self.queue, self.ev, self.variable_ops)
+        ret = self.device.execute(self.queue, self.cg.observables, self.variable_ops)
         return self.output_conversion(ret)
 
     def metric_tensor(self, *args, **kwargs):
