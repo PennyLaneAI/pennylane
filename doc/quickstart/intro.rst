@@ -21,8 +21,8 @@ It shows new PennyLane users how to:
 More information about PennyLane's code base can be found in the
 :ref:`Code Documentation <library_overview>`.
 An introduction of how to use and optimize quantum nodes in larger hybrid computations
-is given in the section on :ref:`Interfaces <interfaces>`, and tutorials for different levels of users
-are provided in the :ref:`Tutorials <sphx_glr_tutorials>` section.
+is given in the section on :ref:`Interfaces <intro_interfaces>`, and tutorials for different levels of users
+are provided in the :ref:`Tutorials <intro_tutorials>` section.
 
 Quantum functions
 -----------------
@@ -100,6 +100,7 @@ The `QNode` can be used to compute the result of a quantum circuit as if it was 
 function. It takes the same arguments as the original quantum function:
 
 >>> qnode(np.pi/4, 0.7)
+0.7648421872844883
 
 The QNode decorator
 -------------------

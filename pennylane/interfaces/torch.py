@@ -12,21 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-.. _torch_qnode:
+interfaces.torch
+================
 
-PyTorch QNode
-=============
+**Module name**: pennylane.interfaces.torch
 
+.. currentmodule:: pennylane.interfaces.torch
 
-Relevant methods
-----------------
+This module contains the :class:`TorchQNode` class to convert Numpy-interfacing quantum nodes with PyTorch
+compatible quantum nodes.
+
+Summary
+-------
 
 .. autosummary::
-    pennylane.qnode.QNode.to_torch
-    pennylane.interfaces.torch.TorchQNode
+    TorchQNode
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 # pylint: disable=redefined-outer-name,arguments-differ
 import inspect

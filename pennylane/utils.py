@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-pennylane.utils
-===============
+utils
+=====
 
 .. currentmodule:: pennylane.utils
+
+**Module name**: pennylane.utils
 
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.

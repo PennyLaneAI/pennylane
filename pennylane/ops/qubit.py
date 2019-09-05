@@ -12,20 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-.. _qubit_ops:
+ops.qubit
+=========
 
-Qubit quantum operations
-========================
+**Module name**: pennylane.ops.qubit
 
 .. currentmodule:: pennylane.ops.qubit
-
-**Module name:** :mod:`pennylane.ops.qubit`
 
 This section contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 
+Summary
+-------
+
 Gates
------
+*****
 
 .. autosummary::
     Hadamard
@@ -49,7 +50,7 @@ Gates
 
 
 State preparation
------------------
+*****************
 
 .. autosummary::
     BasisState
@@ -57,7 +58,7 @@ State preparation
 
 
 Observables
------------
+***********
 
 .. autosummary::
     Hadamard
@@ -68,7 +69,7 @@ Observables
 
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 import numpy as np
 

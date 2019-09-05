@@ -1,4 +1,4 @@
-.. _interfaces:
+.. _intro_interfaces:
 
 Interfaces
 ==========

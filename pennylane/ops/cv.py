@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. _cv_ops:
+ops.cv
+======
 
-CV quantum operations
-=====================
+**Module name**: pennylane.ops.cv
 
-**Module name:** :mod:`pennylane.ops.cv`
 
 .. currentmodule:: pennylane.ops.cv
 
@@ -41,8 +40,11 @@ quantum operations supported by PennyLane, as well as their conventions.
    :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 
+Summary
+-------
+
 Gates
------
+*****
 
 .. autosummary::
     Rotation
@@ -60,7 +62,7 @@ Gates
 
 
 State preparation
------------------
+*****************
 
 .. autosummary::
     CoherentState
@@ -74,7 +76,7 @@ State preparation
     CatState
 
 Observables
------------
+***********
 
 .. autosummary::
     NumberOperator
@@ -86,7 +88,7 @@ Observables
 
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 import numpy as np
 from scipy.linalg import block_diag

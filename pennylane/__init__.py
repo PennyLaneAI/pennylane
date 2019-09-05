@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-pennylane
-=========
+__init__
+========
+
+**Module name**: pennylane
 
 .. currentmodule: pennylane
 

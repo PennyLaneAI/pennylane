@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-pennylane.variable
-==================
+variable
+========
+
+**Module name**: pennylane.variable
 
 .. currentmodule:: pennylane.variable
 

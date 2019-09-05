@@ -14,8 +14,10 @@
 # pylint: disable=inconsistent-return-statements
 """
 
-pennylane.plugins.default_gaussian
-==================================
+plugins.default_gaussian
+========================
+
+**Module name**: pennylane.plugins.default_gaussian
 
 .. currentmodule:: pennylane.plugins.default_gaussian
 

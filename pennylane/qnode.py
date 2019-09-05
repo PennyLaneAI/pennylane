@@ -14,8 +14,10 @@
 # pylint: disable=cell-var-from-loop,attribute-defined-outside-init,too-many-branches,too-many-arguments
 
 """
-pennylane.qnode
-===============
+qnode
+=====
+
+**Module name**: pennylane.qnode
 
 .. currentmodule:: pennylane.qnode
 

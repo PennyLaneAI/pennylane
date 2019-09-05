@@ -6,7 +6,21 @@ Overview
 .. currentmodule:: pennylane
 
 The code documentation serves as a reference where all classes and functions of
-PennyLane can be looked up.
+PennyLane can be looked up. This is useful in order to check the signatures of inputs
+outputs, as well as the different options these functions provide.
+
+Functions and classes are organised in **modules**. To import a class or functions, you need
+to specify the full module path, i.e.,
+
+.. code::
+
+    from pennylane.templates.layers import StronglyEntanglingLayer
+
+Some modules are relevant to users, while others are providing more lower-level functionality.
+
+
+User-facing modules
+-------------------
 
 The following modules are relevant for a typical **user** of PennyLane:
 
@@ -35,11 +49,21 @@ The following modules are relevant for a typical **user** of PennyLane:
 | <templates>`                  |  submodules, which contain pre-composed pieces of a quantum circuit.                 |
 +-------------------------------+--------------------------------------------------------------------------------------+
 
-The following modules are important for PennyLane **developers**:
+Other modules
+-------------
 
+The following modules are contain lower-level functionality, which is not directly
+relevant for users:
+
++-------------------------------+--------------------------------------------------------------------------------------+
+| :ref:`pennylane.about         |  Print basic information about PennyLane.                                            |
+| <about>`                      |                                                                                      |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane._device       |  Defines the abstract :class:`Device` class,                                         |
 | <device>`                     |  which plugins inherit from.                                                         |
++-------------------------------+--------------------------------------------------------------------------------------+
+| :ref:`pennylane.interfaces    |  Contains the quantum nodes for different interfaces.                                |
+| <interfaces>`                 |                                                                                      |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.operation     |  Defines the abstract :class:`Operation` class from                                  |
 | <operation>`                  |  which all operations, such as gates and observables, are derived.                   |
@@ -62,24 +86,4 @@ The following modules are important for PennyLane **developers**:
 
 For a summary of *all* modules, refer to the :ref:`modindex`, and all methods
 can be found in the :ref:`genindex`.
-
-.. toctree::
-    :maxdepth: 1
-    :hidden:
-
-    init
-    device
-    configuration
-    decorator
-    measure
-    operation
-    ops
-    optimize
-    plugins
-    qnode
-    templates
-    templates/layers
-    utils
-    variable
-
 

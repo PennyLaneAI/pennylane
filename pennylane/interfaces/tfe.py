@@ -12,24 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-.. _tfe_qnode:
+interfaces.tfe
+==============
 
-
-TensorFlow QNode
-================
+**Module name**: pennylane.interfaces.tfe
 
 .. currentmodule:: pennylane.interfaces.tfe
 
+This module contains the :class:`TFEQNode` class to convert Numpy-interfacing quantum nodes with TensorFlow
+Eager mode compatible quantum nodes.
+
+Summary
+-------
 
 Relevant methods
-----------------
+****************
 
 .. autosummary::
-    pennylane.qnode.QNode.to_tfe
-    pennylane.interfaces.tfe.TFEQNode
+    TFEQNode
 
 Code details
-~~~~~~~~~~~~
+------------
 """
 # pylint: disable=redefined-outer-name
 from functools import partial

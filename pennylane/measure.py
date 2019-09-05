@@ -13,8 +13,10 @@
 # limitations under the License.
 # pylint: disable=protected-access
 """
-pennylane.measure
-=================
+measure
+=======
+
+**Module name**: pennylane.measure
 
 .. currentmodule:: pennylane.measure
 

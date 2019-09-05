@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-pennylane.init
-==============
+init
+====
+
+**Module name**: pennylane.init
 
 .. currentmodule:: pennylane.init
 

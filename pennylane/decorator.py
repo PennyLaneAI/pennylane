@@ -13,8 +13,10 @@
 # limitations under the License.
 
 """
-pennylane.decorator
-===================
+decorator
+=========
+
+**Module name**: pennylane.decorator
 
 .. currentmodule: pennylane.decorator
 

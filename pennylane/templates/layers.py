@@ -15,6 +15,8 @@ r"""
 templates.layers
 ================
 
+**Module name**: pennylane.templates.layers
+
 .. currentmodule:: pennylane.templates.layers
 
 This module contains templates for trainable 'layers'. In contrast to other templates such as embeddings, layers

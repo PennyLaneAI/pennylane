@@ -16,7 +16,7 @@ added benefit of automatic differentiation.
 All you have to do is make sure to import the wrapped version of NumPy
 provided by PennyLane:
 
->>> from pennylane import numpy as np
+from pennylane import numpy as np
 
 This is provided via `autograd <https://github.com/HIPS/autograd>`_, and enables
 automatic differentiation and backpropagation of classical computations using familiar
@@ -162,18 +162,19 @@ For more details on the NumPy optimizers, check out the tutorials, as well as th
 Vector-valued QNodes and the Jacobian
 -------------------------------------
 
-How does automatic differentiation work in the case where the QNode returns multiple expectation values? If we were to naively try computing the gradient using the :func:`~.grad` function,
+How does automatic differentiation work in the case where the QNode returns multiple expectation values?
+If we were to naively try computing the gradient of ``qnode1`` using the :func:`~.grad` function,
 
 .. code::
 
-    g1 = qml.grad(circuit1, argnum=0)
+    g1 = qml.grad(qnode1, argnum=0)
     g1(np.pi/2)
 
 we would get an error message. This is because the `gradient <https://en.wikipedia.org/wiki/Gradient>`_ is only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode returns multiple expectation values, the correct differential operator to use is the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_. This can be accessed in PennyLane as :func:`~.jacobian`:
 
->>> j1 = qml.jacobian(circuit1, argnum=0)
+>>> j1 = qml.jacobian(qnode1, argnum=0)
 >>> j1(np.pi/2)
-array([-1., -1.])
+np.array([-1.,  -0.70710678])
 
 The output of :func:`~.jacobian` is a two-dimensional vector, with the first/second element being the partial derivative of the first/second expectation value with respect to the input parameter. The Jacobian function has the same signature as the gradient function, requiring the user to specify which argument should be differentiated.
 
@@ -192,9 +193,10 @@ If you want to compute the Jacobian matrix for a function with multiple input pa
 It has a full Jacobian with two rows and three columns:
 
 >>> j2 = qml.jacobian(circuit2, argnum=0)
->>> j2(np.pi / 3, 0.25, np.pi / 2)
->>> array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
-           [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
+>>> params = np.array([np.pi / 3, 0.25, np.pi / 2])
+>>> j2(params)
+array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
+       [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
 
 .. warning:: Currently, :func:`pennylane.jacobian` supports only the case where ``argnum`` is a single integer. For quantum functions with multiple arguments, use the above method to get the full Jacobian matrix.
 

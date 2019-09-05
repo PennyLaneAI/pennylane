@@ -13,8 +13,10 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-pennylane.operation
-===================
+operation
+=========
+
+**Module name**: pennylane.operation
 
 .. currentmodule:: pennylane.operation
 

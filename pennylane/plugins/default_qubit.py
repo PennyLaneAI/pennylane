@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-pennylane.plugins.default_qubit
-===============================
+plugins.default_qubit
+=====================
+
+**Module name**: pennylane.plugins.default_qubit
 
 .. currentmodule:: pennylane.plugins.default_qubit
 

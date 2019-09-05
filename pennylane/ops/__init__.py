@@ -15,8 +15,10 @@
 #pylint: disable=too-few-public-methods,function-redefined
 
 """
-pennylane.ops
-=============
+ops
+===
+
+**Module name**: pennylane.ops
 
 .. currentmodule:: pennylane.ops
 

@@ -15,6 +15,8 @@ r"""
 templates.embeddings
 ====================
 
+**Module name**: pennylane.templates.embeddings
+
 .. currentmodule:: pennylane.templates.embeddings
 
 This module provides quantum circuit architectures that can embed features into a quantum state.
