@@ -358,7 +358,7 @@ class QNode:
         if not all(are_cvs) and any(are_cvs):
             raise QuantumFunctionError("Continuous and discrete operations are not "
                                        "allowed in the same quantum circuit.")
-        elif all(are_cvs):
+        if all(are_cvs):
             self.type = 'CV'
         elif not any(are_cvs):
             self.type = 'qubit'
