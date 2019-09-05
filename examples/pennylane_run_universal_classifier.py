@@ -1,8 +1,8 @@
 r"""
 .. _universal_classifier:
 
-Universal Quantum Classifier 
-============================
+Data-reuploading classifer
+==========================
 **Author: Shahnawaz Ahmed (shahnawaz.ahmed95@gmail.com)**
 
 A single-qubit quantum circuit which can implement arbitrary unitary
