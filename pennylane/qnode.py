@@ -553,7 +553,7 @@ class QNode:
         # 5. Then run the standard discrete-case algorithm for determining the best gradient method
         # for every free parameter.
 
-        # pylint: disable=too-many-statements
+        # pylint: disable=too-many-return-statements
         def best_for_op(op_node):
             "Returns the best gradient method for the operation op."
             # for discrete operations, other ops do not affect the choice
@@ -596,10 +596,11 @@ class QNode:
 
         if all(k == 'A' for k in methods):
             return 'A'
-        elif None in methods:
+
+        if None in methods:
             return None
-        else:
-            return 'F'
+
+        return 'F'
 
     def __call__(self, *args, **kwargs):
         """Wrapper for :meth:`~.QNode.evaluate`."""
