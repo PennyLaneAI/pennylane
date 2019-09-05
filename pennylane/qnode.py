@@ -846,7 +846,8 @@ class QNode:
             # construct the circuit
             self.construct(params, circuit_kwargs)
 
-        sample_ops = [e for e in self.ev if e.return_type is pennylane.operation.Sample]
+        sample_ops = [
+            e for e in self.cg.observables if e.return_type is pennylane.operation.Sample]
 
         if sample_ops:
             names = [str(e) for e in sample_ops]
@@ -893,7 +894,7 @@ class QNode:
             else:
                 y0 = None
 
-        variances = any(e.return_type is pennylane.operation.Variance for e in self.ev)
+        variances = any(e.return_type is pennylane.operation.Variance for e in self.cg.observables)
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
@@ -957,8 +958,7 @@ class QNode:
         if q.ndim == 2:
             # 2nd order observable
             qp = qp +qp.T
-        val = pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
-        return val
+        return pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
 
 
     def _pd_analytic(self, params, idx, force_order2=False, **kwargs):
@@ -986,12 +986,13 @@ class QNode:
         pd = 0.0
         # find the Commands in which the free parameter appears, use the product rule
         for o_idx, p_idx in self.variable_ops[idx]:
-            op = self.ops[o_idx]
+            op = self.cg.graph.nodes[o_idx]["op"]
 
             # we temporarily edit the Operation such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operations depending on the original.
             orig = op.params[p_idx]
             assert orig.idx == idx
+
 
             # reference to a new, temporary parameter with index n, otherwise identical with orig
             temp_var = copy.copy(orig)
@@ -1064,24 +1065,21 @@ class QNode:
         Returns:
             float: partial derivative of the node.
         """
-        old_ev = copy.deepcopy(self.ev)
-
         # boolean mask: elements are True where the
         # return type is a variance, False for expectations
-        where_var = [e.return_type is pennylane.operation.Variance for e in self.ev]
+        where_var = [e.return_type is pennylane.operation.Variance for e in self.cg.observables]
 
-        for i, e in enumerate(self.ev):
-            # iterate through all observables
-            # here, i is the index of the observable
-            # and e is the observable
+        applicable_nodes = [
+            node for node in self.cg.observable_nodes
+            if node["op"].return_type == pennylane.operation.Variance]
+        original_nodes = copy.deepcopy(applicable_nodes)
 
-            if e.return_type is not pennylane.operation.Variance:
-                # if the expectation value is not a variance
-                # continue on to the next loop iteration
-                continue
+        for node in applicable_nodes:
+            e, i = node["op"], node["idx"]
 
             # temporarily convert return type to expectation
-            self.ev[i].return_type = pennylane.operation.Expectation
+            e.return_type = pennylane.operation.Expectation
+            self.cg.update_node(node, e)
 
             # analytic derivative of <A^2>
             # For involutory observables (A^2 = I),
@@ -1102,13 +1100,15 @@ class QNode:
                         old = copy.deepcopy(e)
 
                         # replace the Hermitian variance with <A^2> expectation
-                        self.ev[i] = pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False))
+                        self.cg.update_node(
+                            node,
+                            pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False)))
 
                         # calculate the analytic derivative of <A^2>
                         pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, **kwargs))
 
                         # restore the original Hermitian variance
-                        self.ev[i] = old
+                        self.cg.update_node(node, old)
 
             elif self.type == 'CV':
                 # need to calculate d<A^2>/dp
@@ -1130,13 +1130,14 @@ class QNode:
                 A = np.kron(A, A.T)
 
                 # replace the first order observable var(A) with <A^2>
-                self.cg.update_node(i, pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)))
+                self.cg.update_node(
+                    node, pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)))
 
                 # calculate the analytic derivative of <A^2>
                 pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))
 
                 # restore the original observable
-                self.cg.update_node(i, old)
+                self.cg.update_node(node, old)
 
         # save original cache setting
         cache = self.cache
@@ -1152,8 +1153,9 @@ class QNode:
         # evaluate circuit gradient assuming all outputs are expectations
         pdA = self._pd_analytic(param_values, param_idx, **kwargs)
 
-        # restore original return queue
-        self.ev = old_ev
+        for node in original_nodes:
+            self.cg.update_node(node, node["op"])
+
         # restore original caching setting
         self.cache = cache
 

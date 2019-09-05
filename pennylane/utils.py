@@ -49,7 +49,6 @@ import autograd.numpy as np
 import networkx as nx
 
 from pennylane.variable import Variable
-from pennylane import operation
 
 
 def _flatten(x):
@@ -261,17 +260,25 @@ class CircuitGraph:
 
     @property
     def observables(self):
+        return [node["op"] for node in self.observable_nodes]
+
+    @property
+    def observable_nodes(self):
         nodes = sorted(
             [node for node in self.graph.nodes.values() if node["return_type"]],
             key=lambda node: node["idx"])
-        return [node["op"] for node in nodes]
+        return nodes
 
     @property
     def operations(self):
+        return [node["op"] for node in self.operation_nodes]
+
+    @property
+    def operation_nodes(self):
         nodes = sorted(
             [node for node in self.graph.nodes.values() if not node["return_type"]],
             key=lambda node: node["idx"])
-        return [node["op"] for node in nodes]
+        return nodes
 
     @property
     def graph(self):
@@ -442,11 +449,7 @@ class CircuitGraph:
 
             yield pre_queue, layer, tuple(param_idx), post_queue
 
-    def update_node(self, idx, op):
-        if isinstance(op, operation.Observable):
-            # Very hacky, but it is to offset node indices by queue length as we index all
-            # operations consecutively.
-            idx += len(self._queue)
-        cmd = Command(name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx)
-        attrs = cmd._asdict()
-        nx.set_node_attributes(self._graph, {idx: {**attrs}})
+    def update_node(self, node, op):
+        cmd = Command(
+            name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=node["idx"])
+        nx.set_node_attributes(self._graph, {node["idx"]: {**cmd._asdict()}})
