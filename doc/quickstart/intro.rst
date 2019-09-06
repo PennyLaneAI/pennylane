@@ -20,7 +20,7 @@ It shows new PennyLane users how to:
 - Define **computational devices**
 - Combine quantum functions and devices to **quantum nodes**
 - Conveniently create quantum nodes using the quantum node **decorator**
-- Understand **interfaces** as the framework of processing quantum nodes
+- Find out more about **interfaces** to use quantum nodes
 
 More information about PennyLane's code base can be found in the
 :ref:`Code Documentation <library_overview>`.
