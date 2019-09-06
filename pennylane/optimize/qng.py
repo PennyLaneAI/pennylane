@@ -33,9 +33,9 @@ class QNGOptimizer(GradientDescentOptimizer):
     .. math::
         x^{(t+1)} = x^{(t)} - \eta G(f(x^{(t)})^{-1} \nabla f(x^{(t)}),
 
-    where :math:`f(x^{(t)}) = \langle 0 | U(x^{(t))^\dagger \hat{B} U(x^{(t)) | 0 \rangle`
+    where :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
     is an expectation value of some observable measured on the variational
-    quantum circuit :math:`U(x^{(t))`.
+    quantum circuit :math:`U(x^{(t)})`.
 
     Consider a quantum node represented by the variational quantum circuit
 
