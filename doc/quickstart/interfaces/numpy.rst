@@ -14,9 +14,12 @@ designed so it will feel like you are just using standard NumPy, with the
 added benefit of automatic differentiation.
 
 All you have to do is make sure to import the wrapped version of NumPy
-provided by PennyLane:
+provided by PennyLane alongside with the PennyLane library:
 
-from pennylane import numpy as np
+.. code::
+
+    import pennylane as qml
+    from pennylane import numpy as np
 
 This is provided via `autograd <https://github.com/HIPS/autograd>`_, and enables
 automatic differentiation and backpropagation of classical computations using familiar
@@ -37,14 +40,14 @@ but this can also be specified explicitly by passing the ``interface='numpy'`` k
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='numpy')
-    def circuit(phi, theta):
+    def circuit1(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit()`` is a NumPy-interfacing QNode, accepting standard Python
+The QNode ``circuit1()`` is a NumPy-interfacing QNode, accepting standard Python
 data types such as ints, floats, lists, and tuples, as well as NumPy arrays, and
 returning NumPy arrays.
 
@@ -52,7 +55,7 @@ It can now be used like any other Python/NumPy function:
 
 >>> phi = np.array([0.5, 0.1])
 >>> theta = 0.2
->>> circuit(phi, theta)
+>>> circuit1(phi, theta)
 array([ 0.87758256,  0.68803733])
 
 Via the QNode class
@@ -67,15 +70,15 @@ multiple devices, or even using different classical interfaces:
     dev1 = qml.device('default.qubit', wires=2)
     dev2 = qml.device('forest.wavefunction', wires=2)
 
-    def circuit(phi, theta):
+    def circuit2(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-    qnode1 = qml.QNode(circuit, dev1)
-    qnode2 = qml.QNode(circuit, dev2)
+    qnode1 = qml.QNode(circuit2, dev1)
+    qnode2 = qml.QNode(circuit2, dev2)
 
 By default, all QNodes created this way are NumPy interfacing QNodes.
 
@@ -93,7 +96,7 @@ For example, consider the following QNode:
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev)
-    def circuit(phi, theta):
+    def circuit3(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -103,9 +106,10 @@ For example, consider the following QNode:
 We can now use :func:`~.grad` to create a QNode *gradient function*,
 with respect to both QNode parameters ``phi`` and ``theta``:
 
->>> phi = np.array([0.5, 0.1])
->>> theta = 0.2
->>> dcircuit = qml.grad(circuit, argnum=[0, 1])
+.. code::
+    phi = np.array([0.5, 0.1])
+    theta = 0.2
+    dcircuit = qml.grad(circuit3, argnum=[0, 1])
 
 Evaluating this gradient function at specific parameter values:
 
@@ -128,7 +132,7 @@ lead to a final expectation value of 0.5:
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev)
-    def circuit(x):
+    def circuit4(x):
         qml.RX(x[0], wires=0)
         qml.RZ(x[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -136,7 +140,7 @@ lead to a final expectation value of 0.5:
         return qml.expval(qml.PauliZ(0))
 
     def cost(x):
-        return np.abs(circuit(x) - 0.5)**2
+        return np.abs(circuit4(x) - 0.5)**2
 
     opt = qml.GradientDescentOptimizer(stepsize=0.4)
 
@@ -151,7 +155,7 @@ The final weights and circuit value are:
 
 >>> params
 array([ 0.19846757,  0.012     ,  1.03559806])
->>> circuit(params)
+>>> circuit4(params)
 0.5
 
 For more details on the NumPy optimizers, check out the tutorials, as well as the
@@ -163,27 +167,49 @@ Vector-valued QNodes and the Jacobian
 -------------------------------------
 
 How does automatic differentiation work in the case where the QNode returns multiple expectation values?
+
+.. code::
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit5(x):
+        qml.RX(x, wires=0)
+        qml.RX(x, wires=1)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
 If we were to naively try computing the gradient of ``qnode1`` using the :func:`~.grad` function,
 
 .. code::
 
-    g1 = qml.grad(qnode1, argnum=0)
+    g1 = qml.grad(circuit5, argnum=0)
     g1(np.pi/2)
 
-we would get an error message. This is because the `gradient <https://en.wikipedia.org/wiki/Gradient>`_ is only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode returns multiple expectation values, the correct differential operator to use is the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_. This can be accessed in PennyLane as :func:`~.jacobian`:
+we would get an error message. This is because the `gradient <https://en.wikipedia.org/wiki/Gradient>`_ is
+only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode
+returns multiple expectation values, the correct differential operator to use is
+the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_.
+This can be accessed in PennyLane as :func:`~.jacobian`:
 
->>> j1 = qml.jacobian(qnode1, argnum=0)
+>>> j1 = qml.jacobian(circuit5, argnum=0)
 >>> j1(np.pi/2)
-np.array([-1.,  -0.70710678])
+array([-1. -1.])
 
-The output of :func:`~.jacobian` is a two-dimensional vector, with the first/second element being the partial derivative of the first/second expectation value with respect to the input parameter. The Jacobian function has the same signature as the gradient function, requiring the user to specify which argument should be differentiated.
 
-If you want to compute the Jacobian matrix for a function with multiple input parameters and multiple expectation values, the recommended way to do this is to combine the parameters into a single list/array and index into this inside your quantum circuit function. Consider the following circuit:
+The output of :func:`~.jacobian` is a two-dimensional vector, with the first/second element being
+the partial derivative of the first/second expectation value with respect to the input parameter.
+The Jacobian function has the same signature as the gradient function, requiring the user to specify
+which argument should be differentiated.
+
+If you want to compute the Jacobian matrix for a function with multiple input parameters
+and multiple expectation values, the recommended way to do this is to combine the parameters
+into a single list/array and index into this inside your quantum circuit function.
+Consider the following circuit:
 
 .. code-block:: python
 
     @qml.qnode(dev)
-    def circuit2(params):
+    def circuit6(params):
         qml.RX(params[0], wires=0)
         qml.RZ(params[1], wires=0)
         qml.RX(params[2], wires=1)
@@ -192,13 +218,17 @@ If you want to compute the Jacobian matrix for a function with multiple input pa
 
 It has a full Jacobian with two rows and three columns:
 
->>> j2 = qml.jacobian(circuit2, argnum=0)
+>>> j2 = qml.jacobian(circuit6, argnum=0)
 >>> params = np.array([np.pi / 3, 0.25, np.pi / 2])
 >>> j2(params)
 array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
        [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
 
-.. warning:: Currently, :func:`pennylane.jacobian` supports only the case where ``argnum`` is a single integer. For quantum functions with multiple arguments, use the above method to get the full Jacobian matrix.
+.. warning::
+
+    Currently, :func:`pennylane.jacobian` supports only the case where
+    ``argnum`` is a single integer. For quantum functions with multiple arguments,
+    use the above method of combining arguments in an array to get the full Jacobian matrix.
 
 
 Advanced Autograd usage

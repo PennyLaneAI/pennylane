@@ -13,7 +13,13 @@ the :func:`TorchQNode` function that returns the new quantum node object.
 .. note::
 
     To use the PyTorch interface in PennyLane, you must first
-    `install PyTorch <https://pytorch.org/get-started/locally/#start-locally>`_.
+    `install PyTorch <https://pytorch.org/get-started/locally/#start-locally>`_
+    and import it together with PennyLane via:
+
+    .. code::
+
+        import pennylane as qml
+        import torch
 
 
 Construction via the decorator
@@ -27,20 +33,20 @@ a PyTorch-capable QNode in PennyLane. Simply specify the ``interface='torch'`` k
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='torch')
-    def circuit(phi, theta):
+    def circuit1(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit()`` is now a PyTorch-capable QNode, accepting ``torch.tensor`` objects
+The QNode ``circuit1()`` is now a PyTorch-capable QNode, accepting ``torch.tensor`` objects
 as input, and returning ``torch.tensor`` objects. Subclassing from ``torch.autograd.Function``,
 it can now be used like any other PyTorch function:
 
 >>> phi = torch.tensor([0.5, 0.1])
 >>> theta = torch.tensor(0.2)
->>> circuit(phi, theta)
+>>> circuit1(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
 Construction from a NumPy QNode
@@ -55,15 +61,15 @@ using different classical interfaces:
     dev1 = qml.device('default.qubit', wires=2)
     dev2 = qml.device('forest.wavefunction', wires=2)
 
-    def circuit(phi, theta):
+    def circuit2(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-    qnode1 = qml.QNode(circuit, dev1)
-    qnode2 = qml.QNode(circuit, dev2)
+    qnode1 = qml.QNode(circuit2, dev1)
+    qnode2 = qml.QNode(circuit2, dev2)
 
 We can convert the default NumPy-interfacing QNode to a PyTorch-interfacing QNode by
 using the :meth:`~.QNode.to_torch` method:
@@ -85,14 +91,12 @@ For example:
 
 .. code-block:: python
 
-    import pennylane as qml
-    import torch
     from torch.autograd import Variable
 
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='torch')
-    def circuit(phi, theta):
+    def circuit3(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -101,7 +105,7 @@ For example:
 
     phi = Variable(torch.tensor([0.5, 0.1]), requires_grad=True)
     theta = Variable(torch.tensor(0.2), requires_grad=True)
-    result = circuit(phi, theta)
+    result = circuit3(phi, theta)
 
 Now, performing the backpropagation and accumulating the gradients:
 
@@ -134,7 +138,7 @@ we can do the following:
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='torch')
-    def circuit(phi, theta):
+    def circuit4(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RZ(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -142,10 +146,10 @@ we can do the following:
         return qml.expval(qml.PauliZ(0))
 
     def cost(phi, theta):
-        return torch.abs(circuit(phi, theta) - 0.5)**2
+        return torch.abs(circuit4(phi, theta) - 0.5)**2
 
-    phi = Variable(torch.tensor([0.011, 0.012], device='cuda'), requires_grad=True)
-    theta = Variable(torch.tensor(0.05, device='cuda'), requires_grad=True)
+    phi = Variable(torch.tensor([0.011, 0.012]), requires_grad=True)
+    theta = Variable(torch.tensor(0.05), requires_grad=True)
 
     opt = torch.optim.Adam([phi, theta], lr = 0.1)
 

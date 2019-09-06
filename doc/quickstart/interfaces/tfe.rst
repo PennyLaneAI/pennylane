@@ -12,11 +12,14 @@ the :func:`TFEQNode` function that returns the new quantum node object.
 .. note::
     To use the TensorFlow eager execution interface in PennyLane, you must first install TensorFlow.
     This interface **only** supports TensorFlow in eager execution mode! This can be set
-    by running the following commands at the beginning of your PennyLane script/program:
+    by running the following commands together with importing PennyLane:
 
-    >>> import tensorflow as tf
-    >>> import tensorflow.contrib.eager as tfe
-    >>> tf.enable_eager_execution()
+    .. code::
+
+        import pennylane as qml
+        import tensorflow as tf
+        import tensorflow.contrib.eager as tfe
+        tf.enable_eager_execution()
 
 Using the TensorFlow eager execution interface is easy in PennyLane --- let's consider a few ways
 it can be done.
@@ -32,19 +35,19 @@ specify the ``interface='tfe'`` keyword argument:
 
     dev = qml.device('default.qubit', wires=2)
     @qml.qnode(dev, interface='tfe')
-    def circuit(phi, theta):
+    def circuit1(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tfe.Variable`` objects
+The QNode ``circuit1()`` is now a TensorFlow-capable QNode, accepting ``tfe.Variable`` objects
 as input, and returning ``tf.Tensor`` objects.
 
 >>> phi = tfe.Variable([0.5, 0.1])
 >>> theta = tfe.Variable(0.2)
->>> circuit(phi, theta)
+>>> circuit1(phi, theta)
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
 Construction from a basic QNode
@@ -57,15 +60,15 @@ Let us first create two basic, NumPy-interfacing QNodes.
     dev1 = qml.device('default.qubit', wires=2)
     dev2 = qml.device('forest.wavefunction', wires=2)
 
-    def circuit(phi, theta):
+    def circuit2(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-    qnode1 = qml.QNode(circuit, dev1)
-    qnode2 = qml.QNode(circuit, dev2)
+    qnode1 = qml.QNode(circuit2, dev1)
+    qnode2 = qml.QNode(circuit2, dev2)
 
 We can convert the default NumPy-interfacing QNodes to TensorFlow-interfacing QNodes by
 using the :meth:`~.QNode.to_tfe` method:
@@ -90,7 +93,7 @@ For example:
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='tfe')
-    def circuit(phi, theta):
+    def circuit3(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -100,7 +103,7 @@ For example:
     phi = tfe.Variable([0.5, 0.1])
     theta = tfe.Variable(0.2)
 
-    grad_fn = tfe.implicit_value_and_gradients(circuit)
+    grad_fn = tfe.implicit_value_and_gradients(circuit3)
     result, [(phi_grad, phi_var), (theta_grad, theta_var)] = grad_fn(phi, theta)
 
 Now, printing the gradients, we get:
@@ -120,16 +123,10 @@ result in an expectation value of 0.5, we can do the following:
 
 .. code-block:: python
 
-    import tensorflow as tf
-    import tensorflow.contrib.eager as tfe
-    tf.enable_eager_execution()
-
-    import pennylane as qml
-
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='tfe')
-    def circuit(phi, theta):
+    def circuit4(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
@@ -144,7 +141,7 @@ result in an expectation value of 0.5, we can do the following:
 
     for i in range(steps):
         with tf.GradientTape() as tape:
-            loss = tf.abs(circuit(phi, theta) - 0.5)**2
+            loss = tf.abs(circuit4(phi, theta) - 0.5)**2
             grads = tape.gradient(loss, [phi, theta])
 
         opt.apply_gradients(zip(grads, [phi, theta]), global_step=tf.train.get_or_create_global_step())
