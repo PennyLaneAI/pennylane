@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""QGT optimizer"""
+"""Quantum natural gradient optimizer"""
 #pylint: disable=too-many-branches
 import autograd.numpy as np
 from scipy import linalg
@@ -21,11 +21,12 @@ from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
 
-class QGTOptimizer(GradientDescentOptimizer):
+class QNGOptimizer(GradientDescentOptimizer):
     r"""Optimizer with adaptive learning rate, via calculation
-    of the quantum geometric tensor.
+    of the quantum geometric tensor or Fubini-Study metric tensor.
+    A quantum generalization of natural gradient descent.
 
-    The QGT optimizer uses a step- and parameter-dependent learning rate,
+    The QNG optimizer uses a step- and parameter-dependent learning rate,
     with the learning rate dependent on the pseudo-inverse
     of the quantum geometric tensor :math:`G`:
 
@@ -60,16 +61,19 @@ class QGTOptimizer(GradientDescentOptimizer):
     of the quantum geometric tensor :math:`G_{ij}^{(\ell)}` is computed
     by directly querying the quantum device.
 
+    For more details, see: James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
+    "Quantum Natural Gradient." `arXiv:1909.02108 <https://arxiv.org/abs/1909.02108>`_, 2019.
+
     .. note::
 
-        The QGT optimizer **only supports single QNodes** as objective functions.
+        The QNG optimizer **only supports single QNodes** as objective functions.
 
         In particular:
 
         * For hybrid classical-quantum models, the "mixed geometry" of the model
           makes it unclear which metric should be used for which parameter.
           For example, parameters of quantum nodes are better suited to
-          one metric (such as the QGT), whereas others (e.g., parameters of classical nodes)
+          one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
           are likely better suited to another metric.
 
         * For multi-QNode models, we don't know what geometry is appropriate
