@@ -1,7 +1,7 @@
 .. role:: html(raw)
    :format: html
 
-.. _overview:
+.. _key_concepts:
 
 Overview
 ========

@@ -25,7 +25,7 @@ the :func:`TorchQNode` function that returns the new quantum node object.
 Construction via the decorator
 ******************************
 
-The :ref:`QNode decorator <qnode_decorator>` is the recommended way for creating
+The :ref:`QNode decorator <decorator>` is the recommended way for creating
 a PyTorch-capable QNode in PennyLane. Simply specify the ``interface='torch'`` keyword argument:
 
 .. code-block:: python
@@ -122,8 +122,8 @@ Optimization using PyTorch
 
 To optimize your hybrid classical-quantum model using the Torch interface,
 you **must** make use of the `PyTorch provided optimizers <https://pytorch.org/docs/stable/optim.html>`_,
-or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <optimization_methods>`
-**cannot be used with the Torch interface, only the** :ref:`numpy_qnode`.
+or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <optimize>`
+**cannot be used with the Torch interface.
 
 For example, to optimize a Torch-interfacing QNode (below) such that the weights ``x``
 result in an expectation value of 0.5, with the classical nodes processed on a GPU,

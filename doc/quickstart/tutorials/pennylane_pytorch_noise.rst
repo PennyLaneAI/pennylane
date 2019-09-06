@@ -13,7 +13,7 @@ PyTorch and noisy devices
 =========================
 
 Let's revisit the original :ref:`qubit rotation <qubit_rotation>` tutorial, but instead of
-using the default NumPy/autograd QNode interface, we'll use the :ref:`torch_qnode`.
+using the default NumPy/autograd QNode interface, we'll use the :ref:`Torch QNode <torch_interf>`.
 We'll also replace the ``default.qubit`` device with a noisy ``forest.qvm`` device, to
 see how the optimization responds to noisy qubits.
 
@@ -232,7 +232,7 @@ copy any tensor arguments to the CPU, before applying them on the specified quan
 device. Once done, it will return a tensor containing the QNode result, and
 automatically copy it back to the GPU for any further classical processing.
 
-.. note:: For more details on the PyTorch interface, see :ref:`torch_qnode`.
+.. note:: For more details on the PyTorch interface, see :ref:`here <torch_interf>`.
 
 
 .. rst-class:: sphx-glr-timing

@@ -94,13 +94,26 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 
 :html:`<h2>Getting started</h2>`
 
-To get PennyLane installed and running on your system, begin at the :ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's :ref:`key concepts <introduction>` for machine learning on quantum circuits.
+To get PennyLane installed and running on your system, begin at the
+:ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's
+:ref:`key concepts <key_concepts>` for machine learning on quantum circuits.
 
-For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`, and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to explore :ref:`hybrid quantum optimization <plugins_hybrid>`, and :ref:`hybrid GPU-QPU optimization via PyTorch <pytorch_noise>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs), and quantum classifiers.
+For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`,
+and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to
+explore :ref:`hybrid quantum optimization <plugins_hybrid>`, and :ref:`hybrid GPU-QPU optimization
+via PyTorch <pytorch_noise>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs),
+and quantum classifiers.
 
-Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid models — these include Strawberry Fields, provided by the `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin, the Rigetti Aspen-1 QPU, provided by the `PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_ plugin, and the IBM QX4 quantum chip, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins.
+Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid
+models — these include Strawberry Fields, provided by the
+`PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin, the Rigetti Aspen-1 QPU, provided by the
+`PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_ plugin, and the IBM QX4 quantum chip,
+provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and
+`PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins.
 
-Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided. Look there for full details on available quantum operations and expectations, and detailed guides on :ref:`how to write your own <developer_overview>` PennyLane compatible quantum device.
+Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided.
+Look there for full details on available quantum operations and expectations, and detailed guides on
+:ref:`how to write your own <plugin_overview>` PennyLane compatible quantum device.
 
 :html:`<h2>How to cite</h2>`
 
@@ -171,9 +184,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Plugin API
    :hidden:
 
-   plugin/plugin_intro
-   plugin/device
-   plugin/reference_plugins
+   plugin_intro
 
 :html:`<h2>Indices and tables</h2>`
 

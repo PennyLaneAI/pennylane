@@ -20,13 +20,17 @@ PennyLane comes with built-in support for two simple quantum devices:
 | :mod:`~.default_gaussian` | A simple simulation of a Gaussian-based continuous-variable quantum optical architecture |
 +---------------------------+------------------------------------------------------------------------------------------+
 
-PennyLane is designed from the ground up to be hardware and device agnostic, allowing quantum functions to be easily re-used on different quantum devices, as long as all contained quantum operations are supported.
+PennyLane is designed from the ground up to be hardware and device agnostic, allowing quantum functions to be
+easily re-used on different quantum devices, as long as all contained quantum operations are supported.
 
 
 List of available plugins
 -------------------------
 
-PennyLane has also been designed to be easily extensible, supporting external quantum devices and custom quantum operations via the built-in plugin API. These plugins are installed separately, providing a rich ecosystem integrating popular quantum software development libraries with the hybrid optimization capabilities of PennyLane.
+PennyLane has also been designed to be easily extensible, supporting external quantum devices and custom
+quantum operations via the built-in plugin API. These plugins are installed separately, providing a rich
+ecosystem integrating popular quantum software development libraries with the hybrid optimization
+capabilities of PennyLane.
 
 Below, we maintain a list of the installable plugins available for PennyLane.
 
@@ -116,7 +120,9 @@ If you have written a PennyLane-compatible plugin and would like it to be listed
 Developing a plugin
 -------------------
 
-To write your own PennyLane-compatible plugin, the best place to start is our :ref:`overview of the developer API <developer_overview>`, as well as exploring
-the source code of the provided reference plugin modules :mod:`pennylane.plugins.default_qubit` and :mod:`pennylane.plugins.default_gaussian`
+To write your own PennyLane-compatible plugin, the best place to start is our
+:ref:`overview of the plugin developer API <plugin_overview>`, as well as exploring
+the source code of the provided reference plugin modules
+:mod:`pennylane.plugins.default_qubit` and :mod:`pennylane.plugins.default_gaussian`
 (providing the ``default.qubit`` and ``default.gaussian`` devices respectively).
 

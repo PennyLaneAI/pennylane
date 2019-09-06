@@ -46,12 +46,11 @@ The following layer templates are available:
 
 +------------------------------------+-------------------------------------------------------------------+
 | :func:`StronglyEntanglingLayers`   | Layers composed of a block of single qubit rotations applied to   |
-|                     `              | every qubit, followed by a block of 2-qubit entangling gates      |
+|                                    | every qubit, followed by a block of 2-qubit entangling gates      |
 +------------------------------------+-------------------------------------------------------------------+
 | :func:`RandomLayers`               | Layers composed of randomly chosen single- and two-qubit gates    |
-|                     `              | applied to randomly chosen qubits.                                |
+|                                    | applied to randomly chosen qubits.                                |
 +------------------------------------+-------------------------------------------------------------------+
-
 
 Embedding templates
 -------------------
@@ -66,18 +65,18 @@ The following embedding templates are available:
 
 +------------------------------------+-------------------------------------------------------------------+
 | :func:`AmplitudeEmbedding`         | Prepares a quantum state whose amplitude vector corresponds to    |
-|                     `              | the input feature vector.                                         |
+|                                    | the input feature vector.                                         |
 +------------------------------------+-------------------------------------------------------------------+
 | :func:`BasisEmbedding`             | Prepares a computational basis state that corresponds to the      |
-|                     `              | binary input sequence.                                            |
+|                                    | binary input sequence.                                            |
 +------------------------------------+-------------------------------------------------------------------+
 | :func:`AngleEmbedding`             | Encodes an input into rotation angles of qubits.                  |
 +------------------------------------+-------------------------------------------------------------------+
 | :func:`SqueezingEmbedding`         | Encodes an input into the squeezing paparameters of quantum       |
-|                     `              | modes.                                                            |
+|                                    | modes.                                                            |
 +------------------------------------+-------------------------------------------------------------------+
 | :func:`DisplacementEmbedding`      | Encodes an input into the squeezing paparameters of quantum       |
-|                     `              | modes.                                                            |
+|                                    | modes.                                                            |
 +------------------------------------+-------------------------------------------------------------------+
 
 Parameter initializations

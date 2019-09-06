@@ -31,7 +31,7 @@ and ``while`` loops.
 Via the QNode decorator
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The :ref:`QNode decorator <qnode_decorator>` is the recommended way for creating QNodes
+The :ref:`QNode decorator <decorator>` is the recommended way for creating QNodes
 in PennyLane. By default, all QNodes are constructed for the NumPy interface,
 but this can also be specified explicitly by passing the ``interface='numpy'`` keyword argument:
 
@@ -122,7 +122,7 @@ Optimization
 ------------
 
 To optimize your hybrid classical-quantum model using the NumPy interface,
-use the provided :ref:`PennyLane optimizers <optimization_methods>`.
+use the provided :ref:`PennyLane optimizers <optimize>`.
 
 For example, we can optimize a NumPy-interfacing QNode (below) such that the weights ``x``
 lead to a final expectation value of 0.5:
@@ -159,7 +159,7 @@ array([ 0.19846757,  0.012     ,  1.03559806])
 0.5
 
 For more details on the NumPy optimizers, check out the tutorials, as well as the
-:ref:`optimization_methods` documentation.
+:ref:`optimize` documentation.
 
 
 

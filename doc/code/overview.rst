@@ -35,6 +35,9 @@ The following modules are relevant for a typical **user** of PennyLane:
 | :ref:`pennylane.decorator     |  Defines the ``qnode()`` decorator function,                                         |
 | <decorator>`                  |  which turns quantum functions into QNodes.                                          |
 +-------------------------------+--------------------------------------------------------------------------------------+
+| :ref:`pennylane.init          |  Contains parameter initialization functions                                         |
+| <par_init>`                   |                                                                                      |
++-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.measure       |  Introduces different results to extract from a measurement,                         |
 | <measure>`                    |  i.e. :func:`expval`, :func:`var` and :func:`samples`.                               |
 +-------------------------------+--------------------------------------------------------------------------------------+
@@ -58,9 +61,6 @@ The following modules are contain lower-level functionality, which is more relev
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.about         |  Print basic information about PennyLane.                                            |
 | <about>`                      |                                                                                      |
-+-------------------------------+--------------------------------------------------------------------------------------+
-| :ref:`pennylane.init          |  Contains parameter initialization functions                                         |
-| <par_init>`                   |                                                                                      |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane._device       |  Defines the abstract :class:`Device` class,                                         |
 | <device>`                     |  which plugins inherit from.                                                         |
