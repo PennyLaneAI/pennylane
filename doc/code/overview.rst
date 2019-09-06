@@ -7,16 +7,17 @@ Overview
 
 The code documentation serves as a reference where all classes and functions of
 PennyLane can be looked up. This is useful in order to check the signatures of inputs
-outputs, as well as the different options these functions provide.
+and outputs of functions, or the attributes and methods of classes.
 
-Functions and classes are organised in **modules**. To import a class or functions, you need
+Functions and classes are organised in **modules**. To import a specific class or function, you need
 to specify the full module path, i.e.,
 
 .. code::
 
     from pennylane.templates.layers import StronglyEntanglingLayer
 
-Some modules are relevant to users, while others are providing more lower-level functionality.
+While some modules are relevant to users, others are providing lower-level functionality and are therefore
+more relevant for developers.
 
 
 User-facing modules
@@ -38,21 +39,21 @@ The following modules are relevant for a typical **user** of PennyLane:
 | <measure>`                    |  i.e. :func:`expval`, :func:`var` and :func:`samples`.                               |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.ops <ops>`    |  Contains specific operations for quantum circuits,                                  |
-|                               |  such as gates and observables.                                                      |
+|                               |  such as the :func:`Kerr` gate and the :func:`PauliZ` observable.                    |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.optimize      |  Contains the optimizers that can be used for basic,                                 |
 | <optimize>`                   |  NumPy-compatible quantum nodes, such as :func:`GradientDescentOptimizer`.           |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.qnode <qnode>`|  Defines the :class:`QNode` class.                                                   |
 +-------------------------------+--------------------------------------------------------------------------------------+
-| :ref:`pennylane.templates     |  Contains the :mod:`templates.layers` and :mod:`templates.embeddings`                |
-| <templates>`                  |  submodules, which contain pre-composed pieces of a quantum circuit.                 |
+| :ref:`pennylane.templates     |  Contains the :mod:`templates.layers` and :mod:`templates.embeddings` submodules,    |
+| <templates>`                  |  which contain subroutines such as :func:`RandomCircuit`.                            |
 +-------------------------------+--------------------------------------------------------------------------------------+
 
 Other modules
 -------------
 
-The following modules are contain lower-level functionality, which is relevant for developers:
+The following modules are contain lower-level functionality, which is more relevant for developers:
 
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.about         |  Print basic information about PennyLane.                                            |
@@ -86,6 +87,5 @@ The following modules are contain lower-level functionality, which is relevant f
     If you want to write a plugin that connects PennyLane to hardware
     and simulator backends, visit the :ref:`Plugin API <plugin_overview>`.
 
-For a summary of *all* modules, refer to the :ref:`modindex`, and all methods
-can be found in the :ref:`genindex`.
+An alphabetical list of *all* functions and classes can be found in the :ref:`genindex`.
 

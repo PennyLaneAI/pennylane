@@ -32,9 +32,6 @@ This module contains optimizers for the standard :mod:`QNode` class, which uses 
 Summary
 -------
 
-Available optimizers
-********************
-
 .. autosummary::
    AdagradOptimizer
    AdamOptimizer

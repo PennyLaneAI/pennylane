@@ -25,9 +25,6 @@ Eager mode compatible quantum nodes.
 Summary
 -------
 
-The TFEQNode function
-*********************
-
 .. autosummary::
     TFEQNode
 

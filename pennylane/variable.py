@@ -25,9 +25,6 @@ and identify :class:`~pennylane.qnode.QNode` parameters.
 Summary
 -------
 
-The Variable class
-******************
-
 .. autosummary::
     Variable
 

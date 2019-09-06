@@ -27,9 +27,6 @@ supported plugins and devices.
 Summary
 -------
 
-The Configuration class
-***********************
-
 .. autosummary::
     Configuration
 

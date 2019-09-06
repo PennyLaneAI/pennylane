@@ -25,9 +25,6 @@ across the PennyLane submodules.
 Summary
 -------
 
-List of utility functions
-*************************
-
 .. autosummary::
     _flatten
     _unflatten

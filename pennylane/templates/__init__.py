@@ -45,11 +45,11 @@ The following layer templates are available:
 .. currentmodule:: pennylane.templates.layers
 
 +------------------------------------+-------------------------------------------------------------------+
-| :ref:`Strongly Entangling Circuit  | Consists of a block of single qubit rotations applied to every    |
-| <StronglyEntanglingLayer>`         | qubit, followed by a block of 2-qubit entangling gates            |
+| :func:`StronglyEntanglingLayers`   | Layers composed of a block of single qubit rotations applied to   |
+|                     `              | every qubit, followed by a block of 2-qubit entangling gates      |
 +------------------------------------+-------------------------------------------------------------------+
-| :ref:`Random Circuit               | Consists of randomly chosen single- and two-qubit gates applied   |
-| <RandomLayer>`                     | to randomly chosen qubits.                                        |
+| :func:`RandomLayers`               | Layers composed of randomly chosen single- and two-qubit gates    |
+|                     `              | applied to randomly chosen qubits.                                |
 +------------------------------------+-------------------------------------------------------------------+
 
 
@@ -65,17 +65,19 @@ The following embedding templates are available:
 .. currentmodule:: pennylane.templates.embeddings
 
 +------------------------------------+-------------------------------------------------------------------+
-| :ref:`Amplitude Embedding          | Prepares a quantum state whose amplitude vector corresponds to    |
-| <AmplitudeEmbedding>`              | the input feature vector.                                         |
+| :func:`AmplitudeEmbedding`         | Prepares a quantum state whose amplitude vector corresponds to    |
+|                     `              | the input feature vector.                                         |
 +------------------------------------+-------------------------------------------------------------------+
-| :ref:`Basis Embedding              | Prepares a computational basis state that corresponds to the      |
-| <BasisEmbedding>`                  | binary input sequence.                                            |
+| :func:`BasisEmbedding`             | Prepares a computational basis state that corresponds to the      |
+|                     `              | binary input sequence.                                            |
 +------------------------------------+-------------------------------------------------------------------+
-| :ref:`Squeezing Embedding          | Encodes an input into the squeezing paparameters of quantum       |
-| <SqueezingEmbedding>`              | modes.                                                            |
+| :func:`AngleEmbedding`             | Encodes an input into rotation angles of qubits.                  |
 +------------------------------------+-------------------------------------------------------------------+
-| :ref:`Displacement Embedding       | Encodes an input into the squeezing paparameters of quantum       |
-| <DisplacementEmbedding>`           | modes.                                                            |
+| :func:`SqueezingEmbedding`         | Encodes an input into the squeezing paparameters of quantum       |
+|                     `              | modes.                                                            |
++------------------------------------+-------------------------------------------------------------------+
+| :func:`DisplacementEmbedding`      | Encodes an input into the squeezing paparameters of quantum       |
+|                     `              | modes.                                                            |
 +------------------------------------+-------------------------------------------------------------------+
 
 Parameter initializations

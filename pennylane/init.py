@@ -19,8 +19,8 @@ init
 
 .. currentmodule:: pennylane.init
 
-This module contains methods to create arrays of parameters that can be
-used as initial parameters of trainable templates.
+This module contains functions to create arrays of parameters that can be
+used as initial parameters of trainable :mod:`pennylane.templates`.
 
 
 Summary
@@ -29,8 +29,8 @@ Summary
 Qubit architectures
 *******************
 
-Initializations for Strongly Entangling Circuit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Initializations for Strongly Entangling Circuits
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -39,8 +39,8 @@ Initializations for Strongly Entangling Circuit
     strong_ent_layer_uniform
     strong_ent_layer_normal
 
-Initializations for Random Circuit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Initializations for Random Circuits
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -52,8 +52,8 @@ Initializations for Random Circuit
 Continuous-variable architectures
 *********************************
 
-Initializations for CV Neural Network
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Initializations for CV Neural Networks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -62,8 +62,8 @@ Initializations for CV Neural Network
     cvqnn_layer_uniform
     cvqnn_layer_normal
 
-Initializations for Interferometer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Initializations for Interferometers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -489,7 +489,10 @@ def cvqnn_layer_normal(n_wires, mean=0, std=1, mean_active=0, std_active=0.1, se
 
 
 def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
-    r"""Returns a list of three parameter arrays of the form ``[theta, phi, varphi]``, where:
+    r"""Creates a list of three parameter arrays for a :func:`Interferometer`, drawn from a uniform
+    distribution.
+
+    The arrays are of the form ``[theta, phi, varphi]``, where:
 
     * ``theta`` is the array of beamsplitter transmittivity angles, of size ``(n_wires*(n_wires-1)/2, )``
 
@@ -522,7 +525,11 @@ def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
 
 
 def interferometer_normal(n_wires, mean=0, std=0.1, seed=None):
-    r"""Returns a list of three parameter arrays of the form ``[theta, phi, varphi]``, where:
+    r"""Creates a list of three parameter arrays for a :func:`Interferometer`, drawn from a normal
+    distribution.
+
+    The arrays are of the form ``[theta, phi, varphi]``, where:
+
 
     * ``theta`` is the array of beamsplitter transmittivity angles, of size ``(n_wires*(n_wires-1)/2, )``
 

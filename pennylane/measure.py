@@ -21,13 +21,11 @@ measure
 .. currentmodule:: pennylane.measure
 
 This module contains the functions for computing different types of measurement
-outcomes - expectation values, variances of expectations, and measurement samples of quantum observables.
+outcomes from quantum observables - expectation values, variances of expectations,
+and measurement samples.
 
 Summary
 -------
-
-Measurement outcome functions
-*****************************
 
 .. autosummary::
    expval

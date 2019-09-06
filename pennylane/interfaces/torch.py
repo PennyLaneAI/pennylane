@@ -25,14 +25,14 @@ compatible quantum nodes.
 Summary
 -------
 
-The TorchQNode function
-***********************
-
 .. autosummary::
     TorchQNode
 
 Auxiliary functions
 *******************
+
+.. autosummary::
+
     args_to_numpy
     kwargs_to_numpy
 

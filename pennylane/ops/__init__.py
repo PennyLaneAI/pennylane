@@ -24,23 +24,15 @@ ops
 
 This module contains core quantum operations supported by PennyLane - such as gates, state preparations and observables.
 
-The following built-in operations and observables for qubit and cv architectures are supported by PennyLane:
+PennyLane has two types of operations:
 
-.. raw:: html
-
-    <style>
-    div.topic.contents > ul {
-        max-height: 100px;
-    }
-    </style>
-
-.. rst-class:: contents local topic
-
-.. toctree::
-    :maxdepth: 2
-
-    ops/qubit
-    ops/cv
++-------------------------------------------+---------------------------------------------------------+
+| :mod:`ops.cv                              | Operations for continuous-variable architectures        |
+| <pennylane.ops.cv>`                       |                                                         |
++-------------------------------------------+---------------------------------------------------------+
+| :mod:`ops.qubit                           | Operations for qubit architectures                      |
+| <pennylane.ops.qubit>`                    |                                                         |
++-------------------------------------------+---------------------------------------------------------+
 
 The only operation shared by both devices is the Identity.
 

@@ -11,10 +11,10 @@ The code documentation for all modules and submodules can be found here:
     :maxdepth: 1
 
     init
+    device
     about
     configuration
     decorator
-    device
     par_init
     interfaces
     interfaces/torch

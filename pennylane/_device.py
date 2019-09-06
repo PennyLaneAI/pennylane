@@ -31,6 +31,11 @@ The Device class
 .. autosummary::
     Device
 
+Auxiliary functions
+*******************
+
+.. autosummary::
+    DeviceError
 
 Code details
 ------------
