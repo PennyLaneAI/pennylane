@@ -53,16 +53,18 @@ class QNGOptimizer(GradientDescentOptimizer):
     .. math::
 
         G_{ij} = \langle 0 | V^{-1} K_i K_j V | 0\rangle
-        - \langle 0 | V^{-1} K_i V | 0\rangle\right
-        \langle 0 | V^{-1} K_j V | 0\rangle\right
+        - \langle 0 | V^{-1} K_i V | 0\rangle
+        \langle 0 | V^{-1} K_j V | 0\rangle
 
     For parametric layer :math:`\ell` in the variational quantum circuit
-    containing $n$ parameters, an :math:`n\times n` block diagonal submatrix
+    containing :math:`n` parameters, an :math:`n\times n` block diagonal submatrix
     of the quantum geometric tensor :math:`G_{ij}^{(\ell)}` is computed
     by directly querying the quantum device.
 
-    For more details, see: James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
-    "Quantum Natural Gradient." `arXiv:1909.02108 <https://arxiv.org/abs/1909.02108>`_, 2019.
+    For more details, see:
+
+        James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
+        "Quantum Natural Gradient." `arXiv:1909.02108 <https://arxiv.org/abs/1909.02108>`_, 2019.
 
     .. note::
 
