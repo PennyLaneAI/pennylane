@@ -5,7 +5,7 @@ TensorFlow interface
 
 To use a quantum node in combination with TensorFlow's Eager mode, we have to make it
 compatible with TensorFlow. A TensorFlow-compatible quantum node can be created
-either by using the ``'interface='tfe'`` flag in the qnode decorator, or
+either by using the ``interface='tfe'`` flag in the qnode decorator, or
 by calling the :func:`QNode.to_tfe` function. Internally, the translation is executed by
 the :func:`TFEQNode` function that returns the new quantum node object.
 
@@ -116,7 +116,7 @@ array([-0.47942549,  0.        ])
 To optimize your hybrid classical-quantum model using the TensorFlow eager interface,
 you **must** make use of the TensorFlow optimizers provided in the ``tf.train`` module,
 or your own custom TensorFlow optimizer. **The** :ref:`PennyLane optimizers <optimize>`
-**cannot be used with the TensorFlow interface.
+**cannot be used with the TensorFlow interface**.
 
 For example, to optimize a TFE-interfacing QNode (below) such that the weights ``x``
 result in an expectation value of 0.5, we can do the following:

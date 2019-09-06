@@ -6,7 +6,7 @@ PyTorch interface
 
 In order to use PennyLane in combination with PyTorch code, we have to generate "PyTorch-compatible"
 quantum nodes. A basic :class:`QNode` can be translated into a quantum node that interfaces
-with PyTorch, either by using the `interface='torch'` flag in the QNode Decorator, or
+with PyTorch, either by using the ``interface='torch'`` flag in the QNode Decorator, or
 by calling the :func:`QNode.to_torch` function. Internally, the translation is executed by
 the :func:`TorchQNode` function that returns the new quantum node object.
 
@@ -123,7 +123,7 @@ Optimization using PyTorch
 To optimize your hybrid classical-quantum model using the Torch interface,
 you **must** make use of the `PyTorch provided optimizers <https://pytorch.org/docs/stable/optim.html>`_,
 or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <optimize>`
-**cannot be used with the Torch interface.
+**cannot be used with the Torch interface**.
 
 For example, to optimize a Torch-interfacing QNode (below) such that the weights ``x``
 result in an expectation value of 0.5, with the classical nodes processed on a GPU,

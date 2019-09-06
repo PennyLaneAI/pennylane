@@ -168,7 +168,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    quickstart/intro
    quickstart/interfaces
-   quickstart/tutorials
+   tutorials
 
 
 .. toctree::

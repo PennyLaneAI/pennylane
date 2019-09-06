@@ -160,7 +160,7 @@ array([ 0.19846757,  0.012     ,  1.03559806])
 0.5
 
 For more details on the NumPy optimizers, check out the tutorials, as well as the
-:ref:`optimize` documentation.
+:ref:`pennylane.optimize` documentation.
 
 
 
