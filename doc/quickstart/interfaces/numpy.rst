@@ -106,7 +106,8 @@ For example, consider the following QNode:
 We can now use :func:`~.grad` to create a QNode *gradient function*,
 with respect to both QNode parameters ``phi`` and ``theta``:
 
-.. code::
+.. code-block:: python
+
     phi = np.array([0.5, 0.1])
     theta = 0.2
     dcircuit = qml.grad(circuit3, argnum=[0, 1])

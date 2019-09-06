@@ -15,17 +15,17 @@ plugins, and devices, via simple and easy-to-follow examples.
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to rotate a qubit.
-    :figure: ../../examples/figures/bloch.png
+    :figure: ../examples/figures/bloch.png
     :description: :ref:`qubit_rotation`
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to tune a beamsplitter.
-    :figure: ../../examples/figures/gaussian_transformation.png
+    :figure: ../examples/figures/gaussian_transformation.png
     :description: :ref:`gaussian_transformation`
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning in a multi-device quantum algorithm.
-    :figure: ../../examples/figures/photon_redirection.png
+    :figure: ../examples/figures/photon_redirection.png
     :description: :ref:`plugins_hybrid`
 
 .. customgalleryitem::
@@ -34,7 +34,7 @@ plugins, and devices, via simple and easy-to-follow examples.
 
 .. customgalleryitem::
     :tooltip: Extend PyTorch with real quantum computing power.
-    :figure: ../../examples/figures/bloch.gif
+    :figure: ../examples/figures/bloch.gif
     :description: :ref:`pytorch_noise`
 
 :html:`<div style='clear:both'></div>`
@@ -55,17 +55,17 @@ algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: A quantum variational classifier
-    :figure: ../../examples/figures/classifier_output_59_0.png
+    :figure: ../examples/figures/classifier_output_59_0.png
     :description: :ref:`variational_classifier`
 
 .. customgalleryitem::
     :tooltip: Fit one dimensional noisy data with a quantum neural network.
-    :figure: ../../examples/figures/qnn_output_28_0.png
+    :figure: ../examples/figures/qnn_output_28_0.png
     :description: :ref:`quantum_neural_net`
 
 .. customgalleryitem::
     :tooltip: Find the ground state of a Hamiltonian.
-    :figure: ../../examples/figures/vqe_output_22_0.png
+    :figure: ../examples/figures/vqe_output_22_0.png
     :description: :ref:`vqe`
 
 :html:`<div style='clear:both'></div>`
