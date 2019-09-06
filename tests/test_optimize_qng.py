@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the QGT optimizer"""
+"""Tests for the QNG optimizer"""
 import pytest
 
 import pennylane as qml
@@ -35,7 +35,7 @@ class TestExceptions:
         def cost(a):
             return circuit(a)
 
-        opt = qml.QGTOptimizer()
+        opt = qml.QNGOptimizer()
         params = 0.5
 
         with pytest.raises(
@@ -48,7 +48,7 @@ class TestOptimize:
     """Test basic optimization integration"""
 
     def test_qubit_rotation(self, tol):
-        """Test qubit rotation has the correct QGT value
+        """Test qubit rotation has the correct QNG value
         every step, the correct parameter updates,
         and correct cost after 200 steps"""
         dev = qml.device("default.qubit", wires=1)
@@ -69,7 +69,7 @@ class TestOptimize:
         init_params = np.array([0.011, 0.012])
         num_steps = 200
 
-        opt = qml.QGTOptimizer(eta)
+        opt = qml.QNGOptimizer(eta)
         theta = init_params
 
         # optimization for 200 steps total
