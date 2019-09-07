@@ -28,6 +28,17 @@
 
 ### Improvements
 
+* Refactoring of parts of the documentation:
+
+  - Extended 'quicksection' to introduce qnodes and interfaces
+
+  - User API is renamed to 'user docs' and now contains the
+    code documentation of all modules
+
+  - Developer API is deleted
+
+  - Plugin API only contains the guideline of how to write a plugin
+
 * Introduces two enumerations: `Any` and `All`, representing any number of wires
   and all wires in the system respectively. They can be imported from
   `pennylane.operation`, and can be used when defining the `Operation.num_wires`
