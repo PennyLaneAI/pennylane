@@ -83,7 +83,8 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_plugins_hybrid
     tutorials/pennylane_run_advanced_usage
     tutorials/pennylane_pytorch_noise
-    tutorials/pennylane_run_state_preparation
+    .. tutorials/pennylane_run_state_preparation
+
     tutorials/pennylane_run_QGAN
     tutorials/pennylane_run_variational_classifier
     tutorials/pennylane_quantum_neural_net
