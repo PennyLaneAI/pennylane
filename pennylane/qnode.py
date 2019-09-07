@@ -701,7 +701,8 @@ class QNode:
 
         # Check if m_wires is list of lists
         wire_list = []
-        if isinstance(m_wires[0], list):
+
+        if (len(m_wires) > 0) and isinstance(m_wires[0], list):
             # unwrap
             for wires in m_wires:
                 for i in wires:
