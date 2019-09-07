@@ -228,11 +228,7 @@ class Device(abc.ABC):
 
             for obs in observables:
                 if obs.return_type is Expectation:
-                    if obs.name == "Tensor":
-                        # Pass the full tensor object rather than just names
-                        results.append(self.expval(obs, obs.wires, obs.parameters))
-                    else:
-                        results.append(self.expval(obs.name, obs.wires, obs.parameters))
+                    results.append(self.expval(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type == Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type is Sample:
@@ -403,10 +399,10 @@ class Device(abc.ABC):
                     "Observable {} not supported on device {}".format(o.name, self.short_name)
                 )
 
-            if isinstance(o, Tensor) and (self.capabilities()["tensor_observables"] is False):
+            if isinstance(o.name, list) and (self.capabilities()["tensor_observables"] is False):
                 raise DeviceError(
                     "Tensor observables {} not supported on device {}".format(
-                        o.ops, self.short_name
+                        o.name, self.short_name
                     )
                 )
 

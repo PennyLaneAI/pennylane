@@ -815,14 +815,16 @@ class Tensor:
 
     def __init__(self):
         self.ops = []
-        self.params = None
+        self.name = []
         self.wires = []
-        self.name = "Tensor"
-        self.parameters = None
+        self.params = []
+        self.parameters = []
 
     def append(self, op):
         """Add operations to a tensor list
         """
         self.ops.append(op)
-        for w in op.wires:
-            self.wires.append(w)
+        self.name.append(op.name)
+        self.wires.append(op.wires)
+        self.params.append(op.params)
+        self.parameters.append(op.parameters)

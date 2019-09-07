@@ -463,11 +463,12 @@ class DefaultQubit(Device):
     def expval(self, observable, wires, par):
         if self.shots == 0:
             # exact expectation value
-            if isinstance(observable, Tensor):
+            if isinstance(observable, list):
                 # unpack the observable matrix
                 # TODO: merge the matrix generator functions
-                A = self._get_tensor_operator_matrix(observable)
-                ev = self.ev(A, wires)
+                A = self._get_tensor_operator_matrix(observable, wires, par)
+                wires_flat = [item for sublist in wires for item in sublist]
+                ev = self.ev(A, wires_flat)
             else:
                 A = self._get_operator_matrix(observable, par)
                 ev = self.ev(A, wires)
@@ -521,7 +522,7 @@ class DefaultQubit(Device):
             return A
         return A(*par)
 
-    def _get_tensor_operator_matrix(self, tensor):
+    def _get_tensor_operator_matrix(self, ops, wires, par):
         """Get the operator matrix for a given tensor of operations.
 
         Args:
@@ -530,8 +531,8 @@ class DefaultQubit(Device):
         Returns:
           array: matrix representation.
         """
-        ops = [self._get_operator_matrix(op.name, op.parameters) for op in tensor.ops]
-        return np.kron(*ops)
+        ops_ = [self._get_operator_matrix(ops[i], par[i]) for i in range(len(ops))]
+        return np.kron(*ops_)
 
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.

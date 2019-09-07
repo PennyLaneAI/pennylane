@@ -698,7 +698,18 @@ class QNode:
 
         # check that no wires are measured more than once
         m_wires = list(w for ex in self.ev for w in ex.wires)
-        if len(m_wires) != len(set(m_wires)):
+
+        # Check if m_wires is list of lists
+        wire_list = []
+        if isinstance(m_wires[0], list):
+            # unwrap
+            for wires in m_wires:
+                for i in wires:
+                    wire_list.append(i)
+        else:
+            wire_list = m_wires
+
+        if len(wire_list) != len(set(wire_list)):
             raise QuantumFunctionError(
                 "Each wire in the quantum circuit can only be measured once."
             )
@@ -706,7 +717,15 @@ class QNode:
         def check_op(op):
             """Make sure only existing wires are referenced."""
             for w in op.wires:
-                if w < 0 or w >= self.num_wires:
+                if isinstance(w, list):
+                    # Check for tensor operations
+                    for i in w:
+                        if i < 0 or i >= self.num_wires:
+                            raise QuantumFunctionError(
+                                "Operation {} applied to invalid wire {} "
+                                "on device with {} wires.".format(op.name, w, self.num_wires)
+                                )   
+                elif w < 0 or w >= self.num_wires:
                     raise QuantumFunctionError(
                         "Operation {} applied to invalid wire {} "
                         "on device with {} wires.".format(op.name, w, self.num_wires)
