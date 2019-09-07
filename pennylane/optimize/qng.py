@@ -31,7 +31,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     of the quantum geometric tensor :math:`G`:
 
     .. math::
-        x^{(t+1)} = x^{(t)} - \eta G(f(x^{(t)})^{-1} \nabla f(x^{(t)}),
+        x^{(t+1)} = x^{(t)} - \eta G(f(x^{(t)}))^{-1} \nabla f(x^{(t)}),
 
     where :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
     is an expectation value of some observable measured on the variational
@@ -80,6 +80,11 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
+
+    .. seealso::
+
+        See the :ref:`quantum natural gradient example <quantum_natural_gradient>`
+        for more details on Fubini-Study metric tensor and this optimization class.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
