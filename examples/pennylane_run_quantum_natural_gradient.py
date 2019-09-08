@@ -78,6 +78,16 @@ construct a quantum analogue to natural gradient descent:
 .. math:: \theta_{t+1} = \theta_t - \eta g^{+}(\theta_t)\nabla \mathcal{L}(\theta)
 
 where :math:`g^{+}` refers to the pseudo-inverse.
+
+.. note::
+
+    It can be shown that the Fubini-Study metric tensor reduces
+    to the Fisher information matrix in the classical limit.
+
+    Furthermore, in the limit where :math:`\eta\rightarrow 0`,
+    the dynamics of the system are equivalent to imaginary-time
+    evolution within the variational subspace, as proposed in
+    `McArdle et al. (2018) <https://arxiv.org/abs/1804.03023>`__.
 """
 
 ##############################################################################
@@ -98,9 +108,9 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 # That is, the gate :math:`K_i` is the *generator* of the parametrized operation :math:`X(\theta_i)`
 # corresponding to the :math:`i`-th parameter.
 #
-# For parametric 'layer' :math:`\ell` in the variational quantum circuit
-# containing :math:`n` parameters, an :math:`n\times n` block diagonal submatrix
-# of the Fubini-Study tensor :math:`g_{ij}^{(\ell)}` is by:
+# For each parametric layer :math:`\ell` in the variational quantum circuit
+# containing :math:`n` parameters, the :math:`n\times n` block-diagonal submatrix
+# of the Fubini-Study tensor :math:`g_{ij}^{(\ell)}` is calculated by:
 #
 # .. math::
 #
@@ -169,7 +179,7 @@ def layer1_subcircuit(params):
 #
 # .. math::
 #
-#     g^{(1)}_{ii} = \langle \psi_\ell | K_i^2 V | \psi_\ell\rangle
+#     g^{(1)}_{ii} = \langle \psi_\ell | K_i^2 | \psi_\ell\rangle
 #     - \langle \psi_\ell | K_i | \psi_\ell \rangle^2 = \Delta K_i
 
 @qml.qnode(dev)
@@ -277,6 +287,11 @@ print(np.round(circuit.metric_tensor(params), 8))
 # requires only 2 quantum evaluations, one per layer. This is done by
 # automatically detecting the layer structure, and noting that every
 # observable that must be measured commutes, allowing for simultaneous measurement.
+#
+# Therefore, combining the quantum natural gradient optimizer with the analytic
+# parameter-shift rule to optimize a variational circuit with :math:`d` parameters
+# and :math:`L` parametrized layers, a total of :math:`2d+L` quantum evaluations
+# are required per optimization step.
 #
 # Note that the :meth:`.QNode.metric_tensor` method also supports computing the diagonal
 # approximation to the metric tensor:
