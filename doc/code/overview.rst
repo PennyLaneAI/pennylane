@@ -35,7 +35,7 @@ The following modules are relevant for a typical **user** of PennyLane:
 | :ref:`pennylane.decorator     |  Defines the ``qnode()`` decorator function,                                         |
 | <decorator>`                  |  which turns quantum functions into QNodes.                                          |
 +-------------------------------+--------------------------------------------------------------------------------------+
-| :ref:`pennylane.init          |  Contains parameter initialization functions                                         |
+| :ref:`pennylane.init          |  Contains parameter initialization functions.                                        |
 | <par_init>`                   |                                                                                      |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.measure       |  Introduces different results to extract from a measurement,                         |

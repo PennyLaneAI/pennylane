@@ -30,14 +30,18 @@
 
 * Refactoring of parts of the documentation:
 
-  - Extended 'quicksection' to introduce qnodes and interfaces
+  - Extended 'Quickstart' to introduce qnodes and interfaces
 
-  - User API is renamed to 'user docs' and now contains the
-    code documentation of all modules
+  - 'User API' is renamed to 'Code Documentation' and now contains the
+    code documentation of all modules. Added overview table.
 
-  - Developer API is deleted
+  - 'Developer API' is deleted/merged into code documentation
 
-  - Plugin API only contains the guideline of how to write a plugin
+  - 'Plugin API' now only contains the guideline of how to
+    write a plugin, no module documentation
+
+  - Reduced number of shots from 1000 to 20 in "state preparation" tutorial
+    to reduce runtime from several hours to minutes
 
 * Introduces two enumerations: `Any` and `All`, representing any number of wires
   and all wires in the system respectively. They can be imported from

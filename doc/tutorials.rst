@@ -46,6 +46,10 @@ Take a deeper dive into quantum machine learning by exploring cutting-edge
 algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
+    :tooltip: Do arbitrary state preparation on a real quantum computer.
+    :description: :ref:`state_preparation`
+
+.. customgalleryitem::
     :tooltip: Use PennyLane to create a simple QGAN
     :description: :ref:`quantum_GAN`
 
@@ -76,6 +80,7 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_plugins_hybrid
     tutorials/pennylane_run_advanced_usage
     tutorials/pennylane_pytorch_noise
+    tutorials/pennylane_run_state_preparation
     tutorials/pennylane_run_QGAN
     tutorials/pennylane_run_variational_classifier
     tutorials/pennylane_quantum_neural_net
