@@ -96,7 +96,7 @@ def layer(params, j):
 # number of samples used to estimate expectation values.
 #
 
-dev = qml.device("forest.qvm", device="3q-pyqvm", shots=20)
+dev = qml.device("forest.qvm", device="3q-pyqvm", shots=100)
 
 ##############################################################################
 # When defining the qnode, we introduce as input a Hermitian operator
@@ -138,7 +138,7 @@ def cost_fn(params):
 opt = qml.AdamOptimizer()
 
 # number of steps in the optimization routine
-steps = 200
+steps = 250
 
 # the final stage of optimization isn't always the best, so we keep track of
 # the best parameters along the way
