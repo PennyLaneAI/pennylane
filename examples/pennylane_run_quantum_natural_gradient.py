@@ -48,7 +48,7 @@ in by this vector in euclidean space.
 The problem with the above approach is that each optimization step
 is highly dependent on the euclidean geometry of the parameter space.
 The parametrization chosen is not necessarily unique; the scale of the
-parameters, or even on the parametrization used, could easily be modified.
+parameters, or even the parametrization used, could easily be modified.
 If we instead consider the optimization problem as a distribution of possible
 output values given an input, a better approach is to instead perform the
 gradient descent in the *distribution space*, which is invariant with respect
