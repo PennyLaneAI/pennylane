@@ -75,7 +75,7 @@ The space of quantum states instead possesses a unique invariant metric
 tensor known as the Fubini-Study metric tensor :math:`g_{ij}`, which can be used to
 construct a quantum analogue to natural gradient descent:
 
-.. math:: \theta_{t+1} = \theta_t - \eta g^{+}(\theta_t)\nabla \mathcal{L}(\theta)
+.. math:: \theta_{t+1} = \theta_t - \eta g^{+}(\theta_t)\nabla \mathcal{L}(\theta),
 
 where :math:`g^{+}` refers to the pseudo-inverse.
 
@@ -95,7 +95,7 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 # ----------------------------
 #
 # The block-diagonal approximation to the Fubini-Study metric tensor
-# of a variational quantum circuit can be easily evaluated on quantum hardware.
+# of a variational quantum circuit can be evaluated on quantum hardware.
 #
 # Consider a quantum node represented by the variational quantum circuit
 #
@@ -276,7 +276,7 @@ print(np.round(g, 8))
 
 
 ##############################################################################
-# PennyLane contains an in-built method for computing the Fubini-Study metric
+# PennyLane contains a built-in method for computing the Fubini-Study metric
 # tensor, :meth:`.QNode.metric_tensor`, which we can use to verify this
 # result:
 print(np.round(circuit.metric_tensor(params), 8))
