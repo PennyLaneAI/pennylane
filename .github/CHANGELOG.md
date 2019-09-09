@@ -2,11 +2,25 @@
 
 ### New features since last release
 
+* Adds a new optimizer, `qml.QNGOptimizer`, which optimizes QNodes using
+  quantum natural gradient descent. See https://arxiv.org/abs/1909.02108
+  for more details.
+  [#295](https://github.com/XanaduAI/pennylane/pull/295)
+  [#311](https://github.com/XanaduAI/pennylane/pull/311)
+
+* Adds a new QNode method, `QNode.metric_tensor()`,
+  which returns the block-diagonal approximation to the Fubini-Study
+  metric tensor evaluated on the attached device.
+  [#295](https://github.com/XanaduAI/pennylane/pull/295)
+
 * Sampling support: QNodes can now return a specified number of samples
   from a given observable via the top-level `pennylane.sample()` function.
   To support this on plugin devices, there is a new `Device.sample` method.
 
   Calculating gradients of QNodes that involve sampling is not possible.
+  [#256](https://github.com/XanaduAI/pennylane/pull/256)
+
+* `default.qubit` has been updated to provide support for sampling.
   [#256](https://github.com/XanaduAI/pennylane/pull/256)
 
 * Added controlled rotation gates to PennyLane operations and `default.qubit` plugin.
@@ -22,9 +36,18 @@
 
 * The following CV observables were renamed to comply with the new Operation/Observable
   scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.
-  [#243](https://github.com/XanaduAI/pennylane/pull/243)
+  [#243](https://github.com/XanaduAI/pennylane/pull/254)
 
 ### Improvements
+
+* The `AmplitudeEmbedding` function now provides options to normalize and
+  pad features to ensure a valid state vector is prepared.
+  [#275](https://github.com/XanaduAI/pennylane/pull/275)
+
+* Operations can now optionally specify generators, either as existing PennyLane
+  operations, or by providing a NumPy array.
+  [#295](https://github.com/XanaduAI/pennylane/pull/295)
+  [#313](https://github.com/XanaduAI/pennylane/pull/313)
 
 * Adds a `Device.parameters` property, so that devices can view a dictionary mapping free
   parameters to operation parameters. This will allow plugin devices to take advantage
@@ -61,18 +84,36 @@
 * Changed the signature of the `RandomLayer` and `RandomLayers` templates to have a fixed seed by default.
   [#258](https://github.com/XanaduAI/pennylane/pull/258)
 
+* `setup.py` has been cleaned up, removing the non-working shebang,
+  and removing unused imports.
+  [#262](https://github.com/XanaduAI/pennylane/pull/262)
+
 ### Bug fixes
 
 * Fixed a bug where a `PolyXP` observable would fail if applied to subsets
   of wires on `default.gaussian`.
   [#277](https://github.com/XanaduAI/pennylane/pull/277)
 
+* Fixes a typo in `QubitStateVector`.
+  [#295](https://github.com/XanaduAI/pennylane/pull/296)
+
+* Fixes a typo in the `default_gaussian.gaussian_state` function.
+  [#293](https://github.com/XanaduAI/pennylane/pull/293)
+
+* Fixes a typo in the gradient recipe within the `RX`, `RY`, `RZ`
+  operation docstrings.
+  [#248](https://github.com/XanaduAI/pennylane/pull/248)
+
+* Fixes a broken link in the tutorial documentation, as a
+  result of the `qml.expval.Observable` deprecation.
+  [#246](https://github.com/XanaduAI/pennylane/pull/246)
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Nicolás Quesada,
-Maria Schuld, Antal Száva, Roeland Wiersema.
+Simon Cross, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer,
+Rohit Midha, Nicolás Quesada, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 ---
 
