@@ -90,17 +90,17 @@
 
 ### Documentation
 
-* Fixes a typo in `QubitStateVector`.
+* Fixed a typo in `QubitStateVector`.
   [#295](https://github.com/XanaduAI/pennylane/pull/296)
 
-* Fixes a typo in the `default_gaussian.gaussian_state` function.
+* Fixed a typo in the `default_gaussian.gaussian_state` function.
   [#293](https://github.com/XanaduAI/pennylane/pull/293)
 
-* Fixes a typo in the gradient recipe within the `RX`, `RY`, `RZ`
+* Fixed a typo in the gradient recipe within the `RX`, `RY`, `RZ`
   operation docstrings.
   [#248](https://github.com/XanaduAI/pennylane/pull/248)
 
-* Fixes a broken link in the tutorial documentation, as a
+* Fixed a broken link in the tutorial documentation, as a
   result of the `qml.expval.Observable` deprecation.
   [#246](https://github.com/XanaduAI/pennylane/pull/246)
 
