@@ -1,11 +1,6 @@
-# Release 0.5.0-dev
+# Release 0.5.0
 
 ### New features since last release
-
-* Adds a `Device.parameters` property, so that devices can view a dictionary mapping free
-  parameters to operation parameters. This will allow plugin devices to take advantage
-  of parametric compilation.
-  [#283](https://github.com/XanaduAI/pennylane/pull/283)
 
 * Sampling support: QNodes can now return a specified number of samples
   from a given observable via the top-level `pennylane.sample()` function.
@@ -19,7 +14,10 @@
 
 ### Breaking changes
 
-* The method `Device.supported` was removed.
+* The method `Device.supported` was removed. The replacement methods are
+  `Device.supports_observable` and `Device.supports_operation`.
+  Both methods can be called with string arguments (`dev.supports_observable('PauliX')`) and
+  class arguments (`dev.supports_observable(qml.PauliX)`).
   [#276](https://github.com/XanaduAI/pennylane/pull/276)
 
 * The following CV observables were renamed to comply with the new Operation/Observable
@@ -28,10 +26,16 @@
 
 ### Improvements
 
+* Adds a `Device.parameters` property, so that devices can view a dictionary mapping free
+  parameters to operation parameters. This will allow plugin devices to take advantage
+  of parametric compilation.
+  [#283](https://github.com/XanaduAI/pennylane/pull/283)
+
 * Introduces two enumerations: `Any` and `All`, representing any number of wires
   and all wires in the system respectively. They can be imported from
   `pennylane.operation`, and can be used when defining the `Operation.num_wires`
   class attribute of operations.
+  [#277](https://github.com/XanaduAI/pennylane/pull/277)
 
   As part of this change:
 
@@ -45,20 +49,12 @@
     which will alert the user that an operation with `num_wires = All`
     is being incorrectly.
 
-  [#277](https://github.com/XanaduAI/pennylane/pull/277)
-
-* The method `Device.supported` that listed all the supported operations and observables
-  was replaced with two separate methods `Device.supports_observable` and `Device.supports_operation`.
-  The methods can now be called with string arguments (`dev.supports_observable('PauliX')`) and with
-  class information arguments (`dev.supports_observable(qml.PauliX)`).
-  [#276](https://github.com/XanaduAI/pennylane/pull/276)
-
-* The one-qubit rotations in `pennylane.plugins.default_qubit` no longer depend on Scipy's `expm`. Instead 
+* The one-qubit rotations in `pennylane.plugins.default_qubit` no longer depend on Scipy's `expm`. Instead
   they are calculated with Euler's formula.
   [#292](https://github.com/XanaduAI/pennylane/pull/292)
 
-* Creates an `ObservableReturnTypes` enumeration class introducing the Sample, 
-  Variance and Expectation. These new values can be assigned to the `return_type`
+* Creates an `ObservableReturnTypes` enumeration class containing `Sample`,
+  `Variance` and `Expectation`. These new values can be assigned to the `return_type`
   attribute of an `Observable`.
   [#290](https://github.com/XanaduAI/pennylane/pull/290)
 
@@ -75,7 +71,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
+Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Nicolás Quesada,
+Maria Schuld, Antal Száva, Roeland Wiersema.
 
 ---
 
