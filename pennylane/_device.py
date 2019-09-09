@@ -384,7 +384,7 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
                 to be applied on the device
-            expectations (Iterable[~.operation.Observable]): observables which are intended
+            observables (Iterable[~.operation.Observable]): observables which are intended
                 to be evaluated on the device
         """
         for o in queue:
@@ -399,12 +399,13 @@ class Device(abc.ABC):
                     "Observable {} not supported on device {}".format(o.name, self.short_name)
                 )
 
-            if isinstance(o.name, list) and (self.capabilities()["tensor_observables"] is False):
-                raise DeviceError(
-                    "Tensor observables {} not supported on device {}".format(
-                        o.name, self.short_name
-                    )
-                )
+            if isinstance(o.name, list): 
+                if self.capabilities()["tensor_observables"] is False:
+                    raise DeviceError("Tensor observables not supported on device {}".format(self.short_name))
+
+                for name in o.name:
+                    if name not in self.observables:
+                        raise DeviceError("Observable {} not supported on device {}".format(i.name, self.short_name))
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
