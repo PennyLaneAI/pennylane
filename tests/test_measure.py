@@ -65,33 +65,6 @@ class TestExpval:
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
-    def test_only_single_qubit_tensors(self):
-        """Test if correct error is raised when attempting to tensor multi-qubit
-            observables."""
-        dev = qml.device("default.qubit", wires=3)
-        observable_matrix = np.array(
-            [
-                [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -1.0 + 0.0j],
-                [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-            ]
-        )
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            qml.RZ(0.52, wires=1)
-
-            return qml.expval(
-                qml.Hermitian(observable_matrix, wires=[0, 1]), qml.PauliY(2)
-            )
-
-        with pytest.raises(
-            QuantumFunctionError, match="Only single wire observables can be tensored."
-        ):
-            res = circuit()
-
     def test_tensored_observables(self):
         """Test expval calculations for a tensor of observables."""
         dev = qml.device("default.qubit", wires=2)
