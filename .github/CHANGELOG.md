@@ -14,7 +14,7 @@
 
 ### Breaking changes
 
-* The method `Device.supported` was removed. The replacement methods are
+* The method `Device.supported` was removed, and replaced with the methods
   `Device.supports_observable` and `Device.supports_operation`.
   Both methods can be called with string arguments (`dev.supports_observable('PauliX')`) and
   class arguments (`dev.supports_observable(qml.PauliX)`).
