@@ -559,6 +559,82 @@ class Observable(Operation):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
+    def __matmul__(self, other):
+        if isinstance(other, Observable):
+            return Tensor(self, other)
+
+        if instance(other, Tensor):
+            return other.__rmatmul__(self)
+
+        raise ValueError("Can only perform tensor products between observables.")
+
+
+class Tensor:
+    return_type = None
+    tensor = True
+
+    def __init__(self, *args):
+        self.obs = list(args)
+
+    @property
+    def name(self):
+        """All consituent observable names making up the tensor product.
+
+        Returns:
+            list[str]: list containing all observable names
+        """
+        return [o.name for o in self.obs]
+
+    @property
+    def num_wires(self):
+        return len([w for sublist in [o.wires for o in self.obs] for w in sublist])
+
+    @property
+    def wires(self):
+        """All wires in the system the tensor product acts on.
+
+        Returns:
+            list[int]: flattened list containing all wire values
+        """
+        return [o.wires for o in self.obs]
+
+    @property
+    def params(self):
+        """Raw parameters of all constituent observables in the tensor product.
+
+        Returns:
+            list[list[Any]]: nested list of shape ``(num_observables, num_parameters)``
+        """
+        return [p for sublist in [o.params for o in self.obs] for p in sublist]
+
+    @property
+    def parameters(self):
+        """Evaluated parameter values of all constituent observables in the tensor product.
+
+        Returns:
+            list[list[Any]]: nested list of shape ``(num_observables, num_parameters)``
+        """
+        return [o.parameters for o in self.obs]
+
+    def __matmul__(self, other):
+        if isinstance(other, Observable):
+            self.obs.append(other)
+
+        if isinstance(other, Tensor):
+            self.obs.extend(other.obs)
+
+        return self
+
+    def __rmatmul__(self, other):
+        if isinstance(other, Observable):
+            self.obs.prepend(other)
+
+        if isinstance(other, Tensor):
+            self.obs[:0] = other.obs
+
+        return self
+
+    __imatmul__ = __matmul__
 
 # =============================================================================
 # CV Operations and observables

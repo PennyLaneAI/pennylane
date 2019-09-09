@@ -341,13 +341,12 @@ class DefaultQubit(Device):
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. A value of 0 yields the exact result.
     """
-
-    name = "Default qubit PennyLane plugin"
-    short_name = "default.qubit"
-    pennylane_requires = "0.5"
-    version = "0.4.0"
-    author = "Xanadu Inc."
-    _capabilities = {"tensor_observables": True}
+    name = 'Default qubit PennyLane plugin'
+    short_name = 'default.qubit'
+    pennylane_requires = '0.5'
+    version = '0.4.0'
+    author = 'Xanadu Inc.'
+    _capabilities = {"model": "qubit", "tensor_observables": True}
 
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
@@ -464,15 +463,11 @@ class DefaultQubit(Device):
         if self.shots == 0:
             # exact expectation value
             if isinstance(observable, list):
-                # unpack the observable matrix
-                # TODO: merge the matrix generator functions
-                A = self._get_tensor_operator_matrix(observable, wires, par)
-                wires_flat = [item for sublist in wires for item in sublist]
-                ev = self.ev(A, wires_flat)
+                A = self._get_tensor_operator_matrix(observable, par)
             else:
                 A = self._get_operator_matrix(observable, par)
-                ev = self.ev(A, wires)
 
+            ev = self.ev(A, wires)
         else:
             # estimate the ev
             ev = np.mean(self.sample(observable, wires, par, self.shots))
@@ -481,9 +476,13 @@ class DefaultQubit(Device):
 
     def var(self, observable, wires, par):
         if self.shots == 0:
-            # exact expectation value
-            A = self._get_operator_matrix(observable, par)
-            var = self.ev(A @ A, wires) - self.ev(A, wires) ** 2
+            # exact variance value
+            if isinstance(observable, list):
+                A = self._get_tensor_operator_matrix(observable, par)
+            else:
+                A = self._get_operator_matrix(observable, par)
+
+            var = self.ev(A@A, wires) - self.ev(A, wires)**2
         else:
             # estimate the ev
             var = np.var(self.sample(observable, wires, par, self.shots))
@@ -522,28 +521,29 @@ class DefaultQubit(Device):
             return A
         return A(*par)
 
-    def _get_tensor_operator_matrix(self, ops, wires, par):
+    def _get_tensor_operator_matrix(self, obs, par):
         """Get the operator matrix for a given tensor of operations.
 
         Args:
-          tensor (:class:`Tensor`): A tensor of operations
-          par (tuple[float]): parameter values
+            obs (list[str]): list of observable names to tensor
+            par (list[list[Any]]): parameter values
+
         Returns:
-          array: matrix representation.
+            array: matrix representation.
         """
-        ops_ = [self._get_operator_matrix(ops[i], par[i]) for i in range(len(ops))]
-        return np.kron(*ops_)
+        ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
+        return np.kron(*ops)
 
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.
 
          Args:
-          A (array[float]): the observable matrix as array
-          wires (Sequence[int]): target subsystems
+            A (array[float]): the observable matrix as array
+            wires (Sequence[int]): target subsystems
          Returns:
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        As = self.mat_vec_product(A, self._state, wires)
+        As = self.mat_vec_product(A, self._state, np.hstack(wires).tolist())
         expectation = np.vdot(self._state, As)
 
         if np.abs(expectation.imag) > tolerance:
