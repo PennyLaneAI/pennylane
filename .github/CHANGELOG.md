@@ -88,11 +88,7 @@
   and removing unused imports.
   [#262](https://github.com/XanaduAI/pennylane/pull/262)
 
-### Bug fixes
-
-* Fixed a bug where a `PolyXP` observable would fail if applied to subsets
-  of wires on `default.gaussian`.
-  [#277](https://github.com/XanaduAI/pennylane/pull/277)
+### Documentation
 
 * Fixes a typo in `QubitStateVector`.
   [#295](https://github.com/XanaduAI/pennylane/pull/296)
@@ -107,6 +103,12 @@
 * Fixes a broken link in the tutorial documentation, as a
   result of the `qml.expval.Observable` deprecation.
   [#246](https://github.com/XanaduAI/pennylane/pull/246)
+
+### Bug fixes
+
+* Fixed a bug where a `PolyXP` observable would fail if applied to subsets
+  of wires on `default.gaussian`.
+  [#277](https://github.com/XanaduAI/pennylane/pull/277)
 
 ### Contributors
 
