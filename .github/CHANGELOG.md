@@ -1,3 +1,21 @@
+# Release 0.6.0-dev
+
+### New features since last release
+
+### Breaking changes
+
+### Improvements
+
+### Documentation
+
+### Bug fixes
+
+### Contributors
+
+This release contains contributions from (in alphabetical order):
+
+---
+
 # Release 0.5.0
 
 ### New features since last release
@@ -89,6 +107,24 @@
   [#262](https://github.com/XanaduAI/pennylane/pull/262)
 
 ### Documentation
+
+* A documentation refactor to simplify the tutorials and
+  include Sphinx-Gallery.
+  [#291](https://github.com/XanaduAI/pennylane/pull/291)
+
+  - Examples and tutorials previously split across the `examples/`
+    and `doc/tutorials/` directories, in a mixture of ReST and Jupyter notebooks,
+    have been rewritten as Python scripts with ReST comments in a single location,
+    the `examples/` folder.
+
+  - Sphinx-Gallery is used to automatically build and run the tutorials.
+    Rendered output is displayed in the Sphinx documentation.
+
+  - Links are provided at the top of every tutorial page for downloading the
+    tutorial as an executable python script, downloading the tutorial
+    as a Jupyter notebook, or viewing the notebook on GitHub.
+
+  - The tutorials table of contents have been moved to a single quick start page.
 
 * Fixed a typo in `QubitStateVector`.
   [#295](https://github.com/XanaduAI/pennylane/pull/296)
