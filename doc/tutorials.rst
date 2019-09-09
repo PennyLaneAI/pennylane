@@ -1,7 +1,7 @@
  .. role:: html(raw)
    :format: html
 
-.. _intro_tutorials:
+.. _New_Users:
 
 Tutorials
 =========

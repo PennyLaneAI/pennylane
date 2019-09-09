@@ -9,7 +9,7 @@ single-qubit states, including mixed states. Along the way, we also show
 how to:
 
 1. Construct compact expressions for circuits composed of many layers.
-2. Succinctly evaluate expectation values of many observables.
+2. Succintly evaluate expectation values of many observables.
 3. Estimate expectation values from repeated measurements, as in real
    hardware.
 """
@@ -74,7 +74,6 @@ nr_layers = 2
 # randomly initialize parameteres from a normal distribution
 params = np.random.normal(0, np.pi, (nr_qubits, nr_layers, 3))
 
-
 # a layer of the circuit ansatz
 def layer(params, j):
     for i in range(nr_qubits):
@@ -96,7 +95,7 @@ def layer(params, j):
 # number of samples used to estimate expectation values.
 #
 
-dev = qml.device("forest.qvm", device="3q-pyqvm", shots=100)
+dev = qml.device("forest.qvm", device="3q-pyqvm", shots=1000)
 
 ##############################################################################
 # When defining the qnode, we introduce as input a Hermitian operator
@@ -138,7 +137,7 @@ def cost_fn(params):
 opt = qml.AdamOptimizer()
 
 # number of steps in the optimization routine
-steps = 250
+steps = 200
 
 # the final stage of optimization isn't always the best, so we keep track of
 # the best parameters along the way
