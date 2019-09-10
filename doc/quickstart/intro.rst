@@ -137,7 +137,7 @@ For example:
 Using QNodes
 ------------
 
-Quantum nodes are typically used in :ref:`hybrid computations <hybrid_computation>`. That means
+Quantum nodes are typically used in :ref:`hybrid computations <hybrid_computation>`. This means
 that results of `QNodes` are further processed in classical functions, and that results from
 classical functions are fed into `QNodes`. The framework in which the `classical parts` of the
 hybrid computation are written is the *interface* with which PennyLane is used.
