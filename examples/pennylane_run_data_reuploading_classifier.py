@@ -1,5 +1,5 @@
 r"""
-.. _universal_classifier:
+.. _data_reuploading_classifier:
 
 Data-reuploading classifer
 ==========================
