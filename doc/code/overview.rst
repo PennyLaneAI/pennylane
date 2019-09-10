@@ -16,7 +16,7 @@ to specify the full module path, i.e.,
 
     from pennylane.templates.layers import StronglyEntanglingLayer
 
-While some modules are relevant to users, others are providing lower-level functionality and are therefore
+While some modules are relevant to users, others provide lower-level functionality and are therefore
 more relevant for developers.
 
 
