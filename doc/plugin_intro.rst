@@ -96,7 +96,7 @@ For a better idea of how to best implement :attr:`~.Device.operations` and :attr
 
     If the convention differs between the built-in PennyLane operation
     and the corresponding operation in the targeted framework, ensure that the
-    conversion between the two conventions takes places automatically
+    conversion between the two conventions takes place automatically
     by the plugin device.
 
 Applying operations
