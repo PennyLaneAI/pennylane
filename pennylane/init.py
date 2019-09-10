@@ -489,7 +489,7 @@ def cvqnn_layer_normal(n_wires, mean=0, std=1, mean_active=0, std_active=0.1, se
 
 
 def interferometer_uniform(n_wires, low=0, high=2 * pi, seed=None):
-    r"""Creates a list of three parameter arrays for a :func:`Interferometer`, drawn from a uniform
+    r"""Creates a list of three parameter arrays for an :func:`Interferometer`, drawn from a uniform
     distribution.
 
     The arrays are of the form ``[theta, phi, varphi]``, where:
