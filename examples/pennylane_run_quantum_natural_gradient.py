@@ -18,15 +18,15 @@ a low-depth parametrized quantum circuit ansatz is chosen, and a problem-specifi
 Hermitian observable measured. A classical optimization loop is then used to find
 the set of quantum parameters that *minimize* a particular measurement statistic
 of the quantum device. Examples of such algorithms include the :ref:`variational quantum
-eigensolver (VQE) <vqe>`, the `quantum approximant optimization algorithm (QAOA) <https://arxiv.org/abs/1411.4028>`__,
+eigensolver (VQE) <vqe>`, the `quantum approximate optimization algorithm (QAOA) <https://arxiv.org/abs/1411.4028>`__,
 and :ref:`quantum neural networks (QNN) <quantum_neural_net>`.
 
-Due to the inherent noise of near-term quantum hardware, most recent implementations
+Most recent implementations
 of variational quantum algorithms have used gradient-free classical optimization
 methods, such as Nelder-Mead. However, the parameter-shift rule for
 analytic quantum gradients (as implemented in PennyLane) has allowed for
 stochastic gradient descent of variational quantum algorithms on quantum
-hardware. Once caveat though that has been surfaced with gradient descent
+hardware. One caveat though that has been surfaced with gradient descent
 is the issue of learning rate or step-size --- how do we choose the optimal
 step size for our variational quantum algorithms, to ensure successful and
 efficient optimization?
@@ -39,14 +39,14 @@ In standard gradient descent, each optimization step is given by
 .. math:: \theta_{t+1} = \theta_t -\eta \nabla \mathcal{L}(\theta),
 
 where :math:`\mathcal{L}(\theta)` is the loss as a function of
-the parameters :math:`\theta`, and :math:`\eta` is the learning-rate
+the parameters :math:`\theta`, and :math:`\eta` is the learning rate
 or step size. In essence, each optimization step calculates a vector of
 steepest descent direction around the local value of :math:`\theta_t`
 in the parameter space, and updates :math:`\theta_t\rightarrow \theta_{t+1}`
-in by this vector in euclidean space.
+by this vector.
 
 The problem with the above approach is that each optimization step
-is highly dependent on the euclidean geometry of the parameter space.
+is strongly connected to a *Euclidean geometry* on the parameter space.
 The parametrization chosen is not necessarily unique; the scale of the
 parameters, or even the parametrization used, could easily be modified.
 If we instead consider the optimization problem as a distribution of possible
@@ -66,14 +66,14 @@ The Fisher information matrix acts as a metric tensor, transforming the
 steepest descent in the euclidean parameter space to the steepest descent in the
 distribution space.
 
-The quantum analogue
+The quantum analog
 ^^^^^^^^^^^^^^^^^^^^
 
-In a similar vein, it has been shown that the standard euclidean geometry
+In a similar vein, it has been shown that the standard Euclidean geometry
 is sub-optimal for optimization of quantum variational algorithms.
 The space of quantum states instead possesses a unique invariant metric
 tensor known as the Fubini-Study metric tensor :math:`g_{ij}`, which can be used to
-construct a quantum analogue to natural gradient descent:
+construct a quantum analog to natural gradient descent:
 
 .. math:: \theta_{t+1} = \theta_t - \eta g^{+}(\theta_t)\nabla \mathcal{L}(\theta),
 
@@ -94,7 +94,7 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 # Block-diagonal metric tensor
 # ----------------------------
 #
-# The block-diagonal approximation to the Fubini-Study metric tensor
+# A block-diagonal approximation to the Fubini-Study metric tensor
 # of a variational quantum circuit can be evaluated on quantum hardware.
 #
 # Consider a quantum node represented by the variational quantum circuit
@@ -104,8 +104,9 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 #     U(\mathbf{\theta}) = W(\theta_{i+1}, \dots, \theta_{N})X(\theta_{i})
 #     V(\theta_1, \dots, \theta_{i-1}),
 #
-# where all parametrized gates can be written of the form :math:`X(\theta_{i}) = e^{i\theta_i K_i}`.
-# That is, the gate :math:`K_i` is the *generator* of the parametrized operation :math:`X(\theta_i)`
+# where all parametrized gates can be written of the form :math:`X(\theta_{i}) = e^{i\theta_i K_i}`,
+# and :math:`W` and :math:`V`denote the circuit before and after the single gate :math:`X`.
+# The operator :math:`K_i` is the *generator* of the parametrized operation :math:`X(\theta_i)`
 # corresponding to the :math:`i`-th parameter.
 #
 # For each parametric layer :math:`\ell` in the variational quantum circuit

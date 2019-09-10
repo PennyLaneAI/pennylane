@@ -69,7 +69,7 @@ algorithms using PennyLane and near-term quantum hardware.
     :description: :ref:`vqe`
 
 .. customgalleryitem::
-    :tooltip: Faster optimization convergence using quantum geometry.
+    :tooltip: Faster optimization convergence using quantum natural gradient.
     :figure: ../examples/figures/qng_optimization.png
     :description: :ref:`quantum_natural_gradient`
 
