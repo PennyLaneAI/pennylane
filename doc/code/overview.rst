@@ -38,7 +38,7 @@ The following modules are relevant for a typical **user** of PennyLane:
 | :ref:`pennylane.init          |  Contains parameter initialization functions.                                        |
 | <par_init>`                   |                                                                                      |
 +-------------------------------+--------------------------------------------------------------------------------------+
-| :ref:`pennylane.measure       |  Introduces different results to extract from a measurement,                         |
+| :ref:`pennylane.measure       |  Contains functions to extract different results from a measurement,                 |
 | <measure>`                    |  i.e. :func:`expval`, :func:`var` and :func:`samples`.                               |
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.ops <ops>`    |  Contains specific operations for quantum circuits,                                  |
