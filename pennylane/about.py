@@ -19,7 +19,7 @@ about
 
 .. currentmodule:: pennylane.about
 
-This module contains the :func:`about` function to display all the details of the `pennylane` installation,
+This module contains the :func:`about` function to display all the details of the PennyLane installation,
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 
 

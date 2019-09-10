@@ -4,7 +4,7 @@ Interfaces
 ==========
 
 PennyLane integrates quantum nodes with other programming and machine learning frameworks.
-Such frameworks are called *interfaces*. The default interface, implicitly used in the previous
+Such frameworks are called *interfaces*. The default interface, implicitly used in the
 :ref:`Introduction <pl_intro>`, is NumPy.
 
 Currently, there is support for the following interfaces:

@@ -19,7 +19,7 @@ interfaces.tfe
 
 .. currentmodule:: pennylane.interfaces.tfe
 
-This module contains the :func:`TFEQNode` function to convert Numpy-interfacing quantum nodes with TensorFlow
+This module contains the :func:`TFEQNode` function to convert Numpy-interfacing quantum nodes to TensorFlow
 Eager mode compatible quantum nodes.
 
 Summary

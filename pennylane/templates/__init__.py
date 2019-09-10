@@ -56,7 +56,7 @@ Embedding templates
 -------------------
 
 Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state
-of the circuit. Hence, they take a feature vector as an argument. These embeddings can also depend of
+of the circuit. Hence, they take a feature vector as an argument. These embeddings can also depend on
 trainable parameters, in which case the embedding is learnable.
 
 The following embedding templates are available:
@@ -72,10 +72,10 @@ The following embedding templates are available:
 +------------------------------------+-------------------------------------------------------------------+
 | :func:`AngleEmbedding`             | Encodes an input into rotation angles of qubits.                  |
 +------------------------------------+-------------------------------------------------------------------+
-| :func:`SqueezingEmbedding`         | Encodes an input into the squeezing paparameters of quantum       |
+| :func:`SqueezingEmbedding`         | Encodes an input into the squeezing parameters of quantum         |
 |                                    | modes.                                                            |
 +------------------------------------+-------------------------------------------------------------------+
-| :func:`DisplacementEmbedding`      | Encodes an input into the squeezing paparameters of quantum       |
+| :func:`DisplacementEmbedding`      | Encodes an input into the squeezing parameters of quantum         |
 |                                    | modes.                                                            |
 +------------------------------------+-------------------------------------------------------------------+
 
