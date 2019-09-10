@@ -91,6 +91,7 @@ build a hybrid computation. For example,
         qnode1 = qml.QNode(qfunc1, dev1)
         result = qnode1(0.543)
 
+
 Machine learning interfaces
 ---------------------------
 

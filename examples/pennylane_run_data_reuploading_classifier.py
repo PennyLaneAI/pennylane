@@ -3,11 +3,11 @@ r"""
 
 Data-reuploading classifer
 ==========================
-**Author: Shahnawaz Ahmed (shahnawaz.ahmed95@gmail.com)**
+*Author: Shahnawaz Ahmed (shahnawaz.ahmed95@gmail.com)*
 
 A single-qubit quantum circuit which can implement arbitrary unitary
 operations can be used as a universal classifier much like a single
-hidden-layered Neural Network. As surprising as it sounds, 
+hidden-layered Neural Network. As surprising as it sounds,
 `Pérez-Salinas et al. (2019) <https://arxiv.org/abs/1907.02085>`_
 discuss this with their idea of 'data
 reuploading'. It is possible to load a single qubit with arbitrary
@@ -18,8 +18,8 @@ python based tool for quantum machine learning, automatic
 differentiation, and optimization of hybrid quantum-classical
 computations.
 
-Circles
-~~~~~~~
+Background
+----------
 
 We consider a simple classification problem and will train a
 single-qubit variational quantum circuit to achieve this goal. The data
@@ -121,20 +121,19 @@ state after running the circuit. We construct an observable corresponding to
 the output label using the `Hermitian <https://pennylane.readthedocs.io/en/latest/code/ops/qubit.html#pennylane.ops.qubit.Hermitian>`_
 operator. The expectation value of the observable gives the overlap or fidelity.
 We can then define the cost function as the sum of the fidelities for all
-the data points after passing throuh the circuit and optimize the parameters
+the data points after passing through the circuit and optimize the parameters
 :math:`(\vec \theta)` to minimize the cost.
 
 .. math::
-
 
    \texttt{Cost} = \sum_{\texttt{data points}} (1 - \texttt{fidelity}(\psi_{\texttt{output}}(\vec x, \vec \theta), \psi_{\texttt{label}}))
 
 Now, we can use our favorite optimizer to maximize the sum of the
 fidelities over all data points (or batches of datapoints) and find the
-optimal weights for classification. Gradient based optimizers such as
+optimal weights for classification. Gradient-based optimizers such as
 Adam (Kingma et. al., 2014) can be used if we have a good model of
 the circuit and how noise might affect it. Or, we can use some
-gradient-free method such as L-BFGS (Liu, Dong C., and Jorge Nocedal, 1989)
+gradient-free method such as L-BFGS (Liu, Dong C., and Nocedal, J., 1989)
 to evaluate the gradient and find the optimal weights where we can
 treat the quantum circuit as a black-box and the gradients are computed
 numerically using a fixed number of function evalutaions and iterations.
@@ -162,7 +161,7 @@ we will only implement a single qubit classifier.
    :alt: DNN
 
 "Talk is cheap. Show me the code. - Linus Torvalds"
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------------------
 """
 
 import pennylane as qml
@@ -173,10 +172,10 @@ import matplotlib.pyplot as plt
 
 
 # Make a dataset of points inside and outside of a circle
-def circle(samples, center=[0.0, 0.0], radius=np.sqrt(2/np.pi)):
+def circle(samples, center=[0.0, 0.0], radius=np.sqrt(2 / np.pi)):
     """
-    Generates a dataset of points with 1/0 labels inside a given radius. 
-    
+    Generates a dataset of points with 1/0 labels inside a given radius.
+
     Args:
         samples (int): number of samples to generate
         center (tuple): center of the circle
@@ -201,7 +200,7 @@ def circle(samples, center=[0.0, 0.0], radius=np.sqrt(2/np.pi)):
 def plot_data(x, y, fig=None, ax=None):
     """
     Plot data with red/blue values for a binary classification.
-    
+
     Args:
         x (array[tuple]): array of data points as tuples
         y (array[int]): array of data points as tuples
@@ -240,6 +239,7 @@ label_1 = [[0], [1]]
 state_labels = [label_0, label_1]
 
 
+##############################################################################
 # Simple classifier with data reloading and fidelity loss
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dev = qml.device("default.qubit", wires=1)
@@ -285,7 +285,7 @@ def cost(params, x, y, state_labels=None):
         x (array[float]): 2-d array of input vectors
         y (array[float]): 1-d array of targets
         state_labels (array[float]): array of state representations for labels
-        
+
     Returns:
         float: loss value to be minimized
     """
@@ -293,24 +293,25 @@ def cost(params, x, y, state_labels=None):
     loss = 0.0
     dm_labels = [density_matrix(s) for s in state_labels]
     for i in range(len(x)):
-        zvals = params[0] + params[1]*x[i]
+        zvals = params[0] + params[1] * x[i]
         f = qcircuit(zvals, x=x[i], y=dm_labels[y[i]])
-        loss = loss + (1 - f)**2
+        loss = loss + (1 - f) ** 2
     return loss / len(x)
 
 
+##############################################################################
 # Utility functions for testing and creating batches
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def test(params, x, y, state_labels=None):
     """
     Tests on a given set of data.
-    
+
     Args:
         weights (array[float]): array of weights
         x (array[float]): 2-d array of input vectors
         y (array[float]): 1-d array of targets
         state_labels (array[float]): 1-d array of state representations for labels
-        
+
     Returns:
         predicted (array([int]): predicted labels for test data
         output_states (array[float]): output quantum states from the circuit
@@ -319,7 +320,7 @@ def test(params, x, y, state_labels=None):
     output_states = []
     dm_labels = [density_matrix(s) for s in state_labels]
     for i in range(len(x)):
-        zvals = params[0] + params[1]*x[i]
+        zvals = params[0] + params[1] * x[i]
         expectation = qcircuit(zvals, x=x[i], y=dm_labels[y[i]])
         output_states.append(dev._state)
     predicted = predicted_labels(output_states, state_labels)
@@ -330,19 +331,17 @@ def predicted_labels(states, state_labels=None):
     """
     Computes the label of the predicted state by selecting the one
     with maximum fidelity.
-    
+
     Args:
         weights (array[float]): array of weights
         x (array[float]): 2-d array of input vectors
         y (array[float]): 1-d array of targets
         state_labels (array[float]): 1-d array of state representations for labels
-        
+
     Returns:
         float: loss value to be minimized
     """
-    output_labels = [
-        np.argmax([fidelity(s, label) for label in state_labels]) for s in states
-    ]
+    output_labels = [np.argmax([fidelity(s, label) for label in state_labels]) for s in states]
     return np.array(output_labels)
 
 
@@ -364,11 +363,11 @@ def accuracy_score(y_true, y_pred):
 def iterate_minibatches(inputs, targets, batch_size):
     """
     A generator for batches of the input data
-    
+
     Args:
         inputs (array[float]): input data
         targets (array[float]): targets
-    
+
     Returns:
         inputs (array[float]): one batch of input data of length `batch_size`
         targets (array[float]): one batch of targets of length `batch_size`
@@ -412,14 +411,16 @@ accuracy_train = accuracy_score(y_train, predicted_train)
 predicted_test, states_test = test(params, X_test, y_test, state_labels)
 accuracy_test = accuracy_score(y_test, predicted_test)
 
-# save predictions with random weights for comparision
+# save predictions with random weights for comparison
 initial_predictions = predicted_test
 
 loss = cost(params, X_test, y_test, state_labels)
 
 print(
     "Epoch: {:2d} | Cost: {:3f} | Train accuracy: {:3f} | Test Accuracy: {:3f}".format(
-        0, loss, accuracy_train, accuracy_test))
+        0, loss, accuracy_train, accuracy_test
+    )
+)
 
 for it in range(epochs):
     for Xbatch, ybatch in iterate_minibatches(X_train, y_train, batch_size=batch_size):
@@ -432,9 +433,7 @@ for it in range(epochs):
     predicted_test, states_test = test(params, X_test, y_test, state_labels)
     accuracy_test = accuracy_score(y_test, predicted_test)
     res = [it + 1, loss, accuracy_train, accuracy_test]
-    print(
-        "Epoch: {:2d} | Loss: {:3f} | Train accuracy: {:3f} | Test accuracy: {:3f}".format(
-            *res))
+    print("Epoch: {:2d} | Loss: {:3f} | Train accuracy: {:3f} | Test accuracy: {:3f}".format(*res))
 
 
 ##############################################################################
@@ -462,21 +461,20 @@ plt.show()
 
 
 ##############################################################################
-# This tutorial was generated using the following Pennylane version
-# ~~~~~~~
+# This tutorial was generated using the following Pennylane version:
 qml.about()
 
 
 ##############################################################################
 # References
-# ~~~~~~~~~~
-
+# ----------
+#
 # [1] Pérez-Salinas, Adrián, et al. “Data re-uploading for a universal
 # quantum classifier.” arXiv preprint arXiv:1907.02085 (2019).
-
-# [2] Kingma, Diederik P., and Jimmy Ba. "Adam: A method for stochastic
+#
+# [2] Kingma, Diederik P., and Ba, J. "Adam: A method for stochastic
 # optimization." arXiv preprint arXiv:1412.6980 (2014).
-
-# [3] Liu, Dong C., and Jorge Nocedal. "On the limited memory BFGS
-# method for large scale optimization." Mathematical programming 
+#
+# [3] Liu, Dong C., and Nocedal, J. "On the limited memory BFGS
+# method for large scale optimization." Mathematical programming
 # 45.1-3 (1989): 503-528.
