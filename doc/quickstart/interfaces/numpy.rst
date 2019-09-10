@@ -179,7 +179,7 @@ How does automatic differentiation work in the case where the QNode returns mult
         qml.RX(x, wires=1)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-If we were to naively try computing the gradient of ``qnode1`` using the :func:`~.grad` function,
+If we were to naively try computing the gradient of ``circuit5`` using the :func:`~.grad` function,
 
 .. code::
 
