@@ -71,7 +71,7 @@ algorithms using PennyLane and near-term quantum hardware.
 .. customgalleryitem::
     :tooltip: Universal Quantum Classifier with data-reuploading
     :figure: ../examples/figures/universal_dnn.png
-    :description: :ref:`universal_classifier`
+    :description: :ref:`data_reuploading_classifier`
 
 :html:`<div style='clear:both'></div>`
 
@@ -90,4 +90,4 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_variational_classifier
     tutorials/pennylane_quantum_neural_net
     tutorials/pennylane_run_variational_quantum_eigensolver
-    tutorials/pennylane_run_universal_classifier
+    tutorials/pennylane_run_data_reuploading_classifier
