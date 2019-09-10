@@ -114,7 +114,7 @@ quantum node decorator. This decorator converts a quantum function containing Pe
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
 .. note::
-    The decorator completely replaces the Python-defined function with
+    The decorator completely replaces the Python-based quantum function with
     a :mod:`QNode <pennylane.qnode>` of the same name - as such, the original
     function is no longer accessible (but is accessible via the :attr:`~.QNode.func` attribute).
 
