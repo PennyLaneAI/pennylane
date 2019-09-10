@@ -16,7 +16,7 @@ to specify the full module path, i.e.,
 
     from pennylane.templates.layers import StronglyEntanglingLayer
 
-While some modules are relevant to users, others are providing lower-level functionality and are therefore
+While some modules are relevant to users, others provide lower-level functionality and are therefore
 more relevant for developers.
 
 
@@ -56,7 +56,7 @@ The following modules are relevant for a typical **user** of PennyLane:
 Other modules
 -------------
 
-The following modules are contain lower-level functionality, which is more relevant for developers:
+The following modules contain lower-level functionality, which is more relevant for developers:
 
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.about         |  Print basic information about PennyLane.                                            |
@@ -85,7 +85,7 @@ The following modules are contain lower-level functionality, which is more relev
 .. note::
 
     If you want to write a plugin that connects PennyLane to hardware
-    and simulator backends, visit the :ref:`Plugin API <plugin_overview>`.
+    and simulator backends, visit the :ref:`Plugin API <plugin_overview>` page.
 
 An alphabetical list of *all* functions and classes can be found in the :ref:`genindex`.
 

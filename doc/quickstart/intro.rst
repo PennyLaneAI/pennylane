@@ -20,7 +20,7 @@ It shows new PennyLane users how to:
 - Define **computational devices**
 - Combine quantum functions and devices to **quantum nodes**
 - Conveniently create quantum nodes using the quantum node **decorator**
-- Find out more about **interfaces** to use quantum nodes
+- Find out more about **interfaces** to use with quantum nodes
 
 More information about PennyLane's code base can be found in the
 :ref:`Code Documentation <library_overview>`.
@@ -83,7 +83,7 @@ instantiated using the :func:`~device` loader.
 
     dev = qml.device('default.qubit', wires=2)
 
-PennyLane comes included with
+PennyLane offers some basic devices such as
 some basic devices such as the ``'default.qubit'`` simulator; additional devices can be installed
 as plugins (see :ref:`plugins` for more details). Note that the choice of a device significantly
 determines the speed of your computation.
@@ -114,7 +114,7 @@ quantum node decorator. This decorator converts a quantum function containing Pe
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
 
 .. note::
-    The decorator completely replaces the Python-defined function with
+    The decorator completely replaces the Python-based quantum function with
     a :mod:`QNode <pennylane.qnode>` of the same name - as such, the original
     function is no longer accessible (but is accessible via the :attr:`~.QNode.func` attribute).
 
@@ -137,7 +137,7 @@ For example:
 Using QNodes
 ------------
 
-Quantum nodes are typically used in :ref:`hybrid computations <hybrid_computation>`. That means
+Quantum nodes are typically used in :ref:`hybrid computations <hybrid_computation>`. This means
 that results of `QNodes` are further processed in classical functions, and that results from
 classical functions are fed into `QNodes`. The framework in which the `classical parts` of the
 hybrid computation are written is the *interface* with which PennyLane is used.

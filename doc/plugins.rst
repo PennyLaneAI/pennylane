@@ -124,5 +124,5 @@ To write your own PennyLane-compatible plugin, the best place to start is our
 :ref:`overview of the plugin developer API <plugin_overview>`, as well as exploring
 the source code of the provided reference plugin modules
 :mod:`pennylane.plugins.default_qubit` and :mod:`pennylane.plugins.default_gaussian`
-(providing the ``default.qubit`` and ``default.gaussian`` devices respectively).
+(these plugins provide the ``default.qubit`` and ``default.gaussian`` devices respectively).
 

@@ -54,7 +54,7 @@ Construction from a NumPy QNode
 
 Sometimes, it is more convenient to instantiate a :class:`~.QNode` object directly, for example,
 if you would like to reuse the same quantum function across multiple devices, or even
-using different classical interfaces:
+use different classical interfaces:
 
 .. code-block:: python
 
