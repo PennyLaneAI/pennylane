@@ -85,7 +85,7 @@ The following modules contain lower-level functionality, which is more relevant 
 .. note::
 
     If you want to write a plugin that connects PennyLane to hardware
-    and simulator backends, visit the :ref:`Plugin API <plugin_overview>`.
+    and simulator backends, visit the :ref:`Plugin API <plugin_overview>` page.
 
 An alphabetical list of *all* functions and classes can be found in the :ref:`genindex`.
 
