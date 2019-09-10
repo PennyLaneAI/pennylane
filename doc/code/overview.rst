@@ -56,7 +56,7 @@ The following modules are relevant for a typical **user** of PennyLane:
 Other modules
 -------------
 
-The following modules are contain lower-level functionality, which is more relevant for developers:
+The following modules contain lower-level functionality, which is more relevant for developers:
 
 +-------------------------------+--------------------------------------------------------------------------------------+
 | :ref:`pennylane.about         |  Print basic information about PennyLane.                                            |
