@@ -171,6 +171,10 @@ from pennylane.optimize import AdamOptimizer, GradientDescentOptimizer
 import matplotlib.pyplot as plt
 
 
+# Set a random seed
+np.random.seed(42)
+
+
 # Make a dataset of points inside and outside of a circle
 def circle(samples, center=[0.0, 0.0], radius=np.sqrt(2 / np.pi)):
     """
@@ -393,7 +397,7 @@ X_test = np.hstack((Xtest, np.zeros((Xtest.shape[0], 1))))
 # Train using Adam optimizer and evaluate the classifier
 num_layers = 3
 learning_rate = 0.6
-epochs = 30
+epochs = 20
 batch_size = 32
 
 opt = AdamOptimizer(learning_rate, beta1=0.9, beta2=0.999)
