@@ -554,28 +554,42 @@ class TestSample:
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
     def test_sampling_parameters_coherent(self, tol, gaussian_device_1_wire, alpha):
-        """Tests that the np.random.normal is called with the correct parameters that reflect 
+        """Tests that the np.random.normal is called with the correct parameters that reflect
            the underlying distribution for a coherent state."""
 
         mean = alpha.imag*np.sqrt(2*gaussian_device_1_wire.hbar)
         std = gaussian_device_1_wire.hbar/2
         gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
-        
+
         with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
             sample = gaussian_device_1_wire.sample('P', [0], [], 5)
 
             args, kwargs = mock.call_args
             assert np.allclose(args, [mean, std, 5], atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
+    def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha):
+        """Tests that the np.random.normal is called with the correct parameters that reflect
+           the underlying distribution for a coherent state when using QuadOperator."""
+
+        mean = alpha.imag*np.sqrt(2*gaussian_device_1_wire.hbar)
+        std = gaussian_device_1_wire.hbar/2
+        gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
+        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
+            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2], 5)
+
+            args, kwargs = mock.call_args
+            assert np.allclose(args, [mean, std, 5], atol=tol, rtol=0)
+
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
     def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi):
-        """Tests that the np.random.normal is called with the correct parameters that reflect 
+        """Tests that the np.random.normal is called with the correct parameters that reflect
            the underlying distribution for a squeezed state."""
 
         mean = 0.0
         std = math.sqrt(gaussian_device_1_wire.hbar*np.exp(2*r)/2)
         gaussian_device_1_wire.apply('SqueezedState', wires=[0], par=[r, phi])
-        
+
         with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
             sample = gaussian_device_1_wire.sample('P', [0], [], 5)
 
