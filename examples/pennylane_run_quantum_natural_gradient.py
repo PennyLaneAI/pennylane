@@ -47,12 +47,38 @@ by this vector.
 
 The problem with the above approach is that each optimization step
 is strongly connected to a *Euclidean geometry* on the parameter space.
-The parametrization chosen is not necessarily unique; the scale of the
-parameters, or even the parametrization used, could easily be modified.
-If we instead consider the optimization problem as a distribution of possible
-output values given an input, a better approach is to instead perform the
-gradient descent in the *distribution space*, which is invariant with respect
-to the parametrization.
+The parametrization is not unique, and different parametrizations can distort
+distances within the optimization landscape.
+
+For example, consider the following loss function:
+
+.. math:: \mathcal{L}(x, y) = 5(1- e^{-(x^2 + (y/10)^2)})
+
+We wish to find the values of parameters :math:`x` and :math:`y` that minimize
+the loss. Here, movement in the :math:`x` direction results in significantly larger changes
+in the overall cost compared to movement in the :math:`y` direction. So for decent
+convergence, we would expect to increment :math:`x` by a proportionally smaller
+amount per optimization step than :math:`y`.
+
+Let's apply the gradient descent update rule as given above:
+
+.. math::
+
+    x_{t+1} &= x_t -(10 \eta x) \mathcal{L}(x, y),\\
+    y_{t+1} &= y_t -(\eta y/100) \mathcal{L}(x, y).
+
+Instead, we can see that significantly larger steps are taken in the :math:`x` direction
+than the :math:`y` direction! Since the parametrization is not unique, another
+parametrization (such as rescaling :math:`y`, or using polar coordinates), might
+result in a more informative step size, and increase optimization convergence.
+
+If we instead consider the optimization problem as a
+probability distribution of possible output values given an input
+(i.e., `maximum likelihood estimation <https://en.wikipedia.org/wiki/Likelihood_function>`_,
+a better approach is to perform the gradient descent in the *distribution space*, which is
+dimensionless and invariant with respect to the parametrization. As a result,
+the optimum step-size at each optimization step will always be chosen for each
+parameter, regardless of the parametrization.
 
 In classical neural networks, the above process is known as
 *natural gradient descent*, and was first introduced by
@@ -97,31 +123,42 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 # A block-diagonal approximation to the Fubini-Study metric tensor
 # of a variational quantum circuit can be evaluated on quantum hardware.
 #
-# Consider a quantum node represented by the variational quantum circuit
+# Consider a variational quantum circuit
 #
 # .. math::
 #
-#     U(\mathbf{\theta}) = W(\theta_{i+1}, \dots, \theta_{N})X(\theta_{i})
-#     V(\theta_1, \dots, \theta_{i-1}),
+#     U(\mathbf{\theta})|\psi_0\rangle = V_L(\theta_L) W_L V_{L-1}(\theta_{L-1}) W_{L-1}
+#       \cdots V_{\ell}(\theta_{\ell}) W_{\ell} \cdots V_{0}(\theta_{0}) W_{0} |\psi_0\rangle
 #
-# where all parametrized gates can be written of the form :math:`X(\theta_{i}) = e^{i\theta_i K_i}`,
-# and :math:`W` and :math:`V`denote the circuit before and after the single gate :math:`X`.
-# The operator :math:`K_i` is the *generator* of the parametrized operation :math:`X(\theta_i)`
-# corresponding to the :math:`i`-th parameter.
+# where
+#
+# * :math:`|\psi_0\rangle` is the initial state,
+# * :math:`W_\ell` are layers of of non-parametrized quantum gates,
+# * :math:`V_\ell(\theta_\ell)` are layers of of parametrized quantum gates
+#   with :math:`n_\ell` parameters :math:`\theta_\ell = \{\theta^{(\ell)}_0, \dots, \theta^{(\ell)}_n\}`.
+#
+# Further, assume all parametrized gates can be written of the form
+# :math:`X(\theta^{(\ell)}_{i}) = e^{i\theta^{(\ell)}_{i} K_i}`,
+# where :math:`K^{(\ell)}_i` is the *generator* of the parametrized operation.
 #
 # For each parametric layer :math:`\ell` in the variational quantum circuit
-# containing :math:`n` parameters, the :math:`n\times n` block-diagonal submatrix
+# the :math:`n_\ell\times n_\ell` block-diagonal submatrix
 # of the Fubini-Study tensor :math:`g_{ij}^{(\ell)}` is calculated by:
 #
 # .. math::
 #
-#     g_{ij}^{(\ell)} = \langle \psi_\ell | K_i K_j | \psi_\ell \rangle
-#     - \langle \psi_\ell | K_i | \psi_\ell\rangle
-#     \langle \psi_\ell |K_j | \psi_\ell\rangle
+#     g_{ij}^{(\ell)} = \langle \psi_{\ell-1} | K_i K_j | \psi_{\ell-1} \rangle
+#     - \langle \psi_{\ell-1} | K_i | \psi_{\ell-1}\rangle
+#     \langle \psi_{\ell-1} |K_j | \psi_{\ell-1}\rangle
 #
-# where :math:`|\psi_\ell\rangle =  V(\theta_1, \dots, \theta_{i-1})|0\rangle`
-# (that is, :math:`|\psi_\ell\rangle` is the quantum state prior to the application
-# of parameterized layer :math:`\ell`).
+# where
+#
+# .. math::
+#
+#     | \psi_{\ell-1}\rangle = V_{\ell-1}(\theta_{\ell-1}) W_{\ell-1} \cdots V_{0}(\theta_{0}) W_{0} |\psi_0\rangle.
+#
+# (that is, :math:`|\psi_{\ell-1}\rangle` is the quantum state prior to the application
+# of parameterized layer :math:`\ell`), and we have :math:`K_i \equiv K_i^{(\ell)}` for brevity.
 #
 # Let's consider a small variational quantum circuit example coded in PennyLane:
 import numpy as np
@@ -170,7 +207,8 @@ params = np.array([0.432, -0.123, 0.543, 0.233])
 g1 = np.zeros([2, 2])
 
 def layer1_subcircuit(params):
-    # all preceding gates
+    """This function contains all gates that
+    precede parametrized layer 1"""
     qml.RY(np.pi/4, wires=0)
     qml.RY(np.pi/3, wires=1)
     qml.RY(np.pi/7, wires=2)
@@ -223,7 +261,8 @@ g1[1, 0] = (exK0K1 - exK0*exK1)/4
 g2 = np.zeros([2, 2])
 
 def layer2_subcircuit(params):
-    # all preceding gates
+    """This function contains all gates that
+    precede parametrized layer 2"""
     # non-parametrized gates
     qml.RY(np.pi/4, wires=0)
     qml.RY(np.pi/3, wires=1)
