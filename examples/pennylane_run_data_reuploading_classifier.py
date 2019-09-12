@@ -245,7 +245,8 @@ state_labels = [label_0, label_1]
 
 ##############################################################################
 # Simple classifier with data reloading and fidelity loss
-##############################################################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 dev = qml.device("default.qubit", wires=1)
 # Install any pennylane-plugin to run on some particular backend
 
@@ -305,7 +306,8 @@ def cost(params, x, y, state_labels=None):
 
 ##############################################################################
 # Utility functions for testing and creating batches
-##############################################################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 def test(params, x, y, state_labels=None):
     """
     Tests on a given set of data.
@@ -384,7 +386,8 @@ def iterate_minibatches(inputs, targets, batch_size):
 
 ##############################################################################
 # Train a quantum classifier on the circle dataset
-##############################################################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Generate training and test data
 num_training = 200
 num_test = 2000
@@ -440,7 +443,8 @@ for it in range(epochs):
 
 ##############################################################################
 # Results
-##############################################################################
+# ~~~~~~~
+
 print("Cost: {:3f} | Train accuracy {:3f} | Test Accuracy : {:3f}".format(
         loss, accuracy_train, accuracy_test))
 
@@ -461,13 +465,13 @@ plt.show()
 
 ##############################################################################
 # This tutorial was generated using the following Pennylane version:
-##############################################################################
+
 qml.about()
 
 
 ##############################################################################
 # References
-##############################################################################
+# ----------
 # [1] Pérez-Salinas, Adrián, et al. “Data re-uploading for a universal
 # quantum classifier.” arXiv preprint arXiv:1907.02085 (2019).
 #
