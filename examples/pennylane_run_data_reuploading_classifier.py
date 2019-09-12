@@ -299,7 +299,7 @@ def cost(params, x, y, state_labels=None):
     dm_labels = [density_matrix(s) for s in state_labels]
     for i in range(len(x)):
         f = qcircuit(params, x=x[i], y=dm_labels[y[i]])
-        loss = loss + (1 - f)**2
+        loss = loss + (1 - f) ** 2
     return loss / len(x)
 
 
@@ -344,7 +344,9 @@ def predicted_labels(states, state_labels=None):
     Returns:
         float: loss value to be minimized
     """
-    output_labels = [np.argmax([fidelity(s, label) for label in state_labels]) for s in states]
+    output_labels = [
+        np.argmax([fidelity(s, label) for label in state_labels]) for s in states
+    ]
     return np.array(output_labels)
 
 
@@ -381,7 +383,7 @@ def iterate_minibatches(inputs, targets, batch_size):
 
 
 ##############################################################################
-# Training a classifier on the circle dataset
+# Train a quantum classifier on the circle dataset
 ##############################################################################
 # Generate training and test data
 num_training = 200
@@ -431,18 +433,21 @@ for it in range(epochs):
     predicted_test, states_test = test(params, X_test, y_test, state_labels)
     accuracy_test = accuracy_score(y_test, predicted_test)
     res = [it + 1, loss, accuracy_train, accuracy_test]
-    print("Epoch: {:2d} | Loss: {:3f} | Train accuracy: {:3f} | Test accuracy: {:3f}".format(*res))
+    print(
+        "Epoch: {:2d} | Loss: {:3f} | Train accuracy: {:3f} | Test accuracy: {:3f}".format(
+            *res))
 
 
 ##############################################################################
 # Results
-# ~~~~~~~
-print("=====================================================================")
+##############################################################################
 print("Cost: {:3f} | Train accuracy {:3f} | Test Accuracy : {:3f}".format(
         loss, accuracy_train, accuracy_test))
 
-print("Learned weights {}:".format(params))
-print("==========================================================================")
+print("Learned weights")
+for i in range(num_layers):
+    print("Layer {}: {}".format(i, params[i]))
+
 
 fig, axes = plt.subplots(1, 3, figsize=(10, 3))
 plot_data(X_test, initial_predictions, fig, axes[0])
@@ -456,13 +461,13 @@ plt.show()
 
 ##############################################################################
 # This tutorial was generated using the following Pennylane version:
+##############################################################################
 qml.about()
 
 
 ##############################################################################
 # References
-# ----------
-#
+##############################################################################
 # [1] Pérez-Salinas, Adrián, et al. “Data re-uploading for a universal
 # quantum classifier.” arXiv preprint arXiv:1907.02085 (2019).
 #
