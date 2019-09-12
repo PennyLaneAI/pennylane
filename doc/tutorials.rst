@@ -9,7 +9,7 @@ Tutorials
 PennyLane basics
 ~~~~~~~~~~~~~~~~~~~
 
-These step-by-step tutorials provide a gentle introduction to the basics of PennyLane. In the last two examples, we put everything together and consider PennyLane's version of the "Hello world!" example - qubit rotation and the Gaussian transformation of a qumode.
+These step-by-step tutorials provide a gentle introduction to the basics of PennyLane. In the last two examples, we put everything together and consider PennyLane's version of the "Hello world!" example — qubit rotation and the Gaussian transformation of a qumode.
 
 .. toctree::
     :hidden:
