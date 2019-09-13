@@ -202,9 +202,7 @@ class TestSample:
 
         sample = circuit()
 
-        assert np.array_equal(sample.shape, (2,))
-        assert np.array_equal(sample[0].shape, (n_sample,))
-        assert np.array_equal(sample[1].shape, (n_sample,))
+        assert np.array_equal(sample.shape, (2,n_sample))
 
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
@@ -227,9 +225,9 @@ class TestSample:
 
     def test_single_wire_sample(self, tol):
         """Test the return type and shape of sampling a single wire"""
-        dev = qml.device("default.qubit", wires=1)
-
         n_sample = 10
+
+        dev = qml.device("default.qubit", wires=1, shots=n_sample)
 
         @qml.qnode(dev)
         def circuit():
@@ -259,28 +257,6 @@ class TestSample:
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == np.dtype("float")
-
-    def test_multi_wire_sample_ragged_shape(self, tol):
-        """Test the return type and shape of sampling multiple wires
-           where a ragged array is expected"""
-        n_sample = 10
-
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
-
-        result = circuit()
-
-        # If the sample dimensions are not equal we expect the
-        # output to be an array of dtype="object"
-        assert isinstance(result, np.ndarray)
-        assert result.dtype == np.dtype("object")
-        assert np.array_equal(result.shape, (3,))
-        assert np.array_equal(result[0].shape, (n_sample,))
-        assert np.array_equal(result[1].shape, (n_sample,))
-        assert np.array_equal(result[2].shape, (n_sample,))
 
     def test_sample_output_type_in_combination(self, tol):
         """Test the return type and shape of sampling multiple works

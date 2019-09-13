@@ -604,7 +604,7 @@ class TestVar:
     def test_var_estimate(self):
         """Test that the variance is not analytically calculated"""
 
-        dev = qml.device("default.qubit", wires=1, shots=3)
+        dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
 
         @qml.qnode(dev)
         def circuit():
@@ -686,7 +686,8 @@ class TestDefaultQubitIntegration:
         
         dev = qml.device("default.qubit", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 0
+        assert dev.shots == 1
+        assert dev.analytic 
         assert dev.short_name == "default.qubit"
 
     def test_args(self):
