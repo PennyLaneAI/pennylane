@@ -309,7 +309,7 @@ class TestDefaultGaussianDevice(BaseTest):
     """Test the default gaussian device. The test ensures that the device is properly
     applying gaussian operations and calculating the correct observables."""
     def setUp(self):
-        self.dev = DefaultGaussian(wires=2, shots=0, hbar=hbar)
+        self.dev = DefaultGaussian(wires=2, shots=1, hbar=hbar, analytic=True)
 
     def test_operation_map(self):
         """Test that default Gaussian device supports all PennyLane Gaussian CV gates."""
@@ -419,7 +419,7 @@ class TestDefaultGaussianDevice(BaseTest):
 
         with self.assertRaisesRegex(ValueError, "Invalid target subsystems provided in 'wires' argument"):
             p = U2
-            dev = DefaultGaussian(wires=4, shots=0, hbar=hbar)
+            dev = DefaultGaussian(wires=4, shots=1, hbar=hbar, analytic=True)
             self.dev.apply('Interferometer', wires=[0, 1, 2], par=[p])
 
     def test_expectation(self):

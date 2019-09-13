@@ -659,36 +659,6 @@ class TestSample:
         # they square to 1
         assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
-    def test_sample_exception_analytic_mode(self, qubit_device_2_wires):
-        """Tests if the sampling raises an error for sample size n=0"""
-
-        with pytest.raises(
-            ValueError, match="Calling sample with n = 0 is not possible."
-        ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n=0)
-
-        # self.def.shots = 0, so this should also fail
-        with pytest.raises(
-            ValueError, match="Calling sample with n = 0 is not possible."
-        ):
-            qubit_device_2_wires.sample('PauliZ', [0], [])
-
-    def test_sample_exception_wrong_n(self, qubit_device_2_wires):
-        """Tests if the sampling raises an error for sample size n<0
-        or non-integer n
-        """
-
-        with pytest.raises(
-            ValueError, match="The number of samples must be a positive integer."
-        ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n=-12)
-
-        qubit_device_2_wires.shots = 0
-        with pytest.raises(
-            ValueError, match="The number of samples must be a positive integer."
-        ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n=12.3)
-
 
 class TestMaps:
     """Tests the maps for operations and observables."""
