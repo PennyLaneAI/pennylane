@@ -175,8 +175,7 @@ class Device(abc.ABC):
         raise NotImplementedError
 
     def set_shots(self, shots):
-        """Changes the number of circuit evaluations/random samples used to estimate
-            expectation values of observables.
+        """Changes the number of shots.
 
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
@@ -433,7 +432,7 @@ class Device(abc.ABC):
         raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
     def sample(self, observable, wires, par):
-        """Return a sample of an observable with a size of `device.shots`.
+        """Return a sample of an observable with a size of ``device.shots``.
 
         For plugin developers: this function should return the result of an evaluation
         of the given observable on the device.
@@ -442,7 +441,6 @@ class Device(abc.ABC):
             observable (str): name of the observable
             wires (Sequence[int]): subsystems the observable is to be measured on
             par (tuple): parameters for the observable
-
 
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``

@@ -701,10 +701,12 @@ class DefaultGaussian(Device):
 
     Args:
         wires (int): the number of modes to initialize the device in
-        shots (int): How many times should the circuit be evaluated (or sampled) to estimate
-            the expectation values. 0 yields the exact result.
+        shots (int): (default 1) How many times should the circuit be evaluated (or sampled) to estimate
+            the expectation values.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
+        analytic (bool): (default True) indicates if the device should calculate expectations
+            and variances analytically.
     """
     name = 'Default Gaussian PennyLane plugin'
     short_name = 'default.gaussian'
