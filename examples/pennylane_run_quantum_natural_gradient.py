@@ -134,9 +134,9 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 # where
 #
 # * :math:`|\psi_0\rangle` is the initial state,
-# * :math:`W_\ell` are layers of of non-parametrized quantum gates,
-# * :math:`V_\ell(\theta_\ell)` are layers of of parametrized quantum gates
-#   with :math:`n` parameters :math:`\theta_\ell = \{\theta^{(\ell)}_0, \dots, \theta^{(\ell)}_n\}`.
+# * :math:`W_\ell` are layers of non-parametrized quantum gates,
+# * :math:`V_\ell(\theta_\ell)` are layers of parametrized quantum gates
+#   with :math:`n_\ell` parameters :math:`\theta_\ell = \{\theta^{(\ell)}_0, \dots, \theta^{(\ell)}_n\}`.
 #
 # Further, assume all parametrized gates can be written in the form
 # :math:`X(\theta^{(\ell)}_{i}) = e^{i\theta^{(\ell)}_{i} K_i}`,
@@ -201,7 +201,7 @@ params = np.array([0.432, -0.123, 0.543, 0.233])
 # layers of 2 parameters each. Therefore, the block-diagonal approximation
 # consists of two :math:`2\times 2` matrices, :math:`g^{(1)}` and :math:`g^{(2)}`.
 #
-# Computing the first block-diagonal :math:`g^{(1)}`, we create subcircuits consisting
+# To compute the first block-diagonal :math:`g^{(1)}`, we create subcircuits consisting
 # of all gates prior to the layer, and observables corresponding to
 # the *generators* of the gates in the layer:
 
