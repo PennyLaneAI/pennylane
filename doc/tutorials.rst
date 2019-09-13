@@ -9,9 +9,7 @@ Tutorials
 PennyLane basics
 ~~~~~~~~~~~~~~~~~~~
 
-These step-by-step tutorials provide a gentle introduction to the basics of PennyLane. In the last
-two examples, we put everything together and consider PennyLane's version of the "Hello world!"
-example - qubit rotation and the Gaussian transformation of a qumode.
+These step-by-step tutorials provide a gentle introduction to the basics of PennyLane. In the last two examples, we put everything together and consider PennyLane's version of the "Hello world!" example — qubit rotation and the Gaussian transformation of a qumode.
 
 .. toctree::
     :hidden:
@@ -70,8 +68,7 @@ example - qubit rotation and the Gaussian transformation of a qumode.
 Machine learning interfaces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following tutorials demonstrate how to optimise the energy of a simple Ising model using
-different interfaces offered by PennyLane. 
+The following tutorials demonstrate how to optimize the energy of a simple Ising model using different machine learning interfaces supported by PennyLane. 
 
 .. toctree::
     :hidden:
