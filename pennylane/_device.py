@@ -240,9 +240,7 @@ class Device(abc.ABC):
                 elif obs.return_type is Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type is Sample:
-                    if not hasattr(obs, "num_samples"):
-                        raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
-                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
                 elif obs.return_type is not None:
                     raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
@@ -434,8 +432,8 @@ class Device(abc.ABC):
         """
         raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
-    def sample(self, observable, wires, par, n=None):
-        """Return a sample of an observable.
+    def sample(self, observable, wires, par):
+        """Return a sample of an observable with a size of `device.shots`.
 
         For plugin developers: this function should return the result of an evaluation
         of the given observable on the device.
@@ -444,8 +442,7 @@ class Device(abc.ABC):
             observable (str): name of the observable
             wires (Sequence[int]): subsystems the observable is to be measured on
             par (tuple): parameters for the observable
-            n (int): Number of samples that should be obtained. Defaults to the
-                number of shots given as a parameter to the corresponding Device.
+            
 
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
