@@ -77,7 +77,7 @@ probability distribution of possible output values given an input
 (i.e., `maximum likelihood estimation <https://en.wikipedia.org/wiki/Likelihood_function>`_,
 a better approach is to perform the gradient descent in the *distribution space*, which is
 dimensionless and invariant with respect to the parametrization. As a result,
-the optimum step-size at each optimization step will always be chosen for each
+each optimization step will always choose the optimum step-size for every
 parameter, regardless of the parametrization.
 
 In classical neural networks, the above process is known as
