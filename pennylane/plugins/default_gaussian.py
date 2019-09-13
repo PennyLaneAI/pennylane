@@ -838,7 +838,7 @@ class DefaultGaussian(Device):
         _, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar, total_wires=self.num_wires)
         return var
 
-    def sample(self, observable, wires, par, n=None):
+    def sample(self, observable, wires, par):
         """Return a sample of an observable.
 
         .. note::

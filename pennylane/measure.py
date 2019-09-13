@@ -149,7 +149,7 @@ def var(op):
 
 
 def sample(op):
-    r"""Sample from the supplied observable with a size of the number of shots 
+    r"""Sample from the supplied observable with a size of the number of shots
     given as a parameter to the corresponding Device
 
     Args:

@@ -176,7 +176,7 @@ class Device(abc.ABC):
 
     def set_shots(self, shots):
         """Changes the number of circuit evaluations/random samples used to estimate
-            expectation values of observables. 
+            expectation values of observables.
 
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
@@ -442,7 +442,7 @@ class Device(abc.ABC):
             observable (str): name of the observable
             wires (Sequence[int]): subsystems the observable is to be measured on
             par (tuple): parameters for the observable
-            
+
 
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
