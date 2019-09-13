@@ -591,7 +591,7 @@ class TestSample:
         gaussian_device_1_wire.apply('SqueezedState', wires=[0], par=[r, phi])
 
         with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
-            sample = gaussian_device_1_wire.sample('P', [0], [], 1)
+            sample = gaussian_device_1_wire.sample('P', [0], [])
 
             args, kwargs = mock.call_args
             assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
