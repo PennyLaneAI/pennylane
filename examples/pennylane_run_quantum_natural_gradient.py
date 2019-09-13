@@ -136,9 +136,9 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 # * :math:`|\psi_0\rangle` is the initial state,
 # * :math:`W_\ell` are layers of of non-parametrized quantum gates,
 # * :math:`V_\ell(\theta_\ell)` are layers of of parametrized quantum gates
-#   with :math:`n_\ell` parameters :math:`\theta_\ell = \{\theta^{(\ell)}_0, \dots, \theta^{(\ell)}_n\}`.
+#   with :math:`n` parameters :math:`\theta_\ell = \{\theta^{(\ell)}_0, \dots, \theta^{(\ell)}_n\}`.
 #
-# Further, assume all parametrized gates can be written of the form
+# Further, assume all parametrized gates can be written in the form
 # :math:`X(\theta^{(\ell)}_{i}) = e^{i\theta^{(\ell)}_{i} K_i}`,
 # where :math:`K^{(\ell)}_i` is the *generator* of the parametrized operation.
 #
