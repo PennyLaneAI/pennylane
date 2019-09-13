@@ -183,7 +183,7 @@ class Device(abc.ABC):
             expectation values of observables.
         """
         if shots < 1:
-            raise qml.DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
+            raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
 
         self.shots = shots
 
