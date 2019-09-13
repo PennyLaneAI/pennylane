@@ -358,20 +358,6 @@ class TestObservables:
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
-    def test_sample_attribute_error(self, mock_device_with_paulis_and_methods):
-        """Check that an error is raised if the required attribute
-           num_samples is not present in a sampled observable"""
-
-        queue = [qml.PauliX(wires=0, do_queue=False)]
-
-        # Make a sampling observable but delete its num_samples attribute
-        obs = qml.sample(qml.PauliZ(0, do_queue=False), n=10)
-        del obs.num_samples
-        observables = [obs]
-
-        with pytest.raises(DeviceError, match="Number of samples not specified for observable"):
-            mock_device_with_paulis_and_methods.execute(queue, observables)
-
     def test_unsupported_observable_return_type_raise_error(self, mock_device_with_paulis_and_methods):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
@@ -399,7 +385,6 @@ class TestObservables:
         obs1.return_type = Expectation
         obs2.return_type = Variance
         obs3.return_type = Sample
-        obs3.num_samples = 1
 
         observables = [obs1,
                        obs2,
