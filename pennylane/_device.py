@@ -109,16 +109,15 @@ class Device(abc.ABC):
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
         shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables. For simulator devices, a value of 0 results
-            in the exact expectation value being returned. Defaults to 0 if not specified.
+            expectation values of observables. Defaults to 1 if not specified.
     """
     #pylint: disable=too-many-public-methods
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, wires=1, shots=0):
+    def __init__(self, wires=1, shots=1):
         self.num_wires = wires
-        self.shots = shots
+        self.set_shots(shots)
 
         self._op_queue = None
         self._obs_queue = None
@@ -174,6 +173,19 @@ class Device(abc.ABC):
             set[str]: the set of PennyLane observable names the device supports
         """
         raise NotImplementedError
+
+    def set_shots(self, shots):
+        """Changes the number of circuit evaluations/random samples used to estimate
+            expectation values of observables. 
+
+        Args:
+            shots (int): number of circuit evaluations/random samples used to estimate
+            expectation values of observables.
+        """
+        if shots < 1:
+            raise qml.DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
+
+        self.shots = shots
 
     @classmethod
     def capabilities(cls):
