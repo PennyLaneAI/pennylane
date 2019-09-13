@@ -329,7 +329,7 @@ print(np.round(circuit.metric_tensor(params), 8))
 # automatically detecting the layer structure, and noting that every
 # observable that must be measured commutes, allowing for simultaneous measurement.
 #
-# Therefore, combining the quantum natural gradient optimizer with the analytic
+# Therefore, by combining the quantum natural gradient optimizer with the analytic
 # parameter-shift rule to optimize a variational circuit with :math:`d` parameters
 # and :math:`L` parametrized layers, a total of :math:`2d+L` quantum evaluations
 # are required per optimization step.
