@@ -77,7 +77,7 @@ class TestExceptions(BaseTest):
 
         @qml.qnode(dev)
         def circuit():
-            return qml.sample(qml.NumberOperator(0), 10)
+            return qml.sample(qml.NumberOperator(0))
             raise NotImplementedError()
 
         with self.assertRaisesRegex(NotImplementedError, r"default\.gaussian does not support sampling NumberOperator"):
@@ -562,10 +562,10 @@ class TestSample:
         gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
 
         with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
-            sample = gaussian_device_1_wire.sample('P', [0], [], 5)
+            sample = gaussian_device_1_wire.sample('P', [0], [])
 
             args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, 5], atol=tol, rtol=0)
+            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
     def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha):
@@ -576,10 +576,10 @@ class TestSample:
         std = gaussian_device_1_wire.hbar/2
         gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
         with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
-            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2], 5)
+            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2])
 
             args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, 5], atol=tol, rtol=0)
+            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
     def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi):
@@ -591,16 +591,17 @@ class TestSample:
         gaussian_device_1_wire.apply('SqueezedState', wires=[0], par=[r, phi])
 
         with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
-            sample = gaussian_device_1_wire.sample('P', [0], [], 5)
+            sample = gaussian_device_1_wire.sample('P', [0], [], 1)
 
             args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, 5], atol=tol, rtol=0)
+            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("observable,n_sample", [('P', 10), ('P', 25), ('X', 1), ('X', 16)])
     def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):
         """Test that the sample function outputs samples of the right size"""
 
-        sample = gaussian_device_2_wires.sample(observable, [0], [], n_sample)
+        gaussian_device_2_wires.set_shots(n_sample)
+        sample = gaussian_device_2_wires.sample(observable, [0], [])
 
         assert np.array_equal(sample.shape, (n_sample,))
         assert sample.dtype == np.dtype("float")
@@ -609,21 +610,14 @@ class TestSample:
         """Test that the sample function raises an error if multiple wires are given"""
 
         with pytest.raises(ValueError, match="Only one mode can be measured in homodyne"):
-            sample = gaussian_device_2_wires.sample('P', [0, 1], [], 10)
-
-    @pytest.mark.parametrize("n_sample", [-1, 1.2, None])
-    def test_sample_error_n_samples(self, gaussian_device_2_wires, n_sample):
-        """Test that the sample function raises an error if the requested number of samples has the wrong format"""
-
-        with pytest.raises(ValueError, match="The number of samples must be a positive integer"):
-            sample = gaussian_device_2_wires.sample('P', [0], [], n_sample)
+            sample = gaussian_device_2_wires.sample('P', [0, 1], [])
 
     @pytest.mark.parametrize("observable", set(qml.ops.cv.obs) - set(['P', 'X', 'QuadOperator']))
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
 
         with pytest.raises(NotImplementedError, match="default.gaussian does not support sampling"):
-            sample = gaussian_device_2_wires.sample(observable, [0], [], 10)
+            sample = gaussian_device_2_wires.sample(observable, [0], [])
 
 class TestDefaultGaussianIntegration(BaseTest):
     """Integration tests for default.gaussian. This test ensures it integrates

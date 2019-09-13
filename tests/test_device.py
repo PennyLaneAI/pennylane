@@ -339,7 +339,7 @@ class TestObservables:
 
         mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
         mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
-        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [], 1)
+        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [])
 
     def test_unsupported_observables_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
@@ -396,7 +396,7 @@ class TestObservables:
 
         mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
         mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
-        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [], 1)
+        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [])
 
 
 class TestParameters:

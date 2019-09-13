@@ -632,13 +632,16 @@ class TestSample:
         qubit_device_2_wires.apply('RX', wires=[0], par=[1.5708])
         qubit_device_2_wires.apply('RX', wires=[1], par=[1.5708])
 
-        s1 = qubit_device_2_wires.sample('PauliZ', [0], [], 10)
+        qubit_device_2_wires.set_shots(10)
+        s1 = qubit_device_2_wires.sample('PauliZ', [0], [])
         assert np.array_equal(s1.shape, (10,))
 
-        s2 = qubit_device_2_wires.sample('PauliZ', [1], [], 12)
+        qubit_device_2_wires.set_shots(12)
+        s2 = qubit_device_2_wires.sample('PauliZ', [1], [])
         assert np.array_equal(s2.shape, (12,))
 
-        s3 = qubit_device_2_wires.sample('CZ', [0, 1], [], 17)
+        qubit_device_2_wires.set_shots(17)
+        s3 = qubit_device_2_wires.sample('CZ', [0, 1], [])
         assert np.array_equal(s3.shape, (17,))
 
     def test_sample_values(self, qubit_device_2_wires, tol):
@@ -653,7 +656,7 @@ class TestSample:
 
         qubit_device_2_wires.apply('RX', wires=[0], par=[1.5708])
 
-        s1 = qubit_device_2_wires.sample('PauliZ', [0], [], 10)
+        s1 = qubit_device_2_wires.sample('PauliZ', [0], [])
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
