@@ -545,6 +545,21 @@ class TestExpval:
         with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
             qubit_device_1_wire.ev(np.array([[1+1j, 0], [0, 1+1j]]), wires=[0])
 
+    def test_expval_estimate(self):
+        """Test that the expectation value is not analytically calculated"""
+
+        dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliX(0))
+
+        expval = circuit()
+
+        # With 3 samples we are guaranteed to see a difference between
+        # an estimated variance an an analytically calculated one
+        assert expval != 0.0
+
 class TestVar:
     """Tests that variances are properly calculated."""
 
