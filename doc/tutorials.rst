@@ -9,7 +9,9 @@ Tutorials
 PennyLane basics
 ~~~~~~~~~~~~~~~~~~~
 
-These step-by-step tutorials provide a gentle introduction to the basics of PennyLane. In the last two examples, we put everything together and consider PennyLane's version of the "Hello world!" example - qubit rotation and the Gaussian transformation of a qumode.
+These step-by-step tutorials provide a gentle introduction to the basics of PennyLane. In the last
+two examples, we put everything together and consider PennyLane's version of the "Hello world!"
+example - qubit rotation and the Gaussian transformation of a qumode.
 
 .. toctree::
     :hidden:
@@ -65,10 +67,11 @@ These step-by-step tutorials provide a gentle introduction to the basics of Penn
 
 :html:`<div style='clear:both'></div>`
 
-Classical interfaces
-~~~~~~~~~~~~~~~~~~~~~
+Machine learning interfaces
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following tutorials demonstrate how to optimise the energy of a simple Ising model using different interfaces offered by PennyLane. 
+The following tutorials demonstrate how to optimise the energy of a simple Ising model using
+different interfaces offered by PennyLane. 
 
 .. toctree::
     :hidden:
@@ -99,8 +102,9 @@ The following tutorials demonstrate how to optimise the energy of a simple Ising
 Plugins and hybrid computation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Plugins allow PennyLane to interact with a variety of quantum simulators and hardware. It also allows the user to run hybrid computations that combine different plugins and interfaces. The following tutorials showcase some examples in this regard.
-
+Plugins allow PennyLane to interact with a variety of quantum simulators and hardware. The following
+tutorials show how to combine different plugins and interfaces for hybrid quantum-classical
+computations.
 
 .. toctree::
     :hidden:
@@ -126,7 +130,11 @@ Plugins allow PennyLane to interact with a variety of quantum simulators and har
 Ready-to-use templates
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-PennyLane provides a growing library of ready-to-use templates of common quantum machine learning circuit architectures and embedding functions. These can be used to easily embed classical data and build (and train) complex quantum machine learning models. They are provided as functions that can be called inside QNodes; for details see :mod:`pennylane.templates`. In the tutorials below, we will go through a couple of examples that use these templates in detail.
+PennyLane provides a growing library of ready-to-use templates of common quantum machine learning
+circuit architectures and embedding functions. These can be used to easily embed classical data and
+build (and train) complex quantum machine learning models. They are provided as functions that can be
+called inside QNodes; for details see :mod:`pennylane.templates`. In the tutorials below, we will go
+through a couple of examples that use these templates in detail.
 
 
 .. toctree::
@@ -152,7 +160,8 @@ PennyLane provides a growing library of ready-to-use templates of common quantum
 Quantum machine learning with PennyLane
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-One goal of PennyLane is to enable machine learning with quantum computers. These examples show PennyLane's implementation of some of the well-known algorithms from the recent research in quantum machine learning. This is, however, just to showcase how quantum machine learning with PennyLane *could* look like. In principle, *any* technique where a quantum circuit is optimized and potentially run on a real device can be implemented in PennyLane.  
+Take a deeper dive into quantum machine learning by exploring cutting-edge algorithms using PennyLane
+and near-term quantum hardware.  
 
 
 .. toctree::
