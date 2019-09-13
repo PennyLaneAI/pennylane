@@ -82,7 +82,7 @@ parameter, regardless of the parametrization.
 
 In classical neural networks, the above process is known as
 *natural gradient descent*, and was first introduced by
-`Shun-Ichi Amari (1998) <https://www.mitpressjournals.org/doi/abs/10.1162/089976698300017746>`__.
+`Amari (1998) <https://www.mitpressjournals.org/doi/abs/10.1162/089976698300017746>`__.
 The standard gradient descent is modified as follows:
 
 .. math:: \theta_{t+1} = \theta_t - \eta F^{-1}\nabla \mathcal{L}(\theta),
@@ -96,7 +96,8 @@ The quantum analog
 ^^^^^^^^^^^^^^^^^^^^
 
 In a similar vein, it has been shown that the standard Euclidean geometry
-is sub-optimal for optimization of quantum variational algorithms.
+is sub-optimal for optimization of quantum variational algorithms
+`(Harrow and Napp, 2019) <https://arxiv.org/abs/1901.05374>`__.
 The space of quantum states instead possesses a unique invariant metric
 tensor known as the Fubini-Study metric tensor :math:`g_{ij}`, which can be used to
 construct a quantum analog to natural gradient descent:
@@ -389,8 +390,12 @@ plt.show()
 # References
 # ----------
 #
-# 1. Amari, Shun-Ichi. "Natural gradient works efficiently in learning."
+# 1. Shun-Ichi Amari. "Natural gradient works efficiently in learning."
 #    `Neural computation 10.2,  251-276 <https://www.mitpressjournals.org/doi/abs/10.1162/089976698300017746>`__, 1998.
 #
 # 2. James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
 #    "Quantum Natural Gradient." `arXiv:1909.02108 <https://arxiv.org/abs/1909.02108>`__, 2019.
+#
+# 3. Aram Harrow and John Napp. "Low-depth gradient measurements can improve
+#    convergence in variational hybrid quantum-classical algorithms."
+#    `arXiv:1901.05374 <https://arxiv.org/abs/1901.05374>`__, 2019.
