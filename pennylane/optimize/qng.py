@@ -23,7 +23,7 @@ from .gradient_descent import GradientDescentOptimizer
 
 class QNGOptimizer(GradientDescentOptimizer):
     r"""Optimizer with adaptive learning rate, via calculation
-    of the Fubini-Study metric tensor.
+    of the diagonal or block-diagonal approximation to the Fubini-Study metric tensor.
     A quantum generalization of natural gradient descent.
 
     The QNG optimizer uses a step- and parameter-dependent learning rate,
