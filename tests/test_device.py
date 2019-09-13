@@ -228,7 +228,7 @@ class TestOperations:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         queue_at_pre_measure = []
@@ -251,7 +251,7 @@ class TestOperations:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         call_history = []
@@ -276,7 +276,7 @@ class TestOperations:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
@@ -307,7 +307,7 @@ class TestObservables:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         queue_at_pre_measure = []
@@ -330,7 +330,7 @@ class TestObservables:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         # The methods expval, var and sample are MagicMock'ed in the fixture
@@ -352,7 +352,7 @@ class TestObservables:
         observables = [
             qml.expval(qml.Hadamard(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
@@ -445,7 +445,7 @@ class TestParameters:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         p_mapping = {}
