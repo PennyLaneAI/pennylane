@@ -26,7 +26,7 @@ of variational quantum algorithms have used gradient-free classical optimization
 methods, such as Nelder-Mead. However, the parameter-shift rule for
 analytic quantum gradients (as implemented in PennyLane) has allowed for
 stochastic gradient descent of variational quantum algorithms on quantum
-hardware. One caveat though that has been surfaced with gradient descent
+hardware. One caveat though that has surfaced with gradient descent
 is the issue of learning rate or step-size --- how do we choose the optimal
 step size for our variational quantum algorithms, to ensure successful and
 efficient optimization?
