@@ -124,7 +124,7 @@ where ``queue`` is a list of PennyLane :class:`~.Operation` instances to be appl
 
 However, additional flexibility is sometimes required for interfacing with more complicated frameworks. In such cases, the following (optional) methods may also be implemented:
 
-* :meth:`~.Device.__init__`: By default, this method receives the ``short_name`` of the device, number of wires (``self.num_wires``), and number of shots ``self.shots``. This is the right place to set up your device. You may add parameters while overwriting this method if you need to add additional options that the user must pass to the device on initialization. Make sure that you call ``super().__init__(self.short_name, wires, shots)`` at some point here.
+* :meth:`~.Device.__init__`: By default, this method receives the number of wires (``self.num_wires``) and number of shots ``self.shots`` of the device. This is the right place to set up your device. You may add parameters while overwriting this method if you need to add additional options that the user must pass to the device on initialization. Make sure that you call ``super().__init__(wires, shots)`` at some point here.
 
 * :meth:`~.Device.execution_context`: Here you may return a context manager for the circuit execution phase (see above). You can implement this method if the quantum library for which you are writing the device requires such an execution context while applying operations and measuring results from the device.
 
