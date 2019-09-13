@@ -13,7 +13,7 @@ Background
 ----------
 
 The most successful class of quantum algorithms for use on near-term noisy quantum hardware
-is the so-called variational quantum algorithm. In variational quantum algorithms,
+is the so-called variational quantum algorithm. As laid out in the :ref:`Concepts <varcirc>`, in variational quantum algorithms
 a low-depth parametrized quantum circuit ansatz is chosen, and a problem-specific
 Hermitian observable measured. A classical optimization loop is then used to find
 the set of quantum parameters that *minimize* a particular measurement statistic
