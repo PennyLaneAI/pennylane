@@ -2,7 +2,7 @@
 
 ### New features since last release
 
-* The plugins default.qubit and default.gaussian have a new initialization parameter
+* The devices `default.qubit` and `default.gaussian` have a new initialization parameter
   `analytic` that indicates if expectation values and variances should be calculated
   analytically and not be estimated from data.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
@@ -16,7 +16,7 @@
 ### Improvements
 
 * The number of shots / random samples used to estimate expectation values and variances, `Device.shots`,
-  can now be changed with the setter method `Device.set_shots`.
+  can now be changed with the setter method `Device.set_shots()`.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
 ### Documentation
@@ -25,7 +25,9 @@
 
 ### Contributors
 
-This release contains contributions from (in alphabetical order): Johannes Jakob Meyer
+This release contains contributions from (in alphabetical order):
+
+Johannes Jakob Meyer
 
 ---
 

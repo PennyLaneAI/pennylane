@@ -149,8 +149,8 @@ def var(op):
 
 
 def sample(op):
-    r"""Sample from the supplied observable with a size of the number of shots
-    given as a parameter to the corresponding Device
+    r"""Sample from the supplied observable, with the number of shots
+    determined from an attribute of the corresponding Device.
 
     Args:
         op (Observable): a quantum observable object

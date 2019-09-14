@@ -179,12 +179,12 @@ class Device(abc.ABC):
 
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables.
+            expectation values of observables
         """
         if shots < 1:
             raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
 
-        self.shots = shots
+        self.shots = int(shots)
 
     @classmethod
     def capabilities(cls):

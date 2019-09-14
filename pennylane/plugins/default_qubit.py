@@ -297,8 +297,8 @@ class DefaultQubit(Device):
         wires (int): the number of modes to initialize the device in
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to 1 if not specified.
-        analytic (bool): Indicates if the device should calculate expectations
-            and variances analytically. Defaults to True if not specified.
+        analytic (bool): indicates if the device should calculate expectations
+            and variances analytically
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
