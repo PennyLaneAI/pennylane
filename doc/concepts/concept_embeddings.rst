@@ -14,7 +14,7 @@ details, see :cite:`schuld2018supervised` and :cite:`schuld2018quantum`.
 
 Let's consider classical input data consisting of :math:`M` examples, with :math:`N` features each, 
 
-.. math:: \mathcal{D}=\{x^{(1)}, \ldots, x^{(M)}\},
+.. math:: \mathcal{D}=\{x^{(1)}, \ldots, x^{(m)}, \ldots, x^{(M)}\},
 
 where :math:`x^{(m)}` is a :math:`N`-dimensional vector for :math:`m=1,\ldots,M`. To embed this data
 into :math:`n` quantum subsystems (:math:`n` qubits *or* :math:`n` qumodes for discrete- and
