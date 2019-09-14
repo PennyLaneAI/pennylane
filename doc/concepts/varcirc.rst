@@ -65,7 +65,7 @@ Examples
 Data-embedding
 ~~~~~~~~~~~~~~
 
-As explained in :ref:`concept_embeddings`, the first few gates in the circuit can be used to embed the input :math:`x` into a quantum state (which functions as a feature map :cite:`schuld2018quantum`), while the subsequent gate have parameters :math:`\bm{\theta}` as arguments.
+As explained in :ref:`concept_embeddings`, the first few gates in the circuit can be used to embed the input :math:`x` into a quantum state (which functions as a feature map :cite:`schuld2018quantum`), while the subsequent gates have parameters :math:`\bm{\theta}` as arguments.
 
 As an example, consider a photonic quantum computer (similar examples can be constructed for qubits). For simplicity, we temporarily omit the parameters :math:`\bm{\theta}`. We take the initial state to be the *vacuum* state and the measured observable :math:`\hat{B}` to be the position operator :math:`x`. The vacuum state has expectation value :math:`\langle\hat{x}\rangle = \langle 0 | \hat{x} | 0 \rangle = 0`.
 

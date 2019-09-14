@@ -14,7 +14,7 @@ details, see :cite:`schuld2018supervised` and :cite:`schuld2018quantum`.
 
 Let's consider classical input data consisting of :math:`M` examples, with :math:`N` features each, 
 
-.. math:: \mathcal{D}=\{x^{(1)}, \ldots, x^{(M)}\},
+.. math:: \mathcal{D}=\{x^{(1)}, \ldots, x^{(m)}, \ldots, x^{(M)}\},
 
 where :math:`x^{(m)}` is a :math:`N`-dimensional vector for :math:`m=1,\ldots,M`. To embed this data
 into :math:`n` quantum subsystems (:math:`n` qubits *or* :math:`n` qumodes for discrete- and
@@ -33,14 +33,14 @@ classical information is represented by one quantum subsystem.
 
 Let's consider the classical dataset :math:`\mathcal{D}` mentioned above. For basis embedding, each
 example has to be a N-bit binary string; :math:`x^{(m)}=(b_1,\ldots,b_N)` with :math:`b_i \in \{0,1\}`
-for :math:`i=1,\ldots,N`. Assuming all features are repesented with unit binary precision (one bit),
+for :math:`i=1,\ldots,N`. Assuming all features are represented with unit binary precision (one bit),
 each input example :math:`x^{(m)}` can be directly mapped to the quantum state :math:`| x^{(m)}\rangle`. **This means that the number of quantum subsystems,** :math:`\bm{n}` **, must be at least equal to** :math:`\bm{N}`. An entire dataset can be represented in superpositions of computational
 basis states as
 
 .. math:: | \mathcal{D} \rangle = \frac{1}{\sqrt{M}} \sum_{m=1}^{M} |x^{(m)} \rangle.
 
 For example, let's say we have a classical dataset containing two examples :math:`x^{(1)}=01`
-and :math:`x^{(2)}=11`. The corresponding basis encoding uses two qubits to represent :math:`| x^{(1)} \rangle=|01 \rangle` and :math:`| x^{(2)} \rangle=|11 \rangle` resulting in
+and :math:`x^{(2)}=11`. The corresponding basis encoding uses two qubits to represent :math:`| x^{(1)} \rangle=|01 \rangle` and :math:`| x^{(2)} \rangle=|11 \rangle`, resulting in
 
 .. math:: | \mathcal{D} \rangle = \frac{1}{\sqrt{2}}|01 \rangle + \frac{1}{\sqrt{2}} |11 \rangle.
 
@@ -56,7 +56,8 @@ a :math:`n`-qubit quantum state :math:`| \psi_x \rangle` as
 
 .. math:: | \psi_x \rangle = \sum_{i=1}^{N} x_i |i \rangle,
 
-where :math:`N=2^n`, :math:`x_i` is the :math:`i`-th element of :math:`x` and :math:`| i \rangle` is
+<<<<<<< HEAD
+where :math:`N=2^n`, :math:`x_i` is the :math:`i`-th element of :math:`x`, and :math:`| i \rangle` is
 the :math:`i`-th computational basis state. In this case, however, :math:`x_i` can have different numeric
 data types; integer, floating point. For example, let's say we want to encode the four-dimensional
 floating-point array :math:`x=(1.0, 0.0, -5.5, 0.0)` using amplitude embedding. The first step is to normalize it, i.e., :math:`x_{norm}=\frac{1}{\sqrt{31.25}}(1.0, 0.0, -5.5, 0.0)`. The corresponding amplitude encoding uses two qubits to represent :math:`x_{norm}` as
@@ -73,8 +74,8 @@ where :math:`C_{norm}` is the normalization constant; this vector must be normal
 
 .. math:: | \mathcal{D} \rangle = \sum_{i=1}^{2^n} \alpha_i |i \rangle,
 
-where :math:`\alpha_i` are the elements of amplitude vector :math:`\alpha` and :math:`| i \rangle`
-are the computational basis states. The number of amplitudes to be encoded are :math:`N \times M`. 
+where :math:`\alpha_i` are the elements of the amplitude vector :math:`\alpha` and :math:`| i \rangle`
+are the computational basis states. The number of amplitudes to be encoded is :math:`N \times M`. 
 As a system of :math:`n` qubits provides :math:`2^n` amplitudes, **amplitude embedding requires** :math:`\bm{n \geq \log_2({NM})}`  **qubits.**
 
 

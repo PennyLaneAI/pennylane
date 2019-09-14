@@ -393,6 +393,7 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1/2]
 
 
 class CRY(Operation):
@@ -423,6 +424,7 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1/2]
 
 
 class CRZ(Operation):
@@ -453,6 +455,7 @@ class CRZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1/2]
 
 
 class CRot(Operation):
