@@ -44,7 +44,7 @@ and :math:`x^{(2)}=11`. The corresponding basis encoding uses two qubits to repr
 
 .. math:: | \mathcal{D} \rangle = \frac{1}{\sqrt{2}}|01 \rangle + \frac{1}{\sqrt{2}} |11 \rangle.
 
-.. note:: For :math:`N` bits, there are :math:`2^N` possible basis states. Given :math:`M \ll 2^N`, the basis embedding of :math:`\mathcal{D}` will be sparse :cite:`schuld2018supervised`. 
+.. note:: For :math:`N` bits, there are :math:`2^N` possible basis states. Given :math:`M \ll 2^N`, the basis embedding of :math:`\mathcal{D}` will be sparse. 
 
 
 Amplitude Embedding
@@ -57,10 +57,11 @@ a :math:`n`-qubit quantum state :math:`| \psi_x \rangle` as
 .. math:: | \psi_x \rangle = \sum_{i=1}^{N} x_i |i \rangle,
 
 where :math:`N=2^n`, :math:`x_i` is the :math:`i`-th element of :math:`x` and :math:`| i \rangle` is
-the :math:`i`-th computational basis state. For example, let's say we want to encode :math:`x=1010`
-using amplitude embedding. The first step is to normalize it, i.e., :math:`x_{norm}=\frac{1}{\sqrt{2}}(1010)`. The corresponding amplitude encoding uses two qubits to represent :math:`x_{norm}` as
+the :math:`i`-th computational basis state. In this case, however, :math:`x_i` can have different numeric
+data types; integer, floating point. For example, let's say we want to encode the four-dimensional
+floating-point array :math:`x=(1.0, 0.0, -5.5, 0.0)` using amplitude embedding. The first step is to normalize it, i.e., :math:`x_{norm}=\frac{1}{\sqrt{31.25}}(1.0, 0.0, -5.5, 0.0)`. The corresponding amplitude encoding uses two qubits to represent :math:`x_{norm}` as
 
-.. math:: | \psi_{x_{norm}} \rangle = \frac{1}{\sqrt{2}}|00 \rangle + \frac{1}{\sqrt{2}}|10 \rangle.  
+.. math:: | \psi_{x_{norm}} \rangle = \frac{1}{\sqrt{31.25}}\left[|00 \rangle - 5.5|10 \rangle\right].  
 
 Let's consider the classical dataset :math:`\mathcal{D}` mentioned above. Its amplitude embedding
 can be easily understood if we concatenate all the input examples :math:`x^{(m)}` together into one
