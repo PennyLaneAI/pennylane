@@ -56,7 +56,6 @@ a :math:`n`-qubit quantum state :math:`| \psi_x \rangle` as
 
 .. math:: | \psi_x \rangle = \sum_{i=1}^{N} x_i |i \rangle,
 
-<<<<<<< HEAD
 where :math:`N=2^n`, :math:`x_i` is the :math:`i`-th element of :math:`x`, and :math:`| i \rangle` is
 the :math:`i`-th computational basis state. In this case, however, :math:`x_i` can have different numeric
 data types; integer, floating point. For example, let's say we want to encode the four-dimensional
