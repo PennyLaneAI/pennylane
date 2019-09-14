@@ -73,7 +73,7 @@ where :math:`C_{norm}` is the normalization constant; this vector must be normal
 .. math:: | \mathcal{D} \rangle = \sum_{i=1}^{2^n} \alpha_i |i \rangle,
 
 where :math:`\alpha_i` are the elements of the amplitude vector :math:`\alpha` and :math:`| i \rangle`
-are the computational basis states. The number of amplitudes to be encoded are :math:`N \times M`. 
+are the computational basis states. The number of amplitudes to be encoded is :math:`N \times M`. 
 As a system of :math:`n` qubits provides :math:`2^n` amplitudes, **amplitude embedding requires** :math:`\bm{n \geq \log_2({NM})}`  **qubits.**
 
 
