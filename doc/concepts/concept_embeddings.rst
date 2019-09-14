@@ -40,7 +40,7 @@ basis states as
 .. math:: | \mathcal{D} \rangle = \frac{1}{\sqrt{M}} \sum_{m=1}^{M} |x^{(m)} \rangle.
 
 For example, let's say we have a classical dataset containing two examples :math:`x^{(1)}=01`
-and :math:`x^{(2)}=11`. The corresponding basis encoding uses two qubits to represent :math:`| x^{(1)} \rangle=|01 \rangle` and :math:`| x^{(2)} \rangle=|11 \rangle` resulting in
+and :math:`x^{(2)}=11`. The corresponding basis encoding uses two qubits to represent :math:`| x^{(1)} \rangle=|01 \rangle` and :math:`| x^{(2)} \rangle=|11 \rangle`, resulting in
 
 .. math:: | \mathcal{D} \rangle = \frac{1}{\sqrt{2}}|01 \rangle + \frac{1}{\sqrt{2}} |11 \rangle.
 
