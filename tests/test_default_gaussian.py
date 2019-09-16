@@ -16,6 +16,9 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import unittest
+from unittest.mock import MagicMock, patch
+import math
+import pytest
 import inspect
 import logging as log
 
@@ -75,8 +78,9 @@ class TestExceptions(BaseTest):
         @qml.qnode(dev)
         def circuit():
             return qml.sample(qml.NumberOperator(0), 10)
+            raise NotImplementedError()
 
-        with self.assertRaisesRegex(NotImplementedError, "Sampling is not supported in default.gaussian"):
+        with self.assertRaisesRegex(NotImplementedError, r"default\.gaussian does not support sampling NumberOperator"):
             res = circuit()
 
 class TestAuxillaryFunctions(BaseTest):
@@ -534,6 +538,92 @@ class TestDefaultGaussianDevice(BaseTest):
         self.assertAllAlmostEqual(res[0], expected[0], delta=self.tol)
         self.assertAllAlmostEqual(res[1], expected[1], delta=self.tol)
 
+
+@pytest.fixture(scope="function")
+def gaussian_device_1_wire():
+    """Fixture of a default.gaussian device with 1 wire."""
+    return qml.device('default.gaussian', wires=1)
+
+@pytest.fixture(scope="function")
+def gaussian_device_2_wires():
+    """Fixture of a default.gaussian device with 2 wires."""
+    return qml.device('default.gaussian', wires=2)
+
+class TestSample:
+    """Tests that sampling is correctly implemented."""
+
+    @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
+    def test_sampling_parameters_coherent(self, tol, gaussian_device_1_wire, alpha):
+        """Tests that the np.random.normal is called with the correct parameters that reflect
+           the underlying distribution for a coherent state."""
+
+        mean = alpha.imag*np.sqrt(2*gaussian_device_1_wire.hbar)
+        std = gaussian_device_1_wire.hbar/2
+        gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
+
+        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
+            sample = gaussian_device_1_wire.sample('P', [0], [], 5)
+
+            args, kwargs = mock.call_args
+            assert np.allclose(args, [mean, std, 5], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
+    def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha):
+        """Tests that the np.random.normal is called with the correct parameters that reflect
+           the underlying distribution for a coherent state when using QuadOperator."""
+
+        mean = alpha.imag*np.sqrt(2*gaussian_device_1_wire.hbar)
+        std = gaussian_device_1_wire.hbar/2
+        gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
+        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
+            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2], 5)
+
+            args, kwargs = mock.call_args
+            assert np.allclose(args, [mean, std, 5], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
+    def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi):
+        """Tests that the np.random.normal is called with the correct parameters that reflect
+           the underlying distribution for a squeezed state."""
+
+        mean = 0.0
+        std = math.sqrt(gaussian_device_1_wire.hbar*np.exp(2*r)/2)
+        gaussian_device_1_wire.apply('SqueezedState', wires=[0], par=[r, phi])
+
+        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
+            sample = gaussian_device_1_wire.sample('P', [0], [], 5)
+
+            args, kwargs = mock.call_args
+            assert np.allclose(args, [mean, std, 5], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("observable,n_sample", [('P', 10), ('P', 25), ('X', 1), ('X', 16)])
+    def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):
+        """Test that the sample function outputs samples of the right size"""
+
+        sample = gaussian_device_2_wires.sample(observable, [0], [], n_sample)
+
+        assert np.array_equal(sample.shape, (n_sample,))
+        assert sample.dtype == np.dtype("float")
+
+    def test_sample_error_multi_wire(self, gaussian_device_2_wires):
+        """Test that the sample function raises an error if multiple wires are given"""
+
+        with pytest.raises(ValueError, match="Only one mode can be measured in homodyne"):
+            sample = gaussian_device_2_wires.sample('P', [0, 1], [], 10)
+
+    @pytest.mark.parametrize("n_sample", [-1, 1.2, None])
+    def test_sample_error_n_samples(self, gaussian_device_2_wires, n_sample):
+        """Test that the sample function raises an error if the requested number of samples has the wrong format"""
+
+        with pytest.raises(ValueError, match="The number of samples must be a positive integer"):
+            sample = gaussian_device_2_wires.sample('P', [0], [], n_sample)
+
+    @pytest.mark.parametrize("observable", set(qml.ops.cv.obs) - set(['P', 'X', 'QuadOperator']))
+    def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
+        """Test that the sample function raises an error if the given observable is not supported"""
+
+        with pytest.raises(NotImplementedError, match="default.gaussian does not support sampling"):
+            sample = gaussian_device_2_wires.sample(observable, [0], [], 10)
 
 class TestDefaultGaussianIntegration(BaseTest):
     """Integration tests for default.gaussian. This test ensures it integrates
