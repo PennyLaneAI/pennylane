@@ -37,6 +37,21 @@ plugins, and devices, via simple and easy-to-follow examples.
     :figure: ../examples/figures/bloch.gif
     :description: :ref:`pytorch_noise`
 
+.. customgalleryitem::
+    :tooltip: Ising model example with PennyLane NumPy interface.
+    :figure: ../examples/figures/pennylane_xanadu.png
+    :description: :ref:`isingmodel_NumPy`
+
+.. customgalleryitem::
+    :tooltip: Ising model example with PennyLane TensorFlow interface.
+    :figure: ../examples/figures/tensorflow.png
+    :description: :ref:`isingmodel_TF`
+
+.. customgalleryitem::
+    :tooltip: Ising model example with PennyLane PyTorch interface.
+    :figure: ../examples/figures/pytorch.png
+    :description: :ref:`isingmodel_PyTorch`
+
 :html:`<div style='clear:both'></div>`
 
 
@@ -85,6 +100,9 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_plugins_hybrid
     tutorials/pennylane_run_advanced_usage
     tutorials/pennylane_pytorch_noise
+    tutorials/pennylane_isingmodel_NumPy 
+    tutorials/pennylane_isingmodel_TF
+    tutorials/pennylane_isingmodel_PyTorch
     tutorials/pennylane_run_state_preparation
     tutorials/pennylane_run_QGAN
     tutorials/pennylane_run_variational_classifier
