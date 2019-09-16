@@ -64,8 +64,8 @@ dev = qml.device('default.qubit', wires = 1)
 #
 # * ``wires``: the number of subsystems to initialize the device with
 #
-# Here, the argument ``wires = 1`` means that a single qubit is initiated. All qubits are initialized in the 
-# state :math:`|0\rangle`.
+# Here, the argument ``wires = 1`` means that a single qubit is initiated. All qubits are initialized
+# in the state :math:`|0\rangle`.
 #
 # Constructing the QNode
 # ----------------------
@@ -105,7 +105,7 @@ def circuit(param):
 #    expectation values ``expval`` or variances ``var``. The desired observable is passed
 #    to the measurement function with the qubits it acts on specified as wire numbers. 
 #    As a result, the quantum function always returns a classical quantity, allowing the
-#    QNode to interface with other classical functions (and also other QNodes). For a full
+#    QNode to interface with other classical functions and other QNodes. For a full
 #    list of available measurements, see :mod:`Measurements <pennylane.measure>`.
 #
 # *  Quantum functions must not contain any classical processing of

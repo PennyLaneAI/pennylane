@@ -12,6 +12,10 @@ Tutorials
 The following tutorials introduce the core PennyLane concepts, including QNodes,
 plugins, and devices, via simple and easy-to-follow examples.
 
+.. customgalleryitem::
+    :tooltip: Learn how to make quantum circuits in PennyLane.
+    :figure: ../examples/figures/firstcircuit.png
+    :description: :ref:`make_your_first_quantum_circuit`
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to rotate a qubit.
