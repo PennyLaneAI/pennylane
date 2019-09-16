@@ -65,19 +65,6 @@ class TestExpval:
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
-    def test_tensored_observables(self):
-        """Test expval calculations for a tensor of observables."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(wires=[0]), qml.PauliY(1))
-
-        res = circuit()
-        assert np.allclose(res, -1.0)
-
     def test_observable_return_type_is_expectation(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
         dev = qml.device("default.qubit", wires=2)
@@ -428,3 +415,30 @@ class TestSample:
             return res
 
         circuit()
+
+
+class TestTensorExpval:
+    """Test tensor expectation values"""
+
+    def test_paulix_pauliy(self):
+        """Test that a tensor product involving PauliX and PauliY works correctly"""
+        theta = 0.432
+        phi = 0.123
+        varphi = -0.543
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(theta, phi, varphi):
+            qml.RX(theta, wires=[0])
+            qml.RX(phi, wires=[1])
+            qml.RX(varphi, wires=[2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+            return qml.expval(qml.PauliX(wires=[0]), qml.PauliY(wires=[2]))
+
+        res = circuit(theta, phi, varphi)
+        expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
+
+        assert np.allclose(res, expected)
