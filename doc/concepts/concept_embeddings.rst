@@ -58,7 +58,7 @@ a :math:`n`-qubit quantum state :math:`| \psi_x \rangle` as
 
 where :math:`N=2^n`, :math:`x_i` is the :math:`i`-th element of :math:`x`, and :math:`| i \rangle` is
 the :math:`i`-th computational basis state. In this case, however, :math:`x_i` can have different numeric
-data types; integer, floating point. For example, let's say we want to encode the four-dimensional
+data types, e.g., integer or floating point. For example, let's say we want to encode the four-dimensional
 floating-point array :math:`x=(1.0, 0.0, -5.5, 0.0)` using amplitude embedding. The first step is to normalize it, i.e., :math:`x_{norm}=\frac{1}{\sqrt{31.25}}(1.0, 0.0, -5.5, 0.0)`. The corresponding amplitude encoding uses two qubits to represent :math:`x_{norm}` as
 
 .. math:: | \psi_{x_{norm}} \rangle = \frac{1}{\sqrt{31.25}}\left[|00 \rangle - 5.5|10 \rangle\right].  
