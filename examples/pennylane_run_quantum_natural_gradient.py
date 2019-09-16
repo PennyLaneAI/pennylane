@@ -66,12 +66,12 @@ using two different coordinate systems, :math:`(\theta_0, \theta_1)`, and
 
 Performing gradient descent in the :math:`(\theta_0, \theta_1)` parameter
 space, we are updating each parameter by the same Euclidean distance,
-and not taking into the fact that the loss function might vary at a different
+and not taking into account the fact that the cost function might vary at a different
 rate with respect to each parameter.
 
-Instead, if we perform a change of coordinate system (or re-parametrization)
+Instead, if we perform a change of coordinate system (re-parametrization)
 of the cost function, we might find a parameter space where variations in :math:`\mathcal{L}`
-are more even across different parameters. This is the case with the new parametrization
+are similar across different parameters. This is the case with the new parametrization
 :math:`(\phi_0, \phi_1)`; the cost function is unchanged,
 but we now have a nicer geometry in which to perform gradient descent, and a more
 informative stepsize. This leads to faster convergence, and can help avoid optimization
@@ -80,7 +80,7 @@ becoming stuck in local minima.
 However, what if we avoid gradient descent in the parameter space altogether?
 If we instead consider the optimization problem as a
 probability distribution of possible output values given an input
-(i.e., `maximum likelihood estimation <https://en.wikipedia.org/wiki/Likelihood_function>`_,
+(i.e., `maximum likelihood estimation <https://en.wikipedia.org/wiki/Likelihood_function>`_),
 a better approach is to perform the gradient descent in the *distribution space*, which is
 dimensionless and invariant with respect to the parametrization. As a result,
 each optimization step will always choose the optimum step-size for every
