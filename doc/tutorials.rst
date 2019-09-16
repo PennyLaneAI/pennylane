@@ -74,8 +74,8 @@ algorithms using PennyLane and near-term quantum hardware.
     :description: :ref:`data_reuploading_classifier`
 
 .. customgalleryitem::
-    :tooltip: Faster optimization convergence using quantum natural gradient.
-    :figure: ../examples/figures/qng_optimization.png
+    :tooltip: Faster optimization convergence using quantum natural gradient
+    :figure: ../examples/figures/quantum_natural_gradient/qng_optimization.png
     :description: :ref:`quantum_natural_gradient`
 
 :html:`<div style='clear:both'></div>`

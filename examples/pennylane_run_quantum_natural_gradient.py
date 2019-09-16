@@ -50,28 +50,33 @@ is strongly connected to a *Euclidean geometry* on the parameter space.
 The parametrization is not unique, and different parametrizations can distort
 distances within the optimization landscape.
 
-For example, consider the following loss function:
+For example, consider the following loss function :math:`L`, parametrized
+using two different coordinate systems, :math:`(\theta_0, \theta_1)`, and
+:math:`(\phi_0, \phi_1)`:
 
-.. math:: \mathcal{L}(x, y) = 5(1- e^{-(x^2 + (y/10)^2)})
+|
 
-We wish to find the values of parameters :math:`x` and :math:`y` that minimize
-the loss. Here, movement in the :math:`x` direction results in significantly larger changes
-in the overall cost compared to movement in the :math:`y` direction. So for decent
-convergence, we would expect to increment :math:`x` by a proportionally smaller
-amount per optimization step than :math:`y`.
+.. figure:: ../../examples/figures/quantum_natural_gradient/qng7.png
+    :align: center
+    :width: 90%
+    :target: javascript:void(0)
 
-Let's apply the gradient descent update rule as given above:
+|
 
-.. math::
+Performing gradient descent in the :math:`(\theta_0, \theta_1)` parameter
+space, we are updating each parameter by the same Euclidean distance,
+and not taking into the fact that the loss function might vary at a different
+rate with respect to each parameter.
 
-    x_{t+1} &= x_t -(10 \eta x) \mathcal{L}(x, y),\\
-    y_{t+1} &= y_t -(\eta y/100) \mathcal{L}(x, y).
+Instead, if we perform a change of coordinate system (or re-parametrization)
+of the loss function, we might find a parameter space where variations in :math:`L`
+are more even across different parameters. This is the case with the new parametrization
+:math:`(\phi_0, \phi_1)`; the loss function is unchanged,
+but we now have a nicer geometry in which to perform gradient descent, and a more
+informative stepsize. This leads to faster convergence, and can help avoid optimization
+becoming stuck in local minima.
 
-Instead, we can see that significantly larger steps are taken in the :math:`x` direction
-than the :math:`y` direction! Since the parametrization is not unique, another
-parametrization (such as rescaling :math:`y`, or using polar coordinates), might
-result in a more informative step size, and increase optimization convergence.
-
+However, what if we avoid gradient descent in the parameter space altogether?
 If we instead consider the optimization problem as a
 probability distribution of possible output values given an input
 (i.e., `maximum likelihood estimation <https://en.wikipedia.org/wiki/Likelihood_function>`_,
@@ -162,6 +167,7 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 # of parameterized layer :math:`\ell`), and we have :math:`K_i \equiv K_i^{(\ell)}` for brevity.
 #
 # Let's consider a small variational quantum circuit example coded in PennyLane:
+
 import numpy as np
 
 import pennylane as qml
@@ -198,12 +204,31 @@ params = np.array([0.432, -0.123, 0.543, 0.233])
 
 ##############################################################################
 # The above circuit consists of 4 parameters, with two distinct parametrized
-# layers of 2 parameters each. Therefore, the block-diagonal approximation
-# consists of two :math:`2\times 2` matrices, :math:`g^{(1)}` and :math:`g^{(2)}`.
+# layers of 2 parameters each.
+#
+# .. figure:: ../../examples/figures/quantum_natural_gradient/qng1.png
+#     :align: center
+#     :width: 90%
+#     :target: javascript:void(0)
+#
+# |
+#
+# Therefore, the block-diagonal approximation consists of two
+# :math:`2\times 2` matrices, :math:`g^{(1)}` and :math:`g^{(2)}`.
+#
+# .. figure:: ../../examples/figures/quantum_natural_gradient/qng2.png
+#     :align: center
+#     :width: 30%
+#     :target: javascript:void(0)
 #
 # To compute the first block-diagonal :math:`g^{(1)}`, we create subcircuits consisting
 # of all gates prior to the layer, and observables corresponding to
 # the *generators* of the gates in the layer:
+#
+# .. figure:: ../../examples/figures/quantum_natural_gradient/qng3.png
+#     :align: center
+#     :width: 30%
+#     :target: javascript:void(0)
 
 g1 = np.zeros([2, 2])
 
@@ -215,12 +240,15 @@ def layer1_subcircuit(params):
     qml.RY(np.pi/7, wires=2)
 
 ##############################################################################
-# The following subcircuit calculates the diagonal terms of :math:`g^{(1)}`,
+# We then post-process the measurement results in order to determine :math:`g^{(1)}`,
+# as follows.
 #
-# .. math::
+# .. figure:: ../../examples/figures/quantum_natural_gradient/qng4.png
+#     :align: center
+#     :width: 50%
+#     :target: javascript:void(0)
 #
-#     g^{(1)}_{ii} = \langle \psi_\ell | K_i^2 | \psi_\ell\rangle
-#     - \langle \psi_\ell | K_i | \psi_\ell \rangle^2 = \Delta K_i
+# We can see that the diagonal terms are simply given by the variance:
 
 @qml.qnode(dev)
 def layer1_diag(params):
@@ -233,7 +261,8 @@ g1[0, 0] = varK0/4
 g1[1, 1] = varK1/4
 
 ##############################################################################
-# The following two subcircuits calculate the off-diagonal terms of :math:`g^{(1)}`:
+# The following two subcircuits are then used to calculate the
+# off-diagonal covariance terms of :math:`g^{(1)}`:
 
 @qml.qnode(dev)
 def layer1_off_diag_single(params):
@@ -257,7 +286,13 @@ g1[1, 0] = (exK0K1 - exK0*exK1)/4
 # Note that, by definition, the block-diagonal matrices must be real and
 # symmetric.
 #
-# We can repeat the above process to compute :math:`g^{(2)}`:
+# We can repeat the above process to compute :math:`g^{(2)}`. The subcircuit
+# required is given by
+#
+# .. figure:: ../../examples/figures/quantum_natural_gradient/qng8.png
+#     :align: center
+#     :width: 50%
+#     :target: javascript:void(0)
 
 g2 = np.zeros([2, 2])
 
@@ -277,15 +312,30 @@ def layer2_subcircuit(params):
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
 
+##############################################################################
+# Using this subcircuit, we can now generate the submatrix :math:`g^{(2)}`.
+#
+# .. figure:: ../../examples/figures/quantum_natural_gradient/qng5.png
+#     :align: center
+#     :width: 50%
+#     :target: javascript:void(0)
+
 @qml.qnode(dev)
 def layer2_diag(params):
     layer2_subcircuit(params)
     return var(qml.PauliY(1)), var(qml.PauliX(2))
 
-# calculate the diagonal terms
+##############################################################################
+# As previously, the diagonal terms are simply given by the variance,
+
 varK0, varK1 = layer2_diag(params)
 g2[0, 0] = varK0/4
 g2[1, 1] = varK1/4
+
+
+##############################################################################
+# while the off-diagonal terms require covariance between the two
+# observables to be computed.
 
 @qml.qnode(dev)
 def layer2_off_diag_single(params):
