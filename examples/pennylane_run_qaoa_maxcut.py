@@ -1,23 +1,77 @@
 """
 .. _qaoa_maxcut:
 
-Quantum Approximate Optimization Algorithm
-==========================================
+Quantum Approximate Optimization for MaxCut
+===========================================
 
-This demo covers the.
+In this tutorial, we show how to implement a quantum approximate
+optimization algorithm (QAOA) for the MaxCut problem in Pennylane. (See `Farhi,
+Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>`__.) This
+example demonstrates how to sample joint qubit measurements from a variational
+circuit to solve a combinatorial optimization problem. In doing so, we encode
+constraints for the MaxCut problem as parametrized operations in the quantum
+circuit.
+
 """
 
 ##############################################################################
-# Imports
-# -------
+# 1 Background
+# -------------
 #
-# As usual, we import PennyLane, the PennyLane-provided version of NumPy,
-# and an optimizer.
+# 1.1 The MaxCut problem
+# ~~~~~~~~~~~~~~~~~~~~~~
+# The aim of MaxCut is to maximize the number of edges in a graph that are "cut" by
+# a given partition of the vertices into two sets as shown in the figure below.
+#
+# More formally, given a graph
+# with a set of :math:`n` vertices :math:`V=\{v_i\}` and :math:`m` edges
+# :math:`E=\{(v_j,v_k)\}`, we seek the partition :math:`z` of :math:`V` into two sets
+# :math:`S` and :math:`S'` which maximizes
+#
+# .. math::
+#   C(z) = \sum_{\alpha=0}^{m}C_\alpha(z)
+#
+# where :math:`C_\alpha(z)` is 1 if :math:`z` places one vertex from the
+# :math:`\alpha^\text{th}` edge in :math:`S` and the other in :math:`S'`, and is 0 otherwise.
+# The goal of approximate optimization in this case is to find a partition :math:`z` which
+# yields a value for :math:`C(z)` that is close to the maximum possible value.
+#
+# For instance,
+# in the "ring" situation depicted in the figure above, the optimal value of :math:`C(z)` is
+# 4, when the partition separates the vertices into the sets :math:`\{(0,2)\}` and
+# :math:`\{(1,3)\}`. Such a situation can be represented by the bitstring :math:`z=1010\text{,}`
+# indicating that the first and third bits are in one partition while the 2nd and fourth are in
+# the other. (The inverse partition, :math:`z=0101` is of course equally valid.) In the following section,
+# we will represent partitions using computational basis states and use PennyLane and QAOA to
+# rediscover this optimal partition.
+#
+# 1.2 A quantum circuit
+# ~~~~~~~~~~~~~~~~~~~~~~~
+# QAOA starts with a uniform superposition over the :math:`n` bit basis states,
+#
+# .. math::
+#   |s\rangle = \frac{1}{\sqrt{2^n}}\sum |z\rangle
+#
+# 
+#
+# 2 QAOA for MaxCut in PennyLane
+# ------------------------------
+#
+# 2.2 Imports
+# ~~~~~~~~~~~
+#
+# To get started, we import PennyLane along with the Pennylane-provided
+# version of NumPy.
 
 
 import pennylane as qml
 from pennylane import numpy as np
 
+##############################################################################
+# Problem definition
+# ~~~~~~~~~~~~~~~~~~
+# We use the default qubit device and specify the number of qubits using
+# "n_wires".
 
 pauli_z = np.array([[1,0],[0,-1]])
 pauli_z_2 = np.kron(pauli_z,pauli_z)
@@ -148,33 +202,6 @@ def qaoa_maxcut(n_wires=0,clauses=[],p=1,steps=30):
 
 import matplotlib.pyplot as plt
 
-
-ring = [(0,1),(0,3),(1,2),(2,3)]
-
-qaoa_output_1 = qaoa_maxcut(n_wires=4,clauses=ring,p=1,steps=30)
-qaoa_output_2 = qaoa_maxcut(n_wires=4,clauses=ring,p=2,steps=30)
-
-bit_strings_1 = qaoa_output_1[2]
-bit_strings_2 = qaoa_output_2[2]
-xs = np.arange(16)
-bins = xs - 0.5
-
-fig,(ax1,ax2) = plt.subplots(1,2)
-plt.subplot(1,2,1)
-plt.title("p=1")
-plt.hist(bit_strings_1,bins)
-plt.xlabel("bit strings")
-plt.ylabel("freq.")
-plt.xticks(xs,map(lambda x : format(x,'04b'),xs),rotation='vertical')
-plt.subplot(1,2,2)
-plt.title("p=2")
-plt.hist(bit_strings_2,bins)
-plt.xlabel("bit strings")
-plt.ylabel("freq.")
-plt.xticks(xs,map(lambda x : format(x,'04b'),xs),rotation='vertical')
-plt.subplots_adjust(bottom=0.15)
-plt.tight_layout()
-plt.show()
 
 ##############################################################################
 # Stuff.
