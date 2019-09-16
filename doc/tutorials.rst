@@ -80,6 +80,7 @@ algorithms using PennyLane and near-term quantum hardware.
     :hidden:
     :maxdepth: 2
 
+    tutorials/pennylane_run_make_your_first_quantum_circuit    
     tutorials/pennylane_run_qubit_rotation
     tutorials/pennylane_run_gaussian_transformation
     tutorials/pennylane_run_plugins_hybrid
