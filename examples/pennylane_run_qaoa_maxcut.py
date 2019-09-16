@@ -104,7 +104,7 @@ from pennylane import numpy as np
 # when the function is called in the quantum circuit.
 
 n_wires = 4
-p = 2
+p = 1
 edges = [(0, 1), (0, 3), (1, 2), (2, 3)]
 
 # unitary operator U_B acting on each wire
@@ -158,7 +158,7 @@ pauli_z_2 = np.kron(pauli_z,pauli_z)
 # circuit with parameters beta = params[0] and
 # gamma = params[1], each of which is a np array
 @qml.qnode(dev1)
-def circuit(params, edge):
+def circuit(params, edge=None):
     # apply hadamards to get n qubit |+> state
     for wire in range(n_wires):
         qml.Hadamard(wires=wire)
@@ -178,7 +178,7 @@ def circuit(params, edge):
 # 2.5 Optimization
 # ~~~~~~~~~~~~~
 # Finally, we optimize the cost function over the
-# angle parameters :math:`\boldsymbol{gamma}` and :math:`\boldsymbol{gamma}`
+# angle parameters :math:`\boldsymbol{\gamma}` and :math:`\boldsymbol{\beta}`
 # using PennyLane's built-in automatic differentiation and sample the optimized
 # circuit multiple times to yield a distribution of bitstrings. One of the optimal partitions
 # (z=0101 or z=1010) should be the most frequently sampled bitstring.
@@ -188,7 +188,7 @@ def objective(params):
     neg_F_p = 0
     for edge in edges:
         # objective for the maxcut problem
-        neg_F_p -= 0.5 * (1 - circuit(params, edge))
+        neg_F_p -= 0.5 * (1 - circuit(params, edge=edge))
     return neg_F_p
 
 
@@ -212,7 +212,7 @@ F_p = -objective(params)
 bit_strings = []
 n_samples = 100
 for i in range(0, n_samples):
-    bit_strings.append(int(circuit(params)))
+    bit_strings.append(int(circuit(params, edge=None)))
 counts = np.bincount(np.array(bit_strings))
 most_freq_bit_string = np.argmax(counts)
 print('Most frequently sampled bit string is: {:04b}'.format(most_freq_bit_string))
@@ -226,12 +226,11 @@ print('Most frequently sampled bit string is: {:04b}'.format(most_freq_bit_strin
 
 import matplotlib.pyplot as plt
 
-
 xs = np.arange(16)
 bins = xs - 0.5
 
 fig,ax = plt.subplots()
-plt.title("p=2")
+plt.title("p=1")
 plt.hist(bit_strings)
 plt.xlabel("bitstrings")
 plt.ylabel("freq.")
