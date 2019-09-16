@@ -393,9 +393,9 @@ print(circuit.metric_tensor(params, diag_approx=True))
 # -------------------------------------
 #
 # PennyLane provides an implementation of the quantum natural gradient
-# optimizer, :class:`~.QNGOptimizer`. Let's use it to compare
-# optimization convergence versus :class:`~.GradientDescentOptimizer`
-# for our simple variational circuit above.
+# optimizer, :class:`~.QNGOptimizer`. Let's compare the optimization convergence
+# of QNG Optimizer and :class:~.GradientDescentOptimizer for the simple variational
+# circuit above.
 
 steps = 200
 init_params = np.array([0.432, -0.123, 0.543, 0.233])
