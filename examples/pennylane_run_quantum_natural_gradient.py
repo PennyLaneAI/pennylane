@@ -13,21 +13,22 @@ Background
 ----------
 
 The most successful class of quantum algorithms for use on near-term noisy quantum hardware
-is the so-called variational quantum algorithm. As laid out in the :ref:`Concepts <varcirc>`, in variational quantum algorithms
+is the so-called variational quantum algorithm. As laid out in the :ref:`Concepts section <varcirc>`, in variational quantum algorithms
 a low-depth parametrized quantum circuit ansatz is chosen, and a problem-specific
-Hermitian observable measured. A classical optimization loop is then used to find
-the set of quantum parameters that *minimize* a particular measurement statistic
+observable measured. A classical optimization loop is then used to find
+the set of quantum parameters that *minimize* a particular measurement expectation value
 of the quantum device. Examples of such algorithms include the :ref:`variational quantum
 eigensolver (VQE) <vqe>`, the `quantum approximate optimization algorithm (QAOA) <https://arxiv.org/abs/1411.4028>`__,
 and :ref:`quantum neural networks (QNN) <quantum_neural_net>`.
 
 Most recent implementations
 of variational quantum algorithms have used gradient-free classical optimization
-methods, such as Nelder-Mead. However, the parameter-shift rule for
-analytic quantum gradients (as implemented in PennyLane) has allowed for
-stochastic gradient descent of variational quantum algorithms on quantum
-hardware. One caveat though that has surfaced with gradient descent
-is the issue of learning rate or step-size --- how do we choose the optimal
+methods, such as the Nelder-Mead algorithm. However, the parameter-shift rule
+(as implemented in PennyLane) allows the user to automatically compute 
+analytic gradients of quantum circuits. This opens up the possibility to train
+quantum computing hardware using gradient descent---the same method used to train
+deep learning models. 
+Though one caveat has surfaced with gradient descent --- how do we choose the optimal
 step size for our variational quantum algorithms, to ensure successful and
 efficient optimization?
 
@@ -38,9 +39,9 @@ In standard gradient descent, each optimization step is given by
 
 .. math:: \theta_{t+1} = \theta_t -\eta \nabla \mathcal{L}(\theta),
 
-where :math:`\mathcal{L}(\theta)` is the loss as a function of
+where :math:`\mathcal{L}(\theta)` is the cost as a function of
 the parameters :math:`\theta`, and :math:`\eta` is the learning rate
-or step size. In essence, each optimization step calculates a vector of
+or step size. In essence, each optimization step calculates the
 steepest descent direction around the local value of :math:`\theta_t`
 in the parameter space, and updates :math:`\theta_t\rightarrow \theta_{t+1}`
 by this vector.
@@ -50,7 +51,7 @@ is strongly connected to a *Euclidean geometry* on the parameter space.
 The parametrization is not unique, and different parametrizations can distort
 distances within the optimization landscape.
 
-For example, consider the following loss function :math:`L`, parametrized
+For example, consider the following cost function :math:`\mathcal{L}`, parametrized
 using two different coordinate systems, :math:`(\theta_0, \theta_1)`, and
 :math:`(\phi_0, \phi_1)`:
 
@@ -69,9 +70,9 @@ and not taking into the fact that the loss function might vary at a different
 rate with respect to each parameter.
 
 Instead, if we perform a change of coordinate system (or re-parametrization)
-of the loss function, we might find a parameter space where variations in :math:`L`
+of the cost function, we might find a parameter space where variations in :math:`\mathcal{L}`
 are more even across different parameters. This is the case with the new parametrization
-:math:`(\phi_0, \phi_1)`; the loss function is unchanged,
+:math:`(\phi_0, \phi_1)`; the cost function is unchanged,
 but we now have a nicer geometry in which to perform gradient descent, and a more
 informative stepsize. This leads to faster convergence, and can help avoid optimization
 becoming stuck in local minima.
@@ -94,11 +95,11 @@ The standard gradient descent is modified as follows:
 
 where :math:`F` is the `Fisher information matrix <https://en.wikipedia.org/wiki/Fisher_information#Matrix_form>`__.
 The Fisher information matrix acts as a metric tensor, transforming the
-steepest descent in the euclidean parameter space to the steepest descent in the
+steepest descent in the Euclidean parameter space to the steepest descent in the
 distribution space.
 
 The quantum analog
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 In a similar vein, it has been shown that the standard Euclidean geometry
 is sub-optimal for optimization of quantum variational algorithms
@@ -144,7 +145,7 @@ where :math:`g^{+}` refers to the pseudo-inverse.
 #   with :math:`n_\ell` parameters :math:`\theta_\ell = \{\theta^{(\ell)}_0, \dots, \theta^{(\ell)}_n\}`.
 #
 # Further, assume all parametrized gates can be written in the form
-# :math:`X(\theta^{(\ell)}_{i}) = e^{i\theta^{(\ell)}_{i} K_i}`,
+# :math:`X(\theta^{(\ell)}_{i}) = e^{i\theta^{(\ell)}_{i} K^{(\ell)}_i}`,
 # where :math:`K^{(\ell)}_i` is the *generator* of the parametrized operation.
 #
 # For each parametric layer :math:`\ell` in the variational quantum circuit
@@ -394,14 +395,14 @@ print(circuit.metric_tensor(params, diag_approx=True))
 #
 # PennyLane provides an implementation of the quantum natural gradient
 # optimizer, :class:`~.QNGOptimizer`. Let's compare the optimization convergence
-# of QNG Optimizer and :class:~.GradientDescentOptimizer for the simple variational
+# of the QNG Optimizer and the :class:`~.GradientDescentOptimizer` for the simple variational
 # circuit above.
 
 steps = 200
 init_params = np.array([0.432, -0.123, 0.543, 0.233])
 
 ##############################################################################
-# Performing a vanilla gradient descent:
+# Performing vanilla gradient descent:
 
 gd_cost = []
 opt = qml.GradientDescentOptimizer(0.01)
@@ -412,7 +413,7 @@ for _ in range(steps):
     gd_cost.append(circuit(theta))
 
 ##############################################################################
-# Performing a quantum natural gradient descent:
+# Performing quantum natural gradient descent:
 
 qng_cost = []
 opt = qml.QNGOptimizer(0.01)
