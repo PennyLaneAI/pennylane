@@ -467,6 +467,7 @@ class CircuitGraph:
 
         Args:
             op (Operation): an operation to update the given node with
+            node (dict): the node to update
         """
         cmd = Command(
             name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=node["idx"])

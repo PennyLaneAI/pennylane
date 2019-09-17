@@ -349,7 +349,7 @@ class QNode:
         self.ev = list(res)  #: list[Observable]: returned observables
         self.ops = self.queue + self.ev  #: list[Operation]: combined list of circuit operations
 
-        # classify the circuit contents
+        # list all operations except for the identity
         non_identity_ops = [op for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
 
         # contains True if op is a CV, False if it is a discrete variable
@@ -358,6 +358,9 @@ class QNode:
         if not all(are_cvs) and any(are_cvs):
             raise QuantumFunctionError("Continuous and discrete operations are not "
                                        "allowed in the same quantum circuit.")
+
+        # TODO: we should enforce plugins using the Device.capabilities dictionary to specify
+        # whether they are qubit or CV devices, and remove this logic here.
         if all(are_cvs):
             self.type = 'CV'
         elif not any(are_cvs):
@@ -372,7 +375,7 @@ class QNode:
                         self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
         # generate directed acyclic graph
-        self.cg = CircuitGraph(self.queue, self.ev, self.variable_ops)
+        self.circuit_graph = CircuitGraph(self.queue, self.ev, self.variable_ops)
 
         #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
@@ -406,7 +409,7 @@ class QNode:
             # construct the circuit
             self.construct(args, kwargs)
 
-        for queue, curr_ops, param_idx, _ in self.cg.iterate_layers():
+        for queue, curr_ops, param_idx, _ in self.circuit_graph.iterate_layers():
             obs = []
             scale = []
 
@@ -512,7 +515,7 @@ class QNode:
         Returns:
             list[Operation]: successors in a topological order
         """
-        succ = [self.cg.graph.nodes[i]["op"] for i in self.cg.descendants((o_idx,))]
+        succ = self.circuit_graph.get_ops(self.circuit_graph.descendants((o_idx,)))
 
         if only == 'E':
             return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
@@ -567,11 +570,12 @@ class QNode:
             if op.grad_method != "A":
                 return op.grad_method
 
-            # op is Gaussian and has the heisenberg_* methods
-            # A non-Gaussian successor is OK if it isn't succeeded by any observables
             obs_successors = self._op_successors(o_idx, 'E')
             if not obs_successors:
                 return 'A'
+
+            # op is Gaussian and has the heisenberg_* methods
+            # A non-Gaussian successor is OK if it isn't succeeded by any observables
 
             # check that all successor ops are also Gaussian
             if not all(x.supports_heisenberg for x in self._op_successors(o_idx, 'G')):
@@ -579,6 +583,7 @@ class QNode:
 
             # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
             for observable in obs_successors:
+                # ev_order of None corresponds to a non-Gaussian observable
                 if observable.ev_order is None:
                     return 'F'
                 if observable.ev_order == 2:
@@ -591,7 +596,7 @@ class QNode:
 
         # indices of operations that depend on the free parameter idx
         o_idxs = [o[0] for o in self.variable_ops[idx]]
-        op_nodes = self.cg.get_nodes(o_idxs)
+        op_nodes = self.circuit_graph.get_nodes(o_idxs)
         methods = list(map(best_for_op, op_nodes))
 
         if all(k == 'A' for k in methods):
@@ -664,7 +669,7 @@ class QNode:
         self.device.reset()
 
         # check that no wires are measured more than once
-        m_wires = list(w for ex in self.cg.observables for w in ex.wires)
+        m_wires = list(w for ex in self.circuit_graph.observables for w in ex.wires)
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
@@ -679,7 +684,7 @@ class QNode:
         for op in self.ops:
             check_op(op)
 
-        ret = self.device.execute(self.queue, self.cg.observables, self.variable_ops)
+        ret = self.device.execute(self.circuit_graph.operations, self.circuit_graph.observables, self.variable_ops)
         return self.output_conversion(ret)
 
     def metric_tensor(self, *args, **kwargs):
@@ -770,7 +775,7 @@ class QNode:
         Assumes :meth:`construct` has already been called.
 
         Args:
-            obs  (Iterable[Obserable]): observables to measure
+            obs  (Iterable[Observable]): observables to measure
             args (array[float]): circuit input parameters
 
         Returns:
@@ -786,7 +791,7 @@ class QNode:
         Variable.kwarg_values = keyword_values
 
         self.device.reset()
-        ret = self.device.execute(self.cg.operations, obs, self.variable_ops)
+        ret = self.device.execute(self.circuit_graph.operations, obs, self.circuit_graph.parameters)
         return ret
 
     def jacobian(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
@@ -848,7 +853,7 @@ class QNode:
             self.construct(params, circuit_kwargs)
 
         sample_ops = [
-            e for e in self.cg.observables if e.return_type is pennylane.operation.Sample]
+            e for e in self.circuit_graph.observables if e.return_type is pennylane.operation.Sample]
 
         if sample_ops:
             names = [str(e) for e in sample_ops]
@@ -895,7 +900,7 @@ class QNode:
             else:
                 y0 = None
 
-        variances = any(e.return_type is pennylane.operation.Variance for e in self.cg.observables)
+        variances = any(e.return_type is pennylane.operation.Variance for e in self.circuit_graph.observables)
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
@@ -953,8 +958,22 @@ class QNode:
 
     @staticmethod
     def _transform_observable(observable, w, Z):
-        """Transform the observable"""
+        """Transform the observable
+
+        Args:
+            observable (Observable): the observable to perform the transformation on
+            w (int): number of wires
+            Z (array[float]): conjugated matrix
+
+        Returns:
+            float: expectation value
+        """
         q = observable.heisenberg_obs(w)
+
+        if q.ndim != observable.ev_order:
+            raise QuantumFunctionError(
+                "Mismatch between polynomial order of observable and heisenberg representation")
+
         qp = q @ Z
         if q.ndim == 2:
             # 2nd order observable
@@ -986,7 +1005,7 @@ class QNode:
         pd = 0.0
         # find the Commands in which the free parameter appears, use the product rule
         for o_idx, p_idx in self.variable_ops[idx]:
-            op = self.cg.graph.nodes[o_idx]["op"]
+            op = self.circuit_graph.graph.nodes[o_idx]["op"]
 
             # we temporarily edit the Operation such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operations depending on the original.
@@ -1041,7 +1060,7 @@ class QNode:
                 Z = B @ Z @ B_inv  # conjugation
 
                 # transform the observables
-                obs = [self._transform_observable(ob, w, Z) for ob in self.cg.observables]
+                obs = [self._transform_observable(ob, w, Z) for ob in self.circuit_graph.observables]
 
                 # measure transformed observables
                 pd += self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
@@ -1065,10 +1084,10 @@ class QNode:
         """
         # boolean mask: elements are True where the
         # return type is a variance, False for expectations
-        where_var = [e.return_type is pennylane.operation.Variance for e in self.cg.observables]
+        where_var = [e.return_type is pennylane.operation.Variance for e in self.circuit_graph.observables]
 
         applicable_nodes = [
-            node for node in self.cg.observable_nodes
+            node for node in self.circuit_graph.observable_nodes
             if node["op"].return_type == pennylane.operation.Variance]
         original_nodes = copy.deepcopy(applicable_nodes)
 
@@ -1077,7 +1096,7 @@ class QNode:
 
             # temporarily convert return type to expectation
             e.return_type = pennylane.operation.Expectation
-            self.cg.update_node(node, e)
+            self.circuit_graph.update_node(node, e)
 
             # analytic derivative of <A^2>
             # For involutory observables (A^2 = I),
@@ -1098,7 +1117,7 @@ class QNode:
                         old = copy.deepcopy(e)
 
                         # replace the Hermitian variance with <A^2> expectation
-                        self.cg.update_node(
+                        self.circuit_graph.update_node(
                             node,
                             pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False)))
 
@@ -1106,7 +1125,7 @@ class QNode:
                         pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, **kwargs))
 
                         # restore the original Hermitian variance
-                        self.cg.update_node(node, old)
+                        self.circuit_graph.update_node(node, old)
 
             elif self.type == 'CV':
                 # need to calculate d<A^2>/dp
@@ -1128,14 +1147,14 @@ class QNode:
                 A = np.kron(A, A.T)
 
                 # replace the first order observable var(A) with <A^2>
-                self.cg.update_node(
+                self.circuit_graph.update_node(
                     node, pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)))
 
                 # calculate the analytic derivative of <A^2>
                 pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))
 
                 # restore the original observable
-                self.cg.update_node(node, old)
+                self.circuit_graph.update_node(node, old)
 
         # save original cache setting
         cache = self.cache
@@ -1152,7 +1171,7 @@ class QNode:
         pdA = self._pd_analytic(param_values, param_idx, **kwargs)
 
         for node in original_nodes:
-            self.cg.update_node(node, node["op"])
+            self.circuit_graph.update_node(node, node["op"])
 
         # restore original caching setting
         self.cache = cache
