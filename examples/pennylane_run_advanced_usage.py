@@ -165,7 +165,6 @@ qnode1_torch = qnode1.to_torch()
 
 ##############################################################################
 # Let's define the cost function that accepts a QNode as an argument.
-# avoids duplication of code. 
    
 def cost(qnode, phi):
     return qnode(phi)
