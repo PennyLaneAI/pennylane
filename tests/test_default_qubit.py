@@ -701,7 +701,7 @@ class TestDefaultQubitIntegration:
         
         dev = qml.device("default.qubit", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1
+        assert dev.shots == 1000
         assert dev.analytic 
         assert dev.short_name == "default.qubit"
 

@@ -211,7 +211,7 @@ class TestOperations:
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
         
-        assert mock_device._shots == 1
+        assert mock_device._shots == 1000
 
         mock_device.shots = 10
 
