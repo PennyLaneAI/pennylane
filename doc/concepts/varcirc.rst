@@ -65,11 +65,11 @@ Examples
 Data-embedding
 ~~~~~~~~~~~~~~
 
-One straightforward embedding strategy is for the first few gates in the circuit to be responsible for embedding the input :math:`x` into a quantum state (which functions as a feature map :cite:`schuld2018quantum`), while the subsequent gates have the parameters :math:`\bm{\theta}` as arguments.
+As explained in :ref:`concept_embeddings`, the first few gates in the circuit can be used to embed the input :math:`x` into a quantum state (which functions as a feature map :cite:`schuld2018quantum`), while the subsequent gates have parameters :math:`\bm{\theta}` as arguments.
 
 As an example, consider a photonic quantum computer (similar examples can be constructed for qubits). For simplicity, we temporarily omit the parameters :math:`\bm{\theta}`. We take the initial state to be the *vacuum* state and the measured observable :math:`\hat{B}` to be the position operator :math:`x`. The vacuum state has expectation value :math:`\langle\hat{x}\rangle = \langle 0 | \hat{x} | 0 \rangle = 0`.
 
-Suppose we have an input :math:`x`, which has :math:`N` dimensions. We can embed this into a quantum circuit with :math:`N` wires using the `displacement operator <https://en.wikipedia.org/wiki/Displacement_operator>`_. For every component :math:`x_i` of :math:`x`, we apply :math:`D(x_i)` to wire :math:`i`.
+Suppose we have an input :math:`x`, which has :math:`N` dimensions. We can embed this into a quantum circuit with :math:`N` wires using the `displacement operator <https://en.wikipedia.org/wiki/Displacement_operator>`_. For every component :math:`x_i` of :math:`x`, we apply :math:`D(x_i)` to wire :math:`i`. This is called displacement embedding. 
 
 Measurement of the expectation value of the :math:`\hat{x}` operator on each wire will then give the result
 

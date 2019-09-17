@@ -157,8 +157,10 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    concepts/overview
    concepts/hybrid_computation
    concepts/quantum_nodes
+   concepts/concept_embeddings
    concepts/varcirc
    concepts/autograd_quantum
+
    zreferences
 
 .. toctree::

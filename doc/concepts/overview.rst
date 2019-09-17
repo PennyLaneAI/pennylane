@@ -69,6 +69,18 @@ This question leads to the notion of a **quantum node** or **QNode**: a basic co
 To a classical device, a quantum node is a black box which can evaluate functions. A quantum device, however, resolves the finer details of the circuit.
 
 
+:html:`<h3>Quantum embeddings</h3>`
+
+.. rst-class:: admonition see
+
+    See the main :ref:`concept_embeddings` page for more details.
+
+How do quantum operations act on the classical data that enters a quantum node? 
+
+Embeddings are functions that map classical data into quantum states. These states can then be acted upon by quantum operations, enabling us to do quantum information processing.   
+
+
+
 :html:`<h3>Variational circuits</h3>`
 
 .. rst-class:: admonition see
