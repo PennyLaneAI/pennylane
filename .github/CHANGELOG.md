@@ -8,15 +8,20 @@
 
 ### Documentation
 
-* Add a section to advanced usage tutorial on the PL feature of one device
-  supporting multiple qnodes with different ML interfaces. 
+* Added a section to advanced usage tutorial on the PL feature of one device
+  supporting multiple QNodes with different ML interfaces. 
   [#323](https://github.com/XanaduAI/pennylane/pull/323) 
+
+* Fixed typos in the state preparation tutorial.
+  [#321](https://github.com/XanaduAI/pennylane/pull/321)
 
 ### Bug fixes
 
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
+
+Aroosa Ijaz, Angus Lowe
 
 ---
 
