@@ -4,14 +4,13 @@
 Quantum Approximate Optimization for MaxCut
 ===========================================
 
-In this tutorial, we show how to implement a quantum approximate
+In this tutorial, we implement a quantum approximate
 optimization algorithm (QAOA) for the MaxCut problem in Pennylane. (See `Farhi,
 Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>`__.) This
 example demonstrates how to sample joint qubit measurements from a variational
-circuit to solve a combinatorial optimization problem. In doing so, we encode
-constraints for the MaxCut problem as parametrized operations in the quantum
+quantum circuit to solve a combinatorial optimization problem. We encode
+constraints for the MaxCut problem as diagonal operators and introduce... in the quantum
 circuit.
-
 """
 
 ##############################################################################
