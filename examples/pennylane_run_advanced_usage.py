@@ -164,7 +164,7 @@ qnode2 = qml.QNode(circuit, dev1)
 qnode1_torch = qnode1.to_torch()
 
 ##############################################################################
-# Let's define the cost function. Notice that we can pass the QNode as an argument too. This 
+# Let's define the cost function that accepts a QNode as an argument.
 # avoids duplication of code. 
    
 def cost(qnode, phi):
