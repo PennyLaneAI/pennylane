@@ -24,10 +24,10 @@ and :ref:`quantum neural networks (QNN) <quantum_neural_net>`.
 Most recent implementations
 of variational quantum algorithms have used gradient-free classical optimization
 methods, such as the Nelder-Mead algorithm. However, the parameter-shift rule
-(as implemented in PennyLane) allows the user to automatically compute 
+(as implemented in PennyLane) allows the user to automatically compute
 analytic gradients of quantum circuits. This opens up the possibility to train
 quantum computing hardware using gradient descent---the same method used to train
-deep learning models. 
+deep learning models.
 Though one caveat has surfaced with gradient descent --- how do we choose the optimal
 step size for our variational quantum algorithms, to ensure successful and
 efficient optimization?
@@ -178,24 +178,24 @@ dev = qml.device('default.qubit', wires=3)
 
 @qml.qnode(dev)
 def circuit(params):
-    # non-parametrized gates
+    # |psi_0>: state preparation
     qml.RY(np.pi/4, wires=0)
     qml.RY(np.pi/3, wires=1)
     qml.RY(np.pi/7, wires=2)
 
-    # Parametrized layer 1
+    # V0(theta0, theta1): Parametrized layer 0
     qml.RZ(params[0], wires=0)
     qml.RZ(params[1], wires=1)
 
-    # non-parametrized gates
+    # W1: non-parametrized gates
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
 
-    # Parametrized layer 2
+    # V_1(theta2, theta3): Parametrized layer 1
     qml.RY(params[2], wires=1)
     qml.RX(params[3], wires=2)
 
-    # non-parametrized gates
+    # W2: non-parametrized gates
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
 
@@ -215,14 +215,14 @@ params = np.array([0.432, -0.123, 0.543, 0.233])
 # |
 #
 # Therefore, the block-diagonal approximation consists of two
-# :math:`2\times 2` matrices, :math:`g^{(1)}` and :math:`g^{(2)}`.
+# :math:`2\times 2` matrices, :math:`g^{(0)}` and :math:`g^{(1)}`.
 #
 # .. figure:: ../../examples/figures/quantum_natural_gradient/qng2.png
 #     :align: center
 #     :width: 30%
 #     :target: javascript:void(0)
 #
-# To compute the first block-diagonal :math:`g^{(1)}`, we create subcircuits consisting
+# To compute the first block-diagonal :math:`g^{(0)}`, we create subcircuits consisting
 # of all gates prior to the layer, and observables corresponding to
 # the *generators* of the gates in the layer:
 #
@@ -231,17 +231,17 @@ params = np.array([0.432, -0.123, 0.543, 0.233])
 #     :width: 30%
 #     :target: javascript:void(0)
 
-g1 = np.zeros([2, 2])
+g0 = np.zeros([2, 2])
 
-def layer1_subcircuit(params):
+def layer0_subcircuit(params):
     """This function contains all gates that
-    precede parametrized layer 1"""
+    precede parametrized layer 0"""
     qml.RY(np.pi/4, wires=0)
     qml.RY(np.pi/3, wires=1)
     qml.RY(np.pi/7, wires=2)
 
 ##############################################################################
-# We then post-process the measurement results in order to determine :math:`g^{(1)}`,
+# We then post-process the measurement results in order to determine :math:`g^{(0)}`,
 # as follows.
 #
 # .. figure:: ../../examples/figures/quantum_natural_gradient/qng4.png
@@ -252,42 +252,42 @@ def layer1_subcircuit(params):
 # We can see that the diagonal terms are simply given by the variance:
 
 @qml.qnode(dev)
-def layer1_diag(params):
-    layer1_subcircuit(params)
+def layer0_diag(params):
+    layer0_subcircuit(params)
     return var(qml.PauliZ(0)), var(qml.PauliZ(1))
 
 # calculate the diagonal terms
-varK0, varK1 = layer1_diag(params)
-g1[0, 0] = varK0/4
-g1[1, 1] = varK1/4
+varK0, varK1 = layer0_diag(params)
+g0[0, 0] = varK0/4
+g0[1, 1] = varK1/4
 
 ##############################################################################
 # The following two subcircuits are then used to calculate the
-# off-diagonal covariance terms of :math:`g^{(1)}`:
+# off-diagonal covariance terms of :math:`g^{(0)}`:
 
 @qml.qnode(dev)
-def layer1_off_diag_single(params):
-    layer1_subcircuit(params)
+def layer0_off_diag_single(params):
+    layer0_subcircuit(params)
     return expval(qml.PauliZ(0)), expval(qml.PauliZ(1))
 
 @qml.qnode(dev)
-def layer1_off_diag_double(params):
-    layer1_subcircuit(params)
+def layer0_off_diag_double(params):
+    layer0_subcircuit(params)
     ZZ = np.kron(np.diag([1, -1]), np.diag([1, -1]))
     return expval(qml.Hermitian(ZZ, wires=[0, 1]))
 
 # calculate the off-diagonal terms
-exK0, exK1 = layer1_off_diag_single(params)
-exK0K1 = layer1_off_diag_double(params)
+exK0, exK1 = layer0_off_diag_single(params)
+exK0K1 = layer0_off_diag_double(params)
 
-g1[0, 1] = (exK0K1 - exK0*exK1)/4
-g1[1, 0] = (exK0K1 - exK0*exK1)/4
+g0[0, 1] = (exK0K1 - exK0*exK1)/4
+g0[1, 0] = (exK0K1 - exK0*exK1)/4
 
 ##############################################################################
 # Note that, by definition, the block-diagonal matrices must be real and
 # symmetric.
 #
-# We can repeat the above process to compute :math:`g^{(2)}`. The subcircuit
+# We can repeat the above process to compute :math:`g^{(1)}`. The subcircuit
 # required is given by
 #
 # .. figure:: ../../examples/figures/quantum_natural_gradient/qng8.png
@@ -295,26 +295,26 @@ g1[1, 0] = (exK0K1 - exK0*exK1)/4
 #     :width: 50%
 #     :target: javascript:void(0)
 
-g2 = np.zeros([2, 2])
+g1 = np.zeros([2, 2])
 
-def layer2_subcircuit(params):
+def layer1_subcircuit(params):
     """This function contains all gates that
-    precede parametrized layer 2"""
-    # non-parametrized gates
+    precede parametrized layer 1"""
+    # |psi_0>: state preparation
     qml.RY(np.pi/4, wires=0)
     qml.RY(np.pi/3, wires=1)
     qml.RY(np.pi/7, wires=2)
 
-    # Parametrized layer 1
+    # V0(theta0, theta1): Parametrized layer 0
     qml.RZ(params[0], wires=0)
     qml.RZ(params[1], wires=1)
 
-    # non-parametrized gates
+    # W1: non-parametrized gates
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
 
 ##############################################################################
-# Using this subcircuit, we can now generate the submatrix :math:`g^{(2)}`.
+# Using this subcircuit, we can now generate the submatrix :math:`g^{(1)}`.
 #
 # .. figure:: ../../examples/figures/quantum_natural_gradient/qng5.png
 #     :align: center
@@ -322,16 +322,16 @@ def layer2_subcircuit(params):
 #     :target: javascript:void(0)
 
 @qml.qnode(dev)
-def layer2_diag(params):
-    layer2_subcircuit(params)
+def layer1_diag(params):
+    layer1_subcircuit(params)
     return var(qml.PauliY(1)), var(qml.PauliX(2))
 
 ##############################################################################
 # As previously, the diagonal terms are simply given by the variance,
 
-varK0, varK1 = layer2_diag(params)
-g2[0, 0] = varK0/4
-g2[1, 1] = varK1/4
+varK0, varK1 = layer1_diag(params)
+g1[0, 0] = varK0/4
+g1[1, 1] = varK1/4
 
 
 ##############################################################################
@@ -339,31 +339,31 @@ g2[1, 1] = varK1/4
 # observables to be computed.
 
 @qml.qnode(dev)
-def layer2_off_diag_single(params):
-    layer2_subcircuit(params)
+def layer1_off_diag_single(params):
+    layer1_subcircuit(params)
     return expval(qml.PauliY(1)), expval(qml.PauliX(2))
 
 @qml.qnode(dev)
-def layer2_off_diag_double(params):
-    layer2_subcircuit(params)
+def layer1_off_diag_double(params):
+    layer1_subcircuit(params)
     X =  np.array([[0, 1], [1, 0]])
     Y =  np.array([[0, -1j], [1j, 0]])
     YX = np.kron(Y, X)
     return expval(qml.Hermitian(YX, wires=[1, 2]))
 
 # calculate the off-diagonal terms
-exK0, exK1 = layer2_off_diag_single(params)
-exK0K1 = layer2_off_diag_double(params)
+exK0, exK1 = layer1_off_diag_single(params)
+exK0K1 = layer1_off_diag_double(params)
 
-g2[0, 1] = (exK0K1 - exK0*exK1)/4
-g2[1, 0] = g2[0, 1]
+g1[0, 1] = (exK0K1 - exK0*exK1)/4
+g1[1, 0] = g1[0, 1]
 
 
 ##############################################################################
 # Putting this altogether, the block-diagonal approximation to the Fubini-Study
 # metric tensor for this variational quantum circuit is
 from scipy.linalg import block_diag
-g = block_diag(g1, g2)
+g = block_diag(g0, g1)
 print(np.round(g, 8))
 
 
