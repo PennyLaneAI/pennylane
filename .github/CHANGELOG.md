@@ -8,13 +8,16 @@
 
 ### Documentation
 
+* Add Ising model example implemented in different ML interfaces to the 
+tutorials [#319] (https://github.com/XanaduAI/pennylane/pull/319)
+
 ### Bug fixes
 
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
 
----
+Aroosa Ijaz
 
 # Release 0.5.0
 
