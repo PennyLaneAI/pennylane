@@ -8,8 +8,8 @@
 
 ### Documentation
 
-* Add Ising model example implemented in different ML interfaces to the 
-tutorials [#319] (https://github.com/XanaduAI/pennylane/pull/319)
+* Add Ising model example implemented in different ML interfaces to the tutorials 
+  [#319] (https://github.com/XanaduAI/pennylane/pull/319)
 
 ### Bug fixes
 
