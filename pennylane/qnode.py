@@ -139,7 +139,9 @@ from scipy import linalg
 import pennylane
 import pennylane.operation
 
-from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, CircuitGraph
+from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand
+from pennylane.circuit_graph import CircuitGraph
+
 from .variable import Variable
 
 
