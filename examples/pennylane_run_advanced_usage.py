@@ -142,3 +142,39 @@ print(circuit3(0.1, fixed=0.4))
 # --> 136         value = self.kwarg_values[self.name][self.idx] * self.mult
 #     137         return value
 # TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+#
+# QNodes from different interfaces on one Device
+# -----------------------------------------------
+#
+# PennyLane does not only provide the flexibility of having multiple quantum nodes on one device,
+# it also allows these nodes to have different interfaces. Let's look at the following simple
+# example:
+
+dev1 = qml.device('default.qubit', wires=1)
+def circuit(phi):
+    qml.RX(phi, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+##############################################################################
+# Now, we construct multiple QNodes on the same device and change the interface of one of them 
+# from NumPy to PyTorch: 
+
+qnode1 = qml.QNode(circuit, dev1)
+qnode2 = qml.QNode(circuit, dev1)
+qnode1_torch = qnode1.to_torch()
+
+##############################################################################
+# Let's define the cost function. Notice that we can pass the QNode as an argument too. This 
+# avoids duplication of code. 
+   
+def cost(qnode, phi):
+    return qnode(phi)
+
+##############################################################################
+# Now we can call the cost function as follows:
+
+print(cost(qnode1, np.pi))
+
+print(cost(qnode2, np.pi))
+
+print(cost(qnode1_torch, np.pi))
