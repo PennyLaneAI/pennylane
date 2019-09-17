@@ -146,7 +146,7 @@ print(circuit3(0.1, fixed=0.4))
 # QNodes from different interfaces on one Device
 # -----------------------------------------------
 #
-# PennyLane does not only provide the flexibility of having multiple quantum nodes on one device,
+# In addition to allowing multiple quantum nodes on one device,
 # it also allows these nodes to have different interfaces. Let's look at the following simple
 # example:
 
