@@ -124,7 +124,20 @@ class TestQNodeConstruct:
             qml.Kerr(0.54, wires=[1])
             return qml.expval(qml.NumberOperator(0))
 
-        circuit.jacobian([0.321])
+        circuit.jacobian([0.321], method='A')
+
+    def test_best_method_with_gaussian_successors_fails(self):
+        dev = DummyDevice(wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Squeezing(x, 0, wires=[0])
+            qml.Beamsplitter(np.pi/4, 0, wires=[0, 1])
+            qml.Kerr(0.54, wires=[1])
+            return qml.expval(qml.NumberOperator(1))
+
+        with pytest.raises(ValueError, match="analytic gradient method cannot be used with"):
+            circuit.jacobian([0.321], method='A')
 
 
 class TestQNodeExceptions:

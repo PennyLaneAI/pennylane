@@ -500,7 +500,7 @@ class QNode:
                 "scale": scale,
             }
 
-    def _op_successors(self, o_idx, only='G'):
+    def _op_successors(self, o_idx, only='G', get_nodes=False):
         """Successors of the given operation in the quantum circuit.
 
         Args:
@@ -514,13 +514,17 @@ class QNode:
         Returns:
             list[Operation]: successors in a topological order
         """
-        succ = self.circuit_graph.get_ops(self.circuit_graph.descendants((o_idx,)))
+        succ = self.circuit_graph.get_nodes(self.circuit_graph.descendants((o_idx,)))
 
         if only == 'E':
-            return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
+            succ = list(filter(lambda x: isinstance(x["op"], pennylane.operation.Observable), succ))
         if only == 'G':
-            return list(filter(lambda x: not isinstance(x, pennylane.operation.Observable), succ))
-        return succ
+            succ = list(filter(lambda x: not isinstance(x["op"], pennylane.operation.Observable), succ))
+
+        if get_nodes:
+            return succ
+        else:
+            return [node["op"] for node in succ]
 
     def _best_method(self, idx):
         """Determine the correct gradient computation method for a free parameter.
@@ -574,10 +578,13 @@ class QNode:
 
                 # op is Gaussian and has the heisenberg_* methods
                 # A non-Gaussian successor is OK if it isn't succeeded by any observables
-
                 # check that all successor ops are also Gaussian
-                if not all(x.supports_heisenberg for x in self._op_successors(o_idx, 'G')):
-                    return 'F'
+                successor_ops = self._op_successors(o_idx, 'G', get_nodes=True)
+                if not all(x["op"].supports_heisenberg for x in successor_ops):
+                    non_gaussian_ops = [x for x in successor_ops if not x["op"].supports_heisenberg]
+                    for x in non_gaussian_ops:
+                        if self._op_successors(x["idx"], 'E'):
+                            return 'F'
 
                 # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
                 for observable in obs_successors:
@@ -1058,6 +1065,8 @@ class QNode:
                 B = np.eye(1 +2*w)
                 B_inv = B.copy()
                 for BB in self._op_successors(o_idx, 'G'):
+                    if not BB.supports_heisenberg:
+                        continue
                     B = BB.heisenberg_tr(w) @ B
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
