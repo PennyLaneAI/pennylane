@@ -160,7 +160,7 @@ we will only implement a single qubit classifier.
    :scale: 35%
    :alt: DNN
 
-"Talk is cheap. Show me the code. - Linus Torvalds"
+"Talk is cheap. Show me the code." - Linus Torvalds
 ---------------------------------------------------
 """
 
