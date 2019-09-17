@@ -441,7 +441,10 @@ class Device(abc.ABC):
         raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
     def sample(self, observable, wires, par):
-        """Return a sample of an observable with a size of ``device.shots``.
+        """Return a sample of an observable.
+        
+        The number of samples is determined by the value of ``Device.shots`` 
+        which can be directly modified.
 
         For plugin developers: this function should return the result of an evaluation
         of the given observable on the device.

@@ -297,6 +297,9 @@ class DefaultQubit(Device):
         wires (int): the number of modes to initialize the device in
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to 1 if not specified.
+            If ``analytic == True``, then the number of shots is ignored
+            in the calculation of expectation values and variances and only controls the number
+            of samples returned by ``sample``. 
         analytic (bool): indicates if the device should calculate expectations
             and variances analytically
     """

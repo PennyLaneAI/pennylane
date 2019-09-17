@@ -701,8 +701,11 @@ class DefaultGaussian(Device):
 
     Args:
         wires (int): the number of modes to initialize the device in
-        shots (int): How many times should the circuit be evaluated (or sampled) to estimate
-            the expectation values
+        shots (int): (default 1) How many times should the circuit be evaluated (or sampled) to estimate
+            the expectation values.
+            If ``analytic == True``, then the number of shots is ignored
+            in the calculation of expectation values and variances and only controls the number
+            of samples returned by ``sample``. 
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
         analytic (bool): indicates if the device should calculate expectations

@@ -419,7 +419,7 @@ class TestDefaultGaussianDevice(BaseTest):
 
         with self.assertRaisesRegex(ValueError, "Invalid target subsystems provided in 'wires' argument"):
             p = U2
-            dev = DefaultGaussian(wires=4, shots=1, hbar=hbar, analytic=True)
+            dev = DefaultGaussian(wires=4, shots=1, hbar=hbar)
             self.dev.apply('Interferometer', wires=[0, 1, 2], par=[p])
 
     def test_expectation(self):
