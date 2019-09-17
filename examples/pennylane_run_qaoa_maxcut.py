@@ -97,25 +97,22 @@ from pennylane import numpy as np
 ##############################################################################
 # 2.3 Operators
 # ~~~~~~~~~~~~~
-# We specify the number of qubits (vertices) with "n_wires" and the static
-# parameter "p", and compose the unitary operators using the definitions
-# above. Each operator takes a parameter as an argument, which is specified
-# when the function is called in the quantum circuit.
+# We specify the number of qubits (vertices) with "n_wires" and
+# compose the unitary operators using the definitions
+# above. Each operator takes a parameter
+# as an argument, which is specified when the function is
+# called in the quantum circuit.
 
 n_wires = 4
-p = 1
 edges = [(0, 1), (0, 3), (1, 2), (2, 3)]
 
-# unitary operator U_B acting on each wire
-# according to parameter beta
+# unitary operator U_B with parameter beta
 def U_B(beta):
     for wire in range(n_wires):
         qml.RX(2 * beta, wires=wire)
 
 
-# unitary operator U_C with each term acting on
-# subset of wires with locality given by corresponding
-# clause
+# unitary operator U_C with parameter gamma
 def U_C(gamma):
     for clause in edges:
         wire1 = clause[0]
@@ -151,13 +148,11 @@ dev1 = qml.device('default.qubit', wires=n_wires)
 # Once, optimized, the same quantum node can be used for sampling an approximately optimal bitstring
 # if executed without the "wires" argument.
 
-pauli_z = np.array([[1,0],[0,-1]])
+pauli_z = [[1,0],[0,-1]]
 pauli_z_2 = np.kron(pauli_z,pauli_z)
 
-# circuit with parameters beta = params[0] and
-# gamma = params[1], each of which is a np array
 @qml.qnode(dev1)
-def circuit(params, edge=None):
+def circuit(params, edge=None, p=1):
     # apply hadamards to get n qubit |+> state
     for wire in range(n_wires):
         qml.Hadamard(wires=wire)
@@ -183,38 +178,38 @@ def circuit(params, edge=None):
 # (z=0101 or z=1010) should be the most frequently sampled bitstring.
 
 
-def objective(params):
-    neg_F_p = 0
-    for edge in edges:
-        # objective for the maxcut problem
-        neg_F_p -= 0.5 * (1 - circuit(params, edge=edge))
-    return neg_F_p
+def qaoa_maxcut(p=1):
+    # initialize the parameters near zero
+    init_params = np.array([(0.01 * np.random.rand(p)),
+                            (0.01 * np.random.rand(p))])
 
+    # minimize negative the objective
+    def objective(params):
+        neg_F_p = 0
+        for edge in edges:
+            # objective for the maxcut problem
+            neg_F_p -= 0.5 * (1 - circuit(params, edge=edge,p=p))
+        return neg_F_p
 
-# initialize the objective near zero - clarify that there's a plateau?
-init_params = np.array([(0.01 * np.random.rand(p)).tolist(),
-                        (0.01 * np.random.rand(p)).tolist()])
+    # initialize optimizer
+    opt = qml.AdagradOptimizer(stepsize=0.5)
 
-# initialize optimizer
-opt = qml.AdagradOptimizer(stepsize=0.5)
-
-steps=30
-# optimize parameters in objective
-params = init_params
-for i in range(steps):
-    params = opt.step(objective, params)
-    if (i + 1) % 5 == 0:
-        print('Objective after step {:5d}: {: .7f}'.format(i + 1, -objective(params), params))
-
-print('Optimized (beta,gamma) vectors: {}'.format(params))
-F_p = -objective(params)
-bit_strings = []
-n_samples = 100
-for i in range(0, n_samples):
-    bit_strings.append(int(circuit(params, edge=None)))
-counts = np.bincount(np.array(bit_strings))
-most_freq_bit_string = np.argmax(counts)
-print('Most frequently sampled bit string is: {:04b}'.format(most_freq_bit_string))
+    steps = 30
+    # optimize parameters in objective
+    params = init_params
+    for i in range(steps):
+        params = opt.step(objective, params)
+        if (i + 1) % 5 == 0:
+            print('Objective after step {:5d}: {: .7f}'.format(i + 1, -objective(params), params))
+    bit_strings = []
+    n_samples = 100
+    for i in range(0, n_samples):
+        bit_strings.append(int(circuit(params, edge=None)))
+    counts = np.bincount(np.array(bit_strings))
+    most_freq_bit_string = np.argmax(counts)
+    print('Optimized (beta,gamma) vectors: {}'.format(params))
+    print('Most frequently sampled bit string is: {:04b}'.format(most_freq_bit_string))
+    return -objective(params), bit_strings
 
 
 ##############################################################################
@@ -226,9 +221,8 @@ print('Most frequently sampled bit string is: {:04b}'.format(most_freq_bit_strin
 import matplotlib.pyplot as plt
 
 xs = np.arange(16)
-bins = xs - 0.5
 
-fig,ax = plt.subplots()
+fig,ax = plt.subplots(figsize=(4,4))
 plt.title("p=1")
 plt.hist(bit_strings)
 plt.xlabel("bitstrings")
