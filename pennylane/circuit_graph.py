@@ -68,7 +68,8 @@ class CircuitGraph:
 
         for idx, op in enumerate(queue + observables):
             cmd = Command(
-                name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx)
+                name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx
+            )
 
             for w in set(op.wires):
                 if w not in self._grid:
@@ -113,7 +114,8 @@ class CircuitGraph:
         """
         nodes = sorted(
             [node for node in self.graph.nodes.values() if node["return_type"]],
-            key=lambda node: node["idx"])
+            key=lambda node: node["idx"],
+        )
         return nodes
 
     @property
@@ -130,7 +132,8 @@ class CircuitGraph:
         """
         nodes = sorted(
             [node for node in self.graph.nodes.values() if not node["return_type"]],
-            key=lambda node: node["idx"])
+            key=lambda node: node["idx"],
+        )
         return nodes
 
     @property
@@ -257,8 +260,11 @@ class CircuitGraph:
             # iterate over all parameters
             for op_idx, _ in gate_param_tuple:
                 # get all dependents of the existing parameter
-                sub = set(nx.dag.topological_sort(
-                    self.graph.subgraph(nx.dag.ancestors(self.graph, op_idx)).copy()))
+                sub = set(
+                    nx.dag.topological_sort(
+                        self.graph.subgraph(nx.dag.ancestors(self.graph, op_idx)).copy()
+                    )
+                )
 
                 # check if any of the dependents are in the
                 # existing layer
@@ -311,5 +317,6 @@ class CircuitGraph:
             node (dict): the node to update
         """
         cmd = Command(
-            name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=node["idx"])
+            name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=node["idx"]
+        )
         nx.set_node_attributes(self._graph, {node["idx"]: {**cmd._asdict()}})
