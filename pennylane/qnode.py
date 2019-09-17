@@ -333,9 +333,8 @@ class QNode:
 
             res = tuple(res)
         else:
-            raise QuantumFunctionError(
-                "A quantum function must return either a single measured observable "
-                "or a nonempty sequence of measured observables.")
+            raise QuantumFunctionError("A quantum function must return either a single measured observable "
+                                       "or a nonempty sequence of measured observables.")
 
         # check that all returned observables have a return_type specified
         for x in res:
@@ -377,7 +376,7 @@ class QNode:
                         self.variable_ops.setdefault(p.idx, []).append((k, idx))
 
         # generate directed acyclic graph
-        self.circuit_graph = CircuitGraph(self.queue, self.ev, self.variable_ops)
+        self.circuit = CircuitGraph(self.queue, self.ev, self.variable_ops)
 
         #: dict[int->str]: map from free parameter index to the gradient method to be used with that parameter
         self.grad_method_for_par = {k: self._best_method(k) for k in self.variable_ops}
@@ -411,7 +410,7 @@ class QNode:
             # construct the circuit
             self.construct(args, kwargs)
 
-        for queue, curr_ops, param_idx, _ in self.circuit_graph.iterate_layers():
+        for queue, curr_ops, param_idx, _ in self.circuit.iterate_layers():
             obs = []
             scale = []
 
@@ -503,7 +502,7 @@ class QNode:
                 "scale": scale,
             }
 
-    def _op_successors(self, o_idx, only='G'):
+    def _op_successors(self, o_idx, only='G', get_nodes=False):
         """Successors of the given operation in the quantum circuit.
 
         Args:
@@ -513,17 +512,22 @@ class QNode:
                 - ``'G'``: only return non-observables (default)
                 - ``'E'``: only return observables
                 - ``None``: return all successors
+            get_nodes (bool): if True, returns nodes instead of operations
 
         Returns:
             list[Operation]: successors in a topological order
         """
-        succ = self.circuit_graph.get_ops(self.circuit_graph.descendants((o_idx,)))
+        succ = self.circuit.get_nodes(self.circuit.descendants((o_idx,)))
 
         if only == 'E':
-            return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
+            succ = list(filter(lambda x: isinstance(x["op"], pennylane.operation.Observable), succ))
         if only == 'G':
-            return list(filter(lambda x: not isinstance(x, pennylane.operation.Observable), succ))
-        return succ
+            succ = list(filter(lambda x: not isinstance(x["op"], pennylane.operation.Observable), succ))
+
+        if get_nodes:
+            return succ
+        else:
+            return [node["op"] for node in succ]
 
     def _best_method(self, idx):
         """Determine the correct gradient computation method for a free parameter.
@@ -569,39 +573,42 @@ class QNode:
                 return op.grad_method
 
             # for CV ops it is more complicated
-            if op.grad_method != "A":
-                return op.grad_method
+            if op.grad_method == "A":
+                obs_successors = self._op_successors(o_idx, 'E')
+                if not obs_successors:
+                    # op is not succeeded by any observables, thus analytic method is OK
+                    return 'A'
 
-            obs_successors = self._op_successors(o_idx, 'E')
-            if not obs_successors:
-                return 'A'
+                # op is Gaussian and has the heisenberg_* methods
+                # A non-Gaussian successor is OK if it isn't succeeded by any observables
+                # check that all successor ops are also Gaussian
+                successor_ops = self._op_successors(o_idx, 'G', get_nodes=True)
+                if not all(x["op"].supports_heisenberg for x in successor_ops):
+                    non_gaussian_ops = [x for x in successor_ops if not x["op"].supports_heisenberg]
+                    for x in non_gaussian_ops:
+                        if self._op_successors(x["idx"], 'E'):
+                            return 'F'
 
-            # op is Gaussian and has the heisenberg_* methods
-            # A non-Gaussian successor is OK if it isn't succeeded by any observables
-
-            # check that all successor ops are also Gaussian
-            if not all(x.supports_heisenberg for x in self._op_successors(o_idx, 'G')):
-                return 'F'
-
-            # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-            for observable in obs_successors:
-                if observable.ev_order is None:
-                    # ev_order of None corresponds to a non-Gaussian observable
-                    return 'F'
-                if observable.ev_order == 2:
-                    if observable.return_type is pennylane.operation.Variance:
-                        # second order observables don't support
-                        # analytic diff of variances
+                # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
+                for observable in obs_successors:
+                    if observable.ev_order is None:
+                        # ev_order of None corresponds to a non-Gaussian observable
                         return 'F'
-                    op.grad_method = 'A2'  # bit of a hack
-            return 'A'
+                    if observable.ev_order == 2:
+                        if observable.return_type is pennylane.operation.Variance:
+                            # second order observables don't support
+                            # analytic diff of variances
+                            return 'F'
+                        op.grad_method = 'A2'  # bit of a hack
+                return 'A'
+            return op.grad_method
 
         # indices of operations that depend on the free parameter idx
         o_idxs = [o[0] for o in self.variable_ops[idx]]
-        op_nodes = self.circuit_graph.get_nodes(o_idxs)
+        op_nodes = self.circuit.get_nodes(o_idxs)
         methods = list(map(best_for_op, op_nodes))
 
-        if all(k == 'A' for k in methods):
+        if all(k in ('A', 'A2') for k in methods):
             return 'A'
 
         if None in methods:
@@ -671,7 +678,7 @@ class QNode:
         self.device.reset()
 
         # check that no wires are measured more than once
-        m_wires = list(w for ex in self.circuit_graph.observables for w in ex.wires)
+        m_wires = list(w for ex in self.circuit.observables for w in ex.wires)
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
@@ -686,7 +693,7 @@ class QNode:
         for op in self.ops:
             check_op(op)
 
-        ret = self.device.execute(self.circuit_graph.operations, self.circuit_graph.observables, self.variable_ops)
+        ret = self.device.execute(self.circuit.operations, self.circuit.observables, self.variable_ops)
         return self.output_conversion(ret)
 
     def metric_tensor(self, *args, **kwargs):
@@ -793,7 +800,7 @@ class QNode:
         Variable.kwarg_values = keyword_values
 
         self.device.reset()
-        ret = self.device.execute(self.circuit_graph.operations, obs, self.circuit_graph.parameters)
+        ret = self.device.execute(self.circuit.operations, obs, self.circuit.parameters)
         return ret
 
     def jacobian(self, params, which=None, *, method='B', h=1e-7, order=1, **kwargs):
@@ -855,7 +862,7 @@ class QNode:
             self.construct(params, circuit_kwargs)
 
         sample_ops = [
-            e for e in self.circuit_graph.observables if e.return_type is pennylane.operation.Sample]
+            e for e in self.circuit.observables if e.return_type is pennylane.operation.Sample]
 
         if sample_ops:
             names = [str(e) for e in sample_ops]
@@ -902,7 +909,7 @@ class QNode:
             else:
                 y0 = None
 
-        variances = any(e.return_type is pennylane.operation.Variance for e in self.circuit_graph.observables)
+        variances = any(e.return_type is pennylane.operation.Variance for e in self.circuit.observables)
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
@@ -959,17 +966,21 @@ class QNode:
             raise ValueError('Order must be 1 or 2.')
 
     @staticmethod
-    def _transform_observable(observable, w, Z):
+    def _transform_observable(observable, ob_successors, w, Z):
         """Transform the observable
 
         Args:
             observable (Observable): the observable to perform the transformation on
+            ob_successors (list[Observable]): list of observable successors to current operation
             w (int): number of wires
             Z (array[float]): conjugated matrix
 
         Returns:
             float: expectation value
         """
+        if observable not in ob_successors:
+            return observable
+
         q = observable.heisenberg_obs(w)
 
         if q.ndim != observable.ev_order:
@@ -1007,7 +1018,7 @@ class QNode:
         pd = 0.0
         # find the Commands in which the free parameter appears, use the product rule
         for o_idx, p_idx in self.variable_ops[idx]:
-            op = self.circuit_graph.graph.nodes[o_idx]["op"]
+            op = self.circuit.graph.nodes[o_idx]["op"]
 
             # we temporarily edit the Operation such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operations depending on the original.
@@ -1057,12 +1068,18 @@ class QNode:
                 B = np.eye(1 +2*w)
                 B_inv = B.copy()
                 for BB in self._op_successors(o_idx, 'G'):
+                    if not BB.supports_heisenberg:
+                        continue
                     B = BB.heisenberg_tr(w) @ B
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
 
+                ob_successors = self._op_successors(o_idx, 'E')
+
                 # transform the observables
-                obs = [self._transform_observable(ob, w, Z) for ob in self.circuit_graph.observables]
+                obs = [
+                    self._transform_observable(ob, ob_successors, w, Z)
+                    for ob in self.circuit.observables]
 
                 # measure transformed observables
                 pd += self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
@@ -1086,10 +1103,10 @@ class QNode:
         """
         # boolean mask: elements are True where the
         # return type is a variance, False for expectations
-        where_var = [e.return_type is pennylane.operation.Variance for e in self.circuit_graph.observables]
+        where_var = [e.return_type is pennylane.operation.Variance for e in self.circuit.observables]
 
         applicable_nodes = [
-            node for node in self.circuit_graph.observable_nodes
+            node for node in self.circuit.observable_nodes
             if node["op"].return_type == pennylane.operation.Variance]
         original_nodes = copy.deepcopy(applicable_nodes)
 
@@ -1098,7 +1115,7 @@ class QNode:
 
             # temporarily convert return type to expectation
             e.return_type = pennylane.operation.Expectation
-            self.circuit_graph.update_node(node, e)
+            self.circuit.update_node(node, e)
 
             # analytic derivative of <A^2>
             # For involutory observables (A^2 = I),
@@ -1119,7 +1136,7 @@ class QNode:
                         old = copy.deepcopy(e)
 
                         # replace the Hermitian variance with <A^2> expectation
-                        self.circuit_graph.update_node(
+                        self.circuit.update_node(
                             node,
                             pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False)))
 
@@ -1127,7 +1144,7 @@ class QNode:
                         pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, **kwargs))
 
                         # restore the original Hermitian variance
-                        self.circuit_graph.update_node(node, old)
+                        self.circuit.update_node(node, old)
 
             elif self.type == 'CV':
                 # need to calculate d<A^2>/dp
@@ -1149,14 +1166,14 @@ class QNode:
                 A = np.kron(A, A.T)
 
                 # replace the first order observable var(A) with <A^2>
-                self.circuit_graph.update_node(
+                self.circuit.update_node(
                     node, pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)))
 
                 # calculate the analytic derivative of <A^2>
                 pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))
 
                 # restore the original observable
-                self.circuit_graph.update_node(node, old)
+                self.circuit.update_node(node, old)
 
         # save original cache setting
         cache = self.cache
@@ -1173,7 +1190,7 @@ class QNode:
         pdA = self._pd_analytic(param_values, param_idx, **kwargs)
 
         for node in original_nodes:
-            self.circuit_graph.update_node(node, node["op"])
+            self.circuit.update_node(node, node["op"])
 
         # restore original caching setting
         self.cache = cache
