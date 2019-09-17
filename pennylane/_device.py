@@ -108,7 +108,7 @@ class Device(abc.ABC):
     Args:
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
-        shots (int): number of circuit evaluations/random samples used to estimate
+        shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
     """
     #pylint: disable=too-many-public-methods
@@ -178,7 +178,7 @@ class Device(abc.ABC):
     @property
     def shots(self):
         """Number of circuit evaluations/random samples used to estimate
-            expectation values of observables"""
+        expectation values of observables"""
 
         return self._shots
 
@@ -188,7 +188,7 @@ class Device(abc.ABC):
 
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables
+                expectation values of observables
         """
         if shots < 1:
             raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
@@ -443,7 +443,7 @@ class Device(abc.ABC):
     def sample(self, observable, wires, par):
         """Return a sample of an observable.
 
-        The number of samples is determined by the value of ``Device.shots``
+        The number of samples is determined by the value of ``Device.shots``,
         which can be directly modified.
 
         For plugin developers: this function should return the result of an evaluation
