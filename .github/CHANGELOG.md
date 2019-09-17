@@ -9,7 +9,7 @@
 ### Documentation
 
 * Fixed typos in the state preparation tutorial
-   [#321](https://github.com/XanaduAI/pennylane/pull/321)
+  [#321](https://github.com/XanaduAI/pennylane/pull/321)
 
 ### Bug fixes
 
