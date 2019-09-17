@@ -583,8 +583,8 @@ class QNode:
 
             # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
             for observable in obs_successors:
-                # ev_order of None corresponds to a non-Gaussian observable
                 if observable.ev_order is None:
+                    # ev_order of None corresponds to a non-Gaussian observable
                     return 'F'
                 if observable.ev_order == 2:
                     if observable.return_type is pennylane.operation.Variance:
