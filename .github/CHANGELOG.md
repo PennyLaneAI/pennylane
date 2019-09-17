@@ -8,6 +8,8 @@
 
 ### Documentation
 
+* fixed 2 typos in the state preparation tutorial
+
 ### Bug fixes
 
 ### Contributors
