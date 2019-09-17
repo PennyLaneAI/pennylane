@@ -147,7 +147,8 @@ print(circuit3(0.1, fixed=0.4))
 # -----------------------------------------------
 #
 # In addition to allowing multiple quantum nodes on one device,
-# it also allows these nodes to have different interfaces. Let's look at the following simple
+# PennyLane also allows provides the flexibility for quantum nodes to have multiple interfaces.
+# Let's look at the following simple example:
 # example:
 
 dev1 = qml.device('default.qubit', wires=1)
