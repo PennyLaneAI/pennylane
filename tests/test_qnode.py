@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
 import math
 from unittest.mock import Mock, PropertyMock, patch
+from conftest import DummyDevice
 
 import pytest
 from autograd import numpy as np
@@ -107,6 +108,23 @@ def operable_mock_device_2_wires():
         expval=Mock(return_value=1),
     ):
         yield Device(wires=2)
+
+
+class TestQNodeConstruct:
+    """
+    Tests methods that are called during construction of QNode
+    """
+    def test_best_method_with_non_gaussian_successors(self):
+        dev = DummyDevice(wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Squeezing(x, 0, wires=[0])
+            qml.Beamsplitter(np.pi/4, 0, wires=[0, 1])
+            qml.Kerr(0.54, wires=[1])
+            return qml.expval(qml.NumberOperator(0))
+
+        circuit.jacobian([0.321])
 
 
 class TestQNodeExceptions:

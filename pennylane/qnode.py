@@ -331,9 +331,8 @@ class QNode:
 
             res = tuple(res)
         else:
-            raise QuantumFunctionError(
-                "A quantum function must return either a single measured observable "
-                "or a nonempty sequence of measured observables.")
+            raise QuantumFunctionError("A quantum function must return either a single measured observable "
+                                       "or a nonempty sequence of measured observables.")
 
         # check that all returned observables have a return_type specified
         for x in res:
@@ -567,39 +566,39 @@ class QNode:
                 return op.grad_method
 
             # for CV ops it is more complicated
-            if op.grad_method != "A":
-                return op.grad_method
+            if op.grad_method == "A":
+                obs_successors = self._op_successors(o_idx, 'E')
+                if not obs_successors:
+                    # op is not succeeded by any observables, thus analytic method is OK
+                    return 'A'
 
-            obs_successors = self._op_successors(o_idx, 'E')
-            if not obs_successors:
-                return 'A'
+                # op is Gaussian and has the heisenberg_* methods
+                # A non-Gaussian successor is OK if it isn't succeeded by any observables
 
-            # op is Gaussian and has the heisenberg_* methods
-            # A non-Gaussian successor is OK if it isn't succeeded by any observables
-
-            # check that all successor ops are also Gaussian
-            if not all(x.supports_heisenberg for x in self._op_successors(o_idx, 'G')):
-                return 'F'
-
-            # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-            for observable in obs_successors:
-                if observable.ev_order is None:
-                    # ev_order of None corresponds to a non-Gaussian observable
+                # check that all successor ops are also Gaussian
+                if not all(x.supports_heisenberg for x in self._op_successors(o_idx, 'G')):
                     return 'F'
-                if observable.ev_order == 2:
-                    if observable.return_type is pennylane.operation.Variance:
-                        # second order observables don't support
-                        # analytic diff of variances
+
+                # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
+                for observable in obs_successors:
+                    if observable.ev_order is None:
+                        # ev_order of None corresponds to a non-Gaussian observable
                         return 'F'
-                    op.grad_method = 'A2'  # bit of a hack
-            return 'A'
+                    if observable.ev_order == 2:
+                        if observable.return_type is pennylane.operation.Variance:
+                            # second order observables don't support
+                            # analytic diff of variances
+                            return 'F'
+                        op.grad_method = 'A2'  # bit of a hack
+                return 'A'
+            return op.grad_method
 
         # indices of operations that depend on the free parameter idx
         o_idxs = [o[0] for o in self.variable_ops[idx]]
         op_nodes = self.circuit_graph.get_nodes(o_idxs)
         methods = list(map(best_for_op, op_nodes))
 
-        if all(k == 'A' for k in methods):
+        if all(k in ('A', 'A2') for k in methods):
             return 'A'
 
         if None in methods:
@@ -957,17 +956,21 @@ class QNode:
             raise ValueError('Order must be 1 or 2.')
 
     @staticmethod
-    def _transform_observable(observable, w, Z):
+    def _transform_observable(observable, ob_successors, w, Z):
         """Transform the observable
 
         Args:
             observable (Observable): the observable to perform the transformation on
+            ob_successors (list[Observable]): list of observable successors to current operation
             w (int): number of wires
             Z (array[float]): conjugated matrix
 
         Returns:
             float: expectation value
         """
+        if observable not in ob_successors:
+            return observable
+
         q = observable.heisenberg_obs(w)
 
         if q.ndim != observable.ev_order:
@@ -1059,8 +1062,12 @@ class QNode:
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
 
+                ob_successors = self._op_successors(o_idx, 'E')
+
                 # transform the observables
-                obs = [self._transform_observable(ob, w, Z) for ob in self.circuit_graph.observables]
+                obs = [
+                    self._transform_observable(ob, ob_successors, w, Z)
+                    for ob in self.circuit_graph.observables]
 
                 # measure transformed observables
                 pd += self.evaluate_obs(obs, unshifted_params, **circuit_kwargs)
