@@ -442,8 +442,8 @@ class Device(abc.ABC):
 
     def sample(self, observable, wires, par):
         """Return a sample of an observable.
-        
-        The number of samples is determined by the value of ``Device.shots`` 
+
+        The number of samples is determined by the value of ``Device.shots``
         which can be directly modified.
 
         For plugin developers: this function should return the result of an evaluation
