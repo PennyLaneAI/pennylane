@@ -85,12 +85,27 @@ class TestQNodeOperationQueue:
         assert opqueue_test_node.ops[1] in successors
         assert opqueue_test_node.ops[4] in successors
 
-    # TODO
-    # once _op_successors has been upgraded to return only strict successors using a DAG
-    # add a test that checks that the strict ordering is used
-    # successors = q._op_successors(2, only=None)
-    # assert q.ops[4] in successors
-    # assert q.ops[5] not in successors
+    def test_op_successors_both_operations_and_observables_nodes(self, opqueue_test_node):
+        """Tests that _op_successors properly extracts all successor nodes"""
+
+        successors = opqueue_test_node._op_successors(0, only=None, get_nodes=True)
+
+        assert opqueue_test_node.circuit.operation_nodes[0] not in successors
+        assert opqueue_test_node.circuit.operation_nodes[1] in successors
+        assert opqueue_test_node.circuit.operation_nodes[2] in successors
+        assert opqueue_test_node.circuit.operation_nodes[3] in successors
+        assert opqueue_test_node.circuit.observable_nodes[0] in successors
+
+    def test_op_successors_both_operations_and_observables_strict_ordering(self, opqueue_test_node):
+        """Tests that _op_successors properly extracts all successors"""
+
+        successors = opqueue_test_node._op_successors(2, only=None)
+
+        assert opqueue_test_node.circuit.operations[0] not in successors
+        assert opqueue_test_node.circuit.operations[1] not in successors
+        assert opqueue_test_node.circuit.operations[2] not in successors
+        assert opqueue_test_node.circuit.operations[3] not in successors
+        assert opqueue_test_node.circuit.observables[0] in successors
 
 
 @pytest.fixture(scope="function")
@@ -114,7 +129,7 @@ class TestQNodeConstruct:
     """
     Tests methods that are called during construction of QNode
     """
-    def test_best_method_with_non_gaussian_successors(self):
+    def test_best_method_with_non_gaussian_successors(self, tol):
         dev = DummyDevice(wires=2)
 
         @qml.qnode(dev)
@@ -124,7 +139,10 @@ class TestQNodeConstruct:
             qml.Kerr(0.54, wires=[1])
             return qml.expval(qml.NumberOperator(0))
 
-        circuit.jacobian([0.321], method='A')
+        res = circuit.jacobian([0.321], method='A')
+        expected = circuit.jacobian([0.321], method='F')
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_best_method_with_gaussian_successors_fails(self):
         dev = DummyDevice(wires=2)
