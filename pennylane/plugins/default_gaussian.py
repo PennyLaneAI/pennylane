@@ -701,7 +701,7 @@ class DefaultGaussian(Device):
 
     Args:
         wires (int): the number of modes to initialize the device in
-        shots (int): (default 1) How many times should the circuit be evaluated (or sampled) to estimate
+        shots (int): (default 1000) How many times should the circuit be evaluated (or sampled) to estimate
             the expectation values.
             If ``analytic == True``, then the number of shots is ignored
             in the calculation of expectation values and variances and only controls the number
@@ -746,7 +746,7 @@ class DefaultGaussian(Device):
 
     _circuits = {}
 
-    def __init__(self, wires, *, shots=1, hbar=2, analytic=True):
+    def __init__(self, wires, *, shots=1000, hbar=2, analytic=True):
         super().__init__(wires, shots)
         self.eng = None
         self.hbar = hbar

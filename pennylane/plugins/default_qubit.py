@@ -296,7 +296,7 @@ class DefaultQubit(Device):
     Args:
         wires (int): the number of modes to initialize the device in
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. Defaults to 1 if not specified.
+            the expectation values. Defaults to 1000 if not specified.
             If ``analytic == True``, then the number of shots is ignored
             in the calculation of expectation values and variances and only controls the number
             of samples returned by ``sample``. 
@@ -343,7 +343,7 @@ class DefaultQubit(Device):
         'Identity': identity
     }
 
-    def __init__(self, wires, *, shots=1, analytic=True):
+    def __init__(self, wires, *, shots=1000, analytic=True):
         super().__init__(wires, shots)
         self.eng = None
         self.analytic = analytic

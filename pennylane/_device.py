@@ -109,15 +109,15 @@ class Device(abc.ABC):
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
         shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables. Defaults to 1 if not specified.
+            expectation values of observables. Defaults to 1000 if not specified.
     """
     #pylint: disable=too-many-public-methods
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, wires=1, shots=1):
+    def __init__(self, wires=1, shots=1000):
         self.num_wires = wires
-        self._shots = 1
+        self._shots = 1000
         self.shots = shots
 
         self._op_queue = None
