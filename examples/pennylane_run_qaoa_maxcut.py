@@ -22,7 +22,7 @@ circuit.
 # The aim of MaxCut is to maximize the number of edges in a graph that are "cut" by
 # a given partition of the vertices into two sets as shown in the figure below.
 #
-# More formally, given a graph
+# That is, given a graph
 # with a set of :math:`n` vertices :math:`V=\{v_i\}` and :math:`m` edges
 # :math:`E=\{(v_j,v_k)\}`, we seek the partition :math:`z` of :math:`V` into two sets
 # :math:`S` and :math:`S'` which maximizes
@@ -37,8 +37,7 @@ circuit.
 #
 # For instance,
 # in the "ring" situation depicted in the figure above, the optimal value of :math:`C(z)` is
-# 4, when the partition separates the vertices into the sets :math:`\{(0,2)\}` and
-# :math:`\{(1,3)\}`. Such a situation can be represented by the bitstring :math:`z=1010\text{,}`
+# 4. Such a situation can be represented by the bitstring :math:`z=1010\text{,}`
 # indicating that the first and third bits are in one partition while the second and fourth are in
 # the other. (The inverse partition, :math:`z=0101` is of course equally valid.) In the following section,
 # we will represent partitions using computational basis states and use PennyLane and QAOA to
@@ -54,6 +53,8 @@ circuit.
 #   C_\alpha = \frac{1}{2}\left(1-\sigma_{j}^z\sigma_{k}^z\right)
 #
 # where the :math:`\alpha\text{th}` edge is between qubits/vertices :math:`(j,k)`.
+# :math:`C_\alpha` is 1 if and only if the :math:`i\text{th}` and :math:`j\text{th}`
+# qubits have different values, representing separate partitions.
 # The objective function :math:`C` is now a diagonal operator with integer eigenvalues.
 #
 # QAOA starts with a uniform superposition over the :math:`n` bitstring basis states,
@@ -71,10 +72,23 @@ circuit.
 # .. math::
 #   |\boldsymbol{\gamma},\boldsymbol{\beta}\rangle = U_{B_p}U_{C_p}U_{B_{p-1}}U_{C_{p-1}}...U_{B_1}U_{C_1}|+_n\rangle
 #
-# where :math:`\gamma_i \in [0,2\pi]\text{, }\beta_i \in [0,\pi]` and the operators have the explicit forms shown in
-# the figure below.
+# where :math:`\gamma_i \in [0,2\pi]\text{, }\beta_i \in [0,\pi]` and the operators have the explicit forms
 #
-# Let :math:`F_p(\boldsymbol{\gamma},\boldsymbol{\beta}) = \langle \boldsymbol{\gamma},
+# .. math::
+#   U_{B_i} &= e^{-i\beta_iB} = \prod_{j=1}^n e^{-i\beta_i\sigma_x^j} \\
+#   U_{C_i} &= e^{-i\gamma_iC} = \prod_{\text{edge (j,k)}} e^{-i\gamma_i(1-\sigma_z^j\sigma_z^k)/2}
+#
+# which can be implemented on a quantum circuit using the gates depicted below (up to an irrelevant constant
+# that gets absorbed into the parameters).
+#
+#
+# .. figure:: ../../examples/figures/qaoa_operators.png
+#    :align: center
+#    :scale: 100%
+#    :alt: qaoa_operators
+#
+#
+# Let :math:`\langle \boldsymbol{\gamma},
 # \boldsymbol{\beta} | C | \boldsymbol{\gamma},\boldsymbol{\beta} \rangle` be our objective function. In the next
 # section, we will use PennyLane to sample this expectation value and perform classical optimization over the
 # parameters. This will specify a state :math:`|\boldsymbol{\gamma},\boldsymbol{\beta}\rangle` which is
@@ -97,11 +111,15 @@ from pennylane import numpy as np
 ##############################################################################
 # 2.3 Operators
 # ~~~~~~~~~~~~~
-# We specify the number of qubits (vertices) with "n_wires" and
+# We specify the number of qubits (vertices) with ``n_wires`` and
 # compose the unitary operators using the definitions
-# above. Each operator takes a parameter
+# above. :math:`U_B` operators act on each of the wires, while :math:`U_c`
+# operators act on wires whose corresponding vertices are joined by an edge in
+# the graph. Each operator takes a parameter
 # as an argument, which is specified when the function is
-# called in the quantum circuit.
+# called in the quantum circuit. We also define the graph using
+# the list ``edges``, which contains the tuples of vertices defining
+# each edge in the graph.
 
 n_wires = 4
 edges = [(0, 1), (0, 3), (1, 2), (2, 3)]
@@ -143,10 +161,10 @@ dev1 = qml.device('default.qubit', wires=n_wires)
 # We also require a quantum node which will apply the operators p times given the
 # angle parameters, and return the expectation value of the observable
 # :math:`\sigma_j^{z}\sigma_k^{z}` to be used in the cost function terms later on. The
-# argument "wires" specifies the chosen edge :math:`(j,k)`.
+# argument "edge" specifies the chosen edge :math:`(j,k)`.
 #
-# Once, optimized, the same quantum node can be used for sampling an approximately optimal bitstring
-# if executed without the "wires" argument.
+# Once optimized, the same quantum node can be used for sampling an approximately optimal bitstring
+# if executed with the ``edge`` keyword set to None.
 
 pauli_z = [[1,0],[0,-1]]
 pauli_z_2 = np.kron(pauli_z,pauli_z)
@@ -172,8 +190,9 @@ def circuit(params, edge=None, p=1):
 # 2.5 Optimization
 # ~~~~~~~~~~~~~
 # Finally, we optimize the cost function over the
-# angle parameters :math:`\boldsymbol{\gamma}` and :math:`\boldsymbol{\beta}`
-# using PennyLane's built-in automatic differentiation and sample the optimized
+# angle parameters :math:`\boldsymbol{\gamma}` (``params[1]``) and :math:`\boldsymbol{\beta}`
+# (``params[0]``)
+# and then sample the optimized
 # circuit multiple times to yield a distribution of bitstrings. One of the optimal partitions
 # (z=0101 or z=1010) should be the most frequently sampled bitstring.
 
@@ -204,28 +223,40 @@ def qaoa_maxcut(p=1):
     bit_strings = []
     n_samples = 100
     for i in range(0, n_samples):
-        bit_strings.append(int(circuit(params, edge=None)))
+        bit_strings.append(int(circuit(params, edge=None, p=p)))
     counts = np.bincount(np.array(bit_strings))
     most_freq_bit_string = np.argmax(counts)
     print('Optimized (beta,gamma) vectors: {}'.format(params))
     print('Most frequently sampled bit string is: {:04b}'.format(most_freq_bit_string))
     return -objective(params), bit_strings
 
+bitstring1 = qaoa_maxcut(p=1)[1]
+bitstring2 = qaoa_maxcut(p=2)[1]
+
 
 ##############################################################################
 # 3 Plotting the results
 # ~~~~~~~~~~~~~~~~~~~~~~
 # We can plot the distribution of measurements we got from the above optimized circuit. As
-# expected for this graph, the partitions z=0101 and z=1010 are measured with the highest frequencies.
+# expected for this graph, the partitions 0101 and 1010 are measured with the highest frequencies,
+# and in the case where we set ``p``=2 we obtain the optimal partitions with 100% certainty.
 
 import matplotlib.pyplot as plt
 
 xs = np.arange(16)
 
-fig,ax = plt.subplots(figsize=(4,4))
+fig,(ax1,ax2) = plt.subplots(1,2,figsize=(8,4))
+plt.subplot(1,2,1)
 plt.title("p=1")
-plt.hist(bit_strings)
+plt.hist(bitstring1)
 plt.xlabel("bitstrings")
 plt.ylabel("freq.")
 plt.xticks(xs,map(lambda x : format(x,'04b'),xs),rotation='vertical')
+plt.subplot(1,2,2)
+plt.title("p=2")
+plt.hist(bitstring2)
+plt.xlabel("bitstrings")
+plt.ylabel("freq.")
+plt.xticks(xs,map(lambda x : format(x,'04b'),xs),rotation='vertical')
+plt.tight_layout()
 plt.show()
