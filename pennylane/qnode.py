@@ -510,6 +510,7 @@ class QNode:
                 - ``'G'``: only return non-observables (default)
                 - ``'E'``: only return observables
                 - ``None``: return all successors
+            get_nodes (bool): if True, returns nodes instead of operations
 
         Returns:
             list[Operation]: successors in a topological order
