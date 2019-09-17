@@ -8,6 +8,10 @@
 
 ### Documentation
 
+* Add a section to advanced usage tutorial on the PL feature of one device
+  supporting multiple qnodes with different ML interfaces. 
+  [#323](https://github.com/XanaduAI/pennylane/pull/323) 
+
 ### Bug fixes
 
 ### Contributors
