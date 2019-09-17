@@ -117,7 +117,8 @@ class Device(abc.ABC):
 
     def __init__(self, wires=1, shots=1):
         self.num_wires = wires
-        self.set_shots(shots)
+        self._shots = 1
+        self.shots = shots
 
         self._op_queue = None
         self._obs_queue = None
@@ -174,7 +175,15 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
-    def set_shots(self, shots):
+    @property
+    def shots(self):
+        """Number of circuit evaluations/random samples used to estimate
+            expectation values of observables"""
+
+        return self._shots
+
+    @shots.setter
+    def shots(self, shots):
         """Changes the number of shots.
 
         Args:
@@ -184,7 +193,7 @@ class Device(abc.ABC):
         if shots < 1:
             raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
 
-        self.shots = int(shots)
+        self._shots = int(shots)
 
     @classmethod
     def capabilities(cls):

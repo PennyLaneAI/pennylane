@@ -16,7 +16,7 @@
 ### Improvements
 
 * The number of shots / random samples used to estimate expectation values and variances, `Device.shots`,
-  can now be changed with the setter method `Device.set_shots()`.
+  can now be changed after device creation.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
 ### Documentation

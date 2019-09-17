@@ -647,15 +647,15 @@ class TestSample:
         qubit_device_2_wires.apply('RX', wires=[0], par=[1.5708])
         qubit_device_2_wires.apply('RX', wires=[1], par=[1.5708])
 
-        qubit_device_2_wires.set_shots(10)
+        qubit_device_2_wires.shots = 10
         s1 = qubit_device_2_wires.sample('PauliZ', [0], [])
         assert np.array_equal(s1.shape, (10,))
 
-        qubit_device_2_wires.set_shots(12)
+        qubit_device_2_wires.shots = 12
         s2 = qubit_device_2_wires.sample('PauliZ', [1], [])
         assert np.array_equal(s2.shape, (12,))
 
-        qubit_device_2_wires.set_shots(17)
+        qubit_device_2_wires.shots = 17
         s3 = qubit_device_2_wires.sample('CZ', [0, 1], [])
         assert np.array_equal(s3.shape, (17,))
 

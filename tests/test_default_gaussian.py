@@ -600,7 +600,7 @@ class TestSample:
     def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):
         """Test that the sample function outputs samples of the right size"""
 
-        gaussian_device_2_wires.set_shots(n_sample)
+        gaussian_device_2_wires.shots = n_sample
         sample = gaussian_device_2_wires.sample(observable, [0], [])
 
         assert np.array_equal(sample.shape, (n_sample,))

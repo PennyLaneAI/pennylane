@@ -208,22 +208,22 @@ def mock_device_with_paulis_and_methods():
 class TestOperations:
     """Tests the logic related to operations"""
 
-    def test_set_shots(self, mock_device):
-        """Tests that the method set_shots changes the number of shots."""
+    def test_shots_setter(self, mock_device):
+        """Tests that the property setter of shots changes the number of shots."""
         
-        assert mock_device.shots == 1
+        assert mock_device._shots == 1
 
-        mock_device.set_shots(10)
+        mock_device.shots = 10
 
-        assert mock_device.shots == 10
+        assert mock_device._shots == 10
 
     @pytest.mark.parametrize("shots", [-10, 0])
-    def test_set_shots_error(self, mock_device, shots):
-        """Tests that the method set_shots raises an error if the requested number of shots
+    def test_shots_setter_error(self, mock_device, shots):
+        """Tests that the property setter of shots raises an error if the requested number of shots
         is erroneous."""
 
         with pytest.raises(qml.DeviceError, match="The specified number of shots needs to be at least 1"):
-            mock_device.set_shots(shots)
+            mock_device.shots = shots
 
     def test_op_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
