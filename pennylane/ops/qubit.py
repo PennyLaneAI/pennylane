@@ -246,14 +246,14 @@ class CSWAP(Operation):
 
     **Details:**
 
-    * Number of wires: 2
+    * Number of wires: 3
     * Number of parameters: 0
 
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_params = 0
-    num_wires = 2
+    num_wires = 3
     par_domain = None
 
 
