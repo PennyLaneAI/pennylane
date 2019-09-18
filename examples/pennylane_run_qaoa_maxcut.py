@@ -53,7 +53,7 @@ quantum circuit to solve a combinatorial optimization problem.
 # objective function as operators like so
 #
 # .. math::
-#   C_\alpha = \frac{1}{2}\left(1-\sigma_{j}^z\sigma_{k}^z\right)
+#   C_\alpha = \frac{1}{2}\left(1-\sigma_{z}^j\sigma_{z}^j\right)
 #
 # where the :math:`\alpha\text{th}` edge is between qubits/vertices :math:`(j,k)`.
 # :math:`C_\alpha` is 1 if and only if the :math:`i\text{th}` and :math:`j\text{th}`
@@ -171,7 +171,7 @@ dev1 = qml.device("default.qubit", wires=n_wires)
 ##############################################################################
 # We also require a quantum node which will apply the operators :math:`p` times given the
 # angle parameters, and return the expectation value of the observable
-# :math:`\sigma_j^{z}\sigma_k^{z}` to be used in the term of the objective function later on. The
+# :math:`\sigma_z^{j}\sigma_z^{k}` to be used in the term of the objective function later on. The
 # argument ``edge`` specifies the chosen edge term in the objective function, :math:`(j,k)`.
 #
 # Once optimized, the same quantum node can be used for sampling an approximately optimal bitstring
