@@ -20,7 +20,7 @@ plugins, and devices, via simple and easy-to-follow examples.
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to tune a beamsplitter.
-    :figure: ../examples/figures/gaussiancircuit.png
+    :figure: ../examples/figures/gauss-circuit.png
     :description: :ref:`gaussian_transformation`
 
 .. customgalleryitem::
