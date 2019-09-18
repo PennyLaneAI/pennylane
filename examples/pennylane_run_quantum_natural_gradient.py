@@ -75,7 +75,9 @@ are similar across different parameters. This is the case with the new parametri
 :math:`(\phi_0, \phi_1)`; the cost function is unchanged,
 but we now have a nicer geometry in which to perform gradient descent, and a more
 informative stepsize. This leads to faster convergence, and can help avoid optimization
-becoming stuck in local minima.
+becoming stuck in local minima. For a more in-depth explanation,
+including why the parameter space might not be best represented by a Euclidean space,
+see `Yamamoto (2019) <https://arxiv.org/abs/1909.05074>`__.
 
 However, what if we avoid gradient descent in the parameter space altogether?
 If we instead consider the optimization problem as a
@@ -214,7 +216,9 @@ params = np.array([0.432, -0.123, 0.543, 0.233])
 #
 # |
 #
-# Therefore, the block-diagonal approximation consists of two
+# (Note that in this example, the first non-parametrized layer :math:`W_0`
+# is simply the identity.) Since there are two layers, each with two parameters,
+# the block-diagonal approximation consists of two
 # :math:`2\times 2` matrices, :math:`g^{(0)}` and :math:`g^{(1)}`.
 #
 # .. figure:: ../../examples/figures/quantum_natural_gradient/qng2.png
@@ -450,3 +454,6 @@ plt.show()
 # 3. Aram Harrow and John Napp. "Low-depth gradient measurements can improve
 #    convergence in variational hybrid quantum-classical algorithms."
 #    `arXiv:1901.05374 <https://arxiv.org/abs/1901.05374>`__, 2019.
+#
+# 4. Naoki Yamamoto. "On the natural gradient for variational quantum eigensolver."
+#    `arXiv:1909.05074 <https://arxiv.org/abs/1909.05074>`__, 2019.
