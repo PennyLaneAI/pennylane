@@ -21,9 +21,7 @@ log.getLogger('defaults')
 import numpy as np
 import numpy.random as nr
 
-from defaults import pennylane, BaseTest
-import pennylane as qml
-
+from defaults import pennylane as qml, BaseTest
 
 dev = qml.device('default.qubit', wires=2)
 
