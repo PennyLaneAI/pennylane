@@ -175,7 +175,6 @@ Z = np.array([[cost([x, y]) for x in X] for y in Y]).reshape(len(Y), len(X))
 
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 
-
 path_z = [cost(var) + 1e-8 for var in var_gd]
 path_x = [v[0] for v in var_gd]
 path_y = [v[1] for v in var_gd]
@@ -253,7 +252,7 @@ xx, yy = np.meshgrid(X, Y)
 Z = np.array([[cost([x, y]) for x in X] for y in Y]).reshape(len(Y), len(X))
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 
-path_z = [cost(var) for var in var_gd]
+path_z = [cost(var) + 1e-8 for var in var_gd]
 path_x = [v[0] for v in var_gd]
 path_y = [v[1] for v in var_gd]
 ax.plot(path_x, path_y, path_z, c="pink", marker=".", label="graddesc",zorder=10)
