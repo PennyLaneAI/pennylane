@@ -294,6 +294,33 @@ class TestQNodeExceptions:
         with pytest.raises(QuantumFunctionError, match="Continuous and discrete"):
             node(0.5)
 
+    def test_transform_observable_incorrect_heisenberg_size(self):
+        """Test that an exception is raised in the case that the
+        dimensions of a CV observable Heisenberg representation does not match
+        the ev_order attribute"""
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        class P(qml.operation.CVObservable):
+            """Dummy CV observable with incorrect ev_order"""
+            num_wires = 1
+            num_params = 0
+            par_domain = None
+            ev_order = 2
+
+            @staticmethod
+            def _heisenberg_rep(p):
+                return np.array([0, 1, 0])
+
+        def circuit(x):
+            qml.Displacement(x, 0.1, wires=0)
+            return qml.expval(P(0))
+
+        node = qml.QNode(circuit, dev)
+
+        with pytest.raises(QuantumFunctionError, match="Mismatch between polynomial order"):
+            node.jacobian([0.5])
+
 
 class TestQNodeJacobianExceptions:
     """Tests that QNode.jacobian raises proper errors"""
@@ -748,8 +775,7 @@ class TestQNodeGradients:
             qml.Squeezing(0.3, y, wires=[1])
             qml.Rotation(1.3, wires=[1])
             # nongaussian succeeding x but not y
-            # TODO when QNode uses a DAG to describe the circuit, uncomment this line
-            # qml.Kerr(0.4, [0])
+            qml.Kerr(0.4, wires=[0])
             return qml.expval(qml.X(0)), qml.expval(qml.X(1))
 
         check_methods(qf, {0: "F", 1: "A"})
