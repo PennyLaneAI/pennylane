@@ -8,12 +8,15 @@
 
 ### Documentation
 
-* Add missing figures for gallery thumbnails of state-preparation
+* Added missing figures for gallery thumbnails of state-preparation
   and QGAN tutorials
   [#326](https://github.com/XanaduAI/pennylane/pull/326)
 
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
+
+* Fixed bug in VQE tutorial 3D plots
+  [#327](https://github.com/XanaduAI/pennylane/pull/327)
 
 ### Bug fixes
 
