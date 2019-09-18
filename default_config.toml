@@ -37,7 +37,7 @@ hbar = 1
 
 ## set the default number of shots/runs used
 ## to determine expectation value statistics
-# shots = 1
+# shots = 1000
 # analytic = True
 
     [strawberryfields.fock]
