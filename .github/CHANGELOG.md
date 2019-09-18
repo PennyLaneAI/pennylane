@@ -2,9 +2,22 @@
 
 ### New features since last release
 
+* The devices `default.qubit` and `default.gaussian` have a new initialization parameter
+  `analytic` that indicates if expectation values and variances should be calculated
+  analytically and not be estimated from data.
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
+
 ### Breaking changes
 
+* The argument `n` specifying the number of samples in the method `Device.sample` was removed.
+  Instead, the method will always return `Device.shots` many samples. 
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
+
 ### Improvements
+
+* The number of shots / random samples used to estimate expectation values and variances, `Device.shots`,
+  can now be changed after device creation.
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
 ### Documentation
 
@@ -19,6 +32,8 @@
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
+
+Johannes Jakob Meyer
 
 ---
 
