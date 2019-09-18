@@ -634,6 +634,7 @@ ops = {
     "CNOT",
     "CZ",
     "SWAP",
+    "CSWAP",
     "RX",
     "RY",
     "RZ",
