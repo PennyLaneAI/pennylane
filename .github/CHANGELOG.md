@@ -8,6 +8,9 @@
 
 ### Documentation
 
+* Added tutorial for QAOA on MaxCut problem
+  []
+
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
 
