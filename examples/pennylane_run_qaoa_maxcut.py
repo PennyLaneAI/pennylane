@@ -148,15 +148,17 @@ def U_C(gamma):
         qml.RZ(gamma, wires=wire2)
         qml.CNOT(wires=[wire1, wire2])
 
+
 ##############################################################################
 # With some foresight, we notice that we will need a way to sample
 # a measurement of multiple qubits in the computational basis, so we define
 # a Hermitian operator to do this. The eigenvalues of the operator are
 # the joint qubit measurement values in integer form.
 
+
 def comp_basis_measurement(wires):
     n_wires = len(wires)
-    return qml.Hermitian(np.diag(range(2 ** n_wires)),wires=wires)
+    return qml.Hermitian(np.diag(range(2 ** n_wires)), wires=wires)
 
 
 ##############################################################################
@@ -164,7 +166,7 @@ def comp_basis_measurement(wires):
 # ~~~~~~~~~~~~~
 # Next, we create a quantum device with 4 qubits.
 
-dev1 = qml.device('default.qubit', wires=n_wires)
+dev1 = qml.device("default.qubit", wires=n_wires)
 
 ##############################################################################
 # We also require a quantum node which will apply the operators :math:`p` times given the
@@ -175,8 +177,9 @@ dev1 = qml.device('default.qubit', wires=n_wires)
 # Once optimized, the same quantum node can be used for sampling an approximately optimal bitstring
 # if executed with the ``edge`` keyword set to None.
 
-pauli_z = [[1,0],[0,-1]]
-pauli_z_2 = np.kron(pauli_z,pauli_z)
+pauli_z = [[1, 0], [0, -1]]
+pauli_z_2 = np.kron(pauli_z, pauli_z)
+
 
 @qml.qnode(dev1)
 def circuit(params, edge=None, p=1):
@@ -195,6 +198,7 @@ def circuit(params, edge=None, p=1):
     # in the objective using exp val
     return qml.expval(qml.Hermitian(pauli_z_2, wires=edge))
 
+
 ##############################################################################
 # 2.5 Optimization
 # ~~~~~~~~~~~~~
@@ -210,14 +214,14 @@ def qaoa_maxcut(p=1):
     print("\np=%d" % p)
 
     # initialize the parameters near zero
-    init_params = 0.01*np.random.rand(2,p)
+    init_params = 0.01 * np.random.rand(2, p)
 
     # minimize negative the objective
     def objective(params):
         neg_F_p = 0
         for edge in graph:
             # objective for the maxcut problem
-            neg_F_p -= 0.5 * (1 - circuit(params, edge=edge,p=p))
+            neg_F_p -= 0.5 * (1 - circuit(params, edge=edge, p=p))
         return neg_F_p
 
     # initialize optimizer
@@ -229,7 +233,7 @@ def qaoa_maxcut(p=1):
     for i in range(steps):
         params = opt.step(objective, params)
         if (i + 1) % 5 == 0:
-            print('Objective after step {:5d}: {: .7f}'.format(i + 1, -objective(params)))
+            print("Objective after step {:5d}: {: .7f}".format(i + 1, -objective(params)))
 
     # sample measured bitstrings 100 times
     bit_strings = []
@@ -240,10 +244,11 @@ def qaoa_maxcut(p=1):
     # print optimal parameters and most frequently sampled bitstring
     counts = np.bincount(np.array(bit_strings))
     most_freq_bit_string = np.argmax(counts)
-    print('Optimized (gamma,beta) vectors: {}'.format(params))
-    print('Most frequently sampled bit string is: {:04b}'.format(most_freq_bit_string))
+    print("Optimized (gamma,beta) vectors: {}".format(params))
+    print("Most frequently sampled bit string is: {:04b}".format(most_freq_bit_string))
 
     return -objective(params), bit_strings
+
 
 # perform qaoa on our graph with p=1,2 and
 # keep the bitstring sample lists
@@ -262,22 +267,22 @@ bitstrings2 = qaoa_maxcut(p=2)[1]
 
 import matplotlib.pyplot as plt
 
-xticks = range(0,16)
-xtick_labels = list(map(lambda x : format(x,'04b'),xticks))
-bins = np.arange(0,17) - 0.5
+xticks = range(0, 16)
+xtick_labels = list(map(lambda x: format(x, "04b"), xticks))
+bins = np.arange(0, 17) - 0.5
 
-fig,(ax1,ax2) = plt.subplots(1,2,figsize=(8,4))
-plt.subplot(1,2,1)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+plt.subplot(1, 2, 1)
 plt.title("p=1")
 plt.xlabel("bitstrings")
 plt.ylabel("freq.")
-plt.xticks(xticks,xtick_labels,rotation='vertical')
+plt.xticks(xticks, xtick_labels, rotation="vertical")
 plt.hist(bitstrings1, bins=bins)
-plt.subplot(1,2,2)
+plt.subplot(1, 2, 2)
 plt.title("p=2")
 plt.xlabel("bitstrings")
 plt.ylabel("freq.")
-plt.xticks(xticks,xtick_labels,rotation='vertical')
+plt.xticks(xticks, xtick_labels, rotation="vertical")
 plt.hist(bitstrings2, bins=bins)
 plt.tight_layout()
 plt.show()
