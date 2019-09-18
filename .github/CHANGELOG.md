@@ -19,10 +19,14 @@
   can now be changed after device creation.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
+* Unified import shortcuts to be under qml in qnode.py
+  and test_operation.py
+  [#329](https://github.com/XanaduAI/pennylane/pull/329)
+
 ### Documentation
 
 * Added tutorial for QAOA on MaxCut problem
-  []
+  [#328](https://github.com/XanaduAI/pennylane/pull/328)
 
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
@@ -36,7 +40,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Johannes Jakob Meyer
+Angus Lowe, Johannes Jakob Meyer
 
 ---
 

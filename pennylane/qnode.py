@@ -136,8 +136,7 @@ import autograd.builtins
 
 from scipy import linalg
 
-import pennylane
-import pennylane.operation
+import pennylane as qml
 
 from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, CircuitGraph
 from .variable import Variable
@@ -222,7 +221,7 @@ class QNode:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
         # EVs go to their own, temporary queue
-        if isinstance(op, pennylane.operation.Observable):
+        if isinstance(op, qml.operation.Observable):
             if op.return_type is None:
                 self.queue.append(op)
             else:
@@ -310,8 +309,8 @@ class QNode:
         # check the validity of the circuit
 
         # quantum circuit function return validation
-        if isinstance(res, pennylane.operation.Observable):
-            if res.return_type is pennylane.operation.Sample:
+        if isinstance(res, qml.operation.Observable):
+            if res.return_type is qml.operation.Sample:
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
                 self.output_conversion = np.squeeze
@@ -320,7 +319,7 @@ class QNode:
 
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
+        elif isinstance(res, Sequence) and res and all(isinstance(x, qml.operation.Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
 
@@ -349,7 +348,7 @@ class QNode:
         self.ops = self.queue + self.ev  #: list[Operation]: combined list of circuit operations
 
         # classify the circuit contents
-        temp = [isinstance(op, pennylane.operation.CV) for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
+        temp = [isinstance(op, qml.operation.CV) for op in self.ops if not isinstance(op, qml.ops.Identity)]
 
         if all(temp):
             self.type = 'CV'
@@ -428,21 +427,21 @@ class QNode:
                 # to the generator of the current operation
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
-                    variance = pennylane.var(pennylane.Hermitian(gen, w, do_queue=False))
+                    variance = qml.var(qml.Hermitian(gen, w, do_queue=False))
 
                     if not diag_approx:
                         Ki_matrices.append((n, expand(gen, w, self.num_wires)))
 
-                elif issubclass(gen, pennylane.operation.Observable):
+                elif issubclass(gen, qml.operation.Observable):
                     # generator is an existing PennyLane operation
-                    variance = pennylane.var(gen(w, do_queue=False))
+                    variance = qml.var(gen(w, do_queue=False))
 
                     if not diag_approx:
-                        if issubclass(gen, pennylane.ops.PauliX):
+                        if issubclass(gen, qml.ops.PauliX):
                             mat = np.array([[0, 1], [1, 0]])
-                        elif issubclass(gen, pennylane.ops.PauliY):
+                        elif issubclass(gen, qml.ops.PauliY):
                             mat = np.array([[0, -1j], [1j, 0]])
-                        elif issubclass(gen, pennylane.ops.PauliZ):
+                        elif issubclass(gen, qml.ops.PauliZ):
                             mat = np.array([[1, 0], [0, -1]])
 
                         Ki_matrices.append((n, expand(mat, w, self.num_wires)))
@@ -522,9 +521,9 @@ class QNode:
         #
         # if it is in a topological order? the docs aren't clear.
         if only == 'E':
-            return list(filter(lambda x: isinstance(x, pennylane.operation.Observable), succ))
+            return list(filter(lambda x: isinstance(x, qml.operation.Observable), succ))
         if only == 'G':
-            return list(filter(lambda x: not isinstance(x, pennylane.operation.Observable), succ))
+            return list(filter(lambda x: not isinstance(x, qml.operation.Observable), succ))
         return succ
 
     def _best_method(self, idx):
@@ -563,7 +562,7 @@ class QNode:
             "Returns the best gradient method for the operation op."
             op = self.ops[o_idx]
             # for discrete operations, other ops do not affect the choice
-            if not isinstance(op, pennylane.operation.CV):
+            if not isinstance(op, qml.operation.CV):
                 return op.grad_method
 
             # for CV ops it is more complicated
@@ -581,7 +580,7 @@ class QNode:
                         if x.ev_order is None:
                             return 'F'
                         if x.ev_order == 2:
-                            if x.return_type is pennylane.operation.Variance:
+                            if x.return_type is qml.operation.Variance:
                                 # second order observables don't support
                                 # analytic diff of variances
                                 return 'F'
@@ -726,7 +725,7 @@ class QNode:
             if not diag_approx:
                 # block diagonal approximation
 
-                unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
+                unitary_op = qml.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
                 self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
                 probs = list(self.device.probability().values())
 
@@ -847,7 +846,7 @@ class QNode:
             # construct the circuit
             self.construct(params, circuit_kwargs)
 
-        sample_ops = [e for e in self.ev if e.return_type is pennylane.operation.Sample]
+        sample_ops = [e for e in self.ev if e.return_type is qml.operation.Sample]
         if sample_ops:
             names = [str(e) for e in sample_ops]
             raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
@@ -893,7 +892,7 @@ class QNode:
             else:
                 y0 = None
 
-        variances = any(e.return_type is pennylane.operation.Variance for e in self.ev)
+        variances = any(e.return_type is qml.operation.Variance for e in self.ev)
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
@@ -1046,7 +1045,7 @@ class QNode:
                     if q.ndim == 2:
                         # 2nd order observable
                         qp = qp +qp.T
-                    return pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
+                    return qml.expval(qml.PolyXP(qp, wires=range(w), do_queue=False))
 
                 # transform the observables
                 obs = list(map(tr_obs, self.ev))
@@ -1075,20 +1074,20 @@ class QNode:
 
         # boolean mask: elements are True where the
         # return type is a variance, False for expectations
-        where_var = [e.return_type is pennylane.operation.Variance for e in self.ev]
+        where_var = [e.return_type is qml.operation.Variance for e in self.ev]
 
         for i, e in enumerate(self.ev):
             # iterate through all observables
             # here, i is the index of the observable
             # and e is the observable
 
-            if e.return_type is not pennylane.operation.Variance:
+            if e.return_type is not qml.operation.Variance:
                 # if the expectation value is not a variance
                 # continue on to the next loop iteration
                 continue
 
             # temporarily convert return type to expectation
-            self.ev[i].return_type = pennylane.operation.Expectation
+            self.ev[i].return_type = qml.operation.Expectation
 
             # analytic derivative of <A^2>
             # For involutory observables (A^2 = I),
@@ -1109,7 +1108,7 @@ class QNode:
                         old = copy.deepcopy(e)
 
                         # replace the Hermitian variance with <A^2> expectation
-                        self.ev[i] = pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False))
+                        self.ev[i] = qml.expval(qml.ops.Hermitian(A @ A, w, do_queue=False))
 
                         # calculate the analytic derivative of <A^2>
                         pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, **kwargs))
@@ -1138,7 +1137,7 @@ class QNode:
 
                 # replace the first order observable var(A) with <A^2>
                 # in the return queue
-                self.ev[i] = pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False))
+                self.ev[i] = qml.expval(qml.ops.PolyXP(A, w, do_queue=False))
 
                 # calculate the analytic derivative of <A^2>
                 pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))
