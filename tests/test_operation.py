@@ -22,11 +22,10 @@ import numpy as np
 import numpy.random as nr
 
 from defaults import pennylane, BaseTest
-import pennylane.operation as oo
-import pennylane.variable as ov
+import pennylane as qml
 
 
-dev = pennylane.device('default.qubit', wires=2)
+dev = qml.device('default.qubit', wires=2)
 
 
 class BasicTest(BaseTest):
@@ -54,7 +53,7 @@ class BasicTest(BaseTest):
 
             op = cls(*par, wires=ww, do_queue=False)
 
-            if issubclass(cls, oo.Observable):
+            if issubclass(cls, qml.operation.Observable):
                 Q = op.heisenberg_obs(0)
                 # ev_order equals the number of dimensions of the H-rep array
                 self.assertEqual(Q.ndim, cls.ev_order)
@@ -158,7 +157,7 @@ class BasicTest(BaseTest):
                     cls(*n*[0.0], wires=ww, do_queue=False)
                 # params must not be Variables
                 with self.assertRaisesRegex(TypeError, 'Array parameter expected'):
-                    cls(*n*[ov.Variable(0)], wires=ww, do_queue=False)
+                    cls(*n*[qml.variable.Variable(0)], wires=ww, do_queue=False)
             elif cls.par_domain == 'N':
                 # params must be natural numbers
                 with self.assertRaisesRegex(TypeError, 'Natural number'):
@@ -218,7 +217,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if called with wrong number of wires"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -232,7 +231,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if called with wrong number of parameters"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -246,7 +245,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if an incorrect parameter domain is requested"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -260,7 +259,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
         self.logTestName()
 
-        class DummyOp(oo.CVOperation):
+        class DummyOp(qml.operation.CVOperation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -275,7 +274,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if a non-None grad-method is provided for natural number params"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -289,7 +288,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if an analytic gradient is requested with an array param"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -303,7 +302,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -318,7 +317,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if an array is expected but a variable is passed"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -326,7 +325,7 @@ class DeveloperTests(BaseTest):
             grad_method = 'A'
 
         with self.assertRaisesRegex(TypeError, "Array parameter expected, got a Variable"):
-            DummyOp(ov.Variable(0), wires=[0], do_queue=False)
+            DummyOp(qml.variable.Variable(0), wires=[0], do_queue=False)
 
     def test_array_instead_of_flattened_array(self):
         """Test that an exception is raised if an array is expected, but an array is passed
@@ -334,7 +333,7 @@ class DeveloperTests(BaseTest):
         accessible by the developer or the user, but is kept in case it will be used in the future."""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -349,7 +348,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if an array is expected but a scalar is passed"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -363,7 +362,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if a real number is expected but an array is passed"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -377,7 +376,7 @@ class DeveloperTests(BaseTest):
         """Test that an exception is raised if a natural number is expected but not passed"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -394,7 +393,7 @@ class DeveloperTests(BaseTest):
         """Test exception raised if no wires are passed"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -408,7 +407,7 @@ class DeveloperTests(BaseTest):
         """Test exception raised if wire is passed as a positional arg"""
         self.logTestName()
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -422,7 +421,7 @@ class DeveloperTests(BaseTest):
         """Check that the return_type of an observable is initially None"""
         self.logTestName()
 
-        class DummyObserv(oo.Observable):
+        class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
             num_params = 1
