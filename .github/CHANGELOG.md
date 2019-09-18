@@ -8,6 +8,10 @@
 
 ### Documentation
 
+* Add missing figures for gallery thumbnails of state-preparation
+  and QGAN tutorials
+  [#326](https://github.com/XanaduAI/pennylane/pull/326)
+
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
 
