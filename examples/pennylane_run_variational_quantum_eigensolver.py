@@ -178,7 +178,7 @@ surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 path_z = [cost(var) + 1e-8 for var in var_gd]
 path_x = [v[0] for v in var_gd]
 path_y = [v[1] for v in var_gd]
-ax.plot(path_x, path_y, path_z, c="green", marker=".", label="graddesc",zorder=10)
+ax.plot(path_x, path_y, path_z, c="green", marker=".", label="graddesc", zorder=10)
 
 ax.set_xlabel("v1")
 ax.set_ylabel("v2")
@@ -255,7 +255,7 @@ surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 path_z = [cost(var) + 1e-8 for var in var_gd]
 path_x = [v[0] for v in var_gd]
 path_y = [v[1] for v in var_gd]
-ax.plot(path_x, path_y, path_z, c="pink", marker=".", label="graddesc",zorder=10)
+ax.plot(path_x, path_y, path_z, c="pink", marker=".", label="graddesc", zorder=10)
 
 ax.set_xlabel("v1")
 ax.set_ylabel("v2")
