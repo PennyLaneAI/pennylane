@@ -52,7 +52,7 @@ algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: Use PennyLane to create a simple QGAN
-    :figure: ../examples/figures/gan.png
+    :figure: ../examples/figures/qgan3.png
     :description: :ref:`quantum_GAN`
 
 .. customgalleryitem::
