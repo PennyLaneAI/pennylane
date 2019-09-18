@@ -8,6 +8,9 @@
 
 ### Documentation
 
+* Added C-SWAP gate to the set of qubit operations
+  [#330](https://github.com/XanaduAI/pennylane/pull/330)
+
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
 
@@ -20,7 +23,7 @@
 
 This release contains contributions from (in alphabetical order):
 
----
+Aroosa Ijaz
 
 # Release 0.5.0
 
