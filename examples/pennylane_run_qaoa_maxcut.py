@@ -26,7 +26,7 @@ quantum circuit to solve a combinatorial optimization problem.
 #    :alt: qaoa_operators
 #
 #
-# We seek the partition :math:`z` of :math:`V` into two sets
+# We seek the partition :math:`z` of the vertices into two sets
 # :math:`S` and :math:`S'` which maximizes
 #
 # .. math::
