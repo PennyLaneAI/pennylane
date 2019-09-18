@@ -8,11 +8,11 @@
 
 ### Documentation
 
+* Added tutorial for QAOA on MaxCut problem
+  []
+
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
-
-* Fixed bug in VQE tutorial 3D plots
-  [#327](https://github.com/XanaduAI/pennylane/pull/327)
 
 ### Bug fixes
 
