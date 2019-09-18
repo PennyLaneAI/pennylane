@@ -53,7 +53,7 @@ quantum circuit to solve a combinatorial optimization problem.
 # objective function as operators like so
 #
 # .. math::
-#   C_\alpha = \frac{1}{2}\left(1-\sigma_{z}^j\sigma_{z}^j\right)
+#   C_\alpha = \frac{1}{2}\left(1-\sigma_{z}^j\sigma_{z}^k\right)
 #
 # where the :math:`\alpha\text{th}` edge is between qubits/vertices :math:`(j,k)`.
 # :math:`C_\alpha` is 1 if and only if the :math:`i\text{th}` and :math:`j\text{th}`
