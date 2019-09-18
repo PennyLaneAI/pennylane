@@ -10,7 +10,7 @@
 
 * Unify import shortcuts to be under qml in qnode.py
   and test_operation.py
-  []
+  [#329](https://github.com/XanaduAI/pennylane/pull/329)
 
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
