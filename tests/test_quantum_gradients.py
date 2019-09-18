@@ -530,7 +530,7 @@ class QubitGradientTest(BaseTest):
         @qml.qnode(self.qubit_dev2)
         def circuit(x):
             qml.RX(x, wires=[0])
-            return qml.sample(qml.PauliZ(0), 1), qml.sample(qml.PauliX(1), 1)
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         with self.assertRaisesRegex(
             qml.QuantumFunctionError,

@@ -813,7 +813,7 @@ class QNode:
         .. note::
            The finite difference method is sensitive to statistical noise in the circuit output,
            since it compares the output at two points infinitesimally close to each other. Hence the
-           'F' method requires exact expectation values, i.e., `shots=0`.
+           'F' method requires exact expectation values, i.e., `analytic=True` in simulation plugins.
 
         Args:
             params (nested Sequence[Number], Number): point in parameter space at which
@@ -828,7 +828,7 @@ class QNode:
             h (float): finite difference method step size
             order (int): finite difference method order, 1 or 2
             shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-                the expectation values. For simulator backends, 0 yields the exact result.
+                the expectation values.
 
         Returns:
             array[float]: Jacobian matrix, with shape ``(n_out, len(which))``, where ``len(which)`` is the
