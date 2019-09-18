@@ -99,8 +99,8 @@ class BasicTest(BaseTest):
                 U_high_order = np.array([U] * 3)
                 op.heisenberg_expand(U_high_order, len(op.wires))
 
-        for op in pennylane.ops._cv__ops__ | pennylane.ops._cv__obs__:
-            cls = getattr(pennylane.ops, op)
+        for op in qml.ops._cv__ops__ | qml.ops._cv__obs__:
+            cls = getattr(qml.ops, op)
             if cls.supports_heisenberg:  # only test gaussian operations
                 h_test(cls)
 
@@ -178,33 +178,33 @@ class BasicTest(BaseTest):
             cls.par_domain = tmp
 
 
-        for cls in pennylane.ops._qubit__ops__:
-            op_test(getattr(pennylane.ops, cls))
+        for cls in qml.ops._qubit__ops__:
+            op_test(getattr(qml.ops, cls))
 
-        for cls in pennylane.ops._cv__ops__:
-            op_test(getattr(pennylane.ops, cls))
+        for cls in qml.ops._cv__ops__:
+            op_test(getattr(qml.ops, cls))
 
-        for cls in pennylane.ops._qubit__obs__:
-            op_test(getattr(pennylane.ops, cls))
+        for cls in qml.ops._qubit__obs__:
+            op_test(getattr(qml.ops, cls))
 
-        for cls in pennylane.ops._cv__obs__:
-            op_test(getattr(pennylane.ops, cls))
+        for cls in qml.ops._cv__obs__:
+            op_test(getattr(qml.ops, cls))
 
     def test_operation_outside_queue(self):
         """Test that an error is raised if an operation is called
         outside of a QNode context."""
         self.logTestName()
 
-        with self.assertRaisesRegex(pennylane.QuantumFunctionError, "can only be used inside a qfunc"):
-            pennylane.ops.Hadamard(wires=0)
+        with self.assertRaisesRegex(qml.QuantumFunctionError, "can only be used inside a qfunc"):
+            qml.ops.Hadamard(wires=0)
 
     def test_operation_no_queue(self):
         """Test that an operation can be called outside a QNode with the do_queue flag"""
         self.logTestName()
 
         try:
-            pennylane.ops.Hadamard(wires=0, do_queue=False)
-        except pennylane.QuantumFunctionError:
+            qml.ops.Hadamard(wires=0, do_queue=False)
+        except qml.QuantumFunctionError:
             self.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
 
 
@@ -430,7 +430,7 @@ class DeveloperTests(BaseTest):
 
 
 if __name__ == '__main__':
-    print('Testing PennyLane version ' + pennylane.version() + ', Operation class.')
+    print('Testing PennyLane version ' + qml.version() + ', Operation class.')
     # run the tests in this file
     suite = unittest.TestSuite()
     for t in (BasicTest, DeveloperTests):
