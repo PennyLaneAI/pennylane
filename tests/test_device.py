@@ -79,7 +79,7 @@ def mock_device_with_paulis_and_methods(monkeypatch):
         m.setattr(Device, 'short_name', 'MockDevice')
         m.setattr(Device, 'expval', lambda self, x, y, z: 0)
         m.setattr(Device, 'var', lambda self, x, y, z: 0)
-        m.setattr(Device, 'sample', lambda self, x, y, z, w: 0)
+        m.setattr(Device, 'sample', lambda self, x, y, z: 0)
         m.setattr(Device, 'apply', lambda self, x, y, z: None)
         yield Device()
 
@@ -94,7 +94,7 @@ def mock_device(monkeypatch):
         m.setattr(Device, 'short_name', 'MockDevice')
         m.setattr(Device, 'expval', lambda self, x, y, z: 0)
         m.setattr(Device, 'var', lambda self, x, y, z: 0)
-        m.setattr(Device, 'sample', lambda self, x, y, z, w: 0)
+        m.setattr(Device, 'sample', lambda self, x, y, z: 0)
         m.setattr(Device, 'apply', lambda self, x, y, z: None)
         yield Device()
 

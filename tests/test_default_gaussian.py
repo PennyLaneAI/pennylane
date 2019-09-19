@@ -20,6 +20,8 @@ import pytest
 from scipy.special import factorial as fac
 from scipy.linalg import block_diag
 
+from unittest.mock import patch  # FIXME remove
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.plugins.default_gaussian import (
@@ -68,6 +70,9 @@ def gaussian_device_1_wire():
 def gaussian_device_2_wires():
     """Fixture of a default.gaussian device with 2 wires."""
     return qml.device('default.gaussian', wires=2)
+
+gaussian_dev = gaussian_device_2_wires  # alias
+
 
 
 class TestExceptions:
@@ -298,10 +303,6 @@ class TestStates:
 class TestDefaultGaussianDevice:
     """Test the default gaussian device. The test ensures that the device is properly
     applying gaussian operations and calculating the correct observables."""
-
-    @pytest.fixture(scope="function")
-    def gaussian_dev_shots():
-        return DefaultGaussian(wires=2, shots=1000, hbar=hbar, analytic=True)
 
     def test_operation_map(self, gaussian_dev):
         """Test that default Gaussian device supports all PennyLane Gaussian CV gates."""
@@ -557,7 +558,7 @@ class TestSample:
            the underlying distribution for a squeezed state."""
 
         mean = 0.0
-        std = math.sqrt(gaussian_device_1_wire.hbar*np.exp(2*r)/2)
+        std = np.sqrt(gaussian_device_1_wire.hbar*np.exp(2*r)/2)
         gaussian_device_1_wire.apply('SqueezedState', wires=[0], par=[r, phi])
 
         with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
