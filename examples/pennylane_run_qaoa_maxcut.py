@@ -211,7 +211,7 @@ def circuit(params, edge=None, p=1):
 
 
 def qaoa_maxcut(p=1):
-    print("\np=%d" % p)
+    print("\np={:d}".format(p))
 
     # initialize the parameters near zero
     init_params = 0.01 * np.random.rand(2, p)
