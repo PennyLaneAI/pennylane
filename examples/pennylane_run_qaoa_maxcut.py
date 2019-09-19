@@ -175,7 +175,8 @@ dev1 = qml.device("default.qubit", wires=n_wires, analytic=True, shots=1)
 # Once optimized, the same quantum node can be used for sampling an approximately optimal bitstring
 # if executed with the ``edge`` keyword set to None.
 #
-#  We can also adjust the number of layers in the circuit :math:`p` using a keyword, `n_layers`.
+#  We can adjust the number of layers in the circuit :math:`p` using a keyword, ``n_layers``.
+#
 
 pauli_z = [[1, 0], [0, -1]]
 pauli_z_2 = np.kron(pauli_z, pauli_z)
@@ -256,7 +257,7 @@ bitstrings1 = qaoa_maxcut(n_layers=1)[1]
 bitstrings2 = qaoa_maxcut(n_layers=2)[1]
 
 ##############################################################################
-# In the case where we set `n_layers=2`, we recover the optimal
+# In the case where we set ``n_layers=2``, we recover the optimal
 # objective function :math:`C=4`
 
 ##############################################################################
