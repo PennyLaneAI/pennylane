@@ -39,7 +39,7 @@ problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/
 # For instance,
 # in the situation depicted in the figure above, the optimal value of :math:`C(z)` is
 # 4. Such a situation can be represented by the bitstring :math:`z=1010\text{,}`
-# indicating that the :math:`0^{\text{th}}` and :math:`2^{\text{nd}}` vertices are in one partition
+# indicating that the :math:`0^{\text{th}}` and :math:`2^{\text{nd}}` vertices are in one set
 # while the :math:`1^{\text{st}}` and :math:`3^{\text{rd}}` are in
 # the other. (The inverse partition, :math:`z=0101` is of course equally valid.) In the following sections,
 # we will represent partitions using computational basis states and use PennyLane to
