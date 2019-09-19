@@ -526,8 +526,8 @@ class QNode:
 
         if get_nodes:
             return succ
-        else:
-            return [node["op"] for node in succ]
+
+        return [node["op"] for node in succ]
 
     def _best_method(self, idx):
         """Determine the correct gradient computation method for a free parameter.
@@ -574,17 +574,18 @@ class QNode:
 
             # for CV ops it is more complicated
             if op.grad_method == "A":
+                # op is Gaussian and has the heisenberg_* methods
+
                 obs_successors = self._op_successors(o_idx, 'E')
                 if not obs_successors:
                     # op is not succeeded by any observables, thus analytic method is OK
                     return 'A'
 
-                # op is Gaussian and has the heisenberg_* methods
-                # A non-Gaussian successor is OK if it isn't succeeded by any observables
                 # check that all successor ops are also Gaussian
                 successor_ops = self._op_successors(o_idx, 'G', get_nodes=True)
                 if not all(x["op"].supports_heisenberg for x in successor_ops):
                     non_gaussian_ops = [x for x in successor_ops if not x["op"].supports_heisenberg]
+                    # a non-Gaussian successor is OK if it isn't succeeded by any observables
                     for x in non_gaussian_ops:
                         if self._op_successors(x["idx"], 'E'):
                             return 'F'
@@ -973,7 +974,7 @@ class QNode:
             observable (Observable): the observable to perform the transformation on
             ob_successors (list[Observable]): list of observable successors to current operation
             w (int): number of wires
-            Z (array[float]): conjugated matrix
+            Z (array[float]): the Heisenberg picture representation of the linear transformation
 
         Returns:
             float: expectation value
@@ -1069,6 +1070,8 @@ class QNode:
                 B_inv = B.copy()
                 for BB in self._op_successors(o_idx, 'G'):
                     if not BB.supports_heisenberg:
+                        # if the successor gate is non-Gaussian in analytic differentiation
+                        # mode, then there must be no observable following it.
                         continue
                     B = BB.heisenberg_tr(w) @ B
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
