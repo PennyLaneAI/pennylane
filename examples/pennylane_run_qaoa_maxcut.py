@@ -207,7 +207,7 @@ def circuit(params, edge=None, p=1):
 # (``params[1]``).
 # and then sample the optimized
 # circuit multiple times to yield a distribution of bitstrings. One of the optimal partitions
-# (z=0101 or z=1010) should be the most frequently sampled bitstring.
+# (:math:`z=0101` or :math:`z=1010`) should be the most frequently sampled bitstring.
 
 
 def qaoa_maxcut(p=1):
