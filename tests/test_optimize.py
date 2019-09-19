@@ -20,11 +20,11 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.utils import _flatten
 from pennylane.optimize import (GradientDescentOptimizer,
-                              MomentumOptimizer,
-                              NesterovMomentumOptimizer,
-                              AdagradOptimizer,
-                              RMSPropOptimizer,
-                              AdamOptimizer)
+                                MomentumOptimizer,
+                                NesterovMomentumOptimizer,
+                                AdagradOptimizer,
+                                RMSPropOptimizer,
+                                AdamOptimizer)
 
 x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
@@ -34,20 +34,48 @@ gamma = 0.5
 delta = 0.8
 
 
+# function arguments in various formats
+mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
+mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
+nested_list = [[[0.2], 0.3], [0.1, [0.4]], -0.1]
+flat_list = [0.2, 0.3, 0.1, 0.4, -0.1]
+multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
+multid_list = [[0.1, 0.2], [-0.1, -0.4]]
+
+
+# functions and their gradients
+fnames = ['test_function_1', 'test_function_2', 'test_function_3']
+univariate_funcs = [np.sin,
+                    lambda x: np.exp(x / 10.),
+                    lambda x: x ** 2]
+grad_uni_fns = [np.cos,
+                lambda x: np.exp(x / 10.) / 10.,
+                lambda x: 2 * x]
+multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
+                      lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
+                      lambda x: np.sum([x_ ** 2 for x_ in x])]
+grad_multi_funcs = [lambda x: np.array([np.cos(x[0]), -np.sin(x[1])]),
+                    lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
+                    lambda x: np.array([2 * x_ for x_ in x])]
+mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
+                   lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
+                   lambda x: np.sum([x_[0] ** 2 for x_ in x])]
+grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
+                                            [-np.sin(x[1, 0]), 1.]]),
+                        lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
+                                             np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2)],
+                                            [0., 0.]]),
+                        lambda x: np.array([[2 * x_[0], 0.] for x_ in x])]
+
+
+
 @qml.qnode(qml.device('default.qubit', wires=1))
 def quant_fun(variables):
     qml.RX(variables[0][1], wires=[0])
     qml.RY(variables[1][2], wires=[0])
     qml.RY(variables[2], wires=[0])
     return qml.expval(qml.PauliZ(0))
-
-
-def hybrid_fun(variables):
-    return quant_fun(variables) + variables[0][1]
-
-
-def class_fun(variables):
-    return variables[0][1] * 2. + variables[1][2] + variables[2]
 
 
 @qml.qnode(qml.device('default.qubit', wires=1))
@@ -59,10 +87,6 @@ def quant_fun_nested(var):
     return qml.expval(qml.PauliZ(0))
 
 
-def hybrid_fun_nested(var):
-    return quant_fun_nested(var) + var[2]
-
-
 @qml.qnode(qml.device('default.qubit', wires=1))
 def quant_fun_flat(var):
     qml.RX(var[0], wires=[0])
@@ -70,10 +94,6 @@ def quant_fun_flat(var):
     qml.RY(var[2], wires=[0])
     qml.RX(var[3], wires=[0])
     return qml.expval(qml.PauliZ(0))
-
-
-def hybrid_fun_flat(var):
-    return quant_fun_flat(var) + var[4]
 
 
 @qml.qnode(qml.device('default.qubit', wires=1))
@@ -84,20 +104,12 @@ def quant_fun_mdarr(var):
     return qml.expval(qml.PauliZ(0))
 
 
-def hybrid_fun_mdarr(var):
-    return quant_fun_mdarr(var) + var[0, 0]
-
-
 @qml.qnode(qml.device('default.qubit', wires=1))
 def quant_fun_mdlist(var):
     qml.RX(var[0][1], wires=[0])
     qml.RY(var[1][0], wires=[0])
     qml.RY(var[1][1], wires=[0])
     return qml.expval(qml.PauliZ(0))
-
-
-def hybrid_fun_mdlist(var):
-    return quant_fun_mdlist(var) + var[0][0]
 
 
 @pytest.fixture(scope="function")
@@ -110,45 +122,6 @@ def bunch():
         rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
         adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
 
-        fnames = ['test_function_1', 'test_function_2', 'test_function_3']
-        univariate_funcs = [np.sin,
-                            lambda x: np.exp(x / 10.),
-                            lambda x: x ** 2]
-        grad_uni_fns = [np.cos,
-                        lambda x: np.exp(x / 10.) / 10.,
-                        lambda x: 2 * x]
-        multivariate_funcs = [lambda x: np.sin(x[0]) + np.cos(x[1]),
-                              lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-                              lambda x: np.sum([x_ ** 2 for x_ in x])]
-        grad_multi_funcs = [lambda x: np.array([np.cos(x[0]), -np.sin(x[1])]),
-                            lambda x: np.array([np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                                                np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]),
-                            lambda x: np.array([2 * x_ for x_ in x])]
-        mvar_mdim_funcs = [lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
-                           lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
-                           lambda x: np.sum([x_[0] ** 2 for x_ in x])]
-        grad_mvar_mdim_funcs = [lambda x: np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])],
-                                                    [-np.sin(x[1, 0]), 1.              ]]),
-                                lambda x: np.array([[np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
-                                                     np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2)],
-                                                    [0., 0.]]),
-                                lambda x: np.array([[2 * x_[0], 0.] for x_ in x])]
-
-        class_fun = staticmethod(class_fun)
-        quant_fun = staticmethod(quant_fun)
-        hybrid_fun = staticmethod(hybrid_fun)
-        hybrid_fun_nested = staticmethod(hybrid_fun_nested)
-        hybrid_fun_flat = staticmethod(hybrid_fun_flat)
-        hybrid_fun_mdarr = staticmethod(hybrid_fun_mdarr)
-        hybrid_fun_mdlist = staticmethod(hybrid_fun_mdlist)
-
-        mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
-        mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
-        nested_list = [[[0.2], 0.3], [0.1, [0.4]], -0.1]
-        flat_list = [0.2, 0.3, 0.1, 0.4, -0.1]
-        multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
-        multid_list = [[0.1, 0.2], [-0.1, -0.4]]
-
     return A()
 
 
@@ -159,8 +132,11 @@ class TestOptimizer:
         """Tests that gradient descent optimizer treats parameters of mixed types the same
         for hybrid optimization tasks."""
 
-        hybrid_list = bunch.sgd_opt.step(bunch.hybrid_fun, bunch.mixed_list)
-        hybrid_tuple = bunch.sgd_opt.step(bunch.hybrid_fun, bunch.mixed_tuple)
+        def hybrid_fun(variables):
+            return quant_fun(variables) + variables[0][1]
+
+        hybrid_list = bunch.sgd_opt.step(hybrid_fun, mixed_list)
+        hybrid_tuple = bunch.sgd_opt.step(hybrid_fun, mixed_tuple)
 
         assert hybrid_list[0] == pytest.approx(hybrid_tuple[0], abs=tol)
         assert hybrid_list[1] == pytest.approx(hybrid_tuple[1], abs=tol)
@@ -170,8 +146,11 @@ class TestOptimizer:
         """Tests that gradient descent optimizer treats parameters of mixed types the same
         for purely classical optimization tasks."""
 
-        class_list = bunch.sgd_opt.step(bunch.class_fun, bunch.mixed_list)
-        class_tuple = bunch.sgd_opt.step(bunch.class_fun, bunch.mixed_tuple)
+        def class_fun(var):
+            return var[0][1] * 2. + var[1][2] + var[2]
+
+        class_list = bunch.sgd_opt.step(class_fun, mixed_list)
+        class_tuple = bunch.sgd_opt.step(class_fun, mixed_tuple)
 
         assert class_list[0] == pytest.approx(class_tuple[0], abs=tol)
         assert class_list[1] == pytest.approx(class_tuple[1], abs=tol)
@@ -181,8 +160,8 @@ class TestOptimizer:
         """Tests that gradient descent optimizer treats parameters of mixed types the same
         for purely quantum optimization tasks."""
 
-        quant_list = bunch.sgd_opt.step(bunch.quant_fun, bunch.mixed_list)
-        quant_tuple = bunch.sgd_opt.step(bunch.quant_fun, bunch.mixed_tuple)
+        quant_list = bunch.sgd_opt.step(quant_fun, mixed_list)
+        quant_tuple = bunch.sgd_opt.step(quant_fun, mixed_tuple)
 
         assert quant_list[0] == pytest.approx(quant_tuple[0], abs=tol)
         assert quant_list[1] == pytest.approx(quant_tuple[1], abs=tol)
@@ -192,8 +171,14 @@ class TestOptimizer:
         """Tests that gradient descent optimizer has the same output for
          nested and flat lists."""
 
-        nested = bunch.sgd_opt.step(bunch.hybrid_fun_nested, bunch.nested_list)
-        flat = bunch.sgd_opt.step(bunch.hybrid_fun_flat, bunch.flat_list)
+        def hybrid_fun_flat(var):
+            return quant_fun_flat(var) + var[4]
+
+        def hybrid_fun_nested(var):
+            return quant_fun_nested(var) + var[2]
+
+        nested = bunch.sgd_opt.step(hybrid_fun_nested, nested_list)
+        flat = bunch.sgd_opt.step(hybrid_fun_flat, flat_list)
 
         assert flat == pytest.approx(list(_flatten(nested)), abs=tol)
 
@@ -201,8 +186,14 @@ class TestOptimizer:
         """Tests that gradient descent optimizer has the same output for
          lists and arrays."""
 
-        array = bunch.sgd_opt.step(bunch.hybrid_fun_mdarr, bunch.multid_array)
-        list = bunch.sgd_opt.step(bunch.hybrid_fun_mdlist, bunch.multid_list)
+        def hybrid_fun_mdarr(var):
+            return quant_fun_mdarr(var) + var[0, 0]
+
+        def hybrid_fun_mdlist(var):
+            return quant_fun_mdlist(var) + var[0][0]
+
+        array = bunch.sgd_opt.step(hybrid_fun_mdarr, multid_array)
+        list = bunch.sgd_opt.step(hybrid_fun_mdlist, multid_list)
 
         assert array == pytest.approx(np.asarray(list), abs=tol)
 
@@ -212,7 +203,7 @@ class TestOptimizer:
         for uni-variate functions."""
 
         # TODO parametrize this for also
-        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             x_new = bunch.sgd_opt.step(f, x_start)
             x_correct = x_start - gradf(x_start) * stepsize
             assert x_new == pytest.approx(x_correct, abs=tol)
@@ -221,7 +212,7 @@ class TestOptimizer:
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for multi-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
                 x_vec = x_vals[jdx:jdx+2]
                 x_new = bunch.sgd_opt.step(f, x_vec)
@@ -232,7 +223,7 @@ class TestOptimizer:
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for multi-variate functions and with higher dimensional inputs."""
 
-        for gradf, f, name in zip(bunch.grad_mvar_mdim_funcs, bunch.mvar_mdim_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_mvar_mdim_funcs, mvar_mdim_funcs, fnames):
             for jdx in range(len(x_vals[:-3])):
                 x_vec = x_vals[jdx:jdx+4]
                 x_vec_multidim = np.reshape(x_vec, (2, 2))
@@ -247,7 +238,7 @@ class TestOptimizer:
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         using user-provided gradients."""
 
-        for gradf, f, name in zip(bunch.grad_uni_fns[::-1], bunch.univariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_uni_fns[::-1], univariate_funcs, fnames):
             x_new = bunch.sgd_opt.step(f, x_start, grad_fn=gradf)
             x_correct = x_start - gradf(x_start) * stepsize
             assert x_new == pytest.approx(x_correct, abs=tol)
@@ -257,7 +248,7 @@ class TestOptimizer:
         """Tests that momentum optimizer takes one and two steps correctly
         for uni-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.mom_opt.reset()
 
             x_onestep = bunch.mom_opt.step(f, x_start)
@@ -273,7 +264,7 @@ class TestOptimizer:
         """Tests that momentum optimizer takes one and two steps correctly
         for multi-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
                 bunch.mom_opt.reset()
 
@@ -292,7 +283,7 @@ class TestOptimizer:
         """Tests that nesterov momentum optimizer takes one and two steps correctly
         for uni-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.nesmom_opt.reset()
 
             x_onestep = bunch.nesmom_opt.step(f, x_start)
@@ -309,7 +300,7 @@ class TestOptimizer:
         """Tests that nesterov momentum optimizer takes one and two steps correctly
         for multi-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
                 bunch.nesmom_opt.reset()
 
@@ -329,7 +320,7 @@ class TestOptimizer:
         """Tests that nesterov momentum optimizer takes gradient-descent steps correctly
         using user-provided gradients."""
 
-        for gradf, f, name in zip(bunch.grad_uni_fns[::-1], bunch.univariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_uni_fns[::-1], univariate_funcs, fnames):
             bunch.nesmom_opt.reset()
 
             x_onestep = bunch.nesmom_opt.step(f, x_start, grad_fn=gradf)
@@ -347,7 +338,7 @@ class TestOptimizer:
         """Tests that adagrad optimizer takes one and two steps correctly
         for uni-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.adag_opt.reset()
 
             x_onestep = bunch.adag_opt.step(f, x_start)
@@ -366,7 +357,7 @@ class TestOptimizer:
         """Tests that adagrad optimizer takes one and two steps correctly
         for multi-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
                 bunch.adag_opt.reset()
 
@@ -388,7 +379,7 @@ class TestOptimizer:
         """Tests that rmsprop optimizer takes one and two steps correctly
         for uni-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.rms_opt.reset()
 
             x_onestep = bunch.rms_opt.step(f, x_start)
@@ -408,7 +399,7 @@ class TestOptimizer:
         """Tests that rmsprop optimizer takes one and two steps correctly
         for multi-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
                 bunch.rms_opt.reset()
 
@@ -431,7 +422,7 @@ class TestOptimizer:
         """Tests that adam optimizer takes one and two steps correctly
         for uni-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_uni_fns, bunch.univariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_uni_fns, univariate_funcs, fnames):
             bunch.adam_opt.reset()
 
             x_onestep = bunch.adam_opt.step(f, x_start)
@@ -452,7 +443,7 @@ class TestOptimizer:
         """Tests that adam optimizer takes one and two steps correctly
         for multi-variate functions."""
 
-        for gradf, f, name in zip(bunch.grad_multi_funcs, bunch.multivariate_funcs, bunch.fnames):
+        for gradf, f, name in zip(grad_multi_funcs, multivariate_funcs, fnames):
             for jdx in range(len(x_vals[:-1])):
                 bunch.adam_opt.reset()
 
