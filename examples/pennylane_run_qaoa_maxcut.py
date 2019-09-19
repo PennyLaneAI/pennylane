@@ -18,13 +18,12 @@ problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/
 # ~~~~~~~~~~~~~~~~~~
 # The aim of MaxCut is to maximize the number of edges (yellow lines) in a graph that are "cut" by
 # a given partition of the vertices (blue circles) into two sets as shown in the figure below.
-# |
 #
 # .. figure:: ../../examples/figures/qaoa_maxcut_partition.png
 #    :align: center
 #    :scale: 65%
 #    :alt: qaoa_operators
-#In particular
+#
 # |
 # Let's say there are :math:`m` edges. We seek the partition :math:`z` of the vertices into two sets
 # 0 and 1 which maximizes
@@ -84,7 +83,6 @@ problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/
 # In other words, we make :math:`p` layers of our parametrized :math:`U_bU_C` gates.
 # These can be implemented on a quantum circuit using the gates depicted below (up to an irrelevant constant
 # that gets absorbed into the parameters).
-# |
 #
 # .. figure:: ../../examples/figures/qaoa_operators.png
 #    :align: center
