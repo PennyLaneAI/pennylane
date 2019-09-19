@@ -68,7 +68,7 @@ quantum circuit to solve a combinatorial optimization problem.
 #
 # We aim to explore the space of bitstring states for a superposition which is likely to yield a
 # large value for the :math:`C` operator upon performing a measurement in the computational basis.
-# Using the angle parameters
+# Using the :math:`2p` angle parameters
 # :math:`\boldsymbol{\gamma} = \gamma_1\gamma_2...\gamma_p`, :math:`\boldsymbol{\beta} = \beta_1\beta_2...\beta_p`
 # we perform a sequence of operations on our initial state:
 #
@@ -81,6 +81,7 @@ quantum circuit to solve a combinatorial optimization problem.
 #   U_{B_i} &= e^{-i\beta_iB} = \prod_{j=1}^n e^{-i\beta_i\sigma_x^j} \\
 #   U_{C_i} &= e^{-i\gamma_iC} = \prod_{\text{edge (j,k)}} e^{-i\gamma_i(1-\sigma_z^j\sigma_z^k)/2}
 #
+# In other words, we make :math:`p` layers of our parametrized :math:`U_bU_C` gates.
 # These can be implemented on a quantum circuit using the gates depicted below (up to an irrelevant constant
 # that gets absorbed into the parameters).
 #
@@ -166,34 +167,35 @@ def comp_basis_measurement(wires):
 # ~~~~~~~
 # Next, we create a quantum device with 4 qubits.
 
-dev1 = qml.device("default.qubit", wires=n_wires)
+dev1 = qml.device("default.qubit", wires=n_wires, analytic=True, shots=1)
 
 ##############################################################################
-# We also require a quantum node which will apply the operators :math:`p` times given the
+# We also require a quantum node which will apply the operators according to the
 # angle parameters, and return the expectation value of the observable
-# :math:`\sigma_z^{j}\sigma_z^{k}` to be used in the term of the objective function later on. The
+# :math:`\sigma_z^{j}\sigma_z^{k}` to be used in each term of the objective function later on. The
 # argument ``edge`` specifies the chosen edge term in the objective function, :math:`(j,k)`.
-#
 # Once optimized, the same quantum node can be used for sampling an approximately optimal bitstring
 # if executed with the ``edge`` keyword set to None.
+#
+#  We can also adjust the number of layers in the circuit :math:`p` using a keyword, `n_layers`.
 
 pauli_z = [[1, 0], [0, -1]]
 pauli_z_2 = np.kron(pauli_z, pauli_z)
 
 
 @qml.qnode(dev1)
-def circuit(params, edge=None, p=1):
+def circuit(params, edge=None, n_layers=1):
     # apply hadamards to get n qubit |+> state
     for wire in range(n_wires):
         qml.Hadamard(wires=wire)
     # p instances of unitary operators
-    for i in range(p):
+    for i in range(n_layers):
         U_C(params[0][i])
         U_B(params[1][i])
     # during measurement phase we are evaluating
     # the circuit with optimized parameters
     if edge is None:
-        return qml.sample(comp_basis_measurement(range(n_wires)), n=1)
+        return qml.sample(comp_basis_measurement(range(n_wires)))
     # during the optimization phase we are evaluating a term
     # in the objective using exp val
     return qml.expval(qml.Hermitian(pauli_z_2, wires=edge))
@@ -210,19 +212,19 @@ def circuit(params, edge=None, p=1):
 # (:math:`z=0101` or :math:`z=1010`) should be the most frequently sampled bitstring.
 
 
-def qaoa_maxcut(p=1):
-    print("\np={:d}".format(p))
+def qaoa_maxcut(n_layers=1):
+    print("\np={:d}".format(n_layers))
 
     # initialize the parameters near zero
-    init_params = 0.01 * np.random.rand(2, p)
+    init_params = 0.01 * np.random.rand(2, n_layers)
 
     # minimize negative the objective
     def objective(params):
-        neg_F_p = 0
+        neg_obj = 0
         for edge in graph:
             # objective for the maxcut problem
-            neg_F_p -= 0.5 * (1 - circuit(params, edge=edge, p=p))
-        return neg_F_p
+            neg_obj -= 0.5 * (1 - circuit(params, edge=edge, n_layers=n_layers))
+        return neg_obj
 
     # initialize optimizer
     opt = qml.AdagradOptimizer(stepsize=0.5)
@@ -239,7 +241,7 @@ def qaoa_maxcut(p=1):
     bit_strings = []
     n_samples = 100
     for i in range(0, n_samples):
-        bit_strings.append(int(circuit(params, edge=None, p=p)))
+        bit_strings.append(int(circuit(params, edge=None, n_layers=n_layers)))
 
     # print optimal parameters and most frequently sampled bitstring
     counts = np.bincount(np.array(bit_strings))
@@ -252,11 +254,12 @@ def qaoa_maxcut(p=1):
 
 # perform qaoa on our graph with p=1,2 and
 # keep the bitstring sample lists
-bitstrings1 = qaoa_maxcut(p=1)[1]
-bitstrings2 = qaoa_maxcut(p=2)[1]
+bitstrings1 = qaoa_maxcut(n_layers=1)[1]
+bitstrings2 = qaoa_maxcut(n_layers=2)[1]
 
 ##############################################################################
-# In the case where we set ``p=2``, we recover optimal objective :math:`C=4`
+# In the case where we set `n_layers=2`, we recover the optimal
+# objective function :math:`C=4`
 
 ##############################################################################
 # Plotting the results
