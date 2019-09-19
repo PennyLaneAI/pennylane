@@ -123,7 +123,7 @@ from pennylane import numpy as np
 # ~~~~~~~~~
 # We specify the number of qubits (vertices) with ``n_wires`` and
 # compose the unitary operators using the definitions
-# above. :math:`U_B` operators act on each of the wires, while :math:`U_C`
+# above. :math:`U_B` operators act on individual wires, while :math:`U_C`
 # operators act on wires whose corresponding vertices are joined by an edge in
 # the graph. We also define the graph using
 # the list ``graph``, which contains the tuples of vertices defining
