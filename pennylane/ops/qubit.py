@@ -239,7 +239,7 @@ class CSWAP(Operation):
             0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
             0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
             0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
-            0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 
+            0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
         \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit**.
