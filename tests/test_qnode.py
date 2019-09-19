@@ -818,6 +818,25 @@ class TestQNodeGradients:
         # the different methods agree
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
+    def test_qnode_gradient_gate_with_two_parameters(self, tol):
+        """Test that a gate with two parameters yields
+        correct gradients"""
+        def qf(r0, phi0, r1, phi1):
+            qml.Squeezing(r0, phi0, wires=[0])
+            qml.Squeezing(r1, phi1, wires=[0])
+            return qml.expval(qml.NumberOperator(0))
+
+        dev = qml.device('default.gaussian', wires=2)
+        q = qml.QNode(qf, dev)
+
+        par = [0.543, 0.123, 0.654, -0.629]
+
+        grad_A = q.jacobian(par, method='A')
+        grad_F = q.jacobian(par, method='F')
+
+        # the different methods agree
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
     def test_qnode_gradient_repeated_gate_parameters(self, tol):
         """Tests that repeated use of a free parameter in a
         multi-parameter gate yield correct gradients."""
