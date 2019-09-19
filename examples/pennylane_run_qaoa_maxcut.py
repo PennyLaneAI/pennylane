@@ -33,7 +33,7 @@ problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/
 #   C(z) = \sum_{\alpha=1}^{m}C_\alpha(z)
 #
 # where :math:`C_\alpha(z)=1` if :math:`z` places one vertex from the
-# :math:`\alpha^\text{th}` edge in partition 0 and the other in partition 1, and :math:`C_\alpha(z)=0` otherwise.
+# :math:`\alpha^\text{th}` edge in set 0 and the other in set 1, and :math:`C_\alpha(z)=0` otherwise.
 # The goal of approximate optimization in this case is to find a partition :math:`z` which
 # yields a value for :math:`C(z)` that is close to the maximum possible value.
 #
