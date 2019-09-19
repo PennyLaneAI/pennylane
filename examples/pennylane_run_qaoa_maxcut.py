@@ -25,7 +25,7 @@ quantum circuit to solve a combinatorial optimization problem.
 #    :scale: 65%
 #    :alt: qaoa_operators
 #
-#
+# |
 # Let's say there are :math:`m` edges. We seek the partition :math:`z` of the vertices into two sets
 # 0 and 1 which maximizes
 #
@@ -90,7 +90,7 @@ quantum circuit to solve a combinatorial optimization problem.
 #    :scale: 100%
 #    :alt: qaoa_operators
 #
-#
+# |
 # Let :math:`\langle \boldsymbol{\gamma},
 # \boldsymbol{\beta} | C | \boldsymbol{\gamma},\boldsymbol{\beta} \rangle` be the expectation of our objective.
 # In the next section, we will use PennyLane to sample this expectation value and perform classical optimization
