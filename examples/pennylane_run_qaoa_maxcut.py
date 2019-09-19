@@ -24,7 +24,7 @@ problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/
 #    :align: center
 #    :scale: 65%
 #    :alt: qaoa_operators
-#
+#In particular
 # |
 # Let's say there are :math:`m` edges. We seek the partition :math:`z` of the vertices into two sets
 # 0 and 1 which maximizes
