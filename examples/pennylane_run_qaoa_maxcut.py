@@ -4,11 +4,10 @@
 QAOA for MaxCut
 ===============
 
-In this tutorial, we implement a quantum approximate
-optimization algorithm (QAOA) for the MaxCut problem in Pennylane. (See `Farhi,
-Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>`__.) This
-example demonstrates how to sample joint qubit measurements from a variational
-quantum circuit to solve a combinatorial optimization problem.
+In this tutorial, we demonstrate how to sample joint qubit measurements from a
+variational quantum circuit to solve a combinatorial optimization problem. Namely, 
+we implement the quantum approximate optimization algorithm (QAOA) for the MaxCut
+problem as proposed by Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>__
 """
 
 ##############################################################################
@@ -19,6 +18,7 @@ quantum circuit to solve a combinatorial optimization problem.
 # ~~~~~~~~~~~~~~~~~~
 # The aim of MaxCut is to maximize the number of edges (yellow lines) in a graph that are "cut" by
 # a given partition of the vertices (blue circles) into two sets as shown in the figure below.
+# |
 #
 # .. figure:: ../../examples/figures/qaoa_maxcut_partition.png
 #    :align: center
@@ -84,7 +84,7 @@ quantum circuit to solve a combinatorial optimization problem.
 # In other words, we make :math:`p` layers of our parametrized :math:`U_bU_C` gates.
 # These can be implemented on a quantum circuit using the gates depicted below (up to an irrelevant constant
 # that gets absorbed into the parameters).
-#
+# |
 #
 # .. figure:: ../../examples/figures/qaoa_operators.png
 #    :align: center
