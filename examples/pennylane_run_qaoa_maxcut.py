@@ -173,10 +173,7 @@ dev1 = qml.device("default.qubit", wires=n_wires, analytic=True, shots=1)
 # :math:`\sigma_z^{j}\sigma_z^{k}` to be used in each term of the objective function later on. The
 # argument ``edge`` specifies the chosen edge term in the objective function, :math:`(j,k)`.
 # Once optimized, the same quantum node can be used for sampling an approximately optimal bitstring
-# if executed with the ``edge`` keyword set to None.
-#
-#  We can adjust the number of layers in the circuit :math:`p` using a keyword, ``n_layers``.
-#
+# if executed with the ``edge`` keyword set to ``None``.
 
 pauli_z = [[1, 0], [0, -1]]
 pauli_z_2 = np.kron(pauli_z, pauli_z)
