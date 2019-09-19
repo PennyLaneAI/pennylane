@@ -11,7 +11,7 @@
 ## set the default number of shots/runs used
 ## to determine expectation value statistics
 [main]
-shots = 0
+shots = 1000
 
 # =================================================================
 #     PLUGIN AND DEVICE OPTIONS
@@ -37,7 +37,8 @@ hbar = 1
 
 ## set the default number of shots/runs used
 ## to determine expectation value statistics
-# shots = 0
+# shots = 1000
+# analytic = True
 
     [strawberryfields.fock]
     ## Default options for the Fock simulator
@@ -46,7 +47,7 @@ hbar = 1
     cutoff_dim = 10
 
     ## set the default number of shots
-    # shots = 0
+    # shots = 1000
 
     ## Set the default value of hbar
     # hbar = 1
@@ -55,7 +56,7 @@ hbar = 1
     ## Default options for the Gaussian simulator
 
     ## set the default number of shots
-    # shots = 0
+    # shots = 1000
 
     ## Set the default value of hbar
     # hbar = 1

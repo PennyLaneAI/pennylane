@@ -148,29 +148,17 @@ def var(op):
     return op
 
 
-def sample(op, n=None):
-    r"""Sample from the supplied observable.
+def sample(op):
+    r"""Sample from the supplied observable, with the number of shots
+    determined from the ``dev.shots`` attribute of the corresponding device.
 
     Args:
         op (Observable): a quantum observable object
-        n (int): Number of samples that should be obtained. Defaults to the
-            number of shots given as a parameter to the corresponding Device.
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
-
-    if n is None:
-        if QNode._current_context is not None:
-            n = QNode._current_context.device.shots
-        else:
-            raise QuantumFunctionError("Could not find a bound device to determine the default number of samples.")
-
-    if n == 0:
-        raise ValueError("Calling sample with n = 0 is not possible.")
-    if n < 0 or not isinstance(n, int):
-        raise ValueError("The number of samples must be a positive integer.")
 
     if QNode._current_context is not None:
         # delete operation from QNode queue
@@ -178,9 +166,6 @@ def sample(op, n=None):
 
     # set return type to be a sample
     op.return_type = Sample
-
-    # attach the number of samples to the operation object
-    op.num_samples = n
 
     if QNode._current_context is not None:
         # add observable back to QNode observable queue
