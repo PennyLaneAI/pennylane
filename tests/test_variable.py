@@ -14,8 +14,6 @@
 """
 Unit tests for :mod:`pennylane.variable`.
 """
-import string
-
 import pytest
 import numpy.random as nr
 
@@ -24,6 +22,26 @@ from pennylane.variable import Variable
 
 # make test deterministic
 nr.seed(42)
+
+n = 10
+keyword_par_names = ['foo', 'bar']
+par_inds = [0, 9]
+par_mults = [1, 0.4, -2.7]
+
+
+@pytest.fixture(scope="function")
+def par_positional():
+    "QNode: positional parameters"
+    temp = nr.randn(n)
+    Variable.free_param_values = temp  # set the values
+    return temp
+
+@pytest.fixture(scope="function")
+def par_keyword():
+    "QNode: keyword parameters"
+    temp = {name: nr.randn(n) for name in keyword_par_names}
+    Variable.kwarg_values = temp  # set the values
+    return temp
 
 
 def test_variable_str():
@@ -41,42 +59,36 @@ def test_variable_str():
     assert str(1.2 * p / 2.5) == "Variable 0: name = kw1,  * 0.48"
 
 
-def test_variable_val():
-    """variable: Tests the positional variable values.
-    """
-    # mapping function must yield the correct parameter values
-    n = 10
-    mul = nr.randn(n)  # parameter multipliers
-    par_free = nr.randn(n)  # free parameter values
-    Variable.free_param_values = par_free
-    var = [Variable(k) for k in range(n)]
-
-    assert all([p == v.val for p, v in zip(par_free, var)])  # basic evaluation
-    assert all([m * p == (m * v).val for p, v, m in zip(par_free, var, mul)])  # left scalar mul
-    assert all([m * p == (v * m).val for p, v, m in zip(par_free, var, mul)])  # right scalar mul
-    assert all([p / m == pytest.approx((v / m).val) for p, v, m in zip(par_free, var, mul)])  # right scalar div
-    assert all([-p == (-v).val for p, v in zip(par_free, var)])  # unary minus
-    assert all([-m**2 * p == (m * -v * m).val for p, v, m in zip(par_free, var, mul)])  # compound expression
+def variable_eval_asserts(v, p, m, tol):
+    """Check that variable evaluation (with scalar multiplication) yields the expected results."""
+    assert v.val == p  # normal evaluation
+    assert (m * v).val == m * p  # left scalar mul
+    assert (v * m).val == m * p  # right scalar mul
+    assert (v / m).val == pytest.approx(p / m, abs=tol)  # right scalar div
+    assert (-v).val == -p   # unary minus
+    assert (m * -v * m).val == -m**2 * p  # compound expression
 
 
-def test_keyword_variable():
-    """
-    variable: Keyword Variable reference tests.
-    """
-    # Check for a single kwarg_value
-    Variable.kwarg_values = {"kw1": 1.0}
-    assert Variable(0, name="kw1").val == 1.0
+@pytest.mark.parametrize("ind", par_inds)
+@pytest.mark.parametrize("mult", par_mults)
+def test_variable_val(par_positional, ind, mult, tol):
+    """Positional variable evaluation."""
+    v = Variable(ind)
 
-    names = string.ascii_lowercase
-    n = 10
-    mul = nr.randn(n)  # parameter multipliers
-    par_free = nr.randn(n)  # free parameter values
-    Variable.kwarg_values = {k: v for k, v in zip(names, par_free)}
-    var = [Variable(0, name=n) for n in names]
+    assert v.name is None
+    assert v.mult == 1
+    assert v.idx == ind
+    variable_eval_asserts(v, par_positional[ind], mult, tol)
 
-    assert all([p == v.val for p, v in zip(par_free, var)])  # basic evaluation
-    assert all([m * p == (m * v).val for p, v, m in zip(par_free, var, mul)])  # left scalar mul
-    assert all([m * p == (v * m).val for p, v, m in zip(par_free, var, mul)])  # right scalar mul
-    assert all([p / m == pytest.approx((v / m).val) for p, v, m in zip(par_free, var, mul)])  # right scalar div
-    assert all([-p == (-v).val for p, v in zip(par_free, var)])  # unary minus
-    assert all([-m**2 * p == (m * -v * m).val for p, v, m in zip(par_free, var, mul)])  # compound expression
+
+@pytest.mark.parametrize("ind", par_inds)
+@pytest.mark.parametrize("mult", par_mults)
+@pytest.mark.parametrize("name", keyword_par_names)
+def test_keyword_variable(par_keyword, name, ind, mult, tol):
+    """Keyword variable evaluation."""
+    v = Variable(ind, name)
+
+    assert v.name == name
+    assert v.mult == 1
+    assert v.idx == ind
+    variable_eval_asserts(v, par_keyword[name][ind], mult, tol)
