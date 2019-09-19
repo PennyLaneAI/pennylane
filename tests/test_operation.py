@@ -17,7 +17,7 @@ Unit tests for :mod:`pennylane.operation`.
 import pytest
 import numpy as np
 
-import pennylane
+import pennylane as qml
 import pennylane.ops
 import pennylane.operation as oo
 import pennylane.variable as ov
@@ -47,7 +47,7 @@ class TestUtilities:
 
             op = cls(*par, wires=ww, do_queue=False)
 
-            if issubclass(cls, oo.Observable):
+            if issubclass(cls, qml.operation.Observable):
                 Q = op.heisenberg_obs(0)
                 # ev_order equals the number of dimensions of the H-rep array
                 assert Q.ndim == cls.ev_order
@@ -95,8 +95,8 @@ class TestUtilities:
                 U_high_order = np.array([U] * 3)
                 op.heisenberg_expand(U_high_order, len(op.wires))
 
-        for op in pennylane.ops._cv__ops__ | pennylane.ops._cv__obs__:
-            cls = getattr(pennylane.ops, op)
+        for op in qml.ops._cv__ops__ | qml.ops._cv__obs__:
+            cls = getattr(qml.ops, op)
             if cls.supports_heisenberg:  # only test gaussian operations
                 h_test(cls)
 
@@ -173,30 +173,30 @@ class TestUtilities:
             cls.par_domain = tmp
 
 
-        for cls in pennylane.ops._qubit__ops__:
-            op_test(getattr(pennylane.ops, cls))
+        for cls in qml.ops._qubit__ops__:
+            op_test(getattr(qml.ops, cls))
 
-        for cls in pennylane.ops._cv__ops__:
-            op_test(getattr(pennylane.ops, cls))
+        for cls in qml.ops._cv__ops__:
+            op_test(getattr(qml.ops, cls))
 
-        for cls in pennylane.ops._qubit__obs__:
-            op_test(getattr(pennylane.ops, cls))
+        for cls in qml.ops._qubit__obs__:
+            op_test(getattr(qml.ops, cls))
 
-        for cls in pennylane.ops._cv__obs__:
-            op_test(getattr(pennylane.ops, cls))
+        for cls in qml.ops._cv__obs__:
+            op_test(getattr(qml.ops, cls))
 
     def test_operation_outside_queue(self):
         """Test that an error is raised if an operation is called
         outside of a QNode context."""
 
-        with pytest.raises(pennylane.QuantumFunctionError, match="can only be used inside a qfunc"):
-            pennylane.ops.Hadamard(wires=0)
+        with pytest.raises(qml.QuantumFunctionError, match="can only be used inside a qfunc"):
+            qml.ops.Hadamard(wires=0)
 
     def test_operation_no_queue(self):
         """Test that an operation can be called outside a QNode with the do_queue flag"""
         try:
-            pennylane.ops.Hadamard(wires=0, do_queue=False)
-        except pennylane.QuantumFunctionError:
+            qml.ops.Hadamard(wires=0, do_queue=False)
+        except qml.QuantumFunctionError:
             pytest.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
 
 
@@ -206,7 +206,7 @@ class TestOperationConstruction:
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -219,7 +219,7 @@ class TestOperationConstruction:
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -232,7 +232,7 @@ class TestOperationConstruction:
     def test_incorrect_param_domain(self):
         """Test that an exception is raised if an incorrect parameter domain is requested"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -245,7 +245,7 @@ class TestOperationConstruction:
     def test_incorrect_grad_recipe_length(self):
         """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
 
-        class DummyOp(oo.CVOperation):
+        class DummyOp(qml.operation.CVOperation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -259,7 +259,7 @@ class TestOperationConstruction:
     def test_grad_method_with_integer_params(self):
         """Test that an exception is raised if a non-None grad-method is provided for natural number params"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -272,7 +272,7 @@ class TestOperationConstruction:
     def test_analytic_grad_with_array_param(self):
         """Test that an exception is raised if an analytic gradient is requested with an array param"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -285,7 +285,7 @@ class TestOperationConstruction:
     def test_numerical_grad_with_grad_recipe(self):
         """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -299,7 +299,7 @@ class TestOperationConstruction:
     def test_variable_instead_of_array(self):
         """Test that an exception is raised if an array is expected but a variable is passed"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -314,7 +314,7 @@ class TestOperationConstruction:
         to check_domain when flattened=True. In the initial release of the library, this is not
         accessible by the developer or the user, but is kept in case it will be used in the future."""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -328,7 +328,7 @@ class TestOperationConstruction:
     def test_scalar_instead_of_array(self):
         """Test that an exception is raised if an array is expected but a scalar is passed"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -341,7 +341,7 @@ class TestOperationConstruction:
     def test_array_instead_of_real(self):
         """Test that an exception is raised if a real number is expected but an array is passed"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -354,7 +354,7 @@ class TestOperationConstruction:
     def test_not_natural_param(self):
         """Test that an exception is raised if a natural number is expected but not passed"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -370,7 +370,7 @@ class TestOperationConstruction:
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -383,7 +383,7 @@ class TestOperationConstruction:
     def test_wire_passed_positionally(self):
         """Test exception raised if wire is passed as a positional arg"""
 
-        class DummyOp(oo.Operation):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -396,7 +396,7 @@ class TestOperationConstruction:
     def test_observable_return_type_none(self):
         """Check that the return_type of an observable is initially None"""
 
-        class DummyObserv(oo.Observable):
+        class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
             num_params = 1

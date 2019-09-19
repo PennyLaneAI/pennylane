@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""QGT optimizer"""
+"""Quantum natural gradient optimizer"""
 #pylint: disable=too-many-branches
 import autograd.numpy as np
 from scipy import linalg
@@ -21,20 +21,21 @@ from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
 
-class QGTOptimizer(GradientDescentOptimizer):
+class QNGOptimizer(GradientDescentOptimizer):
     r"""Optimizer with adaptive learning rate, via calculation
-    of the quantum geometric tensor.
+    of the diagonal or block-diagonal approximation to the Fubini-Study metric tensor.
+    A quantum generalization of natural gradient descent.
 
-    The QGT optimizer uses a step- and parameter-dependent learning rate,
+    The QNG optimizer uses a step- and parameter-dependent learning rate,
     with the learning rate dependent on the pseudo-inverse
-    of the quantum geometric tensor :math:`G`:
+    of the Fubini-Study metric tensor :math:`g`:
 
     .. math::
-        x^{(t+1)} = x^{(t)} - \eta G(f(x^{(t)})^{-1} \nabla f(x^{(t)}),
+        x^{(t+1)} = x^{(t)} - \eta g(f(x^{(t)}))^{-1} \nabla f(x^{(t)}),
 
-    where :math:`f(x^{(t)}) = \langle 0 | U(x^{(t))^\dagger \hat{B} U(x^{(t)) | 0 \rangle`
+    where :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
     is an expectation value of some observable measured on the variational
-    quantum circuit :math:`U(x^{(t))`.
+    quantum circuit :math:`U(x^{(t)})`.
 
     Consider a quantum node represented by the variational quantum circuit
 
@@ -43,37 +44,53 @@ class QGTOptimizer(GradientDescentOptimizer):
         U(\mathbf{\theta}) = W(\theta_{i+1}, \dots, \theta_{N})X(\theta_{i})
         V(\theta_1, \dots, \theta_{i-1}),
 
-    where :math:`X(\theta_{i}) = e^{i\theta_i K_i}` (i.e., the gate :math:`K_i`
-    is the *generator* of the parametrized operation :math:`X(\theta_i)` corresponding
-    to the :math:`i`-th parameter).
+    where all parametrized gates can be written of the form :math:`X(\theta_{i}) = e^{i\theta_i K_i}`.
+    That is, the gate :math:`K_i` is the *generator* of the parametrized operation :math:`X(\theta_i)`
+    corresponding to the :math:`i`-th parameter.
 
-    The quantum geometric tensor element is thus given by:
+    For each parametric layer :math:`\ell` in the variational quantum circuit
+    containing :math:`n` parameters, the :math:`n\times n` block-diagonal submatrix
+    of the Fubini-Study tensor :math:`g_{ij}^{(\ell)}` is calculated directly on the
+    quantum device in a single evaluation:
 
     .. math::
 
-        G_{ij} = \langle 0 | V^{-1} K_i K_j V | 0\rangle
-        - \langle 0 | V^{-1} K_i V | 0\rangle\right
-        \langle 0 | V^{-1} K_j V | 0\rangle\right
+        g_{ij}^{(\ell)} = \langle \psi_\ell | K_i K_j | \psi_\ell \rangle
+        - \langle \psi_\ell | K_i | \psi_\ell\rangle
+        \langle \psi_\ell |K_j | \psi_\ell\rangle
 
-    For parametric layer :math:`\ell` in the variational quantum circuit
-    containing $n$ parameters, an :math:`n\times n` block diagonal submatrix
-    of the quantum geometric tensor :math:`G_{ij}^{(\ell)}` is computed
-    by directly querying the quantum device.
+    where :math:`|\psi_\ell\rangle =  V(\theta_1, \dots, \theta_{i-1})|0\rangle`
+    (that is, :math:`|\psi_\ell\rangle` is the quantum state prior to the application
+    of parameterized layer :math:`\ell`).
+
+    Combining the quantum natural gradient optimizer with the analytic parameter-shift
+    rule to optimize a variational circuit with :math:`d` parameters and :math:`L` layers,
+    a total of :math:`2d+L` quantum evaluations are required per optimization step.
+
+    For more details, see:
+
+        James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
+        "Quantum Natural Gradient." `arXiv:1909.02108 <https://arxiv.org/abs/1909.02108>`_, 2019.
 
     .. note::
 
-        The QGT optimizer **only supports single QNodes** as objective functions.
+        The QNG optimizer **only supports single QNodes** as objective functions.
 
         In particular:
 
         * For hybrid classical-quantum models, the "mixed geometry" of the model
           makes it unclear which metric should be used for which parameter.
           For example, parameters of quantum nodes are better suited to
-          one metric (such as the QGT), whereas others (e.g., parameters of classical nodes)
+          one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
           are likely better suited to another metric.
 
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
+
+    .. seealso::
+
+        See the :ref:`quantum natural gradient example <quantum_natural_gradient>`
+        for more details on Fubini-Study metric tensor and this optimization class.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`

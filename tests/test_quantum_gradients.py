@@ -515,7 +515,7 @@ class TestQubitGradient:
         @qml.qnode(qubit2_dev)
         def circuit(x):
             qml.RX(x, wires=[0])
-            return qml.sample(qml.PauliZ(0), 1), qml.sample(qml.PauliX(1), 1)
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         with pytest.raises(qml.QuantumFunctionError,
                            match="Circuits that include sampling can not be differentiated."):

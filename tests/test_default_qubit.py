@@ -545,6 +545,21 @@ class TestExpval:
         with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
             qubit_device_1_wire.ev(np.array([[1+1j, 0], [0, 1+1j]]), wires=[0])
 
+    def test_expval_estimate(self):
+        """Test that the expectation value is not analytically calculated"""
+
+        dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliX(0))
+
+        expval = circuit()
+
+        # With 3 samples we are guaranteed to see a difference between
+        # an estimated variance an an analytically calculated one
+        assert expval != 0.0
+
 class TestVar:
     """Tests that variances are properly calculated."""
 
@@ -604,7 +619,7 @@ class TestVar:
     def test_var_estimate(self):
         """Test that the variance is not analytically calculated"""
 
-        dev = qml.device("default.qubit", wires=1, shots=3)
+        dev = qml.device("default.qubit", wires=1, shots=3, analytic=False)
 
         @qml.qnode(dev)
         def circuit():
@@ -632,13 +647,16 @@ class TestSample:
         qubit_device_2_wires.apply('RX', wires=[0], par=[1.5708])
         qubit_device_2_wires.apply('RX', wires=[1], par=[1.5708])
 
-        s1 = qubit_device_2_wires.sample('PauliZ', [0], [], 10)
+        qubit_device_2_wires.shots = 10
+        s1 = qubit_device_2_wires.sample('PauliZ', [0], [])
         assert np.array_equal(s1.shape, (10,))
 
-        s2 = qubit_device_2_wires.sample('PauliZ', [1], [], 12)
+        qubit_device_2_wires.shots = 12
+        s2 = qubit_device_2_wires.sample('PauliZ', [1], [])
         assert np.array_equal(s2.shape, (12,))
 
-        s3 = qubit_device_2_wires.sample('CZ', [0, 1], [], 17)
+        qubit_device_2_wires.shots = 17
+        s3 = qubit_device_2_wires.sample('CZ', [0, 1], [])
         assert np.array_equal(s3.shape, (17,))
 
     def test_sample_values(self, qubit_device_2_wires, tol):
@@ -653,41 +671,11 @@ class TestSample:
 
         qubit_device_2_wires.apply('RX', wires=[0], par=[1.5708])
 
-        s1 = qubit_device_2_wires.sample('PauliZ', [0], [], 10)
+        s1 = qubit_device_2_wires.sample('PauliZ', [0], [])
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
         assert np.allclose(s1**2, 1, atol=tol, rtol=0)
-
-    def test_sample_exception_analytic_mode(self, qubit_device_2_wires):
-        """Tests if the sampling raises an error for sample size n=0"""
-
-        with pytest.raises(
-            ValueError, match="Calling sample with n = 0 is not possible."
-        ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n=0)
-
-        # self.def.shots = 0, so this should also fail
-        with pytest.raises(
-            ValueError, match="Calling sample with n = 0 is not possible."
-        ):
-            qubit_device_2_wires.sample('PauliZ', [0], [])
-
-    def test_sample_exception_wrong_n(self, qubit_device_2_wires):
-        """Tests if the sampling raises an error for sample size n<0
-        or non-integer n
-        """
-
-        with pytest.raises(
-            ValueError, match="The number of samples must be a positive integer."
-        ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n=-12)
-
-        qubit_device_2_wires.shots = 0
-        with pytest.raises(
-            ValueError, match="The number of samples must be a positive integer."
-        ):
-            qubit_device_2_wires.sample('PauliZ', [0], [], n=12.3)
 
 
 class TestMaps:
@@ -713,7 +701,8 @@ class TestDefaultQubitIntegration:
         
         dev = qml.device("default.qubit", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 0
+        assert dev.shots == 1000
+        assert dev.analytic 
         assert dev.short_name == "default.qubit"
 
     def test_args(self):
