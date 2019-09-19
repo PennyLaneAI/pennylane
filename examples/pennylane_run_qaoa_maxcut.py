@@ -186,11 +186,10 @@ def circuit(params, edge=None, n_layers=1):
         qml.Hadamard(wires=wire)
     # p instances of unitary operators
     for i in range(n_layers):
-        U_C(params[0][i])
-        U_B(params[1][i])
-    # during measurement phase we are evaluating
-    # the circuit with optimized parameters
+        U_C(params[0][i]) # params[0] is gamma
+        U_B(params[1][i]) # params[1] is beta
     if edge is None:
+        # measurement phase
         return qml.sample(comp_basis_measurement(range(n_wires)))
     # during the optimization phase we are evaluating a term
     # in the objective using exp val
