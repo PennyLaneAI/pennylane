@@ -113,7 +113,9 @@ class TestQNodeConstruct:
     """
     Tests methods that are called during construction of QNode
     """
-    def test_best_method_with_non_gaussian_successors(self):
+    def test_best_method_with_non_gaussian_successors(self, tol):
+    """Tests that the analytic differentiation method is allowed and matches numerical
+    differentiation if a non-Gaussian gate is not succeeded by an observable."""
         dev = DummyDevice(wires=2)
 
         @qml.qnode(dev)
@@ -123,9 +125,13 @@ class TestQNodeConstruct:
             qml.Kerr(0.54, wires=[1])
             return qml.expval(qml.NumberOperator(0))
 
-        circuit.jacobian([0.321], method='A')
+        res = circuit.jacobian([0.321], method='A')
+        expected = circuit.jacobian([0.321], method='F')
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_best_method_with_gaussian_successors_fails(self):
+    """Tests that the analytic differentiation method is not allowed
+    if a non-Gaussian gate is succeeded by an observable."""
         dev = DummyDevice(wires=2)
 
         @qml.qnode(dev)

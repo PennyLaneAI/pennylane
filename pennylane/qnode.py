@@ -971,7 +971,7 @@ class QNode:
             observable (Observable): the observable to perform the transformation on
             ob_successors (list[Observable]): list of observable successors to current operation
             w (int): number of wires
-            Z (array[float]): conjugated matrix
+            Z (array[float]): the Heisenberg picture representation of the linear transformation
 
         Returns:
             float: expectation value
@@ -1067,6 +1067,8 @@ class QNode:
                 B_inv = B.copy()
                 for BB in self._op_successors(o_idx, 'G'):
                     if not BB.supports_heisenberg:
+                        # if the successor gate is non-Gaussian in analytic differentiation
+                        # mode, then there must be no observable following it.
                         continue
                     B = BB.heisenberg_tr(w) @ B
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
