@@ -1,8 +1,8 @@
 """
 .. _qaoa_maxcut:
 
-Quantum Approximate Optimization for MaxCut
-===========================================
+QAOA for MaxCut
+===============
 
 In this tutorial, we implement a quantum approximate
 optimization algorithm (QAOA) for the MaxCut problem in Pennylane. (See `Farhi,
@@ -12,11 +12,11 @@ quantum circuit to solve a combinatorial optimization problem.
 """
 
 ##############################################################################
-# 1 Background
-# -------------
+# Background
+# ----------
 #
-# 1.1 The MaxCut problem
-# ~~~~~~~~~~~~~~~~~~~~~~
+# The MaxCut problem
+# ~~~~~~~~~~~~~~~~~~
 # The aim of MaxCut is to maximize the number of edges (yellow lines) in a graph that are "cut" by
 # a given partition of the vertices (blue circles) into two sets as shown in the figure below.
 #
@@ -42,12 +42,12 @@ quantum circuit to solve a combinatorial optimization problem.
 # 4. Such a situation can be represented by the bitstring :math:`z=1010\text{,}`
 # indicating that the :math:`0^{\text{th}}` and :math:`2^{\text{nd}}` vertices are in one partition
 # while the :math:`1^{\text{st}}` and :math:`3^{\text{rd}}` are in
-# the other. (The inverse partition, :math:`z=0101` is of course equally valid.) In the following section,
+# the other. (The inverse partition, :math:`z=0101` is of course equally valid.) In the following sections,
 # we will represent partitions using computational basis states and use PennyLane to
 # rediscover this optimal cut.
 #
-# 1.2 A quantum circuit
-# ~~~~~~~~~~~~~~~~~~~~~~~
+# A quantum circuit
+# ~~~~~~~~~~~~~~~~~
 # This section presents the operators used in the QAOA algorithm and their implementation using basic unitary gates.
 # Firstly, if the partition is given by the computational basis states, we can represent the terms in the
 # objective function as operators like so
@@ -105,11 +105,11 @@ quantum circuit to solve a combinatorial optimization problem.
 #   :alt: optimal_state
 #
 #
-# 2 Implementing QAOA in PennyLane
-# ----------------------------------
+# Implementing QAOA in PennyLane
+# ------------------------------
 #
-# 2.2 Imports and setup
-# ~~~~~~~~~~~~~~~~~~~~~
+# Imports and setup
+# ~~~~~~~~~~~~~~~~~
 #
 # To get started, we import PennyLane along with the PennyLane-provided
 # version of NumPy.
@@ -120,8 +120,8 @@ from pennylane import numpy as np
 
 
 ##############################################################################
-# 2.3 Operators
-# ~~~~~~~~~~~~~
+# Operators
+# ~~~~~~~~~
 # We specify the number of qubits (vertices) with ``n_wires`` and
 # compose the unitary operators using the definitions
 # above. :math:`U_B` operators act on each of the wires, while :math:`U_C`
@@ -162,8 +162,8 @@ def comp_basis_measurement(wires):
 
 
 ##############################################################################
-# 2.4 Circuit
-# ~~~~~~~~~~~~~
+# Circuit
+# ~~~~~~~
 # Next, we create a quantum device with 4 qubits.
 
 dev1 = qml.device("default.qubit", wires=n_wires)
@@ -200,8 +200,8 @@ def circuit(params, edge=None, p=1):
 
 
 ##############################################################################
-# 2.5 Optimization
-# ~~~~~~~~~~~~~
+# Optimization
+# ~~~~~~~~~~~~
 # Finally, we optimize the objective over the
 # angle parameters :math:`\boldsymbol{\gamma}` (``params[0]``) and :math:`\boldsymbol{\beta}`
 # (``params[1]``).
@@ -259,8 +259,8 @@ bitstrings2 = qaoa_maxcut(p=2)[1]
 # In the case where we set ``p=2``, we recover optimal objective :math:`C=4`
 
 ##############################################################################
-# 3 Plotting the results
-# ~~~~~~~~~~~~~~~~~~~~~~
+# Plotting the results
+# --------------------
 # We can plot the distribution of measurements we got from the optimized circuits. As
 # expected for this graph, the partitions 0101 and 1010 are measured with the highest frequencies,
 # and in the case where we set ``p=2`` we obtain one of the optimal partitions with 100% certainty.
