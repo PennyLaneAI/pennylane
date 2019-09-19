@@ -23,167 +23,153 @@ import pennylane.operation as oo
 import pennylane.variable as ov
 
 
+# Operation subclasses to test
+op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
+op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
+op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
 
-class TestUtilities:
-    """Utility class tests."""
-    def test_heisenberg(self, tol):
+
+class TestOperation:
+    """Operation class tests."""
+
+    @pytest.mark.parametrize("cls", op_classes_gaussian)
+    def test_heisenberg(self, cls, tol):
         "Heisenberg picture adjoint actions of CV Operations."
 
-        def h_test(cls):
-            "Test a gaussian CV operation."
+        ww = list(range(cls.num_wires))
 
-            ww = list(range(cls.num_wires))
-
-            # fixed parameter values
-            if cls.par_domain == 'A':
-                if cls.__name__ == "Interferometer":
-                    ww = list(range(2))
-                    par = [np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
-                                     [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])]
-                else:
-                    par = [np.array([[-1.82624687]])] * cls.num_params
+        # fixed parameter values
+        if cls.par_domain == 'A':
+            if cls.__name__ == "Interferometer":
+                ww = list(range(2))
+                par = [np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
+                                 [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])]
             else:
-                par = [-0.069125, 0.51778, 0.91133, 0.95904][:cls.num_params]
+                par = [np.array([[-1.82624687]])] * cls.num_params
+        else:
+            par = [-0.069125, 0.51778, 0.91133, 0.95904][:cls.num_params]
 
-            op = cls(*par, wires=ww, do_queue=False)
+        op = cls(*par, wires=ww, do_queue=False)
 
-            if issubclass(cls, qml.operation.Observable):
-                Q = op.heisenberg_obs(0)
-                # ev_order equals the number of dimensions of the H-rep array
-                assert Q.ndim == cls.ev_order
-                return
+        if issubclass(cls, qml.operation.Observable):
+            Q = op.heisenberg_obs(0)
+            # ev_order equals the number of dimensions of the H-rep array
+            assert Q.ndim == cls.ev_order
+            return
 
-            # not an Expectation
+        # not an Expectation
 
-            U = op.heisenberg_tr(num_wires=2)
-            I = np.eye(*U.shape)
-            # first row is always (1,0,0...)
-            assert np.all(U[0, :] == I[:, 0])
+        U = op.heisenberg_tr(num_wires=2)
+        I = np.eye(*U.shape)
+        # first row is always (1,0,0...)
+        assert np.all(U[0, :] == I[:, 0])
 
-            # check the inverse transform
-            V = op.heisenberg_tr(num_wires=2, inverse=True)
-            assert np.linalg.norm(U @ V -I) == pytest.approx(0, abs=tol)
-            assert np.linalg.norm(V @ U -I) == pytest.approx(0, abs=tol)
+        # check the inverse transform
+        V = op.heisenberg_tr(num_wires=2, inverse=True)
+        assert np.linalg.norm(U @ V -I) == pytest.approx(0, abs=tol)
+        assert np.linalg.norm(V @ U -I) == pytest.approx(0, abs=tol)
 
-            if op.grad_recipe is not None:
-                # compare gradient recipe to numerical gradient
-                h = 1e-7
-                U = op.heisenberg_tr(0)
-                for k in range(cls.num_params):
-                    D = op.heisenberg_pd(k)  # using the recipe
-                    # using finite difference
-                    op.params[k] += h
-                    Up = op.heisenberg_tr(0)
-                    op.params = par
-                    G = (Up-U) / h
-                    assert D == pytest.approx(G, abs=tol)
+        if op.grad_recipe is not None:
+            # compare gradient recipe to numerical gradient
+            h = 1e-7
+            U = op.heisenberg_tr(0)
+            for k in range(cls.num_params):
+                D = op.heisenberg_pd(k)  # using the recipe
+                # using finite difference
+                op.params[k] += h
+                Up = op.heisenberg_tr(0)
+                op.params = par
+                G = (Up-U) / h
+                assert D == pytest.approx(G, abs=tol)
 
-            # make sure that `heisenberg_expand` method receives enough wires to actually expand
-            # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
-            # so only check multimode ops
-            if len(op.wires) > 1:
-                with pytest.raises(ValueError, match='is too small to fit Heisenberg matrix'):
-                    op.heisenberg_expand(U, len(op.wires) - 1)
+        # make sure that `heisenberg_expand` method receives enough wires to actually expand
+        # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
+        # so only check multimode ops
+        if len(op.wires) > 1:
+            with pytest.raises(ValueError, match='is too small to fit Heisenberg matrix'):
+                op.heisenberg_expand(U, len(op.wires) - 1)
 
-            # validate size of input for `heisenberg_expand` method
-            with pytest.raises(ValueError, match='Heisenberg matrix is the wrong size'):
-                U_wrong_size = U[1:, 1:]
-                op.heisenberg_expand(U_wrong_size, len(op.wires))
+        # validate size of input for `heisenberg_expand` method
+        with pytest.raises(ValueError, match='Heisenberg matrix is the wrong size'):
+            U_wrong_size = U[1:, 1:]
+            op.heisenberg_expand(U_wrong_size, len(op.wires))
 
-            # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
-            with pytest.raises(ValueError, match='Only order-1 and order-2 arrays supported'):
-                U_high_order = np.array([U] * 3)
-                op.heisenberg_expand(U_high_order, len(op.wires))
+        # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
+        with pytest.raises(ValueError, match='Only order-1 and order-2 arrays supported'):
+            U_high_order = np.array([U] * 3)
+            op.heisenberg_expand(U_high_order, len(op.wires))
 
-        for op in qml.ops._cv__ops__ | qml.ops._cv__obs__:
-            cls = getattr(qml.ops, op)
-            if cls.supports_heisenberg:  # only test gaussian operations
-                h_test(cls)
 
-    def test_ops(self):
-        "Operation initialization."
 
-        def op_test(cls):
-            "Test the Operation subclass."
-            #log.debug('\tTesting: cls.{}'.format(cls.__name__))
-            n = cls.num_params
-            w = cls.num_wires
-            ww = list(range(w))
-            # valid pars
-            if cls.par_domain == 'A':
-                pars = [np.eye(2)] * n
-            elif cls.par_domain == 'N':
-                pars = [0] * n
-            else:
-                pars = [0.0] * n
+    @pytest.mark.parametrize("cls", op_classes)
+    def test_operation_init(self, cls):
+        "Operation subclass initialization."
 
-            # valid call
-            cls(*pars, wires=ww, do_queue=False)
+        n = cls.num_params
+        w = cls.num_wires
+        ww = list(range(w))
+        # valid pars
+        if cls.par_domain == 'A':
+            pars = [np.eye(2)] * n
+        elif cls.par_domain == 'N':
+            pars = [0] * n
+        else:
+            pars = [0.0] * n
 
-            # too many parameters
+        # valid call
+        cls(*pars, wires=ww, do_queue=False)
+
+        # too many parameters
+        with pytest.raises(ValueError, match='wrong number of parameters'):
+            cls(*(n+1)*[0], wires=ww, do_queue=False)
+
+        # too few parameters
+        if n > 0:
             with pytest.raises(ValueError, match='wrong number of parameters'):
-                cls(*(n+1)*[0], wires=ww, do_queue=False)
+                cls(*(n-1)*[0], wires=ww, do_queue=False)
 
-            # too few parameters
-            if n > 0:
-                with pytest.raises(ValueError, match='wrong number of parameters'):
-                    cls(*(n-1)*[0], wires=ww, do_queue=False)
+        if w > 0:
+            # too many or too few wires
+            with pytest.raises(ValueError, match='wrong number of wires'):
+                cls(*pars, wires=list(range(w+1)), do_queue=False)
+            with pytest.raises(ValueError, match='wrong number of wires'):
+                cls(*pars, wires=list(range(w-1)), do_queue=False)
+            # repeated wires
+            if w > 1:
+                with pytest.raises(ValueError, match='wires must be unique'):
+                    cls(*pars, wires=w*[0], do_queue=False)
 
-            if w > 0:
-                # too many or too few wires
-                with pytest.raises(ValueError, match='wrong number of wires'):
-                    cls(*pars, wires=list(range(w+1)), do_queue=False)
-                with pytest.raises(ValueError, match='wrong number of wires'):
-                    cls(*pars, wires=list(range(w-1)), do_queue=False)
-                # repeated wires
-                if w > 1:
-                    with pytest.raises(ValueError, match='wires must be unique'):
-                        cls(*pars, wires=w*[0], do_queue=False)
+        if n == 0:
+            return
 
-            if n == 0:
-                return
-
-            # wrong parameter types
-            if cls.par_domain == 'A':
-                # params must be arrays
-                with pytest.raises(TypeError, match='Array parameter expected'):
-                    cls(*n*[0.0], wires=ww, do_queue=False)
-                # params must not be Variables
-                with pytest.raises(TypeError, match='Array parameter expected'):
-                    cls(*n*[ov.Variable(0)], wires=ww, do_queue=False)
-            elif cls.par_domain == 'N':
-                # params must be natural numbers
-                with pytest.raises(TypeError, match='Natural number'):
-                    cls(*n*[0.7], wires=ww, do_queue=False)
-                with pytest.raises(TypeError, match='Natural number'):
-                    cls(*n*[-1], wires=ww, do_queue=False)
-            elif cls.par_domain == 'R':
-                # params must be real numbers
-                with pytest.raises(TypeError, match='Real scalar parameter expected'):
-                    cls(*n*[1j], wires=ww, do_queue=False)
-
-            # if par_domain ever gets overridden to an unsupported value, should raise exception
-            tmp = cls.par_domain
-            with pytest.raises(ValueError, match='Unknown parameter domain'):
-                cls.par_domain = 'junk'
+        # wrong parameter types
+        if cls.par_domain == 'A':
+            # params must be arrays
+            with pytest.raises(TypeError, match='Array parameter expected'):
                 cls(*n*[0.0], wires=ww, do_queue=False)
-                cls.par_domain = 7
-                cls(*n*[0.0], wires=ww, do_queue=False)
+            # params must not be Variables
+            with pytest.raises(TypeError, match='Array parameter expected'):
+                cls(*n*[ov.Variable(0)], wires=ww, do_queue=False)
+        elif cls.par_domain == 'N':
+            # params must be natural numbers
+            with pytest.raises(TypeError, match='Natural number'):
+                cls(*n*[0.7], wires=ww, do_queue=False)
+            with pytest.raises(TypeError, match='Natural number'):
+                cls(*n*[-1], wires=ww, do_queue=False)
+        elif cls.par_domain == 'R':
+            # params must be real numbers
+            with pytest.raises(TypeError, match='Real scalar parameter expected'):
+                cls(*n*[1j], wires=ww, do_queue=False)
 
-            cls.par_domain = tmp
+        # if par_domain ever gets overridden to an unsupported value, should raise exception
+        tmp = cls.par_domain
+        with pytest.raises(ValueError, match='Unknown parameter domain'):
+            cls.par_domain = 'junk'
+            cls(*pars, wires=ww, do_queue=False)
+            cls.par_domain = 7
+            cls(*pars, wires=ww, do_queue=False)
+        cls.par_domain = tmp
 
-
-        for cls in qml.ops._qubit__ops__:
-            op_test(getattr(qml.ops, cls))
-
-        for cls in qml.ops._cv__ops__:
-            op_test(getattr(qml.ops, cls))
-
-        for cls in qml.ops._qubit__obs__:
-            op_test(getattr(qml.ops, cls))
-
-        for cls in qml.ops._cv__obs__:
-            op_test(getattr(qml.ops, cls))
 
     def test_operation_outside_queue(self):
         """Test that an error is raised if an operation is called
