@@ -136,8 +136,7 @@ import autograd.builtins
 
 from scipy import linalg
 
-import pennylane
-import pennylane.operation
+import pennylane as qml
 
 from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, CircuitGraph
 from .variable import Variable
@@ -222,7 +221,7 @@ class QNode:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
         # EVs go to their own, temporary queue
-        if isinstance(op, pennylane.operation.Observable):
+        if isinstance(op, qml.operation.Observable):
             if op.return_type is None:
                 self.queue.append(op)
             else:
@@ -310,8 +309,8 @@ class QNode:
         # check the validity of the circuit
 
         # quantum circuit function return validation
-        if isinstance(res, pennylane.operation.Observable):
-            if res.return_type is pennylane.operation.Sample:
+        if isinstance(res, qml.operation.Observable):
+            if res.return_type is qml.operation.Sample:
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
                 self.output_conversion = np.squeeze
@@ -320,7 +319,7 @@ class QNode:
 
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, Sequence) and res and all(isinstance(x, pennylane.operation.Observable) for x in res):
+        elif isinstance(res, Sequence) and res and all(isinstance(x, qml.operation.Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
 
@@ -349,10 +348,10 @@ class QNode:
         self.ops = self.queue + self.ev  #: list[Operation]: combined list of circuit operations
 
         # list all operations except for the identity
-        non_identity_ops = [op for op in self.ops if not isinstance(op, pennylane.ops.Identity)]
+        non_identity_ops = [op for op in self.ops if not isinstance(op, qml.ops.Identity)]
 
         # contains True if op is a CV, False if it is a discrete variable
-        are_cvs = [isinstance(op, pennylane.operation.CV) for op in non_identity_ops]
+        are_cvs = [isinstance(op, qml.operation.CV) for op in non_identity_ops]
 
         if not all(are_cvs) and any(are_cvs):
             raise QuantumFunctionError("Continuous and discrete operations are not "
@@ -432,21 +431,21 @@ class QNode:
                 # to the generator of the current operation
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
-                    variance = pennylane.var(pennylane.Hermitian(gen, w, do_queue=False))
+                    variance = qml.var(qml.Hermitian(gen, w, do_queue=False))
 
                     if not diag_approx:
                         Ki_matrices.append((n, expand(gen, w, self.num_wires)))
 
-                elif issubclass(gen, pennylane.operation.Observable):
+                elif issubclass(gen, qml.operation.Observable):
                     # generator is an existing PennyLane operation
-                    variance = pennylane.var(gen(w, do_queue=False))
+                    variance = qml.var(gen(w, do_queue=False))
 
                     if not diag_approx:
-                        if issubclass(gen, pennylane.ops.PauliX):
+                        if issubclass(gen, qml.ops.PauliX):
                             mat = np.array([[0, 1], [1, 0]])
-                        elif issubclass(gen, pennylane.ops.PauliY):
+                        elif issubclass(gen, qml.ops.PauliY):
                             mat = np.array([[0, -1j], [1j, 0]])
-                        elif issubclass(gen, pennylane.ops.PauliZ):
+                        elif issubclass(gen, qml.ops.PauliZ):
                             mat = np.array([[1, 0], [0, -1]])
 
                         Ki_matrices.append((n, expand(mat, w, self.num_wires)))
@@ -518,9 +517,9 @@ class QNode:
         succ = self.circuit.get_nodes(self.circuit.descendants((o_idx,)))
 
         if only == 'E':
-            succ = list(filter(lambda x: isinstance(x["op"], pennylane.operation.Observable), succ))
+            succ = list(filter(lambda x: isinstance(x["op"], qml.operation.Observable), succ))
         if only == 'G':
-            succ = list(filter(lambda x: not isinstance(x["op"], pennylane.operation.Observable), succ))
+            succ = list(filter(lambda x: not isinstance(x["op"], qml.operation.Observable), succ))
 
         if get_nodes:
             return succ
@@ -567,7 +566,7 @@ class QNode:
             o_idx = op_node["idx"]
             op = op_node["op"]
 
-            if not isinstance(op, pennylane.operation.CV):
+            if not isinstance(op, qml.operation.CV):
                 return op.grad_method
 
             # for CV ops it is more complicated
@@ -594,7 +593,7 @@ class QNode:
                         # ev_order of None corresponds to a non-Gaussian observable
                         return 'F'
                     if observable.ev_order == 2:
-                        if observable.return_type is pennylane.operation.Variance:
+                        if observable.return_type is qml.operation.Variance:
                             # second order observables don't support
                             # analytic diff of variances
                             return 'F'
@@ -739,7 +738,7 @@ class QNode:
             if not diag_approx:
                 # block diagonal approximation
 
-                unitary_op = pennylane.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
+                unitary_op = qml.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
                 self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
                 probs = list(self.device.probability().values())
 
@@ -826,7 +825,7 @@ class QNode:
         .. note::
            The finite difference method is sensitive to statistical noise in the circuit output,
            since it compares the output at two points infinitesimally close to each other. Hence the
-           'F' method requires exact expectation values, i.e., `shots=0`.
+           'F' method requires exact expectation values, i.e., `analytic=True` in simulation plugins.
 
         Args:
             params (nested Sequence[Number], Number): point in parameter space at which
@@ -841,7 +840,7 @@ class QNode:
             h (float): finite difference method step size
             order (int): finite difference method order, 1 or 2
             shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-                the expectation values. For simulator backends, 0 yields the exact result.
+                the expectation values.
 
         Returns:
             array[float]: Jacobian matrix, with shape ``(n_out, len(which))``, where ``len(which)`` is the
@@ -861,7 +860,7 @@ class QNode:
             self.construct(params, circuit_kwargs)
 
         sample_ops = [
-            e for e in self.circuit.observables if e.return_type is pennylane.operation.Sample]
+            e for e in self.circuit.observables if e.return_type is qml.operation.Sample]
 
         if sample_ops:
             names = [str(e) for e in sample_ops]
@@ -908,7 +907,7 @@ class QNode:
             else:
                 y0 = None
 
-        variances = any(e.return_type is pennylane.operation.Variance for e in self.circuit.observables)
+        variances = any(e.return_type is qml.operation.Variance for e in self.circuit.observables)
 
         # compute the partial derivative w.r.t. each parameter using the proper method
         grad = np.zeros((self.output_dim, len(which)), dtype=float)
@@ -990,7 +989,7 @@ class QNode:
         if q.ndim == 2:
             # 2nd order observable
             qp = qp +qp.T
-        return pennylane.expval(pennylane.PolyXP(qp, wires=range(w), do_queue=False))
+        return qml.expval(qml.PolyXP(qp, wires=range(w), do_queue=False))
 
 
     def _pd_analytic(self, params, idx, force_order2=False, **kwargs):
@@ -1104,18 +1103,18 @@ class QNode:
         """
         # boolean mask: elements are True where the
         # return type is a variance, False for expectations
-        where_var = [e.return_type is pennylane.operation.Variance for e in self.circuit.observables]
+        where_var = [e.return_type is qml.operation.Variance for e in self.circuit.observables]
 
         applicable_nodes = [
             node for node in self.circuit.observable_nodes
-            if node["op"].return_type == pennylane.operation.Variance]
+            if node["op"].return_type == qml.operation.Variance]
         original_nodes = copy.deepcopy(applicable_nodes)
 
         for node in applicable_nodes:
             e = node["op"]
 
             # temporarily convert return type to expectation
-            e.return_type = pennylane.operation.Expectation
+            e.return_type = qml.operation.Expectation
             self.circuit.update_node(node, e)
 
             # analytic derivative of <A^2>
@@ -1139,7 +1138,7 @@ class QNode:
                         # replace the Hermitian variance with <A^2> expectation
                         self.circuit.update_node(
                             node,
-                            pennylane.expval(pennylane.ops.Hermitian(A @ A, w, do_queue=False)))
+                            qml.expval(qml.ops.Hermitian(A @ A, w, do_queue=False)))
 
                         # calculate the analytic derivative of <A^2>
                         pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, **kwargs))
@@ -1168,7 +1167,7 @@ class QNode:
 
                 # replace the first order observable var(A) with <A^2>
                 self.circuit.update_node(
-                    node, pennylane.expval(pennylane.ops.PolyXP(A, w, do_queue=False)))
+                    node, qml.expval(qml.ops.PolyXP(A, w, do_queue=False)))
 
                 # calculate the analytic derivative of <A^2>
                 pdA2 = np.asarray(self._pd_analytic(param_values, param_idx, force_order2=True, **kwargs))

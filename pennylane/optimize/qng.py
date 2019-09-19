@@ -23,15 +23,15 @@ from .gradient_descent import GradientDescentOptimizer
 
 class QNGOptimizer(GradientDescentOptimizer):
     r"""Optimizer with adaptive learning rate, via calculation
-    of the quantum geometric tensor or Fubini-Study metric tensor.
+    of the diagonal or block-diagonal approximation to the Fubini-Study metric tensor.
     A quantum generalization of natural gradient descent.
 
     The QNG optimizer uses a step- and parameter-dependent learning rate,
     with the learning rate dependent on the pseudo-inverse
-    of the quantum geometric tensor :math:`G`:
+    of the Fubini-Study metric tensor :math:`g`:
 
     .. math::
-        x^{(t+1)} = x^{(t)} - \eta G(f(x^{(t)})^{-1} \nabla f(x^{(t)}),
+        x^{(t+1)} = x^{(t)} - \eta g(f(x^{(t)}))^{-1} \nabla f(x^{(t)}),
 
     where :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
     is an expectation value of some observable measured on the variational
@@ -44,22 +44,28 @@ class QNGOptimizer(GradientDescentOptimizer):
         U(\mathbf{\theta}) = W(\theta_{i+1}, \dots, \theta_{N})X(\theta_{i})
         V(\theta_1, \dots, \theta_{i-1}),
 
-    where :math:`X(\theta_{i}) = e^{i\theta_i K_i}` (i.e., the gate :math:`K_i`
-    is the *generator* of the parametrized operation :math:`X(\theta_i)` corresponding
-    to the :math:`i`-th parameter).
+    where all parametrized gates can be written of the form :math:`X(\theta_{i}) = e^{i\theta_i K_i}`.
+    That is, the gate :math:`K_i` is the *generator* of the parametrized operation :math:`X(\theta_i)`
+    corresponding to the :math:`i`-th parameter.
 
-    The quantum geometric tensor element is thus given by:
+    For each parametric layer :math:`\ell` in the variational quantum circuit
+    containing :math:`n` parameters, the :math:`n\times n` block-diagonal submatrix
+    of the Fubini-Study tensor :math:`g_{ij}^{(\ell)}` is calculated directly on the
+    quantum device in a single evaluation:
 
     .. math::
 
-        G_{ij} = \langle 0 | V^{-1} K_i K_j V | 0\rangle
-        - \langle 0 | V^{-1} K_i V | 0\rangle
-        \langle 0 | V^{-1} K_j V | 0\rangle
+        g_{ij}^{(\ell)} = \langle \psi_\ell | K_i K_j | \psi_\ell \rangle
+        - \langle \psi_\ell | K_i | \psi_\ell\rangle
+        \langle \psi_\ell |K_j | \psi_\ell\rangle
 
-    For parametric layer :math:`\ell` in the variational quantum circuit
-    containing :math:`n` parameters, an :math:`n\times n` block diagonal submatrix
-    of the quantum geometric tensor :math:`G_{ij}^{(\ell)}` is computed
-    by directly querying the quantum device.
+    where :math:`|\psi_\ell\rangle =  V(\theta_1, \dots, \theta_{i-1})|0\rangle`
+    (that is, :math:`|\psi_\ell\rangle` is the quantum state prior to the application
+    of parameterized layer :math:`\ell`).
+
+    Combining the quantum natural gradient optimizer with the analytic parameter-shift
+    rule to optimize a variational circuit with :math:`d` parameters and :math:`L` layers,
+    a total of :math:`2d+L` quantum evaluations are required per optimization step.
 
     For more details, see:
 
@@ -80,6 +86,11 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
+
+    .. seealso::
+
+        See the :ref:`quantum natural gradient example <quantum_natural_gradient>`
+        for more details on Fubini-Study metric tensor and this optimization class.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
