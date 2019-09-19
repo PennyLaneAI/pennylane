@@ -5,9 +5,9 @@ QAOA for MaxCut
 ===============
 
 In this tutorial, we demonstrate how to sample joint qubit measurements from a
-variational quantum circuit to solve a combinatorial optimization problem. Namely, 
+variational quantum circuit to solve a combinatorial optimization problem. Namely,
 we implement the quantum approximate optimization algorithm (QAOA) for the MaxCut
-problem as proposed by Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>__
+problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>__`
 """
 
 ##############################################################################
