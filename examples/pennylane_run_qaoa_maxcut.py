@@ -262,7 +262,7 @@ bitstrings2 = qaoa_maxcut(n_layers=2)[1]
 # --------------------
 # We can plot the distribution of measurements we got from the optimized circuits. As
 # expected for this graph, the partitions 0101 and 1010 are measured with the highest frequencies,
-# and in the case where we set ``p=2`` we obtain one of the optimal partitions with 100% certainty.
+# and in the case where we set ``n_layers=2`` we obtain one of the optimal partitions with 100% certainty.
 
 import matplotlib.pyplot as plt
 
@@ -272,13 +272,13 @@ bins = np.arange(0, 17) - 0.5
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
 plt.subplot(1, 2, 1)
-plt.title("p=1")
+plt.title("n_layers=1")
 plt.xlabel("bitstrings")
 plt.ylabel("freq.")
 plt.xticks(xticks, xtick_labels, rotation="vertical")
 plt.hist(bitstrings1, bins=bins)
 plt.subplot(1, 2, 2)
-plt.title("p=2")
+plt.title("n_layers=2")
 plt.xlabel("bitstrings")
 plt.ylabel("freq.")
 plt.xticks(xticks, xtick_labels, rotation="vertical")
