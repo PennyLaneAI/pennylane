@@ -110,8 +110,6 @@ We welcome contributions — simply fork the PennyLane repository, and then make
 
 We also encourage bug reports, suggestions for new features and enhancements, and even links to cool projects or applications built on PennyLane.
 
-Don't forget to submit your PennyLane contribution to the `Xanadu Quantum Software Competition <https://pennylane.ai/competition>`_, with prizes of up CAD$1000 on offer.
-
 See our `contributions page <https://github.com/XanaduAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
 for more details.
 
