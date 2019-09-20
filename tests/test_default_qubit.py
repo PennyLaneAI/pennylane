@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
-                                             Rot3, Rotx, Roty, Rotz, 
+                                             Rot3, Rotx, Roty, Rotz,
                                              Rphi, Z, hermitian,
                                              spectral_decomposition, unitary)
 
@@ -273,7 +273,7 @@ class TestStateFunctions:
 
     def test_hermitian(self, tol):
         """Test that the hermitian function produces the correct output."""
-        
+
         out = hermitian(H)
 
         # verify output type
@@ -313,7 +313,7 @@ class TestOperatorMatrices:
                            [0, 0, 0, 0, 1, 0, 0, 0],
                            [0, 0, 0, 0, 0, 0, 1, 0],
                            [0, 0, 0, 0, 0, 1, 0, 0],
-                           [0, 0, 0, 0, 0, 0, 0, 1]])), 
+                           [0, 0, 0, 0, 0, 0, 0, 1]])),
         ("CZ", np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])),
     ])
     def test_get_operator_matrix_no_parameters(self, qubit_device_3_wires, tol, name, expected):
@@ -535,7 +535,7 @@ class TestExpval:
         qubit_device_1_wire._state = np.array(input)
         res = qubit_device_1_wire.expval(name, wires=[0], par=[])
 
-        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+        assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
         ("Identity", [1, 0], 1, []),
@@ -571,7 +571,7 @@ class TestExpval:
 
     def test_expval_warnings(self, qubit_device_1_wire):
         """Tests that expval raises a warning if the given observable is complex."""
-        
+
         qubit_device_1_wire.reset()
 
         # text warning raised if matrix is complex
@@ -616,7 +616,7 @@ class TestVar:
         qubit_device_1_wire._state = np.array(input)
         res = qubit_device_1_wire.var(name, wires=[0], par=[])
 
-        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+        assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
         ("Identity", [1, 0], 0, []),
@@ -716,26 +716,26 @@ class TestMaps:
 
     def test_operation_map(self, qubit_device_3_wires):
         """Test that default qubit device supports all PennyLane discrete gates."""
-        
+
         assert set(qml.ops._qubit__ops__) ==  set(qubit_device_3_wires._operation_map)
 
     def test_observable_map(self, qubit_device_3_wires):
         """Test that default qubit device supports all PennyLane discrete observables."""
-        
+
         assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_3_wires._observable_map)
 
-    
+
 class TestDefaultQubitIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
     def test_load_default_qubit_device(self):
         """Test that the default plugin loads correctly"""
-        
+
         dev = qml.device("default.qubit", wires=2)
         assert dev.num_wires == 2
         assert dev.shots == 1000
-        assert dev.analytic 
+        assert dev.analytic
         assert dev.short_name == "default.qubit"
 
     def test_args(self):
@@ -746,13 +746,13 @@ class TestDefaultQubitIntegration:
         ):
             qml.device("default.qubit")
 
-    
+
     @pytest.mark.parametrize("gate", set(qml.ops.cv.ops))
     def test_unsupported_gate_error(self, qubit_device_3_wires, gate):
         """Tests that an error is raised if an unsupported gate is applied"""
         op = getattr(qml.ops, gate)
 
-        if op.num_wires == 0:
+        if op.num_wires is qml.operation.Wires.Any or qml.operation.Wires.All:
             wires = [0]
         else:
             wires = list(range(op.num_wires))
@@ -778,7 +778,7 @@ class TestDefaultQubitIntegration:
 
         op = getattr(qml.ops, observable)
 
-        if op.num_wires == 0:
+        if op.num_wires is qml.operation.Wires.Any or qml.operation.Wires.All:
             wires = [0]
         else:
             wires = list(range(op.num_wires))
@@ -825,7 +825,7 @@ class TestDefaultQubitIntegration:
 
     def test_nonzero_shots(self, tol):
         """Test that the default qubit plugin provides correct result for high shot number"""
-        
+
         shots = 10 ** 5
         dev = qml.device("default.qubit", wires=1, shots=shots)
 
@@ -949,7 +949,7 @@ class TestDefaultQubitIntegration:
     ])
     def test_supported_gate_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, par, expected_output):
         """Tests supported gates that act on a single wire that are parameterized"""
-    
+
         op = getattr(qml.ops, name)
 
         assert qubit_device_1_wire.supports_operation(name)
@@ -983,7 +983,7 @@ class TestDefaultQubitIntegration:
     ])
     def test_supported_gate_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, par, expected_output):
         """Tests supported gates that act on two wires wires that are parameterized"""
-    
+
         op = getattr(qml.ops, name)
 
         assert qubit_device_2_wires.supports_operation(name)
@@ -1023,7 +1023,7 @@ class TestDefaultQubitIntegration:
             return qml.expval(obs(wires=[0]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
-    
+
     @pytest.mark.parametrize("name,state,expected_output,par", [
         ("Identity", [1, 0], 1, []),
         ("Identity", [0, 1], 1, []),
@@ -1045,7 +1045,7 @@ class TestDefaultQubitIntegration:
             return qml.expval(obs(*par, wires=[0]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
-    
+
     @pytest.mark.parametrize("name,state,expected_output,par", [
         ("Hermitian", [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], 5/3, [np.array([[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]])]),
         ("Hermitian", [0, 0, 0, 1], 0, [np.array([[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])]),
