@@ -54,6 +54,7 @@ Gates and operations
     H
     CNOT
     SWAP
+    CSWAP
     CZ
     CRotx
     CRoty
@@ -128,7 +129,15 @@ H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNOT gate
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
-
+# Three qubit gates
+CSWAP = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 1, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 1, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 1, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 1, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 1, 0],
+                  [0, 0, 0, 0, 0, 1, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 1]]) #: CSWAP gate
 
 #========================================================
 #  parametrized gates
@@ -322,6 +331,7 @@ class DefaultQubit(Device):
         'Hadamard': H,
         'CNOT': CNOT,
         'SWAP': SWAP,
+        'CSWAP':CSWAP,
         'CZ': CZ,
         'PhaseShift': Rphi,
         'RX': Rotx,
