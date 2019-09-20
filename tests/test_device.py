@@ -215,7 +215,7 @@ class TestOperations:
 
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
-        
+
         assert mock_device._shots == 1000
 
         mock_device.shots = 10
@@ -337,28 +337,28 @@ class TestObservables:
 
         assert queue_at_pre_measure == observables
 
-    @pytest.mark.skip('FIXME')
-    def test_obs_queue_is_filled_during_execution(self, mock_device_with_paulis_and_methods):
+    def test_obs_queue_is_filled_during_execution(self, monkeypatch, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        queue = [
-            qml.PauliX(wires=0, do_queue=False),
-            qml.PauliY(wires=1, do_queue=False),
-            qml.PauliZ(wires=2, do_queue=False),
-        ]
-
         observables = [
-            qml.expval(qml.PauliZ(0, do_queue=False)),
-            qml.var(qml.PauliZ(1, do_queue=False)),
+            qml.expval(qml.PauliX(0, do_queue=False)),
+            qml.var(qml.PauliY(1, do_queue=False)),
             qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
-        # The methods expval, var and sample are MagicMock'ed in the fixture
+        # capture the arguments passed to dev methods
+        expval_args = []
+        var_args = []
+        sample_args = []
+        with monkeypatch.context() as m:
+            m.setattr(Device, 'expval', lambda self, *args: expval_args.extend(args))
+            m.setattr(Device, 'var',    lambda self, *args: var_args.extend(args))
+            m.setattr(Device, 'sample', lambda self, *args: sample_args.extend(args))
+            mock_device_with_paulis_and_methods.execute([], observables)
 
-        mock_device_with_paulis_and_methods.execute(queue, observables)
+        assert expval_args == ["PauliX", [0], []]
+        assert var_args == ["PauliY", [1], []]
+        assert sample_args == ["PauliZ", [2], []]
 
-        mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
-        mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
-        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [])
 
     def test_unsupported_observables_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
@@ -390,33 +390,6 @@ class TestObservables:
         with pytest.raises(QuantumFunctionError, match="Unsupported return type specified for observable"):
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
-    @pytest.mark.skip('FIXME')
-    def test_supported_observable_return_types(self, mock_device_with_paulis_and_methods):
-        """Check that no error is raised if the return types of observables are supported"""
-
-        queue = [qml.PauliX(wires=0, do_queue=False)]
-
-        # Make observables with specifying supported return types
-
-        obs1 = qml.PauliZ(0, do_queue=False)
-        obs2 = qml.PauliZ(1, do_queue=False)
-        obs3 = qml.PauliZ(2, do_queue=False)
-
-        obs1.return_type = Expectation
-        obs2.return_type = Variance
-        obs3.return_type = Sample
-
-        observables = [obs1,
-                       obs2,
-                       obs3,
-        ]
-
-        # The methods expval, var and sample are MagicMock'ed in the fixture
-        mock_device_with_paulis_and_methods.execute(queue, observables)
-
-        mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
-        mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
-        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [])
 
 
 class TestParameters:
