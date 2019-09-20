@@ -219,7 +219,7 @@ class CircuitGraph:
         self.parameters = parameters or {}
 
         self._grid = {}
-        """dict[int, list[int, Command]]: dictionary representing the quantum circuit
+        """dict[int, list[Command]]: dictionary representing the quantum circuit
         as a grid. Here, the key is the wire number, and the value is a list
         containing the operation index (that is, where in the queue it occured)
         as well as a Command object containing the operation/observable itself.
