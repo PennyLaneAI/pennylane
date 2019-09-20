@@ -19,11 +19,14 @@
   can now be changed after device creation.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
-### Documentation
-
-* Unify import shortcuts to be under qml in qnode.py
+* Unified import shortcuts to be under qml in qnode.py
   and test_operation.py
   [#329](https://github.com/XanaduAI/pennylane/pull/329)
+
+### Documentation
+
+* Added C-SWAP gate to the set of qubit operations
+  [#330](https://github.com/XanaduAI/pennylane/pull/330)
 
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
@@ -37,7 +40,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Johannes Jakob Meyer
+Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer
 
 ---
 
