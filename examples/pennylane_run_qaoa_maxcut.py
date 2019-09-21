@@ -1,4 +1,4 @@
-elect"""
+"""
 .. _qaoa_maxcut:
 
 QAOA for MaxCut
@@ -55,9 +55,9 @@ problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/
 #   C_\alpha = \frac{1}{2}\left(1-\sigma_{z}^j\sigma_{z}^k\right)
 #
 # where the :math:`\alpha\text{th}` edge is between qubits/vertices :math:`(j,k)`.
-# :math:`C_\alpha` is 1 if and only if the :math:`j\text{th}` and :math:`k\text{th}`
+# :math:`C_\alpha` has eigenvalue 1 if and only if the :math:`j\text{th}` and :math:`k\text{th}`
 # qubits have different z-axis measurement values, representing separate partitions.
-# The objective function :math:`C` is now a diagonal operator with integer eigenvalues.
+# The objective function :math:`C` can now be considered a diagonal operator with integer eigenvalues.
 #
 # QAOA starts with a uniform superposition over the :math:`n` bitstring basis states,
 #
