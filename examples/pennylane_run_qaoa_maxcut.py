@@ -1,4 +1,4 @@
-"""
+elect"""
 .. _qaoa_maxcut:
 
 Quantum Approximate Optimization for MaxCut
