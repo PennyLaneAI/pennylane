@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 CircuitGraph
-=========
+============
 
 **Module name:** :mod:`pennylane.circuit_graph`
 
