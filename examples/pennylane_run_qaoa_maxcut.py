@@ -235,7 +235,7 @@ def qaoa_maxcut(n_layers=1):
         return neg_obj
 
     # initialize optimizer
-    opt = qml.AdagradOptimizer(stepsize=0.5)
+    opt = qml.GradientDescentOptimizer(stepsize=0.5)
 
     # optimize parameters in objective
     params = init_params
