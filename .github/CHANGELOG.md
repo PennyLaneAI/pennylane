@@ -23,7 +23,8 @@
   and test_operation.py
   [#329](https://github.com/XanaduAI/pennylane/pull/329)
 
-* The quantum natural gradient now uses `scipy.linalg.pinvh` which is more efficient for symmetric matrices.
+* The quantum natural gradient now uses `scipy.linalg.pinvh` which is more efficient for symmetric matrices
+than the previously used `scipy.linalg.pinv`.
 
 ### Documentation
 
