@@ -70,7 +70,8 @@ def cost(params):
 
 class Rotosolve:
 
-    def step(self, cost, params):
+    def step(self, cost, thetas):
+        params = thetas[:]
         for d in range(len(params)):
             phi = 0.5
             params[d] = phi
@@ -85,7 +86,7 @@ class Rotosolve:
                 params[d] -= 2 * np.pi
             if params[d] <= -np.pi:
                 params[d] += 2 * np.pi
-
+        return params
 
 
 init_params = [0.3,0.25]
@@ -97,7 +98,7 @@ opt = Rotosolve()
 
 for i in range(n_steps):
     obj1.append(cost(params))
-    opt.step(cost,params)
+    params = opt.step(cost,params)
 
 opt = qml.GradientDescentOptimizer(1.8)
 
@@ -131,14 +132,13 @@ plt.ylabel("cost")
 class Rotoselect:
 
 
-    def step(self, cost, var, gen):
-        params = var[:]
-        params_opt = var[:]
-        generators = gen[:]
-        generators_opt = gen[:]
+    def cycle(self, cost, var, gen):
+        params = var.copy()
+        params_opt = params.copy()
+        generators = gen.copy()
+        generators_opt = gen.copy()
         params_opt_cost = cost(params_opt, generators_opt)
         for d in range(len(params)):
-            generator_opt = 0
             params[d] = 0.
             M_phi = cost(params, generators) # M_phi independent of generator selection
             for generator in ['X','Y','Z']:
@@ -163,7 +163,7 @@ class Rotoselect:
         return params, generators
 
 
-def rot_selection(theta, generator, wires):
+def RGen(theta, generator, wires):
     if generator == 'X':
         qml.RX(theta, wires=wires)
     elif generator == 'Y':
@@ -175,8 +175,8 @@ def rot_selection(theta, generator, wires):
 
 
 def ansatz(var, generators):
-    rot_selection(var[0], generators[0], wires=0)
-    rot_selection(var[1], generators[1], wires=1)
+    RGen(var[0], generators[0], wires=0)
+    RGen(var[1], generators[1], wires=1)
     qml.CNOT(wires=[0,1])
 
 @qml.qnode(dev)
@@ -198,13 +198,13 @@ def cost(params, generators):
 
 obj3 = []
 opt = Rotoselect()
-init_params = [0.3,0.025]
+init_params = [0.3, 0.8]
 params = init_params
 init_generators = ['X', 'X']
 generators = init_generators
 for _ in range(n_steps):
     obj3.append(cost(params, generators))
-    params, generators = opt.step(cost, params, generators)
+    params, generators = opt.cycle(cost, params, generators)
 
 print("Optimal generators are: {}".format(generators))
 
