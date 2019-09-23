@@ -68,7 +68,7 @@ import matplotlib.pyplot as plt
 #########################################
 # Create a randomized variational circuit
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-num_qubits = 2
+num_qubits = 4
 dev = qml.device("default.qubit", wires=num_qubits)
 gate_set = [qml.RX, qml.RY, qml.RZ]
 gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
@@ -106,7 +106,7 @@ def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
 qcircuit = qml.QNode(rand_circuit, dev)
 grad = qml.grad(qcircuit, argnum=0)
 
-# We only take a low number of samples
+# We only take a low number of samples for quick running of the code
 num_samples = 10
 grad_vals = []
 
@@ -139,7 +139,8 @@ def generate_random_circuit(num_qubits):
 
 qubits = [2, 3, 4, 5, 6, 7]
 variances = []
-# We only take a low number of samples
+
+# We can increase the sample size for better results.
 num_samples = 30
 
 
