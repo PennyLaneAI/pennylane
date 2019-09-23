@@ -32,7 +32,7 @@ algorithms.
 
 
 .. figure:: ../../examples/figures/barren_plateaus/surface.png
-   :scale: 60%
+   :scale: 52%
    :alt: surface
 
 In this tutorial, we will show how randomized quantum circuits 
