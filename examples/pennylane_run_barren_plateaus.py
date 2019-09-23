@@ -32,7 +32,7 @@ algorithms.
 
 
 .. figure:: ../../examples/figures/barren_plateaus/surface.png
-   :scale: 65%
+   :scale: 60%
    :alt: surface
 
 In this tutorial, we will show how randomized quantum circuits 
@@ -137,11 +137,11 @@ def generate_random_circuit(num_qubits):
     return qcircuit, random_gate_sequence
 
 
-qubits = [2, 3, 4, 5, 6, 7]
+qubits = [2, 3, 4, 5, 6, 7, 8]
 variances = []
 
 # We can increase the sample size for better results.
-num_samples = 30
+num_samples = 25
 
 
 for num_qubits in qubits:
@@ -168,8 +168,8 @@ p = np.polyfit(qubits, np.log(variances), 1)
 plt.semilogy(qubits, variances, "o")
 plt.semilogy(qubits, np.exp(p[0] * qubits + p[1]), "o-.",
              label="Slope {:3.2f}".format(p[0]))
-plt.xlabel(r"Number of qubits")
-plt.ylabel(r"$\langle \partial \theta_1 E\rangle$")
+plt.xlabel(r"N Qubits")
+plt.ylabel(r"$\langle \partial \theta_{1, 1} E\rangle$ variance")
 plt.legend()
 plt.show()
 
