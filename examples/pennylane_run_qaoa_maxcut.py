@@ -191,7 +191,7 @@ pauli_z_2 = np.kron(pauli_z, pauli_z)
 
 @qml.qnode(dev1)
 def circuit(params, edge=None, n_layers=1):
-    # apply hadamards to get n qubit |+> state
+    # apply Hadamards to get the n qubit |+> state
     for wire in range(n_wires):
         qml.Hadamard(wires=wire)
     # p instances of unitary operators
