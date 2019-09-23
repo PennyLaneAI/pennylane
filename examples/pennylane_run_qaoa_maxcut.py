@@ -230,7 +230,7 @@ def qaoa_maxcut(n_layers=1):
     def objective(params):
         neg_obj = 0
         for edge in graph:
-            # objective for the maxcut problem
+            # objective for the MaxCut problem
             neg_obj -= 0.5 * (1 - circuit(params, edge=edge, n_layers=n_layers))
         return neg_obj
 
