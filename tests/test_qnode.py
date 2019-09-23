@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
 import math
 from unittest.mock import Mock, PropertyMock, patch
+from conftest import DummyDevice
 
 import pytest
 from autograd import numpy as np
@@ -84,12 +85,11 @@ class TestQNodeOperationQueue:
         assert opqueue_test_node.ops[1] in successors
         assert opqueue_test_node.ops[4] in successors
 
-    # TODO
-    # once _op_successors has been upgraded to return only strict successors using a DAG
-    # add a test that checks that the strict ordering is used
-    # successors = q._op_successors(2, only=None)
-    # assert q.ops[4] in successors
-    # assert q.ops[5] not in successors
+    def test_op_successors_extracts_all_successors(self, opqueue_test_node):
+        """Tests that _op_successors properly extracts all successors"""
+        successors = opqueue_test_node._op_successors(2, only=None)
+        assert opqueue_test_node.ops[4] in successors
+        assert opqueue_test_node.ops[5] not in successors
 
 
 @pytest.fixture(scope="function")
@@ -107,6 +107,42 @@ def operable_mock_device_2_wires():
         expval=Mock(return_value=1),
     ):
         yield Device(wires=2)
+
+
+class TestQNodeBestMethod:
+    """
+    Test different flows of _best_method
+    """
+    def test_best_method_with_non_gaussian_successors(self, tol):
+        """Tests that the analytic differentiation method is allowed and matches numerical
+        differentiation if a non-Gaussian gate is not succeeded by an observable."""
+        dev = DummyDevice(wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Squeezing(x, 0, wires=[0])
+            qml.Beamsplitter(np.pi/4, 0, wires=[0, 1])
+            qml.Kerr(0.54, wires=[1])
+            return qml.expval(qml.NumberOperator(0))
+
+        res = circuit.jacobian([0.321], method='A')
+        expected = circuit.jacobian([0.321], method='F')
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_best_method_with_gaussian_successors_fails(self):
+        """Tests that the analytic differentiation method is not allowed
+        if a non-Gaussian gate is succeeded by an observable."""
+        dev = DummyDevice(wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Squeezing(x, 0, wires=[0])
+            qml.Beamsplitter(np.pi/4, 0, wires=[0, 1])
+            qml.Kerr(0.54, wires=[1])
+            return qml.expval(qml.NumberOperator(1))
+
+        with pytest.raises(ValueError, match="analytic gradient method cannot be used with"):
+            circuit.jacobian([0.321], method='A')
 
 
 class TestQNodeExceptions:
@@ -244,6 +280,33 @@ class TestQNodeExceptions:
 
         with pytest.raises(QuantumFunctionError, match="Continuous and discrete"):
             node(0.5)
+
+    def test_transform_observable_incorrect_heisenberg_size(self):
+        """Test that an exception is raised in the case that the
+        dimensions of a CV observable Heisenberg representation does not match
+        the ev_order attribute"""
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        class P(qml.operation.CVObservable):
+            """Dummy CV observable with incorrect ev_order"""
+            num_wires = 1
+            num_params = 0
+            par_domain = None
+            ev_order = 2
+
+            @staticmethod
+            def _heisenberg_rep(p):
+                return np.array([0, 1, 0])
+
+        def circuit(x):
+            qml.Displacement(x, 0.1, wires=0)
+            return qml.expval(P(0))
+
+        node = qml.QNode(circuit, dev)
+
+        with pytest.raises(QuantumFunctionError, match="Mismatch between polynomial order"):
+            node.jacobian([0.5])
 
 
 class TestQNodeJacobianExceptions:
@@ -699,8 +762,7 @@ class TestQNodeGradients:
             qml.Squeezing(0.3, y, wires=[1])
             qml.Rotation(1.3, wires=[1])
             # nongaussian succeeding x but not y
-            # TODO when QNode uses a DAG to describe the circuit, uncomment this line
-            # qml.Kerr(0.4, [0])
+            qml.Kerr(0.4, wires=[0])
             return qml.expval(qml.X(0)), qml.expval(qml.X(1))
 
         check_methods(qf, {0: "F", 1: "A"})
@@ -753,6 +815,25 @@ class TestQNodeGradients:
         # gradient has the correct shape and every element is nonzero
         assert grad_A.shape == (1, 3)
         assert np.count_nonzero(grad_A) == 3
+        # the different methods agree
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
+    def test_qnode_gradient_gate_with_two_parameters(self, tol):
+        """Test that a gate with two parameters yields
+        correct gradients"""
+        def qf(r0, phi0, r1, phi1):
+            qml.Squeezing(r0, phi0, wires=[0])
+            qml.Squeezing(r1, phi1, wires=[0])
+            return qml.expval(qml.NumberOperator(0))
+
+        dev = qml.device('default.gaussian', wires=2)
+        q = qml.QNode(qf, dev)
+
+        par = [0.543, 0.123, 0.654, -0.629]
+
+        grad_A = q.jacobian(par, method='A')
+        grad_F = q.jacobian(par, method='F')
+
         # the different methods agree
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
