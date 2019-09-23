@@ -4,8 +4,8 @@
 QAOA for MaxCut
 ===============
 
-"In this tutorial we implement the quantum approximate optimization algorithm (QAOA) for the MaxCut
-problem as proposed by Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>__". First, we
+In this tutorial we implement the quantum approximate optimization algorithm (QAOA) for the MaxCut
+problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>`__. First, we
 give an overview of the MaxCut problem using a simple example, a graph with 4 vertices and 4 edges. We then
 show how to find the maximum cut by sampling qubit measurements using PennyLane.
 """
@@ -43,7 +43,7 @@ show how to find the maximum cut by sampling qubit measurements using PennyLane.
 # in the situation depicted in the figure above the bitstring is :math:`z=0101\text{,}`
 # indicating that the :math:`0^{\text{th}}` and :math:`2^{\text{nd}}` vertices are in :math:`A`
 # while the :math:`1^{\text{st}}` and :math:`3^{\text{rd}}` are in
-# :math:`B`. This assignment yields a value for the objective function
+# :math:`B`. This assignment yields a value for the objective function (the number of yellow lines cut)
 # :math:`C=4`, which turns out to be the maximum cut. In the following sections,
 # we will represent partitions using computational basis states and use PennyLane to
 # rediscover this maximum cut. (Note that :math:`z=1010` could equally well serve as the maximum cut.)
