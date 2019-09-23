@@ -89,8 +89,8 @@ show how to find the maximum cut by sampling qubit measurements using PennyLane.
 #   U_{C_l} &= e^{-i\gamma_lC} = \prod_{\text{edge (j,k)}} e^{-i\gamma_l(1-\sigma_z^j\sigma_z^k)/2}
 #
 # In other words, we make :math:`p` layers of our parametrized :math:`U_bU_C` gates.
-# These can be implemented on a quantum circuit using the gates depicted below (up to an irrelevant constant
-# that gets absorbed into the parameters).
+# These can be implemented on a quantum circuit using the gates depicted below, up to an irrelevant constant
+# that gets absorbed into the parameters.
 #
 # .. figure:: ../../examples/figures/qaoa_operators.png
 #    :align: center
@@ -101,10 +101,11 @@ show how to find the maximum cut by sampling qubit measurements using PennyLane.
 # Let :math:`\langle \boldsymbol{\gamma},
 # \boldsymbol{\beta} | C | \boldsymbol{\gamma},\boldsymbol{\beta} \rangle` be the expectation of our objective operator.
 # In the next section, we will use PennyLane to perform classical optimization
-# over the parameters. This will specify a state :math:`|\boldsymbol{\gamma},\boldsymbol{\beta}\rangle` which is
+# over the circuit parameters. This will specify a state :math:`|\boldsymbol{\gamma},\boldsymbol{\beta}\rangle` which is
 # likely to yield an approximately optimal partition :math:`|z\rangle` upon performing a measurement in the
 # computational basis.
-# In the case of the graph shown above, we want to measure either 0101 or 1010 from our state.
+# In the case of the graph shown above, we want to measure either 0101 or 1010 from our state since these correspond to
+# the optimal partitions.
 #
 # .. figure:: ../../examples/figures/qaoa_optimal_state.png
 #   :align: center
