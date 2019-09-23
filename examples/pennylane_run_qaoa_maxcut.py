@@ -272,7 +272,7 @@ bitstrings2 = qaoa_maxcut(n_layers=2)[1]
 ##############################################################################
 # Plotting the results
 # --------------------
-# We can plot the distribution of measurements we got from the optimized circuits. As
+# We can plot the distribution of measurements obtained from the optimized circuits. As
 # expected for this graph, the partitions 0101 and 1010 are measured with the highest frequencies,
 # and in the case where we set ``n_layers=2`` we obtain one of the optimal partitions with 100% certainty.
 
