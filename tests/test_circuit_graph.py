@@ -206,7 +206,7 @@ class TestCircuitGraph:
         assert nodes[8]["return_type"] == Expectation
 
     def test_get_nodes(self, circuit, monkeypatch):
-        """Test that `get_nodes` fetches the correct nodes from the graph"""
+        """Test that `get_nodes` fetches the correct nodes from the graph."""
         mock_graph = MagicMock()
         monkeypatch.setattr(circuit, "_graph", mock_graph)
 
@@ -215,7 +215,7 @@ class TestCircuitGraph:
         assert result == [mock_graph.nodes[i] for i in o_idxs]
 
     def test_get_ops(self, circuit, monkeypatch):
-        """Test that `get_ops` fetches the correct ops based on given nodes"""
+        """Test that `get_ops` fetches the correct ops based on given nodes."""
         mock_nodes = MagicMock()
         mock_ops = MagicMock()
         mock_get_nodes = MagicMock()
@@ -228,7 +228,7 @@ class TestCircuitGraph:
 
     def test_update_node(self, circuit, monkeypatch):
         """Test that `nx.set_node_attributes` is called correctly when updating a node using
-        `update_node` and a given node and op"""
+        `update_node` and a given node and op."""
         mock_command = MagicMock()
         mock_nx = MagicMock()
 
@@ -240,9 +240,6 @@ class TestCircuitGraph:
 
         circuit.update_node(node, op)
 
-        mock_command.assert_called_once_with(
-            name=op.name, op=op, return_type=op.return_type, idx=node["idx"]
-        )
         mock_nx.set_node_attributes.assert_called_once_with(
             circuit._graph,
             {
