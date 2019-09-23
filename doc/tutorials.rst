@@ -80,7 +80,7 @@ algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: Perform QAOA for MaxCut
-    :figure: ../examples/figures/qaoa_optimal_state.png
+    :figure: ../examples/figures/qaoa_maxcut_partition.png
     :description: :ref:`qaoa_maxcut`
 
 :html:`<div style='clear:both'></div>`

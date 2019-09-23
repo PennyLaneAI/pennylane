@@ -25,25 +25,28 @@ problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/
 #    :alt: qaoa_operators
 #
 # |
-# Let's say there are :math:`m` edges. We seek the partition :math:`z` of the vertices into two sets
-# 0 and 1 which maximizes
+# Let's say there are :math:`m` edges and :math:`n` vertices. We seek the partition
+# :math:`z` of the vertices into two sets
+# :math:`A` and :math:`B` which maximizes
 #
 # .. math::
 #   C(z) = \sum_{\alpha=1}^{m}C_\alpha(z)
 #
 # where :math:`C_\alpha(z)=1` if :math:`z` places one vertex from the
-# :math:`\alpha^\text{th}` edge in set 0 and the other in set 1, and :math:`C_\alpha(z)=0` otherwise.
+# :math:`\alpha^\text{th}` edge in set :math:`A` and the other in set :math:`B`, and :math:`C_\alpha(z)=0` otherwise.
 # The goal of approximate optimization in this case is to find a partition :math:`z` which
 # yields a value for :math:`C(z)` that is close to the maximum possible value.
 #
-# For instance,
-# in the situation depicted in the figure above, the optimal value of :math:`C(z)` is
-# 4. Such a situation can be represented by the bitstring :math:`z=1010\text{,}`
-# indicating that the :math:`0^{\text{th}}` and :math:`2^{\text{nd}}` vertices are in one set
+# We can represent the assignment of vertices to set :math:`A` or :math:`B` using a bitstring,
+# :math:`z=z_1...z_n` where :math:`z_i=0` if the :math:`i^\text{th}` vertex is in :math:`A` and
+# :math:`z_i = 1` if it is in :math:`B`. For instance,
+# in the situation depicted in the figure above the bitstring is :math:`z=0101\text{,}`
+# indicating that the :math:`0^{\text{th}}` and :math:`2^{\text{nd}}` vertices are in :math:`A`
 # while the :math:`1^{\text{st}}` and :math:`3^{\text{rd}}` are in
-# the other. (The inverse partition, :math:`z=0101` is of course equally valid.) In the following sections,
+# :math:`B`. This assignment yields a value for the objective function
+# :math:`C=4`, which turns out to be the maximum cut. In the following sections,
 # we will represent partitions using computational basis states and use PennyLane to
-# rediscover this optimal cut.
+# rediscover this maximum cut. (Note that :math:`z=1010` could equally well serve as the maximum cut.)
 #
 # A quantum circuit
 # ~~~~~~~~~~~~~~~~~
