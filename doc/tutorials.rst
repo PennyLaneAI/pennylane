@@ -78,6 +78,11 @@ algorithms using PennyLane and near-term quantum hardware.
     :figure: ../examples/figures/quantum_natural_gradient/qng_optimization.png
     :description: :ref:`quantum_natural_gradient`
 
+.. customgalleryitem::
+    :tooltip: VQE with Rotosolve and Rotoselect algorithms
+    :figure: ../examples/figures/quantum_natural_gradient/qng_optimization.png
+    :description: :ref:`rotoselect`
+
 :html:`<div style='clear:both'></div>`
 
 

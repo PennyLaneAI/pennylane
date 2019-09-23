@@ -2,40 +2,65 @@ r"""
 
 .. _rotoselect:
 
-Circuit structure learning with Rotoselect
-==========================================
+Quantum circuit structure learning
+==================================
 
-This example demonstrates how to learn the optimal selection of rotation
-gates in addition to their parameters so as to minimize a cost
-function. We apply the algorithm to VQE (as outlined in a prior
-tutorial) and attempt to reproduce the circuit structure for that algorithm
-along with the optimal parameters.
+This example shows how to learn the optimal selection of rotation
+gates so as to minimize a cost
+function using the Rotoselect algorithm `Ostaszewski et al.
+(2019) <https://arxiv.org/abs/1905.09692>`__. We apply the algorithm to minimize the Hamiltonian presented in
+a previous tutorial, VQE, and improve upon the circuit structure ansatz
+chosen there.
 """
 ##############################################################################
 # Background
 # ----------
 #
 # The effects of noise tend to increase with the depth of a quantum circuit, so
-# there is incentive to keep circuits as shallow as possible. Generally, the
-# chosen set of gates on a circuit are suboptimal for the task at hand. The Rotoselect
-# algorithm provides a method for learning the structure of a quantum circuit, in addition
-# to those parameters which optimize the cost function.
+# there is incentive to keep them as shallow as possible. Furthermore, it is often the case that a
+# chosen set of gates is suboptimal for the task at hand. The Rotoselect
+# algorithm provides a method for learning a good structure for a quantum circuit tasked with
+# minimizing a certain cost function.
+#
+# The algorithm works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1...\theta_D` and gate choices
+# :math:`\boldsymbol{P}=P_1...P_D`
+# one at a time according to a closed-form expression for the optimal parameter value :math:`\theta^{*}_d`
+# when the other parameters and gate choices are fixed:
+#
+# .. math::
+#
+#   \theta^{*}_d &= \underset{\theta_d}{\text{argmin}} \langle H \rangle (\theta_d) \\
+#                &= -\frac{\pi}{2} - \text{arctan}\left(\frac{2\langle H \rangle (0) -
+#                \langle H \rangle (\pi/2) - \langle H \rangle (-\pi/2)}{\langle H \rangle (\pi/2) -
+#                \langle H \rangle (-\pi/2)}\right)
+#
+# where the expression makes use of 3 separate evaluations
+# of the cost function expectation value :math:`\langle H \rangle (\theta_d)` using the quantum circuit. Although
+# :math:`\langle H \rangle` is really a function of all parameters and gate choices :math:`\boldsymbol{\theta}, \ \boldsymbol{P}`, we
+# are fixing every parameter and gate choice apart from :math:`\theta_d` in this expresion.
+# For each parameter in the quantum circuit, the algorithm proceeds by evaluating this expression for each choice of
+# gate :math:`P_d \in \{R_x,R_y,R_z\}` and selecting the gate which yields the minimum value.
+# One might expect the number of circuit evaluations required to be 9 (3 for each gate choice), but
+# since there is a 3-fold
+# degeneracy in the expectation value :math:`\langle H \rangle (0)` for each of the gates, the number of
+# evaluations reduces to 7.
 #
 # VQE
 # ~~~
 #
-# We choose to focus on the example of VQE with 2 qubits for simplicity. Here, the Hamiltonian
+# We choose to focus on the example of a VQE circuit with 2 qubits for simplicity. Here, the Hamiltonian
 # is
 #
 # .. math::
-#   H = 0.1*\sigma_x^2+0.5*\sigma_y^2
+#   H = 0.1\sigma_x+0.5\sigma_y
 #
-# which act on the second qubit in the circuit. We adopt the ansatz from the previous tutorial and
-# and proceed to calculate the ground state using the Rotosolve algorithm. We then attempt to recover
-# the ansatz structure (or discover something better) by switching to the Rotoselect algorithm.
+# acting on the second qubit.
 #
 # Rotosolve
-# ~~~~~~~~~
+# ---------
+# As a precursor to implementing Rotoselect we can analyze a version of the algorithm
+# which does not optimize the choice of gates, called Rotosolve. Later, we will build on this example
+# to implement Rotoselect and vary the circuit structure. 
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -71,7 +96,7 @@ def cost(params):
 class Rotosolve:
 
     def step(self, cost, thetas):
-        params = thetas[:]
+        params = thetas.copy()
         for d in range(len(params)):
             phi = 0.5
             params[d] = phi
