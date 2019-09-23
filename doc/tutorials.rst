@@ -78,6 +78,11 @@ algorithms using PennyLane and near-term quantum hardware.
     :figure: ../examples/figures/quantum_natural_gradient/qng_optimization.png
     :description: :ref:`quantum_natural_gradient`
 
+.. customgalleryitem::
+    :tooltip: Barren plateaus in quantum neural networks
+    :figure: ../examples/figures/barren_plateaus/surface.png
+    :description: :ref:`barren_plateaus`
+
 :html:`<div style='clear:both'></div>`
 
 
