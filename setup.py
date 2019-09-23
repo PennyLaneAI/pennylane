@@ -20,10 +20,11 @@ with open("pennylane/_version.py") as f:
 requirements = [
     "numpy",
     "scipy",
+    "networkx",
     "autograd",
     "toml",
     "appdirs",
-    "semantic_version"
+    "semantic_version==2.6"
 ]
 
 extra_requirements = {

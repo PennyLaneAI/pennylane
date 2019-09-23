@@ -64,6 +64,7 @@ The following methods and attributes must be defined for all devices:
 In addition, the following may also be optionally defined:
 
 .. autosummary::
+    probability
     pre_apply
     post_apply
     pre_measure
@@ -90,7 +91,8 @@ Code details
 import abc
 
 import autograd.numpy as np
-from pennylane.operation import Operation, Observable
+from pennylane.operation import Operation, Observable, Sample, Variance, Expectation
+from .qnode import QuantumFunctionError
 
 
 class DeviceError(Exception):
@@ -106,16 +108,16 @@ class Device(abc.ABC):
     Args:
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
-        shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables. For simulator devices, a value of 0 results
-            in the exact expectation value being returned. Defaults to 0 if not specified.
+        shots (int): Number of circuit evaluations/random samples used to estimate
+            expectation values of observables. Defaults to 1000 if not specified.
     """
     #pylint: disable=too-many-public-methods
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, wires=1, shots=0):
+    def __init__(self, wires=1, shots=1000):
         self.num_wires = wires
+        self._shots = 1000
         self.shots = shots
 
         self._op_queue = None
@@ -173,6 +175,26 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
+    @property
+    def shots(self):
+        """Number of circuit evaluations/random samples used to estimate
+        expectation values of observables"""
+
+        return self._shots
+
+    @shots.setter
+    def shots(self, shots):
+        """Changes the number of shots.
+
+        Args:
+            shots (int): number of circuit evaluations/random samples used to estimate
+                expectation values of observables
+        """
+        if shots < 1:
+            raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
+
+        self._shots = int(shots)
+
     @classmethod
     def capabilities(cls):
         """Get the other capabilities of the plugin.
@@ -221,15 +243,14 @@ class Device(abc.ABC):
             self.pre_measure()
 
             for obs in observables:
-                if obs.return_type == "expectation":
+                if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == "variance":
+                elif obs.return_type is Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == "sample":
-                    if not hasattr(obs, "num_samples"):
-                        raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
-
-                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
+                elif obs.return_type is Sample:
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
+                elif obs.return_type is not None:
+                    raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
             self.post_measure()
 
@@ -239,9 +260,9 @@ class Device(abc.ABC):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(obs.return_type == "sample" for obs in observables):
+            if all(obs.return_type is Sample for obs in observables):
                 return np.asarray(results)
-            if any(obs.return_type == "sample" for obs in observables):
+            if any(obs.return_type is Sample for obs in observables):
                 return np.asarray(results, dtype="object")
 
             return np.asarray(results)
@@ -419,8 +440,11 @@ class Device(abc.ABC):
         """
         raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
-    def sample(self, observable, wires, par, n=None):
+    def sample(self, observable, wires, par):
         """Return a sample of an observable.
+
+        The number of samples is determined by the value of ``Device.shots``,
+        which can be directly modified.
 
         For plugin developers: this function should return the result of an evaluation
         of the given observable on the device.
@@ -429,13 +453,21 @@ class Device(abc.ABC):
             observable (str): name of the observable
             wires (Sequence[int]): subsystems the observable is to be measured on
             par (tuple): parameters for the observable
-            n (int): Number of samples that should be obtained. Defaults to the
-                number of shots given as a parameter to the corresponding Device.
 
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
         raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
+
+    def probability(self):
+        """Return the full state probability of each computational basis state from the last run of the device.
+
+        Returns:
+            OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
+            to the resulting probability. The dictionary should be sorted such that the
+            state tuples are in lexicographical order.
+        """
+        raise NotImplementedError("Returning probability not currently supported by {}".format(self.short_name))
 
     @abc.abstractmethod
     def reset(self):

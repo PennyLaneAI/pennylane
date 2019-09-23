@@ -54,6 +54,7 @@ Gates and operations
     H
     CNOT
     SWAP
+    CSWAP
     CZ
     CRotx
     CRoty
@@ -77,6 +78,8 @@ Classes
 Code details
 ^^^^^^^^^^^^
 """
+from collections import OrderedDict
+import itertools
 import warnings
 
 import numpy as np
@@ -126,7 +129,15 @@ H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNOT gate
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
-
+# Three qubit gates
+CSWAP = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 1, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 1, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 1, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 1, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 1, 0],
+                  [0, 0, 0, 0, 0, 1, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 1]]) #: CSWAP gate
 
 #========================================================
 #  parametrized gates
@@ -294,12 +305,17 @@ class DefaultQubit(Device):
     Args:
         wires (int): the number of modes to initialize the device in
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
-            the expectation values. A value of 0 yields the exact result.
+            the expectation values. Defaults to 1000 if not specified.
+            If ``analytic == True``, then the number of shots is ignored
+            in the calculation of expectation values and variances, and only controls the number
+            of samples returned by ``sample``.
+        analytic (bool): indicates if the device should calculate expectations
+            and variances analytically
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
-    pennylane_requires = '0.5'
-    version = '0.4.0'
+    pennylane_requires = '0.6'
+    version = '0.6.0'
     author = 'Xanadu Inc.'
 
     # Note: BasisState and QubitStateVector don't
@@ -315,6 +331,7 @@ class DefaultQubit(Device):
         'Hadamard': H,
         'CNOT': CNOT,
         'SWAP': SWAP,
+        'CSWAP':CSWAP,
         'CZ': CZ,
         'PhaseShift': Rphi,
         'RX': Rotx,
@@ -336,9 +353,11 @@ class DefaultQubit(Device):
         'Identity': identity
     }
 
-    def __init__(self, wires, *, shots=0):
+    def __init__(self, wires, *, shots=1000, analytic=True):
         super().__init__(wires, shots)
         self.eng = None
+        self.analytic = analytic
+
         self._state = None
 
     def pre_apply(self):
@@ -400,36 +419,28 @@ class DefaultQubit(Device):
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
     def expval(self, observable, wires, par):
-        if self.shots == 0:
+        if self.analytic:
             # exact expectation value
             A = self._get_operator_matrix(observable, par)
             ev = self.ev(A, wires)
         else:
             # estimate the ev
-            ev = np.mean(self.sample(observable, wires, par, self.shots))
+            ev = np.mean(self.sample(observable, wires, par))
 
         return ev
 
     def var(self, observable, wires, par):
-        if self.shots == 0:
+        if self.analytic:
             # exact expectation value
             A = self._get_operator_matrix(observable, par)
             var = self.ev(A@A, wires) - self.ev(A, wires)**2
         else:
             # estimate the ev
-            var = np.var(self.sample(observable, wires, par, self.shots))
+            var = np.var(self.sample(observable, wires, par))
 
         return var
 
-    def sample(self, observable, wires, par, n=None):
-        if n is None:
-            n = self.shots
-
-        if n == 0:
-            raise ValueError("Calling sample with n = 0 is not possible.")
-        if n < 0 or not isinstance(n, int):
-            raise ValueError("The number of samples must be a positive integer.")
-
+    def sample(self, observable, wires, par):
         A = self._get_operator_matrix(observable, par)
         a, P = spectral_decomposition(A)
 
@@ -437,7 +448,7 @@ class DefaultQubit(Device):
         for idx, Pi in enumerate(P):
             p[idx] = self.ev(Pi, wires)
 
-        return np.random.choice(a, n, p=p)
+        return np.random.choice(a, self.shots, p=p)
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
@@ -482,3 +493,12 @@ class DefaultQubit(Device):
     @property
     def observables(self):
         return set(self._observable_map.keys())
+
+    def probability(self):
+        if self._state is None:
+            return None
+
+        states = itertools.product(range(2), repeat=self.num_wires)
+        probs = np.abs(self._state)**2
+
+        return OrderedDict(zip(states, probs))

@@ -701,15 +701,20 @@ class DefaultGaussian(Device):
 
     Args:
         wires (int): the number of modes to initialize the device in
-        shots (int): How many times should the circuit be evaluated (or sampled) to estimate
-            the expectation values. 0 yields the exact result.
+        shots (int): How many times the circuit should be evaluated (or sampled) to estimate
+            the expectation values.
+            If ``analytic == True``, then the number of shots is ignored
+            in the calculation of expectation values and variances, and only controls the number
+            of samples returned by ``sample``.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
+        analytic (bool): indicates if the device should calculate expectations
+            and variances analytically
     """
     name = 'Default Gaussian PennyLane plugin'
     short_name = 'default.gaussian'
-    pennylane_requires = '0.5'
-    version = '0.4.0'
+    pennylane_requires = '0.6'
+    version = '0.6.0'
     author = 'Xanadu Inc.'
 
     _operation_map = {
@@ -741,10 +746,12 @@ class DefaultGaussian(Device):
 
     _circuits = {}
 
-    def __init__(self, wires, *, shots=0, hbar=2):
+    def __init__(self, wires, *, shots=1000, hbar=2, analytic=True):
         super().__init__(wires, shots)
         self.eng = None
         self.hbar = hbar
+        self.analytic = analytic
+
         self.reset()
 
     def pre_apply(self):
@@ -823,7 +830,7 @@ class DefaultGaussian(Device):
 
         ev, var = self._observable_map[observable](mu, cov, wires, par, self.num_wires, hbar=self.hbar)
 
-        if self.shots != 0:
+        if not self.analytic:
             # estimate the ev
             # use central limit theorem, sample normal distribution once, only ok if n_eval is large
             # (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
@@ -836,9 +843,44 @@ class DefaultGaussian(Device):
         _, var = self._observable_map[observable](mu, cov, wires, par, hbar=self.hbar, total_wires=self.num_wires)
         return var
 
-    def sample(self, observable, wires, par, n=None):
-        raise NotImplementedError("Sampling is not supported in default.gaussian, "
-                                  "please install PennyLane-SF or another plugin capable of sampling")
+    def sample(self, observable, wires, par):
+        """Return a sample of an observable.
+
+        .. note::
+
+            The ``default.gaussian`` plugin only supports sampling
+            from :class:`~.X`, :class:`~.P`, and :class:`~.QuadOperator`
+            observables.
+
+        Args:
+            observable (str): name of the observable
+            wires (Sequence[int]): subsystems the observable is to be measured on
+            par (tuple): parameters for the observable
+
+        Returns:
+            array[float]: samples in an array of dimension ``(n, num_wires)``
+        """
+        if len(wires) != 1:
+            raise ValueError("Only one mode can be measured in homodyne.")
+
+        if observable == "X":
+            phi = 0.0
+        elif observable == "P":
+            phi = np.pi/2
+        elif observable == "QuadOperator":
+            phi = par[0]
+        else:
+            raise NotImplementedError("default.gaussian does not support sampling {}".format(observable))
+
+        mu, cov = self.reduced_state(wires)
+        rot = rotation(phi)
+
+        muphi = rot.T @ mu
+        covphi = rot.T @ cov @ rot
+
+        stdphi = np.sqrt(covphi[0, 0])
+        meanphi = muphi[0]
+        return np.random.normal(meanphi, stdphi, self.shots)
 
     def reset(self):
         """Reset the device"""

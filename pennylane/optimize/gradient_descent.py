@@ -17,7 +17,7 @@ import autograd
 from pennylane.utils import _flatten, unflatten
 
 
-class GradientDescentOptimizer(object):
+class GradientDescentOptimizer:
     r"""Basic gradient-descent optimizer.
 
     Base class for other gradient-descent-based optimizers.

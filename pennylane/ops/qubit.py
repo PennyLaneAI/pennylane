@@ -35,6 +35,7 @@ Gates
     CNOT
     CZ
     SWAP
+    CSWAP
     RX
     RY
     RZ
@@ -70,6 +71,7 @@ Observables
 Code details
 ~~~~~~~~~~~~
 """
+import numpy as np
 
 from pennylane.operation import All, Any, Observable, Operation
 
@@ -213,8 +215,6 @@ class SWAP(Operation):
             0 & 0 & 0 & 1
         \end{bmatrix}.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
     **Details:**
 
     * Number of wires: 2
@@ -225,6 +225,35 @@ class SWAP(Operation):
     """
     num_params = 0
     num_wires = 2
+    par_domain = None
+
+class CSWAP(Operation):
+    r"""CSWAP(wires)
+    The controlled-swap operator
+
+    .. math:: CSWAP = \begin{bmatrix}
+            1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 0
+    num_wires = 3
     par_domain = None
 
 
@@ -252,6 +281,7 @@ class RX(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [PauliX, -1/2]
 
 
 class RY(Operation):
@@ -278,6 +308,7 @@ class RY(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [PauliY, -1/2]
 
 
 class RZ(Operation):
@@ -304,6 +335,7 @@ class RZ(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [PauliZ, -1/2]
 
 
 class PhaseShift(Operation):
@@ -330,6 +362,7 @@ class PhaseShift(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0], [0, 1]]), 1]
 
 
 class Rot(Operation):
@@ -388,6 +421,7 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1/2]
 
 
 class CRY(Operation):
@@ -418,6 +452,7 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1/2]
 
 
 class CRZ(Operation):
@@ -448,6 +483,7 @@ class CRZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1/2]
 
 
 class CRot(Operation):
@@ -598,6 +634,7 @@ ops = {
     "CNOT",
     "CZ",
     "SWAP",
+    "CSWAP",
     "RX",
     "RY",
     "RZ",

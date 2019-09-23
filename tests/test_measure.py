@@ -17,6 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.qnode import QuantumFunctionError
+from pennylane.operation import Sample, Variance, Expectation
 
 
 def test_no_measure(tol):
@@ -64,6 +65,17 @@ class TestExpval:
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
+    def test_observable_return_type_is_expectation(self):
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.expval(qml.PauliZ(0))
+            assert res.return_type is Expectation
+            return res
+
+        circuit()
 
 class TestDeprecatedExpval:
     """Tests for the deprecated expval attribute getter.
@@ -116,6 +128,19 @@ class TestDeprecatedExpval:
             with pytest.raises(AttributeError, match="has no observable 'R'"):
                 res = circuit()
 
+    def test_expval_factory_getattr_return_type_is_expectation(self):
+        """Test that the named attribute of the :class:`ExpvalFactory`
+        contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
+        with pytest.warns(DeprecationWarning, match="is deprecated"):
+            obs = qml.expval.PauliZ(0, do_queue=False)
+
+        assert obs.return_type is Expectation
+
+    def test_expval_factory_call_return_type_is_expectation(self):
+        """Test that the function call operator of the :class:`ExpvalFactory`
+        contains a dictionary with return type :attr:`ObservableReturnTypes.Expecation`"""
+        obs = qml.expval(qml.PauliZ(0, do_queue=False))
+        assert obs.return_type is Expectation
 
 class TestVar:
     """Tests for the var function"""
@@ -148,38 +173,48 @@ class TestVar:
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             res = circuit()
 
+    def test_observable_return_type_is_variance(self):
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.var(qml.PauliZ(0))
+            assert res.return_type is Variance
+            return res
+
+        circuit()
+
 
 class TestSample:
     """Tests for the sample function"""
 
     def test_sample_dimension(self, tol):
         """Test that the sample function outputs samples of the right size"""
-        dev = qml.device("default.qubit", wires=2)
-
         n_sample = 10
+
+        dev = qml.device("default.qubit", wires=2, shots=n_sample)
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
-            return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliX(1), 2*n_sample)
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         sample = circuit()
 
-        assert np.array_equal(sample.shape, (2,))
-        assert np.array_equal(sample[0].shape, (n_sample,))
-        assert np.array_equal(sample[1].shape, (2*n_sample,))
+        assert np.array_equal(sample.shape, (2,n_sample))
 
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
-        dev = qml.device("default.qubit", wires=3)
-
         n_sample = 10
+
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
 
-            return qml.sample(qml.PauliZ(0), n_sample), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
+            return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
 
         result = circuit()
 
@@ -190,15 +225,15 @@ class TestSample:
 
     def test_single_wire_sample(self, tol):
         """Test the return type and shape of sampling a single wire"""
-        dev = qml.device("default.qubit", wires=1)
-
         n_sample = 10
+
+        dev = qml.device("default.qubit", wires=1, shots=n_sample)
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
 
-            return qml.sample(qml.PauliZ(0), n_sample)
+            return qml.sample(qml.PauliZ(0))
 
         result = circuit()
 
@@ -208,13 +243,13 @@ class TestSample:
     def test_multi_wire_sample_regular_shape(self, tol):
         """Test the return type and shape of sampling multiple wires
            where a rectangular array is expected"""
-        dev = qml.device("default.qubit", wires=3)
-
         n_sample = 10
+
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliZ(1), n_sample), qml.sample(qml.PauliZ(2), n_sample)
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
         result = circuit()
 
@@ -223,38 +258,16 @@ class TestSample:
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == np.dtype("float")
 
-    def test_multi_wire_sample_ragged_shape(self, tol):
-        """Test the return type and shape of sampling multiple wires
-           where a ragged array is expected"""
-        dev = qml.device("default.qubit", wires=3)
-
-        n_sample = 10
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliZ(1), 2*n_sample), qml.sample(qml.PauliZ(2), 3*n_sample)
-
-        result = circuit()
-
-        # If the sample dimensions are not equal we expect the 
-        # output to be an array of dtype="object"
-        assert isinstance(result, np.ndarray)
-        assert result.dtype == np.dtype("object")
-        assert np.array_equal(result.shape, (3,))
-        assert np.array_equal(result[0].shape, (n_sample,))
-        assert np.array_equal(result[1].shape, (2*n_sample,))
-        assert np.array_equal(result[2].shape, (3*n_sample,))
-
     def test_sample_output_type_in_combination(self, tol):
-        """Test the return type and shape of sampling multiple works 
+        """Test the return type and shape of sampling multiple works
            in combination with expvals and vars"""
-        dev = qml.device("default.qubit", wires=3)
-
         n_sample = 10
+
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2), n_sample)
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
         result = circuit()
 
@@ -266,60 +279,6 @@ class TestSample:
         assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
-
-    def test_sample_default_n(self, tol):
-        """Test the return type and shape of sampling multiple works 
-           in combination with expvals and vars"""
-
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.sample(qml.PauliZ(0))
-
-        result = circuit()
-
-        # If all the dimensions are equal the result will end up to be a proper rectangular array
-        assert np.array_equal(result.shape, (n_shots,))
-        
-    def test_sample_exception_device_context_missing(self):
-        """Tests if the sampling raises an error when using a default
-           sample number but the underlying device can't be accessed"""
-
-        with pytest.raises(QuantumFunctionError, match="Could not find a bound device to determine the default number of samples."):
-            qml.QNode._current_context = None
-            qml.sample(qml.PauliZ(0, do_queue=False))
-
-    def test_sample_exception_wrong_n(self):
-        """Tests if the sampling raises an error for sample size n<=0
-        or non-integer n
-        """
-        dev = qml.device("default.qubit", wires=2)
-
-        with pytest.raises(ValueError, match="Calling sample with n = 0 is not possible."):
-            @qml.qnode(dev)
-            def circuit_a():
-                qml.RX(0.52, wires=0)
-                return qml.sample(qml.PauliZ(0), n=0)
-
-            circuit_a()
-
-        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):
-            @qml.qnode(dev)
-            def circuit_b():
-                qml.RX(0.52, wires=0)
-                return qml.sample(qml.PauliZ(0), n=-12)
-
-            circuit_b()
-
-        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):
-            @qml.qnode(dev)
-            def circuit_c():
-                qml.RX(0.52, wires=0)
-                return qml.sample(qml.PauliZ(0), n=20.4)
-
-            circuit_c()
 
     def test_not_an_observable(self):
         """Test that a QuantumFunctionError is raised if the provided
@@ -333,3 +292,16 @@ class TestSample:
 
         with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
             sample = circuit()
+
+    def test_observable_return_type_is_sample(self):
+        """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.sample(qml.PauliZ(0))
+            assert res.return_type is Sample
+            return res
+
+        circuit()
