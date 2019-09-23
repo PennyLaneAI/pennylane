@@ -202,10 +202,13 @@ def circuit(params, edge=None, n_layers=1):
 # ~~~~~~~~~~~~
 # Finally, we optimize the objective over the
 # angle parameters :math:`\boldsymbol{\gamma}` (``params[0]``) and :math:`\boldsymbol{\beta}`
-# (``params[1]``).
+# (``params[1]``)
 # and then sample the optimized
 # circuit multiple times to yield a distribution of bitstrings. One of the optimal partitions
 # (:math:`z=0101` or :math:`z=1010`) should be the most frequently sampled bitstring.
+# We perform a maximization of :math:`C` by
+# minimizing :math:`-C` to follow the convention that optimizations are cast as minimizations
+# in PennyLane.
 
 
 def qaoa_maxcut(n_layers=1):
