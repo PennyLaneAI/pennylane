@@ -7,6 +7,9 @@
   analytically and not be estimated from data.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
+* Added C-SWAP gate to the set of qubit operations
+  [#330](https://github.com/XanaduAI/pennylane/pull/330)
+
 ### Breaking changes
 
 * The argument `n` specifying the number of samples in the method `Device.sample` was removed.
@@ -28,8 +31,9 @@
   [#331](https://github.com/XanaduAI/pennylane/pull/331)
 ### Documentation
 
-* Added C-SWAP gate to the set of qubit operations
-  [#330](https://github.com/XanaduAI/pennylane/pull/330)
+* Added missing figures for gallery thumbnails of state-preparation
+  and QGAN tutorials
+  [#326](https://github.com/XanaduAI/pennylane/pull/326)
 
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
