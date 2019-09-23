@@ -112,11 +112,8 @@ class CircuitGraph:
         """
         Return a list of nodes of operations that have a return type, sorted by "idx".
         """
-        nodes = sorted(
-            [node for node in self.graph.nodes.values() if node["return_type"]],
-            key=lambda node: node["idx"],
-        )
-        return nodes
+        nodes = [node for node in self.graph.nodes.values() if node["return_type"]]
+        return sorted(nodes, key=lambda node: node["idx"])
 
     @property
     def operations(self):
@@ -130,11 +127,8 @@ class CircuitGraph:
         """
         Return a list of nodes of operations that do not have a return type, sorted by "idx".
         """
-        nodes = sorted(
-            [node for node in self.graph.nodes.values() if not node["return_type"]],
-            key=lambda node: node["idx"],
-        )
-        return nodes
+        nodes = [node for node in self.graph.nodes.values() if not node["return_type"]]
+        return sorted(nodes, key=lambda node: node["idx"])
 
     @property
     def graph(self):

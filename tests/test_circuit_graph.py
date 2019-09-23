@@ -250,3 +250,21 @@ class TestCircuitGraph:
                 }
             },
         )
+
+    def test_observables(self, circuit, obs):
+        """Test that the `observables` property returns the list of observables in the circuit."""
+        assert circuit.observables == obs
+
+    def test_observable_nodes_and_operation_nodes(self, circuit, monkeypatch):
+        """Test that the `observable_nodes` and `operation_nodes` methods return the correct
+        values."""
+        mock_graph = MagicMock()
+        mock_graph.nodes.values.return_value = [
+            {"return_type": None, "idx": 0}, {"return_type": MagicMock(), "idx": 1}]
+        monkeypatch.setattr(circuit, "_graph", mock_graph)
+        assert circuit.observable_nodes == [mock_graph.nodes.values()[1]]
+        assert circuit.operation_nodes == [mock_graph.nodes.values()[0]]
+
+    def test_operations(self, circuit, queue):
+        """Test that the `operations` property returns the list of operations in the circuit."""
+        assert circuit.operations == queue
