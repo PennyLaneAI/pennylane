@@ -2,9 +2,33 @@
 
 ### New features since last release
 
+* The devices `default.qubit` and `default.gaussian` have a new initialization parameter
+  `analytic` that indicates if expectation values and variances should be calculated
+  analytically and not be estimated from data.
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
+
+* Added C-SWAP gate to the set of qubit operations
+  [#330](https://github.com/XanaduAI/pennylane/pull/330)
+
 ### Breaking changes
 
+* The argument `n` specifying the number of samples in the method `Device.sample` was removed.
+  Instead, the method will always return `Device.shots` many samples. 
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
+
 ### Improvements
+
+* The number of shots / random samples used to estimate expectation values and variances, `Device.shots`,
+  can now be changed after device creation.
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
+
+* Unified import shortcuts to be under qml in qnode.py
+  and test_operation.py
+  [#329](https://github.com/XanaduAI/pennylane/pull/329)
+
+* The quantum natural gradient now uses `scipy.linalg.pinvh` which is more efficient for symmetric matrices
+  than the previously used `scipy.linalg.pinv`.
+  [#331](https://github.com/XanaduAI/pennylane/pull/331)
 
 ### Documentation
 
@@ -13,7 +37,12 @@
   [#323](https://github.com/XanaduAI/pennylane/pull/323) 
 
 * Fixed typos in the state preparation tutorial.
+
+* Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
+
+* Fixed bug in VQE tutorial 3D plots
+  [#327](https://github.com/XanaduAI/pennylane/pull/327)
 
 ### Bug fixes
 
@@ -21,7 +50,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Angus Lowe
+Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Roeland Wiersema
 
 ---
 

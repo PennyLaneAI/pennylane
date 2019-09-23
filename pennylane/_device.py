@@ -108,16 +108,16 @@ class Device(abc.ABC):
     Args:
         wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
-        shots (int): number of circuit evaluations/random samples used to estimate
-            expectation values of observables. For simulator devices, a value of 0 results
-            in the exact expectation value being returned. Defaults to 0 if not specified.
+        shots (int): Number of circuit evaluations/random samples used to estimate
+            expectation values of observables. Defaults to 1000 if not specified.
     """
     #pylint: disable=too-many-public-methods
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
-    def __init__(self, wires=1, shots=0):
+    def __init__(self, wires=1, shots=1000):
         self.num_wires = wires
+        self._shots = 1000
         self.shots = shots
 
         self._op_queue = None
@@ -175,6 +175,26 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
+    @property
+    def shots(self):
+        """Number of circuit evaluations/random samples used to estimate
+        expectation values of observables"""
+
+        return self._shots
+
+    @shots.setter
+    def shots(self, shots):
+        """Changes the number of shots.
+
+        Args:
+            shots (int): number of circuit evaluations/random samples used to estimate
+                expectation values of observables
+        """
+        if shots < 1:
+            raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
+
+        self._shots = int(shots)
+
     @classmethod
     def capabilities(cls):
         """Get the other capabilities of the plugin.
@@ -228,9 +248,7 @@ class Device(abc.ABC):
                 elif obs.return_type is Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type is Sample:
-                    if not hasattr(obs, "num_samples"):
-                        raise DeviceError("Number of samples not specified for observable {}".format(obs.name))
-                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters, obs.num_samples)))
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
                 elif obs.return_type is not None:
                     raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
@@ -422,8 +440,11 @@ class Device(abc.ABC):
         """
         raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
-    def sample(self, observable, wires, par, n=None):
+    def sample(self, observable, wires, par):
         """Return a sample of an observable.
+
+        The number of samples is determined by the value of ``Device.shots``,
+        which can be directly modified.
 
         For plugin developers: this function should return the result of an evaluation
         of the given observable on the device.
@@ -432,8 +453,6 @@ class Device(abc.ABC):
             observable (str): name of the observable
             wires (Sequence[int]): subsystems the observable is to be measured on
             par (tuple): parameters for the observable
-            n (int): Number of samples that should be obtained. Defaults to the
-                number of shots given as a parameter to the corresponding Device.
 
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``

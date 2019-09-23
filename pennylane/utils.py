@@ -196,7 +196,7 @@ def expand(U, wires, num_wires):
 # Graph functions
 
 
-Command = namedtuple("Command", ["name", "op", "return_type"])
+Command = namedtuple("Command", ["name", "op", "return_type", "idx"])
 Layer = namedtuple("Layer", ["op_idx", "param_idx"])
 
 
@@ -214,19 +214,20 @@ class CircuitGraph:
     """
 
     def __init__(self, queue, observables, parameters=None):
-        self.queue = queue
-        self.observables = observables
+        self._queue = queue
+        self._observables = observables
         self.parameters = parameters or {}
 
         self._grid = {}
-        """dict[int, list[int, Command]]: dictionary representing the quantum circuit
+        """dict[int, list[Command]]: dictionary representing the quantum circuit
         as a grid. Here, the key is the wire number, and the value is a list
         containing the operation index (that is, where in the queue it occured)
         as well as a Command object containing the operation/observable itself.
         """
 
         for idx, op in enumerate(queue + observables):
-            cmd = Command(name=op.name, op=op, return_type=getattr(op, "return_type", None))
+            cmd = Command(
+                name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx)
 
             for w in set(op.wires):
                 if w not in self._grid:
@@ -235,30 +236,61 @@ class CircuitGraph:
                     self._grid[w] = []
 
                 # Add the operation to the grid, to the end of the specified wire
-                self._grid[w].append([idx, cmd])
+                self._grid[w].append(cmd)
 
         self._graph = nx.DiGraph()
 
-        # iterate over each wire in the grid
-        for _, cmds in self._grid.items():
+        # Iterate over each wire in the grid
+        for cmds in self._grid.values():
             if cmds:
                 # Add the first operation on the wire to the graph
                 # This operation does not depend on any others
-                attrs = cmds[0][1]._asdict()
-                self._graph.add_node(cmds[0][0], **attrs)
+                self._graph.add_node(cmds[0].idx, **cmds[0]._asdict())
 
             for i in range(1, len(cmds)):
                 # For subsequent operations on the wire:
-
-                if cmds[i][0] not in self._graph:
-                    # add them to the graph if they are not already
+                if cmds[i].idx not in self._graph:
+                    # Add them to the graph if they are not already
                     # in the graph (multi-qubit operations might already have been placed)
-                    attrs = cmds[i][1]._asdict()
-                    self._graph.add_node(cmds[i][0], **attrs)
+                    self._graph.add_node(cmds[i].idx, **cmds[i]._asdict())
 
-                # create an edge between this operation and the
+                # Create an edge between this operation and the
                 # previous operation
-                self._graph.add_edge(cmds[i - 1][0], cmds[i][0])
+                self._graph.add_edge(cmds[i - 1].idx, cmds[i].idx)
+
+    @property
+    def observables(self):
+        """
+        Return a list of operations that have a return type.
+        """
+        return [node["op"] for node in self.observable_nodes]
+
+    @property
+    def observable_nodes(self):
+        """
+        Return a list of nodes of operations that have a return type, sorted by "idx".
+        """
+        nodes = sorted(
+            [node for node in self.graph.nodes.values() if node["return_type"]],
+            key=lambda node: node["idx"])
+        return nodes
+
+    @property
+    def operations(self):
+        """
+        Return a list of operations that do not have a return type.
+        """
+        return [node["op"] for node in self.operation_nodes]
+
+    @property
+    def operation_nodes(self):
+        """
+        Return a list of nodes of operations that do not have a return type, sorted by "idx".
+        """
+        nodes = sorted(
+            [node for node in self.graph.nodes.values() if not node["return_type"]],
+            key=lambda node: node["idx"])
+        return nodes
 
     @property
     def graph(self):
@@ -306,13 +338,8 @@ class CircuitGraph:
             set[int]: integer position of all operations
             in the queue that are ancestors of the given operations
         """
-        ancestors = set()
-
-        for o in ops:
-            subG = self.graph.subgraph(nx.dag.ancestors(self.graph, o))
-            ancestors |= set(subG.nodes())
-
-        return ancestors - set(ops)
+        subGs = [self.graph.subgraph(nx.dag.ancestors(self.graph, o)) for o in ops]
+        return set().union(*[set(subG.nodes()) for subG in subGs]) - set(ops)
 
     def descendants(self, ops):
         """Returns all descendant operations of a given set of operations.
@@ -325,13 +352,20 @@ class CircuitGraph:
             set[int]: integer position of all operations
             in the queue that are descendants of the given operations
         """
-        descendants = set()
+        subGs = [self.graph.subgraph(nx.dag.descendants(self.graph, o)) for o in ops]
+        return set().union(*[set(subG.nodes()) for subG in subGs]) - set(ops)
 
-        for o in ops:
-            subG = self.graph.subgraph(nx.dag.descendants(self.graph, o))
-            descendants |= set(subG.nodes())
+    def get_nodes(self, ops):
+        """Given a set of operation indices, return the nodes corresponding to the indices.
 
-        return descendants - set(ops)
+        Args:
+            ops (Iterable[int]): a given set of operations labelled by integer
+                position in the queue
+
+        Returns:
+            List[Node]: nodes corresponding to given integer positions in the queue
+        """
+        return [self.graph.nodes[i] for i in ops]
 
     def get_ops(self, ops):
         """Given a set of operation indices, return the operation objects.
@@ -344,7 +378,7 @@ class CircuitGraph:
             List[Operation, Observable]: operations or observables
             corresponding to given integer positions in the queue
         """
-        return [self.graph.nodes(data="op")[i] for i in ops]
+        return [node["op"] for node in self.get_nodes(ops)]
 
     def get_names(self, ops):
         """Given a set of operation indices, return the operation names.
@@ -382,7 +416,8 @@ class CircuitGraph:
             # iterate over all parameters
             for op_idx, _ in gate_param_tuple:
                 # get all dependents of the existing parameter
-                sub = set(nx.dag.topological_sort(self.graph.subgraph(nx.dag.ancestors(self.graph, op_idx)).copy()))
+                sub = set(nx.dag.topological_sort(
+                    self.graph.subgraph(nx.dag.ancestors(self.graph, op_idx)).copy()))
 
                 # check if any of the dependents are in the
                 # existing layer
@@ -425,3 +460,15 @@ class CircuitGraph:
             post_queue = self.get_ops(self.descendants(ops))
 
             yield pre_queue, layer, tuple(param_idx), post_queue
+
+    def update_node(self, node, op):
+        """
+        Updates a given node with a new operation, op.
+
+        Args:
+            op (Operation): an operation to update the given node with
+            node (dict): the node to update
+        """
+        cmd = Command(
+            name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=node["idx"])
+        nx.set_node_attributes(self._graph, {node["idx"]: {**cmd._asdict()}})
