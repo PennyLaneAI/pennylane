@@ -23,6 +23,8 @@
   and test_operation.py
   [#329](https://github.com/XanaduAI/pennylane/pull/329)
 
+* The quantum natural gradient now uses `scipy.linalg.pinvh` which is more efficient for symmetric matrices.
+
 ### Documentation
 
 * Added C-SWAP gate to the set of qubit operations
@@ -40,7 +42,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer
+Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Roeland Wiersema
 
 ---
 
