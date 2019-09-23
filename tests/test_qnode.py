@@ -107,6 +107,12 @@ class TestQNodeOperationQueue:
         assert opqueue_test_node.circuit.operations[3] not in successors
         assert opqueue_test_node.circuit.observables[0] in successors
 
+    def test_op_successors_extracts_all_successors(self, opqueue_test_node):
+        """Tests that _op_successors properly extracts all successors"""
+        successors = opqueue_test_node._op_successors(2, only=None)
+        assert opqueue_test_node.ops[4] in successors
+        assert opqueue_test_node.ops[5] not in successors
+
 
 @pytest.fixture(scope="function")
 def operable_mock_device_2_wires():
@@ -831,6 +837,25 @@ class TestQNodeGradients:
         # gradient has the correct shape and every element is nonzero
         assert grad_A.shape == (1, 3)
         assert np.count_nonzero(grad_A) == 3
+        # the different methods agree
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
+    def test_qnode_gradient_gate_with_two_parameters(self, tol):
+        """Test that a gate with two parameters yields
+        correct gradients"""
+        def qf(r0, phi0, r1, phi1):
+            qml.Squeezing(r0, phi0, wires=[0])
+            qml.Squeezing(r1, phi1, wires=[0])
+            return qml.expval(qml.NumberOperator(0))
+
+        dev = qml.device('default.gaussian', wires=2)
+        q = qml.QNode(qf, dev)
+
+        par = [0.543, 0.123, 0.654, -0.629]
+
+        grad_A = q.jacobian(par, method='A')
+        grad_F = q.jacobian(par, method='F')
+
         # the different methods agree
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 

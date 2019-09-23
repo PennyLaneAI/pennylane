@@ -361,10 +361,7 @@ class QNode:
 
         # TODO: we should enforce plugins using the Device.capabilities dictionary to specify
         # whether they are qubit or CV devices, and remove this logic here.
-        if all(are_cvs):
-            self.type = 'CV'
-        elif not any(are_cvs):
-            self.type = 'qubit'
+        self.type = 'CV' if all(are_cvs) else 'qubit'
 
         # map each free variable to the operations which depend on it
         self.variable_ops = {}

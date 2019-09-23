@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
-                                             Rot3, Rotx, Roty, Rotz, 
+                                             Rot3, Rotx, Roty, Rotz,
                                              Rphi, Z, hermitian,
                                              spectral_decomposition, unitary)
 
@@ -69,6 +69,15 @@ U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 U_swap = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
+U_cswap = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 1]])
 
 
 H = np.array(
@@ -264,7 +273,7 @@ class TestStateFunctions:
 
     def test_hermitian(self, tol):
         """Test that the hermitian function produces the correct output."""
-        
+
         out = hermitian(H)
 
         # verify output type
@@ -297,12 +306,20 @@ class TestOperatorMatrices:
         ("Hadamard", np.array([[1, 1], [1, -1]])/np.sqrt(2)),
         ("CNOT", np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])),
         ("SWAP", np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])),
+        ("CSWAP",np.array([[1, 0, 0, 0, 0, 0, 0, 0],
+                           [0, 1, 0, 0, 0, 0, 0, 0],
+                           [0, 0, 1, 0, 0, 0, 0, 0],
+                           [0, 0, 0, 1, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 1, 0, 0, 0],
+                           [0, 0, 0, 0, 0, 0, 1, 0],
+                           [0, 0, 0, 0, 0, 1, 0, 0],
+                           [0, 0, 0, 0, 0, 0, 0, 1]])),
         ("CZ", np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])),
     ])
-    def test_get_operator_matrix_no_parameters(self, qubit_device_2_wires, tol, name, expected):
+    def test_get_operator_matrix_no_parameters(self, qubit_device_3_wires, tol, name, expected):
         """Tests that get_operator_matrix returns the correct matrix."""
 
-        res = qubit_device_2_wires._get_operator_matrix(name, ())
+        res = qubit_device_3_wires._get_operator_matrix(name, ())
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -377,6 +394,22 @@ class TestApply:
         qubit_device_2_wires.apply(name, wires=[0, 1], par=[])
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
+
+
+    @pytest.mark.parametrize("name,input,expected_output", [
+        ("CSWAP", [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]),
+        ("CSWAP", [0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0]),
+        ("CSWAP", [0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1, 0, 0]),
+    ])
+    def test_apply_operation_three_wires_no_parameters(self, qubit_device_3_wires, tol, name, input, expected_output):
+        """Tests that applying an operation yields the expected output state for three wire
+           operations that have no parameters."""
+
+        qubit_device_3_wires._state = np.array(input)
+        qubit_device_3_wires.apply(name, wires=[0, 1, 2], par=[])
+
+        assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
+
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
         ("BasisState", [1, 0, 0, 0], [0, 0, 1, 0], [[1, 0]]),
@@ -502,7 +535,7 @@ class TestExpval:
         qubit_device_1_wire._state = np.array(input)
         res = qubit_device_1_wire.expval(name, wires=[0], par=[])
 
-        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+        assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
         ("Identity", [1, 0], 1, []),
@@ -538,7 +571,7 @@ class TestExpval:
 
     def test_expval_warnings(self, qubit_device_1_wire):
         """Tests that expval raises a warning if the given observable is complex."""
-        
+
         qubit_device_1_wire.reset()
 
         # text warning raised if matrix is complex
@@ -583,7 +616,7 @@ class TestVar:
         qubit_device_1_wire._state = np.array(input)
         res = qubit_device_1_wire.var(name, wires=[0], par=[])
 
-        assert np.isclose(res, expected_output, atol=tol, rtol=0) 
+        assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
         ("Identity", [1, 0], 0, []),
@@ -681,28 +714,28 @@ class TestSample:
 class TestMaps:
     """Tests the maps for operations and observables."""
 
-    def test_operation_map(self, qubit_device_2_wires):
+    def test_operation_map(self, qubit_device_3_wires):
         """Test that default qubit device supports all PennyLane discrete gates."""
-        
-        assert set(qml.ops._qubit__ops__) ==  set(qubit_device_2_wires._operation_map)
 
-    def test_observable_map(self, qubit_device_2_wires):
+        assert set(qml.ops._qubit__ops__) ==  set(qubit_device_3_wires._operation_map)
+
+    def test_observable_map(self, qubit_device_3_wires):
         """Test that default qubit device supports all PennyLane discrete observables."""
-        
-        assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_2_wires._observable_map)
 
-    
+        assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_3_wires._observable_map)
+
+
 class TestDefaultQubitIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
     def test_load_default_qubit_device(self):
         """Test that the default plugin loads correctly"""
-        
+
         dev = qml.device("default.qubit", wires=2)
         assert dev.num_wires == 2
         assert dev.shots == 1000
-        assert dev.analytic 
+        assert dev.analytic
         assert dev.short_name == "default.qubit"
 
     def test_args(self):
@@ -713,18 +746,18 @@ class TestDefaultQubitIntegration:
         ):
             qml.device("default.qubit")
 
-    
+
     @pytest.mark.parametrize("gate", set(qml.ops.cv.ops))
-    def test_unsupported_gate_error(self, qubit_device_2_wires, gate):
+    def test_unsupported_gate_error(self, qubit_device_3_wires, gate):
         """Tests that an error is raised if an unsupported gate is applied"""
         op = getattr(qml.ops, gate)
 
-        if op.num_wires <= 0:
+        if op.num_wires is qml.operation.Wires.Any or qml.operation.Wires.All:
             wires = [0]
         else:
             wires = list(range(op.num_wires))
 
-        @qml.qnode(qubit_device_2_wires)
+        @qml.qnode(qubit_device_3_wires)
         def circuit(*x):
             """Test quantum function"""
             x = prep_par(x, op)
@@ -740,17 +773,17 @@ class TestDefaultQubitIntegration:
             circuit(*x)
 
     @pytest.mark.parametrize("observable", set(qml.ops.cv.obs))
-    def test_unsupported_observable_error(self, qubit_device_2_wires, observable):
+    def test_unsupported_observable_error(self, qubit_device_3_wires, observable):
         """Test error is raised with unsupported observables"""
 
         op = getattr(qml.ops, observable)
 
-        if op.num_wires <= 0:
+        if op.num_wires is qml.operation.Wires.Any or qml.operation.Wires.All:
             wires = [0]
         else:
             wires = list(range(op.num_wires))
 
-        @qml.qnode(qubit_device_2_wires)
+        @qml.qnode(qubit_device_3_wires)
         def circuit(*x):
             """Test quantum function"""
             x = prep_par(x, op)
@@ -792,7 +825,7 @@ class TestDefaultQubitIntegration:
 
     def test_nonzero_shots(self, tol):
         """Test that the default qubit plugin provides correct result for high shot number"""
-        
+
         shots = 10 ** 5
         dev = qml.device("default.qubit", wires=1, shots=shots)
 
@@ -838,7 +871,7 @@ class TestDefaultQubitIntegration:
         ("CZ", [-1/2, -1/2]),
     ])
     def test_supported_gate_two_wires_no_parameters(self, qubit_device_2_wires, tol, name, expected_output):
-        """Tests supported gates that act on a single wire that are not parameterized"""
+        """Tests supported gates that act on two wires that are not parameterized"""
 
         op = getattr(qml.ops, name)
 
@@ -851,6 +884,26 @@ class TestDefaultQubitIntegration:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
+
+
+    @pytest.mark.parametrize("name,expected_output", [
+        ("CSWAP", [-1, -1, 1]),
+    ])
+    def test_supported_gate_three_wires_no_parameters(self, qubit_device_3_wires, tol, name, expected_output):
+        """Tests supported gates that act on three wires that are not parameterized"""
+
+        op = getattr(qml.ops, name)
+
+        assert qubit_device_3_wires.supports_operation(name)
+
+        @qml.qnode(qubit_device_3_wires)
+        def circuit():
+            qml.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
+            op(wires=[0, 1, 2])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+
+        assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
+
 
     # This test is ran with two Z expvals
     @pytest.mark.parametrize("name,par,expected_output", [
@@ -896,7 +949,7 @@ class TestDefaultQubitIntegration:
     ])
     def test_supported_gate_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, par, expected_output):
         """Tests supported gates that act on a single wire that are parameterized"""
-    
+
         op = getattr(qml.ops, name)
 
         assert qubit_device_1_wire.supports_operation(name)
@@ -930,7 +983,7 @@ class TestDefaultQubitIntegration:
     ])
     def test_supported_gate_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, par, expected_output):
         """Tests supported gates that act on two wires wires that are parameterized"""
-    
+
         op = getattr(qml.ops, name)
 
         assert qubit_device_2_wires.supports_operation(name)
@@ -970,7 +1023,7 @@ class TestDefaultQubitIntegration:
             return qml.expval(obs(wires=[0]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
-    
+
     @pytest.mark.parametrize("name,state,expected_output,par", [
         ("Identity", [1, 0], 1, []),
         ("Identity", [0, 1], 1, []),
@@ -992,7 +1045,7 @@ class TestDefaultQubitIntegration:
             return qml.expval(obs(*par, wires=[0]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
-    
+
     @pytest.mark.parametrize("name,state,expected_output,par", [
         ("Hermitian", [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], 5/3, [np.array([[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]])]),
         ("Hermitian", [0, 0, 0, 1], 0, [np.array([[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])]),
