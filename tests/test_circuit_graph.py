@@ -58,6 +58,26 @@ def circuit(queue, obs):
     return circuit
 
 
+@pytest.fixture()
+def parameterized_circuit():
+    def circuit(a, b, c, d, e, f):
+        qml.Rotation(a, wires=0),
+        qml.Rotation(b, wires=1),
+        qml.Rotation(c, wires=2),
+        qml.Beamsplitter(d, 1, wires=[0, 1])
+        qml.Rotation(1, wires=0),
+        qml.Rotation(e, wires=1),
+        qml.Rotation(f, wires=2),
+
+        return [
+            qml.expval(qml.ops.NumberOperator(wires=0)),
+            qml.expval(qml.ops.NumberOperator(wires=1)),
+            qml.expval(qml.ops.NumberOperator(wires=2)),
+        ]
+
+    return circuit
+
+
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
 
@@ -260,7 +280,9 @@ class TestCircuitGraph:
         values."""
         mock_graph = MagicMock()
         mock_graph.nodes.values.return_value = [
-            {"return_type": None, "idx": 0}, {"return_type": MagicMock(), "idx": 1}]
+            {"return_type": None, "idx": 0},
+            {"return_type": MagicMock(), "idx": 1},
+        ]
         monkeypatch.setattr(circuit, "_graph", mock_graph)
         assert circuit.observable_nodes == [mock_graph.nodes.values()[1]]
         assert circuit.operation_nodes == [mock_graph.nodes.values()[0]]
@@ -271,17 +293,7 @@ class TestCircuitGraph:
 
     def test_get_names(self, circuit):
         result = circuit.get_names(range(9))
-        expected = [
-            "RX",
-            "RY",
-            "RZ",
-            "CNOT",
-            "Hadamard",
-            "CNOT",
-            "PauliX",
-            "PauliX",
-            "Hermitian",
-        ]
+        expected = ["RX", "RY", "RZ", "CNOT", "Hadamard", "CNOT", "PauliX", "PauliX", "Hermitian"]
         assert result == expected
 
     def test_op_indices(self, circuit):
@@ -295,25 +307,10 @@ class TestCircuitGraph:
         assert circuit.get_op_indices_for_wire(1) == op_indices_for_wire_1
         assert circuit.get_op_indices_for_wire(2) == op_indices_for_wire_2
 
-    def test_layers(self):
+    def test_layers(self, parameterized_circuit):
         """A test of a simple circuit with 3 layers and 6 parameters"""
-        def circuit(a, b, c, d, e, f):
-            qml.Rotation(a, wires=0),
-            qml.Rotation(b, wires=1),
-            qml.Rotation(c, wires=2),
-            qml.Beamsplitter(d, 1, wires=[0, 1])
-            qml.Rotation(1, wires=0),
-            qml.Rotation(e, wires=1),
-            qml.Rotation(f, wires=2),
-
-            return [
-                qml.expval(qml.ops.NumberOperator(wires=0)),
-                qml.expval(qml.ops.NumberOperator(wires=1)),
-                qml.expval(qml.ops.NumberOperator(wires=2)),
-            ]
-
         dev = qml.device("default.qubit", wires=3)
-        circuit = qml.QNode(circuit, dev)
+        circuit = qml.QNode(parameterized_circuit, dev)
         circuit.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
 
         layers = circuit.circuit.layers()
@@ -325,3 +322,29 @@ class TestCircuitGraph:
         assert layers[1].param_idx == [3]
         assert layers[2].op_idx == [5, 6]
         assert layers[2].param_idx == [4, 5]
+
+    def test_iterate_layers(self, parameterized_circuit):
+        dev = qml.device("default.qubit", wires=3)
+        circuit = qml.QNode(parameterized_circuit, dev)
+        circuit.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
+        result = list(circuit.circuit.iterate_layers())
+
+        assert len(result) == 3
+        assert set(result[0][0]) == set([])
+        assert set(result[0][1]) == set(circuit.circuit.operations[:3])
+        assert result[0][2] == (0, 1, 2)
+        assert set(result[0][3]) == set(
+            circuit.circuit.operations[3:] + circuit.circuit.observables
+        )
+
+        assert set(result[1][0]) == set(circuit.circuit.operations[:2])
+        assert set(result[1][1]) == set([circuit.circuit.operations[3]])
+        assert result[1][2] == (3,)
+        assert set(result[1][3]) == set(
+            circuit.circuit.operations[4:6] + circuit.circuit.observables[:2]
+        )
+
+        assert set(result[2][0]) == set(circuit.circuit.operations[:4])
+        assert set(result[2][1]) == set(circuit.circuit.operations[5:])
+        assert result[2][2] == (4, 5)
+        assert set(result[2][3]) == set(circuit.circuit.observables[1:])
