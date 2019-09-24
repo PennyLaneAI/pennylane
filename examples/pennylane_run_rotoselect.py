@@ -107,17 +107,24 @@ dev = qml.device('default.qubit',analytic=True,wires=2)
 def ansatz(params):
     qml.RX(params[0], wires=0)
     qml.RY(params[1], wires=1)
-    qml.CNOT(wires=[0,1])
+    qml.CNOT(wires=[0, 1])
+
 
 @qml.qnode(dev)
 def circuit(params):
     ansatz(params)
-    return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliX(1))
+    return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliY(1))
+
+@qml.qnode(dev)
+def circuit2(params):
+    ansatz(params)
+    return qml.expval(qml.PauliX(0))
 
 def cost(params):
     Z_1 = circuit(params)[0]
-    X_2 = circuit(params)[1]
-    return 0.1*X_2 - 0.3*Z_1
+    Y_2 = circuit(params)[1]
+    X_1 = circuit2(params)
+    return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
 ##############################################################################
 # Helper methods for the algorithm
@@ -177,7 +184,7 @@ for i in range(n_steps):
 # the gradient of the circuit and step in this direction.
 
 params = init_params[:]
-opt = qml.GradientDescentOptimizer(stepsize=2.)
+opt = qml.GradientDescentOptimizer(stepsize=0.5)
 costs_grad_desc = []
 for i in range(n_steps):
     costs_grad_desc.append(cost(params))
@@ -214,8 +221,8 @@ from mpl_toolkits.mplot3d import Axes3D
 fig = plt.figure(figsize=(6, 4))
 ax = fig.gca(projection="3d")
 
-X = np.linspace(-3.0, 3.0, 20)
-Y = np.linspace(-3.0, 3.0, 20)
+X = np.linspace(-4.0, 4.0, 20)
+Y = np.linspace(-4.0, 4.0, 20)
 xx, yy = np.meshgrid(X, Y)
 Z = np.array([[cost([x, y]) for x in X] for y in Y]).reshape(len(Y), len(X))
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
@@ -257,13 +264,18 @@ def ansatz(params, generators):
 @qml.qnode(dev)
 def circuit(params, generators=[]): # generators must be a kwarg in a qnode
     ansatz(params, generators)
-    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
+@qml.qnode(dev)
+def circuit2(params, generators=[]): # generators must be a kwarg in a qnode
+    ansatz(params, generators)
+    return qml.expval(qml.PauliX(0))
 
 def cost(params, generators):
     Z_1 = circuit(params, generators=generators)[0]
-    X_2 = circuit(params, generators=generators)[1]
-    return 0.1*X_2 - 0.3*Z_1
+    Y_2 = circuit(params, generators=generators)[1]
+    X_1 = circuit2(params, generators=generators)
+    return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
 
 
@@ -308,21 +320,58 @@ def rotoselect_cycle(cost, params, generators):
 ##############################################################################
 # Optimization and comparison with gradient descent
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# 
+# We perform the optimization and print the optimal generators. The cost function is
+# reduced below the minimal value from gradient descent or Rotosolve on the original
+# circuit structure ansatz: the learned circuit structure performs better without
+# increasing the depth of the circuit.
 
-obj3 = []
+costs_rotoselect = []
 init_params = [0.3, 0.8]
 params = init_params
 init_generators = ['X', 'X']
 generators = init_generators
 for _ in range(n_steps):
-    obj3.append(cost(params, generators))
+    costs_rotoselect.append(cost(params, generators))
     params, generators = rotoselect_cycle(cost, params, generators)
 
 print("Optimal generators are: {}".format(generators))
 
+# plot cost function vs. steps comparison
+fig, (ax1,ax2) = plt.subplots(1,2,figsize=(7,4))
+plt.subplot(1,2,1)
+plt.plot(steps,costs_grad_desc,'o-')
+plt.title("grad. desc. on original ansatz")
+plt.xlabel("steps")
+plt.ylabel("cost")
+plt.subplot(1,2,2)
+plt.plot(steps,costs_rotoselect,'o-')
+plt.title("rotoselect")
+plt.xlabel("cycles")
+plt.ylabel("cost")
+plt.tight_layout()
+plt.show()
+
+
 ##############################################################################
 # Cost function surface for learned circuit structure
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Finally, we plot the cost function surface for the newly discovered optimized
+# circuit structure shown in the figure above. It is apparent from this plot that
+# the original ansatz was not expressive enough to arrive at the optimal values
+# of the cost function.
 
+fig = plt.figure(figsize=(6, 4))
+ax = fig.gca(projection="3d")
 
+X = np.linspace(-4.0, 4.0, 20)
+Y = np.linspace(-4.0, 4.0, 20)
+xx, yy = np.meshgrid(X, Y)
+# plot cost for fixed optimal generators
+Z = np.array([[cost([x, y], generators=generators) for x in X] for y in Y]).reshape(len(Y), len(X))
+surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
+
+ax.set_xlabel(r"$\theta_1$")
+ax.set_ylabel(r"$\theta_2$")
+ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
+
+plt.show()
