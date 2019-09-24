@@ -152,7 +152,7 @@ class CircuitGraph:
         """
         return self._graph
 
-    def get_op_indices(self, wire):
+    def get_op_indices_for_wire(self, wire):
         """The operation indices on the given wire.
 
         Args:
@@ -162,7 +162,7 @@ class CircuitGraph:
             list (int): all operation indices on the wire,
             in temporal order
         """
-        return list(zip(*self._grid[wire]))[0]
+        return [op.idx for op in self._grid[wire]]
 
     def ancestors(self, ops):
         """Returns all ancestor operations of a given set of operations.

@@ -54,7 +54,12 @@ def obs():
 @pytest.fixture()
 def circuit(queue, obs):
     """A fixture of a circuit generated based on the queue and obs fixtures above."""
-    circuit = CircuitGraph(queue, obs)
+    params = {
+        0: [(0, 0)],
+        1: [(1, 0)],
+        2: [(2, 0)],
+    }
+    circuit = CircuitGraph(queue, obs, params)
     return circuit
 
 
@@ -268,3 +273,29 @@ class TestCircuitGraph:
     def test_operations(self, circuit, queue):
         """Test that the `operations` property returns the list of operations in the circuit."""
         assert circuit.operations == queue
+
+    def test_get_names(self, circuit):
+        result = circuit.get_names(range(9))
+        expected = [
+            "RX",
+            "RY",
+            "RZ",
+            "CNOT",
+            "Hadamard",
+            "CNOT",
+            "PauliX",
+            "PauliX",
+            "Hermitian",
+        ]
+        assert result == expected
+
+    def test_op_indices(self, circuit):
+        """Test that for the given circuit, this method will fetch the correct operation indices for
+        a given wire"""
+        op_indices_for_wire_0 = [0, 3, 5, 7]
+        op_indices_for_wire_1 = [1, 3, 6, 8]
+        op_indices_for_wire_2 = [2, 4, 5, 8]
+
+        assert circuit.get_op_indices_for_wire(0) == op_indices_for_wire_0
+        assert circuit.get_op_indices_for_wire(1) == op_indices_for_wire_1
+        assert circuit.get_op_indices_for_wire(2) == op_indices_for_wire_2
