@@ -72,7 +72,7 @@ chosen there.
 # is
 #
 # .. math::
-#   H = 0.1X_2 - 0.3Z_1
+#   H = 0.5Y_2 - 0.8Z_1 - 0.2X_1
 #
 # where the subscript denotes the qubit upon which the Pauli operator acts. The
 # expectation value of this quantity acts as the cost function for our
@@ -81,7 +81,10 @@ chosen there.
 # Rotosolve
 # ---------
 # As a precursor to implementing Rotoselect we can analyze a version of the algorithm
-# which does not optimize the choice of gates, called Rotosolve. Later, we will build on this example
+# which does not optimize the choice of gates, called# .. figure:: ../../examples/figures/original_ansatz.png
+#    :scale: 65%
+#    :align: center
+#    :alt: original_ansatz Rotosolve. Later, we will build on this example
 # to implement Rotoselect and vary the circuit structure.
 #
 # Imports
@@ -101,8 +104,14 @@ dev = qml.device('default.qubit',analytic=True,wires=2)
 ##############################################################################
 # Creating a fixed quantum circuit
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# .. figure:: ../../examples/figures/original_ansatz.png
+#    :scale: 65%
+#    :align: center
+#    :alt: original_ansatz
+#
 # Next, we set up a circuit with a fixed ansatz structure -- which will later be subject to change -- and encode
-# the Hamiltonian into a cost function.
+# the Hamiltonian into a cost function. The structure is shown in the figure above.
 
 def ansatz(params):
     qml.RX(params[0], wires=0)
@@ -212,8 +221,12 @@ plt.show()
 ##############################################################################
 # Cost function surface for circuit ansatz
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Now, we plot the cost function surface for comparison with the surface generated
-# by learning the circuit structure.
+# Now, we plot the cost function surface for later comparison with the surface generated
+# by learning the circuit structure. It is apparent that, based on the structure
+# ansatz chosen above, the cost function does not depend on the angle parameter :math:`\theta_2`
+# for the rotation gate :math:`R_y`. As we will show in the following sections, this independence is not true
+# for alternative gate choices.
+
 from matplotlib import cm
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.mplot3d import Axes3D
@@ -236,8 +249,15 @@ plt.show()
 ##############################################################################
 # Rotoselect
 # ----------
+#
+# .. figure:: ../../examples/figures/rotoselect_structure.png
+#    :scale: 65%
+#    :align: center
+#    :alt: rotoselect_structure
+#
 # We now implement the Rotoselect algorithm to learn a good selection of gates to minimize
-# our cost function.
+# our cost function. The structure is similar to the original ansatz, but the unitaries are
+# selected from the set of rotation gates :math:`P_d \in \{R_x,R_y,R_z\}` as shown in the figure above.
 #
 # Creating a quantum circuit with variable gates
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -318,8 +338,8 @@ def rotoselect_cycle(cost, params, generators):
 
 
 ##############################################################################
-# Optimization and comparison with gradient descent
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Optimizing the circuit structure
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # We perform the optimization and print the optimal generators. The cost function is
 # reduced below the minimal value from gradient descent or Rotosolve on the original
 # circuit structure ansatz: the learned circuit structure performs better without
@@ -355,6 +375,12 @@ plt.show()
 ##############################################################################
 # Cost function surface for learned circuit structure
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# .. figure:: ../../examples/figures/learned_structure.png
+#    :scale: 65%
+#    :align: center
+#    :alt: learned_structure
+#
 # Finally, we plot the cost function surface for the newly discovered optimized
 # circuit structure shown in the figure above. It is apparent from this plot that
 # the original ansatz was not expressive enough to arrive at the optimal values
