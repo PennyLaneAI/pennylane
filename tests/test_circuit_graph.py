@@ -324,6 +324,7 @@ class TestCircuitGraph:
         assert layers[2].param_idx == [4, 5]
 
     def test_iterate_layers(self, parameterized_circuit):
+        """A test of the different layers, their successors and ancestors using a simple circuit"""
         dev = qml.device("default.qubit", wires=3)
         circuit = qml.QNode(parameterized_circuit, dev)
         circuit.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
