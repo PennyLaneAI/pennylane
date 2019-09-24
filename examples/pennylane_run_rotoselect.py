@@ -8,9 +8,8 @@ Quantum circuit structure learning
 This example shows how to learn a good selection of rotation
 gates so as to minimize a cost
 function using the Rotoselect algorithm `Ostaszewski et al.
-(2019) <https://arxiv.org/abs/1905.09692>`__. We apply the algorithm to minimize the Hamiltonian presented in
-a previous tutorial, VQE, and improve upon the circuit structure ansatz
-chosen there.
+(2019) <https://arxiv.org/abs/1905.09692>`__. We apply the algorithm to minimize a Hamiltonian for a VQE
+and improve upon an initial circuit structure ansatz.
 """
 ##############################################################################
 # Background
