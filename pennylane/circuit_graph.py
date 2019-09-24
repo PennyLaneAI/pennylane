@@ -152,7 +152,7 @@ class CircuitGraph:
         """
         return self._graph
 
-    def get_op_indices_for_wire(self, wire):
+    def get_wire_indices(self, wire):
         """The operation indices on the given wire.
 
         Args:
@@ -230,6 +230,7 @@ class CircuitGraph:
         """
         return [self.graph.nodes(data="name")[i] for i in ops]
 
+    @property
     def layers(self):
         """Identifies and returns a metadata list describing the
         layer structure of the circuit.
@@ -292,7 +293,7 @@ class CircuitGraph:
             * ``post_queue`` (*list[Operation, Observable]*): all operations that succeed the layer
         """
         # iterate through each layer
-        for ops, param_idx in self.layers():
+        for ops, param_idx in self.layers:
 
             # get the ops in this layer
             layer = self.get_ops(ops)

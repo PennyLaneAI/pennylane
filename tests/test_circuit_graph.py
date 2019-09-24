@@ -303,9 +303,9 @@ class TestCircuitGraph:
         op_indices_for_wire_1 = [1, 3, 6, 8]
         op_indices_for_wire_2 = [2, 4, 5, 8]
 
-        assert circuit.get_op_indices_for_wire(0) == op_indices_for_wire_0
-        assert circuit.get_op_indices_for_wire(1) == op_indices_for_wire_1
-        assert circuit.get_op_indices_for_wire(2) == op_indices_for_wire_2
+        assert circuit.get_wire_indices(0) == op_indices_for_wire_0
+        assert circuit.get_wire_indices(1) == op_indices_for_wire_1
+        assert circuit.get_wire_indices(2) == op_indices_for_wire_2
 
     def test_layers(self, parameterized_circuit):
         """A test of a simple circuit with 3 layers and 6 parameters"""
@@ -313,7 +313,7 @@ class TestCircuitGraph:
         circuit = qml.QNode(parameterized_circuit, dev)
         circuit.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
 
-        layers = circuit.circuit.layers()
+        layers = circuit.circuit.layers
 
         assert len(layers) == 3
         assert layers[0].op_idx == [0, 1, 2]
