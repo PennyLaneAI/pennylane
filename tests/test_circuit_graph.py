@@ -54,12 +54,7 @@ def obs():
 @pytest.fixture()
 def circuit(queue, obs):
     """A fixture of a circuit generated based on the queue and obs fixtures above."""
-    params = {
-        0: [(0, 0)],
-        1: [(1, 0)],
-        2: [(2, 0)],
-    }
-    circuit = CircuitGraph(queue, obs, params)
+    circuit = CircuitGraph(queue, obs)
     return circuit
 
 
@@ -299,3 +294,34 @@ class TestCircuitGraph:
         assert circuit.get_op_indices_for_wire(0) == op_indices_for_wire_0
         assert circuit.get_op_indices_for_wire(1) == op_indices_for_wire_1
         assert circuit.get_op_indices_for_wire(2) == op_indices_for_wire_2
+
+    def test_layers(self):
+        """A test of a simple circuit with 3 layers and 6 parameters"""
+        def circuit(a, b, c, d, e, f):
+            qml.Rotation(a, wires=0),
+            qml.Rotation(b, wires=1),
+            qml.Rotation(c, wires=2),
+            qml.Beamsplitter(d, 1, wires=[0, 1])
+            qml.Rotation(1, wires=0),
+            qml.Rotation(e, wires=1),
+            qml.Rotation(f, wires=2),
+
+            return [
+                qml.expval(qml.ops.NumberOperator(wires=0)),
+                qml.expval(qml.ops.NumberOperator(wires=1)),
+                qml.expval(qml.ops.NumberOperator(wires=2)),
+            ]
+
+        dev = qml.device("default.qubit", wires=3)
+        circuit = qml.QNode(circuit, dev)
+        circuit.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
+
+        layers = circuit.circuit.layers()
+
+        assert len(layers) == 3
+        assert layers[0].op_idx == [0, 1, 2]
+        assert layers[0].param_idx == [0, 1, 2]
+        assert layers[1].op_idx == [3]
+        assert layers[1].param_idx == [3]
+        assert layers[2].op_idx == [5, 6]
+        assert layers[2].param_idx == [4, 5]
