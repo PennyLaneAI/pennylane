@@ -54,11 +54,16 @@ chosen there.
 # for each choice of
 # gate :math:`P_d \in \{R_x,R_y,R_z\}` and selecting the gate which yields the minimum value.
 #
-# Thus, one might expect the number of circuit evaluations required to be 9 (3 for each gate choice). However,
-# since there is a 3-fold
+# Thus, one might expect the number of circuit evaluations required to be 9 for each parameter (3 for each gate
+# choice). However, since there is a 3-fold
 # degeneracy in the expectation value -- :math:`\langle H \rangle (0) = 1` for each of the gates -- the number of
-# evaluations reduces to 7. In this way, one could learn both the optimal parameters and generators for a circuit. In
-# the following sections, we will present an example of this algorithm applied to a VQE Hamiltonian.
+# evaluations reduces to 7.
+#
+# One cycle of the Rotosolve algorithm constitutes
+# iterating through every parameter and performing the calculation above.
+# This cycle is repeated for a fixed number of steps or until convergence. In this way, one could learn both
+# the optimal parameters and generators for a circuit. Next, we present an example of this algorithm
+# applied to a VQE Hamiltonian.
 #
 # VQE
 # ~~~
@@ -67,9 +72,10 @@ chosen there.
 # is
 #
 # .. math::
-#   H = 0.1\sigma_x+0.5\sigma_y
+#   H = 0.1X_2 - 0.3Z_1
 #
-# acting on the second qubit. The expectation value of this quantity acts as the cost function for our
+# where the subscript denotes the qubit upon which the Pauli operator acts. The
+# expectation value of this quantity acts as the cost function for our
 # optimization.
 #
 # Rotosolve
@@ -95,9 +101,8 @@ dev = qml.device('default.qubit',analytic=True,wires=2)
 ##############################################################################
 # Creating a fixed quantum circuit
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Next, we set up a circuit with a fixed ansatz structure which will later be subject to change and encode
-# the Hamiltonian into a cost function. We require 2 circuits since we are calculating multiple expectation
-# values of Pauli measurements on the same wire.
+# Next, we set up a circuit with a fixed ansatz structure -- which will later be subject to change -- and encode
+# the Hamiltonian into a cost function.
 
 def ansatz(params):
     qml.RX(params[0], wires=0)
@@ -105,19 +110,14 @@ def ansatz(params):
     qml.CNOT(wires=[0,1])
 
 @qml.qnode(dev)
-def circuit_X(params):
+def circuit(params):
     ansatz(params)
-    return qml.expval(qml.PauliX(1))
-
-@qml.qnode(dev)
-def circuit_Y(params):
-    ansatz(params)
-    return qml.expval(qml.PauliY(1))
+    return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliX(1))
 
 def cost(params):
-    X = circuit_X(params)
-    Y = circuit_Y(params)
-    return 0.1*X + 0.5*Y
+    Z_1 = circuit(params)[0]
+    X_2 = circuit(params)[1]
+    return 0.1*X_2 - 0.3*Z_1
 
 ##############################################################################
 # Helper methods for the algorithm
@@ -126,6 +126,7 @@ def cost(params):
 # the expression in the previous section. These will serve as the basis for
 # our optimization algorithm.
 
+# calculation as described above
 def opt_theta_d(d, params, cost):
     params[d] = 0.
     M_0 = cost(params)
@@ -142,7 +143,7 @@ def opt_theta_d(d, params, cost):
     if params[d] <= -np.pi:
         params[d] += 2 * np.pi
 
-
+# one cycle of rotosolve
 def rotosolve_cycle(cost, params):
     for d in range(len(params)):
         opt_theta_d(d, params, cost)
@@ -157,12 +158,10 @@ def rotosolve_cycle(cost, params):
 # gates in the ansatz circuit structure and perform an optimization using the
 # Rotosolve algorithm.
 
-
 init_params = [0.3, 0.25]
 params = init_params[:]
 n_steps = 30
 
-#
 costs_rotosolve = []
 
 for i in range(n_steps):
@@ -188,7 +187,7 @@ for i in range(n_steps):
 # plot cost function optimization using the 2 techniques
 import matplotlib.pyplot as plt
 steps = np.arange(0,n_steps)
-fig, (ax1,ax2) = plt.subplots(1,2)
+fig, (ax1,ax2) = plt.subplots(1,2,figsize=(7,4))
 plt.subplot(1,2,1)
 plt.plot(steps,costs_grad_desc,'o-')
 plt.title("grad. desc.")
@@ -199,104 +198,131 @@ plt.plot(steps,costs_rotosolve,'o-')
 plt.title("rotosolve")
 plt.xlabel("cycles")
 plt.ylabel("cost")
+plt.tight_layout()
+plt.show()
+
 
 ##############################################################################
 # Cost function surface for circuit ansatz
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Now, we plot the cost function surface for comparison with the surface generated
+# by learning the circuit structure.
+from matplotlib import cm
+from matplotlib.ticker import MaxNLocator
+from mpl_toolkits.mplot3d import Axes3D
 
+fig = plt.figure(figsize=(6, 4))
+ax = fig.gca(projection="3d")
+
+X = np.linspace(-3.0, 3.0, 20)
+Y = np.linspace(-3.0, 3.0, 20)
+xx, yy = np.meshgrid(X, Y)
+Z = np.array([[cost([x, y]) for x in X] for y in Y]).reshape(len(Y), len(X))
+surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
+
+ax.set_xlabel(r"$\theta_1$")
+ax.set_ylabel(r"$\theta_2$")
+ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
+
+plt.show()
 
 ##############################################################################
 # Rotoselect
 # ----------
+# We now implement the Rotoselect algorithm to learn a good selection of gates to minimize
+# our cost function.
+#
+# Creating a quantum circuit with variable gates
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# First, we setup a quantum circuit with a similar structure to the one above, but
+# instead of fixed rotation gates :math:`X` and :math:`Y`, we allow the gates to be specified with the
+# ``generators`` keyword. A helper method ``RGen`` returns the correct unitary gate according to the
+# rotation specified by an element of ``generators``.
 
-class Rotoselect:
-
-
-    def cycle(self, cost, var, gen):
-        params = var.copy()
-        params_opt = params.copy()
-        generators = gen.copy()
-        generators_opt = gen.copy()
-        params_opt_cost = cost(params_opt, generators_opt)
-        for d in range(len(params)):
-            params[d] = 0.
-            M_phi = cost(params, generators) # M_phi independent of generator selection
-            for generator in ['X','Y','Z']:
-                generators[d] = generator
-                params[d] = np.pi / 2.
-                M_phi_plus = cost(params, generators)
-                params[d] = -np.pi / 2.
-                M_phi_minus = cost(params, generators)
-                a = np.arctan2(2. * M_phi - M_phi_plus - M_phi_minus, M_phi_plus - M_phi_minus)
-                params[d] = -np.pi / 2. - a
-                if params[d] > np.pi:
-                    params[d] -= 2 * np.pi
-                if params[d] <= -np.pi:
-                    params[d] += 2 * np.pi
-                params_cost = cost(params, generators)
-                if params_cost <= params_opt_cost:
-                    params_opt[d] = params[d]
-                    params_opt_cost = params_cost
-                    generators_opt[d] = generator
-            params[d] = params_opt[d]
-            generators[d] = generators_opt[d]
-        return params, generators
-
-
-def RGen(theta, generator, wires):
+def RGen(param, generator, wires):
     if generator == 'X':
-        qml.RX(theta, wires=wires)
+        qml.RX(param, wires=wires)
     elif generator == 'Y':
-        qml.RY(theta, wires=wires)
+        qml.RY(param, wires=wires)
     elif generator == 'Z':
-        qml.RZ(theta, wires=wires)
+        qml.RZ(param, wires=wires)
     else:
         raise Exception("Invalid generator")
 
-
-def ansatz(var, generators):
-    RGen(var[0], generators[0], wires=0)
-    RGen(var[1], generators[1], wires=1)
+def ansatz(params, generators):
+    RGen(params[0], generators[0], wires=0)
+    RGen(params[1], generators[1], wires=1)
     qml.CNOT(wires=[0,1])
 
 @qml.qnode(dev)
-def circuit_X(params, generators=[]):
+def circuit(params, generators=[]): # generators must be a kwarg in a qnode
     ansatz(params, generators)
-    return qml.expval(qml.PauliX(1))
-
-@qml.qnode(dev)
-def circuit_Y(params, generators=[]):
-    ansatz(params, generators)
-    return qml.expval(qml.PauliY(1))
+    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
 
 def cost(params, generators):
-    X = circuit_X(params, generators=generators)
-    Y = circuit_Y(params, generators=generators)
-    return 0.1*X + 0.5*Y
+    Z_1 = circuit(params, generators=generators)[0]
+    X_2 = circuit(params, generators=generators)[1]
+    return 0.1*X_2 - 0.3*Z_1
 
+
+
+##############################################################################
+# Helper methods
+# ~~~~~~~~~~~~~~
+# We define helper methods in a similar fashion to Rotosolve. In this case,
+# we must iterate through the possible gate choices in addition to optimizing each parameter.
+
+def rotosolve_d(d, params, generators, cost, M_0): # M_0 only calculated once
+    params[d] = np.pi / 2.
+    M_0_plus = cost(params, generators)
+    params[d] = -np.pi / 2.
+    M_0_minus = cost(params, generators)
+    a = np.arctan2(2. * M_0 - M_0_plus - M_0_minus, M_0_plus - M_0_minus)
+    params[d] = -np.pi / 2. - a
+    if params[d] > np.pi:
+        params[d] -= 2 * np.pi
+    if params[d] <= -np.pi:
+        params[d] += 2 * np.pi
+    return cost(params, generators)
+
+def optimal_theta_and_gen_helper(d, params, generators, cost):
+    params[d] = 0.
+    M_0 = cost(params, generators)  # M_0 independent of generator selection
+    for generator in ['X', 'Y', 'Z']:
+        generators[d] = generator
+        params_cost = rotosolve_d(d, params, generators, cost, M_0)
+        if generator == 'X' or params_cost <= params_opt_cost:
+            params_opt_d = params[d]
+            params_opt_cost = params_cost
+            generators_opt_d = generator
+    return params_opt_d, generators_opt_d
+
+
+def rotoselect_cycle(cost, params, generators):
+    for d in range(len(params)):
+        params[d], generators[d] = optimal_theta_and_gen_helper(d, params, generators, cost)
+    return params, generators
+
+
+##############################################################################
+# Optimization and comparison with gradient descent
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
 
 obj3 = []
-opt = Rotoselect()
 init_params = [0.3, 0.8]
 params = init_params
 init_generators = ['X', 'X']
 generators = init_generators
 for _ in range(n_steps):
     obj3.append(cost(params, generators))
-    params, generators = opt.cycle(cost, params, generators)
+    params, generators = rotoselect_cycle(cost, params, generators)
 
 print("Optimal generators are: {}".format(generators))
-
-
-plt.subplot(1,3,3)
-plt.title("rotoselect")
-plt.xlabel("steps")
-plt.ylabel("cost")
-plt.plot(steps,obj3,'o-')
-plt.tight_layout()
-plt.show()
 
 ##############################################################################
 # Cost function surface for learned circuit structure
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
