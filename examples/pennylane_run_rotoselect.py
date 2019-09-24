@@ -110,6 +110,7 @@ dev = qml.device('default.qubit',analytic=True,wires=2)
 #    :align: center
 #    :alt: original_ansatz
 #
+# |
 # Next, we set up a circuit with a fixed ansatz structure -- which will later be subject to change -- and encode
 # the Hamiltonian into a cost function. The structure is shown in the figure above.
 
@@ -255,6 +256,7 @@ plt.show()
 #    :align: center
 #    :alt: rotoselect_structure
 #
+# |
 # We now implement the Rotoselect algorithm to learn a good selection of gates to minimize
 # our cost function. The structure is similar to the original ansatz, but the unitaries are
 # selected from the set of rotation gates :math:`P_d \in \{R_x,R_y,R_z\}` as shown in the figure above.
@@ -381,6 +383,7 @@ plt.show()
 #    :align: center
 #    :alt: learned_structure
 #
+# |
 # Finally, we plot the cost function surface for the newly discovered optimized
 # circuit structure shown in the figure above. It is apparent from this plot that
 # the original ansatz was not expressive enough to arrive at the optimal values
