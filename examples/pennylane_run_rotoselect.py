@@ -201,7 +201,7 @@ for i in range(n_steps):
 # plot cost function optimization using the 2 techniques
 import matplotlib.pyplot as plt
 steps = np.arange(0,n_steps)
-fig, (ax1,ax2) = plt.subplots(1,2,figsize=(7,4))
+fig, (ax1,ax2) = plt.subplots(1,2,figsize=(7,3))
 plt.subplot(1,2,1)
 plt.plot(steps,costs_grad_desc,'o-')
 plt.title("grad. desc.")
@@ -356,7 +356,7 @@ for _ in range(n_steps):
 print("Optimal generators are: {}".format(generators))
 
 # plot cost function vs. steps comparison
-fig, (ax1,ax2) = plt.subplots(1,2,figsize=(7,4))
+fig, (ax1,ax2) = plt.subplots(1,2,figsize=(7,3))
 plt.subplot(1,2,1)
 plt.plot(steps,costs_grad_desc,'o-')
 plt.title("grad. desc. on original ansatz")
@@ -382,7 +382,7 @@ plt.show()
 #
 # |
 # Finally, we plot the cost function surface for the newly discovered optimized
-# circuit structure shown in the figure above. It is apparent from this plot that
+# circuit structure shown in the figure above. It is apparent from the minima in the plot that
 # the original ansatz was not expressive enough to arrive at the optimal values
 # of the cost function.
 
