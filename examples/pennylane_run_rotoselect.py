@@ -168,7 +168,7 @@ def rotosolve_cycle(cost, params):
 ##############################################################################
 # Optimization and comparison with gradient descent
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# We set up some initial parameters for the :math:`\sigma_x` and :math:`\sigma_y`
+# We set up some initial parameters for the :math:`R_x` and :math:`R_y`
 # gates in the ansatz circuit structure and perform an optimization using the
 # Rotosolve algorithm.
 
