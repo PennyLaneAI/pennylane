@@ -102,3 +102,4 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_variational_quantum_eigensolver
     tutorials/pennylane_run_data_reuploading_classifier
     tutorials/pennylane_run_quantum_natural_gradient
+    tutorials/pennylane_run_rotoselect
