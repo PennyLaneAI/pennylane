@@ -34,7 +34,7 @@
 
 * Added tutorial for Rotoselect algorithm for circuit
   structure learning
-  []()
+  [#335](https://github.com/XanaduAI/pennylane/pull/335)
 
 * Added missing figures for gallery thumbnails of state-preparation
   and QGAN tutorials
