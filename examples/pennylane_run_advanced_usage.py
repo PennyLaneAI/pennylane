@@ -143,14 +143,15 @@ print(circuit3(0.1, fixed=0.4))
 #     137         return value
 # TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
 #
-# QNodes from different interfaces on one Device
-# -----------------------------------------------
+# Using different interfaces on one Device
+# ----------------------------------------
 #
 # In addition to allowing multiple quantum nodes on one device,
-# PennyLane also provides the flexibility for quantum nodes to have multiple interfaces.
+# PennyLane also provides the flexibility for these nodes to have multiple interfaces.
 # Let's look at the following simple example:
 
 dev1 = qml.device('default.qubit', wires=1)
+
 def circuit(phi):
     qml.RX(phi, wires=0)
     return qml.expval(qml.PauliZ(0))
@@ -160,7 +161,7 @@ def circuit(phi):
 # from NumPy to PyTorch: 
 
 qnode1 = qml.QNode(circuit, dev1)
-qnode2 = qml.QNode(circuit, dev1)
+
 qnode1_torch = qnode1.to_torch()
 
 ##############################################################################
@@ -174,6 +175,40 @@ def cost(qnode, phi):
 
 print(cost(qnode1, np.pi))
 
-print(cost(qnode2, np.pi))
-
 print(cost(qnode1_torch, np.pi))
+
+##############################################################################
+# The same result is observed when using the more familiar method of defining a QNode:
+#
+
+@qml.qnode(dev1, interface="numpy")
+def circuit1(phi):
+    qml.RX(phi, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+print(circuit1(np.pi))
+
+##############################################################################
+
+@qml.qnode(dev1, interface="torch")
+def circuit2(phi):
+    qml.RX(phi, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+print(circuit2(np.pi))
+
+##############################################################################
+
+import tensorflow as tf
+import tensorflow.contrib.eager as tfe
+tf.enable_eager_execution()
+
+pi = tf.constant(np.pi)
+
+@qml.qnode(dev1, interface="tfe")
+def circuit3(phi):
+    qml.RX(phi, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+print(circuit3(pi))
+
