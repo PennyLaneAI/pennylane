@@ -21,6 +21,10 @@
 
 ### Documentation
 
+* Added tutorial for Rotoselect algorithm for circuit
+  structure learning
+  []()
+
 * Unify import shortcuts to be under qml in qnode.py
   and test_operation.py
   [#329](https://github.com/XanaduAI/pennylane/pull/329)

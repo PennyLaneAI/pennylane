@@ -15,16 +15,17 @@ and improve upon an initial circuit structure ansatz.
 # Background
 # ----------
 #
-# The effects of noise tend to increase with the depth of a quantum circuit, so
-# there is incentive to keep them as shallow as possible. It is often the case that a
-# chosen set of gates is suboptimal for the task at hand. Therefore it would be useful to employ an
-# algorithm which learns a good structure for the quantum circuit tasked with
-# minimizing a certain cost function.
+# In quantum machine learning and optimization problems,
+# one wishes to minimize a cost function with respect to some parameters in the circuit. It is desirable
+# to keep the circuit as shallow as possible to reduce the effects of noise, but a given
+# choice of gates is generally suboptimal for performing the optimization.
+# Therefore it would be useful to employ an
+# algorithm which learns a good circuit structure at fixed depth to minimize the cost function.
 #
 # Furthermore, PennyLane's optimizers perform automatic differentiation of quantum nodes by evaluating phase-shifted
 # calculations of their constituent operators' expectation values on the quantum circuit itself.
-# The output of a calculation, the gradient, is used in optimization methods to minimize a cost. However, there exists
-# a technique to find the optimal parameters of a quantum circuit through phase-shifted calculations,
+# The output of a calculation, the gradient, is used in optimization methods to minimize the cost function. However,
+# there exists a technique to find the optimal parameters of a quantum circuit through phase-shifted calculations,
 # without the need for calculating the gradient as an intermediate step (i.e. a gradient-free optimization).
 # It would be desirable, in some cases, to
 # take advantage of this.
@@ -61,7 +62,7 @@ and improve upon an initial circuit structure ansatz.
 # One cycle of the Rotosolve algorithm constitutes
 # iterating through every parameter and performing the calculation above.
 # This cycle is repeated for a fixed number of steps or until convergence. In this way, one could learn both
-# the optimal parameters and generators for a circuit. Next, we present an example of this algorithm
+# the optimal parameters and generators of rotation for a circuit. Next, we present an example of this algorithm
 # applied to a VQE Hamiltonian.
 #
 # VQE
@@ -187,7 +188,8 @@ for i in range(n_steps):
 # the cost functions at each step, or cycle in the case of Rotosolve.
 # This comparison is fair since the number of circuit
 # evaluations involved in a cycle of Rotosolve is similar to those required to calculate
-# the gradient of the circuit and step in this direction.
+# the gradient of the circuit and step in this direction. Evidently, the Rotosolve algorithm
+# converges on the minimum after the first cycle for this simple circuit.
 
 params = init_params[:]
 opt = qml.GradientDescentOptimizer(stepsize=0.5)
@@ -260,7 +262,7 @@ plt.show()
 # Creating a quantum circuit with variable gates
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # First, we setup a quantum circuit with a similar structure to the one above, but
-# instead of fixed rotation gates :math:`X` and :math:`Y`, we allow the gates to be specified with the
+# instead of fixed rotation gates :math:`R_x` and :math:`R_y`, we allow the gates to be specified with the
 # ``generators`` keyword. A helper method ``RGen`` returns the correct unitary gate according to the
 # rotation specified by an element of ``generators``.
 
@@ -338,9 +340,9 @@ def rotoselect_cycle(cost, params, generators):
 ##############################################################################
 # Optimizing the circuit structure
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# We perform the optimization and print the optimal generators. The cost function is
+# We perform the optimization and print the optimal generators for the rotation gates. The cost function is
 # reduced below the minimal value from gradient descent or Rotosolve on the original
-# circuit structure ansatz: the learned circuit structure performs better without
+# circuit structure ansatz. In other words, the learned circuit structure performs better without
 # increasing the depth of the circuit.
 
 costs_rotoselect = []
