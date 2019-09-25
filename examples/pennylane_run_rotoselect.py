@@ -109,7 +109,7 @@ dev = qml.device('default.qubit',analytic=True,wires=2)
 #
 # |
 # Next, we set up a circuit with a fixed ansatz structure -- which will later be subject to change -- and encode
-# the Hamiltonian into a cost function. The structure is shown in the figure above.
+# the Hamiltonian into a cost function. The structure https://github.com/XanaduAI/pennylane/pull/335is shown in the figure above.
 
 def ansatz(params):
     qml.RX(params[0], wires=0)
@@ -346,9 +346,8 @@ def rotoselect_cycle(cost, params, generators):
 # increasing the depth of the circuit.
 
 costs_rotoselect = []
-init_params = [0.3, 0.8]
-params = init_params
-init_generators = ['X', 'X']
+params = init_params[:]
+init_generators = ['X', 'Y']
 generators = init_generators
 for _ in range(n_steps):
     costs_rotoselect.append(cost(params, generators))
@@ -368,6 +367,7 @@ plt.plot(steps,costs_rotoselect,'o-')
 plt.title("rotoselect")
 plt.xlabel("cycles")
 plt.ylabel("cost")
+plt.yticks(np.arange(-1.25,0.80,0.25))
 plt.tight_layout()
 plt.show()
 
