@@ -7,6 +7,9 @@
   analytically and not be estimated from data.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
+* Added C-SWAP gate to the set of qubit operations
+  [#330](https://github.com/XanaduAI/pennylane/pull/330)
+
 ### Breaking changes
 
 * The argument `n` specifying the number of samples in the method `Device.sample` was removed.
@@ -23,10 +26,21 @@
   and test_operation.py
   [#329](https://github.com/XanaduAI/pennylane/pull/329)
 
+* The quantum natural gradient now uses `scipy.linalg.pinvh` which is more efficient for symmetric matrices
+  than the previously used `scipy.linalg.pinv`.
+  [#331](https://github.com/XanaduAI/pennylane/pull/331)
+
 ### Documentation
 
 * Added tutorial for QAOA on MaxCut problem
   [#328](https://github.com/XanaduAI/pennylane/pull/328)
+  
+* Added QGAN flow chart figure to its tutorial
+  [#333](https://github.com/XanaduAI/pennylane/pull/333)
+
+* Added missing figures for gallery thumbnails of state-preparation
+  and QGAN tutorials
+  [#326](https://github.com/XanaduAI/pennylane/pull/326)
 
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
@@ -40,7 +54,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Angus Lowe, Johannes Jakob Meyer
+Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Roeland Wiersema
 
 ---
 

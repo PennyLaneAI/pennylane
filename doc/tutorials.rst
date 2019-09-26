@@ -20,7 +20,7 @@ plugins, and devices, via simple and easy-to-follow examples.
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to tune a beamsplitter.
-    :figure: ../examples/figures/gaussian_transformation.png
+    :figure: ../examples/figures/gauss-circuit.png
     :description: :ref:`gaussian_transformation`
 
 .. customgalleryitem::
@@ -47,10 +47,12 @@ algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: Do arbitrary state preparation on a real quantum computer.
+    :figure: ../examples/figures/NOON.png
     :description: :ref:`state_preparation`
 
 .. customgalleryitem::
     :tooltip: Use PennyLane to create a simple QGAN
+    :figure: ../examples/figures/qgan3.png
     :description: :ref:`quantum_GAN`
 
 .. customgalleryitem::

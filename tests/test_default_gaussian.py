@@ -644,7 +644,7 @@ class TestDefaultGaussianIntegration(BaseTest):
     def test_unsupported_gates(self):
         """Test error is raised with unsupported gates"""
         self.logTestName()
-        dev = qml.device('default.gaussian', wires=2)
+        dev = qml.device('default.gaussian', wires=3)
 
         gates = set(dev._operation_map.keys())
         all_gates = set(qml.ops.__all_ops__)
@@ -653,7 +653,7 @@ class TestDefaultGaussianIntegration(BaseTest):
             op = getattr(qml.ops, g)
 
             if op.num_wires <= 0:
-                wires = list(range(2))
+                wires = list(range(3))
             else:
                 wires = list(range(op.num_wires))
 
