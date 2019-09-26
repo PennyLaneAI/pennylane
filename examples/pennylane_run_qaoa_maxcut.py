@@ -179,7 +179,7 @@ def comp_basis_measurement(wires):
 # ~~~~~~~
 # Next, we create a quantum device with 4 qubits.
 
-dev1 = qml.device("default.qubit", wires=n_wires, analytic=True, shots=1)
+dev = qml.device("default.qubit", wires=n_wires, analytic=True, shots=1)
 
 ##############################################################################
 # We also require a quantum node which will apply the operators according to the
