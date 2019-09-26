@@ -36,6 +36,9 @@
   structure learning
   [#335](https://github.com/XanaduAI/pennylane/pull/335)
 
+* Added QGAN flow chart figure to its tutorial
+  [#333](https://github.com/XanaduAI/pennylane/pull/333)
+
 * Added missing figures for gallery thumbnails of state-preparation
   and QGAN tutorials
   [#326](https://github.com/XanaduAI/pennylane/pull/326)
