@@ -101,7 +101,8 @@ show how to find the maximum cut by sampling qubit measurements using PennyLane.
 # Let :math:`\langle \boldsymbol{\gamma},
 # \boldsymbol{\beta} | C | \boldsymbol{\gamma},\boldsymbol{\beta} \rangle` be the expectation of our objective operator.
 # In the next section, we will use PennyLane to perform classical optimization
-# over the circuit parameters :math:`(\boldsymbol{\gamma}, \boldsymbol{\beta})`. This will specify a state :math:`|\boldsymbol{\gamma},\boldsymbol{\beta}\rangle` which is
+# over the circuit parameters :math:`(\boldsymbol{\gamma}, \boldsymbol{\beta})`.
+# This will specify a state :math:`|\boldsymbol{\gamma},\boldsymbol{\beta}\rangle` which is
 # likely to yield an approximately optimal partition :math:`|z\rangle` upon performing a measurement in the
 # computational basis.
 # In the case of the graph shown above, we want to measure either 0101 or 1010 from our state since these correspond to
@@ -112,6 +113,7 @@ show how to find the maximum cut by sampling qubit measurements using PennyLane.
 #   :scale: 60%
 #   :alt: optimal_state
 #
+# |
 # Qualitatively, QAOA tries to evolve the state into the plane of the
 # :math:`|0101\rangle`, :math:`|1010\rangle` basis states (see figure above).
 #
