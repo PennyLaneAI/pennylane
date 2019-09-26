@@ -23,8 +23,9 @@ and improve upon an initial circuit structure ansatz.
 # algorithm which learns a good circuit structure at fixed depth to minimize the cost function.
 #
 # Furthermore, PennyLane's optimizers perform automatic differentiation of quantum nodes by evaluating phase-shifted
-# calculations of their constituent operators' expectation values on the quantum circuit itself.
-# The output of a calculation, the gradient, is used in optimization methods to minimize the cost function. However,
+# expectation values of operators using the quantum circuit itself.
+# The output of these calculations, the gradient, is used in optimization methods to minimize
+# the cost function. However, 
 # there exists a technique to find the optimal parameters of a quantum circuit through phase-shifted calculations,
 # without the need for calculating the gradient as an intermediate step (i.e. a gradient-free optimization).
 # It would be desirable, in some cases, to
