@@ -114,7 +114,7 @@ show how to find the maximum cut by sampling qubit measurements using PennyLane.
 #   :alt: optimal_state
 #
 # |
-# Qualitatively, QAOA tries to evolve the state into the plane of the
+# Qualitatively, QAOA tries to evolve the initial state into the plane of the
 # :math:`|0101\rangle`, :math:`|1010\rangle` basis states (see figure above).
 #
 #
