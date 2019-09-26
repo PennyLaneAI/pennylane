@@ -195,14 +195,14 @@ pauli_z_2 = np.kron(pauli_z, pauli_z)
 
 
 @qml.qnode(dev)
-def circuit(params, edge=None, n_layers=1):
+def circuit(gammas, betas, edge=None, n_layers=1):
     # apply Hadamards to get the n qubit |+> state
     for wire in range(n_wires):
         qml.Hadamard(wires=wire)
     # p instances of unitary operators
     for i in range(n_layers):
-        U_C(params[0][i]) # params[0] is gamma
-        U_B(params[1][i]) # params[1] is beta
+        U_C(gammas[i])
+        U_B(betas[i])
     if edge is None:
         # measurement phase
         return qml.sample(comp_basis_measurement(range(n_wires)))
@@ -233,10 +233,12 @@ def qaoa_maxcut(n_layers=1):
 
     # minimize the negative of the objective function
     def objective(params):
+        gammas = params[0]
+        betas = params[1]
         neg_obj = 0
         for edge in graph:
             # objective for the MaxCut problem
-            neg_obj -= 0.5 * (1 - circuit(params, edge=edge, n_layers=n_layers))
+            neg_obj -= 0.5 * (1 - circuit(gammas, betas, edge=edge, n_layers=n_layers))
         return neg_obj
 
     # initialize optimizer: Adagrad works well empirically
@@ -254,7 +256,7 @@ def qaoa_maxcut(n_layers=1):
     bit_strings = []
     n_samples = 100
     for i in range(0, n_samples):
-        bit_strings.append(int(circuit(params, edge=None, n_layers=n_layers)))
+        bit_strings.append(int(circuit(params[0], params[1], edge=None, n_layers=n_layers)))
 
     # print optimal parameters and most frequently sampled bitstring
     counts = np.bincount(np.array(bit_strings))
