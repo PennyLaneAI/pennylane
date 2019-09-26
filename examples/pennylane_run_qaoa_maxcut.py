@@ -194,7 +194,7 @@ pauli_z = [[1, 0], [0, -1]]
 pauli_z_2 = np.kron(pauli_z, pauli_z)
 
 
-@qml.qnode(dev1)
+@qml.qnode(dev)
 def circuit(params, edge=None, n_layers=1):
     # apply Hadamards to get the n qubit |+> state
     for wire in range(n_wires):
@@ -239,7 +239,7 @@ def qaoa_maxcut(n_layers=1):
             neg_obj -= 0.5 * (1 - circuit(params, edge=edge, n_layers=n_layers))
         return neg_obj
 
-    # initialize optimizer
+    # initialize optimizer: Adagrad works well empirically
     opt = qml.AdagradOptimizer(stepsize=0.5)
 
     # optimize parameters in objective
