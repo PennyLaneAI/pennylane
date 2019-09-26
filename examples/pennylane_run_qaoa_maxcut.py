@@ -17,7 +17,7 @@ show how to find the maximum cut by sampling qubit measurements using PennyLane.
 # The MaxCut problem
 # ~~~~~~~~~~~~~~~~~~
 # The aim of MaxCut is to maximize the number of edges (yellow lines) in a graph that are "cut" by
-# a given partition of the vertices (blue circles) into two sets as shown in the figure below.
+# a given partition of the vertices (blue circles) into two sets (see figure below).
 #
 # .. figure:: ../../examples/figures/qaoa_maxcut_partition.png
 #    :align: center
