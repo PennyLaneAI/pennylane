@@ -221,7 +221,7 @@ def circuit(params, edge=None, n_layers=1):
 # circuit multiple times to yield a distribution of bitstrings. One of the optimal partitions
 # (:math:`z=0101` or :math:`z=1010`) should be the most frequently sampled bitstring.
 # We perform a maximization of :math:`C` by
-# minimizing :math:`-C` to follow the convention that optimizations are cast as minimizations
+# minimizing :math:`-C`, following the convention that optimizations are cast as minimizations
 # in PennyLane.
 
 
