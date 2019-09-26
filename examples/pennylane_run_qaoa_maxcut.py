@@ -207,7 +207,7 @@ def circuit(params, edge=None, n_layers=1):
         # measurement phase
         return qml.sample(comp_basis_measurement(range(n_wires)))
     # during the optimization phase we are evaluating a term
-    # in the objective using exp val
+    # in the objective using expval
     return qml.expval(qml.Hermitian(pauli_z_2, wires=edge))
 
 
