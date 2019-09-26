@@ -207,7 +207,7 @@ def circuit(params, edge=None, n_layers=1):
         # measurement phase
         return qml.sample(comp_basis_measurement(range(n_wires)))
     # during the optimization phase we are evaluating a term
-    # in the objective using exp val
+    # in the objective using expval
     return qml.expval(qml.Hermitian(pauli_z_2, wires=edge))
 
 
@@ -221,7 +221,7 @@ def circuit(params, edge=None, n_layers=1):
 # circuit multiple times to yield a distribution of bitstrings. One of the optimal partitions
 # (:math:`z=0101` or :math:`z=1010`) should be the most frequently sampled bitstring.
 # We perform a maximization of :math:`C` by
-# minimizing :math:`-C` to follow the convention that optimizations are cast as minimizations
+# minimizing :math:`-C`, following the convention that optimizations are cast as minimizations
 # in PennyLane.
 
 
@@ -231,7 +231,7 @@ def qaoa_maxcut(n_layers=1):
     # initialize the parameters near zero
     init_params = 0.01 * np.random.rand(2, n_layers)
 
-    # minimize negative the objective
+    # minimize the negative of the objective function
     def objective(params):
         neg_obj = 0
         for edge in graph:
