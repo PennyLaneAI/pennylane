@@ -231,7 +231,7 @@ def qaoa_maxcut(n_layers=1):
     # initialize the parameters near zero
     init_params = 0.01 * np.random.rand(2, n_layers)
 
-    # minimize negative the objective
+    # minimize the negative of the objective function
     def objective(params):
         neg_obj = 0
         for edge in graph:
