@@ -41,24 +41,26 @@ and improve upon an initial circuit structure ansatz.
 #
 # .. math::
 #
-#   \theta^{*}_d &= \underset{\theta_d}{\text{argmin}} \langle H \rangle (\theta_d) \\
-#                &= -\frac{\pi}{2} - \text{arctan}\left(\frac{2\langle H \rangle (0) -
-#                \langle H \rangle (\pi/2) - \langle H \rangle (-\pi/2)}{\langle H \rangle (\pi/2) -
-#                \langle H \rangle (-\pi/2)}\right)
+#   \theta^{*}_d &= \underset{\theta_d}{\text{argmin}} \langle H \rangle_{\theta_d) \\
+#                &= -\frac{\pi}{2} - \text{arctan}\left(\frac{2\langle H \rangle_{\theta_d = 0} -
+#                \langle H \rangle_{\theta_d=\pi/2} - \langle H \rangle_{\theta_d=-\pi/2}}{\langle
+#                H \rangle_{\theta_d=\pi/2} -
+#                \langle H \rangle_{\theta_d=-\pi/2}}\right)
 #
 # The calculation makes use of 3 separate evaluations
-# of the expectation value :math:`\langle H \rangle (\theta_d)` using the quantum circuit. Although
+# of the expectation value :math:`\langle H \rangle_{\theta_d}` using the quantum circuit. Although
 # :math:`\langle H \rangle` is really a function of all parameters and gate choices
 # :math:`\boldsymbol{\theta}`, :math:`\boldsymbol{P}`, we
 # are fixing every parameter and gate choice apart from :math:`\theta_d` in this expression so we write it as
-# :math:`\langle H \rangle = \langle H \rangle (\theta_d)`.
+# :math:`\langle H \rangle = \langle H \rangle_{\theta_d}`.
 # For each parameter in the quantum circuit, the algorithm proceeds by evaluating :math:`\theta^{*}_d`
 # for each choice of
-# gate :math:`P_d \in \{R_x,R_y,R_z\}` and selecting the gate which yields the minimum value.
+# gate :math:`P_d \in \{R_x,R_y,R_z\}` and selecting the gate which yields the minimum value of
+# :math:`\langle H \rangle`.
 #
 # Thus, one might expect the number of circuit evaluations required to be 9 for each parameter (3 for each gate
 # choice). However, since there is a 3-fold
-# degeneracy in the expectation value -- :math:`\langle H \rangle (0) = 1` for each of the gates -- the number of
+# degeneracy in the expectation value -- :math:`R_x(0) = R_y(0) = R_z(0) = 1` -- the number of
 # evaluations reduces to 7.
 #
 # One cycle of the Rotosolve algorithm constitutes
