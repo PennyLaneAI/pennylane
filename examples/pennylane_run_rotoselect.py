@@ -8,7 +8,8 @@ Quantum circuit structure learning
 This example shows how to learn a good selection of rotation
 gates so as to minimize a cost
 function using the Rotoselect algorithm `Ostaszewski et al.
-(2019) <https://arxiv.org/abs/1905.09692>`__. We apply the algorithm to minimize a Hamiltonian for a VQE
+(2019) <https://arxiv.org/abs/1905.09692>`__. We apply the algorithm to minimize a Hamiltonian for a 
+variational quantum eigensolver (VQE) problem, 
 and improve upon an initial circuit structure ansatz.
 """
 ##############################################################################
@@ -27,15 +28,15 @@ and improve upon an initial circuit structure ansatz.
 # The output of these calculations, the gradient, is used in optimization methods to minimize
 # the cost function. However, 
 # there exists a technique to find the optimal parameters of a quantum circuit through phase-shifted calculations,
-# without the need for calculating the gradient as an intermediate step (i.e. a gradient-free optimization).
-# It would be desirable, in some cases, to
+# without the need for calculating the gradient as an intermediate step (i.e., a gradient-free optimization).
+# It could be desirable, in some cases, to
 # take advantage of this.
 #
 #
 # The Rotoselect algorithm addresses the above two points.
 # It works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1...\theta_D` and gate choices
 # :math:`\boldsymbol{P}=P_1...P_D`
-# one at a time according to a closed-form expression for the optimal parameter value :math:`\theta^{*}_d`
+# one at a time according to a *closed-form expression for the optimal parameter value* :math:`\theta^{*}_d`
 # when the other parameters and gate choices are fixed:
 #
 # .. math::
