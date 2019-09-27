@@ -55,7 +55,7 @@ and improve upon an initial circuit structure ansatz.
 # :math:`\langle H \rangle = \langle H \rangle_{\theta_d}`.
 # For each parameter in the quantum circuit, the algorithm proceeds by evaluating :math:`\theta^{*}_d`
 # for each choice of
-# gate :math:`P_d \in \{R_x,R_y,R_z\}` and selecting the gate which yields the minimum value of
+# gate :math:`R_d \in \{R_x,R_y,R_z\}` and selecting the gate which yields the minimum value of
 # :math:`\langle H \rangle`.
 #
 # Thus, one might expect the number of circuit evaluations required to be 9 for each parameter (3 for each gate
@@ -266,8 +266,9 @@ plt.show()
 #
 # |
 # We now implement the Rotoselect algorithm to learn a good selection of gates to minimize
-# our cost function. The structure is similar to the original ansatz, but the unitaries are
-# selected from the set of rotation gates :math:`P_d \in \{R_x,R_y,R_z\}` as shown in the figure above.
+# our cost function. The structure is similar to the original ansatz, but the generators of rotation are
+# selected from the set of Pauli gates :math:`P_d \in \{X,Y,Z\}` as shown in the figure above. For example,
+# :math:`U(\theta,Z) = R_z(\theta)`.
 #
 # Creating a quantum circuit with variable gates
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
