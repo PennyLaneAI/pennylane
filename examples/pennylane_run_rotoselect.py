@@ -272,7 +272,7 @@ plt.show()
 #
 # Creating a quantum circuit with variable gates
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# First, we setup a quantum circuit with a similar structure to the one above, but
+# First, we set up a quantum circuit with a similar structure to the one above, but
 # instead of fixed rotation gates :math:`R_x` and :math:`R_y`, we allow the gates to be specified with the
 # ``generators`` keyword. A helper method ``RGen`` returns the correct unitary gate according to the
 # rotation specified by an element of ``generators``.
