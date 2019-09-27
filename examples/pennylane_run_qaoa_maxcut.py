@@ -70,7 +70,7 @@ show how to find the maximum cut by running the QAOA algorithm using PennyLane.
 # QAOA starts with a uniform superposition over the :math:`n` bitstring basis states,
 #
 # .. math::
-#   |+_{n}\rangle = \frac{1}{\sqrt{2^n}}\sum_{z\in \{0,1\}^n} |z\rangle
+#   |+_{n}\rangle = \frac{1}{\sqrt{2^n}}\sum_{z\in \{0,1\}^n} |z\rangle.
 #
 #
 # We aim to explore the space of bitstring states for a superposition which is likely to yield a
