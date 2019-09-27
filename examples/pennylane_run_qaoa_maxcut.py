@@ -35,7 +35,7 @@ show how to find the maximum cut by running the QAOA algorithm using PennyLane.
 # where :math:`C` counts the number of edges cut. :math:`C_\alpha(z)=1` if :math:`z` places one vertex from the
 # :math:`\alpha^\text{th}` edge in set :math:`A` and the other in set :math:`B`, and :math:`C_\alpha(z)=0` otherwise.
 # Finding a cut which yields the maximum possible value of :math:`C` is an NP-complete problem, so our best hope for a
-# polynomial time algorithm lies in an approximate optimization.
+# polynomial-time algorithm lies in an approximate optimization.
 # In the case of MaxCut, this means finding a partition :math:`z` which
 # yields a value for :math:`C(z)` that is close to the maximum possible value.
 #
