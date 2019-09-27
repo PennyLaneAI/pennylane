@@ -194,7 +194,7 @@ for i in range(n_steps):
 ##############################################################################
 # We then compare the results of Rotosolve to an optimization
 # performed with gradient descent and plot
-# the cost functions at each step, or cycle in the case of Rotosolve.
+# the cost functions at each step (or cycle in the case of Rotosolve).
 # This comparison is fair since the number of circuit
 # evaluations involved in a cycle of Rotosolve is similar to those required to calculate
 # the gradient of the circuit and step in this direction. Evidently, the Rotosolve algorithm
