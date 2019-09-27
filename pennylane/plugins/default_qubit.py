@@ -92,10 +92,9 @@ from pennylane.operation import Tensor
 tolerance = 1e-10
 
 
-# ========================================================
+#========================================================
 #  utilities
-# ========================================================
-
+#========================================================
 
 def spectral_decomposition(A):
     r"""Spectral decomposition of a Hermitian matrix.
@@ -115,27 +114,26 @@ def spectral_decomposition(A):
     return d, P
 
 
-# ========================================================
+#========================================================
 #  fixed gates
-# ========================================================
+#========================================================
 
 I = np.eye(2)
 # Pauli matrices
-X = np.array([[0, 1], [1, 0]])  #: Pauli-X matrix
-Y = np.array([[0, -1j], [1j, 0]])  #: Pauli-Y matrix
-Z = np.array([[1, 0], [0, -1]])  #: Pauli-Z matrix
+X = np.array([[0, 1], [1, 0]]) #: Pauli-X matrix
+Y = np.array([[0, -1j], [1j, 0]]) #: Pauli-Y matrix
+Z = np.array([[1, 0], [0, -1]]) #: Pauli-Z matrix
 
-H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  #: Hadamard gate
+H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
 # Two qubit gates
-CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])  #: CNOT gate
-SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])  #: SWAP gate
-CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])  #: CZ gate
+CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNOT gate
+SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
+CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
 
 
-# ========================================================
+#========================================================
 #  parametrized gates
-# ========================================================
-
+#========================================================
 
 def Rphi(phi):
     r"""One-qubit phase shift.
@@ -145,7 +143,7 @@ def Rphi(phi):
     Returns:
         array: unitary 2x2 phase shift matrix
     """
-    return np.array([[1, 0], [0, np.exp(1j * phi)]])
+    return np.array([[1, 0], [0, np.exp(1j*phi)]])
 
 
 def Rotx(theta):
@@ -156,7 +154,7 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * X
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * X
 
 
 def Roty(theta):
@@ -167,7 +165,7 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Y
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Y
 
 
 def Rotz(theta):
@@ -178,7 +176,7 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Z
+    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Z
 
 
 def Rot3(a, b, c):
@@ -200,14 +198,7 @@ def CRotx(theta):
     Returns:
         array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
     """
-    return np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, np.cos(theta / 2), -1j * np.sin(theta / 2)],
-            [0, 0, -1j * np.sin(theta / 2), np.cos(theta / 2)],
-        ]
-    )
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1j*np.sin(theta/2)], [0, 0, -1j*np.sin(theta/2), np.cos(theta/2)]])
 
 
 def CRoty(theta):
@@ -218,14 +209,7 @@ def CRoty(theta):
     Returns:
         array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
     """
-    return np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, np.cos(theta / 2), -np.sin(theta / 2)],
-            [0, 0, np.sin(theta / 2), np.cos(theta / 2)],
-        ]
-    )
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
 
 
 def CRotz(theta):
@@ -236,14 +220,7 @@ def CRotz(theta):
     Returns:
         array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
     """
-    return np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, np.exp(-1j * theta / 2), 0],
-            [0, 0, 0, np.exp(1j * theta / 2)],
-        ]
-    )
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
 
 
 def CRot3(a, b, c):
@@ -254,30 +231,13 @@ def CRot3(a, b, c):
     Returns:
         array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
-    return np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [
-                0,
-                0,
-                np.exp(-1j * (a + c) / 2) * np.cos(b / 2),
-                -np.exp(1j * (a - c) / 2) * np.sin(b / 2),
-            ],
-            [
-                0,
-                0,
-                np.exp(-1j * (a - c) / 2) * np.sin(b / 2),
-                np.exp(1j * (a + c) / 2) * np.cos(b / 2),
-            ],
-        ]
-    )
+    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
 
 
-# ========================================================
+
+#========================================================
 #  Arbitrary states and operators
-# ========================================================
-
+#========================================================
 
 def unitary(*args):
     r"""Input validation for an arbitary unitary operation.
@@ -318,7 +278,6 @@ def hermitian(*args):
 
     return A
 
-
 def identity(*_):
     """Identity matrix observable.
 
@@ -327,10 +286,9 @@ def identity(*_):
     """
     return np.identity(2)
 
-
-# ========================================================
+#========================================================
 #  device
-# ========================================================
+#========================================================
 
 
 class DefaultQubit(Device):
@@ -343,8 +301,8 @@ class DefaultQubit(Device):
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
-    pennylane_requires = '0.6'
-    version = '0.6.0'
+    pennylane_requires = '0.5'
+    version = '0.4.0'
     author = 'Xanadu Inc.'
     _capabilities = {"model": "qubit", "tensor_observables": True}
 
@@ -352,34 +310,34 @@ class DefaultQubit(Device):
     # map to any particular function, as they modify
     # the internal device state directly.
     _operation_map = {
-        "BasisState": None,
-        "QubitStateVector": None,
-        "QubitUnitary": unitary,
-        "PauliX": X,
-        "PauliY": Y,
-        "PauliZ": Z,
-        "Hadamard": H,
-        "CNOT": CNOT,
-        "SWAP": SWAP,
-        "CZ": CZ,
-        "PhaseShift": Rphi,
-        "RX": Rotx,
-        "RY": Roty,
-        "RZ": Rotz,
-        "Rot": Rot3,
-        "CRX": CRotx,
-        "CRY": CRoty,
-        "CRZ": CRotz,
-        "CRot": CRot3,
+        'BasisState': None,
+        'QubitStateVector': None,
+        'QubitUnitary': unitary,
+        'PauliX': X,
+        'PauliY': Y,
+        'PauliZ': Z,
+        'Hadamard': H,
+        'CNOT': CNOT,
+        'SWAP': SWAP,
+        'CZ': CZ,
+        'PhaseShift': Rphi,
+        'RX': Rotx,
+        'RY': Roty,
+        'RZ': Rotz,
+        'Rot': Rot3,
+        'CRX': CRotx,
+        'CRY': CRoty,
+        'CRZ': CRotz,
+        'CRot': CRot3
     }
 
     _observable_map = {
-        "PauliX": X,
-        "PauliY": Y,
-        "PauliZ": Z,
-        "Hadamard": H,
-        "Hermitian": hermitian,
-        "Identity": identity,
+        'PauliX': X,
+        'PauliY': Y,
+        'PauliZ': Z,
+        'Hadamard': H,
+        'Hermitian': hermitian,
+        'Identity': identity
     }
 
     def __init__(self, wires, *, shots=0):
@@ -391,41 +349,27 @@ class DefaultQubit(Device):
         self.reset()
 
     def apply(self, operation, wires, par):
-        if operation == "QubitStateVector":
+        if operation == 'QubitStateVector':
             state = np.asarray(par[0], dtype=np.complex128)
-            if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
+            if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
                 self._state = state
             else:
-                raise ValueError("State vector must be of length 2**wires.")
+                raise ValueError('State vector must be of length 2**wires.')
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-                raise ValueError(
-                    "The default.qubit plugin can apply QubitStateVector only to all of the {} wires.".format(
-                        self.num_wires
-                    )
-                )
+                raise ValueError("The default.qubit plugin can apply QubitStateVector only to all of the {} wires.".format(self.num_wires))
             return
-        if operation == "BasisState":
+        if operation == 'BasisState':
             n = len(par[0])
             # get computational basis state number
-            if n > self.num_wires or not (
-                set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}
-            ):
-                raise ValueError(
-                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
-                        self.num_wires
-                    )
-                )
+            if n > self.num_wires or not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
+                raise ValueError("BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(self.num_wires))
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-                raise ValueError(
-                    "The default.qubit plugin can apply BasisState only to all of the {} wires.".format(
-                        self.num_wires
-                    )
-                )
+                raise ValueError("The default.qubit plugin can apply BasisState only to all of the {} wires.".format(self.num_wires))
 
-            num = int(np.sum(np.array(par[0]) * 2 ** np.arange(n - 1, -1, -1)))
+            num = int(np.sum(np.array(par[0])*2**np.arange(n-1, -1, -1)))
 
             self._state = np.zeros_like(self._state)
-            self._state[num] = 1.0
+            self._state[num] = 1.
             return
 
         A = self._get_operator_matrix(operation, par)
@@ -455,7 +399,7 @@ class DefaultQubit(Device):
         # We'll need to invert this permutation to put the indices in the correct place
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in wires]
         perm = wires + unused_idxs
-        inv_perm = np.argsort(perm)  # argsort gives inverse permutation
+        inv_perm = np.argsort(perm) # argsort gives inverse permutation
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
@@ -547,16 +491,13 @@ class DefaultQubit(Device):
         expectation = np.vdot(self._state, As)
 
         if np.abs(expectation.imag) > tolerance:
-            warnings.warn(
-                "Nonvanishing imaginary part {} in expectation value.".format(expectation.imag),
-                RuntimeWarning,
-            )
+            warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expectation.imag), RuntimeWarning)
         return expectation.real
 
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
-        self._state = np.zeros(2 ** self.num_wires, dtype=complex)
+        self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
 
     @property

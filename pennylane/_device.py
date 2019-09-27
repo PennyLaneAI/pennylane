@@ -99,7 +99,6 @@ class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
     """
-
     pass
 
 
@@ -113,10 +112,9 @@ class Device(abc.ABC):
             expectation values of observables. For simulator devices, a value of 0 results
             in the exact expectation value being returned. Defaults to 0 if not specified.
     """
-
-    # pylint: disable=too-many-public-methods
-    _capabilities = {}  #: dict[str->*]: plugin capabilities
-    _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
+    #pylint: disable=too-many-public-methods
+    _capabilities = {} #: dict[str->*]: plugin capabilities
+    _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
 
     def __init__(self, wires=1, shots=0):
         self.num_wires = wires
@@ -132,9 +130,7 @@ class Device(abc.ABC):
 
     def __str__(self):
         """Verbose string representation."""
-        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(
-            self.name, self.pennylane_requires, self.version, self.author
-        )
+        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.pennylane_requires, self.version, self.author)
 
     @abc.abstractproperty
     def name(self):
@@ -229,7 +225,7 @@ class Device(abc.ABC):
             for obs in observables:
                 if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
-                elif obs.return_type == Variance:
+                elif obs.return_type is Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
                 elif obs.return_type is Sample:
                     if not hasattr(obs, "num_samples"):
@@ -279,9 +275,7 @@ class Device(abc.ABC):
             list[~.operation.Observable]
         """
         if self._obs_queue is None:
-            raise ValueError(
-                "Cannot access the observable value queue outside of the execution context!"
-            )
+            raise ValueError("Cannot access the observable value queue outside of the execution context!")
 
         return self._obs_queue
 
@@ -299,9 +293,7 @@ class Device(abc.ABC):
             within the Operation.
         """
         if self._parameters is None:
-            raise ValueError(
-                "Cannot access the free parameter mapping outside of the execution context!"
-            )
+            raise ValueError("Cannot access the free parameter mapping outside of the execution context!")
 
         return self._parameters
 
@@ -331,12 +323,10 @@ class Device(abc.ABC):
         source of :meth:`.Device.execute` for more details).
         """
         # pylint: disable=no-self-use
-        class MockContext:  # pylint: disable=too-few-public-methods
+        class MockContext: # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute()."""
-
             def __enter__(self):
                 pass
-
             def __exit__(self, type, value, traceback):
                 pass
 
@@ -356,9 +346,7 @@ class Device(abc.ABC):
         if isinstance(operation, str):
             return operation in self.operations
 
-        raise ValueError(
-            "The given operation must either be a pennylane.Operation class or a string."
-        )
+        raise ValueError("The given operation must either be a pennylane.Operation class or a string.")
 
     def supports_observable(self, observable):
         """Checks if an observable is supported by this device.
@@ -374,9 +362,8 @@ class Device(abc.ABC):
         if isinstance(observable, str):
             return observable in self.observables
 
-        raise ValueError(
-            "The given operation must either be a pennylane.Observable class or a string."
-        )
+        raise ValueError("The given operation must either be a pennylane.Observable class or a string.")
+
 
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
@@ -389,23 +376,20 @@ class Device(abc.ABC):
         """
         for o in queue:
             if o.name not in self.operations:
-                raise DeviceError(
-                    "Gate {} not supported on device {}".format(o.name, self.short_name)
-                )
+                raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
         for o in observables:
-            if isinstance(o, Observable) and (o.name not in self.observables):
-                raise DeviceError(
-                    "Observable {} not supported on device {}".format(o.name, self.short_name)
-                )
 
-            if isinstance(o.name, list): 
+            if isinstance(o, Tensor):
                 if self.capabilities()["tensor_observables"] is False:
                     raise DeviceError("Tensor observables not supported on device {}".format(self.short_name))
 
-                for name in o.name:
-                    if name not in self.observables:
+                for i in o.obs:
+                    if i.name not in self.observables:
                         raise DeviceError("Observable {} not supported on device {}".format(i.name, self.short_name))
+            else:
+                if o.name not in self.observables:
+                    raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
 
     @abc.abstractmethod
     def apply(self, op):
@@ -441,9 +425,7 @@ class Device(abc.ABC):
         Returns:
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
         """
-        raise NotImplementedError(
-            "Returning variances from QNodes not currently supported by {}".format(self.short_name)
-        )
+        raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
 
     def sample(self, obs, n=None):
         """Return a sample of an observable.
@@ -455,9 +437,7 @@ class Device(abc.ABC):
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
-        raise NotImplementedError(
-            "Returning samples from QNodes not currently supported by {}".format(self.short_name)
-        )
+        raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
 
     def probability(self):
         """Return the full state probability of each computational basis state from the last run of the device.

@@ -69,12 +69,12 @@ class ExpvalFactory:
     r"""Expectation value of the supplied observable.
 
     Args:
-        ops (list of Observable): Quantum observable or a list of observables.
+        op (Observable): a quantum observable object
     """
 
     def __call__(self, *ops):
         for op in ops:
-            if not isinstance(op, Observable):
+            if not isinstance(op, (Observable, Tensor)):
                 raise QuantumFunctionError(
                     "{} is not an observable: cannot be used with expval".format(op.name)
                 )
@@ -89,6 +89,7 @@ class ExpvalFactory:
 
             # set return type to be an expectation value
             op.return_type = Expectation
+
         if len(ops) == 1:
             if QNode._current_context is not None:
                 # add observable to QNode observable queue
@@ -198,9 +199,7 @@ def sample(op, n=None):
         if QNode._current_context is not None:
             n = QNode._current_context.device.shots
         else:
-            raise QuantumFunctionError(
-                "Could not find a bound device to determine the default number of samples."
-            )
+            raise QuantumFunctionError("Could not find a bound device to determine the default number of samples.")
 
     if n == 0:
         raise ValueError("Calling sample with n = 0 is not possible.")
