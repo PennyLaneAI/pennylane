@@ -36,7 +36,7 @@ and improve upon an initial circuit structure ansatz.
 # The Rotoselect algorithm addresses the above two points.
 # It works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1...\theta_D` and gate choices
 # :math:`\boldsymbol{P}=P_1...P_D`
-# one at a time according to a closed-form expression for the optimal parameter value :math:`\theta^{*}_d`
+# one at a time according to a *closed-form expression for the optimal parameter value* :math:`\theta^{*}_d`
 # when the other parameters and gate choices are fixed:
 #
 # .. math::
