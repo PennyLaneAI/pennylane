@@ -110,7 +110,7 @@ dev = qml.device('default.qubit',analytic=True,wires=2)
 #
 # |
 # Next, we set up a circuit with a fixed ansatz structure -- which will later be subject to change -- and encode
-# the Hamiltonian into a cost function. The structure https://github.com/XanaduAI/pennylane/pull/335is shown in the figure above.
+# the Hamiltonian into a cost function. The structure is shown in the figure above.
 
 def ansatz(params):
     qml.RX(params[0], wires=0)
