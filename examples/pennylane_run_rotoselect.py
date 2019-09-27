@@ -69,7 +69,7 @@ and improve upon an initial circuit structure ansatz.
 # One cycle of the Rotosolve algorithm constitutes
 # iterating through every parameter and performing the calculation above.
 # This cycle is repeated for a fixed number of steps or until convergence. In this way, one could learn both
-# the optimal parameters and generators of rotation for a circuit. Next, we present an example of this algorithm
+# the optimal parameters and gate choices for a circuit ansatz. Next, we present an example of this algorithm
 # applied to a VQE Hamiltonian.
 #
 # VQE
