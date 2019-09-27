@@ -75,7 +75,7 @@ and improve upon an initial circuit structure ansatz.
 # VQE
 # ~~~
 #
-# We choose to focus on the example of a VQE circuit with 2 qubits for simplicity. Here, the Hamiltonian
+# We focus on a 2-qubit VQE circuit for simplicity. Here, the Hamiltonian
 # is
 #
 # .. math::
