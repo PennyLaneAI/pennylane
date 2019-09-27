@@ -30,7 +30,7 @@ show how to find the maximum cut by running the QAOA algorithm using PennyLane.
 # :math:`A` and :math:`B` which maximizes
 #
 # .. math::
-#   C(z) = \sum_{\alpha=1}^{m}C_\alpha(z)
+#   C(z) = \sum_{\alpha=1}^{m}C_\alpha(z),
 #
 # where :math:`C` counts the number of edges cut. :math:`C_\alpha(z)=1` if :math:`z` places one vertex from the
 # :math:`\alpha^\text{th}` edge in set :math:`A` and the other in set :math:`B`, and :math:`C_\alpha(z)=0` otherwise.
