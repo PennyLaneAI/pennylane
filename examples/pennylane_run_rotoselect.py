@@ -416,3 +416,10 @@ ax.set_ylabel(r"$\theta_2$")
 ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
 
 plt.show()
+
+##############################################################################
+# References
+# ----------
+#
+# 1. Mateusz Ostaszewski, Edward Grant, Marcello Bendetti. "Quantum circuit structure learning."
+#    `arxiv:1905.09692 <https://arxiv.org/abs/1905.09692>`__, 2019.
