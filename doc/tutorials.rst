@@ -81,6 +81,11 @@ algorithms using PennyLane and near-term quantum hardware.
     :description: :ref:`quantum_natural_gradient`
 
 .. customgalleryitem::
+    :tooltip: Perform QAOA for MaxCut
+    :figure: ../examples/figures/qaoa_maxcut_partition.png
+    :description: :ref:`qaoa_maxcut`
+
+.. customgalleryitem::
     :tooltip: Rotoselect algorithm for VQE
     :figure: ../examples/figures/rotoselect_structure.png
     :description: :ref:`rotoselect`
@@ -104,4 +109,5 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_variational_quantum_eigensolver
     tutorials/pennylane_run_data_reuploading_classifier
     tutorials/pennylane_run_quantum_natural_gradient
+    tutorials/pennylane_run_qaoa_maxcut
     tutorials/pennylane_run_rotoselect

@@ -36,6 +36,9 @@
   structure learning
   [#335](https://github.com/XanaduAI/pennylane/pull/335)
 
+* Added tutorial for QAOA on MaxCut problem
+  [#328](https://github.com/XanaduAI/pennylane/pull/328)
+  
 * Added QGAN flow chart figure to its tutorial
   [#333](https://github.com/XanaduAI/pennylane/pull/333)
 
