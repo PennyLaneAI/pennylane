@@ -138,8 +138,7 @@ def circuit2(params):
 
 
 def cost(params):
-    Z_1 = circuit(params)[0]
-    Y_2 = circuit(params)[1]
+    Z_1,Y_2 = circuit(params)
     X_1 = circuit2(params)
     return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
@@ -308,8 +307,7 @@ def circuit2(params, generators=[]):  # generators must be a kwarg in a qnode
 
 
 def cost(params, generators):
-    Z_1 = circuit(params, generators=generators)[0]
-    Y_2 = circuit(params, generators=generators)[1]
+    Z_1,Y_2 = circuit(params, generators=generators)
     X_1 = circuit2(params, generators=generators)
     return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
