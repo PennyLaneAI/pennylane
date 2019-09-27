@@ -41,7 +41,7 @@ and improve upon an initial circuit structure ansatz.
 #
 # .. math::
 #
-#   \theta^{*}_d &= \underset{\theta_d}{\text{argmin}} \langle H \rangle_{\theta_d) \\
+#   \theta^{*}_d &= \underset{\theta_d}{\text{argmin}} \langle H \rangle_{\theta_d} \\
 #                &= -\frac{\pi}{2} - \text{arctan}\left(\frac{2\langle H \rangle_{\theta_d = 0} -
 #                \langle H \rangle_{\theta_d=\pi/2} - \langle H \rangle_{\theta_d=-\pi/2}}{\langle
 #                H \rangle_{\theta_d=\pi/2} -
@@ -60,8 +60,11 @@ and improve upon an initial circuit structure ansatz.
 #
 # Thus, one might expect the number of circuit evaluations required to be 9 for each parameter (3 for each gate
 # choice). However, since there is a 3-fold
-# degeneracy in the expectation value -- :math:`R_x(0) = R_y(0) = R_z(0) = 1` -- the number of
-# evaluations reduces to 7.
+# degeneracy in the expectation value when :math:`\theta_d=0`,
+#
+# .. math:: R_x(0) = R_y(0) = R_z(0) = 1,
+#
+# the number of evaluations is reduced to 7.
 #
 # One cycle of the Rotosolve algorithm constitutes
 # iterating through every parameter and performing the calculation above.
