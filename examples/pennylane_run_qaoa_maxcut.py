@@ -99,7 +99,7 @@ show how to find the maximum cut by running the QAOA algorithm using PennyLane.
 #
 # |
 # Let :math:`\langle \boldsymbol{\gamma},
-# \boldsymbol{\beta} | C | \boldsymbol{\gamma},\boldsymbol{\beta} \rangle` be the expectation of our objective operator.
+# \boldsymbol{\beta} | C | \boldsymbol{\gamma},\boldsymbol{\beta} \rangle` be the expectation of the objective operator.
 # In the next section, we will use PennyLane to perform classical optimization
 # over the circuit parameters :math:`(\boldsymbol{\gamma}, \boldsymbol{\beta})`.
 # This will specify a state :math:`|\boldsymbol{\gamma},\boldsymbol{\beta}\rangle` which is
