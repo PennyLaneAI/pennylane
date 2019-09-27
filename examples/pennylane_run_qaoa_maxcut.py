@@ -88,7 +88,7 @@ show how to find the maximum cut by running the QAOA algorithm using PennyLane.
 #   U_{B_l} &= e^{-i\beta_lB} = \prod_{j=1}^n e^{-i\beta_l\sigma_x^j}, \\
 #   U_{C_l} &= e^{-i\gamma_lC} = \prod_{\text{edge (j,k)}} e^{-i\gamma_l(1-\sigma_z^j\sigma_z^k)/2}.
 #
-# In other words, we make :math:`p` layers of our parametrized :math:`U_bU_C` gates.
+# In other words, we make :math:`p` layers of parametrized :math:`U_bU_C` gates.
 # These can be implemented on a quantum circuit using the gates depicted below, up to an irrelevant constant
 # that gets absorbed into the parameters.
 #
