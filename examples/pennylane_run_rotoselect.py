@@ -337,6 +337,7 @@ def optimal_theta_and_gen_helper(d, params, generators, cost):
     for generator in ["X", "Y", "Z"]:
         generators[d] = generator
         params_cost = rotosolve(d, params, generators, cost, M_0)
+        # initialize optimal generator with first item in list, "X", and update if necessary
         if generator == "X" or params_cost <= params_opt_cost:
             params_opt_d = params[d]
             params_opt_cost = params_cost
