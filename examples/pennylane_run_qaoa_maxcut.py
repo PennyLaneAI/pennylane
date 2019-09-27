@@ -166,7 +166,7 @@ def U_C(gamma):
 # We will need a way to sample
 # a measurement of multiple qubits in the computational basis, so we define
 # a Hermitian operator to do this. The eigenvalues of the operator are
-# the joint qubit measurement values in integer form.
+# the qubit measurement values in integer form.
 
 
 def comp_basis_measurement(wires):
