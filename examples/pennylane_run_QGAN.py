@@ -12,8 +12,19 @@ This demo constructs a Quantum Generative Adversarial Network (QGAN)
 using two subcircuits, a *generator* and a *discriminator*. The
 generator attempts to generate synthetic quantum data to match a pattern
 of “real” data, while the discriminator, tries to discern real data from
-fake data. The gradient of the discriminator’s output provides a
+fake data; see image below. The gradient of the discriminator’s output provides a
 training signal for the generator to improve its fake generated data.
+
+|
+
+.. figure:: ../../examples/figures/qgan.png
+    :align: center
+    :width: 75%
+    :target: javascript:void(0)
+
+|
+
+
 """
 
 ##############################################################################

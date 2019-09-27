@@ -20,7 +20,7 @@ plugins, and devices, via simple and easy-to-follow examples.
 
 .. customgalleryitem::
     :tooltip: Use quantum machine learning to tune a beamsplitter.
-    :figure: ../examples/figures/gaussian_transformation.png
+    :figure: ../examples/figures/gauss-circuit.png
     :description: :ref:`gaussian_transformation`
 
 .. customgalleryitem::
@@ -47,10 +47,12 @@ algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: Do arbitrary state preparation on a real quantum computer.
+    :figure: ../examples/figures/NOON.png
     :description: :ref:`state_preparation`
 
 .. customgalleryitem::
     :tooltip: Use PennyLane to create a simple QGAN
+    :figure: ../examples/figures/qgan3.png
     :description: :ref:`quantum_GAN`
 
 .. customgalleryitem::
@@ -73,6 +75,11 @@ algorithms using PennyLane and near-term quantum hardware.
     :figure: ../examples/figures/universal_dnn.png
     :description: :ref:`data_reuploading_classifier`
 
+.. customgalleryitem::
+    :tooltip: Faster optimization convergence using quantum natural gradient
+    :figure: ../examples/figures/quantum_natural_gradient/qng_optimization.png
+    :description: :ref:`quantum_natural_gradient`
+
 :html:`<div style='clear:both'></div>`
 
 
@@ -91,3 +98,4 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_quantum_neural_net
     tutorials/pennylane_run_variational_quantum_eigensolver
     tutorials/pennylane_run_data_reuploading_classifier
+    tutorials/pennylane_run_quantum_natural_gradient

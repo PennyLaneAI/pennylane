@@ -80,8 +80,7 @@ class TestExpval:
 class TestDeprecatedExpval:
     """Tests for the deprecated expval attribute getter.
     Once fully deprecated, this test can be removed"""
-
-    # TODO: once `qml.expval.Observable` is deprecated, remove this test
+    #TODO: once `qml.expval.Observable` is deprecated, remove this test
 
     def test_value(self, tol):
         """Test that the old expval interface works,
@@ -157,7 +156,7 @@ class TestVar:
 
         x = 0.54
         res = circuit(x)
-        expected = np.sin(x) ** 2
+        expected = np.sin(x)**2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -199,16 +198,13 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
-            return (
-                qml.sample(qml.PauliZ(0), n_sample),
-                qml.sample(qml.PauliX(1), 2 * n_sample),
-            )
+            return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliX(1), 2*n_sample)
 
         sample = circuit()
 
         assert np.array_equal(sample.shape, (2,))
         assert np.array_equal(sample[0].shape, (n_sample,))
-        assert np.array_equal(sample[1].shape, (2 * n_sample,))
+        assert np.array_equal(sample[1].shape, (2*n_sample,))
 
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
@@ -220,11 +216,7 @@ class TestSample:
         def circuit():
             qml.RX(0.54, wires=0)
 
-            return (
-                qml.sample(qml.PauliZ(0), n_sample),
-                qml.expval(qml.PauliX(1)),
-                qml.var(qml.PauliY(2)),
-            )
+            return qml.sample(qml.PauliZ(0), n_sample), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
 
         result = circuit()
 
@@ -259,11 +251,7 @@ class TestSample:
 
         @qml.qnode(dev)
         def circuit():
-            return (
-                qml.sample(qml.PauliZ(0), n_sample),
-                qml.sample(qml.PauliZ(1), n_sample),
-                qml.sample(qml.PauliZ(2), n_sample),
-            )
+            return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliZ(1), n_sample), qml.sample(qml.PauliZ(2), n_sample)
 
         result = circuit()
 
@@ -281,11 +269,7 @@ class TestSample:
 
         @qml.qnode(dev)
         def circuit():
-            return (
-                qml.sample(qml.PauliZ(0), n_sample),
-                qml.sample(qml.PauliZ(1), 2 * n_sample),
-                qml.sample(qml.PauliZ(2), 3 * n_sample),
-            )
+            return qml.sample(qml.PauliZ(0), n_sample), qml.sample(qml.PauliZ(1), 2*n_sample), qml.sample(qml.PauliZ(2), 3*n_sample)
 
         result = circuit()
 
@@ -295,8 +279,8 @@ class TestSample:
         assert result.dtype == np.dtype("object")
         assert np.array_equal(result.shape, (3,))
         assert np.array_equal(result[0].shape, (n_sample,))
-        assert np.array_equal(result[1].shape, (2 * n_sample,))
-        assert np.array_equal(result[2].shape, (3 * n_sample,))
+        assert np.array_equal(result[1].shape, (2*n_sample,))
+        assert np.array_equal(result[2].shape, (3*n_sample,))
 
     def test_sample_output_type_in_combination(self, tol):
         """Test the return type and shape of sampling multiple works
@@ -307,11 +291,7 @@ class TestSample:
 
         @qml.qnode(dev)
         def circuit():
-            return (
-                qml.expval(qml.PauliZ(0)),
-                qml.var(qml.PauliZ(1)),
-                qml.sample(qml.PauliZ(2), n_sample),
-            )
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2), n_sample)
 
         result = circuit()
 
@@ -344,10 +324,7 @@ class TestSample:
         """Tests if the sampling raises an error when using a default
            sample number but the underlying device can't be accessed"""
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Could not find a bound device to determine the default number of samples.",
-        ):
+        with pytest.raises(QuantumFunctionError, match="Could not find a bound device to determine the default number of samples."):
             qml.QNode._current_context = None
             qml.sample(qml.PauliZ(0, do_queue=False))
 
@@ -357,10 +334,7 @@ class TestSample:
         """
         dev = qml.device("default.qubit", wires=2)
 
-        with pytest.raises(
-            ValueError, match="Calling sample with n = 0 is not possible."
-        ):
-
+        with pytest.raises(ValueError, match="Calling sample with n = 0 is not possible."):
             @qml.qnode(dev)
             def circuit_a():
                 qml.RX(0.52, wires=0)
@@ -368,10 +342,7 @@ class TestSample:
 
             circuit_a()
 
-        with pytest.raises(
-            ValueError, match="The number of samples must be a positive integer."
-        ):
-
+        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):
             @qml.qnode(dev)
             def circuit_b():
                 qml.RX(0.52, wires=0)
@@ -379,10 +350,7 @@ class TestSample:
 
             circuit_b()
 
-        with pytest.raises(
-            ValueError, match="The number of samples must be a positive integer."
-        ):
-
+        with pytest.raises(ValueError, match="The number of samples must be a positive integer."):
             @qml.qnode(dev)
             def circuit_c():
                 qml.RX(0.52, wires=0)
@@ -415,30 +383,3 @@ class TestSample:
             return res
 
         circuit()
-
-
-class TestTensorExpval:
-    """Test tensor expectation values"""
-
-    def test_paulix_pauliy(self):
-        """Test that a tensor product involving PauliX and PauliY works correctly"""
-        theta = 0.432
-        phi = 0.123
-        varphi = -0.543
-
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circuit(theta, phi, varphi):
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.RX(varphi, wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-
-            return qml.expval(qml.PauliX(wires=[0]), qml.PauliY(wires=[2]))
-
-        res = circuit(theta, phi, varphi)
-        expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-
-        assert np.allclose(res, expected)

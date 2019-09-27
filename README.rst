@@ -95,7 +95,7 @@ PennyLane requires Python version 3.5 and above. Installation of PennyLane, as w
 Getting started
 ===============
 
-For getting started with PennyLane, check out our `qubit rotation <https://pennylane.readthedocs.io/en/latest/tutorials/qubit_rotation.html>`_, `Gaussian transformation <https://pennylane.readthedocs.io/en/latest/tutorials/gaussian_transformation.html>`_, `hybrid computation <https://pennylane.readthedocs.io/en/latest/tutorials/hybrid_computation.html>`_, and other machine learning tutorials.
+For getting started with PennyLane, check out our `qubit rotation <https://pennylane.readthedocs.io/en/latest/tutorials/pennylane_run_qubit_rotation.html>`_, `Gaussian transformation <https://pennylane.readthedocs.io/en/latest/tutorials/pennylane_run_gaussian_transformation.html>`_, `hybrid computation <https://pennylane.readthedocs.io/en/latest/tutorials/pennylane_run_plugins_hybrid.html>`_, and other `machine learning tutorials <https://pennylane.readthedocs.io/en/latest/tutorials.html>`_.
 
 Our `documentation <https://pennylane.readthedocs.io>`_ is also a great starting point to familiarize yourself with the hybrid classical-quantum machine learning approach, and explore the available optimization tools provided by PennyLane. Play around with the numerous devices and plugins available for running your hybrid optimizations — these include the `IBM QX4 quantum chip <https://quantumexperience.ng.bluemix.net/qx/experience>`__, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins, as well as the `Rigetti Aspen-1 QPU <https://www.rigetti.com/qpu>`__.
 
@@ -109,8 +109,6 @@ We welcome contributions — simply fork the PennyLane repository, and then make
 `pull request <https://help.github.com/articles/about-pull-requests/>`_ containing your contribution.  All contributers to PennyLane will be listed as authors on the releases. All users who contribute significantly to the code (new plugins, new functionality, etc.) will be listed on the PennyLane arXiv paper.
 
 We also encourage bug reports, suggestions for new features and enhancements, and even links to cool projects or applications built on PennyLane.
-
-Don't forget to submit your PennyLane contribution to the `Xanadu Quantum Software Competition <https://pennylane.ai/competition>`_, with prizes of up CAD$1000 on offer.
 
 See our `contributions page <https://github.com/XanaduAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
 for more details.
