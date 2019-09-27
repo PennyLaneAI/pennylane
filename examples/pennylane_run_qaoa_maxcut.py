@@ -7,7 +7,7 @@ QAOA for MaxCut
 In this tutorial we implement the quantum approximate optimization algorithm (QAOA) for the MaxCut
 problem as proposed by `Farhi, Goldstone, and Gutmann (2014) <https://arxiv.org/abs/1411.4028>`__. First, we
 give an overview of the MaxCut problem using a simple example, a graph with 4 vertices and 4 edges. We then
-show how to find the maximum cut by sampling qubit measurements using PennyLane.
+show how to find the maximum cut by running the QAOA algorithm using PennyLane.
 """
 
 ##############################################################################
