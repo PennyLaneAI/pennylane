@@ -29,8 +29,12 @@
 * The quantum natural gradient now uses `scipy.linalg.pinvh` which is more efficient for symmetric matrices
   than the previously used `scipy.linalg.pinv`.
   [#331](https://github.com/XanaduAI/pennylane/pull/331)
+
 ### Documentation
 
+* Added tutorial for QAOA on MaxCut problem
+  [#328](https://github.com/XanaduAI/pennylane/pull/328)
+  
 * Added QGAN flow chart figure to its tutorial
   [#333](https://github.com/XanaduAI/pennylane/pull/333)
 
