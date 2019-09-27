@@ -29,7 +29,7 @@ and improve upon an initial circuit structure ansatz.
 # the cost function. However, 
 # there exists a technique to find the optimal parameters of a quantum circuit through phase-shifted calculations,
 # without the need for calculating the gradient as an intermediate step (i.e., a gradient-free optimization).
-# It would be desirable, in some cases, to
+# It could be desirable, in some cases, to
 # take advantage of this.
 #
 #
