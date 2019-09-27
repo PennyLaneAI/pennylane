@@ -24,10 +24,10 @@ and improve upon an initial circuit structure ansatz.
 # algorithm which learns a good circuit structure at fixed depth to minimize the cost function.
 #
 # Furthermore, PennyLane's optimizers perform automatic differentiation of quantum nodes by evaluating phase-shifted
-# expectation values of operators using the quantum circuit itself.
+# expectation values using the quantum circuit itself.
 # The output of these calculations, the gradient, is used in optimization methods to minimize
 # the cost function. However,
-# there exists a technique to find the optimal parameters of a quantum circuit through phase-shifted calculations,
+# there exists a technique to find the optimal parameters of a quantum circuit through phase-shifted evaluations,
 # without the need for calculating the gradient as an intermediate step (i.e., a gradient-free optimization).
 # It could be desirable, in some cases, to
 # take advantage of this.
@@ -138,7 +138,7 @@ def circuit2(params):
 
 
 def cost(params):
-    Z_1,Y_2 = circuit(params)
+    Z_1, Y_2 = circuit(params)
     X_1 = circuit2(params)
     return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
@@ -158,7 +158,9 @@ def opt_theta(d, params, cost):
     M_0_plus = cost(params)
     params[d] = -np.pi / 2.0
     M_0_minus = cost(params)
-    a = np.arctan2(2.0 * M_0 - M_0_plus - M_0_minus, M_0_plus - M_0_minus) # returns value in (-pi,pi]
+    a = np.arctan2(
+        2.0 * M_0 - M_0_plus - M_0_minus, M_0_plus - M_0_minus
+    )  # returns value in (-pi,pi]
     params[d] = -np.pi / 2.0 - a
     # restrict output to lie in (-pi,pi], a convention
     # consistent with the Rotosolve paper
@@ -307,7 +309,7 @@ def circuit2(params, generators=[]):  # generators must be a kwarg in a qnode
 
 
 def cost(params, generators):
-    Z_1,Y_2 = circuit(params, generators=generators)
+    Z_1, Y_2 = circuit(params, generators=generators)
     X_1 = circuit2(params, generators=generators)
     return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
@@ -324,7 +326,9 @@ def rotosolve(d, params, generators, cost, M_0):  # M_0 only calculated once
     M_0_plus = cost(params, generators)
     params[d] = -np.pi / 2.0
     M_0_minus = cost(params, generators)
-    a = np.arctan2(2.0 * M_0 - M_0_plus - M_0_minus, M_0_plus - M_0_minus) # returns value in (-pi,pi]
+    a = np.arctan2(
+        2.0 * M_0 - M_0_plus - M_0_minus, M_0_plus - M_0_minus
+    )  # returns value in (-pi,pi]
     params[d] = -np.pi / 2.0 - a
     if params[d] <= -np.pi:
         params[d] += 2 * np.pi
