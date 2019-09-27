@@ -357,7 +357,7 @@ def rotoselect_cycle(cost, params, generators):
 # We perform the optimization and print the optimal generators for the rotation gates. The minimized cost function
 # obtained by optimizing using Rotoselect is less than the minimized cost function from gradient descent or
 # Rotosolve, which were performed on the original circuit structure ansatz.
-# In other words, Rotoselect performs better without 
+# In other words, Rotoselect performs better without
 # increasing the depth of the circuit by selecting better gates for the task of minimizing the cost function.
 
 costs_rotoselect = []
@@ -399,8 +399,7 @@ plt.show()
 # |
 # Finally, we plot the cost function surface for the newly discovered optimized
 # circuit structure shown in the figure above. It is apparent from the minima in the plot that
-# the original ansatz was not expressive enough to arrive at the optimal values
-# of the cost function.
+# the new circuit structure is better suited for the problem.
 
 fig = plt.figure(figsize=(6, 4))
 ax = fig.gca(projection="3d")
