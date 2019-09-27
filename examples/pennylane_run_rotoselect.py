@@ -354,10 +354,11 @@ def rotoselect_cycle(cost, params, generators):
 ##############################################################################
 # Optimizing the circuit structure
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# We perform the optimization and print the optimal generators for the rotation gates. The cost function is
-# reduced below the minimal value from gradient descent or Rotosolve on the original
-# circuit structure ansatz. In other words, the learned circuit structure performs better without
-# increasing the depth of the circuit.
+# We perform the optimization and print the optimal generators for the rotation gates. The minimized cost function
+# obtained by optimizing using Rotoselect is less than the minimized cost function from gradient descent or
+# Rotosolve, which were performed on the original circuit structure ansatz.
+# In other words, Rotoselect performs better without 
+# increasing the depth of the circuit by selecting better gates for the task of minimizing the cost function.
 
 costs_rotoselect = []
 params = init_params[:]
