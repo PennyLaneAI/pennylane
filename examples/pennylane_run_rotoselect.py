@@ -34,7 +34,7 @@ and improve upon an initial circuit structure ansatz.
 #
 #
 # The Rotoselect algorithm addresses the above two points.
-# It works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1...\theta_D` and gate choices
+# It works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1,\dots,\theta_D` and gate choices
 # :math:`\boldsymbol{P}=P_1...P_D`
 # one at a time according to a *closed-form expression for the optimal parameter value* :math:`\theta^{*}_d`
 # when the other parameters and gate choices are fixed:
@@ -69,13 +69,13 @@ and improve upon an initial circuit structure ansatz.
 # One cycle of the Rotosolve algorithm involves
 # iterating through every parameter and performing the calculation above.
 # This cycle is repeated for a fixed number of steps or until convergence. In this way, one could learn both
-# the optimal parameters and generators of rotation for a circuit. Next, we present an example of this algorithm
+# the optimal parameters and gate choices for a circuit ansatz. Next, we present an example of this algorithm
 # applied to a VQE Hamiltonian.
 #
 # VQE
 # ~~~
 #
-# We choose to focus on the example of a VQE circuit with 2 qubits for simplicity. Here, the Hamiltonian
+# We focus on a 2-qubit VQE circuit for simplicity. Here, the Hamiltonian
 # is
 #
 # .. math::
@@ -115,7 +115,7 @@ dev = qml.device("default.qubit", analytic=True, wires=2)
 #    :alt: original_ansatz
 #
 # |
-# Next, we set up a circuit with a fixed ansatz structure -- which will later be subject to change -- and encode
+# Next, we set up a circuit with a fixed ansatz structure---which will later be subject to change---and encode
 # the Hamiltonian into a cost function. The structure is shown in the figure above.
 
 
