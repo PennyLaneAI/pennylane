@@ -47,7 +47,7 @@ and improve upon an initial circuit structure ansatz.
 #                \langle H \rangle (-\pi/2)}\right)
 #
 # The calculation makes use of 3 separate evaluations
-# of the cost function expectation value :math:`\langle H \rangle (\theta_d)` using the quantum circuit. Although
+# of the expectation value :math:`\langle H \rangle (\theta_d)` using the quantum circuit. Although
 # :math:`\langle H \rangle` is really a function of all parameters and gate choices
 # :math:`\boldsymbol{\theta}, \ \boldsymbol{P}`, we
 # are fixing every parameter and gate choice apart from :math:`\theta_d` in this expression so we write it as
