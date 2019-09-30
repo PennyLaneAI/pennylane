@@ -81,3 +81,18 @@ class TestBasisStatePreparation:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
+    # fmt: off
+    @pytest.mark.parametrize("basis_state,wires,error_message", [
+        ([0], [0, 1], "Number of qubits must be equal to the number of wires"),
+        ([0, 1], [0], "Number of qubits must be equal to the number of wires"),
+        ([0], 0, "Wires needs to be a list of wires that the embedding uses"),
+        ([3], [0], "Basis state must only consist of 0s and 1s"),
+        ([1, 0, 2], [0, 1, 2], "Basis state must only consist of 0s and 1s"),
+    ])
+    # fmt: on
+    def test_errors(self, basis_state, wires, error_message):
+        """Tests that the correct error messages are raised."""
+
+        with pytest.raises(ValueError, match=error_message):
+            BasisStatePreparation(basis_state, wires)
+

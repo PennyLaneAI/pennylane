@@ -59,6 +59,11 @@ def BasisStatePreparation(basis_state, wires):
             "got {}.".format(len(wires), len(basis_state))
         )
 
+    if any([x not in [0, 1] for x in basis_state]):
+        raise ValueError(
+            "Basis state must only consist of 0s and 1s, got {}".format(basis_state)
+        )
+
     for wire, state in zip(wires, basis_state):
         if state == 1:
             qml.PauliX(wire)
