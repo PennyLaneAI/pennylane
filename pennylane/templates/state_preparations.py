@@ -34,6 +34,7 @@ Code details
 ^^^^^^^^^^^^
 """
 from collections.abc import Iterable
+import numpy as np
 
 import pennylane as qml
 
