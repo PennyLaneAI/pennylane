@@ -187,7 +187,7 @@ qml.about()
 # 1. Dauphin, Yann N., et al.,
 #    Identifying and attacking the saddle point problem in high-dimensional non-convex
 #    optimization. Advances in neural information processing
-#    systems. 2014.
+#    systems (2014).
 #
 # 2. McClean, Jarrod R., et al.,
 #    Barren plateaus in quantum neural network training landscapes.
