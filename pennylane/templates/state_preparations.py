@@ -28,7 +28,7 @@ Qubit architectures
 .. autosummary::
 
     BasisStatePreparation
-    MöttönenStatePreparation
+    MottonenStatePreparation
 
 Code details
 ^^^^^^^^^^^^
@@ -67,3 +67,36 @@ def BasisStatePreparation(basis_state, wires):
     for wire, state in zip(wires, basis_state):
         if state == 1:
             qml.PauliX(wire)
+
+
+
+def MottonenStatePreparation(state_vector, wires):
+    r"""
+    Prepares an arbitrary state on the given wires using a decomposition into gates developed
+    by Möttönen et al. :cite:`mottonen2005transformation`.
+
+    Args:
+        state_vector (array): Input array of shape ``(2^N,)``, where N is the number of qubits,
+            with :math:`N\leq n`
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
+    """
+
+    if not isinstance(wires, Iterable):
+        raise ValueError(
+            "Wires needs to be a list of wires that the embedding uses; got {}.".format(wires)
+        )
+
+    if not len(state_vector) == 2**len(wires):
+        raise ValueError(
+            "Number of qubits must be equal to 2 to the power of the number of wires, which is {}; "
+            "got {}.".format(2**len(wires), len(state_vector))
+        )
+
+    probability_sum = np.sum(np.abs(state_vector)**2)
+
+    if np.isclose(probability_sum, 1.0, atol=1E-3):
+        raise ValueError(
+            "State vector probabilities have to sum up to 1.0, got {}".format(probability_sum)
+        )
+        
+    # TODO: Implement the state preparation
