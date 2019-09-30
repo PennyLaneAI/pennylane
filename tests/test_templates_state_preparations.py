@@ -25,6 +25,7 @@ from pennylane.templates.state_preparations import BasisStatePreparation
 class TestBasisStatePreparation:
     """Tests the template BasisStatePreparation."""
 
+    # fmt: off
     @pytest.mark.parametrize("basis_state,wires,target_wires", [
         ([0], [0], []),
         ([0], [1], []),
@@ -38,6 +39,7 @@ class TestBasisStatePreparation:
         ([1, 1, 1, 0], [1, 2, 6, 8], [1, 2, 6]),
         ([1, 0, 1, 1], [1, 2, 6, 8], [1, 6, 8]),
     ])
+    # fmt: on
     def test_correct_pl_gates(self, tol, basis_state, wires, target_wires):
         """Tests that the template BasisStatePreparation calls the correct
         PennyLane gates on the correct wires."""
@@ -49,3 +51,33 @@ class TestBasisStatePreparation:
 
             assert len(target_wires) == len(called_wires)
             assert np.array_equal(called_wires, target_wires)
+
+    # fmt: off
+    @pytest.mark.parametrize("basis_state,wires,target_state", [
+        ([0], [0], [0, 0, 0]),
+        ([0], [1], [0, 0, 0]),
+        ([1], [0], [1, 0, 0]),
+        ([1], [1], [0, 1, 0]),
+        ([0, 1], [0, 1], [0, 1, 0]),
+        ([1, 1], [0, 2], [1, 0, 1]),
+        ([1, 1], [1, 2], [0, 1, 1]),
+        ([1, 0], [0, 2], [1, 0, 0]),
+        ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
+        ([1, 0, 1], [0, 1, 2], [1, 0, 1]),
+    ])
+    # fmt: on
+    def test_state_preparation(self, tol, qubit_device_3_wires, basis_state, wires, target_state):
+        """Tests that the template BasisStatePreparation integrates correctly with PennyLane."""
+
+        @qml.qnode(qubit_device_3_wires)
+        def circuit():
+            BasisStatePreparation(basis_state, wires)
+
+            # Pauli Z gates identify the basis state
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+
+        # Convert from Pauli Z eigenvalues to basis state
+        output_state = [0 if x == 1.0 else 1 for x in circuit()]
+
+        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+
