@@ -114,7 +114,7 @@ for i in range(num_samples):
     params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
     grad_vals.append(grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits))
 
-print("Variance of the gradient for {} sammples: {}".format(num_samples, np.var(grad_vals)))
+print("Variance of the gradient for {} samples: {}".format(num_samples, np.var(grad_vals)))
 
 
 #######################################
