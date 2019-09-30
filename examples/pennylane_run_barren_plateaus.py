@@ -26,7 +26,7 @@ reasonable direction is non-zero to some fixed precision
 is exponentially small as a function of the number
 of qubits."*
 
-Thus, random quantum circuits might not be the best
+Thus, randomly selected quantum circuits might not be the best
 option to choose while implementing variational quantum
 algorithms.
 
