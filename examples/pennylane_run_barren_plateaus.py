@@ -75,7 +75,7 @@ gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
 
 
 def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
-    """A random variational quantum circuit
+    """A random variational quantum circuit.
 
     Args:
         params (array[float]): array of parameters
