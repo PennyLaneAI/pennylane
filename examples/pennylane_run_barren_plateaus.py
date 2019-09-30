@@ -7,7 +7,7 @@ Barren plateaus in quantum neural networks
 
 In classical optimization, it is suggested "that saddle
 points, not local minima, provide a fundamental impediment
-to rapid high dimensional non-convex optimization".
+to rapid high-dimensional non-convex optimization".
 (Dauphin et. al, 2014).
 
 The problem of such barren plateaus manifests in a different
