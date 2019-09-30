@@ -124,7 +124,7 @@ print("Variance of the gradient for {} samples: {}".format(num_samples, np.var(g
 
 def generate_random_circuit(num_qubits):
     """
-    Generates a random quantum circuit based on (McClean et. al., 2019)
+    Generates a random quantum circuit based on (McClean et. al., 2019).
 
     Args:
         num_qubits (int): the number of qubits in the circuit
