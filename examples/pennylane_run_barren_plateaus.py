@@ -186,7 +186,7 @@ qml.about()
 #
 # 1. Dauphin, Yann N., et al.,
 #    Identifying and attacking the saddle point problem in high-dimensional non-convex
-#    optimization. Advances in neural information processing
+#    optimization. Advances in Neural Information Processing
 #    systems (2014).
 #
 # 2. McClean, Jarrod R., et al.,
