@@ -14,8 +14,8 @@
 """
 .. _tf_qnode:
 
-TensorFlow 2.0 interface
-************************
+TensorFlow interface
+********************
 
 **Module name:** :mod:`pennylane.interfaces.tf`
 
@@ -28,8 +28,8 @@ Using the TensorFlow interface
 
     To use the TensorFlow interface in PennyLane, you must first install TensorFlow.
 
-    Note that this interface **only** supports TensorFlow 1.12-1.14 and TensorFlow
-    2.0 in eager execution mode!
+    Note that this interface **only** supports TensorFlow versions >=1.12
+    (including version 2.0) in eager execution mode!
 
 Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
 it can be done.
@@ -201,7 +201,7 @@ import tensorflow as tf
 
 if tf.__version__[0] == "1":
     import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
-    from tensorflow.contrib.eager import Variable # pylint: disable=unused-import
+    Variable = tfe.Variable
 else:
     from tensorflow import Variable
 

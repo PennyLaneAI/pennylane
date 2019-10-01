@@ -1214,11 +1214,11 @@ class QNode:
         """Convert the standard PennyLane QNode into a :func:`~.TFQNode`.
         """
         # Placing slow imports here, in case the user does not use the TF interface
-        try: # pragma: no cover
-            from .interfaces.tf import TFQNode
-        except ImportError: # pragma: no cover
-            raise QuantumFunctionError("TensorFlow not found. Please install "
-                                       "the latest version of TensorFlow to enable the TFQNode interface.") from None
+        # try: # pragma: no cover
+        from .interfaces.tf import TFQNode
+        # except ImportError: # pragma: no cover
+            # raise QuantumFunctionError("TensorFlow not found. Please install "
+                                       # "the latest version of TensorFlow to enable the TFQNode interface.") from None
 
         return TFQNode(self)
 

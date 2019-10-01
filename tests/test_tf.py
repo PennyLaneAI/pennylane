@@ -24,7 +24,8 @@ try:
 
     if tf.__version__[0] == "1":
         import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
-        from tensorflow.contrib.eager import Variable # pylint: disable=unused-import
+        tf.enable_eager_execution()
+        Variable = tfe.Variable
     else:
         from tensorflow import Variable
 
