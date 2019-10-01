@@ -5,10 +5,13 @@ matrix:
   include:
   - python: 3.7
     dist: xenial
+    env: TF=1
   - python: 3.6
     dist: xenial
+    env: TF=1
   - python: 3.5
     dist: xenial
+    env: TF=0
 env:
   global:
   - COVERALLS_PARALLEL=true
@@ -16,7 +19,7 @@ env:
 install:
 - pip install -r requirements.txt
 - pip install wheel pytest pytest-cov absl-py --upgrade
-- pip install tensorflow==2.0
+- if [ "$TF" = "1" ]; then pip install tensorflow==2.0; fi
 - pip install torch==1.2.0+cpu torchvision==0.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 - python3 setup.py bdist_wheel
 - pip install dist/PennyLane*.whl
