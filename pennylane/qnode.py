@@ -1227,7 +1227,7 @@ class QNode:
         """
         # Placing slow imports here, in case the user does not use the TFE interface
         try: # pragma: no cover
-            from .interfaces.tf import TFQNode
+            from .interfaces.tfe import TFEQNode
         except ImportError: # pragma: no cover
             raise QuantumFunctionError("TensorFlow 1.0 with eager execution mode not found. Please install "
                                        "the latest version of TensorFlow to enable the TFQNode interface.") from None
