@@ -16,7 +16,7 @@ env:
 install:
 - pip install -r requirements.txt
 - pip install wheel pytest pytest-cov --upgrade
-- pip install tensorflow==1.13.1
+- pip install tensorflow==2.0
 - pip install torch==1.2.0+cpu torchvision==0.4.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 - python3 setup.py bdist_wheel
 - pip install dist/PennyLane*.whl
