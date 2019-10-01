@@ -51,4 +51,5 @@ the quantum analytic gradient to the machine learning library during backpropaga
     interfaces/numpy
     interfaces/torch
     interfaces/tf
+    interfaces/tfe
 """
