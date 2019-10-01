@@ -199,13 +199,14 @@ from functools import partial
 import numpy as np
 import tensorflow as tf
 
+from pennylane.utils import unflatten
+
+
 if tf.__version__[0] == "1":
     import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
     Variable = tfe.Variable
 else:
     from tensorflow import Variable
-
-from pennylane.utils import unflatten
 
 
 def TFQNode(qnode):
