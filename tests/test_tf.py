@@ -23,7 +23,7 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
+        import tensorflow.contrib.eager as tfe
         tf.enable_eager_execution()
         Variable = tfe.Variable
     else:
