@@ -21,6 +21,13 @@ import numpy as np
 
 try:
     import tensorflow as tf
+
+    if tf.__version__[0] == "1":
+        import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
+        from tensorflow.contrib.eager import Variable # pylint: disable=unused-import
+    else:
+        from tensorflow import Variable
+
 except ImportError as e:
     pass
 
@@ -41,9 +48,6 @@ def tf_support():
     try:
         import tensorflow as tf
         tf_support = True
-
-        if tf.__version__[0] != "2":
-            raise ImportError
 
     except ImportError as e:
         tf_support = False
@@ -69,7 +73,7 @@ class TestTFQNodeExceptions():
             return qml.expval(qml.PauliZ(0)), 0.3
 
         with pytest.raises(QuantumFunctionError, match='must return either'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
     def test_qnode_fails_on_expval_not_returned(self, qubit_device_2_wires):
         """All expectation values in the qfunc must be returned"""
@@ -81,7 +85,7 @@ class TestTFQNodeExceptions():
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(QuantumFunctionError, match='All measured observables'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
     def test_qnode_fails_on_wrong_expval_order(self, qubit_device_2_wires):
         """Expvals must be returned in the order they were created in"""
@@ -93,7 +97,7 @@ class TestTFQNodeExceptions():
             return qml.expval(qml.PauliZ(0)), ex
 
         with pytest.raises(QuantumFunctionError, match='All measured observables'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
     def test_qnode_fails_on_gates_after_measurements(self, qubit_device_2_wires):
         """Gates have to precede measurements"""
@@ -106,7 +110,7 @@ class TestTFQNodeExceptions():
             return ev
 
         with pytest.raises(QuantumFunctionError, match='gates must precede'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
     def test_qnode_fails_on_multiple_measurements_of_same_wire(self, qubit_device_2_wires):
         """A wire can only be measured once"""
@@ -118,7 +122,7 @@ class TestTFQNodeExceptions():
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliX(0))
 
         with pytest.raises(QuantumFunctionError, match='can only be measured once'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
     def test_qnode_fails_on_qfunc_with_too_many_wires(self, qubit_device_2_wires):
         """The device must have sufficient wires for the qfunc"""
@@ -130,7 +134,7 @@ class TestTFQNodeExceptions():
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(QuantumFunctionError, match='applied to invalid wire'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
     def test_qnode_fails_on_combination_of_cv_and_qbit_ops(self, qubit_device_1_wire):
         """CV and discrete operations must not be mixed"""
@@ -142,7 +146,7 @@ class TestTFQNodeExceptions():
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(QuantumFunctionError, match='Continuous and discrete'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
     def test_qnode_fails_for_cv_ops_on_qubit_device(self, qubit_device_1_wire):
         """A qubit device cannot execute CV operations"""
@@ -153,7 +157,7 @@ class TestTFQNodeExceptions():
             return qml.expval(qml.X(0))
 
         with pytest.raises(DeviceError, match='Gate [a-zA-Z]+ not supported on device'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
     def test_qnode_fails_for_cv_observables_on_qubit_device(self, qubit_device_1_wire):
         """A qubit device cannot measure CV observables"""
@@ -163,7 +167,7 @@ class TestTFQNodeExceptions():
             return qml.expval(qml.X(0))
 
         with pytest.raises(DeviceError, match='Observable [a-zA-Z]+ not supported on device'):
-            qf(tf.Variable(0.5))
+            qf(Variable(0.5))
 
 
 @pytest.mark.usefixtures("skip_if_no_tf_support")
@@ -209,7 +213,7 @@ class TestTFQNodeParameterHandling:
         grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
         cost_target = 1.03257
 
-        args = (tf.Variable(0.46), tf.Variable([[2., 3., 0.3], [7., 4., 2.1]]), tf.Variable(-0.13))
+        args = (Variable(0.46), Variable([[2., 3., 0.3], [7., 4., 2.1]]), Variable(-0.13))
 
         def cost(x, array, y):
             c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
@@ -238,7 +242,7 @@ class TestTFQNodeParameterHandling:
         grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
         cost_target = 1.03257
 
-        args = (tf.Variable(0.46), tf.Variable([[2., 3., 0.3], [7., 4., 2.1]]), tf.Variable(-0.13))
+        args = (Variable(0.46), Variable([[2., 3., 0.3], [7., 4., 2.1]]), Variable(-0.13))
 
         def cost(x, array, y):
             c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
@@ -268,7 +272,7 @@ class TestTFQNodeParameterHandling:
         grad_target = (np.array(1.), np.array([[0.5,  0.43879, 0], [0, -0.43879, 0]]), np.array(-0.4))
         cost_target = 1.03257
 
-        args = (tf.Variable(0.46), tf.Variable([[2., 3., 0.3], [7., 4., 2.1]]), tf.Variable(-0.13))
+        args = (Variable(0.46), Variable([[2., 3., 0.3], [7., 4., 2.1]]), Variable(-0.13))
 
         def cost(x, array, y):
             c = tf.cast(circuit(tf.constant(0.111), array, tf.constant(4.5)), tf.float32)
@@ -306,15 +310,15 @@ class TestTFQNodeParameterHandling:
             return ansatz(*array)
 
         positional_res = circuit1(a, b, c)
-        array_res1 = circuit2(a, tf.Variable([b, c]))
-        array_res2 = circuit3(tf.Variable([a, b, c]))
+        array_res1 = circuit2(a, Variable([b, c]))
+        array_res2 = circuit3(Variable([a, b, c]))
 
         assert np.allclose(positional_res.numpy(), array_res1.numpy(), atol=tol, rtol=0)
         assert np.allclose(positional_res.numpy(), array_res2.numpy(), atol=tol, rtol=0)
 
     def test_multiple_expectation_different_wires(self, qubit_device_2_wires, tol):
         """Tests that qnodes return multiple expectation values."""
-        a, b, c = tf.Variable(0.5), tf.Variable(0.54), tf.Variable(0.3)
+        a, b, c = Variable(0.5), Variable(0.54), Variable(0.3)
 
         @qml.qnode(qubit_device_2_wires, interface='tf')
         def circuit(x, y, z):
@@ -446,8 +450,8 @@ class TestTFQNodeParameterHandling:
         y = 0.45632
         expected_grad = np.array([np.sin(x)*np.cos(y), np.sin(y)*np.cos(x)])
 
-        x_t = tf.Variable(x)
-        y_t = tf.Variable(y)
+        x_t = Variable(x)
+        y_t = Variable(y)
 
         # test first basis state against analytic result
         with tf.GradientTape() as tape:
@@ -497,8 +501,8 @@ class TestIntegration():
         phi = [0.5, 0.1]
         theta = [0.2]
 
-        phi_t = tf.Variable(phi)
-        theta_t = tf.Variable(theta)
+        phi_t = Variable(phi)
+        theta_t = Variable(theta)
 
         autograd_eval = circuit(phi, theta)
         tf_eval = circuit_tf(phi_t, theta_t)
@@ -526,8 +530,8 @@ class TestIntegration():
         phi = [0.5, 0.1]
         theta = [0.2]
 
-        phi_t = tf.Variable(phi)
-        theta_t = tf.Variable(theta)
+        phi_t = Variable(phi)
+        theta_t = Variable(theta)
 
         dcircuit = qml.grad(circuit, [0, 1])
         autograd_grad = dcircuit(phi, theta)

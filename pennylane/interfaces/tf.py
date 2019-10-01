@@ -21,14 +21,15 @@ TensorFlow 2.0 interface
 
 .. currentmodule:: pennylane.interfaces.tf
 
-Using the TensorFlow 2.0 interface
+Using the TensorFlow interface
 ----------------------------------
 
 .. note::
 
-    To use the TensorFlow interface in PennyLane, you must first install TensorFlow 2.0.
+    To use the TensorFlow interface in PennyLane, you must first install TensorFlow.
 
-    Note that this interface **only** supports TensorFlow 2.0 in eager execution mode!
+    Note that this interface **only** supports TensorFlow 1.12-1.14 and TensorFlow
+    2.0 in eager execution mode!
 
 Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
 it can be done.
@@ -53,11 +54,11 @@ specify the ``interface='tf'`` keyword argument:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tf.Variable`` objects
+The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``Variable`` objects
 as input, and returning ``tf.Tensor`` objects.
 
->>> phi = tf.Variable([0.5, 0.1])
->>> theta = tf.Variable(0.2)
+>>> phi = Variable([0.5, 0.1])
+>>> theta = Variable(0.2)
 >>> circuit(phi, theta)
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
@@ -115,8 +116,8 @@ For example:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = tf.Variable([0.5, 0.1])
-    theta = tf.Variable(0.2)
+    phi = Variable([0.5, 0.1])
+    theta = Variable(0.2)
 
     with tf.GradientTape() as tape:
         loss = tf.abs(circuit(phi, theta) - 0.5)**2
@@ -145,6 +146,14 @@ result in an expectation value of 0.5, we can do the following:
 .. code-block:: python
 
     import tensorflow as tf
+    from tensorflow import Variable
+
+    # if using TensorFlow 1.12-1.14, you will
+    # need to uncomment the following lines
+    # import tensorflow.contrib.eager as tfe
+    # from tensorflow.contrib.eager import Variable
+    # tf.enable_eager_execution()
+
     import pennylane as qml
 
     dev = qml.device('default.qubit', wires=2)
@@ -157,8 +166,8 @@ result in an expectation value of 0.5, we can do the following:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = tf.Variable([0.5, 0.1], dtype=tf.float64)
-    theta = tf.Variable(0.2, dtype=tf.float64)
+    phi = Variable([0.5, 0.1], dtype=tf.float64)
+    theta = Variable(0.2, dtype=tf.float64)
 
     opt = tf.train.GradientDescentOptimizer(learning_rate=0.1)
     steps = 200
@@ -174,9 +183,9 @@ result in an expectation value of 0.5, we can do the following:
 The final weights and circuit value are:
 
 >>> phi
-<tf.Variable 'Variable:0' shape=(2,) dtype=float64, numpy=array([ 1.04719755,  0.1       ])>
+<Variable 'Variable:0' shape=(2,) dtype=float64, numpy=array([ 1.04719755,  0.1       ])>
 >>> theta
-<tf.Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
+<Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
 >>> circuit(phi, theta)
 <tf.Tensor: id=106269, shape=(), dtype=float64, numpy=0.5000000000000091>
 
@@ -190,11 +199,13 @@ from functools import partial
 import numpy as np
 import tensorflow as tf
 
+if tf.__version__[0] == "1":
+    import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
+    from tensorflow.contrib.eager import Variable # pylint: disable=unused-import
+else:
+    from tensorflow import Variable
+
 from pennylane.utils import unflatten
-
-
-if tf.__version__[0] != "2":
-    raise ImportError
 
 
 def TFQNode(qnode):
@@ -223,8 +234,8 @@ def TFQNode(qnode):
     @tf.custom_gradient
     def _TFQNode(*input_, **input_kwargs):
         # detach all input Tensors, convert to NumPy array
-        args = [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in input_]
-        kwargs = {k:v.numpy() if isinstance(v, (tf.Variable, tf.Tensor)) else v for k, v in input_kwargs.items()}
+        args = [i.numpy() if isinstance(i, (Variable, tf.Tensor)) else i for i in input_]
+        kwargs = {k:v.numpy() if isinstance(v, (Variable, tf.Tensor)) else v for k, v in input_kwargs.items()}
 
         # if NumPy array is scalar, convert to a Python float
         args = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in args]
