@@ -14,12 +14,12 @@
 """
 .. _tf_qnode:
 
-TensorFlow eager interface
-**************************
+TensorFlow interface
+********************
 
-**Module name:** :mod:`pennylane.interfaces.tfe`
+**Module name:** :mod:`pennylane.interfaces.tf`
 
-.. currentmodule:: pennylane.interfaces.tfe
+.. currentmodule:: pennylane.interfaces.tf
 
 Using the TensorFlow interface
 ------------------------------
@@ -28,14 +28,9 @@ Using the TensorFlow interface
 
     To use the TensorFlow eager execution interface in PennyLane, you must first install TensorFlow.
 
-    This interface **only** supports TensorFlow in eager execution mode! This can be set
-    by running the following commands at the beginning of your PennyLane script/program:
+    Note that this interface **only** supports TensorFlow 2.0 in eager execution mode!
 
-    >>> import tensorflow as tf
-    >>> import tensorflow.contrib.eager as tfe
-    >>> tf.enable_eager_execution()
-
-Using the TensorFlow eager execution interface is easy in PennyLane --- let's consider a few ways
+Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
 it can be done.
 
 
@@ -44,13 +39,13 @@ Via the QNode decorator
 
 The :ref:`QNode decorator <qnode_decorator>` is the recommended way for creating QNodes
 in PennyLane. The only change required to construct a TensorFlow-capable QNode is to
-specify the ``interface='tfe'`` keyword argument:
+specify the ``interface='tf'`` keyword argument:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tfe')
+    @qml.qnode(dev, interface='tf')
     def circuit(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
@@ -58,11 +53,11 @@ specify the ``interface='tfe'`` keyword argument:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tfe.Variable`` objects
+The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tf.Variable`` objects
 as input, and returning ``tf.Tensor`` objects.
 
->>> phi = tfe.Variable([0.5, 0.1])
->>> theta = tfe.Variable(0.2)
+>>> phi = tf.Variable([0.5, 0.1])
+>>> theta = tf.Variable(0.2)
 >>> circuit(phi, theta)
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
@@ -90,13 +85,13 @@ using different classical interfaces:
     qnode2 = qml.QNode(circuit, dev2)
 
 We can convert the default NumPy-interfacing QNode to a TensorFlow-interfacing QNode by
-using the :meth:`~.QNode.to_tfe` method:
+using the :meth:`~.QNode.to_tf` method:
 
->>> qnode1 = qnode1.to_tfe()
+>>> qnode1 = qnode1.to_tf()
 >>> qnode1
 <QNode: device='default.qubit', func=circuit, wires=2, interface=TensorFlow>
 
-Internally, the :meth:`~.QNode.to_tfe` method uses the :func:`~.TFEQNode` function
+Internally, the :meth:`~.QNode.to_tf` method uses the :func:`~.TFQNode` function
 to do the conversion.
 
 
@@ -112,7 +107,7 @@ For example:
 
     dev = qml.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tfe')
+    @qml.qnode(dev, interface='tf')
     def circuit(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
@@ -120,11 +115,12 @@ For example:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = tfe.Variable([0.5, 0.1])
-    theta = tfe.Variable(0.2)
+    phi = tf.Variable([0.5, 0.1])
+    theta = tf.Variable(0.2)
 
-    grad_fn = tfe.implicit_value_and_gradients(circuit)
-    result, [(phi_grad, phi_var), (theta_grad, theta_var)] = grad_fn(phi, theta)
+    with tf.GradientTape() as tape:
+        loss = tf.abs(circuit(phi, theta) - 0.5)**2
+        phi_grad, theta_grad = tape.gradient(loss, [phi, theta])
 
 Now, printing the gradients, we get:
 
@@ -143,20 +139,20 @@ you **must** make use of the TensorFlow optimizers provided in the ``tf.train`` 
 or your own custom TensorFlow optimizer. **The** :ref:`PennyLane optimizers <optimization_methods>`
 **cannot be used with the TensorFlow interface, only the** :ref:`numpy_qnode`.
 
-For example, to optimize a TFE-interfacing QNode (below) such that the weights ``x``
+For example, to optimize a TF-interfacing QNode (below) such that the weights ``x``
 result in an expectation value of 0.5, we can do the following:
 
 .. code-block:: python
 
     import tensorflow as tf
-    import tensorflow.contrib.eager as tfe
+    import tensorflow.contrib.eager as tf
     tf.enable_eager_execution()
 
     import pennylane as qml
 
     dev = qml.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='tfe')
+    @qml.qnode(dev, interface='tf')
     def circuit(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
@@ -164,8 +160,8 @@ result in an expectation value of 0.5, we can do the following:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = tfe.Variable([0.5, 0.1], dtype=tf.float64)
-    theta = tfe.Variable(0.2, dtype=tf.float64)
+    phi = tf.Variable([0.5, 0.1], dtype=tf.float64)
+    theta = tf.Variable(0.2, dtype=tf.float64)
 
     opt = tf.train.GradientDescentOptimizer(learning_rate=0.1)
     steps = 200
@@ -196,12 +192,11 @@ from functools import partial
 
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
 
 from pennylane.utils import unflatten
 
 
-def TFEQNode(qnode):
+def TFQNode(qnode):
     """Function that accepts a :class:`~.QNode`, and returns a TensorFlow eager-execution-compatible QNode.
 
     Args:
@@ -225,7 +220,7 @@ def TFEQNode(qnode):
 
     @qnode_str
     @tf.custom_gradient
-    def _TFEQNode(*input_, **input_kwargs):
+    def _TFQNode(*input_, **input_kwargs):
         # detach all input Tensors, convert to NumPy array
         args = [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in input_]
         kwargs = {k:v.numpy() if isinstance(v, (tf.Variable, tf.Tensor)) else v for k, v in input_kwargs.items()}
@@ -260,4 +255,4 @@ def TFEQNode(qnode):
 
         return res, grad
 
-    return _TFEQNode
+    return _TFQNode

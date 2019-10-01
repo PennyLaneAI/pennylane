@@ -114,8 +114,6 @@ def tf_support():
     """Boolean fixture for TensorFlow support"""
     try:
         import tensorflow as tf
-        import tensorflow.contrib.eager as tfe
-        tf.enable_eager_execution()
         tf_support = True
     except ImportError as e:
         tf_support = False
