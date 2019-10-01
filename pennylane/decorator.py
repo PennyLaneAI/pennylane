@@ -147,9 +147,6 @@ def qnode(device, interface='numpy', cache=False):
         if interface == 'tf':
             return qnode.to_tf()
 
-        if interface == 'tfe':
-            return qnode.to_tfe()
-
         @wraps(func)
         def wrapper(*args, **kwargs):
             """Wrapper function"""
