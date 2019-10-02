@@ -239,8 +239,9 @@ def MottonenStatePreparation(state_vector, wires):
     This code is adapted from code written by Carsten Blank for PennyLane-Qiskit.
 
     Args:
-        state_vector (array): Input array of shape ``(2^N,)``, where N is the number of qubits,
-            with :math:`N\leq n`
+        state_vector (array): Input array of shape ``(2^N,)``, where N is the number of wires
+            the state preparation acts on. ``N`` must be smaller or equal to the total 
+            number of wires.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
