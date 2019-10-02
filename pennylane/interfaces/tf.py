@@ -22,7 +22,7 @@ TensorFlow interface
 .. currentmodule:: pennylane.interfaces.tf
 
 Using the TensorFlow interface
-----------------------------------
+------------------------------
 
 .. note::
 
