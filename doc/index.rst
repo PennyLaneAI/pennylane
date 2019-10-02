@@ -145,12 +145,18 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    installing
-   intro
-   quantum_circuits
-   interfaces
-   plugins
    Get Help<https://discuss.pennylane.ai/>
    research
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Using PennyLane
+   :hidden:
+
+   intro_pl
+   intro_vcirc
+   interfaces
+   plugins
 
 .. toctree::
    :maxdepth: 1
