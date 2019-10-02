@@ -54,7 +54,7 @@ def BasisStatePreparation(basis_state, wires):
 
     if not isinstance(wires, Iterable):
         raise ValueError(
-            "Wires needs to be a list of wires that the embedding uses; got {}.".format(wires)
+            "Wires must be passed as a list of integers; got {}.".format(wires)
         )
 
     if not len(basis_state) == len(wires):
