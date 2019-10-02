@@ -47,8 +47,9 @@ def BasisStatePreparation(basis_state, wires):
     Prepares a basis state on the given wires using a sequence of Pauli X gates.
 
     Args:
-        basis_state (array): Input array of shape ``(N,)``, where N is the number of qubits,
-            with :math:`N\leq n`
+        basis_state (array): Input array of shape ``(N,)``, where N is the number of wires
+            the state preparation acts on. ``N`` must be smaller or equal to the total 
+            number of wires.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
