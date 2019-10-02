@@ -146,12 +146,15 @@ result in an expectation value of 0.5, we can do the following:
 .. code-block:: python
 
     import tensorflow as tf
+
+    # For TensorFlow 2.X:
     from tensorflow import Variable
 
-    # if using TensorFlow 1.12-1.14, you will
-    # need to uncomment the following lines
+    # if using TensorFlow 1.X, you will
+    # instead require the following three lines:
+    #
     # import tensorflow.contrib.eager as tfe
-    # from tensorflow.contrib.eager import Variable
+    # Variable = tfe.Variable
     # tf.enable_eager_execution()
 
     import pennylane as qml

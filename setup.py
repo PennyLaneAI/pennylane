@@ -27,11 +27,6 @@ requirements = [
     "semantic_version==2.6"
 ]
 
-extra_requirements = {
-    'pytorch':  ["torch", "torchvision"],
-    'tf':  ["tensorflow>=1.12"],
-}
-
 info = {
     'name': 'PennyLane',
     'version': version,
