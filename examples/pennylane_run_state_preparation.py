@@ -27,7 +27,7 @@ how to:
 # :math:`\|\vec{a}\|\leq 1`.
 #
 # The *purity* of a state is defined as :math:`p=\text{Tr}(\rho^2)`, which
-# for a qubit is bounded as :math:`1/2\leq p\geq 1`. The state is pure if
+# for a qubit is bounded as :math:`1/2\leq p\leq 1`. The state is pure if
 # :math:`p=1` and maximally mixed if :math:`p=1/2`. In this example, we
 # select the target state by choosing a random Bloch vector and
 # renormalizing it to have a specified purity.
@@ -71,7 +71,7 @@ nr_qubits = 3
 # number of layers in the circuit
 nr_layers = 2
 
-# randomly initialize parameteres from a normal distribution
+# randomly initialize parameters from a normal distribution
 params = np.random.normal(0, np.pi, (nr_qubits, nr_layers, 3))
 
 # a layer of the circuit ansatz

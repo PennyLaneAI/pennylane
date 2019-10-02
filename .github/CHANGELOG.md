@@ -2,21 +2,63 @@
 
 ### New features since last release
 
+* The devices `default.qubit` and `default.gaussian` have a new initialization parameter
+  `analytic` that indicates if expectation values and variances should be calculated
+  analytically and not be estimated from data.
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
+
+* Added C-SWAP gate to the set of qubit operations
+  [#330](https://github.com/XanaduAI/pennylane/pull/330)
+
 ### Breaking changes
+
+* The argument `n` specifying the number of samples in the method `Device.sample` was removed.
+  Instead, the method will always return `Device.shots` many samples. 
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
 ### Improvements
 
+* The number of shots / random samples used to estimate expectation values and variances, `Device.shots`,
+  can now be changed after device creation.
+  [#317](https://github.com/XanaduAI/pennylane/pull/317)
+
+* Unified import shortcuts to be under qml in qnode.py
+  and test_operation.py
+  [#329](https://github.com/XanaduAI/pennylane/pull/329)
+
+* The quantum natural gradient now uses `scipy.linalg.pinvh` which is more efficient for symmetric matrices
+  than the previously used `scipy.linalg.pinv`.
+  [#331](https://github.com/XanaduAI/pennylane/pull/331)
+
 ### Documentation
 
-* The code documentation is updated to be a comprehensive module reference. Tutorial-style
-  explanations are outsorced to the Quickstart section or the Plugin API.
+
+* The code documentation is reordered and updated to be a comprehensive module reference.
   [#314](https://github.com/XanaduAI/pennylane/pull/275)
+
+* Added tutorial for QAOA on MaxCut problem
+  [#328](https://github.com/XanaduAI/pennylane/pull/328)
+  
+* Added QGAN flow chart figure to its tutorial
+  [#333](https://github.com/XanaduAI/pennylane/pull/333)
+
+* Added missing figures for gallery thumbnails of state-preparation
+  and QGAN tutorials
+  [#326](https://github.com/XanaduAI/pennylane/pull/326)
+
+* Fixed typos in the state preparation tutorial
+  [#321](https://github.com/XanaduAI/pennylane/pull/321)
+
+* Fixed bug in VQE tutorial 3D plots
+  [#327](https://github.com/XanaduAI/pennylane/pull/327)
 
 ### Bug fixes
 
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
+
+Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Maria Schuld, Roeland Wiersema
 
 ---
 
