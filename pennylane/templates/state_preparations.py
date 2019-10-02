@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""
 State Preparations
-==========
+==================
 
 **Module name:** :mod:`pennylane.templates.state_preparations`
 
