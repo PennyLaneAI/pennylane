@@ -183,9 +183,9 @@ result in an expectation value of 0.5, we can do the following:
 The final weights and circuit value are:
 
 >>> phi
-<Variable 'Variable:0' shape=(2,) dtype=float64, numpy=array([ 1.04719755,  0.1       ])>
+<tf.Variable 'Variable:0' shape=(2,) dtype=float64, numpy=array([ 1.04719755,  0.1       ])>
 >>> theta
-<Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
+<tf.Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
 >>> circuit(phi, theta)
 <tf.Tensor: id=106269, shape=(), dtype=float64, numpy=0.5000000000000091>
 
