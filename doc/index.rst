@@ -145,9 +145,11 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    installing
+   intro
+   interfaces
    plugins
-   research
    Get Help<https://discuss.pennylane.ai/>
+   research
 
 .. toctree::
    :maxdepth: 1
@@ -165,11 +167,9 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
 .. toctree::
    :maxdepth: 1
-   :caption: Quickstart
+   :caption: Tutorials
    :hidden:
 
-   quickstart/intro
-   quickstart/interfaces
    tutorials
 
 
@@ -181,12 +181,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/overview
    code/module_list
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Plugin API
-   :hidden:
-
-   plugin_intro
 
 :html:`<h2>Indices and tables</h2>`
 

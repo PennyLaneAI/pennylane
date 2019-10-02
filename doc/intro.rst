@@ -6,12 +6,12 @@
 Introduction
 ============
 
-This section is an introduction to how the concept of a :ref:`variational quantum circuit <varcirc>`
-is implemented in PennyLane.
+This section is an introduction to how the concept of a :ref:`variational quantum circuit <varcirc>`, the
+heart piece of hybrid quantum-classical optimization, is implemented in PennyLane.
 
 It shows new PennyLane users how to:
 
-.. image:: ../_static/intro_qnodes.png
+.. image:: _static/intro_qnodes.png
     :align: right
     :width: 180px
     :target: javascript:void(0);
@@ -22,11 +22,13 @@ It shows new PennyLane users how to:
 - Conveniently create quantum nodes using the quantum node **decorator**
 - Find out more about **interfaces** to use with quantum nodes
 
+The theoretical background of variational circuits and hybrid optimization is found in
+the :ref:`Key Concepts <key_concepts>`.
 More information about PennyLane's code base can be found in the
 :ref:`Code Documentation <library_overview>`.
-An introduction of how to use and optimize quantum nodes in larger hybrid computations
-is given in the section on :ref:`Interfaces <intro_interfaces>`, and tutorials for different levels of users
-are provided in the :ref:`Tutorials <intro_tutorials>` section.
+More on how to use and optimize variational circuits - also as part of larger hybrid computations -
+is provided in the :ref:`Interfaces <intro_interfaces>` section, and tutorials for different levels of users
+are given in the :ref:`Tutorials <sphx_glr_tutorials>` section.
 
 Quantum functions
 -----------------
