@@ -31,7 +31,7 @@ Using the TensorFlow interface
     Note that this interface **only** supports TensorFlow versions >=1.12
     (including version 2.0) in eager execution mode!
 
-Using the TensorFlow interface is easy in PennyLane --- let's consider a few ways
+Using the TensorFlow interface is easy in PennyLane---let's consider a few ways
 it can be done.
 
 
@@ -120,7 +120,7 @@ For example:
     theta = Variable(0.2)
 
     with tf.GradientTape() as tape:
-        loss = tf.abs(circuit(phi, theta) - 0.5)**2
+        loss = tf.abs(circuit(phi, theta) - 0.5) ** 2
         phi_grad, theta_grad = tape.gradient(loss, [phi, theta])
 
 Now, printing the gradients, we get:
