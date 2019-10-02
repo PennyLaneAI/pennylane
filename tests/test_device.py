@@ -208,6 +208,23 @@ def mock_device_with_paulis_and_methods():
 class TestOperations:
     """Tests the logic related to operations"""
 
+    def test_shots_setter(self, mock_device):
+        """Tests that the property setter of shots changes the number of shots."""
+        
+        assert mock_device._shots == 1000
+
+        mock_device.shots = 10
+
+        assert mock_device._shots == 10
+
+    @pytest.mark.parametrize("shots", [-10, 0])
+    def test_shots_setter_error(self, mock_device, shots):
+        """Tests that the property setter of shots raises an error if the requested number of shots
+        is erroneous."""
+
+        with pytest.raises(qml.DeviceError, match="The specified number of shots needs to be at least 1"):
+            mock_device.shots = shots
+
     def test_op_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
@@ -228,7 +245,7 @@ class TestOperations:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         queue_at_pre_measure = []
@@ -251,7 +268,7 @@ class TestOperations:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         call_history = []
@@ -276,7 +293,7 @@ class TestOperations:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
@@ -307,7 +324,7 @@ class TestObservables:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         queue_at_pre_measure = []
@@ -330,7 +347,7 @@ class TestObservables:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         # The methods expval, var and sample are MagicMock'ed in the fixture
@@ -339,7 +356,7 @@ class TestObservables:
 
         mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
         mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
-        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [], 1)
+        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [])
 
     def test_unsupported_observables_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
@@ -352,24 +369,10 @@ class TestObservables:
         observables = [
             qml.expval(qml.Hadamard(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
-            mock_device_with_paulis_and_methods.execute(queue, observables)
-
-    def test_sample_attribute_error(self, mock_device_with_paulis_and_methods):
-        """Check that an error is raised if the required attribute
-           num_samples is not present in a sampled observable"""
-
-        queue = [qml.PauliX(wires=0, do_queue=False)]
-
-        # Make a sampling observable but delete its num_samples attribute
-        obs = qml.sample(qml.PauliZ(0, do_queue=False), n=10)
-        del obs.num_samples
-        observables = [obs]
-
-        with pytest.raises(DeviceError, match="Number of samples not specified for observable"):
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
     def test_unsupported_observable_return_type_raise_error(self, mock_device_with_paulis_and_methods):
@@ -399,7 +402,6 @@ class TestObservables:
         obs1.return_type = Expectation
         obs2.return_type = Variance
         obs3.return_type = Sample
-        obs3.num_samples = 1
 
         observables = [obs1,
                        obs2,
@@ -411,7 +413,7 @@ class TestObservables:
 
         mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
         mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
-        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [], 1)
+        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [])
 
 
 class TestParameters:
@@ -460,7 +462,7 @@ class TestParameters:
         observables = [
             qml.expval(qml.PauliZ(0, do_queue=False)),
             qml.var(qml.PauliZ(1, do_queue=False)),
-            qml.sample(qml.PauliZ(2, do_queue=False), 1),
+            qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
         p_mapping = {}

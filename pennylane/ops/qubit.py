@@ -35,6 +35,7 @@ Gates
     CNOT
     CZ
     SWAP
+    CSWAP
     RX
     RY
     RZ
@@ -214,8 +215,6 @@ class SWAP(Operation):
             0 & 0 & 0 & 1
         \end{bmatrix}.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
     **Details:**
 
     * Number of wires: 2
@@ -226,6 +225,35 @@ class SWAP(Operation):
     """
     num_params = 0
     num_wires = 2
+    par_domain = None
+
+class CSWAP(Operation):
+    r"""CSWAP(wires)
+    The controlled-swap operator
+
+    .. math:: CSWAP = \begin{bmatrix}
+            1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 0
+    num_wires = 3
     par_domain = None
 
 
@@ -606,6 +634,7 @@ ops = {
     "CNOT",
     "CZ",
     "SWAP",
+    "CSWAP",
     "RX",
     "RY",
     "RZ",

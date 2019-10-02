@@ -15,7 +15,7 @@
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
 # pylint: disable=protected-access
-import pennylane
+import pennylane as qml
 import pytest
 import re
 
@@ -24,11 +24,11 @@ def test_about(capfd):
     """
     about: Tests if the about string prints correct.
     """
-    pennylane.about()
+    qml.about()
     out, err = capfd.readouterr()
     assert "Version:" in out
     pl_version_match = re.search(r"Version:\s+([\S]+)\n", out).group(1)
-    assert pennylane.version().replace("-", ".") in pl_version_match
+    assert qml.version().replace("-", ".") in pl_version_match
     assert "Numpy version" in out
     assert "Scipy version" in out
     assert "default.qubit" in out

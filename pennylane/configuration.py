@@ -56,7 +56,8 @@ and has the following format:
     [main]
     # Global PennyLane options.
     # Affects every loaded plugin if applicable.
-    shots = 0
+    shots = 1000
+    analytic = True
 
     [strawberryfields.global]
     # Options for the Strawberry Fields plugin
@@ -90,7 +91,7 @@ section. Alternatively, options can be specified on a per-plugin basis, by setti
 ``[plugin.global]``.
 
 For example, in the above configuration file, the Strawberry Fields
-devices will be loaded with a default of ``shots = 100``, rather than ``shots = 0``. Finally,
+devices will be loaded with a default of ``shots = 100``, rather than ``shots = 1000``. Finally,
 you can also specify settings on a device-by-device basis, by placing the options under the
 ``[plugin.device]`` settings.
 
