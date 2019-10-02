@@ -6,10 +6,38 @@
 Introduction
 ============
 
-This section is an introduction to how the concept of a :ref:`variational quantum circuit <varcirc>`, the
+What does PennyLane do?
+-----------------------
+
+PennyLane can be understood as a framework that integrates classical and quantum computations (or *nodes*) for the
+purpose of automatic differentiation.
+
+The classical computations, as well as the overall optimization,
+are executed by a **classical interface** (see also :ref:`Interfaces <intro_interfaces>`).
+
+The quantum computations, or *quantum variational circuits*, are sent to one of a growing number
+of devices for execution; a device can be a classical
+simulator or a real quantum device. The communication between the device and PennyLane is
+defined by a **plugin** (see also :ref:`Plugins <plugins>`).
+
+
+.. image:: _static/building_blocks.png
+    :align: center
+    :width: 650px
+    :target: javascript:void(0);
+
+
+The main job of PennyLane is twofold: Firstly, it defines variational circuits in a unified language and
+sends them to the devices for execution. Secondly, it manages the computation or estimation of gradients
+of the variational circuits, and makes them accessible for the classical interface.
+
+Variational Circuits in PennyLane
+---------------------------------
+
+In the following we will see how the concept of a :ref:`variational quantum circuit <varcirc>`, the
 heart piece of hybrid quantum-classical optimization, is implemented in PennyLane.
 
-It shows new PennyLane users how to:
+New PennyLane users learn how to:
 
 .. image:: _static/intro_qnodes.png
     :align: right
@@ -22,16 +50,12 @@ It shows new PennyLane users how to:
 - Conveniently create quantum nodes using the quantum node **decorator**
 - Find out more about **interfaces** to use with quantum nodes
 
-The theoretical background of variational circuits and hybrid optimization is found in
-the :ref:`Key Concepts <key_concepts>`.
-More information about PennyLane's code base can be found in the
-:ref:`Code Documentation <library_overview>`.
-More on how to use and optimize variational circuits - also as part of larger hybrid computations -
-is provided in the :ref:`Interfaces <intro_interfaces>` section, and tutorials for different levels of users
-are given in the :ref:`Tutorials <sphx_glr_tutorials>` section.
+The theoretical background
+of variational circuits and hybrid optimization is found in the :ref:`Key Concepts <key_concepts>`.
+
 
 Quantum functions
------------------
+^^^^^^^^^^^^^^^^^
 
 A quantum circuit is constructed as a special Python function, a *quantum circuit function*, or *quantum function* in short.
 For example:
@@ -73,13 +97,13 @@ constraints:
 
 
 Defining a device
------------------
+^^^^^^^^^^^^^^^^^
 
 To run - and later optimize - a quantum circuit, one needs to first specify a *computational device*.
 
 The device is an instance of the :class:`~_device.Device`
 class, and can represent either a simulator or hardware device. They can be
-instantiated using the :func:`~device` loader. 
+instantiated using the :func:`~device` loader.
 
 .. code-block:: python
 
@@ -91,7 +115,7 @@ as plugins (see :ref:`plugins` for more details). Note that the choice of a devi
 determines the speed of your computation.
 
 Quantum nodes
--------------
+^^^^^^^^^^^^^
 
 Together, a quantum function and a device are used to create a *quantum node* or
 :class:`QNode` object, which wraps the quantum function and binds it to the device.
@@ -109,7 +133,7 @@ function. It takes the same arguments as the original quantum function:
 0.7648421872844883
 
 The QNode decorator
--------------------
+^^^^^^^^^^^^^^^^^^^
 
 A more convenient - and in fact the recommended - way for creating `QNodes` is the provided
 quantum node decorator. This decorator converts a quantum function containing PennyLane quantum
@@ -137,7 +161,7 @@ For example:
 
 
 Using QNodes
-------------
+^^^^^^^^^^^^
 
 Quantum nodes are typically used in :ref:`hybrid computations <hybrid_computation>`. This means
 that results of `QNodes` are further processed in classical functions, and that results from
@@ -150,4 +174,8 @@ NumPy-interfacing quantum nodes take NumPy datastructures, such as floats and ar
 similar data structures. They can be optimized using NumPy-based :ref:`optimization methods <optimize>`.
 Other PennyLane interfaces are :ref:`PyTorch <torch_interf>` and :ref:`TensorFlow's Eager
 mode <tf_interf>`.
+
+
+
+
 

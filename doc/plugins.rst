@@ -3,8 +3,8 @@
 
 .. _plugins:
 
-Plugins and ecosystem
-=====================
+Quantum plugins
+===============
 
 PennyLane provides a framework for the construction and optimization of hybrid quantum-classical computational models.
 While classical processing is performed using different :ref:`interfaces <intro_interfaces>`,
