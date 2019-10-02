@@ -174,7 +174,7 @@ result in an expectation value of 0.5, we can do the following:
 
     for i in range(steps):
         with tf.GradientTape() as tape:
-            loss = tf.abs(circuit(phi, theta) - 0.5)**2
+            loss = circuit(phi, theta)
             grads = tape.gradient(loss, [phi, theta])
 
         opt.apply_gradients(zip(grads, [phi, theta]), global_step=tf.train.get_or_create_global_step())
