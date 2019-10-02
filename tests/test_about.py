@@ -27,7 +27,6 @@ def test_about():
     """
     about: Tests if the about string prints correct.
     """
-    qml.about()
 
     with patch("sys.stdout", new=StringIO()) as redirect:
         qml.about()
