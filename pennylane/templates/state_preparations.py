@@ -230,7 +230,6 @@ def get_alpha_y(a, n, k):
         alpha[j, 0] = 2*np.arcsin(e)
 
     return alpha
-
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
