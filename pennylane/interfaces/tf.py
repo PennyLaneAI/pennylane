@@ -120,6 +120,7 @@ For example:
     theta = Variable(0.2)
 
     with tf.GradientTape() as tape:
+        # Use the circuit to calculate the loss value
         loss = circuit(phi, theta)
         phi_grad, theta_grad = tape.gradient(loss, [phi, theta])
 
