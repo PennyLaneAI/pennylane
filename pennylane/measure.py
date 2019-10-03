@@ -144,7 +144,7 @@ def sample(op):
             QNode._current_context.queue.remove(op)
 
     # set return type to be an expectation value
-    op.return_type = Variance
+    op.return_type = Sample
 
     if QNode._current_context is not None:
         # add observable to QNode observable queue
