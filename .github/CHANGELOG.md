@@ -54,6 +54,9 @@
 
 ### Bug fixes
 
+* Fixed typo in measurement type error message in qnode.py
+  [#341](https://github.com/XanaduAI/pennylane/pull/341)
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
