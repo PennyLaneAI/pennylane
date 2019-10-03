@@ -57,10 +57,6 @@ Summary
 Code details
 ^^^^^^^^^^^^
 """
-import warnings
-
-import pennylane as qml
-
 from .qnode import QNode, QuantumFunctionError
 from .operation import Observable, Sample, Variance, Expectation, Tensor
 

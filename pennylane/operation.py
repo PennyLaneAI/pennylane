@@ -67,6 +67,7 @@ Summary
 .. autosummary::
    Operation
    Observable
+   Tensor
 
 
 CV Operation base classes
@@ -527,21 +528,48 @@ class Observable(Operation):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     def __matmul__(self, other):
+        if isinstance(other, Tensor):
+            return other.__rmatmul__(self)
+
         if isinstance(other, Observable):
             return Tensor(self, other)
-
-        if instance(other, Tensor):
-            return other.__rmatmul__(self)
 
         raise ValueError("Can only perform tensor products between observables.")
 
 
 class Tensor(Observable):
+    """Container class representing tensor products of observables.
+
+    To create a tensor, simply initiate it like so:
+
+    >>> T = Tensor(qml.PauliX(0), qml.Hermitian(A, [1, 2]))
+
+    You can also create a tensor from other Tensors:
+
+    >>> T = Tensor(T, qml.PauliZ(4))
+
+    The ``@`` symbol can be used as a tensor product operation:
+
+    >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+    """
     return_type = None
     tensor = True
+    par_domain = None
 
-    def __init__(self, *args):
-        self.obs = list(args)
+    def __init__(self, *args): #pylint: disable=super-init-not-called
+        self.obs = []
+
+        for o in args:
+            if isinstance(o, Tensor):
+                self.obs.extend(o.obs)
+            elif isinstance(o, Observable):
+                self.obs.append(o)
+            else:
+                raise ValueError("Can only perform tensor products between observables.")
+
+    def __str__(self):
+        """Print the tensor product and some information."""
+        return 'Tensor product {}: {} params, wires {}'.format([i.name for i in self.obs], len(self.params), self.wires)
 
     @property
     def name(self):
@@ -581,6 +609,15 @@ class Tensor(Observable):
         return [p for sublist in [o.params for o in self.obs] for p in sublist]
 
     @property
+    def num_params(self):
+        """Raw parameters of all constituent observables in the tensor product.
+
+        Returns:
+            list[Any]: flattened list containing all dependent parameters
+        """
+        return len(self.params)
+
+    @property
     def parameters(self):
         """Evaluated parameter values of all constituent observables in the tensor product.
 
@@ -591,22 +628,20 @@ class Tensor(Observable):
         return [o.parameters for o in self.obs]
 
     def __matmul__(self, other):
-        if isinstance(other, Observable):
-            self.obs.append(other)
-
         if isinstance(other, Tensor):
             self.obs.extend(other.obs)
+            return self
 
-        return self
+        if isinstance(other, Observable):
+            self.obs.append(other)
+            return self
+
+        raise ValueError("Can only perform tensor products between observables.")
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
-            self.obs.prepend(other)
-
-        if isinstance(other, Tensor):
-            self.obs[:0] = other.obs
-
-        return self
+            self.obs[:0] = [other]
+            return self
 
     __imatmul__ = __matmul__
 

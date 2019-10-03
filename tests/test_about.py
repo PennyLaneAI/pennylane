@@ -20,16 +20,16 @@ import pytest
 import re
 
 
-# def test_about(capfd):
-#     """
-#     about: Tests if the about string prints correct.
-#     """
-#     qml.about()
-#     out, err = capfd.readouterr()
-#     assert "Version:" in out
-#     pl_version_match = re.search(r"Version:\s+([\S]+)\n", out).group(1)
-#     assert qml.version().replace("-", ".") in pl_version_match
-#     assert "Numpy version" in out
-#     assert "Scipy version" in out
-#     assert "default.qubit" in out
-#     assert "default.gaussian" in out
+def test_about(capfd):
+    """
+    about: Tests if the about string prints correct.
+    """
+    qml.about()
+    out, err = capfd.readouterr()
+    assert "Version:" in out
+    pl_version_match = re.search(r"Version:\s+([\S]+)\n", out).group(1)
+    assert qml.version().replace("-", ".") in pl_version_match
+    assert "Numpy version" in out
+    assert "Scipy version" in out
+    assert "default.qubit" in out
+    assert "default.gaussian" in out

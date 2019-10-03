@@ -451,7 +451,11 @@ class DefaultQubit(Device):
         return var
 
     def sample(self, observable, wires, par):
-        A = self._get_operator_matrix(observable, par)
+        if isinstance(observable, list):
+            A = self._get_tensor_operator_matrix(observable, par)
+        else:
+            A = self._get_operator_matrix(observable, par)
+
         a, P = spectral_decomposition(A)
 
         p = np.zeros(a.shape)
@@ -485,7 +489,7 @@ class DefaultQubit(Device):
             array: matrix representation.
         """
         ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
-        return functools.reduce(lambda x, y: np.kron(x, y), ops)
+        return functools.reduce(np.kron, ops)
 
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.

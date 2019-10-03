@@ -402,7 +402,7 @@ class Device(abc.ABC):
         for o in observables:
 
             if isinstance(o, Tensor):
-                if self.capabilities()["tensor_observables"] is False:
+                if "tensor_observables" not in self.capabilities() or not self.capabilities()["tensor_observables"]:
                     raise DeviceError("Tensor observables not supported on device {}".format(self.short_name))
 
                 for i in o.obs:
@@ -429,10 +429,13 @@ class Device(abc.ABC):
     def expval(self, observable, wires, par):
         r"""Returns the expectation value of observable on specified wires.
 
+        Note: all arguments accept _lists_, which indicate a tensor
+        product of observables.
+
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
+            observable (str or list[str]): name of the observable(s)
+            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
@@ -442,10 +445,13 @@ class Device(abc.ABC):
     def var(self, observable, wires, par):
         r"""Returns the variance of observable on specified wires.
 
+        Note: all arguments support _lists_, which indicate a tensor
+        product of observables.
+
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
+            observable (str or list[str]): name of the observable(s)
+            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
@@ -458,13 +464,13 @@ class Device(abc.ABC):
         The number of samples is determined by the value of ``Device.shots``,
         which can be directly modified.
 
-        For plugin developers: this function should return the result of an evaluation
-        of the given observable on the device.
+        Note: all arguments support _lists_, which indicate a tensor
+        product of observables.
 
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
+            observable (str or list[str]): name of the observable(s)
+            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
