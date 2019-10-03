@@ -213,14 +213,12 @@ print("Final cost after optimization:",cost(p1_final, p2_final))
 # Try it yourself! Download and run this file with different
 # initialization parameters and see how the results change.
 # The figure below shows the results from two different initializations on various optimizers.
-#  
-# .. figure:: ../../examples/figures/ising1.png
-#     :align: center
-#     :width: 50%
-#     :target: javascript:void(0);
 #
-# .. figure:: ../../examples/figures/ising2.png
-#     :align: center
-#     :width: 50%
-#     :target: javascript:void(0);
+# |
+# .. image:: ../../examples/figures/ising1.png
+#    :width: 48%
+# .. image:: ../../examples/figures/ising2.png
+#    :width: 48%
+# |
+
 
