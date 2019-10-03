@@ -928,17 +928,24 @@ class TestDefaultQubitIntegration:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
+
     # This test is ran with two Z expvals
-    @pytest.mark.parametrize("name,par,expected_output", [
-        ("BasisState", [0, 0], [1, 1]),
-        ("BasisState", [1, 0], [-1, 1]),
-        ("BasisState", [0, 1], [1, -1]),
-        ("QubitStateVector", [1, 0, 0, 0], [1, 1]),
-        ("QubitStateVector", [0, 0, 1, 0], [-1, 1]),
-        ("QubitStateVector", [0, 1, 0, 0], [1, -1]),
+    @pytest.mark.parametrize("name,par,wires,expected_output", [
+        ("BasisState", [0, 0], [0, 1], [1, 1]),
+        ("BasisState", [1, 0], [0, 1], [-1, 1]),
+        ("BasisState", [0, 1], [0, 1], [1, -1])
     ])
-    def test_state_prep_numwire_consistency(self, qubit_device_2_wires, tol, name, par, expected_output):
-        assert False
+    def test_state_prep_numwires_consistency(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
+
+        op = getattr(qml.ops, name)
+        assert qubit_device_2_wires.supports_operation(name)
+
+        @qml.qnode(qubit_device_2_wires)
+        def circuit():
+            op(np.array(par),wires=wires)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
     # This test is ran on the state |0> with one Z expvals
     @pytest.mark.parametrize("name,par,expected_output", [
