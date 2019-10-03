@@ -40,7 +40,7 @@ However, PennyLane has the ability to contruct quantum nodes that can also be us
 with other classical machine learning libraries. Such QNodes will accept and return the correct
 object types expected by the machine learning library (i.e., Python default types and NumPy array
 for the PennyLane-provided wrapped NumPy, ``torch.tensor`` for PyTorch, and
-``tf.Tensor`` or ``tfe.Variable`` for TensorFlow). Furthermore, PennyLane will correctly pass
+``tf.Tensor`` or ``tf.Variable`` for TensorFlow). Furthermore, PennyLane will correctly pass
 the quantum analytic gradient to the machine learning library during backpropagation.
 
 .. rst-class:: contents local topic
@@ -50,5 +50,5 @@ the quantum analytic gradient to the machine learning library during backpropaga
 
     interfaces/numpy
     interfaces/torch
-    interfaces/tfe
+    interfaces/tf
 """
