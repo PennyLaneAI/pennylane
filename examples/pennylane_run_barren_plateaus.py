@@ -11,7 +11,7 @@ to rapid high-dimensional non-convex optimization".
 (Dauphin et. al, 2014).
 
 The problem of such barren plateaus manifests in a different
-form in variational quantum circuits which are at the heart
+form in variational quantum circuits, which are at the heart
 of techniques such as quantum neural networks or approximate
 optimization e.g., QAOA (Quantum Adiabatic Optimization Algorithm).
 
