@@ -530,7 +530,7 @@ class QubitUnitary(Operation):
 
     **Details:**
 
-    * Number of wires: The operation can act on any number of wires.
+    * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
     * Gradient recipe: None
 
@@ -555,7 +555,7 @@ class BasisState(Operation):
 
     **Details:**
 
-    * Number of wires: All (applied to the entire system)
+    * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
     * Gradient recipe: None (integer parameters not supported)
 
