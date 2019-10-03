@@ -1,4 +1,4 @@
-.. automodule:: pennylane.interfaces.tfe
+.. automodule:: pennylane.interfaces.tf
    :members:
    :private-members:
    :special-members:
