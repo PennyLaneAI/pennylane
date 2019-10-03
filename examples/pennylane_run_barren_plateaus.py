@@ -106,7 +106,9 @@ def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
 qcircuit = qml.QNode(rand_circuit, dev)
 grad = qml.grad(qcircuit, argnum=0)
 
-# We only take a low number of samples for quick running of the code
+ ################################################# 
+# We take a small number of samples to allow the code to run
+# in a reasonable amount of time.
 num_samples = 10
 grad_vals = []
 
