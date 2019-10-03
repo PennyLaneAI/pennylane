@@ -144,8 +144,8 @@ def qnode(device, interface='numpy', cache=False):
         if interface == 'torch':
             return qnode.to_torch()
 
-        if interface == 'tfe':
-            return qnode.to_tfe()
+        if interface == 'tf':
+            return qnode.to_tf()
 
         @wraps(func)
         def wrapper(*args, **kwargs):
