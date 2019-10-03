@@ -70,7 +70,7 @@ Observables
     Z
 
 Classes
--------
+-------.pi
 
 .. autosummary::
     DefaultQubit
@@ -82,6 +82,7 @@ from collections import OrderedDict
 import itertools
 import warnings
 
+import math
 import numpy as np
 from scipy.linalg import eigh
 
@@ -129,6 +130,8 @@ H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNOT gate
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
+SGate = np.array([[1, 0], [0, 1j]]) #: Phase Gate
+TGate = np.array([[1, 0], [0, np.exp(1j*math.pi/4)]]) #: T Gate
 # Three qubit gates
 CSWAP = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                   [0, 1, 0, 0, 0, 0, 0, 0],
@@ -329,6 +332,8 @@ class DefaultQubit(Device):
         'PauliY': Y,
         'PauliZ': Z,
         'Hadamard': H,
+        'SGate': SGate,
+        'TGate': TGate,
         'CNOT': CNOT,
         'SWAP': SWAP,
         'CSWAP':CSWAP,

@@ -152,6 +152,52 @@ class PauliZ(Observable, Operation):
     par_domain = None
 
 
+class SGate(Operation):
+    r"""SGate(wires)
+    The single qubit phase gate
+
+    .. math:: S = \begin{bmatrix}
+                1 & 0 \\
+                0 & i
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = None
+
+
+class TGate(Operation):
+    r"""TGate(wires)
+    The single qubit T gate
+
+    .. math:: T = \begin{bmatrix}
+                1 & 0 \\
+                0 & e^{\frac{i*pi}{4}}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = None
+
+
 class CNOT(Operation):
     r"""CNOT(wires)
     The controlled-NOT operator
@@ -392,6 +438,7 @@ class Rot(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+
 
 class CRX(Operation):
     r"""CRX(phi, wires)
