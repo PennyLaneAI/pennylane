@@ -110,3 +110,4 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_data_reuploading_classifier
     tutorials/pennylane_run_quantum_natural_gradient
     tutorials/pennylane_run_qaoa_maxcut
+    tutorials/pennylane_run_barren_plateaus

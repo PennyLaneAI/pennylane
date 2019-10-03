@@ -5,26 +5,28 @@ Barren plateaus in quantum neural networks
 ==========================================
 *Author: Shahnawaz Ahmed (shahnawaz.ahmed95@gmail.com)*
 
-In classical optimization, it is suggested "that saddle
+In classical optimization, it is suggested that saddle
 points, not local minima, provide a fundamental impediment
-to rapid high-dimensional non-convex optimization".
+to rapid high-dimensional non-convex optimization.
 (Dauphin et. al, 2014).
 
 The problem of such barren plateaus manifests in a different
 form in variational quantum circuits which are at the heart
 of techniques such as quantum neural networks or approximate
-optimization e.g., QAOA (Quantum Adiabatic Optimization Algorithm).
+optimization e.g., QAOA (Quantum Adiabatic Optimization Algorithm)
+which can be found in this `Pennylane QAOA tutorial
+<https://pennylane.readthedocs.io/en/latest/tutorials/pennylane_run_qaoa_maxcut.html#qaoa-maxcut>`_.
 
 While starting from a parameterized
 random quantum circuit seems like a good unbiased choice if
 we do not know the problem structure, McClean et. al., 2018,
 show that
 
-*"for a wide class of reasonable parameterized quantum
+*for a wide class of reasonable parameterized quantum
 circuits, the probability that the gradient along any
 reasonable direction is non-zero to some fixed precision
 is exponentially small as a function of the number
-of qubits."*
+of qubits.*
 
 Thus, randomly selected quantum circuits might not be the best
 option to choose while implementing variational quantum
@@ -59,6 +61,8 @@ at the start of training."*
 ##############################################################################
 # Exploring the barren plateau problem with Pennylane
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# First, we import PennyLane, NumPy, and Matplotlib
 
 import pennylane as qml
 from pennylane import numpy as np
