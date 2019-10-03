@@ -10,6 +10,10 @@
 * Added C-SWAP gate to the set of qubit operations
   [#330](https://github.com/XanaduAI/pennylane/pull/330)
 
+* The TensorFlow interface has been renamed from `"tfe"` to `"tf"`, and
+  now supports TensorFlow 2.0.
+  [#337](https://github.com/XanaduAI/pennylane/pull/337)
+
 ### Breaking changes
 
 * The argument `n` specifying the number of samples in the method `Device.sample` was removed.
