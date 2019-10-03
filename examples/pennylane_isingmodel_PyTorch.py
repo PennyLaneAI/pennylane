@@ -208,17 +208,16 @@ print("Final cost after optimization:",cost(p1_final, p2_final))
 # Local minimum
 # ^^^^^^^^^^^^^
 # If the spins are initialized close to the local minimum of zero energy, the optimizer is
-# likely to get stuck here and never find the global minimum at -2. 
-#
-# Try it yourself! Download and run this file with different
-# initialization parameters and see how the results change.
-# The figure below shows the results from two different initializations on various optimizers.
-#
+# likely to get stuck here and never find the global minimum at -2. The figure below shows
+# the results from two different initializations on various optimizers.
+# 
 # |
 # .. image:: ../../examples/figures/ising1.png
 #    :width: 48%
 # .. image:: ../../examples/figures/ising2.png
 #    :width: 48%
 # |
-
+#
+# Try it yourself! Download and run this file with different
+# initialization parameters and see how the results change.
 
