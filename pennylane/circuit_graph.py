@@ -20,18 +20,18 @@ CircuitGraph
 .. currentmodule:: pennylane.circuit_graph
 
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
-based on operation and observable queues.
+representation of a quantum circuit, based on the operation and observable queues.
 
-.. raw:: html
 
-    <h3>Summary</h3>
+Classes
+-------
 
 .. autosummary::
-    CircuitGraph
+   CircuitGraph
 
-.. raw:: html
 
-    <h3>Code details</h3>
+Code details
+~~~~~~~~~~~~
 """
 from collections import namedtuple
 import networkx as nx
@@ -42,8 +42,7 @@ Layer = namedtuple("Layer", ["op_idx", "param_idx"])
 
 
 class CircuitGraph:
-    """Represents a queue of operations and observables
-    as a directed acyclic graph.
+    """Represents a quantum circuit as a directed acyclic graph.
 
     Args:
         queue (list[Operation]): the quantum operations to apply
@@ -55,8 +54,8 @@ class CircuitGraph:
     """
 
     def __init__(self, queue, observables, parameters=None):
-        self._queue = queue
-        self._observables = observables
+        #self._queue = queue
+        #self._observables = observables
         self.parameters = parameters or {}
 
         self._grid = {}
@@ -66,18 +65,10 @@ class CircuitGraph:
         """
 
         for idx, op in enumerate(queue + observables):
-            cmd = Command(
-                name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx
-            )
-
+            cmd = Command(name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx)
             for w in set(op.wires):
-                if w not in self._grid:
-                    # wire is not already in the grid;
-                    # add the corresponding wire to the grid
-                    self._grid[w] = []
-
-                # Add the operation to the grid, to the end of the specified wire
-                self._grid[w].append(cmd)
+                # Add op to the grid, to the end of wire w
+                self._grid.setdefault(w, []).append(cmd)
 
         self._graph = nx.DiGraph()
 
@@ -109,7 +100,7 @@ class CircuitGraph:
     @property
     def observable_nodes(self):
         """
-        Return a list of nodes of operations that have a return type, sorted by "idx".
+        List of nodes of operations that have a return type, sorted by "idx".
         """
         nodes = [node for node in self.graph.nodes.values() if node["return_type"]]
         return sorted(nodes, key=lambda node: node["idx"])
@@ -131,10 +122,10 @@ class CircuitGraph:
 
     @property
     def graph(self):
-        """The graph representation of the quantum program.
+        """The graph representation of the quantum circuit.
 
         The resulting graph has nodes representing quantum operations,
-        and edges representing dependent/successor operations.
+        and directed edges pointing from nodes to their immediate dependents/successors.
 
         Each node is labelled by an integer corresponding to the position
         in the queue; node attributes are used to store information about the node:
@@ -175,8 +166,7 @@ class CircuitGraph:
             set[int]: integer position of all operations
             in the queue that are ancestors of the given operations
         """
-        subGs = [self.graph.subgraph(nx.dag.ancestors(self.graph, o)) for o in ops]
-        return set().union(*[set(subG.nodes()) for subG in subGs]) - set(ops)
+        return set.union(*(nx.dag.ancestors(self.graph, o) for o in ops)) - set(ops)
 
     def descendants(self, ops):
         """Returns all descendant operations of a given set of operations.
@@ -189,8 +179,7 @@ class CircuitGraph:
             set[int]: integer position of all operations
             in the queue that are descendants of the given operations
         """
-        subGs = [self.graph.subgraph(nx.dag.descendants(self.graph, o)) for o in ops]
-        return set().union(*[set(subG.nodes()) for subG in subGs]) - set(ops)
+        return set.union(*(nx.dag.descendants(self.graph, o) for o in ops)) - set(ops)
 
     def get_nodes(self, ops):
         """Given a set of operation indices, return the nodes corresponding to the indices.
@@ -235,7 +224,7 @@ class CircuitGraph:
         """Identifies and returns a metadata list describing the
         layer structure of the circuit.
 
-        Each layer is a named tuple containing:
+        Each layer is a namedtuple containing:
 
         * ``op_idx`` *(list[int])*: the list of operation indices in the layer
 
@@ -244,35 +233,33 @@ class CircuitGraph:
         Returns:
             list[Layer]: a list of layers
         """
-        # keep track of the layer number
-        layer = 0
-        layer_ops = {0: ([], [])}
+        # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0 c1], [b0, d1] and not [a0], [b0 c1], [d1]
+        # keep track of the current layer
+        current = Layer([], [])
+        layers = [current]
 
+        # sort vars by first occurrence of the var in the ops queue?
         variable_ops_sorted = sorted(list(self.parameters.items()), key=lambda x: x[1][0][0])
 
+        # iterate over all parameters
         for param_idx, gate_param_tuple in variable_ops_sorted:
-            # iterate over all parameters
+            # iterate over ops depending on that param
             for op_idx, _ in gate_param_tuple:
-                # get all dependents of the existing parameter
-                sub = set(
-                    nx.dag.topological_sort(
-                        self.graph.subgraph(nx.dag.ancestors(self.graph, op_idx)).copy()
-                    )
-                )
+                # get all predecessor ops of the op
+                sub = self.ancestors([op_idx])
 
                 # check if any of the dependents are in the
-                # existing layer
-                if set(layer_ops[layer][0]) & sub:
-                    # operation depends on previous layer,
-                    # start a new layer count
-                    layer += 1
+                # currently assembled layer
+                if set(current.op_idx) & sub:
+                    # operation depends on current layer, start a new layer
+                    current = Layer([], [])
+                    layers.append(current)
 
                 # store the parameters and ops indices for the layer
-                layer_ops.setdefault(layer, ([], []))
-                layer_ops[layer][0].append(op_idx)
-                layer_ops[layer][1].append(param_idx)
+                current.op_idx.append(op_idx)
+                current.param_idx.append(param_idx)
 
-        return [Layer(*k) for _, k in sorted(list(layer_ops.items()))]
+        return layers
 
     def iterate_layers(self):
         """Identifies and returns an iterable containing
