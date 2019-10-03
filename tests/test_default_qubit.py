@@ -928,6 +928,18 @@ class TestDefaultQubitIntegration:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
+    # This test is ran with two Z expvals
+    @pytest.mark.parametrize("name,par,expected_output", [
+        ("BasisState", [0, 0], [1, 1]),
+        ("BasisState", [1, 0], [-1, 1]),
+        ("BasisState", [0, 1], [1, -1]),
+        ("QubitStateVector", [1, 0, 0, 0], [1, 1]),
+        ("QubitStateVector", [0, 0, 1, 0], [-1, 1]),
+        ("QubitStateVector", [0, 1, 0, 0], [1, -1]),
+    ])
+    def test_state_prep_numwire_consistency(self, qubit_device_2_wires, tol, name, par, expected_output):
+        assert False
+
     # This test is ran on the state |0> with one Z expvals
     @pytest.mark.parametrize("name,par,expected_output", [
         ("PhaseShift", [math.pi/2], 1),
