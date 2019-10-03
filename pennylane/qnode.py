@@ -223,7 +223,7 @@ class QNode:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
         # EVs go to their own, temporary queue
-        if isinstance(op, (qml.operation.Observable, qml.operation.Tensor)):
+        if isinstance(op, qml.operation.Observable):
             if op.return_type is None:
                 self.queue.append(op)
             else:
@@ -311,8 +311,8 @@ class QNode:
         # check the validity of the circuit
 
         # quantum circuit function return validation
-        if isinstance(res, (qml.operation.Observable, qml.operation.Tensor)):
-            if res.return_type is pennylane.operation.Sample:
+        if isinstance(res, qml.operation.Observable):
+            if res.return_type is qml.operation.Sample:
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
                 self.output_conversion = np.squeeze
@@ -321,7 +321,7 @@ class QNode:
 
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, Sequence) and res and all(isinstance(x, (qml.operation.Observable, qml.operation.Tensor)) for x in res):
+        elif isinstance(res, Sequence) and res and all(isinstance(x, qml.operation.Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
 

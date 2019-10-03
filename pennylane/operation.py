@@ -536,7 +536,7 @@ class Observable(Operation):
         raise ValueError("Can only perform tensor products between observables.")
 
 
-class Tensor:
+class Tensor(Observable):
     return_type = None
     tensor = True
 
@@ -554,6 +554,11 @@ class Tensor:
 
     @property
     def num_wires(self):
+        """Number of wires the tensor product acts on.
+
+        Returns:
+            int: number of wires
+        """
         return len([w for sublist in [o.wires for o in self.obs] for w in sublist])
 
     @property
@@ -561,7 +566,8 @@ class Tensor:
         """All wires in the system the tensor product acts on.
 
         Returns:
-            list[int]: flattened list containing all wire values
+            list[list[Any]]: nested list containing the wires per observable
+                in the tensor product
         """
         return [o.wires for o in self.obs]
 
@@ -570,7 +576,7 @@ class Tensor:
         """Raw parameters of all constituent observables in the tensor product.
 
         Returns:
-            list[list[Any]]: nested list of shape ``(num_observables, num_parameters)``
+            list[Any]: flattened list containing all dependent parameters
         """
         return [p for sublist in [o.params for o in self.obs] for p in sublist]
 
@@ -579,7 +585,8 @@ class Tensor:
         """Evaluated parameter values of all constituent observables in the tensor product.
 
         Returns:
-            list[list[Any]]: nested list of shape ``(num_observables, num_parameters)``
+            list[list[Any]]: nested list containing the parameters per observable
+                in the tensor product
         """
         return [o.parameters for o in self.obs]
 

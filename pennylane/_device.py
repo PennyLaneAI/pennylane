@@ -410,13 +410,13 @@ class Device(abc.ABC):
                     raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
 
     @abc.abstractmethod
-    def apply(self, op):
+    def apply(self, operation, wires, par):
         """Apply a quantum operation.
 
         For plugin developers: this function should apply the operation on the device.
 
         Args:
-            op (str): name of the operation
+            operation (str): name of the operation
             wires (Sequence[int]): subsystems the operation is applied on
             par (tuple): parameters for the operation
         """

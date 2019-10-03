@@ -65,121 +65,62 @@ from .qnode import QNode, QuantumFunctionError
 from .operation import Observable, Sample, Variance, Expectation, Tensor
 
 
-class ExpvalFactory:
+def expval(op):
     r"""Expectation value of the supplied observable.
 
     Args:
         op (Observable): a quantum observable object
     """
-
-    def __call__(self, *ops):
-        for op in ops:
-            if not isinstance(op, (Observable, Tensor)):
-                raise QuantumFunctionError(
-                    "{} is not an observable: cannot be used with expval".format(op.name)
-                )
-
-            if QNode._current_context is not None:
-                # delete operations from QNode queue
-                if isinstance(op, Tensor):
-                    for o in op.obs:
-                        QNode._current_context.queue.remove(o)
-                else:
-                    QNode._current_context.queue.remove(op)
-
-            # set return type to be an expectation value
-            op.return_type = Expectation
-
-        if len(ops) == 1:
-            if QNode._current_context is not None:
-                # add observable to QNode observable queue
-                QNode._current_context._append_op(ops[0])
-
-            return ops[0]
-
-        if len(ops) >= 1:
-
-            tensor = Tensor(*ops)
-            tensor.return_type = Expectation
-
-            if QNode._current_context is not None:
-                # add observable to QNode observable queue
-                QNode._current_context._append_op(tensor)
-
-            return tensor
-
-    def __getattr__(self, name):
-        # This to allow backwards compatibility with the previous
-        # module/attribute UI for requesting expectation values. Note that a deprecation
-        # warning will be raised if this UI is used.
-        #
-        # Once fully deprecated, this method can be removed,
-        # and the ExpvalFactory function can be converted into a
-        # simple expval() function using the code within __call__.
-        warnings.warn(
-            "Calling qml.expval.Observable() is deprecated. "
-            "Please use the new qml.expval(qml.Observable()) form.",
-            DeprecationWarning,
+    if not isinstance(op, Observable):
+        raise QuantumFunctionError(
+            "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
-        if name in qml.ops.__all_obs__:  # pylint: disable=no-member
-            obs_class = getattr(qml.ops, name)
-            return type(name, (obs_class,), {"return_type": Expectation})
+    if QNode._current_context is not None:
+        # delete operations from QNode queue
+        if isinstance(op, Tensor):
+            for o in op.obs:
+                QNode._current_context.queue.remove(o)
+        else:
+            QNode._current_context.queue.remove(op)
 
-        if name in qml.ops.__all_ops__:  # pylint: disable=no-member
-            raise AttributeError("{} is not an observable: cannot be used with expval".format(name))
+    # set return type to be an expectation value
+    op.return_type = Expectation
 
-        raise AttributeError("module 'pennylane' has no observable '{}'".format(name))
+    if QNode._current_context is not None:
+        # add observable to QNode observable queue
+        QNode._current_context._append_op(op)
 
-
-expval = ExpvalFactory()
-r"""Expectation value of the supplied observable.
-
-Args:
-    op (Observable): a quantum observable object
-"""
+    return op
 
 
-def var(*ops):
+def var(op):
     r"""Variance of the supplied observable.
 
     Args:
         op (Observable): a quantum observable object
     """
-    for op in ops:
-        if not isinstance(op, (Observable, Tensor)):
-            raise QuantumFunctionError(
-                "{} is not an observable: cannot be used with var".format(op.name)
-            )
+    if not isinstance(op, Observable):
+        raise QuantumFunctionError(
+            "{} is not an observable: cannot be used with var".format(op.name)
+        )
 
-        if QNode._current_context is not None:
-            # delete operations from QNode queue
-            if isinstance(op, Tensor):
-                for o in op.obs:
-                    QNode._current_context.queue.remove(o)
-            else:
-                QNode._current_context.queue.remove(op)
+    if QNode._current_context is not None:
+        # delete operations from QNode queue
+        if isinstance(op, Tensor):
+            for o in op.obs:
+                QNode._current_context.queue.remove(o)
+        else:
+            QNode._current_context.queue.remove(op)
 
-        # set return type to be a variance value
-        op.return_type = Variance
+    # set return type to be an expectation value
+    op.return_type = Variance
 
-    if len(ops) == 1:
-        if QNode._current_context is not None:
-            # add observable to QNode observable queue
-            QNode._current_context._append_op(ops[0])
+    if QNode._current_context is not None:
+        # add observable to QNode observable queue
+        QNode._current_context._append_op(op)
 
-        return ops[0]
-
-    if len(ops) >= 1:
-
-        tensor = Tensor(*ops)
-        tensor.return_type = Variance
-
-        if QNode._current_context is not None:
-            # add observable to QNode observable queue
-            QNode._current_context._append_op(tensor)
-
-        return tensor
+    return op
 
 
 def sample(op):
@@ -195,14 +136,18 @@ def sample(op):
         )
 
     if QNode._current_context is not None:
-        # delete operation from QNode queue
-        QNode._current_context.queue.remove(op)
+        # delete operations from QNode queue
+        if isinstance(op, Tensor):
+            for o in op.obs:
+                QNode._current_context.queue.remove(o)
+        else:
+            QNode._current_context.queue.remove(op)
 
-    # set return type to be a sample
-    op.return_type = Sample
+    # set return type to be an expectation value
+    op.return_type = Variance
 
     if QNode._current_context is not None:
-        # add observable back to QNode observable queue
+        # add observable to QNode observable queue
         QNode._current_context._append_op(op)
 
     return op
