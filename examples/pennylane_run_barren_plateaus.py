@@ -14,7 +14,7 @@ The problem of such barren plateaus manifests in a different
 form in variational quantum circuits, which are at the heart
 of techniques such as quantum neural networks or approximate
 optimization e.g., QAOA (Quantum Adiabatic Optimization Algorithm)
-which can be found in this `Pennylane QAOA tutorial
+which can be found in this `PennyLane QAOA tutorial
 <https://pennylane.readthedocs.io/en/latest/tutorials/pennylane_run_qaoa_maxcut.html#qaoa-maxcut>`_.
 
 While starting from a parameterized
@@ -37,8 +37,8 @@ algorithms.
    :scale: 52%
    :alt: surface
 
-In this tutorial, we will show how randomized quantum circuits 
-face the problem of barren plateaus using Pennylane. We will
+In this tutorial, we will show how randomized quantum circuits
+face the problem of barren plateaus using PennyLane. We will
 partly reproduce some of the findings in McClean et. al., 2018
 with just a few lines of code.
 
@@ -59,7 +59,7 @@ at the start of training."*
 """
 
 ##############################################################################
-# Exploring the barren plateau problem with Pennylane
+# Exploring the barren plateau problem with PennyLane
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # First, we import PennyLane, NumPy, and Matplotlib
@@ -182,7 +182,7 @@ plt.show()
 
 
 ##############################################################################
-# This tutorial was generated using the following Pennylane version:
+# This tutorial was generated using the following PennyLane version:
 qml.about()
 
 
