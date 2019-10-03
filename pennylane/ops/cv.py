@@ -667,7 +667,7 @@ class DisplacedSqueezedState(CVOperation):
     **Details:**
 
     * Number of wires: 1
-    * Number of parameters: 3
+    * Number of parameters: 4
     * Gradient recipe: None (uses finite difference)
 
     Args:
@@ -710,7 +710,7 @@ class GaussianState(CVOperation):
     **Details:**
 
     * Number of wires: Any
-    * Number of parameters: 1
+    * Number of parameters: 2
     * Gradient recipe: None
 
     Args:
