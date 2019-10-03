@@ -8,6 +8,7 @@ git+git://github.com/XanaduAI/pennylane-sf.git#egg=PennyLane_SF
 pennylane-forest
 pyquil==2.10
 scipy
+sphinx==1.8.5
 sphinxcontrib-bibtex
 sphinx_gallery
 strawberryfields
