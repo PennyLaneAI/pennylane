@@ -50,6 +50,9 @@
 
 ### Bug fixes
 
+* Fixed typo in measurement type error message in qnode.py
+  []()
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):

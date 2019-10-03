@@ -339,7 +339,7 @@ class QNode:
         for x in res:
             if x.return_type is None:
                 raise QuantumFunctionError("Observable '{}' does not have the measurement "
-                                           "type specified.")
+                                           "type specified.".format(x.name))
 
         # check that all ev's are returned, in the correct order
         if res != tuple(self.ev):
