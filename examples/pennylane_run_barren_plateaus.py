@@ -11,7 +11,7 @@ to rapid high-dimensional non-convex optimization.
 (Dauphin et. al, 2014).
 
 The problem of such barren plateaus manifests in a different
-form in variational quantum circuits which are at the heart
+form in variational quantum circuits, which are at the heart
 of techniques such as quantum neural networks or approximate
 optimization e.g., QAOA (Quantum Adiabatic Optimization Algorithm)
 which can be found in this `Pennylane QAOA tutorial
@@ -110,7 +110,9 @@ def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
 qcircuit = qml.QNode(rand_circuit, dev)
 grad = qml.grad(qcircuit, argnum=0)
 
-# We only take a low number of samples for quick running of the code
+ ################################################# 
+# We take a small number of samples to allow the code to run
+# in a reasonable amount of time.
 num_samples = 10
 grad_vals = []
 
