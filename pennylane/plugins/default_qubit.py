@@ -80,13 +80,13 @@ Code details
 """
 from collections import OrderedDict
 import itertools
+import functools
 import warnings
 
 import numpy as np
 from scipy.linalg import eigh
 
 from pennylane import Device
-from pennylane.operation import Tensor
 
 
 # tolerance for numerical errors
@@ -485,7 +485,7 @@ class DefaultQubit(Device):
             array: matrix representation.
         """
         ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
-        return np.kron(*ops)
+        return functools.reduce(lambda x, y: np.kron(x, y), ops)
 
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.

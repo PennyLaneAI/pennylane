@@ -245,10 +245,13 @@ class Device(abc.ABC):
             for obs in observables:
                 if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
+
                 elif obs.return_type is Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
+
                 elif obs.return_type is Sample:
                     results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
+
                 elif obs.return_type is not None:
                     raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
