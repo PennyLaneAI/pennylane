@@ -3,28 +3,24 @@ r"""
 
 Optimization of 3-qubit Ising model in PyTorch
 ===============================================
-*Author: Aroosa Ijaz (aroosa@xanadu.ai)*
 
-Qubit Optimization for 3-qubit Ising model using the Pennylane ``default.qubit`` Plugin.
-The Ising model is an example of a system whose optimization landscape is
-non-convex and hence using gradient descent may not be the best strategy
-since the optimization can get stuck in local minima.
-Ising models are used in Quantum Annealing (for example on a D-wave system) to solve Quadratic 
-Unconstrained Binary Optimization (QUBO) problems with non-convex cost functions. This example demonstrates how
-gradient descent optimizers can get stuck in local minima when using non-convex cost functions.
+The Ising model is an example of a system whose optimization landscape is non-convex. Hence, using gradient descent may not be the best strategy as the optimization can get
+stuck in local minima. Consequently, Ising models are popularly used to represent and solve
+Quadratic Unconstrained Binary Optimization (QUBO) problems with non-convex cost functions in
+Quantum Annealing (for example on a D-wave system). 
 
 The energy for this system is given by:
 
 .. math::  H=-\sum_{<i,j>} J_{ij} \sigma_i \sigma_{j}
 
-where each spin can be in +1 or -1 spin state and :math:`J_{ij}` are
-nearest neighbour coupling strengths.
+where each spin can be in +1 or -1 spin state and :math:`J_{ij}` are the nearest neighbor coupling strengths.
 
-For simplicity, we will assume that the first spin is always in up state
-(+1 eigenstate of Pauli-Z operator). Moreover, we will be solving this problem with 
-fixed couplings between the three qubits using the coupling matrix J = [1,-1].
+PennyLane implementation
+------------------------
 
-We will then optimize the rotation angles for the other two spins
+This basic tutorial optimizes a 3-qubit Ising model using the PennyLane ``default.qubit``
+Plugin with PyTorch machine learning interface. For simplicity, the first spin can be assumed
+to be in the "up" state (+1 eigenstate of Pauli-Z operator) and the coupling matrix can be set to :math:`J = [1,-1]`. The rotation angles for the other two spins are then optimized
 so that the energy of the system is minimized for the given couplings.
 """
 
@@ -34,40 +30,44 @@ import pennylane as qml
 from pennylane import numpy as np
 
 ###############################################################################
+# A three-qubit quantum circuit is initialized to represent the three spins:
+ 
+dev = qml.device("default.qubit", wires = 3)
 
-dev3 = qml.device("default.qubit", wires = 3)
-
-@qml.qnode(dev3, interface = "torch") # note the use of argument 'interface'
-def circuit3(p1, p2):
+@qml.qnode(dev, interface = "torch") 
+def circuit(p1, p2):
     # We use the general Rot(phi,theta,omega,wires) single-qubit operation
     qml.Rot(p1[0], p1[1], p1[2], wires=1)
     qml.Rot(p2[0], p2[1], p2[2], wires=2)
-    return qml.expval.PauliZ(0), qml.expval.PauliZ(1), qml.expval.PauliZ(2)
+    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
 
 ###############################################################################
-# Our cost function is the energy of the spin configuration which we will
-# optimize using gradient descent.
+# The cost function can be defined as the energy of the spin configuration which is to be
+# optimized using gradient descent:
 
 def cost(var1, var2):
-    # circuit3 function returns a numpy array of Pauli-Z exp values
-    spins = circuit3(var1, var2)
+    # the circuit function returns a numpy array of Pauli-Z expectation values
+    spins = circuit(var1, var2)
+
     # the expectation value of Pauli-Z is +1 for spin up and -1 for spin down
     energy = -(1 * spins[0] * spins[1]) - (-1 * spins[1] * spins[2])
     return energy
 
 ###############################################################################
+# Sanity check
+# ^^^^^^^^^^^^^
+# Let’s test the functions above using :math:`[s_1, s_2, s_3] = [1, -1, -1]` spin
+# configuration and the given coupling matrix. The total energy for this Ising model
+# should be:
 #
-# Let’s test these functions for the [1,-1,-1] spin configuration.
-# Total energy for this Ising model should be:
-#
-# .. math:: H = -1(J_1 s_1 \otimes s_2 + J_2 s_2 \otimes s3) = -1 [1 \times 1 \times (-1) + (-1) \times (-1) \times (-1)] = 2 
+# .. math:: H = -1(J_1 s_1 \otimes s_2 + J_2 s_2 \otimes s3) = 2 
 #
 
 test1 = torch.tensor([0, np.pi, 0])
 test2 = torch.tensor([0, np.pi, 0])
 
 cost_check = cost(test1, test2)
-print("Energy for [1,-1,-1] spin configuration:",cost_check)
+print("Energy for [1, -1, -1] spin configuration:",cost_check)
 
 ###############################################################################
 # .. rst-class:: sphx-glr-script-out
@@ -76,10 +76,11 @@ print("Energy for [1,-1,-1] spin configuration:",cost_check)
 #
 #  .. code-block:: none
 #
-#     Energy for [1,-1,-1] spin configuration: tensor(2.0000, dtype=torch.float64)
+#     Energy for [1, -1, -1] spin configuration is: tensor(2.0000, dtype=torch.float64)
 #
-
-# Random initialization in PyTorch
+#
+# Random initialization
+# ^^^^^^^^^^^^^^^^^^^^^
 
 p1 = Variable((np.pi * torch.rand(3, dtype=torch.float64)), requires_grad=True)
 p2 = Variable((np.pi * torch.rand(3, dtype=torch.float64)), requires_grad=True)
@@ -88,7 +89,7 @@ var_init = [p1, p2]
 cost_init = cost(p1, p2)
 
 print("Randomly initialized angles:",var_init)
-print("Corresponding cost before initialization:",cost_init)
+print("Corresponding cost before optimization:",cost_init)
 
 ###############################################################################
 # .. rst-class:: sphx-glr-script-out
@@ -100,7 +101,9 @@ print("Corresponding cost before initialization:",cost_init)
 #     Randomly initialized angles: [tensor([0.3461, 2.9970, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 2.8112, 1.1473], dtype=torch.float64, requires_grad=True)]
 #     Corresponding cost before initialization: tensor(1.9256, dtype=torch.float64, grad_fn=<SubBackward0>)
 #
-# Now we use the PyTorch gradient descent optimizer to minimize the cost.
+# Optimization
+# ^^^^^^^^^^^^
+# Now we use the PyTorch gradient descent optimizer to minimize the cost:
 
 opt = torch.optim.SGD(var_init, lr = 0.1)
 
@@ -171,6 +174,8 @@ for i in range(steps):
 #
 #     Energy after step   100: -1.9993288 | Angles: [tensor([ 0.3461, -0.0033,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.1779, 1.1473], dtype=torch.float64, requires_grad=True)] 
 #
+#
+#
 # .. note::
 #     When using the *PyTorch* optimizer, keep in mind that:
 #
@@ -181,9 +186,10 @@ for i in range(steps):
 #     Hence, its standard practice to define the ``closure()`` function that clears up the old gradient, 
 #     evaluates the new gradient and passes it onto the optimizer in each step. 
 #
-# The minimum energy is -2  for the spin configuration [1,1,-1] which corresponds to
+# The minimum energy is -2  for the spin configuration :math:`[s_1, s_2, s_3] = [1, 1, -1]`
+# which corresponds to
 # :math:`(\phi, \theta, \omega) = (0, 0, 0)` for the second spin and :math:`(\phi, \theta, \omega) = (0, \pi, 0)` for 
-# the third spin, respectively. We might not always see this value due to the non-convex cost function.
+# the third spin. We might not always see this value due to the non-convex cost function.
 
 p1_final, p2_final = opt.param_groups[0]["params"]
 print("Optimized angles:",p1_final, p2_final)
@@ -199,10 +205,14 @@ print("Final cost after optimization:",cost(p1_final, p2_final))
 #     Optimized angles: tensor([ 0.3461, -0.0033,  2.2130], dtype=torch.float64, requires_grad=True) tensor([2.7079, 3.1779, 1.1473], dtype=torch.float64, requires_grad=True)
 #     Final cost after optimization: tensor(-1.9993, dtype=torch.float64, grad_fn=<SubBackward0>)
 #
-# When we initialize close to zero, the optimizer is more likely to get
-# stuck in a local minimum. Try it yourself! Download and run this file with different
+# Local minimum
+# ^^^^^^^^^^^^^
+# If the spins are initialized close to the local minimum of zero energy, the optimizer is
+# likely to get stuck here and never find the global minimum at -2. 
+#
+# Try it yourself! Download and run this file with different
 # initialization parameters and see how the results change.
-# The figure below shows outputs of two different runs from different optimizers.
+# The figure below shows the results from two different initializations on various optimizers.
 #  
 # .. figure:: ../../examples/figures/ising1.png
 #     :align: center
