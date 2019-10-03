@@ -32,6 +32,8 @@ Gates
     PauliX
     PauliY
     PauliZ
+    S
+    T
     CNOT
     CZ
     SWAP
@@ -152,8 +154,8 @@ class PauliZ(Observable, Operation):
     par_domain = None
 
 
-class SGate(Operation):
-    r"""SGate(wires)
+class S(Operation):
+    r"""S(wires)
     The single qubit phase gate
 
     .. math:: S = \begin{bmatrix}
@@ -175,13 +177,13 @@ class SGate(Operation):
     par_domain = None
 
 
-class TGate(Operation):
-    r"""TGate(wires)
+class T(Operation):
+    r"""T(wires)
     The single qubit T gate
 
     .. math:: T = \begin{bmatrix}
                 1 & 0 \\
-                0 & e^{\frac{i*pi}{4}}
+                0 & e^{\frac{i*\pi}{4}}
             \end{bmatrix}.
 
     **Details:**
@@ -678,6 +680,8 @@ ops = {
     "PauliX",
     "PauliY",
     "PauliZ",
+    "S",
+    "T",
     "CNOT",
     "CZ",
     "SWAP",
