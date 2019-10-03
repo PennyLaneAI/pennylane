@@ -76,7 +76,7 @@ print("Energy for [1, -1, -1] spin configuration:",cost_check)
 #
 #  .. code-block:: none
 #
-#     Energy for [1, -1, -1] spin configuration is: tensor(2.0000, dtype=torch.float64)
+#     Energy for [1, -1, -1] spin configuration: tensor(2.0000, dtype=torch.float64)
 #
 #
 # Random initialization
@@ -99,7 +99,7 @@ print("Corresponding cost before optimization:",cost_init)
 #  .. code-block:: none
 #
 #     Randomly initialized angles: [tensor([0.3461, 2.9970, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 2.8112, 1.1473], dtype=torch.float64, requires_grad=True)]
-#     Corresponding cost before initialization: tensor(1.9256, dtype=torch.float64, grad_fn=<SubBackward0>)
+#     Corresponding cost before optimization: tensor(1.9256, dtype=torch.float64, grad_fn=<SubBackward0>)
 #
 # Optimization
 # ^^^^^^^^^^^^
@@ -189,7 +189,7 @@ for i in range(steps):
 # The minimum energy is -2  for the spin configuration :math:`[s_1, s_2, s_3] = [1, 1, -1]`
 # which corresponds to
 # :math:`(\phi, \theta, \omega) = (0, 0, 0)` for the second spin and :math:`(\phi, \theta, \omega) = (0, \pi, 0)` for 
-# the third spin. We might not always see this value due to the non-convex cost function.
+# the third spin. We might not always see this cost value due to the non-convex cost function.
 
 p1_final, p2_final = opt.param_groups[0]["params"]
 print("Optimized angles:",p1_final, p2_final)
