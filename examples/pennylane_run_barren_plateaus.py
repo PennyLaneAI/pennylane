@@ -7,8 +7,8 @@ Barren plateaus in quantum neural networks
 
 In classical optimization, it is suggested that saddle
 points, not local minima, provide a fundamental impediment
-to rapid high-dimensional non-convex optimization.
-(Dauphin et. al, 2014).
+to rapid high-dimensional non-convex optimization
+(Dauphin et al., 2014).
 
 The problem of such barren plateaus manifests in a different
 form in variational quantum circuits, which are at the heart
@@ -19,14 +19,14 @@ which can be found in this `PennyLane QAOA tutorial
 
 While starting from a parameterized
 random quantum circuit seems like a good unbiased choice if
-we do not know the problem structure, McClean et. al., 2018,
+we do not know the problem structure, McClean et al. (2018)
 show that
 
-*for a wide class of reasonable parameterized quantum
+*"for a wide class of reasonable parameterized quantum
 circuits, the probability that the gradient along any
 reasonable direction is non-zero to some fixed precision
 is exponentially small as a function of the number
-of qubits.*
+of qubits."*
 
 Thus, randomly selected quantum circuits might not be the best
 option to choose while implementing variational quantum
@@ -37,31 +37,34 @@ algorithms.
    :scale: 52%
    :alt: surface
 
+|
+
 In this tutorial, we will show how randomized quantum circuits
 face the problem of barren plateaus using PennyLane. We will
 partly reproduce some of the findings in McClean et. al., 2018
 with just a few lines of code.
 
+.. note::
 
-Initialization strategy to tackle barren plateaus
--------------------------------------------------
+    **An initialization strategy to tackle barren plateaus**
 
-In (Grant et. al., 2019), the authors present one strategy to
-tackle the barren plateau problem in randomized quantum circuits:
+    How do we avoid the problem of barren plateaus?
+    In Grant et al. (2019), the authors present one strategy to
+    tackle the barren plateau problem in randomized quantum circuits:
 
-*"The technique involves randomly selecting some of the initial
-parameter values, then choosing the remaining values so that
-the final circuit is a sequence of shallow unitary blocks that
-each evaluates to the identity. Initializing in this way limits
-the effective depth of the circuits used to calculate the first
-parameter update so that they cannot be stuck in a barren plateau
-at the start of training."*
+    *"The technique involves randomly selecting some of the initial
+    parameter values, then choosing the remaining values so that
+    the final circuit is a sequence of shallow unitary blocks that
+    each evaluates to the identity. Initializing in this way limits
+    the effective depth of the circuits used to calculate the first
+    parameter update so that they cannot be stuck in a barren plateau
+    at the start of training."*
 """
 
 ##############################################################################
 # Exploring the barren plateau problem with PennyLane
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+# ---------------------------------------------------
+#
 # First, we import PennyLane, NumPy, and Matplotlib
 
 import pennylane as qml
@@ -69,9 +72,9 @@ from pennylane import numpy as np
 import matplotlib.pyplot as plt
 
 
-#########################################
-# Create a randomized variational circuit
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##################################################
+# Next, we create a randomized variational circuit
+
 num_qubits = 4
 dev = qml.device("default.qubit", wires=num_qubits)
 gate_set = [qml.RX, qml.RY, qml.RZ]
@@ -104,15 +107,15 @@ def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
     return qml.expval(qml.Hermitian(H, wirelist))
 
 
-#################################################
-# Compute the gradient and calculate the variance
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+############################################################
+# Now we can compute the gradient and calculate the variance.
+# While we only take 200 samples to allow the code to run in
+# a reasonable amount of time, this can be increased
+# for more accurate results.
+
 qcircuit = qml.QNode(rand_circuit, dev)
 grad = qml.grad(qcircuit, argnum=0)
 
- ################################################# 
-# We take a small number of samples to allow the code to run
-# in a reasonable amount of time.
 num_samples = 200
 grad_vals = []
 
@@ -123,9 +126,11 @@ for i in range(num_samples):
 print("Variance of the gradient for {} samples: {}".format(num_samples, np.var(grad_vals)))
 
 
-#######################################
+###########################################################
 # Evaluate the gradient for more qubits
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# We can repeat the above analysis with increasing number
+# of qubits.
 
 
 def generate_random_circuit(num_qubits):
@@ -146,7 +151,6 @@ def generate_random_circuit(num_qubits):
 qubits = [2, 3, 4, 5, 6]
 variances = []
 
-# We can increase the sample size for better results.
 num_samples = 200
 
 
@@ -183,6 +187,7 @@ plt.show()
 
 ##############################################################################
 # This tutorial was generated using the following PennyLane version:
+
 qml.about()
 
 
