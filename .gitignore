@@ -1,3 +1,4 @@
+.gitignore
 *~
 *.pyc
 doc/_build
@@ -17,3 +18,4 @@ doc/_static/thumbs/*
 !doc/_static/code.png
 *.DS_Store
 /.vscode/*
+/venv/*
