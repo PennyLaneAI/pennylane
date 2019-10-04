@@ -166,8 +166,7 @@ class S(Operation):
     **Details:**
 
     * Number of wires: 1
-    * Number of parameters: 1
-    * Gradient recipe: None
+    * Number of parameters: 0
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
@@ -189,8 +188,7 @@ class T(Operation):
     **Details:**
 
     * Number of wires: 1
-    * Number of parameters: 1
-    * Gradient recipe: None
+    * Number of parameters: 0
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
