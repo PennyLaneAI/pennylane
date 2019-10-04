@@ -577,7 +577,7 @@ class QubitStateVector(Operation):
 
     **Details:**
 
-    * Number of wires: All (applied to the entire system)
+    * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
     * Gradient recipe: None
 
@@ -586,7 +586,7 @@ class QubitStateVector(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = All
+    num_wires = Any
     par_domain = "A"
     grad_method = None
 

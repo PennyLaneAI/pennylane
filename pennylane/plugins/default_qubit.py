@@ -366,13 +366,14 @@ class DefaultQubit(Device):
 
     def apply(self, operation, wires, par):
         if operation == 'QubitStateVector':
-            state = np.asarray(par[0], dtype=np.complex128)
-            if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
-                self._state = state
+            input_state = np.asarray(par[0], dtype=np.complex128)
+            if input_state.ndim == 1 and input_state.shape[0] == 2**self.num_wires:
+                self._state = input_state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-                raise ValueError("The default.qubit plugin can apply QubitStateVector only to all of the {} wires.".format(self.num_wires))
+                raise ValueError("The default.qubit plugin can apply QubitStateVector only to "
+                                 "all of the {} wires.".format(self.num_wires))
             self._first_operation = False
             return
         if operation == 'BasisState':
