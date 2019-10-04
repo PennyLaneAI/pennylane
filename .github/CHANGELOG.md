@@ -14,6 +14,9 @@
   now supports TensorFlow 2.0.
   [#337](https://github.com/XanaduAI/pennylane/pull/337)
 
+* Added the S and T gates to the set of qubit operations
+  [#343](https://github.com/XanaduAI/pennylane/pull/343)
+
 ### Breaking changes
 
 * The argument `n` specifying the number of samples in the method `Device.sample` was removed.
