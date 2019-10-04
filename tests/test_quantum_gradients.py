@@ -195,16 +195,14 @@ class TestCVGradient:
                 # the different methods agree
                 assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
-
     def test_cv_gradients_multiple_gate_parameters(self, gaussian_dev, tol):
         "Tests that gates with multiple free parameters yield correct gradients."
-        par = [0.4, -0.3, -0.7]
+        par = [0.4, -0.3, -0.7, 0.2]
 
-        def qf(x, y, z):
-            qml.Displacement(x, 0.2, wires=[0])
-            qml.Squeezing(y, z, wires=[0])
-            qml.Rotation(-0.2, wires=[0])
-            return qml.expval(qml.X(0))
+        def qf(r0, phi0, r1, phi1):
+            qml.Squeezing(r0, phi0, wires=[0])
+            qml.Squeezing(r1, phi1, wires=[0])
+            return qml.expval(qml.NumberOperator(0))
 
         q = qml.QNode(qf, gaussian_dev)
         grad_F = q.jacobian(par, method='F')
@@ -212,11 +210,21 @@ class TestCVGradient:
         grad_A2 = q.jacobian(par, method='A', force_order2=True)
 
         # analytic method works for every parameter
-        assert q.grad_method_for_par == {0:'A', 1:'A', 2:'A'}
+        assert q.grad_method_for_par == {i:'A' for i in range(4)}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
+        # check against the known analytic formula
+        r0, phi0, r1, phi1 = par
+        dn = np.zeros([4])
+
+        dn[0] = np.cosh(2 * r1) * np.sinh(2 * r0) + np.cos(phi0 - phi1) * np.cosh(2 * r0) * np.sinh(2 * r1)
+        dn[1] = -0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
+        dn[2] = np.cos(phi0 - phi1) * np.cosh(2 * r1) * np.sinh(2 * r0) + np.cosh(2 * r0) * np.sinh(2 * r1)
+        dn[3] = 0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
+
+        self.assertAllAlmostEqual(grad_A, dn, delta=self.tol)
 
     def test_cv_gradients_repeated_gate_parameters(self, gaussian_dev, tol):
         "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."

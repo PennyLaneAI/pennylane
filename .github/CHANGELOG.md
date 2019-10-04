@@ -7,6 +7,13 @@
   analytically and not be estimated from data.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
+* Added C-SWAP gate to the set of qubit operations
+  [#330](https://github.com/XanaduAI/pennylane/pull/330)
+
+* The TensorFlow interface has been renamed from `"tfe"` to `"tf"`, and
+  now supports TensorFlow 2.0.
+  [#337](https://github.com/XanaduAI/pennylane/pull/337)
+
 ### Breaking changes
 
 * The argument `n` specifying the number of samples in the method `Device.sample` was removed.
@@ -19,11 +26,25 @@
   can now be changed after device creation.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
-### Documentation
-
-* Unify import shortcuts to be under qml in qnode.py
+* Unified import shortcuts to be under qml in qnode.py
   and test_operation.py
   [#329](https://github.com/XanaduAI/pennylane/pull/329)
+
+* The quantum natural gradient now uses `scipy.linalg.pinvh` which is more efficient for symmetric matrices
+  than the previously used `scipy.linalg.pinv`.
+  [#331](https://github.com/XanaduAI/pennylane/pull/331)
+
+### Documentation
+
+* Added tutorial for QAOA on MaxCut problem
+  [#328](https://github.com/XanaduAI/pennylane/pull/328)
+  
+* Added QGAN flow chart figure to its tutorial
+  [#333](https://github.com/XanaduAI/pennylane/pull/333)
+
+* Added missing figures for gallery thumbnails of state-preparation
+  and QGAN tutorials
+  [#326](https://github.com/XanaduAI/pennylane/pull/326)
 
 * Fixed typos in the state preparation tutorial
   [#321](https://github.com/XanaduAI/pennylane/pull/321)
@@ -33,11 +54,14 @@
 
 ### Bug fixes
 
+* Fixed typo in measurement type error message in qnode.py
+  [#341](https://github.com/XanaduAI/pennylane/pull/341)
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
 
-Johannes Jakob Meyer
+Shahnawaz Ahmed, Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Roeland Wiersema
 
 ---
 

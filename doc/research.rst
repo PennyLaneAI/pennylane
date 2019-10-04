@@ -41,12 +41,5 @@ We encourage contributions — simply fork the PennyLane repository, and then ma
 
 We also encourage bug reports, suggestions for new features and enhancements, and even links to cool projects or applications built on PennyLane.
 
-**Update**: big announcement! We're excited to launch the Xanadu Quantum Software Competition, with prizes of up
-to $1000 on offer. Submissions close 30th August 2019 — so no excuse not to submit your PennyLane
-contribution, whether its an informative Jupyter notebook, PennyLane plugin, or a cool research result.
-
-See the `competition website <https://pennylane.ai/competition>`_ or our
-`blog post <https://medium.com/xanaduai/announcing-the-xanadu-quantum-software-competition-bdcd3d6d53a9>`_ for more.
-
 For the full contributing guidelines, please see our `contributions page <https://github.com/XanaduAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
 for more details.
