@@ -20,7 +20,7 @@ import math
 
 import pytest
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as np, DeviceError
 from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
                                              Rot3, Rotx, Roty, Rotz,
                                              Rphi, Z, hermitian,
@@ -501,15 +501,30 @@ class TestApply:
 
         with pytest.raises(
             ValueError,
-            match="BasisState parameter must be an array of 0 or 1 integers of length at most 2."
+            match="BasisState parameter must be an array of 0 or 1 integers."
         ):
             qubit_device_2_wires.apply("BasisState", wires=[0, 1], par=[np.array([-0.2, 4.2])])
 
         with pytest.raises(
             ValueError,
-            match="The default.qubit plugin can apply BasisState only to all of the 2 wires."
+            match="Length of wires parameter must not exceed 2."
         ):
-            qubit_device_2_wires.apply("BasisState", wires=[0, 1, 2], par=[np.array([0, 1])])
+            qubit_device_2_wires.apply("BasisState", wires=[0,1,2], par=[[0, 1, 1]])
+
+        with pytest.raises(
+            ValueError,
+            match="BasisState parameter and wires must be arrays of equal length."
+        ):
+            qubit_device_2_wires.apply("BasisState", wires=[0], par=[np.array([0, 1])])
+
+        with pytest.raises(
+            DeviceError,
+            match="Operation BasisState cannot be used after other Operations have already been applied "
+                                  "on a default.qubit device."
+        ):
+            qubit_device_2_wires.reset()
+            qubit_device_2_wires.apply("RZ", wires=[0], par=[0.5])
+            qubit_device_2_wires.apply("BasisState", wires=[0,1], par=[[1,1]])
 
 
 class TestExpval:
@@ -935,10 +950,9 @@ class TestDefaultQubitIntegration:
         ("BasisState", [1], [0], [-1, 1]),
         ("BasisState", [1], [1], [1, -1])
     ])
-    def test_state_prep_numwires_consistency(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
+    def test_basis_state_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
 
         op = getattr(qml.ops, name)
-        assert qubit_device_2_wires.supports_operation(name)
 
         @qml.qnode(qubit_device_2_wires)
         def circuit():
