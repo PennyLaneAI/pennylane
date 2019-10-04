@@ -72,7 +72,7 @@ Observables
     Z
 
 Classes
--------.pi
+-------
 
 .. autosummary::
     DefaultQubit
