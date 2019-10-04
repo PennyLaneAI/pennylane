@@ -14,7 +14,7 @@
   now supports TensorFlow 2.0.
   [#337](https://github.com/XanaduAI/pennylane/pull/337)
 
-* Added the S and T gates to the set of qubit operations
+* Added the S and T gates to the set of qubit operations.
   [#343](https://github.com/XanaduAI/pennylane/pull/343)
 
 ### Breaking changes
@@ -64,7 +64,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Shahnawaz Ahmed, Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Roeland Wiersema
+Shahnawaz Ahmed, Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Antal Száva, Roeland Wiersema
 
 ---
 

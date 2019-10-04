@@ -156,7 +156,7 @@ class PauliZ(Observable, Operation):
 
 class S(Operation):
     r"""S(wires)
-    The single qubit phase gate
+    The single-qubit phase gate
 
     .. math:: S = \begin{bmatrix}
                 1 & 0 \\
@@ -178,7 +178,7 @@ class S(Operation):
 
 class T(Operation):
     r"""T(wires)
-    The single qubit T gate
+    The single-qubit T gate
 
     .. math:: T = \begin{bmatrix}
                 1 & 0 \\

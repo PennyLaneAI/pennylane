@@ -84,7 +84,6 @@ from collections import OrderedDict
 import itertools
 import warnings
 
-import math
 import numpy as np
 from scipy.linalg import eigh
 
@@ -133,7 +132,7 @@ CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNO
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
 S = np.array([[1, 0], [0, 1j]]) #: Phase Gate
-T = np.array([[1, 0], [0, np.exp(1j * math.pi / 4)]]) #: T Gate
+T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]]) #: T Gate
 # Three qubit gates
 CSWAP = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                   [0, 1, 0, 0, 0, 0, 0, 0],
