@@ -65,7 +65,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Roeland Wiersema
+Shahnawaz Ahmed, Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Roeland Wiersema
 
 ---
 
