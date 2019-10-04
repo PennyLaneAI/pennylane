@@ -113,7 +113,7 @@ grad = qml.grad(qcircuit, argnum=0)
  ################################################# 
 # We take a small number of samples to allow the code to run
 # in a reasonable amount of time.
-num_samples = 10
+num_samples = 200
 grad_vals = []
 
 for i in range(num_samples):
@@ -143,11 +143,11 @@ def generate_random_circuit(num_qubits):
     return qcircuit, random_gate_sequence
 
 
-qubits = [2, 3, 4, 5, 6, 7, 8]
+qubits = [2, 3, 4, 5, 6]
 variances = []
 
 # We can increase the sample size for better results.
-num_samples = 25
+num_samples = 200
 
 
 for num_qubits in qubits:
