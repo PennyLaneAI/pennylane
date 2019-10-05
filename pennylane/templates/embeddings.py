@@ -45,8 +45,9 @@ Code details
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
-from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 import numpy as np
+
+from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 
 def AngleEmbedding(features, wires, rotation='X'):
     r"""

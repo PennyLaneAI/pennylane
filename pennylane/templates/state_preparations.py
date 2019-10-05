@@ -41,6 +41,7 @@ import pennylane as qml
 from scipy import sparse
 from sympy.combinatorics.graycode import GrayCode
 
+# pylint: disable=len-as-condition
 
 def BasisStatePreparation(basis_state, wires):
     r"""
@@ -48,7 +49,7 @@ def BasisStatePreparation(basis_state, wires):
 
     Args:
         basis_state (array): Input array of shape ``(N,)``, where N is the number of wires
-            the state preparation acts on. ``N`` must be smaller or equal to the total 
+            the state preparation acts on. ``N`` must be smaller or equal to the total
             number of wires.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
@@ -194,7 +195,7 @@ def _get_alpha_z(omega, n, k):
         omega (float): phase of the input
         n (int): total number of qubits
         k (int): current qubit
-        
+
     Returns:
         a sparse vector representing :math:`\alpha^z_k`
     """
@@ -217,7 +218,7 @@ def _get_alpha_y(a, n, k):
         omega (float): phase of the input
         n (int): total number of qubits
         k (int): current qubit
-        
+
     Returns:
         a sparse vector representing :math:`\alpha^y_k`
     """
@@ -256,7 +257,7 @@ def MottonenStatePreparation(state_vector, wires):
 
     Args:
         state_vector (array): Input array of shape ``(2^N,)``, where N is the number of wires
-            the state preparation acts on. ``N`` must be smaller or equal to the total 
+            the state preparation acts on. ``N`` must be smaller or equal to the total
             number of wires.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
