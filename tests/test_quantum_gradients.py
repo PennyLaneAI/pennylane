@@ -218,13 +218,12 @@ class TestCVGradient:
         # check against the known analytic formula
         r0, phi0, r1, phi1 = par
         dn = np.zeros([4])
-
         dn[0] = np.cosh(2 * r1) * np.sinh(2 * r0) + np.cos(phi0 - phi1) * np.cosh(2 * r0) * np.sinh(2 * r1)
         dn[1] = -0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
         dn[2] = np.cos(phi0 - phi1) * np.cosh(2 * r1) * np.sinh(2 * r0) + np.cosh(2 * r0) * np.sinh(2 * r1)
         dn[3] = 0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
 
-        self.assertAllAlmostEqual(grad_A, dn, delta=self.tol)
+        assert dn[np.newaxis, :] == pytest.approx(grad_F, abs=tol)
 
     def test_cv_gradients_repeated_gate_parameters(self, gaussian_dev, tol):
         "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
