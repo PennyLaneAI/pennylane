@@ -14,17 +14,15 @@
 """
 Unit tests for the :mod:`pennylane.template.state_preparations` module.
 """
+import math
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pennylane as qml
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
-import numpy as np
-from unittest.mock import patch, MagicMock
-import math
-
-import pennylane as qml
-from pennylane.templates.state_preparations import (
-    BasisStatePreparation,
-    MottonenStatePreparation,
-)
+from pennylane.templates.state_preparations import (BasisStatePreparation,
+                                                    MottonenStatePreparation)
 
 
 class TestBasisStatePreparation:
@@ -218,4 +216,3 @@ class TestBasisStatePreparation:
 
         with pytest.raises(ValueError, match=error_message):
             MottonenStatePreparation(state_vector, wires)
-

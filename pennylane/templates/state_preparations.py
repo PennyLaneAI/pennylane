@@ -33,13 +33,13 @@ Qubit architectures
 Code details
 ^^^^^^^^^^^^
 """
-from collections.abc import Iterable
-import numpy as np
 import math
+from collections.abc import Iterable
+
+import numpy as np
+import pennylane as qml
 from scipy import sparse
 from sympy.combinatorics.graycode import GrayCode
-
-import pennylane as qml
 
 
 def BasisStatePreparation(basis_state, wires):
