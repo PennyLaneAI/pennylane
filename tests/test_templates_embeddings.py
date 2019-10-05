@@ -129,7 +129,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=3, rotation='A')
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
 
 
@@ -179,7 +179,7 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires=3)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
 
 
@@ -233,7 +233,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=3, pad=False, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
 
 
@@ -316,7 +316,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=3, method='A')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
 
 
@@ -399,6 +399,6 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=3, method='A')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
 
