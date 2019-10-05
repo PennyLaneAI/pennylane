@@ -15,18 +15,23 @@
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
 # pylint: disable=protected-access
+
+import contextlib
+import io
 import re
+import sys
 
 import pennylane as qml
-import pytest
 
 
-def test_about(capfd):
+def test_about():
     """
     about: Tests if the about string prints correct.
     """
-    qml.about()
-    out, err = capfd.readouterr()
+    f = io.StringIO()
+    with contextlib.redirect_stdout(f):
+        qml.about()
+    out = f.getvalue().strip()
 
     assert "Version:" in out
     pl_version_match = re.search(r"Version:\s+([\S]+)\n", out).group(1)
