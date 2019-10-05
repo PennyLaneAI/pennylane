@@ -19,11 +19,10 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 import pytest
 from scipy.special import factorial as fac
 from scipy.linalg import block_diag
-
-from unittest.mock import patch  # FIXME remove
+import numpy as np
+import numpy.random
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.plugins.default_gaussian import (
     fock_prob,
     rotation, squeezing, quadratic_phase, beamsplitter, two_mode_squeezing, controlled_addition, controlled_phase,
@@ -520,11 +519,18 @@ class TestDefaultGaussianDevice:
         assert res[1] == pytest.approx(expected[1], abs=tol)
 
 
+
+def input_logger(*args):
+    """Helper function for monkeypatch: logs its input."""
+    input_logger.args = args
+    return np.array([1, 2, 3, 4, 5])
+
+
 class TestSample:
     """Tests that sampling is correctly implemented."""
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
-    def test_sampling_parameters_coherent(self, tol, gaussian_device_1_wire, alpha):
+    def test_sampling_parameters_coherent(self, tol, gaussian_device_1_wire, alpha, monkeypatch):
         """Tests that the np.random.normal is called with the correct parameters that reflect
            the underlying distribution for a coherent state."""
 
@@ -532,28 +538,27 @@ class TestSample:
         std = gaussian_device_1_wire.hbar/2
         gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
 
-        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
+        with monkeypatch.context() as m:
+            m.setattr(numpy.random, 'normal', input_logger)
             sample = gaussian_device_1_wire.sample('P', [0], [])
-
-            args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
-    def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha):
+    def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha, monkeypatch):
         """Tests that the np.random.normal is called with the correct parameters that reflect
            the underlying distribution for a coherent state when using QuadOperator."""
 
         mean = alpha.imag*np.sqrt(2*gaussian_device_1_wire.hbar)
         std = gaussian_device_1_wire.hbar/2
         gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
-        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
-            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2])
 
-            args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+        with monkeypatch.context() as m:
+            m.setattr(numpy.random, 'normal', input_logger)
+            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2])
+            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
-    def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi):
+    def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi, monkeypatch):
         """Tests that the np.random.normal is called with the correct parameters that reflect
            the underlying distribution for a squeezed state."""
 
@@ -561,11 +566,10 @@ class TestSample:
         std = np.sqrt(gaussian_device_1_wire.hbar*np.exp(2*r)/2)
         gaussian_device_1_wire.apply('SqueezedState', wires=[0], par=[r, phi])
 
-        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
+        with monkeypatch.context() as m:
+            m.setattr(numpy.random, 'normal', input_logger)
             sample = gaussian_device_1_wire.sample('P', [0], [])
-
-            args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("observable,n_sample", [('P', 10), ('P', 25), ('X', 1), ('X', 16)])
     def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):
@@ -613,7 +617,7 @@ class TestDefaultGaussianIntegration:
 
     def test_unsupported_gates(self):
         """Test error is raised with unsupported gates"""
-        self.logTestName()
+
         dev = qml.device('default.gaussian', wires=3)
 
         gates = set(dev._operation_map.keys())
