@@ -17,6 +17,10 @@
 * Added the S and T gates to the set of qubit operations.
   [#343](https://github.com/XanaduAI/pennylane/pull/343)
 
+* Added the templates `BasisStatePreparation` and `MottonenStatePreparation` that use
+  gates to prepare a basis state and an arbitrary state respectively.
+  [#336](https://github.com/XanaduAI/pennylane/pull/336)
+
 ### Breaking changes
 
 * The argument `n` specifying the number of samples in the method `Device.sample` was removed.
