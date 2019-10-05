@@ -25,6 +25,9 @@ from pennylane.plugins import DefaultQubit
 import pytest
 
 
+# TODO add test for Observable.return_type
+
+
 def test_pass_positional_wires_to_observable(monkeypatch, capfd):
     """Tests whether the ability to pass wires as positional argument is retained"""
     dev = qml.device("default.qubit", wires=1)
