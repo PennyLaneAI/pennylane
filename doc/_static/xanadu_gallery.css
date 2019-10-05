@@ -214,6 +214,7 @@ p.sphx-glr-signature a.reference.external {
 .pennylane-call-to-action-links {
   padding-top: 25px;
   display: flex;
+  align-items: end;
 /*   justify-content: center; */
 }
 
