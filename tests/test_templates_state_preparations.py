@@ -86,7 +86,7 @@ class TestBasisStatePreparation:
     @pytest.mark.parametrize("basis_state,wires,error_message", [
         ([0], [0, 1], "Number of qubits must be equal to the number of wires"),
         ([0, 1], [0], "Number of qubits must be equal to the number of wires"),
-        ([0], 0, "Wires needs to be a list of wires that the embedding uses"),
+        ([0], 0, "Wires must be passed as a list of integers"),
         ([3], [0], "Basis state must only consist of 0s and 1s"),
         ([1, 0, 2], [0, 1, 2], "Basis state must only consist of 0s and 1s"),
     ])
@@ -162,31 +162,19 @@ class TestMottonenStatePreparation:
             [-0.17133152-0.18777771j, 0.00240643-0.40704011j, 0.18684538-0.36315606j, -0.07096948+0.104501j, 0.30357755-0.23831927j, -0.38735106+0.36075556j, 0.12351096-0.0539908j, 0.27942828-0.24810483j],
         ),
         (
-            [-0.29972867+0.04964242j, -0.28309418+0.09873227j,  0.00785743-0.37560696j,
-  -0.3825148 +0.00674343j, -0.03008048+0.31119167j,  0.03666351-0.15935903j,   -0.25358831+0.35461265j, -0.32198531+0.33479292j],
+            [-0.29972867+0.04964242j, -0.28309418+0.09873227j, 0.00785743-0.37560696j, -0.3825148 +0.00674343j, -0.03008048+0.31119167j, 0.03666351-0.15935903j, -0.25358831+0.35461265j, -0.32198531+0.33479292j],
             [0, 1, 2],
-            [-0.29972867+0.04964242j, -0.28309418+0.09873227j,  0.00785743-0.37560696j,
-  -0.3825148 +0.00674343j, -0.03008048+0.31119167j,  0.03666351-0.15935903j,   -0.25358831+0.35461265j, -0.32198531+0.33479292j],
+            [-0.29972867+0.04964242j, -0.28309418+0.09873227j, 0.00785743-0.37560696j, -0.3825148 +0.00674343j, -0.03008048+0.31119167j, 0.03666351-0.15935903j, -0.25358831+0.35461265j, -0.32198531+0.33479292j],
         ),
         (
-            [-0.39340123+0.05705932j,  0.1980509 -0.24234781j,  0.27265585-0.0604432j,
-  -0.42641249+0.25767258j,  0.40386614-0.39925987j,  0.03924761+0.13193724j,
-  -0.06059103-0.01753834j,  0.21707136-0.15887973j],
+            [-0.39340123+0.05705932j, 0.1980509 -0.24234781j, 0.27265585-0.0604432j, -0.42641249+0.25767258j, 0.40386614-0.39925987j, 0.03924761+0.13193724j, -0.06059103-0.01753834j, 0.21707136-0.15887973j],
             [0, 1, 2],
-            [-0.39340123+0.05705932j,  0.1980509 -0.24234781j,  0.27265585-0.0604432j,
-  -0.42641249+0.25767258j,  0.40386614-0.39925987j,  0.03924761+0.13193724j,
-  -0.06059103-0.01753834j,  0.21707136-0.15887973j]
+            [-0.39340123+0.05705932j, 0.1980509 -0.24234781j, 0.27265585-0.0604432j, -0.42641249+0.25767258j, 0.40386614-0.39925987j, 0.03924761+0.13193724j, -0.06059103-0.01753834j, 0.21707136-0.15887973j]
         ),
         (
-            [-1.33865287e-01+0.09802308j,  1.25060033e-01+0.16087698j,
-  -4.14678130e-01-0.00774832j,  1.10121136e-01+0.37805482j,
-  -3.21284864e-01+0.21521063j, -2.23121454e-04+0.28417422j,
-   5.64131205e-02+0.38135286j,  2.32694503e-01+0.41331133j],
+            [-1.33865287e-01+0.09802308j, 1.25060033e-01+0.16087698j, -4.14678130e-01-0.00774832j, 1.10121136e-01+0.37805482j, -3.21284864e-01+0.21521063j, -2.23121454e-04+0.28417422j, 5.64131205e-02+0.38135286j, 2.32694503e-01+0.41331133j],
             [0, 1, 2],
-            [-1.33865287e-01+0.09802308j,  1.25060033e-01+0.16087698j,
-  -4.14678130e-01-0.00774832j,  1.10121136e-01+0.37805482j,
-  -3.21284864e-01+0.21521063j, -2.23121454e-04+0.28417422j,
-   5.64131205e-02+0.38135286j,  2.32694503e-01+0.41331133j],
+            [-1.33865287e-01+0.09802308j, 1.25060033e-01+0.16087698j, -4.14678130e-01-0.00774832j, 1.10121136e-01+0.37805482j, -3.21284864e-01+0.21521063j, -2.23121454e-04+0.28417422j, 5.64131205e-02+0.38135286j, 2.32694503e-01+0.41331133j],
         ),
         ([1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0], [0, 1, 2], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
         ([1/2, 0, 1j/2, 1j/math.sqrt(2)], [0, 1], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
@@ -215,17 +203,17 @@ class TestMottonenStatePreparation:
         assert np.isclose(fidelity, 1, atol=tol, rtol=0)
 
     # fmt: off
-    @pytest.mark.parametrize("basis_state,wires,error_message", [
-        ([0], [0, 1], "Number of qubits must be equal to the number of wires"),
-        ([0, 1], [0], "Number of qubits must be equal to the number of wires"),
-        ([0], 0, "Wires needs to be a list of wires that the embedding uses"),
-        ([3], [0], "Basis state must only consist of 0s and 1s"),
-        ([1, 0, 2], [0, 1, 2], "Basis state must only consist of 0s and 1s"),
+    @pytest.mark.parametrize("state_vector,wires,error_message", [
+        ([0, 1, 0], [0, 1], "Number of entries in the state vector must be equal to 2 to the power of the number of wires"),
+        ([0, 1, 0, 0, 0], [0], "Number of entries in the state vector must be equal to 2 to the power of the number of wires"),
+        ([0], 0, "Wires must be passed as a list of integers"),
+        ([1/2, 1/2], [0], "State vector probabilities have to sum up to 1.0"),
+        ([2/3, 0, 2j/3, -2/3], [0, 1], "State vector probabilities have to sum up to 1.0"),
     ])
     # fmt: on
-    def test_errors(self, basis_state, wires, error_message):
+    def test_errors(self, state_vector, wires, error_message):
         """Tests that the correct error messages are raised."""
 
         with pytest.raises(ValueError, match=error_message):
-            BasisStatePreparation(basis_state, wires)
+            MottonenStatePreparation(state_vector, wires)
 

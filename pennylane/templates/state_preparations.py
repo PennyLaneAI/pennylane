@@ -270,7 +270,7 @@ def MottonenStatePreparation(state_vector, wires):
 
     if not len(state_vector) == 2 ** n:
         raise ValueError(
-            "Number of qubits must be equal to 2 to the power of the number of wires, which is {}; "
+            "Number of entries in the state vector must be equal to 2 to the power of the number of wires, which is {}; "
             "got {}.".format(2 ** n, len(state_vector))
         )
 
