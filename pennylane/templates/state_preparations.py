@@ -54,9 +54,7 @@ def BasisStatePreparation(basis_state, wires):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError(
-            "Wires must be passed as a list of integers; got {}.".format(wires)
-        )
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if not len(basis_state) == len(wires):
         raise ValueError(
@@ -65,13 +63,12 @@ def BasisStatePreparation(basis_state, wires):
         )
 
     if any([x not in [0, 1] for x in basis_state]):
-        raise ValueError(
-            "Basis state must only consist of 0s and 1s, got {}".format(basis_state)
-        )
+        raise ValueError("Basis state must only consist of 0s and 1s, got {}".format(basis_state))
 
     for wire, state in zip(wires, basis_state):
         if state == 1:
             qml.PauliX(wire)
+
 
 def matrix_M_entry(row, col):
     """The matrix entry for the angle computation.
@@ -92,7 +89,8 @@ def matrix_M_entry(row, col):
 
         b_and_g = b_and_g >> 1
 
-    return (-1)**sum_of_ones
+    return (-1) ** sum_of_ones
+
 
 def compute_theta(alpha):
     """Calculates the rotation angles from the alpha vector
@@ -104,7 +102,7 @@ def compute_theta(alpha):
         (array[float]): rotation angles theta
     """
     k = np.log2(alpha.shape[0])
-    factor = 2**(-k)
+    factor = 2 ** (-k)
 
     theta = sparse.dok_matrix(alpha.shape, dtype=np.float64)  # type: sparse.dok_matrix
 
@@ -116,6 +114,7 @@ def compute_theta(alpha):
             theta[row, 0] = entry
 
     return theta
+
 
 def uniform_rotation_dg(gate, alpha, control_wires, target_wire):
     """Applies a Y or Z rotation to the target qubit
@@ -174,6 +173,7 @@ def unirz_dg(alpha, control_wires, target_wire):
 
     uniform_rotation_dg(qml.RZ, alpha, control_wires, target_wire)
 
+
 def uniry_dg(alpha, control_wires, target_wire):
     """Applies a Y rotation to the target qubit
     that is uniformly controlled by the control qubits.
@@ -209,6 +209,7 @@ def get_alpha_z(omega, n, k):
 
     return alpha_z_k
 
+
 def get_alpha_y(a, n, k):
     """Computes the rotation angles alpha for the z-rotations
 
@@ -220,28 +221,28 @@ def get_alpha_y(a, n, k):
     Returns:
         a sparse vector representing :math:`\alpha^y_k`
     """
-    alpha = sparse.dok_matrix((2**(n - k), 1), dtype=np.float64)
+    alpha = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
 
     numerator = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
     denominator = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
 
     for (i, _), e in a.items():
-        j = int(math.ceil((i + 1) / 2**k))
-        l = (i + 1) - (2*j - 1)*2**(k-1)
-        is_part_numerator = 1 <= l <= 2**(k-1)
+        j = int(math.ceil((i + 1) / 2 ** k))
+        l = (i + 1) - (2 * j - 1) * 2 ** (k - 1)
+        is_part_numerator = 1 <= l <= 2 ** (k - 1)
 
         if is_part_numerator:
-            numerator[j - 1, 0] += e*e
-        denominator[j - 1, 0] += e*e
+            numerator[j - 1, 0] += e * e
+        denominator[j - 1, 0] += e * e
 
     for (j, _), e in numerator.items():
         numerator[j, 0] = np.sqrt(e)
     for (j, _), e in denominator.items():
-        denominator[j, 0] = 1/np.sqrt(e)
+        denominator[j, 0] = 1 / np.sqrt(e)
 
     pre_alpha = numerator.multiply(denominator)  # type: sparse.csr_matrix
     for (j, _), e in pre_alpha.todok().items():
-        alpha[j, 0] = 2*np.arcsin(e)
+        alpha[j, 0] = 2 * np.arcsin(e)
 
     return alpha
 
@@ -262,26 +263,28 @@ def MottonenStatePreparation(state_vector, wires):
 
     if not isinstance(wires, Iterable):
         raise ValueError(
-            "Wires needs to be a list of wires that the embedding uses; got {}.".format(wires)
+            "Wires must be passed as a list of integers; got {}.".format(wires)
         )
 
     n = len(wires)
 
-    if not len(state_vector) == 2**n:
+    if not len(state_vector) == 2 ** n:
         raise ValueError(
             "Number of qubits must be equal to 2 to the power of the number of wires, which is {}; "
-            "got {}.".format(2**n, len(state_vector))
+            "got {}.".format(2 ** n, len(state_vector))
         )
 
-    probability_sum = np.sum(np.abs(state_vector)**2)
+    probability_sum = np.sum(np.abs(state_vector) ** 2)
 
-    if not np.isclose(probability_sum, 1.0, atol=1E-3):
+    if not np.isclose(probability_sum, 1.0, atol=1e-3):
         raise ValueError(
             "State vector probabilities have to sum up to 1.0, got {}".format(probability_sum)
         )
-    
+
     # Change ordering of indices, original code was for IBM machines
-    reorder_indices = np.ravel_multi_index(np.unravel_index(range(2**n), [2]*n, order="C"), [2]*n, order="F") 
+    reorder_indices = np.ravel_multi_index(
+        np.unravel_index(range(2 ** n), [2] * n, order="C"), [2] * n, order="F"
+    )
 
     state_vector = np.array(state_vector)[reorder_indices, np.newaxis]
     state_vector = sparse.dok_matrix(state_vector)
@@ -303,7 +306,7 @@ def MottonenStatePreparation(state_vector, wires):
         control = wires[k:]
         target = wires[k - 1]
         uniry_dg(alpha_y_k, control, target)
-    
+
     # Apply z rotations
     for k in range(n, 0, -1):
         alpha_z_k = get_alpha_z(omega, n, k)
