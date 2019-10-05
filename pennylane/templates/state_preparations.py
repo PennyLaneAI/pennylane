@@ -117,7 +117,7 @@ def compute_theta(alpha):
 
     return theta
 
-def uniform_rotation(gate, alpha, control_wires, target_wire):
+def uniform_rotation_dg(gate, alpha, control_wires, target_wire):
     """Applies a Y or Z rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -133,18 +133,18 @@ def uniform_rotation(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
-        gate(theta[0, 0], wires=[target_wire], do_queue=False)
+        gate(theta[0, 0], wires=[target_wire])
         return
 
     gc = GrayCode(gray_code_rank)
 
     current_gray = gc.current
     for i in range(gc.selections):
-        gate(theta[i, 0], wires=[target_wire], do_queue=False)
+        gate(theta[i, 0], wires=[target_wire])
         next_gray = gc.next(i + 1).current
 
         control_index = int(np.log2(int(current_gray, 2) ^ int(next_gray, 2)))
-        qml.CNOT(wires=[control_wires[control_index], target_wire], do_queue=False)
+        qml.CNOT(wires=[control_wires[control_index], target_wire])
 
         current_gray = next_gray
 
@@ -158,7 +158,7 @@ def unirz_dg(alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    uniform_rotation(qml.RZ, alpha, control_wires, target_wire)
+    uniform_rotation_dg(qml.RZ, alpha, control_wires, target_wire)
 
 def uniry_dg(alpha, control_wires, target_wire):
     """Applies a Y rotation to the target qubit
@@ -170,7 +170,7 @@ def uniry_dg(alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    uniform_rotation(qml.RY, alpha, control_wires, target_wire)
+    uniform_rotation_dg(qml.RY, alpha, control_wires, target_wire)
 
 
 def get_alpha_z(omega, n, k):
@@ -194,7 +194,6 @@ def get_alpha_z(omega, n, k):
         alpha_z_k[j - 1, 0] = alpha_z_k[j - 1, 0] + s_i * om / 2 ** (k - 1)
 
     return alpha_z_k
-
 
 def get_alpha_y(a, n, k):
     """Computes the rotation angles alpha for the z-rotations
@@ -231,6 +230,8 @@ def get_alpha_y(a, n, k):
         alpha[j, 0] = 2*np.arcsin(e)
 
     return alpha
+
+
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
