@@ -34,7 +34,8 @@ algorithms.
 
 
 .. figure:: ../../examples/figures/barren_plateaus/surface.png
-   :scale: 52%
+   :width: 90%
+   :align: center
    :alt: surface
 
 |
