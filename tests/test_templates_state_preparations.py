@@ -43,7 +43,7 @@ class TestBasisStatePreparation:
         ([1, 0, 1, 1], [1, 2, 6, 8], [1, 6, 8]),
     ])
     # fmt: on
-    def test_correct_pl_gates(self, tol, basis_state, wires, target_wires):
+    def test_correct_pl_gates(self, basis_state, wires, target_wires):
         """Tests that the template BasisStatePreparation calls the correct
         PennyLane gates on the correct wires."""
 
