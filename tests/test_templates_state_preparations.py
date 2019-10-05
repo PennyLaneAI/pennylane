@@ -21,7 +21,11 @@ from unittest.mock import patch, MagicMock
 import math
 
 import pennylane as qml
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
+
 
 class TestBasisStatePreparation:
     """Tests the template BasisStatePreparation."""
@@ -97,45 +101,43 @@ class TestBasisStatePreparation:
         with pytest.raises(ValueError, match=error_message):
             BasisStatePreparation(basis_state, wires)
 
-class TestMottonenStatePreparation:
-    """Tests the template MottonenStatePreparation."""
+    class TestMottonenStatePreparation:
+        """Tests the template MottonenStatePreparation."""
 
-    
-    # def test_basis_state_mapping(self, num_wires):
-    #     """Tests that MottonenStatePreparation maps basis states to basis states."""
-    #     eye = np.eye(num_wires**2)
-    #     dev = qml.device("default.qubit", wires=num_wires)
+        # def test_basis_state_mapping(self, num_wires):
+        #     """Tests that MottonenStatePreparation maps basis states to basis states."""
+        #     eye = np.eye(num_wires**2)
+        #     dev = qml.device("default.qubit", wires=num_wires)
 
-    #     idx_maps = []
-    #     bin_maps = []
+        #     idx_maps = []
+        #     bin_maps = []
 
-    #     for row in eye:
-    #         dev.reset()
+        #     for row in eye:
+        #         dev.reset()
 
-    #         @qml.qnode(dev)
-    #         def circuit():
-    #             MottonenStatePreparation(row, [0, 1, 2, 3])
+        #         @qml.qnode(dev)
+        #         def circuit():
+        #             MottonenStatePreparation(row, [0, 1, 2, 3])
 
-    #             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliZ(3))
+        #             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliZ(3))
 
-    #         circuit()
+        #         circuit()
 
-    #         state = dev._state
+        #         state = dev._state
 
-    #         assert 
+        #         assert
 
-    #         print("Circuit maps\n    {}\n -> {}".format(row, np.real(np.round(state, 2))))
-    #         idx_maps.append((np.argmax(row), np.argmax(np.real(np.round(state, 2)))))
-    #         bin_maps.append(("{0:04b}".format(np.argmax(row)), "{0:04b}".format(np.argmax(np.real(np.round(state, 2))))))
+        #         print("Circuit maps\n    {}\n -> {}".format(row, np.real(np.round(state, 2))))
+        #         idx_maps.append((np.argmax(row), np.argmax(np.real(np.round(state, 2)))))
+        #         bin_maps.append(("{0:04b}".format(np.argmax(row)), "{0:04b}".format(np.argmax(np.real(np.round(state, 2))))))
 
-    #     #print(idx_maps)
-    #     #print(bin_maps)
-    #     for i in range(16):
-    #         print("{} -> {}, {} -> {}".format(idx_maps[i][0], idx_maps[i][1], bin_maps[i][0], bin_maps[i][1]))
-    #     raise Exception("X")
+        #     #print(idx_maps)
+        #     #print(bin_maps)
+        #     for i in range(16):
+        #         print("{} -> {}, {} -> {}".format(idx_maps[i][0], idx_maps[i][1], bin_maps[i][0], bin_maps[i][1]))
+        #     raise Exception("X")
 
-
-    # fmt: off
+        # fmt: off
     @pytest.mark.parametrize("state_vector,wires,target_state", [
         ([1, 0], [0], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [1], [1, 0, 0, 0, 0, 0, 0, 0]),
