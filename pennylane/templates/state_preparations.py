@@ -136,6 +136,19 @@ def uniform_rotation_dg(gate, alpha, control_wires, target_wire):
         gate(theta[0, 0], wires=[target_wire])
         return
 
+    # gc = GrayCode(gray_code_rank)
+    # code = list(gc.generate_gray())
+    # control_indices = []
+
+    # current_gray = gc.current
+    # for i in range(gc.selections):
+    #     control_indices.append(int(np.log2(int(code[i], 2) ^ int(code[(i+1) % gc.selections], 2))))
+
+    # for i in reversed(range(gc.selections)):
+    #     print(i, ": control = ", control_indices[i])
+
+    #     qml.CNOT(wires=[control_wires[control_indices[i]], target_wire])
+    #     gate(theta[i, 0], wires=[target_wire])
     gc = GrayCode(gray_code_rank)
 
     current_gray = gc.current
@@ -147,6 +160,7 @@ def uniform_rotation_dg(gate, alpha, control_wires, target_wire):
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
         current_gray = next_gray
+
 
 def unirz_dg(alpha, control_wires, target_wire):
     """Applies a Z rotation to the target qubit
@@ -266,7 +280,10 @@ def MottonenStatePreparation(state_vector, wires):
             "State vector probabilities have to sum up to 1.0, got {}".format(probability_sum)
         )
     
-    state_vector = np.array(state_vector)[:, np.newaxis]
+    # Change ordering of indices, original code was for IBM machines
+    reorder_indices = np.ravel_multi_index(np.unravel_index(range(2**n), [2]*n, order="C"), [2]*n, order="F") 
+
+    state_vector = np.array(state_vector)[reorder_indices, np.newaxis]
     state_vector = sparse.dok_matrix(state_vector)
     wires = np.array(wires)
 
