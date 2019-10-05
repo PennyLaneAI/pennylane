@@ -70,18 +70,10 @@ cost_check = cost(test1, test2)
 print("Energy for [1, -1, -1] spin configuration:",cost_check)
 
 ###############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     Energy for [1, -1, -1] spin configuration: tensor(2.0000, dtype=torch.float64)
-#
-#
 # Random initialization
 # ^^^^^^^^^^^^^^^^^^^^^
 
+torch.manual_seed(56)
 p1 = Variable((np.pi * torch.rand(3, dtype=torch.float64)), requires_grad=True)
 p2 = Variable((np.pi * torch.rand(3, dtype=torch.float64)), requires_grad=True)
 
@@ -92,15 +84,6 @@ print("Randomly initialized angles:",var_init)
 print("Corresponding cost before optimization:",cost_init)
 
 ###############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     Randomly initialized angles: [tensor([0.3461, 2.9970, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 2.8112, 1.1473], dtype=torch.float64, requires_grad=True)]
-#     Corresponding cost before optimization: tensor(1.9256, dtype=torch.float64, grad_fn=<SubBackward0>)
-#
 # Optimization
 # ^^^^^^^^^^^^
 # Now we use the PyTorch gradient descent optimizer to minimize the cost:
@@ -128,53 +111,6 @@ for i in range(steps):
         print("Energy after step {:5d}: {: .7f} | Angles: {}".format(i + 1, costn, [p1n, p2n]),"\n")
 
 ###############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     Energy after step     5:  1.3439279 | Angles: [tensor([0.3461, 2.5032, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 2.3098, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    10:  0.5053288 | Angles: [tensor([0.3461, 1.9946, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 1.8016, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    15: -0.0728912 | Angles: [tensor([0.3461, 1.4770, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 1.3476, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    20: -0.3170200 | Angles: [tensor([0.3461, 0.9930, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 1.1379, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    25: -0.6022581 | Angles: [tensor([0.3461, 0.5703, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 1.2823, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    30: -1.0901277 | Angles: [tensor([0.3461, 0.2054, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 1.6846, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    35: -1.5947685 | Angles: [tensor([ 0.3461, -0.0799,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 2.2141, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    40: -1.8839163 | Angles: [tensor([ 0.3461, -0.2145,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 2.7601, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    45: -1.9681684 | Angles: [tensor([ 0.3461, -0.1725,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.2078, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    50: -1.9475494 | Angles: [tensor([ 0.3461, -0.0402,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.4619, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    55: -1.9300671 | Angles: [tensor([0.3461, 0.0668, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.5059, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    60: -1.9582732 | Angles: [tensor([0.3461, 0.0884, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.4033, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    65: -1.9930545 | Angles: [tensor([0.3461, 0.0406, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.2446, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    70: -1.9991189 | Angles: [tensor([ 0.3461, -0.0178,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.1080, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    75: -1.9930509 | Angles: [tensor([ 0.3461, -0.0400,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.0381, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    80: -1.9941513 | Angles: [tensor([ 0.3461, -0.0226,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.0382, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    85: -1.9982029 | Angles: [tensor([0.3461, 0.0059, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.0822, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    90: -1.9996421 | Angles: [tensor([0.3461, 0.0183, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.1349, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step    95: -1.9994925 | Angles: [tensor([0.3461, 0.0104, 2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.1698, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#     Energy after step   100: -1.9993288 | Angles: [tensor([ 0.3461, -0.0033,  2.2130], dtype=torch.float64, requires_grad=True), tensor([2.7079, 3.1779, 1.1473], dtype=torch.float64, requires_grad=True)] 
-#
-#
 #
 # .. note::
 #     When using the *PyTorch* optimizer, keep in mind that:
@@ -196,14 +132,6 @@ print("Optimized angles:",p1_final, p2_final)
 print("Final cost after optimization:",cost(p1_final, p2_final))
 
 ###############################################################################
-# .. rst-class:: sphx-glr-script-out
-#
-#  Out:
-#
-#  .. code-block:: none
-#
-#     Optimized angles: tensor([ 0.3461, -0.0033,  2.2130], dtype=torch.float64, requires_grad=True) tensor([2.7079, 3.1779, 1.1473], dtype=torch.float64, requires_grad=True)
-#     Final cost after optimization: tensor(-1.9993, dtype=torch.float64, grad_fn=<SubBackward0>)
 #
 # Local minimum
 # ^^^^^^^^^^^^^
