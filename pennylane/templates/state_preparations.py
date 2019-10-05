@@ -70,7 +70,7 @@ def BasisStatePreparation(basis_state, wires):
             qml.PauliX(wire)
 
 
-def matrix_M_entry(row, col):
+def  _matrix_M_entry(row, col):
     """The matrix entry for the angle computation.
 
     Args:
@@ -92,7 +92,7 @@ def matrix_M_entry(row, col):
     return (-1) ** sum_of_ones
 
 
-def compute_theta(alpha):
+def _compute_theta(alpha):
     """Calculates the rotation angles from the alpha vector
 
     Args:
@@ -108,7 +108,7 @@ def compute_theta(alpha):
 
     for row in range(alpha.shape[0]):
         # Use transpose of M:
-        entry = sum([matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
+        entry = sum([ _matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
         entry *= factor
         if abs(entry) > 1e-6:
             theta[row, 0] = entry
@@ -116,7 +116,7 @@ def compute_theta(alpha):
     return theta
 
 
-def uniform_rotation_dg(gate, alpha, control_wires, target_wire):
+def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
     """Applies a Y or Z rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -127,7 +127,7 @@ def uniform_rotation_dg(gate, alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    theta = compute_theta(alpha)  # type: sparse.dok_matrix
+    theta = _compute_theta(alpha)  # type: sparse.dok_matrix
 
     gray_code_rank = len(control_wires)
 
@@ -161,7 +161,7 @@ def uniform_rotation_dg(gate, alpha, control_wires, target_wire):
         current_gray = next_gray
 
 
-def unirz_dg(alpha, control_wires, target_wire):
+def _unirz_dg(alpha, control_wires, target_wire):
     """Applies a Z rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -171,10 +171,10 @@ def unirz_dg(alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    uniform_rotation_dg(qml.RZ, alpha, control_wires, target_wire)
+    _uniform_rotation_dg(qml.RZ, alpha, control_wires, target_wire)
 
 
-def uniry_dg(alpha, control_wires, target_wire):
+def _uniry_dg(alpha, control_wires, target_wire):
     """Applies a Y rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -184,10 +184,10 @@ def uniry_dg(alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    uniform_rotation_dg(qml.RY, alpha, control_wires, target_wire)
+    _uniform_rotation_dg(qml.RY, alpha, control_wires, target_wire)
 
 
-def get_alpha_z(omega, n, k):
+def _get_alpha_z(omega, n, k):
     """Computes the rotation angles alpha for the z-rotations
 
     Args:
@@ -210,7 +210,7 @@ def get_alpha_z(omega, n, k):
     return alpha_z_k
 
 
-def get_alpha_y(a, n, k):
+def _get_alpha_y(a, n, k):
     """Computes the rotation angles alpha for the z-rotations
 
     Args:
@@ -302,15 +302,15 @@ def MottonenStatePreparation(state_vector, wires):
 
     # Apply y rotations
     for k in range(n, 0, -1):
-        alpha_y_k = get_alpha_y(a, n, k)  # type: sparse.dok_matrix
+        alpha_y_k = _get_alpha_y(a, n, k)  # type: sparse.dok_matrix
         control = wires[k:]
         target = wires[k - 1]
-        uniry_dg(alpha_y_k, control, target)
+        _uniry_dg(alpha_y_k, control, target)
 
     # Apply z rotations
     for k in range(n, 0, -1):
-        alpha_z_k = get_alpha_z(omega, n, k)
+        alpha_z_k = _get_alpha_z(omega, n, k)
         control = wires[k:]
         target = wires[k - 1]
         if len(alpha_z_k) > 0:
-            unirz_dg(alpha_z_k, control, target)
+            _unirz_dg(alpha_z_k, control, target)
