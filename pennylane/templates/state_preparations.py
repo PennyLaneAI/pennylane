@@ -70,7 +70,7 @@ def BasisStatePreparation(basis_state, wires):
             qml.PauliX(wire)
 
 
-def  _matrix_M_entry(row, col):
+def _matrix_M_entry(row, col):
     """The matrix entry for the angle computation.
 
     Args:
@@ -108,7 +108,7 @@ def _compute_theta(alpha):
 
     for row in range(alpha.shape[0]):
         # Use transpose of M:
-        entry = sum([ _matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
+        entry = sum([_matrix_M_entry(col, row) * a for (col, _), a in alpha.items()])
         entry *= factor
         if abs(entry) > 1e-6:
             theta[row, 0] = entry
@@ -262,9 +262,7 @@ def MottonenStatePreparation(state_vector, wires):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError(
-            "Wires must be passed as a list of integers; got {}.".format(wires)
-        )
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     n = len(wires)
 
