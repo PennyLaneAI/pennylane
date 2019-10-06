@@ -510,7 +510,7 @@ class TestApply:
 
         with pytest.raises(
             ValueError,
-            match="BasisState parameter must be an array of 0 or 1 integers."
+            match="BasisState parameter must consist of 0 or 1 integers."
         ):
             qubit_device_2_wires.apply("BasisState", wires=[0, 1], par=[np.array([-0.2, 4.2])])
 
@@ -522,7 +522,7 @@ class TestApply:
 
         with pytest.raises(
             ValueError,
-            match="BasisState parameter and wires must be arrays of equal length."
+            match="BasisState parameter and wires must be of equal length."
         ):
             qubit_device_2_wires.apply("BasisState", wires=[0], par=[np.array([0, 1])])
 

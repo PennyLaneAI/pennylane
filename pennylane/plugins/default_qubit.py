@@ -365,30 +365,34 @@ class DefaultQubit(Device):
         self.reset()
 
     def apply(self, operation, wires, par):
+        # number of wires on device
+        n = self.num_wires
+        if len(wires) > n:
+            raise ValueError("Length of wires parameter must not exceed {}".format(n))
+
         if operation == 'QubitStateVector':
             input_state = np.asarray(par[0], dtype=np.complex128)
-            if input_state.ndim == 1 and input_state.shape[0] == 2**self.num_wires:
+            n_state_vector = input_state.shape[0]
+            if not self._first_operation:
+                raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
+                                  "on a {} device.".format(operation, self.short_name))
+            if n_state_vector != 2**len(wires):
+                raise ValueError("State vector parameter and wires must be of equal length.")
+            if input_state.ndim == 1:
                 self._state = input_state
             else:
                 raise ValueError('State vector must be of length 2**wires.')
-            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-                raise ValueError("The default.qubit plugin can apply QubitStateVector only to "
-                                 "all of the {} wires.".format(self.num_wires))
+
             self._first_operation = False
             return
         if operation == 'BasisState':
             # length of basis state parameter
             n_basis_state = len(par[0])
 
-            # number of wires on device
-            n = self.num_wires
-
             if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
-                raise ValueError("BasisState parameter must be an array of 0 or 1 integers.")
+                raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
             if n_basis_state != len(wires):
-                raise ValueError("BasisState parameter and wires must be arrays of equal length.")
-            if len(wires) > n:
-                raise ValueError("Length of wires parameter must not exceed {}.".format(n))
+                raise ValueError("BasisState parameter and wires must be of equal length.")
             if not self._first_operation:
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
                                   "on a {} device.".format(operation, self.short_name))
