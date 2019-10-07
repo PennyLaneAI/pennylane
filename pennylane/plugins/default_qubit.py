@@ -385,7 +385,7 @@ class DefaultQubit(Device):
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
                                   "on a {} device.".format(operation, self.short_name))
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
-                # create matrix of binary integers ascending along first axis
+                # create matrix of binary integers ascending along first axis 
                 bin_matrix = np.tile(np.arange(0, n_state_vector), (len(wires), 1))
                 rows = range(0, len(wires))
                 ks = (len(wires) - 1 - j for j in rows)
