@@ -34,7 +34,8 @@ algorithms.
 
 
 .. figure:: ../../examples/figures/barren_plateaus/surface.png
-   :scale: 52%
+   :width: 90%
+   :align: center
    :alt: surface
 
 |
@@ -74,6 +75,9 @@ import matplotlib.pyplot as plt
 
 ##################################################
 # Next, we create a randomized variational circuit
+
+# Set a seed for reproducibility
+np.random.seed(20)
 
 num_qubits = 4
 dev = qml.device("default.qubit", wires=num_qubits)
