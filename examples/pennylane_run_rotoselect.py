@@ -161,9 +161,7 @@ def opt_theta(d, params, cost):
     a = np.arctan2(
         2.0 * M_0 - M_0_plus - M_0_minus, M_0_plus - M_0_minus
     )  # returns value in (-pi,pi]
-    print(a)
     params[d] = -np.pi / 2.0 - a
-    print(params[d])
     # restrict output to lie in (-pi,pi], a convention
     # consistent with the Rotosolve paper
     if params[d] <= -np.pi:
@@ -203,7 +201,7 @@ for i in range(n_steps):
 # the gradient of the circuit and step in this direction. Evidently, the Rotosolve algorithm
 # converges on the minimum after the first cycle for this simple circuit.
 
-params = init_params[:]
+params = init_params.copy()
 opt = qml.GradientDescentOptimizer(stepsize=0.5)
 costs_grad_desc = []
 for i in range(n_steps):
