@@ -497,6 +497,11 @@ class TestApply:
 
     def test_apply_errors(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
+        with pytest.raises(
+            ValueError,
+            match="Length of wires parameter must not exceed 2."
+        ):
+            qubit_device_2_wires.apply("QubitStateVector", wires=[0, 1, 2], par=[np.array([1, 0, 0, 0, 0, 0, 0, 0])])
 
         with pytest.raises(
             ValueError,
@@ -519,12 +524,6 @@ class TestApply:
             match="BasisState parameter must consist of 0 or 1 integers."
         ):
             qubit_device_2_wires.apply("BasisState", wires=[0, 1], par=[np.array([-0.2, 4.2])])
-
-        with pytest.raises(
-            ValueError,
-            match="Length of wires parameter must not exceed 2."
-        ):
-            qubit_device_2_wires.apply("BasisState", wires=[0,1,2], par=[[0, 1, 1]])
 
         with pytest.raises(
             ValueError,
@@ -965,7 +964,7 @@ class TestDefaultQubitIntegration:
         ("BasisState", [1], [1], [1, -1])
     ])
     def test_basis_state_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
-        """Tests qubit state vector preparation on subsets of qubits"""
+        """Tests qubit basis state preparation on subsets of qubits"""
 
         op = getattr(qml.ops, name)
 
@@ -980,7 +979,7 @@ class TestDefaultQubitIntegration:
     @pytest.mark.parametrize("name,par,wires,expected_output", [
         ("QubitStateVector", [0, 1], [1], [1, -1]),
         ("QubitStateVector", [0, 1], [0], [-1, 1]),
-        ("QubitStateVector", [1, 1], [1], [0, 1])
+        ("QubitStateVector", [1, 1], [1], [1, 0])
     ])
     def test_state_vector_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
         """Tests qubit state vector preparation on subsets of qubits"""

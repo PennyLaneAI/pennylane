@@ -374,7 +374,7 @@ class DefaultQubit(Device):
         # number of wires on device
         n = self.num_wires
         if len(wires) > n:
-            raise ValueError("Length of wires parameter must not exceed {}".format(n))
+            raise ValueError("Length of wires parameter must not exceed {}.".format(n))
 
         if operation == 'QubitStateVector':
             input_state = np.asarray(par[0], dtype=np.complex128)
@@ -383,10 +383,12 @@ class DefaultQubit(Device):
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
                                   "on a {} device.".format(operation, self.short_name))
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
-                bin_matrix = np.tile(np.arange(0, n_state_vector), (len(wires), 1)).T
-                for i in range(0, len(wires)):
-                    k = len(wires) - 1 - i
-                    bin_matrix[:, i] = np.array(list(map(lambda x: int(x/2**k) % 2, bin_matrix[:, i])))
+                # create matrix of binary integers ascending along first axis
+                bin_matrix = np.tile(np.arange(0, n_state_vector), (len(wires), 1))
+                bin_matrix = np.array([list(map(lambda x: int(x/2**k) % 2, bin_matrix[i, :]))
+                                       for i in range(0,len(wires)) for k in range(0, len(wires))
+                                       if k == len(wires) - 1 - i]).T
+                # get indices of state to change to the input state vector
                 nums = np.dot(bin_matrix, 2**(n - 1 - np.sort(np.array(wires))))
                 self._state = np.zeros_like(self._state)
                 self._state[nums] = input_state
