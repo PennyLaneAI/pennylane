@@ -32,11 +32,11 @@ In general, stochastic gradient descent is preferred over standard gradient
 descent for several reasons:
 
 1. Samples of the gradient estimator :math:`g^{(t)}(\theta)` can typically
-   be computed much more efficiently than \mathcal{L}(\theta),
+   be computed much more efficiently than :math:`\mathcal{L}(\theta)`,
 
 2. Stochasticity helps avoid local minima and saddle points,
 
-3. Convergence is guaranteed.
+3. Convergence is guaranteed to be on par with regular gradient descent.
 
 In variational quantum algorithms, a parametrized quantum circuit ansatz :math:`U(\theta)`
 is optimized by a classical optimization loop in order to minimize a function of the of expectation
@@ -59,13 +59,13 @@ expectation values.
 Putting these two results together, `Ryan Sweke et al. (2019) <https://arxiv.org/abs/1910.01155>`__
 show that samples of the expectation value fed into the parameter shift rule provide
 unbiased estimators of the quantum gradient --- resulting in a form of stochastic gradient descent.
-Moreover, they show that convergence of the stochastic gradient descent is guaranteed;
-even in the surprising case where the number of shots is 1!
+Moreover, they show that convergence of the stochastic gradient descent is guaranteed
+to be on par with standard gradient descent, even in the surprising case where the number
+of shots is 1!
 
 .. note::
 
-    While convergence of the optimization is guaranteed with a finite number of shots,
-    it is worth noting that the smaller the number of shots used, the larger the
+    It is worth noting that the smaller the number of shots used, the larger the
     variance in the estimated expectation value. As a result, it may take
     more optimization steps for convergence than using a larger number of shots,
     or the analytic gradient.
@@ -113,7 +113,7 @@ from pennylane.templates.layers import StronglyEntanglingLayers
 num_layers = 2
 num_wires = 2
 eta = 0.01
-steps = 100
+steps = 200
 
 dev_GD = qml.device("default.qubit", wires=num_wires, analytic=True)
 dev_SGD1 = qml.device("default.qubit", wires=num_wires, analytic=False, shots=1)
@@ -146,32 +146,32 @@ init_params = strong_ent_layers_uniform(num_layers, num_wires)
 # Optimizing using exact gradient descent
 
 cost_GD = []
-params = init_params
+params_GD = init_params
 opt = qml.GradientDescentOptimizer(eta)
 
 for _ in range(steps):
-    cost_GD.append(qnode_GD(params))
-    params = opt.step(qnode_GD, params)
+    cost_GD.append(qnode_GD(params_GD))
+    params_GD = opt.step(qnode_GD, params_GD)
 
 # Optimizing using stochastic gradient descent with shots=1
 
 cost_SGD1 = []
-params = init_params
+params_SGD1 = init_params
 opt = qml.GradientDescentOptimizer(eta)
 
 for _ in range(steps):
-    cost_SGD1.append(qnode_SGD1(params))
-    params = opt.step(qnode_SGD1, params)
+    cost_SGD1.append(qnode_SGD1(params_SGD1))
+    params_SGD1 = opt.step(qnode_SGD1, params_SGD1)
 
 # Optimizing using stochastic gradient descent with shots=100
 
 cost_SGD100 = []
-params = init_params
+params_SGD100 = init_params
 opt = qml.GradientDescentOptimizer(eta)
 
 for _ in range(steps):
-    cost_SGD100.append(qnode_SGD100(params))
-    params = opt.step(qnode_SGD100, params)
+    cost_SGD100.append(qnode_SGD100(params_SGD100))
+    params_SGD100 = opt.step(qnode_SGD100, params_SGD100)
 
 
 ##############################################################################
@@ -180,9 +180,9 @@ for _ in range(steps):
 from matplotlib import pyplot as plt
 
 plt.style.use("seaborn")
-plt.plot(cost_GD, label="Vanilla gradient descent")
-plt.plot(cost_SGD100, label="Stochastic gradient descent, $shots=100$")
-plt.plot(cost_SGD1, "--", label="Stochastic gradient descent, $shots=1$")
+plt.plot(cost_GD[:100], label="Vanilla gradient descent")
+plt.plot(cost_SGD100[:100], label="Stochastic gradient descent, $shots=100$")
+plt.plot(cost_SGD1[:100], ".", label="Stochastic gradient descent, $shots=1$")
 
 # analytic ground state
 min_energy = min(np.linalg.eigvalsh(H))
@@ -194,8 +194,16 @@ plt.legend()
 plt.show()
 
 ##############################################################################
-# Amazingly, we see that even the ``shots=1`` optimization converges
-# to the ground state energy!
+# Using the trained parameters from each optimization strategy, we can
+# evaluate the analytic quantum device:
+
+print("Vanilla gradient descent min energy = ", qnode_GD(params_GD))
+print("Stochastic gradient descent (shots=100) min energy = ", qnode_GD(params_SGD100))
+print("Stochastic gradient descent (shots=1) min energy = ", qnode_GD(params_SGD1))
+
+##############################################################################
+# Amazingly, we see that even the ``shots=1`` optimization converged
+# to a reasonably close approximation of ground state energy!
 
 ##############################################################################
 # Doubly stochastic gradient descent for VQE
@@ -229,7 +237,7 @@ plt.show()
 # This inserts another element of stochasticity into the system --- all the while
 # convergence continues to be guaranteed!
 #
-# Let's create a QNode that randomly samples four terms from the above
+# Let's create a QNode that randomly samples three terms from the above
 # Hamiltonian as the observable to be measured.
 
 I = np.identity(2)
@@ -253,36 +261,46 @@ def sampled_terms(params, A=None):
 def loss(params):
     n = np.random.choice(np.arange(5), size=3, replace=False)
     A = np.sum(terms[n], axis=0)
-    return 4 + sampled_terms(params, A=A)
+    return 4 + (5/3)*sampled_terms(params, A=A)
 
 ##############################################################################
 # Optimizing the circuit using gradient descent via the parameter shift rule:
 
 cost = []
-params = strong_ent_layers_uniform(num_layers, num_wires)
-opt = qml.AdamOptimizer(0.005)
+params = init_params
+opt = qml.AdamOptimizer(0.01)
 
-for _ in range(1000):
+for _ in range(250):
     cost.append(loss(params))
     params = opt.step(loss, params)
 
 ##############################################################################
-# Plotting the moving average of the cost versus optimization step:
+# Plotting the cost versus optimization step:
 
 def moving_average(data, n=3) :
     ret = np.cumsum(data, dtype=np.float64)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
-plt.plot(moving_average(cost, 50))
-plt.plot(cost, ".")
-plt.hlines(min_energy, 0, 1000, linestyles=':', label="Ground state energy")
+average = np.vstack([np.arange(25, 200), moving_average(cost, n=50)[:-26]])
+
+plt.plot(cost_GD, label="Vanilla gradient descent")
+plt.plot(cost, ".", label="Doubly stochastic gradient descent")
+plt.plot(average[0], average[1], "--", label="Doubly stochastic gradient descent moving average")
+plt.hlines(min_energy, 0, 200, linestyles=':', label="Ground state energy")
 
 plt.ylabel("Cost function value")
 plt.xlabel("Optimization steps")
+plt.xlim(-2, 200)
 plt.legend()
 plt.show()
 
+##############################################################################
+# Finally, verifying that the doubly stochastic gradient descent optimization
+# correctly provides the ground state energy when evaluated for a larger
+# number of shots:
+
+print("Doubly stochastic gradient descent min energy = ", qnode_GD(params))
 
 ##############################################################################
 # References
