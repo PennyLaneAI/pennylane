@@ -378,6 +378,8 @@ class DefaultQubit(Device):
 
         if operation == 'QubitStateVector':
             input_state = np.asarray(par[0], dtype=np.complex128)
+            if not np.isclose(np.linalg.norm(input_state,2), 1.0, atol=tolerance):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
             n_state_vector = input_state.shape[0]
             if not self._first_operation:
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
