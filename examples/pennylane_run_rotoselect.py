@@ -72,8 +72,8 @@ and improve upon an initial circuit structure ansatz.
 # the optimal parameters and gate choices for a circuit ansatz. Next, we present an example of this algorithm
 # applied to a VQE Hamiltonian.
 #
-# VQE
-# ~~~
+# Example VQE Problem
+# -------------------
 #
 # We focus on a 2-qubit VQE circuit for simplicity. Here, the Hamiltonian
 # is
@@ -161,11 +161,13 @@ def opt_theta(d, params, cost):
     a = np.arctan2(
         2.0 * M_0 - M_0_plus - M_0_minus, M_0_plus - M_0_minus
     )  # returns value in (-pi,pi]
+    print(a)
     params[d] = -np.pi / 2.0 - a
+    print(params[d])
     # restrict output to lie in (-pi,pi], a convention
     # consistent with the Rotosolve paper
     if params[d] <= -np.pi:
-        params[d] += 2 * np.pi
+        params[d] += 2*np.pi
 
 
 # one cycle of rotosolve
@@ -183,7 +185,7 @@ def rotosolve_cycle(cost, params):
 # Rotosolve algorithm.
 
 init_params = [0.3, 0.25]
-params = init_params[:]
+params = init_params.copy()
 n_steps = 30
 
 costs_rotosolve = []
@@ -331,7 +333,7 @@ def rotosolve(d, params, generators, cost, M_0):  # M_0 only calculated once
     )  # returns value in (-pi,pi]
     params[d] = -np.pi / 2.0 - a
     if params[d] <= -np.pi:
-        params[d] += 2 * np.pi
+        params[d] += 2*np.pi
     return cost(params, generators)
 
 
@@ -365,7 +367,7 @@ def rotoselect_cycle(cost, params, generators):
 # increasing the depth of the circuit by selecting better gates for the task of minimizing the cost function.
 
 costs_rotoselect = []
-params = init_params[:]
+params = init_params.copy()
 init_generators = ["X", "Y"]
 generators = init_generators
 for _ in range(n_steps):
