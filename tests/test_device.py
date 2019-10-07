@@ -14,7 +14,6 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
-from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import pytest
 import pennylane as qml
@@ -24,27 +23,82 @@ from pennylane.qnode import QuantumFunctionError
 
 
 @pytest.fixture(scope="function")
-def mock_device_with_operations():
+def mock_device_with_operations(monkeypatch):
     """A mock instance of the abstract Device class with non-empty operations"""
-
-    with patch.multiple(
-        Device,
-        __abstractmethods__=set(),
-        operations=PropertyMock(return_value=["PauliX", "PauliZ", "CNOT"]),
-    ):
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, 'operations', ["PauliX", "PauliZ", "CNOT"])
         yield Device()
 
 
 @pytest.fixture(scope="function")
-def mock_device_with_observables():
+def mock_device_with_observables(monkeypatch):
     """A mock instance of the abstract Device class with non-empty observables"""
-
-    with patch.multiple(
-        Device,
-        __abstractmethods__=set(),
-        observables=PropertyMock(return_value=["PauliX", "PauliZ"]),
-    ):
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, 'observables', ["PauliX", "PauliZ"])
         yield Device()
+
+
+mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
+
+@pytest.fixture(scope="function")
+def mock_device_supporting_paulis(monkeypatch):
+    """A mock instance of the abstract Device class with non-empty observables"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, 'operations', mock_device_paulis)
+        m.setattr(Device, 'observables', mock_device_paulis)
+        m.setattr(Device, 'short_name', 'MockDevice')
+        yield Device()
+
+
+mock_device_capabilities = {
+    "measurements": "everything",
+    "noise_models": ["depolarizing", "bitflip"],
+}
+
+
+@pytest.fixture(scope="function")
+def mock_device_with_capabilities(monkeypatch):
+    """A mock instance of the abstract Device class with non-empty observables"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, '_capabilities', mock_device_capabilities)
+        yield Device()
+
+
+@pytest.fixture(scope="function")
+def mock_device_with_paulis_and_methods(monkeypatch):
+    """A mock instance of the abstract Device class with non-empty observables"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, '_capabilities', mock_device_capabilities)
+        m.setattr(Device, 'operations', mock_device_paulis)
+        m.setattr(Device, 'observables', mock_device_paulis)
+        m.setattr(Device, 'short_name', 'MockDevice')
+        m.setattr(Device, 'expval', lambda self, x, y, z: 0)
+        m.setattr(Device, 'var', lambda self, x, y, z: 0)
+        m.setattr(Device, 'sample', lambda self, x, y, z: 0)
+        m.setattr(Device, 'apply', lambda self, x, y, z: None)
+        yield Device()
+
+
+@pytest.fixture(scope="function")
+def mock_device(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, '_capabilities', mock_device_capabilities)
+        m.setattr(Device, 'operations', ["PauliY", "RX", "Rot"])
+        m.setattr(Device, 'observables', ["PauliZ"])
+        m.setattr(Device, 'short_name', 'MockDevice')
+        m.setattr(Device, 'expval', lambda self, x, y, z: 0)
+        m.setattr(Device, 'var', lambda self, x, y, z: 0)
+        m.setattr(Device, 'sample', lambda self, x, y, z: 0)
+        m.setattr(Device, 'apply', lambda self, x, y, z: None)
+        yield Device()
+
+
 
 
 class TestDeviceSupportedLogic:
@@ -103,22 +157,6 @@ class TestDeviceSupportedLogic:
             mock_device.supports_observable(qml.CNOT)
 
 
-mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
-
-
-@pytest.fixture(scope="function")
-def mock_device_supporting_paulis():
-    """A mock instance of the abstract Device class with non-empty observables"""
-
-    with patch.multiple(
-        Device,
-        __abstractmethods__=set(),
-        operations=PropertyMock(return_value=mock_device_paulis),
-        observables=PropertyMock(return_value=mock_device_paulis),
-        short_name=PropertyMock(return_value="MockDevice"),
-    ):
-        yield Device()
-
 
 class TestInternalFunctions:
     """Test the internal functions of the abstract Device class"""
@@ -163,20 +201,6 @@ class TestInternalFunctions:
             mock_device_supporting_paulis.check_validity(queue, observables)
 
 
-mock_device_capabilities = {
-    "measurements": "everything",
-    "noise_models": ["depolarizing", "bitflip"],
-}
-
-
-@pytest.fixture(scope="function")
-def mock_device_with_capabilities():
-    """A mock instance of the abstract Device class with non-empty observables"""
-
-    with patch.multiple(Device, __abstractmethods__=set(), _capabilities=mock_device_capabilities):
-        yield Device()
-
-
 class TestClassmethods:
     """Test the classmethods of Device"""
 
@@ -186,31 +210,12 @@ class TestClassmethods:
         assert mock_device_with_capabilities.capabilities() == mock_device_capabilities
 
 
-@pytest.fixture(scope="function")
-def mock_device_with_paulis_and_methods():
-    """A mock instance of the abstract Device class with non-empty observables"""
-
-    with patch.multiple(
-        Device,
-        __abstractmethods__=set(),
-        _capabilities=mock_device_capabilities,
-        expval=MagicMock(return_value=0),
-        var=MagicMock(return_value=0),
-        sample=MagicMock(return_value=[0]),
-        apply=MagicMock(),
-        operations=PropertyMock(return_value=mock_device_paulis),
-        observables=PropertyMock(return_value=mock_device_paulis),
-        short_name=PropertyMock(return_value="MockDevice"),
-    ):
-        yield Device()
-
-
 class TestOperations:
     """Tests the logic related to operations"""
 
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
-        
+
         assert mock_device._shots == 1000
 
         mock_device.shots = 10
@@ -233,7 +238,7 @@ class TestOperations:
         ):
             mock_device.op_queue
 
-    def test_op_queue_is_filled_at_pre_measure(self, mock_device_with_paulis_and_methods):
+    def test_op_queue_is_filled_at_pre_measure(self, mock_device_with_paulis_and_methods, monkeypatch):
         """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
            op_queue raises no error"""
         queue = [
@@ -250,14 +255,13 @@ class TestOperations:
 
         queue_at_pre_measure = []
 
-        with patch.object(
-            Device, "pre_measure", lambda self: queue_at_pre_measure.extend(self.op_queue)
-        ):
+        with monkeypatch.context() as m:
+            m.setattr(Device, 'pre_measure', lambda self: queue_at_pre_measure.extend(self.op_queue))
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
         assert queue_at_pre_measure == queue
 
-    def test_op_queue_is_filled_during_execution(self, mock_device_with_paulis_and_methods):
+    def test_op_queue_is_filled_during_execution(self, mock_device_with_paulis_and_methods, monkeypatch):
         """Tests that the operations are properly applied and queued"""
         queue = [
             qml.PauliX(wires=0, do_queue=False),
@@ -272,11 +276,9 @@ class TestOperations:
         ]
 
         call_history = []
-        mock_device_with_paulis_and_methods.apply = Mock(
-            wraps=lambda op, wires, params: call_history.append([op, wires, params])
-        )
-
-        mock_device_with_paulis_and_methods.execute(queue, observables)
+        with monkeypatch.context() as m:
+            m.setattr(Device, 'apply', lambda self, op, wires, params: call_history.append([op, wires, params]))
+            mock_device_with_paulis_and_methods.execute(queue, observables)
 
         assert call_history[0] == ["PauliX", [0], []]
         assert call_history[1] == ["PauliY", [1], []]
@@ -312,7 +314,7 @@ class TestObservables:
         ):
             mock_device.obs_queue
 
-    def test_obs_queue_is_filled_at_pre_measure(self, mock_device_with_paulis_and_methods):
+    def test_obs_queue_is_filled_at_pre_measure(self, mock_device_with_paulis_and_methods, monkeypatch):
         """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
            op_queue raises no error"""
         queue = [
@@ -329,34 +331,34 @@ class TestObservables:
 
         queue_at_pre_measure = []
 
-        with patch.object(
-            Device, "pre_measure", lambda self: queue_at_pre_measure.extend(self.obs_queue)
-        ):
+        with monkeypatch.context() as m:
+            m.setattr(Device, 'pre_measure', lambda self: queue_at_pre_measure.extend(self.obs_queue))
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
         assert queue_at_pre_measure == observables
 
-    def test_obs_queue_is_filled_during_execution(self, mock_device_with_paulis_and_methods):
+    def test_obs_queue_is_filled_during_execution(self, monkeypatch, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        queue = [
-            qml.PauliX(wires=0, do_queue=False),
-            qml.PauliY(wires=1, do_queue=False),
-            qml.PauliZ(wires=2, do_queue=False),
-        ]
-
         observables = [
-            qml.expval(qml.PauliZ(0, do_queue=False)),
-            qml.var(qml.PauliZ(1, do_queue=False)),
+            qml.expval(qml.PauliX(0, do_queue=False)),
+            qml.var(qml.PauliY(1, do_queue=False)),
             qml.sample(qml.PauliZ(2, do_queue=False)),
         ]
 
-        # The methods expval, var and sample are MagicMock'ed in the fixture
+        # capture the arguments passed to dev methods
+        expval_args = []
+        var_args = []
+        sample_args = []
+        with monkeypatch.context() as m:
+            m.setattr(Device, 'expval', lambda self, *args: expval_args.extend(args))
+            m.setattr(Device, 'var',    lambda self, *args: var_args.extend(args))
+            m.setattr(Device, 'sample', lambda self, *args: sample_args.extend(args))
+            mock_device_with_paulis_and_methods.execute([], observables)
 
-        mock_device_with_paulis_and_methods.execute(queue, observables)
+        assert expval_args == ["PauliX", [0], []]
+        assert var_args == ["PauliY", [1], []]
+        assert sample_args == ["PauliZ", [2], []]
 
-        mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
-        mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
-        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [])
 
     def test_unsupported_observables_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
@@ -388,51 +390,10 @@ class TestObservables:
         with pytest.raises(QuantumFunctionError, match="Unsupported return type specified for observable"):
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
-    def test_supported_observable_return_types(self, mock_device_with_paulis_and_methods):
-        """Check that no error is raised if the return types of observables are supported"""
-
-        queue = [qml.PauliX(wires=0, do_queue=False)]
-
-        # Make observables with specifying supported return types
-
-        obs1 = qml.PauliZ(0, do_queue=False)
-        obs2 = qml.PauliZ(1, do_queue=False)
-        obs3 = qml.PauliZ(2, do_queue=False)
-
-        obs1.return_type = Expectation
-        obs2.return_type = Variance
-        obs3.return_type = Sample
-
-        observables = [obs1,
-                       obs2,
-                       obs3,
-        ]
-
-        # The methods expval, var and sample are MagicMock'ed in the fixture
-        mock_device_with_paulis_and_methods.execute(queue, observables)
-
-        mock_device_with_paulis_and_methods.expval.assert_called_with("PauliZ", [0], [])
-        mock_device_with_paulis_and_methods.var.assert_called_with("PauliZ", [1], [])
-        mock_device_with_paulis_and_methods.sample.assert_called_with("PauliZ", [2], [])
 
 
 class TestParameters:
     """Test for checking device parameter mappings"""
-
-    @pytest.fixture(scope="function")
-    def mock_device(self):
-        with patch.multiple(
-            Device,
-            __abstractmethods__=set(),
-            operations=PropertyMock(return_value=["PauliY", "RX", "Rot"]),
-            observables=PropertyMock(return_value=["PauliZ"]),
-            short_name=PropertyMock(return_value="MockDevice"),
-            expval=MagicMock(return_value=0),
-            var=MagicMock(return_value=0),
-            sample=MagicMock(return_value=[0]),
-            apply=MagicMock()
-        ):
-            yield Device()
 
     def test_parameters_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
@@ -443,7 +404,7 @@ class TestParameters:
         ):
             mock_device.parameters
 
-    def test_parameters_available_at_pre_measure(self, mock_device):
+    def test_parameters_available_at_pre_measure(self, mock_device, monkeypatch):
         """Tests that the parameter mapping is available when pre_measure is called and that accessing
            Device.parameters raises no error"""
 
@@ -467,7 +428,8 @@ class TestParameters:
 
         p_mapping = {}
 
-        with patch.object(Device, "pre_measure", lambda self: p_mapping.update(self.parameters)):
+        with monkeypatch.context() as m:
+            m.setattr(Device, "pre_measure", lambda self: p_mapping.update(self.parameters))
             mock_device.execute(queue, observables, parameters=parameters)
 
         assert p_mapping == parameters
@@ -482,9 +444,10 @@ class TestDeviceInit:
         with pytest.raises(DeviceError, match="Device does not exist"):
             qml.device("None", wires=0)
 
-    def test_outdated_API(self):
+    def test_outdated_API(self, monkeypatch):
         """Test that an exception is raised if plugin that targets an old API is loaded"""
 
-        with patch.object(qml, "version", return_value="0.0.1"):
+        with monkeypatch.context() as m:
+            m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
                 qml.device("default.qubit", wires=0)
