@@ -242,7 +242,10 @@ class Operation(abc.ABC):
             This flag is useful if there is some reason to run an Operation
             outside of a QNode context.
     """
+    string_for_inverse = ".inv"
+
     _grad_recipe = None
+    _inverse = False
 
     @abc.abstractproperty
     def num_params(self):
@@ -320,14 +323,27 @@ class Operation(abc.ABC):
         """
         return [None, 1]
 
+    @property
+    def name(self):
+        r"""String for the name of the operation.
+
+        If the inverse of a specific operation was defined, then returns the name
+        of the operation appended with the the inverse string.
+        """
+        operation_name = self.__class__.__name__
+        return operation_name + self.string_for_inverse if self._inverse else operation_name
+
     @grad_recipe.setter
     def grad_recipe(self, value):
         """Setter for the grad_recipe property"""
         self._grad_recipe = value
 
+    def inv(self):
+        self._inverse = True
+        return self
+
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
-        self.name = self.__class__.__name__   #: str: name of the operation
 
         if self.num_wires == All:
             if do_queue:

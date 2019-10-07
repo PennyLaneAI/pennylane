@@ -87,7 +87,7 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import Device
+from pennylane import Device, Operation
 
 
 # tolerance for numerical errors
@@ -359,12 +359,39 @@ class DefaultQubit(Device):
         'Identity': identity
     }
 
+    _string_for_inverse = ".inv"
+
     def __init__(self, wires, *, shots=1000, analytic=True):
         super().__init__(wires, shots)
         self.eng = None
         self.analytic = analytic
 
         self._state = None
+        self.add_inverse_mappings()
+
+    @classmethod
+    def add_inverse_mappings(cls):
+
+        _operation_inverses_map = {
+
+            # Adds the inverse for each operation that does not have a parameter
+            **{
+                op + Operation.string_for_inverse: cls._operation_map[op].conj().T for op in cls._operation_map
+                if not callable(cls._operation_map[op]) and cls._operation_map[op] is not None
+            },
+
+            # Adds the inverse for each operation that has a parameter
+            **{
+                op + cls._string_for_inverse: cls._operation_map[op] for op in cls._operation_map if callable(cls._operation_map[op])
+            }
+        }
+
+        _observable_inverses_map = {
+            obs + cls._string_for_inverse: cls._observable_map[obs] for obs in cls._observable_map
+        }
+
+        cls._operation_map = {**cls._operation_map, **_operation_inverses_map}
+        cls._observable_map = {**cls._observable_map, **_observable_inverses_map}
 
     def pre_apply(self):
         self.reset()
@@ -468,7 +495,11 @@ class DefaultQubit(Device):
         A = {**self._operation_map, **self._observable_map}[operation]
         if not callable(A):
             return A
-        return A(*par)
+        elif operation.endswith(self._string_for_inverse):
+            negated_params = (-1*param for param in par)
+            return A(*negated_params)
+        else:
+            return A(*par)
 
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.
