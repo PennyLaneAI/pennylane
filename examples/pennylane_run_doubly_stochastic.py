@@ -3,9 +3,9 @@ Doubly stochastic gradient descent
 ==================================
 
 In this tutorial we investigate and implement the doubly stochastic gradient descent
-result from `Ryan Sweke et al. (2019) <https://arxiv.org/abs/1910.01155>`__. In this paper,
+paper from `Ryan Sweke et al. (2019) <https://arxiv.org/abs/1910.01155>`__. In this paper,
 it is shown that quantum gradient descent, where a finite number of measurement samples
-(or shots) are used to estimate the gradient, is a form of stochastic gradient descent.
+(or *shots*) are used to estimate the gradient, is a form of stochastic gradient descent.
 Furthermore, if the optimization involves a linear combination of expectation values
 (such as VQE), sampling from the terms in this linear combination can further reduce required
 resources, allowing for "doubly stochastic gradient descent".
@@ -38,29 +38,29 @@ descent for several reasons:
 
 3. Convergence is guaranteed to be on par with regular gradient descent.
 
-In variational quantum algorithms, a parametrized quantum circuit ansatz :math:`U(\theta)`
-is optimized by a classical optimization loop in order to minimize a function of the of expectation
-values. For example, consider the set of expectation values
+In variational quantum algorithms, a parametrized quantum circuit :math:`U(\theta)`
+is optimized by a classical optimization loop in order to minimize a function of the expectation
+values. For example, consider the expectation values
 
 .. math:: \langle A_i \rangle = \langle 0 | U(\theta)^\dagger A_i U(\theta) | 0\rangle
 
-for a set of observables :math:`\{A_i\}`, and equivalent loss function
+for a set of observables :math:`\{A_i\}`, and loss function
 
 .. math:: \mathcal{L}(\theta, \langle A_1 \rangle, \dots, \langle A_M \rangle).
 
 While the expectation values can be calculated analytically in classical simulations,
 on quantum hardware we are limited to *sampling* from the expectation values; as the
 number of samples (or shots) increase, we converge on the analytic expectation value, but can
-never recover the exact expression. Furthermore, the parameter shift rule
-(`Maria Schuld et al., 2018 <https://arxiv.org/abs/1811.11184>`__) allows for analytic
+never recover the exact expression. Furthermore, the parameter-shift rule
+(`Schuld et al., 2018 <https://arxiv.org/abs/1811.11184>`__) allows for analytic
 quantum gradients to be computed from a linear combination of the variational circuits'
 expectation values.
 
-Putting these two results together, `Ryan Sweke et al. (2019) <https://arxiv.org/abs/1910.01155>`__
-show that samples of the expectation value fed into the parameter shift rule provide
-unbiased estimators of the quantum gradient --- resulting in a form of stochastic gradient descent.
+Putting these two results together, `Sweke et al. (2019) <https://arxiv.org/abs/1910.01155>`__
+show that samples of the expectation value fed into the parameter-shift rule provide
+unbiased estimators of the quantum gradient---resulting in a form of stochastic gradient descent.
 Moreover, they show that convergence of the stochastic gradient descent is guaranteed
-to be on par with standard gradient descent, even in the surprising case where the number
+to be on par with standard gradient descent, even in the case where the number
 of shots is 1!
 
 .. note::
@@ -68,7 +68,7 @@ of shots is 1!
     It is worth noting that the smaller the number of shots used, the larger the
     variance in the estimated expectation value. As a result, it may take
     more optimization steps for convergence than using a larger number of shots,
-    or the analytic gradient.
+    or an exact value.
 
     At the same time, a reduced number of shots may significantly reduce the
     wall time of each optimization step, leading to a reduction in the overall
@@ -81,7 +81,7 @@ using a finite number of shots.
 """
 
 ##############################################################################
-# A single shot stochastic gradient descent
+# A single-shot stochastic gradient descent
 # -----------------------------------------
 #
 # Consider the Hamiltonian
@@ -99,7 +99,7 @@ using a finite number of shots.
 # the variational quantum eigensolver (VQE) algorithm.
 #
 # Let's use the ``default.qubit`` simulator for both the analytic gradient,
-# as well as the estimated gradient using number of shots :math:`N=1, 100`.
+# as well as the estimated gradient using number of shots :math:`N\in\{1, 100\}`.
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -120,8 +120,8 @@ dev_SGD1 = qml.device("default.qubit", wires=num_wires, analytic=False, shots=1)
 dev_SGD100 = qml.device("default.qubit", wires=num_wires, analytic=False, shots=100)
 
 ##############################################################################
-# We can use ``qml.Hermitian`` to directly specify we want to measure
-# the expectation value of the dense matrix :math:`H`:
+# We can use ``qml.Hermitian`` to directly specify that we want to measure
+# the expectation value of the matrix :math:`H`:
 
 H = np.array([[8, 4, 0, -6],
               [4, 0, 4, 0],
@@ -135,7 +135,7 @@ def circuit(params):
 
 ##############################################################################
 # Now, we create three QNodes, each corresponding to a device above,
-# and optimize it using gradient descent via the parameter shift rule.
+# and optimize them using gradient descent via the parameter-shift rule.
 
 qnode_GD = qml.QNode(circuit, dev_GD)
 qnode_SGD1 = qml.QNode(circuit, dev_SGD1)
@@ -186,7 +186,7 @@ plt.plot(cost_SGD1[:100], ".", label="Stochastic gradient descent, $shots=1$")
 
 # analytic ground state
 min_energy = min(np.linalg.eigvalsh(H))
-plt.hlines(min_energy, 0, 100, linestyles=':', label="Ground state energy")
+plt.hlines(min_energy, 0, 100, linestyles=':', label="Ground-state energy")
 
 plt.ylabel("Cost function value")
 plt.xlabel("Optimization steps")
@@ -203,15 +203,15 @@ print("Stochastic gradient descent (shots=1) min energy = ", qnode_GD(params_SGD
 
 ##############################################################################
 # Amazingly, we see that even the ``shots=1`` optimization converged
-# to a reasonably close approximation of ground state energy!
+# to a reasonably close approximation of ground-state energy!
 
 ##############################################################################
 # Doubly stochastic gradient descent for VQE
 # ------------------------------------------
 #
-# As noted in `Ryan Sweke et al. (2019) <https://arxiv.org/abs/1910.01155>`__,
+# As noted in `Sweke et al. (2019) <https://arxiv.org/abs/1910.01155>`__,
 # variational quantum algorithms often include terms consisting of linear combinations
-# of expectation values. This is true of the parameter shift rule (where the
+# of expectation values. This is true of the parameter-shift rule (where the
 # gradient of each parameter is determined by shifting the parameter by macroscopic
 # amounts and taking the difference), as well as VQE, where the Hamiltonian
 # is usually decomposed into a sum of Pauli expectation values.
@@ -231,10 +231,10 @@ print("Stochastic gradient descent (shots=1) min energy = ", qnode_GD(params_SGD
 #
 #     H = 4  + 2I\otimes X + 4I \otimes Z - X\otimes X + 5 Y\otimes Y + 2Z\otimes X.
 #
-# To apply "doubly stochastic gradient descent", we simply apply the stochastic
+# To apply "doubly stochastic" gradient descent, we simply apply the stochastic
 # gradient descent approach from above, but in addition also uniformly sample
 # a subset of the terms for the Hamiltonian expectation at each optimization step.
-# This inserts another element of stochasticity into the system --- all the while
+# This inserts another element of stochasticity into the system---all the while
 # convergence continues to be guaranteed!
 #
 # Let's create a QNode that randomly samples three terms from the above
@@ -264,7 +264,7 @@ def loss(params):
     return 4 + (5/3)*sampled_terms(params, A=A)
 
 ##############################################################################
-# Optimizing the circuit using gradient descent via the parameter shift rule:
+# Optimizing the circuit using gradient descent via the parameter-shift rule:
 
 cost = []
 params = init_params
