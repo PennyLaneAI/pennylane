@@ -388,7 +388,7 @@ class DefaultQubit(Device):
                 bin_matrix = np.array([list(map(lambda x: int(x/2**k) % 2, bin_matrix[i, :]))
                                        for i in range(0,len(wires)) for k in range(0, len(wires))
                                        if k == len(wires) - 1 - i]).T
-                # get indices of state to change to the input state vector
+                # get indices for which state is changed to the input state vector elements
                 nums = np.dot(bin_matrix, 2**(n - 1 - np.sort(np.array(wires))))
                 self._state = np.zeros_like(self._state)
                 self._state[nums] = input_state
