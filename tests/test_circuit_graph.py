@@ -124,7 +124,7 @@ class TestCircuitGraph:
 
     def test_ancestors_and_descendants_example(self, ops):
         """
-        Test that the `ancestors` and `descendants` methods return the expected result.
+        Test that the ``ancestors`` and ``descendants`` methods return the expected result.
         """
         circuit = CircuitGraph(ops, {})
 

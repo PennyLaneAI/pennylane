@@ -175,7 +175,11 @@ class QuantumFunctionError(Exception):
 
 
 ParDep = namedtuple("ParDep", ["op", "par_idx"])
-"""Represents the dependence of an Operation on a Variable, through its par_idx'th parameter."""
+"""Represents the dependence of an Operation on a Variable.
+
+Args:
+    op (Operation): an operation containing a :class:`~.Variable` instance
+    par_idx (int): the operation argument index of the corresponding :class:`~.Variable`
 
 
 class QNode:
