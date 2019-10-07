@@ -378,7 +378,7 @@ class DefaultQubit(Device):
 
         if operation == 'QubitStateVector':
             input_state = np.asarray(par[0], dtype=np.complex128)
-            if not np.isclose(np.linalg.norm(input_state,2), 1.0, atol=tolerance):
+            if not np.isclose(np.linalg.norm(input_state, 2), 1.0, atol=tolerance):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
             n_state_vector = input_state.shape[0]
             if not self._first_operation:
@@ -387,9 +387,10 @@ class DefaultQubit(Device):
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
                 # create matrix of binary integers ascending along first axis
                 bin_matrix = np.tile(np.arange(0, n_state_vector), (len(wires), 1))
+                rows = range(0, len(wires))
+                ks = (len(wires) - 1 - j for j in rows)
                 bin_matrix = np.array([list(map(lambda x: int(x/2**k) % 2, bin_matrix[i, :]))
-                                       for i in range(0, len(wires)) for k in range(0, len(wires))
-                                       if k == len(wires) - 1 - i]).T
+                                       for (i, k) in zip(rows, ks)]).T
                 # get indices for which state is changed to the input state vector elements
                 nums = np.dot(bin_matrix, 2**(n - 1 - np.sort(np.array(wires))))
                 self._state = np.zeros_like(self._state)
