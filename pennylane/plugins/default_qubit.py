@@ -376,13 +376,16 @@ class DefaultQubit(Device):
             if not self._first_operation:
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
                                   "on a {} device.".format(operation, self.short_name))
-            if n_state_vector != 2**len(wires):
-                raise ValueError("State vector parameter and wires must be of equal length.")
-            if input_state.ndim == 1:
-                self._state = input_state
+            if input_state.ndim == 1 and n_state_vector == 2**len(wires):
+                bin_matrix = np.tile(np.arange(0, n_state_vector), (len(wires), 1)).T
+                for i in range(0, len(wires)):
+                    k = len(wires) - 1 - i
+                    bin_matrix[:, i] = np.array(list(map(lambda x: int(x/2**k) % 2, bin_matrix[:, i])))
+                nums = np.dot(bin_matrix, 2**(n - 1 - np.sort(np.array(wires))))
+                self._state = np.zeros_like(self._state)
+                self._state[nums] = input_state
             else:
-                raise ValueError('State vector must be of length 2**wires.')
-
+                raise ValueError("State vector must be of length 2**wires.")
             self._first_operation = False
             return
         if operation == 'BasisState':
