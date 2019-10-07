@@ -48,6 +48,8 @@ Gates and operations
     Roty
     Rotz
     Rot3
+    S
+    T
     X
     Y
     Z
@@ -129,6 +131,8 @@ H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNOT gate
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
+S = np.array([[1, 0], [0, 1j]]) #: Phase Gate
+T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]]) #: T Gate
 # Three qubit gates
 CSWAP = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                   [0, 1, 0, 0, 0, 0, 0, 0],
@@ -329,6 +333,8 @@ class DefaultQubit(Device):
         'PauliY': Y,
         'PauliZ': Z,
         'Hadamard': H,
+        'S': S,
+        'T': T,
         'CNOT': CNOT,
         'SWAP': SWAP,
         'CSWAP':CSWAP,

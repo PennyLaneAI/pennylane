@@ -32,6 +32,8 @@ Gates
     PauliX
     PauliY
     PauliZ
+    S
+    T
     CNOT
     CZ
     SWAP
@@ -138,6 +140,50 @@ class PauliZ(Observable, Operation):
     The Pauli Z operator
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 0
+    num_wires = 1
+    par_domain = None
+
+
+class S(Operation):
+    r"""S(wires)
+    The single-qubit phase gate
+
+    .. math:: S = \begin{bmatrix}
+                1 & 0 \\
+                0 & i
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 0
+    num_wires = 1
+    par_domain = None
+
+
+class T(Operation):
+    r"""T(wires)
+    The single-qubit T gate
+
+    .. math:: T = \begin{bmatrix}
+                1 & 0 \\
+                0 & e^{\frac{i\pi}{4}}
+            \end{bmatrix}.
 
     **Details:**
 
@@ -393,6 +439,7 @@ class Rot(Operation):
     par_domain = "R"
     grad_method = "A"
 
+
 class CRX(Operation):
     r"""CRX(phi, wires)
     The controlled-RX operator
@@ -631,6 +678,8 @@ ops = {
     "PauliX",
     "PauliY",
     "PauliZ",
+    "S",
+    "T",
     "CNOT",
     "CZ",
     "SWAP",
