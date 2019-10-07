@@ -102,7 +102,7 @@ class TestOperation:
 
 
     @pytest.mark.parametrize("cls", op_classes)
-    def test_operation_init(self, cls):
+    def test_operation_init(self, cls, monkeypatch):
         "Operation subclass initialization."
 
         n = cls.num_params
@@ -117,7 +117,10 @@ class TestOperation:
             pars = [0.0] * n
 
         # valid call
-        cls(*pars, wires=ww, do_queue=False)
+        op = cls(*pars, wires=ww, do_queue=False)
+        assert op.name == cls.__name__
+        assert op.params == pars
+        assert op._wires == ww
 
         # too many parameters
         with pytest.raises(ValueError, match='wrong number of parameters'):
@@ -162,13 +165,14 @@ class TestOperation:
                 cls(*n*[1j], wires=ww, do_queue=False)
 
         # if par_domain ever gets overridden to an unsupported value, should raise exception
-        tmp = cls.par_domain
+        monkeypatch.setattr(cls, 'par_domain', 'junk')
         with pytest.raises(ValueError, match='Unknown parameter domain'):
-            cls.par_domain = 'junk'
             cls(*pars, wires=ww, do_queue=False)
-            cls.par_domain = 7
+
+        monkeypatch.setattr(cls, 'par_domain', 7)
+        with pytest.raises(ValueError, match='Unknown parameter domain'):
             cls(*pars, wires=ww, do_queue=False)
-        cls.par_domain = tmp
+
 
 
     def test_operation_outside_queue(self):

@@ -70,6 +70,11 @@ def gaussian_device_2_wires():
     """Fixture of a default.gaussian device with 2 wires."""
     return qml.device('default.gaussian', wires=2)
 
+@pytest.fixture(scope="function")
+def gaussian_device_3_wires():
+    """Fixture of a default.gaussian device with 3 wires."""
+    return qml.device('default.gaussian', wires=3)
+
 gaussian_dev = gaussian_device_2_wires  # alias
 
 
@@ -615,61 +620,46 @@ class TestDefaultGaussianIntegration:
         with pytest.raises(TypeError, match="missing 1 required positional argument: 'wires'"):
             qml.device('default.gaussian')
 
-    def test_unsupported_gates(self):
+    @pytest.mark.parametrize("g", set(qml.ops.__all_ops__) - set(DefaultGaussian._operation_map.keys()))
+    def test_unsupported_gates(self, g, gaussian_device_3_wires):
         """Test error is raised with unsupported gates"""
 
-        dev = qml.device('default.gaussian', wires=3)
+        op = getattr(qml.ops, g)
+        if op.num_wires <= 0:
+            wires = list(range(3))
+        else:
+            wires = list(range(op.num_wires))
 
-        gates = set(dev._operation_map.keys())
-        all_gates = set(qml.ops.__all_ops__)
+        @qml.qnode(gaussian_device_3_wires)
+        def circuit(*x):
+            """Test quantum function"""
+            x = prep_par(x, op)
+            op(*x, wires=wires)
+            return qml.expval(qml.X(0)) if issubclass(op, qml.operation.CV) else qml.expval(qml.PauliZ(0))
 
-        for g in all_gates - gates:
-            op = getattr(qml.ops, g)
+        x = np.random.random([op.num_params])
+        with pytest.raises(qml.DeviceError, match="Gate {} not supported on device default.gaussian".format(g)):
+            circuit(*x)
 
-            if op.num_wires <= 0:
-                wires = list(range(3))
-            else:
-                wires = list(range(op.num_wires))
+    @pytest.mark.parametrize("g", set(qml.ops.__all_obs__) - set(DefaultGaussian._observable_map.keys()))
+    def test_unsupported_observables(self, g, gaussian_dev):
+        """Test error is raised with unsupported observables."""
 
-            @qml.qnode(dev)
-            def circuit(*x):
-                """Test quantum function"""
-                x = prep_par(x, op)
-                op(*x, wires=wires)
+        op = getattr(qml.ops, g)
+        if op.num_wires <= 0:
+            wires = list(range(2))
+        else:
+            wires = list(range(op.num_wires))
 
-                if issubclass(op, qml.operation.CV):
-                    return qml.expval(qml.X(0))
+        @qml.qnode(gaussian_dev)
+        def circuit(*x):
+            """Test quantum function"""
+            x = prep_par(x, op)
+            return qml.expval(op(*x, wires=wires))
 
-                return qml.expval(qml.PauliZ(0))
-
-            with pytest.raises(qml.DeviceError, match="Gate {} not supported on device default.gaussian".format(g)):
-                x = np.random.random([op.num_params])
-                circuit(*x)
-
-    def test_unsupported_observables(self):
-        """Test error is raised with unsupported observables"""
-        dev = qml.device('default.gaussian', wires=2)
-
-        obs = set(dev._observable_map.keys())
-        all_obs = set(qml.ops.__all_obs__)
-
-        for g in all_obs - obs:
-            op = getattr(qml.ops, g)
-
-            if op.num_wires <= 0:
-                wires = list(range(2))
-            else:
-                wires = list(range(op.num_wires))
-
-            @qml.qnode(dev)
-            def circuit(*x):
-                """Test quantum function"""
-                x = prep_par(x, op)
-                return qml.expval(op(*x, wires=wires))
-
-            with pytest.raises(qml.DeviceError, match="Observable {} not supported on device default.gaussian".format(g)):
-                x = np.random.random([op.num_params])
-                circuit(*x)
+        x = np.random.random([op.num_params])
+        with pytest.raises(qml.DeviceError, match="Observable {} not supported on device default.gaussian".format(g)):
+            circuit(*x)
 
     def test_gaussian_circuit(self, tol):
         """Test that the default gaussian plugin provides correct result for simple circuit"""
@@ -719,57 +709,55 @@ class TestDefaultGaussianIntegration:
 
         assert np.mean(runs) == pytest.approx(p*np.sqrt(2*hbar), abs=tol)
 
-    def test_supported_gates(self):
+    @pytest.mark.parametrize("g, qop", set(DefaultGaussian._operation_map.items()))
+    def test_supported_gates(self, g, qop, gaussian_dev):
         """Test that all supported gates work correctly"""
         a = 0.312
+        dev = gaussian_dev
+        dev.reset()
 
-        dev = qml.device('default.gaussian', wires=2)
+        assert dev.supports_operation(g)
 
-        for g, qop in dev._operation_map.items():
-            #log.debug('\tTesting gate %s...', g)
-            assert dev.supports_operation(g)
-            dev.reset()
+        op = getattr(qml.ops, g)
+        if op.num_wires <= 0:
+            wires = list(range(2))
+        else:
+            wires = list(range(op.num_wires))
 
-            op = getattr(qml.ops, g)
-            if op.num_wires <= 0:
-                wires = list(range(2))
-            else:
-                wires = list(range(op.num_wires))
+        @qml.qnode(gaussian_dev)
+        def circuit(*x):
+            """Reference quantum function"""
+            qml.Displacement(a, 0, wires=[0])
+            op(*x, wires=wires)
+            return qml.expval(qml.X(0))
 
-            @qml.qnode(dev)
-            def circuit(*x):
-                """Reference quantum function"""
-                qml.Displacement(a, 0, wires=[0])
-                op(*x, wires=wires)
-                return qml.expval(qml.X(0))
-
-            # compare to reference result
-            def reference(*x):
-                """reference circuit"""
-                if g == 'GaussianState':
-                    return x[0][0]
-
-                if g == 'Displacement':
-                    alpha = x[0]*np.exp(1j*x[1])
-                    return (alpha+a).real*np.sqrt(2*hbar)
-
-                if 'State' in g:
-                    mu, _ = qop(*x, hbar=hbar)
-                    return mu[0]
-
-                S = qop(*x)
-
-                # calculate the expected output
-                if op.num_wires == 1:
-                    S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
-
-                return (S @ np.array([a.real, a.imag, 0, 0])*np.sqrt(2*hbar))[0]
-
+        # compare to reference result
+        def reference(*x):
+            """reference circuit"""
             if g == 'GaussianState':
-                p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
-            elif g == 'Interferometer':
-                p = [np.array(U)]
-            else:
-                p = [0.432423, -0.12312, 0.324, 0.763][:op.num_params]
+                return x[0][0]
 
-            assert circuit(*p) == reference(*p)
+            if g == 'Displacement':
+                alpha = x[0]*np.exp(1j*x[1])
+                return (alpha+a).real*np.sqrt(2*hbar)
+
+            if 'State' in g:
+                mu, _ = qop(*x, hbar=hbar)
+                return mu[0]
+
+            S = qop(*x)
+
+            # calculate the expected output
+            if op.num_wires == 1:
+                S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
+
+            return (S @ np.array([a.real, a.imag, 0, 0])*np.sqrt(2*hbar))[0]
+
+        if g == 'GaussianState':
+            p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
+        elif g == 'Interferometer':
+            p = [np.array(U)]
+        else:
+            p = [0.432423, -0.12312, 0.324, 0.763][:op.num_params]
+
+        assert circuit(*p) == reference(*p)
