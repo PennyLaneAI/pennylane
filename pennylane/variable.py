@@ -147,4 +147,4 @@ class Variable:
         if isinstance(temp, (Sequence, np.ndarray)):
             return temp[self.idx] * self.mult
 
-        return temp * self.mult  # FIXME is this ever reached?
+        raise TypeError('Internal: Keyword arguments must map to arrays.')
