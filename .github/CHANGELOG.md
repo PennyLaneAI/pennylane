@@ -27,7 +27,7 @@
 
 * Default qubit state vector preparation operations can now be applied to subsets of qubits, and
   are restricted to being the first operation in a circuit
-  []()
+  [#346](https://github.com/XanaduAI/pennylane/pull/346)
 
 * The number of shots / random samples used to estimate expectation values and variances, `Device.shots`,
   can now be changed after device creation.
