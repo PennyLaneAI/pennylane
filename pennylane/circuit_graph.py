@@ -29,6 +29,7 @@ Classes
 .. autosummary::
    CircuitGraph
    Layer
+   LayerData
 
 
 CircuitGraph methods
@@ -136,7 +137,7 @@ class CircuitGraph:
 
     @property
     def operations(self):
-        """Non-observable Operations in the circuit, sorted by "idx".
+        """Non-observable Operations in the circuit, sorted by queue index.
 
         Returns:
             list[Operation]: operations
@@ -203,7 +204,9 @@ class CircuitGraph:
         return nx.dag.topological_sort(G)
 
     def ancestors_in_order(self, ops):
-        """Ancestors in a topological order.
+        """Operation ancestors in a topological order.
+
+        Currently the topological order is determined by the queue index.
 
         Args:
             ops (Iterable[Operation]): set of operations in the circuit
@@ -216,7 +219,9 @@ class CircuitGraph:
         return sorted(self.ancestors(ops), key=lambda x: x.queue_idx)
 
     def descendants_in_order(self, ops):
-        """Descendants in a topological order.
+        """Operation descendants in a topological order.
+
+        Currently the topological order is determined by the queue index.
 
         Args:
             ops (Iterable[Operation]): set of operations in the circuit
@@ -271,7 +276,7 @@ class CircuitGraph:
         for ops, param_inds in self.layers:
             pre_queue = self.ancestors_in_order(ops)
             post_queue = self.descendants_in_order(ops)
-            yield pre_queue, ops, tuple(param_inds), post_queue
+            yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)
 
     def update_node(self, old, new):
         """Replaces the given circuit graph node with a new one.
