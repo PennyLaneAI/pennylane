@@ -116,17 +116,14 @@ eta = 0.01
 steps = 200
 
 dev_GD = qml.device("default.qubit", wires=num_wires, analytic=True)
-dev_SGD1 = qml.device("default.qubit", wires=num_wires, analytic=False, shots=1)
-dev_SGD100 = qml.device("default.qubit", wires=num_wires, analytic=False, shots=100)
+dev_SGD = qml.device("default.qubit", wires=num_wires, analytic=False)
 
 ##############################################################################
 # We can use ``qml.Hermitian`` to directly specify that we want to measure
 # the expectation value of the matrix :math:`H`:
 
-H = np.array([[8, 4, 0, -6],
-              [4, 0, 4, 0],
-              [0, 4, 8, 0],
-              [-6, 0, 0, 0]])
+H = np.array([[8, 4, 0, -6], [4, 0, 4, 0], [0, 4, 8, 0], [-6, 0, 0, 0]])
+
 
 def circuit(params):
     StronglyEntanglingLayers(*params, wires=[0, 1])
@@ -138,8 +135,7 @@ def circuit(params):
 # and optimize them using gradient descent via the parameter-shift rule.
 
 qnode_GD = qml.QNode(circuit, dev_GD)
-qnode_SGD1 = qml.QNode(circuit, dev_SGD1)
-qnode_SGD100 = qml.QNode(circuit, dev_SGD100)
+qnode_SGD = qml.QNode(circuit, dev_SGD)
 
 init_params = strong_ent_layers_uniform(num_layers, num_wires)
 
@@ -155,23 +151,25 @@ for _ in range(steps):
 
 # Optimizing using stochastic gradient descent with shots=1
 
+dev_SGD.shots = 1
 cost_SGD1 = []
 params_SGD1 = init_params
 opt = qml.GradientDescentOptimizer(eta)
 
 for _ in range(steps):
-    cost_SGD1.append(qnode_SGD1(params_SGD1))
-    params_SGD1 = opt.step(qnode_SGD1, params_SGD1)
+    cost_SGD1.append(qnode_SGD(params_SGD1))
+    params_SGD1 = opt.step(qnode_SGD, params_SGD1)
 
 # Optimizing using stochastic gradient descent with shots=100
 
+dev_SGD.shots = 100
 cost_SGD100 = []
 params_SGD100 = init_params
 opt = qml.GradientDescentOptimizer(eta)
 
 for _ in range(steps):
-    cost_SGD100.append(qnode_SGD100(params_SGD100))
-    params_SGD100 = opt.step(qnode_SGD100, params_SGD100)
+    cost_SGD100.append(qnode_SGD(params_SGD100))
+    params_SGD100 = opt.step(qnode_SGD, params_SGD100)
 
 
 ##############################################################################
@@ -186,7 +184,7 @@ plt.plot(cost_SGD1[:100], ".", label="Stochastic gradient descent, $shots=1$")
 
 # analytic ground state
 min_energy = min(np.linalg.eigvalsh(H))
-plt.hlines(min_energy, 0, 100, linestyles=':', label="Ground-state energy")
+plt.hlines(min_energy, 0, 100, linestyles=":", label="Ground-state energy")
 
 plt.ylabel("Cost function value")
 plt.xlabel("Optimization steps")
@@ -231,7 +229,7 @@ print("Stochastic gradient descent (shots=1) min energy = ", qnode_GD(params_SGD
 #
 #     H = 4  + 2I\otimes X + 4I \otimes Z - X\otimes X + 5 Y\otimes Y + 2Z\otimes X.
 #
-# To apply "doubly stochastic" gradient descent, we simply apply the stochastic
+# To perform "doubly stochastic" gradient descent, we simply apply the stochastic
 # gradient descent approach from above, but in addition also uniformly sample
 # a subset of the terms for the Hamiltonian expectation at each optimization step.
 # This inserts another element of stochasticity into the system---all the while
@@ -245,30 +243,30 @@ X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
 
-terms = np.array([2*np.kron(I, X),
-                 4*np.kron(I, Z),
-                 -np.kron(X, X),
-                 5*np.kron(Y, Y),
-                 2*np.kron(Z, X)])
+terms = np.array(
+    [2 * np.kron(I, X), 4 * np.kron(I, Z), -np.kron(X, X), 5 * np.kron(Y, Y), 2 * np.kron(Z, X)]
+)
 
-dev = qml.device("default.qubit", wires=num_wires, analytic=False, shots=100)
 
-@qml.qnode(dev)
+@qml.qnode(dev_SGD)
 def sampled_terms(params, A=None):
     StronglyEntanglingLayers(*params, wires=[0, 1])
     return expval(qml.Hermitian(A, wires=[0, 1]))
 
+
 def loss(params):
     n = np.random.choice(np.arange(5), size=3, replace=False)
     A = np.sum(terms[n], axis=0)
-    return 4 + (5/3)*sampled_terms(params, A=A)
+    return 4 + (5 / 3) * sampled_terms(params, A=A)
+
 
 ##############################################################################
 # Optimizing the circuit using gradient descent via the parameter-shift rule:
 
+dev_SGD.shots = 100
 cost = []
 params = init_params
-opt = qml.AdamOptimizer(0.01)
+opt = qml.GradientDescentOptimizer(0.005)
 
 for _ in range(250):
     cost.append(loss(params))
@@ -277,17 +275,19 @@ for _ in range(250):
 ##############################################################################
 # Plotting the cost versus optimization step:
 
-def moving_average(data, n=3) :
+
+def moving_average(data, n=3):
     ret = np.cumsum(data, dtype=np.float64)
     ret[n:] = ret[n:] - ret[:-n]
-    return ret[n - 1:] / n
+    return ret[n - 1 :] / n
+
 
 average = np.vstack([np.arange(25, 200), moving_average(cost, n=50)[:-26]])
 
 plt.plot(cost_GD, label="Vanilla gradient descent")
 plt.plot(cost, ".", label="Doubly stochastic gradient descent")
 plt.plot(average[0], average[1], "--", label="Doubly stochastic gradient descent moving average")
-plt.hlines(min_energy, 0, 200, linestyles=':', label="Ground state energy")
+plt.hlines(min_energy, 0, 200, linestyles=":", label="Ground state energy")
 
 plt.ylabel("Cost function value")
 plt.xlabel("Optimization steps")
