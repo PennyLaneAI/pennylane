@@ -60,8 +60,25 @@ import networkx as nx
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
-"""TODO Parametrized layer of the circuit."""
+"""Parametrized layer of the circuit.
 
+TODO define what a layer is
+
+Args:
+
+    ops (list[Operation]): parametrized operations in the layer
+    param_inds (tuple[int]): corresponding free parameter indices
+"""
+
+LayerData = namedtuple("LayerData", ["pre_ops", "ops", "param_inds", "post_ops"])
+"""Parametrized layer of the circuit.
+
+Args:
+    pre_ops (list[Operation]): operations that precede the layer
+    ops (list[Operation]): parametrized operations in the layer
+    param_inds (tuple[int]): corresponding free parameter indices
+    post_ops (list[Operation]): operations that succeed the layer
+"""
 
 class CircuitGraph:
     """Represents a quantum circuit as a directed acyclic graph.
@@ -209,26 +226,19 @@ class CircuitGraph:
         """
         return sorted(self.descendants(ops), key=lambda x: x.queue_idx)
 
-
     @property
     def layers(self):
         """Identify the parametrized layer structure of the circuit.
 
-        Each :class:`Layer` is a namedtuple containing the fields
-
-        * ``ops`` *(list[int])*: the list of Operations in the layer
-
-        * ``param_inds`` *(list[int])*: the list of parameter indices used within the layer
-
         Returns:
-            list[Layer]: the layers of the circuit
+            list[Layer]: layers of the circuit
         """
         # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0 c1], [b0, d1] and not [a0], [b0 c1], [d1]
         # keep track of the current layer
         current = Layer([], [])
         layers = [current]
 
-        # sort vars by first occurrence of the var in the ops queue?
+        # sort vars by first occurrence of the var in the ops queue
         variable_ops_sorted = sorted(self.variable_deps.items(), key=lambda x: x[1][0].op.queue_idx)
 
         # iterate over all parameters
@@ -255,17 +265,7 @@ class CircuitGraph:
         """Parametrized layers of the circuit.
 
         Returns:
-            Iterable[tuple[list, list, tuple, list]]: an iterable that returns a tuple
-            ``(pre_queue, layer, param_idx, post_queue)`` at each iteration.
-
-            * ``pre_queue`` (*list[Operation]*): all operations that precede the layer
-
-            * ``layer`` (*list[Operation]*): parametrized gates in the layer
-
-            * ``param_inds`` (*tuple[int]*): integer indices corresponding
-              to the free parameters of this layer, in the order they appear
-
-            * ``post_queue`` (*list[Operation, Observable]*): all operations that succeed the layer
+            Iterable[LayerData]: layers with extra metadata
         """
         # iterate through each layer
         for ops, param_inds in self.layers:
