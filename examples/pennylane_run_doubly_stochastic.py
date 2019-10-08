@@ -63,9 +63,9 @@ expectation values.
 
 Putting these two results together, `Sweke et al. (2019) <https://arxiv.org/abs/1910.01155>`__
 show that samples of the expectation value fed into the parameter-shift rule provide
-unbiased estimators of the quantum gradient---resulting in a form of stochastic gradient descent.
-Moreover, they show that convergence of the stochastic gradient descent is guaranteed
-in sufficiently simplified settings, even in the case where the number
+unbiased estimators of the quantum gradient---resulting in a form of stochastic gradient descent
+(referred to as QSGD). Moreover, they show that convergence of the stochastic gradient
+descent is guaranteed in sufficiently simplified settings, even in the case where the number
 of shots is 1!
 
 .. note::
@@ -120,8 +120,8 @@ num_wires = 2
 eta = 0.01
 steps = 200
 
-dev_GD = qml.device("default.qubit", wires=num_wires, analytic=True)
-dev_SGD = qml.device("default.qubit", wires=num_wires, analytic=False)
+dev_analytic = qml.device("default.qubit", wires=num_wires, analytic=True)
+dev_stochastic = qml.device("default.qubit", wires=num_wires, analytic=False)
 
 ##############################################################################
 # We can use ``qml.Hermitian`` to directly specify that we want to measure
@@ -139,8 +139,8 @@ def circuit(params):
 # Now, we create three QNodes, each corresponding to a device above,
 # and optimize them using gradient descent via the parameter-shift rule.
 
-qnode_GD = qml.QNode(circuit, dev_GD)
-qnode_SGD = qml.QNode(circuit, dev_SGD)
+qnode_analytic = qml.QNode(circuit, dev_analytic)
+qnode_stochastic = qml.QNode(circuit, dev_stochastic)
 
 init_params = strong_ent_layers_uniform(num_layers, num_wires)
 
@@ -151,30 +151,30 @@ params_GD = init_params
 opt = qml.GradientDescentOptimizer(eta)
 
 for _ in range(steps):
-    cost_GD.append(qnode_GD(params_GD))
-    params_GD = opt.step(qnode_GD, params_GD)
+    cost_GD.append(qnode_analytic(params_GD))
+    params_GD = opt.step(qnode_analytic, params_GD)
 
 # Optimizing using stochastic gradient descent with shots=1
 
-dev_SGD.shots = 1
+dev_stochastic.shots = 1
 cost_SGD1 = []
 params_SGD1 = init_params
 opt = qml.GradientDescentOptimizer(eta)
 
 for _ in range(steps):
-    cost_SGD1.append(qnode_SGD(params_SGD1))
-    params_SGD1 = opt.step(qnode_SGD, params_SGD1)
+    cost_SGD1.append(qnode_stochastic(params_SGD1))
+    params_SGD1 = opt.step(qnode_stochastic, params_SGD1)
 
 # Optimizing using stochastic gradient descent with shots=100
 
-dev_SGD.shots = 100
+dev_stochastic.shots = 100
 cost_SGD100 = []
 params_SGD100 = init_params
 opt = qml.GradientDescentOptimizer(eta)
 
 for _ in range(steps):
-    cost_SGD100.append(qnode_SGD(params_SGD100))
-    params_SGD100 = opt.step(qnode_SGD, params_SGD100)
+    cost_SGD100.append(qnode_stochastic(params_SGD100))
+    params_SGD100 = opt.step(qnode_stochastic, params_SGD100)
 
 
 ##############################################################################
@@ -184,8 +184,8 @@ from matplotlib import pyplot as plt
 
 plt.style.use("seaborn")
 plt.plot(cost_GD[:100], label="Vanilla gradient descent")
-plt.plot(cost_SGD100[:100], label="Stochastic gradient descent, $shots=100$")
-plt.plot(cost_SGD1[:100], ".", label="Stochastic gradient descent, $shots=1$")
+plt.plot(cost_SGD100[:100], label="QSGD ($shots=100$)")
+plt.plot(cost_SGD1[:100], ".", label="QSGD ($shots=1$)")
 
 # analytic ground state
 min_energy = min(np.linalg.eigvalsh(H))
@@ -200,9 +200,9 @@ plt.show()
 # Using the trained parameters from each optimization strategy, we can
 # evaluate the analytic quantum device:
 
-print("Vanilla gradient descent min energy = ", qnode_GD(params_GD))
-print("Stochastic gradient descent (shots=100) min energy = ", qnode_GD(params_SGD100))
-print("Stochastic gradient descent (shots=1) min energy = ", qnode_GD(params_SGD1))
+print("Vanilla gradient descent min energy = ", qnode_analytic(params_GD))
+print("Stochastic gradient descent (shots=100) min energy = ", qnode_analytic(params_SGD100))
+print("Stochastic gradient descent (shots=1) min energy = ", qnode_analytic(params_SGD1))
 
 ##############################################################################
 # Amazingly, we see that even the ``shots=1`` optimization converged
@@ -225,8 +225,13 @@ print("Stochastic gradient descent (shots=1) min energy = ", qnode_GD(params_SGD
 #
 # .. math::
 #
-#     H = \sum_{i,j=I,x,y,z} a_{i,j} (\sigma_i\otimes \sigma_j),
-#         ~~a_{i,j} = \frac{1}{4}\text{tr}[(\sigma_i\otimes \sigma_j )H].
+#     H = \sum_{i,j=0,1,2,3} a_{i,j} (\sigma_i\otimes \sigma_j),
+#
+# where
+#
+# .. math::
+#
+#     a_{i,j} = \frac{1}{4}\text{tr}[(\sigma_i\otimes \sigma_j )H], ~~ \sigma = \{I, X, Y, Z\}.
 #
 # Applying this, we can see that
 #
@@ -253,22 +258,22 @@ terms = np.array(
 )
 
 
-@qml.qnode(dev_SGD)
-def sampled_terms(params, A=None):
+@qml.qnode(dev_stochastic)
+def circuit(params, n=None):
     StronglyEntanglingLayers(*params, wires=[0, 1])
+    idx = np.random.choice(np.arange(5), size=n, replace=False)
+    A = np.sum(terms[idx], axis=0)
     return expval(qml.Hermitian(A, wires=[0, 1]))
 
 
 def loss(params):
-    n = np.random.choice(np.arange(5), size=3, replace=False)
-    A = np.sum(terms[n], axis=0)
-    return 4 + (5 / 3) * sampled_terms(params, A=A)
+    return 4 + (5 / 3) * circuit(params, n=3)
 
 
 ##############################################################################
 # Optimizing the circuit using gradient descent via the parameter-shift rule:
 
-dev_SGD.shots = 100
+dev_stochastic.shots = 100
 cost = []
 params = init_params
 opt = qml.GradientDescentOptimizer(0.005)
@@ -278,7 +283,12 @@ for _ in range(250):
     params = opt.step(loss, params)
 
 ##############################################################################
-# Plotting the cost versus optimization step:
+# During doubly stochastic gradient descent, we are sampling from terms of the
+# analytic cost function, so it is not entirely instructive to plot the cost
+# versus optimization step---partial sums of the terms in the Hamiltonian
+# may have minimum energy below the ground state energy of the total Hamiltonian.
+# Nevertheless, we can keep track of the cost value moving average during doubly
+# stochastic gradient descent as an indicator of convergence.
 
 
 def moving_average(data, n=3):
@@ -290,8 +300,8 @@ def moving_average(data, n=3):
 average = np.vstack([np.arange(25, 200), moving_average(cost, n=50)[:-26]])
 
 plt.plot(cost_GD, label="Vanilla gradient descent")
-plt.plot(cost, ".", label="Doubly stochastic gradient descent")
-plt.plot(average[0], average[1], "--", label="Doubly stochastic gradient descent moving average")
+plt.plot(cost, ".", label="Doubly QSGD")
+plt.plot(average[0], average[1], "--", label="Doubly QSGD (moving average)")
 plt.hlines(min_energy, 0, 200, linestyles=":", label="Ground state energy")
 
 plt.ylabel("Cost function value")
@@ -305,7 +315,67 @@ plt.show()
 # correctly provides the ground state energy when evaluated for a larger
 # number of shots:
 
-print("Doubly stochastic gradient descent min energy = ", qnode_GD(params))
+print("Doubly stochastic gradient descent min energy = ", qnode_analytic(params))
+
+##############################################################################
+# While stochastic gradient descent requires more optimization steps to achieve
+# convergence, it is worth noting that it requires significantly fewer quantum
+# device evaluations, and thus may as a result take less time overall.
+
+##############################################################################
+# Adaptive stochasticity
+# ----------------------
+#
+# To improve on the convergence, we may even consider a crude "adaptive" modification
+# of the doubly stochastic gradient descent optimization performed above. In this
+# approach, we successively increase the number of terms we are sampling from as
+# the optimization proceeds, as well as increasing the number of shots.
+
+dev_stochastic.shots = 100
+cost = []
+params = init_params
+opt = qml.GradientDescentOptimizer(0.005)
+
+for i in range(250):
+
+    if i < 10:
+        n = 1
+        dev_stochastic.shots = 1
+    elif i < 25:
+        n = 2
+        dev_stochastic.shots = 10
+    elif i < 100:
+        n = 3
+        dev_stochastic.shots = 100
+    elif i < 150:
+        n = 4
+        dev_stochastic.shots = 500
+    elif i < 250:
+        n = 5
+        dev_stochastic.shots = 1000
+
+    def loss(params):
+        return 4 + (5 / n) * circuit(params, n=n)
+
+    cost.append(loss(params))
+    params = opt.step(loss, params)
+
+
+average = np.vstack([np.arange(25, 226), moving_average(cost, n=50)])
+
+plt.plot(cost_GD, label="Vanilla gradient descent")
+plt.plot(cost, ".", label="Adaptive QSGD")
+plt.plot(average[0], average[1], "--", label="Adaptive QSGD moving average")
+plt.hlines(min_energy, 0, 250, linestyles=":", label="Ground state energy")
+
+plt.ylabel("Cost function value")
+plt.xlabel("Optimization steps")
+plt.xlim(-2, 200)
+plt.legend()
+plt.show()
+
+
+print("Adaptive QSGD min energy = ", qnode_analytic(params))
 
 ##############################################################################
 # References
