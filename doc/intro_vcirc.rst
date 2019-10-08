@@ -160,20 +160,6 @@ Quantum operations
 PennyLane supports a wide variety of quantum operations - such as gates, state preparations and measurement
 observables. These operations can be used exclusively in quantum functions.
 
-.. raw:: html
-    <style>
-    div.topic.contents > ul {
-        max-height: 100px;
-    }
-    </style>
-.. rst-class:: contents local topic
-
-.. toctree::
-    :maxdepth: 2
-    ops/qubit
-    ops/cv
-
-
 Qubit operations
 ^^^^^^^^^^^^^^^^
 
