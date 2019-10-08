@@ -360,8 +360,6 @@ class DefaultQubit(Device):
         'Identity': identity
     }
 
-    _string_for_inverse = ".inv"
-
     def __init__(self, wires, *, shots=1000, analytic=True):
         super().__init__(wires, shots)
         self.eng = None
@@ -383,12 +381,12 @@ class DefaultQubit(Device):
 
             # Adds the inverse for each operation that has a parameter
             **{
-                op + cls._string_for_inverse: cls._operation_map[op] for op in cls._operation_map if callable(cls._operation_map[op])
+                op + Operation.string_for_inverse: cls._operation_map[op] for op in cls._operation_map if callable(cls._operation_map[op])
             }
         }
 
         _observable_inverses_map = {
-            obs + cls._string_for_inverse: cls._observable_map[obs] for obs in cls._observable_map
+            obs + Operation.string_for_inverse: cls._observable_map[obs] for obs in cls._observable_map
         }
 
         cls._operation_map = {**cls._operation_map, **_operation_inverses_map}
@@ -496,7 +494,7 @@ class DefaultQubit(Device):
         A = {**self._operation_map, **self._observable_map}[operation]
         if not callable(A):
             return A
-        elif operation.endswith(self._string_for_inverse):
+        elif operation.endswith(Operation.string_for_inverse):
             return A(*np.negative(par))
         else:
             return A(*par)
