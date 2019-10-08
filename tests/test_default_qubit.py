@@ -362,7 +362,9 @@ class TestOperatorMatrices:
 
 
 class TestApply:
-    """Tests that operations are applied correctly or that the proper errors are raised."""
+    """Tests that operations and inverses of certain operations are applied correctly or that the proper
+    errors are raised.
+    """
 
     test_data_no_parameters = [
         ("PauliX", [1, 0], np.array([0, 1])),
@@ -455,8 +457,7 @@ class TestApply:
         ("QubitStateVector", [1, 0, 0, 0], [1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)]]),
     ])
     def test_apply_operation_state_preparation(self, qubit_device_2_wires, tol, name, input, expected_output, par):
-        """Tests that applying an operation yields the expected output state for single wire
-           operations that have no parameters."""
+        """Tests that applying state preparation operations yield the expected output."""
 
         qubit_device_2_wires._state = np.array(input)
         qubit_device_2_wires.apply(name, wires=[0, 1], par=par)
@@ -511,7 +512,7 @@ class TestApply:
                              test_data_single_wire_with_parameters_inverses)
     def test_apply_operation_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, input, expected_output, par):
         """Tests that applying an operation yields the expected output state for single wire
-           operations that have no parameters."""
+           operations that have parameters."""
 
         qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply(name, wires=[0], par=par)
@@ -556,8 +557,8 @@ class TestApply:
     @pytest.mark.parametrize("name,input,expected_output,par", test_data_two_wires_with_parameters +
                              test_data_two_wires_with_parameters_inverses)
     def test_apply_operation_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, input, expected_output, par):
-        """Tests that applying an operation yields the expected output state for single wire
-           operations that have no parameters."""
+        """Tests that applying an operation yields the expected output state for two wire
+           operations that have parameters."""
 
         qubit_device_2_wires._state = np.array(input)
         qubit_device_2_wires.apply(name, wires=[0, 1], par=par)
@@ -924,14 +925,14 @@ class TestDefaultQubitIntegration:
         ("S", -1),
     ])
     def test_inverse_circuit(self, qubit_device_1_wire, tol, name, expected_output):
-        """Tests supported gates that act on a single wire that are not parameterized"""
+        """Tests the inverse of supported gates that act on a single wire that are not parameterized"""
 
         op = getattr(qml.ops, name)
 
         @qml.qnode(qubit_device_1_wire)
         def circuit():
             qml.BasisState(np.array([1]), wires=[0])
-            op(wires=0).inv()
+            op(wires=0)
             return qml.expval(qml.PauliZ(0))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
