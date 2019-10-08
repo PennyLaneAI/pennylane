@@ -2,7 +2,7 @@
    :format: html
 
 
-.. _intro_qnodes:
+.. _intro_vcircuits:
 
 Variational Circuits
 ====================

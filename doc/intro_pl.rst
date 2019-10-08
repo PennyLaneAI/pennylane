@@ -6,16 +6,22 @@
 Introduction
 ============
 
-PennyLane can be understood as a framework that integrates classical and quantum computations (or *nodes*) for the
-purpose of automatic differentiation.
+PennyLane can be understood as a mediator that integrates classical and quantum computations for the
+purpose of hybrid optimization.
+
+Bridging the classical and quantum world
+----------------------------------------
 
 The classical computations, as well as the overall optimization,
-are executed by a **classical interface** .
+are executed by a **classical interface** . PennyLane's standard interface is :ref:`NumPy <https://numpy.org/>`,
+but there is also support for powerful machine learning interfaces like :ref:`PyTorch <https://pytorch.org/>`
+and :ref:`Tensorflow <https://www.tensorflow.org/>`.
 
-The quantum computations, or *quantum variational circuits*, are sent to one of a growing number
-of devices for execution; a device can be a classical
-simulator or a real quantum device. The communication between the device and PennyLane is
-defined by a **plugin**.
+The quantum computations are sent to a **device** for execution. A device can be a classical
+simulator or real quantum hardware. PennyLane comes with default devices, but it can also use external
+soft- and hardware to run quantum circuits - such as Xanadu's *StrawberryFields*, Rigetti's *Forest*, IBM's *Quiskit*,
+*ProjectQ* or Microsoft's *Q#*.
+The communication between PennyLane and external devices is coordinated by a **plugin**.
 
 
 .. image:: _static/building_blocks.png
@@ -23,21 +29,26 @@ defined by a **plugin**.
     :width: 650px
     :target: javascript:void(0);
 
+The main job of PennyLane is to manage the computation or estimation of gradients
+of adaptable quantum circuits, so called *variational circuits*, on quantum devices,
+and to make them accessible for the classical interface. The classical interface uses the gradient
+information to automatically differentiate through the computation - an essential process in optimization
+and machine learning.
 
-Being a mediator between classical and quantum computing frameworks,
-the main job of PennyLane is threefold:
+Learn more
+----------
 
-1. PennyLane unifies and simplifies the construction of variational quantum circuits
-for hybrid optimization tasks (see also :ref:`Variational Circuits <vcircuits>`).
+In the following you can learn more about quantum circuits, interfaces and plugins to external
+quantum devices in PennyLane:
 
-2. PennyLane sends the circuits via plugins to the desired devices
-for execution (see also :ref:`Plugins <plugins>`).
+1. The section on :ref:`Variational Circuits <intro_vcircuits>` shows you how PennyLane unifies and
+simplifies the process of programming quantum circuits with trainable parameters.
 
-3. PennyLane manages the computation or estimation of gradients
-of the variational circuits, and makes them accessible for the classical interface
-(see also :ref:`Interfaces <intro_interfaces>`).
+2. The section on :ref:`Interfaces <intro_interfaces>` introduces you to how PennyLane is used
+with the different classical interfaces for hybrid optimization.
 
-
+3. The section on :ref:`Plugins <intro_plugins>` gives you an overview of PennyLane's plugin ecosystem,
+and teaches you how to write a new plugin for a quantum device.
 
 
 
