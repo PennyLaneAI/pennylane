@@ -135,20 +135,7 @@ def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
     if gray_code_rank == 0:
         gate(theta[0, 0], wires=[target_wire])
         return
-
-    # gc = GrayCode(gray_code_rank)
-    # code = list(gc.generate_gray())
-    # control_indices = []
-
-    # current_gray = gc.current
-    # for i in range(gc.selections):
-    #     control_indices.append(int(np.log2(int(code[i], 2) ^ int(code[(i+1) % gc.selections], 2))))
-
-    # for i in reversed(range(gc.selections)):
-    #     print(i, ": control = ", control_indices[i])
-
-    #     qml.CNOT(wires=[control_wires[control_indices[i]], target_wire])
-    #     gate(theta[i, 0], wires=[target_wire])
+        
     gc = GrayCode(gray_code_rank)
 
     current_gray = gc.current
