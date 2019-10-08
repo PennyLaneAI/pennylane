@@ -86,18 +86,36 @@ class TestBasisStatePreparation:
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
     # fmt: off
-    @pytest.mark.parametrize("basis_state,wires,error_message", [
-        ([0], [0, 1], "Number of qubits must be equal to the number of wires"),
-        ([0, 1], [0], "Number of qubits must be equal to the number of wires"),
-        ([0], 0, "Wires must be passed as a list of integers"),
-        ([3], [0], "Basis state must only consist of 0s and 1s"),
-        ([1, 0, 2], [0, 1, 2], "Basis state must only consist of 0s and 1s"),
+    @pytest.mark.parametrize("basis_state,wires", [
+        ([0], [0, 1]),
+        ([0, 1], [0]),
     ])
     # fmt: on
-    def test_errors(self, basis_state, wires, error_message):
-        """Tests that the correct error messages are raised."""
+    def test_error_num_qubits(self, basis_state, wires):
+        """Tests that the correct error message is raised when the number
+        of qubits doesn't match the number of wires."""
 
-        with pytest.raises(ValueError, match=error_message):
+        with pytest.raises(ValueError, match="Number of qubits must be equal to the number of wires"):
+            BasisStatePreparation(basis_state, wires)
+
+    def test_error_wires_list(self, basis_state, wires):
+        """Tests that the correct error messages is raised when wires
+        are not passed as a list of integers."""
+
+        with pytest.raises(ValueError, match="Wires must be passed as a list of integers"):
+            BasisStatePreparation([0], 0)
+
+    # fmt: off
+    @pytest.mark.parametrize("basis_state,wires", [
+        ([3], [0]),
+        ([1, 0, 2], [0, 1, 2]),
+    ])
+    # fmt: on
+    def test_error_basis_state_format(self, basis_state, wires):
+        """Tests that the correct error messages is raised when
+        the basis state contains numbers different from 0 and 1."""
+
+        with pytest.raises(ValueError, match="Basis state must only consist of 0s and 1s"):
             BasisStatePreparation(basis_state, wires)
 
 class TestMottonenStatePreparation:
