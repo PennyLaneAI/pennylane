@@ -39,7 +39,7 @@ def circuit(p1, p2):
     # We use the general Rot(phi,theta,omega,wires) single-qubit operation
     qml.Rot(p1[0], p1[1], p1[2], wires=1)
     qml.Rot(p2[0], p2[1], p2[2], wires=2)
-    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+    return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
 ###############################################################################
 # The cost function can be defined as the energy of the spin configuration which is to be
