@@ -116,7 +116,7 @@ for i in range(steps):
 #
 #     1. ``loss.backward()`` computes the gradient of the cost function with respect to all parameters with ``requires_grad=True``. 
 #     2. ``opt.step()`` performs the parameter update based on this *current* gradient and the learning rate. 
-#     3. ``opt.zer_grad()`` sets all the gradients back to zero. It’s important to call this before ``loss.backward()`` to avoid the accumulation of  gradients from multiple passes.
+#     3. ``opt.zer_grad()`` sets all the gradients back to zero. It's important to call this before ``loss.backward()`` to avoid the accumulation of gradients from multiple passes.
 #
 #     Hence, its standard practice to define the ``closure()`` function that clears up the old gradient, 
 #     evaluates the new gradient and passes it onto the optimizer in each step. 
