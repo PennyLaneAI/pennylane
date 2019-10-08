@@ -21,8 +21,8 @@ interfaces
 .. currentmodule:: pennylane.interfaces
 
 This module defines quantum nodes that are compatible with different :ref:`interfaces <intro_interfaces>`.
-=======
-However, PennyLane has the ability to contruct quantum nodes that can also be used in conjunction
+
+However, PennyLane has the ability to construct quantum nodes that can also be used in conjunction
 with other classical machine learning libraries. Such QNodes will accept and return the correct
 object types expected by the machine learning library (i.e., Python default types and NumPy array
 for the PennyLane-provided wrapped NumPy, ``torch.tensor`` for PyTorch, and

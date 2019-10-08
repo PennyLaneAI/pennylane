@@ -1,4 +1,4 @@
-.. _numpy_interface:
+.. _numpy_interf:
 
 NumPy interface
 ***************

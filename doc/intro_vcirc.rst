@@ -9,28 +9,38 @@ Variational Circuits
 
 In the following we will see how the concept of a :ref:`variational quantum circuit <varcirc>`, the
 heart piece of hybrid quantum-classical optimization, is implemented in PennyLane.
+We give an overview of quantum :ref:`operations <intro_vcirc_ops>` and :ref:`measurements <intro_vcirc_measure>`
+that can be used in quantum circuits, and show how a growing library of
+:ref:`templates <intro_vcirc_templates>` allows
+for easy use of common types of ansatze or architectures.
 
-New PennyLane users learn how to:
-
-.. image:: _static/intro_qnodes.png
-    :align: right
-    :width: 180px
-    :target: javascript:void(0);
-
-- Construct quantum circuits via **quantum functions**
-- Define **computational devices**
-- Combine quantum functions and devices to **quantum nodes**
-- Conveniently create quantum nodes using the quantum node **decorator**
-- Find out more about **interfaces** to use with quantum nodes
-
-The theoretical background
-of variational circuits and hybrid optimization is found in the :ref:`Key Concepts <key_concepts>`.
+You can read up on the theoretical background of variational circuits and hybrid optimization
+in the :ref:`Key Concepts <key_concepts>` section.
 
 Creating quantum nodes
 ----------------------
 
+.. image:: _static/qnode.png
+    :align: right
+    :width: 180px
+    :target: javascript:void(0);
+
+
+In PennyLane, variational circuits are represented as quantum nodes. A quantum node
+is a combination of a :ref:`quantum functions <intro_vcirc_qfunc>` that defines the composition of the circuit,
+and a :ref:`device <intro_vcirc_device>` that runs the computation. One can conveniently create quantum nodes using
+the quantum node :ref:`decorator <intro_vcirc_decorator>`.
+
+Each classical **interface** uses a different version of a quantum node, and we will here introduce the standard QNode
+to use with the NumPy interface. NumPy-interfacing quantum nodes take NumPy datastructures,
+such as floats and arrays, and return Numpy data structures.
+They can be optimized using NumPy-based :ref:`optimization methods <optimize>`.
+Quantum nodes for other PennyLane interfaces like :ref:`PyTorch <torch_interf>` and
+:ref:`TensorFlow's Eager mode <tf_interf>` are introduced in the section on :ref:`Interfaces <intro_interfaces>`.
+
 Quantum functions
 ^^^^^^^^^^^^^^^^^
+.. _intro_vcirc_qfunc:
 
 A quantum circuit is constructed as a special Python function, a *quantum circuit function*, or *quantum function* in short.
 For example:
@@ -73,6 +83,7 @@ constraints:
 
 Defining a device
 ^^^^^^^^^^^^^^^^^
+.. _intro_vcirc_device:
 
 To run - and later optimize - a quantum circuit, one needs to first specify a *computational device*.
 
@@ -110,6 +121,8 @@ function. It takes the same arguments as the original quantum function:
 The QNode decorator
 ^^^^^^^^^^^^^^^^^^^
 
+.. _intro_vcirc_decorator:
+
 A more convenient - and in fact the recommended - way for creating `QNodes` is the provided
 quantum node decorator. This decorator converts a quantum function containing PennyLane quantum
 operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
@@ -135,28 +148,17 @@ For example:
     result = qfunc(0.543)
 
 
-Using QNodes
-^^^^^^^^^^^^
-
-Quantum nodes are typically used in :ref:`hybrid computations <hybrid_computation>`. This means
-that results of `QNodes` are further processed in classical functions, and that results from
-classical functions are fed into `QNodes`. The framework in which the `classical parts` of the
-hybrid computation are written is the *interface* with which PennyLane is used.
-
-In the above introduction to quantum nodes, we implicitly already used the default interface
-- the :ref:`NumPy interface <numpy_interface>`.
-NumPy-interfacing quantum nodes take NumPy datastructures, such as floats and arrays, and return
-similar data structures. They can be optimized using NumPy-based :ref:`optimization methods <optimize>`.
-Other PennyLane interfaces are :ref:`PyTorch <torch_interf>` and :ref:`TensorFlow's Eager
-mode <tf_interf>`.
 
 
-Supported operations
---------------------
+Quantum operations
+------------------
 
+.. _intro_vcirc_ops:
+
+.. currentmodule:: pennylane.ops
 
 PennyLane supports a wide variety of quantum operations - such as gates, state preparations and measurement
-observables.
+observables. These operations can be used exclusively in quantum functions.
 
 .. raw:: html
     <style>
@@ -165,6 +167,7 @@ observables.
     }
     </style>
 .. rst-class:: contents local topic
+
 .. toctree::
     :maxdepth: 2
     ops/qubit
@@ -271,14 +274,17 @@ Observables
 Shared operations
 ^^^^^^^^^^^^^^^^^
 
+.. currentmodule:: pennylane.ops
+
 The only operation shared by both qubit and continouous-variable architectures is the Identity.
 
 .. autosummary::
     Identity
 
 
-Supported measurements
-----------------------
+Quantum measurements
+--------------------
+.. _intro_vcirc_measure:
 
 .. currentmodule:: pennylane.measure
 
@@ -290,10 +296,12 @@ PennyLane can extract different types of measurement results:
     sample
 
 
-Pre-coded templates
--------------------
+Templates
+---------
 
-PennyLane provides a growing library of templates of common quantum
+.. _intro_vcirc_templates:
+
+PennyLane provides a growing library of pre-coded templates of common quantum
 machine learning circuit architectures that can be used to easily build,
 evaluate, and train more complex quantum machine learning models. In the
 quantum machine learning literature, such architectures are commonly known as an
@@ -305,11 +313,15 @@ quantum machine learning literature, such architectures are commonly known as an
     provided by PennyLane. This means that **template functions can only be used within a
     valid** :mod:`pennylane.qnode`.
 
-PennyLane conceptually distinguishes two types of templates, **layer architectures** and **input embeddings**.
-Most templates are complemented by functions that provide an array of random **initial parameters**.
+PennyLane conceptually distinguishes two types of templates, :ref:`layer architectures <intro_vcirc_temp_layer>`
+and :ref:`input embeddings <intro_vcirc_temp_emb>` .
+Most templates are complemented by functions that provide an array of
+random :ref:`initial parameters <intro_vcirc_temp_params>` .
 
 Layer templates
 ^^^^^^^^^^^^^^^
+
+.. _intro_vcirc_temp_layer:
 
 .. currentmodule:: pennylane.templates.layers
 
@@ -324,6 +336,7 @@ The following layer templates are available:
 
 Embedding templates
 ^^^^^^^^^^^^^^^^^^^
+.. _intro_vcirc_temp_emb:
 
 .. currentmodule:: pennylane.templates.embeddings
 
@@ -343,6 +356,7 @@ The following embedding templates are available:
 
 Parameter initializations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+.. _intro_vcirc_temp_params:
 
 .. currentmodule:: pennylane.init
 

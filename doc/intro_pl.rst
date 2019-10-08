@@ -31,23 +31,23 @@ The communication between PennyLane and external devices is coordinated by a **p
 
 The main job of PennyLane is to manage the computation or estimation of gradients
 of adaptable quantum circuits, so called *variational circuits*, on quantum devices,
-and to make them accessible for the classical interface. The classical interface uses the gradient
-information to automatically differentiate through the computation - an essential process in optimization
-and machine learning.
+and to make them accessible to the classical interface.
+The classical interface uses the gradient information to automatically differentiate
+through the computation - an essential process in optimization and machine learning.
 
 Learn more
 ----------
 
-In the following you can learn more about quantum circuits, interfaces and plugins to external
+You can learn more about quantum circuits, interfaces and plugins to external
 quantum devices in PennyLane:
 
 1. The section on :ref:`Variational Circuits <intro_vcircuits>` shows you how PennyLane unifies and
 simplifies the process of programming quantum circuits with trainable parameters.
 
 2. The section on :ref:`Interfaces <intro_interfaces>` introduces you to how PennyLane is used
-with the different classical interfaces for hybrid optimization.
+with the different classical interfaces to optimize quantum circuits or hybrid computations.
 
-3. The section on :ref:`Plugins <intro_plugins>` gives you an overview of PennyLane's plugin ecosystem,
+3. The section on :ref:`Plugins <plugins>` gives you an overview of PennyLane's plugin ecosystem,
 and teaches you how to write a new plugin for a quantum device.
 
 

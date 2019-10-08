@@ -1,7 +1,7 @@
 .. role:: html(raw)
    :format: html
 
-.. _intro_plugins:
+.. _plugins:
 
 Quantum plugins
 ===============
