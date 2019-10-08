@@ -4,12 +4,13 @@ r"""
 Optimization of 3-qubit Ising model in PyTorch
 ===============================================
 
-The Ising model is an example of a system whose optimization landscape is non-convex. Hence, using gradient descent may not be the best strategy as the optimization can get
+The Ising model is an example of a system whose optimization landscape is non-convex. Hence,
+using gradient descent may not be the best strategy as the optimization can get
 stuck in local minima. Consequently, Ising models are popularly used to represent and solve
 Quadratic Unconstrained Binary Optimization (QUBO) problems with non-convex cost functions in
 Quantum Annealing (for example on a D-wave system). 
 
-The energy for this system is given by:
+The Hamiltonian for this system is given by:
 
 .. math::  H=-\sum_{<i,j>} J_{ij} \sigma_i \sigma_{j}
 
@@ -117,7 +118,7 @@ for i in range(steps):
 #
 #     1. ``loss.backward()`` computes the gradient of the cost function with respect to all parameters (whcih have ``requires_grad=True``). 
 #     2. ``opt.step()`` performs the parameter update based on this *current* gradient and the learning rate. 
-#     3. ``opt.zer_grad()`` sets all the gradients back to zero. It’s important to call this before ``loss.backward()`` to avoid the accumulation of  gradients from multiple passes.
+#     3. ``opt.zero_grad()`` sets all the gradients back to zero. It’s important to call this before ``loss.backward()`` to avoid the accumulation of  gradients from multiple passes.
 #
 #     Hence, its standard practice to define the ``closure()`` function that clears up the old gradient, 
 #     evaluates the new gradient and passes it onto the optimizer in each step. 
