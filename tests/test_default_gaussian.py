@@ -14,48 +14,41 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
-# pylint: disable=protected-access,cell-var-from-loop
-import unittest
-from unittest.mock import MagicMock, patch
-import math
-import pytest
-import inspect
-import logging as log
+# pylint: disable=protected-access,cell-var-from-loop,no-self-use
 
+import pytest
 from scipy.special import factorial as fac
 from scipy.linalg import block_diag
+import numpy as np
+import numpy.random
 
-from defaults import pennylane as qml, BaseTest
-
-from pennylane import numpy as np
-
-from pennylane.plugins.default_gaussian import fock_prob
-
-from pennylane.plugins.default_gaussian import (rotation, squeezing, quadratic_phase,
-                                                beamsplitter, two_mode_squeezing,
-                                                controlled_addition, controlled_phase)
-from pennylane.plugins.default_gaussian import (vacuum_state, coherent_state,
-                                                squeezed_state, displaced_squeezed_state,
-                                                thermal_state)
-
-from pennylane.plugins.default_gaussian import DefaultGaussian
+import pennylane as qml
+from pennylane.plugins.default_gaussian import (
+    fock_prob,
+    rotation, squeezing, quadratic_phase, beamsplitter, two_mode_squeezing, controlled_addition, controlled_phase,
+    vacuum_state, coherent_state, squeezed_state, displaced_squeezed_state, thermal_state,
+    DefaultGaussian)
 
 
-log.getLogger('defaults')
+
+U = np.array(
+    [[0.83645892-0.40533293j, -0.20215326+0.30850569j],
+     [-0.23889780-0.28101519j, -0.88031770-0.29832709j]]
+)
 
 
-U = np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
-              [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])
+U2 = np.array(
+    [[-0.07843244-3.57825948e-01j, 0.71447295-5.38069384e-02j, 0.20949966+6.59100734e-05j, -0.50297381+2.35731613e-01j],
+     [-0.26626692+4.53837083e-01j, 0.27771991-2.40717436e-01j, 0.41228017-1.30198687e-01j, 0.01384490-6.33200028e-01j],
+     [-0.69254712-2.56963068e-02j, -0.15484858+6.57298384e-02j, -0.53082141+7.18073414e-02j, -0.41060450-1.89462315e-01j],
+     [-0.09686189-3.15085273e-01j, -0.53241387-1.99491763e-01j, 0.56928622+3.97704398e-01j, -0.28671074-6.01574497e-02j]]
+)
 
 
-U2 = np.array([[-0.07843244-3.57825948e-01j, 0.71447295-5.38069384e-02j, 0.20949966+6.59100734e-05j, -0.50297381+2.35731613e-01j],
-               [-0.26626692+4.53837083e-01j, 0.27771991-2.40717436e-01j, 0.41228017-1.30198687e-01j, 0.01384490-6.33200028e-01j],
-               [-0.69254712-2.56963068e-02j, -0.15484858+6.57298384e-02j, -0.53082141+7.18073414e-02j, -0.41060450-1.89462315e-01j],
-               [-0.09686189-3.15085273e-01j, -0.53241387-1.99491763e-01j, 0.56928622+3.97704398e-01j, -0.28671074-6.01574497e-02j]])
-
-
-H = np.array([[1.02789352, 1.61296440-0.3498192j],
-              [1.61296440+0.3498192j, 1.23920938+0j]])
+H = np.array(
+    [[1.02789352, 1.61296440-0.3498192j],
+     [1.61296440+0.3498192j, 1.23920938+0j]]
+)
 
 
 hbar = 2
@@ -66,12 +59,31 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
-class TestExceptions(BaseTest):
+
+@pytest.fixture(scope="function")
+def gaussian_device_1_wire():
+    """Fixture of a default.gaussian device with 1 wire."""
+    return qml.device('default.gaussian', wires=1)
+
+@pytest.fixture(scope="function")
+def gaussian_device_2_wires():
+    """Fixture of a default.gaussian device with 2 wires."""
+    return qml.device('default.gaussian', wires=2)
+
+@pytest.fixture(scope="function")
+def gaussian_device_3_wires():
+    """Fixture of a default.gaussian device with 3 wires."""
+    return qml.device('default.gaussian', wires=3)
+
+gaussian_dev = gaussian_device_2_wires  # alias
+
+
+
+class TestExceptions:
     """Tests that default.gaussian throws the correct error messages"""
 
     def test_sample_exception(self):
         """Test that default.gaussian raises an exception if sampling is attempted."""
-        self.logTestName()
 
         dev = qml.device('default.gaussian', wires=1)
 
@@ -80,40 +92,39 @@ class TestExceptions(BaseTest):
             return qml.sample(qml.NumberOperator(0))
             raise NotImplementedError()
 
-        with self.assertRaisesRegex(NotImplementedError, r"default\.gaussian does not support sampling NumberOperator"):
-            res = circuit()
+        with pytest.raises(NotImplementedError, match="default.gaussian does not support sampling NumberOperator"):
+            circuit()
 
-class TestAuxillaryFunctions(BaseTest):
+class TestAuxillaryFunctions:
     """Tests the auxillary functions"""
 
-    def setUp(self):
-        self.hbar = 2.
+    def test_fock_prob(self, tol):
+        """Test fock_prob returns the correct Fock probabilities"""
 
         # an arbitrary two-mode Gaussian state generated using Strawberry Fields
-        self.mu = np.array([0.6862, 0.4002, 0.09, 0.558])*np.sqrt(self.hbar)
-        self.cov = np.array([[0.50750512, -0.04125979, -0.21058229, -0.07866912],
-                             [-0.04125979, 0.50750512, -0.07866912, -0.21058229],
-                             [-0.21058229, -0.07866912, 0.95906208, 0.27133391],
-                             [-0.07866912, -0.21058229, 0.27133391, 0.95906208]])*self.hbar
+        mu = np.array([0.6862, 0.4002, 0.09, 0.558]) * np.sqrt(hbar)
+        cov = np.array(
+            [[0.50750512, -0.04125979, -0.21058229, -0.07866912],
+             [-0.04125979, 0.50750512, -0.07866912, -0.21058229],
+             [-0.21058229, -0.07866912, 0.95906208, 0.27133391],
+             [-0.07866912, -0.21058229, 0.27133391, 0.95906208]]
+        ) * hbar
 
         # expected Fock state probabilities
-        self.events = [(0, 0), (0, 1), (1, 1), (2, 3)]
-        self.probs = [0.430461524043, 0.163699407559, 0.0582788388927, 0.00167706931355]
+        events = [(0, 0), (0, 1), (1, 1), (2, 3)]
+        probs = [0.430461524043, 0.163699407559, 0.0582788388927, 0.00167706931355]
 
-    def test_fock_prob(self):
-        """Test fock_prob returns the correct Fock probabilities"""
-        for idx, e in enumerate(self.events):
-            res = fock_prob(self.mu, self.cov, e, hbar=self.hbar)
-            self.assertAlmostEqual(res, self.probs[idx], delta=self.tol)
+        for idx, e in enumerate(events):
+            res = fock_prob(mu, cov, e, hbar=hbar)
+            assert res == pytest.approx(probs[idx], abs=tol)
 
 
-class TestGates(BaseTest):
+class TestGates:
     """Gate tests."""
 
-    def test_rotation(self):
+    def test_rotation(self, tol):
         """Test the Fourier transform of a displaced state."""
         # pylint: disable=invalid-unary-operand-type
-        self.logTestName()
 
         alpha = 0.23+0.12j
         S = rotation(np.pi/2)
@@ -121,11 +132,10 @@ class TestGates(BaseTest):
         # apply to a coherent state. F{x, p} -> {-p, x}
         out = S @ np.array([alpha.real, alpha.imag])*np.sqrt(2*hbar)
         expected = np.array([-alpha.imag, alpha.real])*np.sqrt(2*hbar)
-        self.assertAllAlmostEqual(out, expected, delta=self.tol)
+        assert out == pytest.approx(expected, abs=tol)
 
-    def test_squeezing(self):
+    def test_squeezing(self, tol):
         """Test the squeezing symplectic transform."""
-        self.logTestName()
 
         r = 0.543
         phi = 0.123
@@ -134,11 +144,10 @@ class TestGates(BaseTest):
         # apply to an identity covariance matrix
         out = S @ S.T
         expected = rotation(phi/2) @ np.diag(np.exp([-2*r, 2*r])) @ rotation(phi/2).T
-        self.assertAllAlmostEqual(out, expected, delta=self.tol)
+        assert out == pytest.approx(expected, abs=tol)
 
-    def test_quadratic_phase(self):
+    def test_quadratic_phase(self, tol):
         """Test the quadratic phase symplectic transform."""
-        self.logTestName()
 
         s = 0.543
         S = quadratic_phase(s)
@@ -147,11 +156,10 @@ class TestGates(BaseTest):
         alpha = 0.23+0.12j
         out = S @ np.array([alpha.real, alpha.imag])*np.sqrt(2*hbar)
         expected = np.array([alpha.real, alpha.imag+s*alpha.real])*np.sqrt(2*hbar)
-        self.assertAllAlmostEqual(out, expected, delta=self.tol)
+        assert out == pytest.approx(expected, abs=tol)
 
-    def test_beamsplitter(self):
+    def test_beamsplitter(self, tol):
         """Test the beamsplitter symplectic transform."""
-        self.logTestName()
 
         theta = 0.543
         phi = 0.312
@@ -167,11 +175,10 @@ class TestGates(BaseTest):
         a1out = T*a1 - R.conj()*a2
         a2out = R*a2 + T*a1
         expected = np.array([a1out.real, a2out.real, a1out.imag, a2out.imag])*np.sqrt(2*hbar)
-        self.assertAllAlmostEqual(out, expected, delta=self.tol)
+        assert out == pytest.approx(expected, abs=tol)
 
-    def test_two_mode_squeezing(self):
+    def test_two_mode_squeezing(self, tol):
         """Test the two mode squeezing symplectic transform."""
-        self.logTestName()
 
         r = 0.543
         phi = 0.123
@@ -181,7 +188,7 @@ class TestGates(BaseTest):
         B = beamsplitter(np.pi/4, 0)
         Sz = block_diag(squeezing(r, phi), squeezing(-r, phi))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
         expected = B.conj().T @ Sz @ B
-        self.assertAllAlmostEqual(S, expected, delta=self.tol)
+        assert S == pytest.approx(expected, abs=tol)
 
         # test that S |a1, a2> = |ta1+ra2, ta2+ra1>
         a1 = 0.23+0.12j
@@ -193,11 +200,10 @@ class TestGates(BaseTest):
         a1out = T*a1 + R*np.conj(a2)
         a2out = T*a2 + R*np.conj(a1)
         expected = np.array([a1out.real, a2out.real, a1out.imag, a2out.imag])*np.sqrt(2*hbar)
-        self.assertAllAlmostEqual(out, expected, delta=self.tol)
+        assert out == pytest.approx(expected, abs=tol)
 
-    def test_controlled_addition(self):
+    def test_controlled_addition(self, tol):
         """Test the CX symplectic transform."""
-        self.logTestName()
 
         s = 0.543
         S = controlled_addition(s)
@@ -208,7 +214,7 @@ class TestGates(BaseTest):
         Sz = block_diag(squeezing(r, 0), squeezing(-r, 0))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
 
         expected = beamsplitter(theta+np.pi/2, 0) @ Sz @ beamsplitter(theta, 0)
-        self.assertAllAlmostEqual(S, expected, delta=self.tol)
+        assert S == pytest.approx(expected, abs=tol)
 
         # test that S[x1, x2, p1, p2] -> [x1, x2+sx1, p1-sp2, p2]
         x1 = 0.5432
@@ -217,11 +223,10 @@ class TestGates(BaseTest):
         p2 = -0.123
         out = S @ np.array([x1, x2, p1, p2])*np.sqrt(2*hbar)
         expected = np.array([x1, x2+s*x1, p1-s*p2, p2])*np.sqrt(2*hbar)
-        self.assertAllAlmostEqual(out, expected, delta=self.tol)
+        assert out == pytest.approx(expected, abs=tol)
 
-    def test_controlled_phase(self):
+    def test_controlled_phase(self, tol):
         """Test the CZ symplectic transform."""
-        self.logTestName()
 
         s = 0.543
         S = controlled_phase(s)
@@ -229,7 +234,7 @@ class TestGates(BaseTest):
         # test that S = R_2(pi/2) CX(s) R_2(pi/2)^\dagger
         R2 = block_diag(np.identity(2), rotation(np.pi/2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
         expected = R2 @ controlled_addition(s) @ R2.conj().T
-        self.assertAllAlmostEqual(S, expected, delta=self.tol)
+        assert S == pytest.approx(expected, abs=tol)
 
         # test that S[x1, x2, p1, p2] -> [x1, x2, p1+sx2, p2+sx1]
         x1 = 0.5432
@@ -238,47 +243,43 @@ class TestGates(BaseTest):
         p2 = -0.123
         out = S @ np.array([x1, x2, p1, p2])*np.sqrt(2*hbar)
         expected = np.array([x1, x2, p1+s*x2, p2+s*x1])*np.sqrt(2*hbar)
-        self.assertAllAlmostEqual(out, expected, delta=self.tol)
+        assert out == pytest.approx(expected, abs=tol)
 
 
-class TestStates(BaseTest):
+class TestStates:
     """State tests."""
 
-    def test_vacuum_state(self):
+    def test_vacuum_state(self, tol):
         """Test the vacuum state is correct."""
-        self.logTestName()
         wires = 3
         means, cov = vacuum_state(wires, hbar=hbar)
-        self.assertAllAlmostEqual(means, np.zeros([2*wires]), delta=self.tol)
-        self.assertAllAlmostEqual(cov, np.identity(2*wires)*hbar/2, delta=self.tol)
+        assert means == pytest.approx(np.zeros([2*wires]), abs=tol)
+        assert cov == pytest.approx(np.identity(2*wires)*hbar/2, abs=tol)
 
-    def test_coherent_state(self):
+    def test_coherent_state(self, tol):
         """Test the coherent state is correct."""
-        self.logTestName()
         a = 0.432-0.123j
         means, cov = coherent_state(a, hbar=hbar)
-        self.assertAllAlmostEqual(means, np.array([a.real, a.imag])*np.sqrt(2*hbar), delta=self.tol)
-        self.assertAllAlmostEqual(cov, np.identity(2)*hbar/2, delta=self.tol)
+        assert means == pytest.approx(np.array([a.real, a.imag])*np.sqrt(2*hbar), abs=tol)
+        assert cov == pytest.approx(np.identity(2)*hbar/2, abs=tol)
 
-    def test_squeezed_state(self):
+    def test_squeezed_state(self, tol):
         """Test the squeezed state is correct."""
-        self.logTestName()
         r = 0.432
         phi = 0.123
         means, cov = squeezed_state(r, phi, hbar=hbar)
 
         # test vector of means is zero
-        self.assertAllAlmostEqual(means, np.zeros([2]), delta=self.tol)
+        assert means == pytest.approx(np.zeros([2]), abs=tol)
 
         R = rotation(phi/2)
         expected = R @ np.array([[np.exp(-2*r), 0],
                                  [0, np.exp(2*r)]]) * hbar/2 @ R.T
         # test covariance matrix is correct
-        self.assertAllAlmostEqual(cov, expected, delta=self.tol)
+        assert cov == pytest.approx(expected, abs=tol)
 
-    def test_displaced_squeezed_state(self):
+    def test_displaced_squeezed_state(self, tol):
         """Test the displaced squeezed state is correct."""
-        self.logTestName()
         alpha = 0.541+0.109j
         a = abs(alpha)
         phi_a = np.angle(alpha)
@@ -287,33 +288,28 @@ class TestStates(BaseTest):
         means, cov = displaced_squeezed_state(a, phi_a, r, phi_r, hbar=hbar)
 
         # test vector of means is correct
-        self.assertAllAlmostEqual(means, np.array([alpha.real, alpha.imag])*np.sqrt(2*hbar), delta=self.tol)
+        assert means == pytest.approx(np.array([alpha.real, alpha.imag])*np.sqrt(2*hbar), abs=tol)
 
         R = rotation(phi_r/2)
         expected = R @ np.array([[np.exp(-2*r), 0],
                                  [0, np.exp(2*r)]]) * hbar/2 @ R.T
         # test covariance matrix is correct
-        self.assertAllAlmostEqual(cov, expected, delta=self.tol)
+        assert cov == pytest.approx(expected, abs=tol)
 
-    def thermal_state(self):
+    def thermal_state(self, tol):
         """Test the thermal state is correct."""
-        self.logTestName()
         nbar = 0.5342
         means, cov = thermal_state(nbar, hbar=hbar)
-        self.assertAllAlmostEqual(means, np.zeros([2]), delta=self.tol)
-        self.assertTrue(np.all((cov.diag*2/hbar-1)/2 == nbar))
+        assert means == pytest.approx(np.zeros([2]), abs=tol)
+        assert np.all((cov.diag*2/hbar-1)/2 == nbar)
 
 
-
-class TestDefaultGaussianDevice(BaseTest):
+class TestDefaultGaussianDevice:
     """Test the default gaussian device. The test ensures that the device is properly
     applying gaussian operations and calculating the correct observables."""
-    def setUp(self):
-        self.dev = DefaultGaussian(wires=2, shots=1000, hbar=hbar, analytic=True)
 
-    def test_operation_map(self):
+    def test_operation_map(self, gaussian_dev):
         """Test that default Gaussian device supports all PennyLane Gaussian CV gates."""
-        self.logTestName()
 
         non_supported = {'FockDensityMatrix',
                          'FockStateVector',
@@ -323,23 +319,19 @@ class TestDefaultGaussianDevice(BaseTest):
                          'CubicPhase',
                          'Kerr'}
 
-        self.assertEqual(set(qml.ops._cv__ops__) - non_supported,
-                         set(self.dev._operation_map))
+        assert set(qml.ops._cv__ops__) - non_supported == set(gaussian_dev._operation_map)
 
-    def test_observable_map(self):
+    def test_observable_map(self, gaussian_dev):
         """Test that default Gaussian device supports all PennyLane Gaussian continuous observables."""
-        self.logTestName()
-        self.assertEqual(set(qml.ops._cv__obs__)|{'Identity'}-{'Heterodyne'},
-                         set(self.dev._observable_map))
+        assert set(qml.ops._cv__obs__)|{'Identity'}-{'Heterodyne'} == set(gaussian_dev._observable_map)
 
-    def test_apply(self):
+    def test_apply(self, gaussian_dev, tol):
         """Test the application of gates to a state"""
-        self.logTestName()
 
         # loop through all supported operations
-        for gate_name, fn in self.dev._operation_map.items():
-            log.debug("\tTesting %s gate...", gate_name)
-            self.dev.reset()
+        for gate_name, fn in gaussian_dev._operation_map.items():
+            #log.debug("\tTesting %s gate...", gate_name)
+            gaussian_dev.reset()
 
             # start in the displaced squeezed state
             alpha = 0.542+0.123j
@@ -348,8 +340,8 @@ class TestDefaultGaussianDevice(BaseTest):
             r = 0.652
             phi_r = -0.124
 
-            self.dev.apply('DisplacedSqueezedState', wires=[0], par=[a, phi_a, r, phi_r])
-            self.dev.apply('DisplacedSqueezedState', wires=[1], par=[a, phi_a, r, phi_r])
+            gaussian_dev.apply('DisplacedSqueezedState', wires=[0], par=[a, phi_a, r, phi_r])
+            gaussian_dev.apply('DisplacedSqueezedState', wires=[1], par=[a, phi_a, r, phi_r])
 
             # get the equivalent pennylane operation class
             op = qml.ops.__getattribute__(gate_name)
@@ -366,21 +358,21 @@ class TestDefaultGaussianDevice(BaseTest):
                     w = list(range(2))
                     p = [U]
                     S = fn(*p)
-                    expected_out = S @ self.dev._state[0], S @ self.dev._state[1] @ S.T
+                    expected_out = S @ gaussian_dev._state[0], S @ gaussian_dev._state[1] @ S.T
             else:
                 # the parameter is a float
                 p = [0.432423, -0.12312, 0.324, 0.751][:op.num_params]
 
                 if gate_name == 'Displacement':
                     alpha = p[0]*np.exp(1j*p[1])
-                    state = self.dev._state
+                    state = gaussian_dev._state
                     mu = state[0].copy()
                     mu[w[0]] += alpha.real*np.sqrt(2*hbar)
                     mu[w[0]+2] += alpha.imag*np.sqrt(2*hbar)
                     expected_out = mu, state[1]
                 elif 'State' in gate_name:
                     mu, cov = fn(*p, hbar=hbar)
-                    expected_out = self.dev._state
+                    expected_out = gaussian_dev._state
                     expected_out[0][[w[0], w[0]+2]] = mu
 
                     ind = np.concatenate([np.array([w[0]]), np.array([w[0]])+2])
@@ -397,34 +389,32 @@ class TestDefaultGaussianDevice(BaseTest):
                         # reorder from symmetric ordering to xp-ordering
                         S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
 
-                    expected_out = S @ self.dev._state[0], S @ self.dev._state[1] @ S.T
+                    expected_out = S @ gaussian_dev._state[0], S @ gaussian_dev._state[1] @ S.T
 
-            self.dev.apply(gate_name, wires=w, par=p)
+            gaussian_dev.apply(gate_name, wires=w, par=p)
 
             # verify the device is now in the expected state
-            self.assertAllAlmostEqual(self.dev._state[0], expected_out[0], delta=self.tol)
-            self.assertAllAlmostEqual(self.dev._state[1], expected_out[1], delta=self.tol)
+            assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
+            assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
 
-    def test_apply_errors(self):
+    def test_apply_errors(self, gaussian_dev):
         """Test that apply fails for incorrect state preparation"""
-        self.logTestName()
 
-        with self.assertRaisesRegex(ValueError, 'incorrect size for the number of subsystems'):
+        with pytest.raises(ValueError, match='incorrect size for the number of subsystems'):
             p = [thermal_state(0.5)]
-            self.dev.apply('GaussianState', wires=[0], par=[p])
+            gaussian_dev.apply('GaussianState', wires=[0], par=[p])
 
-        with self.assertRaisesRegex(ValueError, 'Incorrect number of subsystems'):
+        with pytest.raises(ValueError, match='Incorrect number of subsystems'):
             p = U
-            self.dev.apply('Interferometer', wires=[0], par=[p])
+            gaussian_dev.apply('Interferometer', wires=[0], par=[p])
 
-        with self.assertRaisesRegex(ValueError, "Invalid target subsystems provided in 'wires' argument"):
+        with pytest.raises(ValueError, match="Invalid target subsystems provided in 'wires' argument"):
             p = U2
-            dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
-            self.dev.apply('Interferometer', wires=[0, 1, 2], par=[p])
+            #dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
+            gaussian_dev.apply('Interferometer', wires=[0, 1, 2], par=[p])
 
-    def test_expectation(self):
+    def test_expectation(self, tol):
         """Test that expectation values are calculated correctly"""
-        self.logTestName()
 
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
@@ -434,24 +424,24 @@ class TestDefaultGaussianDevice(BaseTest):
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
         mean = dev.expval('NumberOperator', [0], [])
-        self.assertAlmostEqual(mean, np.abs(alpha)**2+nbar, delta=self.tol)
+        assert mean == pytest.approx(np.abs(alpha)**2+nbar, abs=tol)
 
         # test correct mean for Homodyne P measurement
         alpha = 0.324-0.59j
         dev.apply('CoherentState', wires=[0], par=[alpha])
         mean = dev.expval('P', [0], [])
-        self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
+        assert mean == pytest.approx(alpha.imag*np.sqrt(2*hbar), abs=tol)
 
         # test correct mean for Homodyne measurement
         mean = dev.expval('QuadOperator', [0], [np.pi/2])
-        self.assertAlmostEqual(mean, alpha.imag*np.sqrt(2*hbar), delta=self.tol)
+        assert mean == pytest.approx(alpha.imag*np.sqrt(2*hbar), abs=tol)
 
         # test correct mean for number state expectation |<n|alpha>|^2
         # on a coherent state
         for n in range(3):
             mean = dev.expval('FockStateProjector', [0], [np.array([n])])
             expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
-            self.assertAlmostEqual(mean, expected, delta=self.tol)
+            assert mean == pytest.approx(expected, abs=tol)
 
         # test correct mean for number state expectation |<n|S(r)>|^2
         # on a squeezed state
@@ -460,11 +450,10 @@ class TestDefaultGaussianDevice(BaseTest):
         dev.apply('SqueezedState', wires=[0], par=[r, 0])
         mean = dev.expval('FockStateProjector', [0], [np.array([2*n])])
         expected = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
-        self.assertAlmostEqual(mean, expected, delta=self.tol)
+        assert mean == pytest.approx(expected, abs=tol)
 
-    def test_variance_displaced_thermal_mean_photon(self):
+    def test_variance_displaced_thermal_mean_photon(self, tol):
         """test correct variance for <n> of a displaced thermal state"""
-        self.logTestName()
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
         nbar = 0.5431
@@ -472,27 +461,25 @@ class TestDefaultGaussianDevice(BaseTest):
         dev.apply('ThermalState', wires=[0], par=[nbar])
         dev.apply('Displacement', wires=[0], par=[alpha, 0])
         var = dev.var('NumberOperator', [0], [])
-        self.assertAlmostEqual(var, nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), delta=self.tol)
+        assert var == pytest.approx(nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), abs=tol)
 
-    def test_variance_coherent_homodyne(self):
+    def test_variance_coherent_homodyne(self, tol):
         """test correct variance for Homodyne P measurement"""
-        self.logTestName()
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
         alpha = 0.324-0.59j
         dev.apply('CoherentState', wires=[0], par=[alpha])
         var = dev.var('P', [0], [])
-        self.assertAlmostEqual(var, hbar/2, delta=self.tol)
+        assert var == pytest.approx(hbar/2, abs=tol)
 
         # test correct mean and variance for Homodyne measurement
         var = dev.var('QuadOperator', [0], [np.pi/2])
-        self.assertAlmostEqual(var, hbar/2, delta=self.tol)
+        assert var == pytest.approx(hbar/2, abs=tol)
 
-    def test_variance_coherent_numberstate(self):
+    def test_variance_coherent_numberstate(self, tol):
         """test correct variance for number state expectation |<n|alpha>|^2
         on a coherent state
         """
-        self.logTestName()
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
         alpha = 0.324-0.59j
@@ -502,13 +489,12 @@ class TestDefaultGaussianDevice(BaseTest):
         for n in range(3):
             var = dev.var('FockStateProjector', [0], [np.array([n])])
             mean = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
-            self.assertAlmostEqual(var, mean*(1-mean), delta=self.tol)
+            assert var == pytest.approx(mean*(1-mean), abs=tol)
 
-    def test_variance_squeezed_numberstate(self):
+    def test_variance_squeezed_numberstate(self, tol):
         """test correct variance for number state expectation |<n|S(r)>|^2
         on a squeezed state
         """
-        self.logTestName()
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
         n = 1
@@ -516,44 +502,40 @@ class TestDefaultGaussianDevice(BaseTest):
         dev.apply('SqueezedState', wires=[0], par=[r, 0])
         var = dev.var('FockStateProjector', [0], [np.array([2*n])])
         mean = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
-        self.assertAlmostEqual(var, mean*(1-mean), delta=self.tol)
+        assert var == pytest.approx(mean*(1-mean), abs=tol)
 
-    def test_reduced_state(self):
+    def test_reduced_state(self, gaussian_dev, tol):
         """Test reduced state"""
-        self.logTestName()
 
         # Test error is raised if requesting a non-existant subsystem
-        with self.assertRaisesRegex(ValueError, "specified wires cannot be larger than the number of subsystems"):
-            self.dev.reduced_state([6, 4])
+        with pytest.raises(ValueError, match="specified wires cannot be larger than the number of subsystems"):
+            gaussian_dev.reduced_state([6, 4])
 
         # Test requesting via an integer
-        res = self.dev.reduced_state(0)
-        expected = self.dev.reduced_state([0])
-        self.assertAllAlmostEqual(res[0], expected[0], delta=self.tol)
-        self.assertAllAlmostEqual(res[1], expected[1], delta=self.tol)
+        res = gaussian_dev.reduced_state(0)
+        expected = gaussian_dev.reduced_state([0])
+        assert res[0] == pytest.approx(expected[0], abs=tol)
+        assert res[1] == pytest.approx(expected[1], abs=tol)
 
         # Test requesting all wires returns the full state
-        res = self.dev.reduced_state([0, 1])
-        expected = self.dev._state
-        self.assertAllAlmostEqual(res[0], expected[0], delta=self.tol)
-        self.assertAllAlmostEqual(res[1], expected[1], delta=self.tol)
+        res = gaussian_dev.reduced_state([0, 1])
+        expected = gaussian_dev._state
+        assert res[0] == pytest.approx(expected[0], abs=tol)
+        assert res[1] == pytest.approx(expected[1], abs=tol)
 
 
-@pytest.fixture(scope="function")
-def gaussian_device_1_wire():
-    """Fixture of a default.gaussian device with 1 wire."""
-    return qml.device('default.gaussian', wires=1)
 
-@pytest.fixture(scope="function")
-def gaussian_device_2_wires():
-    """Fixture of a default.gaussian device with 2 wires."""
-    return qml.device('default.gaussian', wires=2)
+def input_logger(*args):
+    """Helper function for monkeypatch: logs its input."""
+    input_logger.args = args
+    return np.array([1, 2, 3, 4, 5])
+
 
 class TestSample:
     """Tests that sampling is correctly implemented."""
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
-    def test_sampling_parameters_coherent(self, tol, gaussian_device_1_wire, alpha):
+    def test_sampling_parameters_coherent(self, tol, gaussian_device_1_wire, alpha, monkeypatch):
         """Tests that the np.random.normal is called with the correct parameters that reflect
            the underlying distribution for a coherent state."""
 
@@ -561,40 +543,38 @@ class TestSample:
         std = gaussian_device_1_wire.hbar/2
         gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
 
-        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
+        with monkeypatch.context() as m:
+            m.setattr(numpy.random, 'normal', input_logger)
             sample = gaussian_device_1_wire.sample('P', [0], [])
-
-            args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
-    def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha):
+    def test_sampling_parameters_coherent_quad_operator(self, tol, gaussian_device_1_wire, alpha, monkeypatch):
         """Tests that the np.random.normal is called with the correct parameters that reflect
            the underlying distribution for a coherent state when using QuadOperator."""
 
         mean = alpha.imag*np.sqrt(2*gaussian_device_1_wire.hbar)
         std = gaussian_device_1_wire.hbar/2
         gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
-        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
-            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2])
 
-            args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+        with monkeypatch.context() as m:
+            m.setattr(numpy.random, 'normal', input_logger)
+            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2])
+            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
-    def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi):
+    def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi, monkeypatch):
         """Tests that the np.random.normal is called with the correct parameters that reflect
            the underlying distribution for a squeezed state."""
 
         mean = 0.0
-        std = math.sqrt(gaussian_device_1_wire.hbar*np.exp(2*r)/2)
+        std = np.sqrt(gaussian_device_1_wire.hbar*np.exp(2*r)/2)
         gaussian_device_1_wire.apply('SqueezedState', wires=[0], par=[r, phi])
 
-        with patch("numpy.random.normal", return_value=np.array([1, 2, 3, 4, 5])) as mock:
+        with monkeypatch.context() as m:
+            m.setattr(numpy.random, 'normal', input_logger)
             sample = gaussian_device_1_wire.sample('P', [0], [])
-
-            args, kwargs = mock.call_args
-            assert np.allclose(args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
+            assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("observable,n_sample", [('P', 10), ('P', 25), ('X', 1), ('X', 16)])
     def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):
@@ -619,88 +599,70 @@ class TestSample:
         with pytest.raises(NotImplementedError, match="default.gaussian does not support sampling"):
             sample = gaussian_device_2_wires.sample(observable, [0], [])
 
-class TestDefaultGaussianIntegration(BaseTest):
+
+class TestDefaultGaussianIntegration:
     """Integration tests for default.gaussian. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
     def test_load_default_gaussian_device(self):
         """Test that the default plugin loads correctly"""
-        self.logTestName()
 
         dev = qml.device('default.gaussian', wires=2, hbar=2)
-        self.assertEqual(dev.num_wires, 2)
-        self.assertEqual(dev.shots, 1000)
-        self.assertEqual(dev.hbar, 2)
-        self.assertEqual(dev.analytic, True)
-        self.assertEqual(dev.short_name, 'default.gaussian')
+        assert dev.num_wires == 2
+        assert dev.shots == 1000
+        assert dev.analytic == True
+        assert dev.hbar == 2
+        assert dev.short_name == 'default.gaussian'
 
     def test_args(self):
         """Test that the plugin requires correct arguments"""
-        self.logTestName()
 
-        with self.assertRaisesRegex(TypeError, "missing 1 required positional argument: 'wires'"):
+        with pytest.raises(TypeError, match="missing 1 required positional argument: 'wires'"):
             qml.device('default.gaussian')
 
-    def test_unsupported_gates(self):
+    @pytest.mark.parametrize("g", set(qml.ops.__all_ops__) - set(DefaultGaussian._operation_map.keys()))
+    def test_unsupported_gates(self, g, gaussian_device_3_wires):
         """Test error is raised with unsupported gates"""
-        self.logTestName()
-        dev = qml.device('default.gaussian', wires=3)
 
-        gates = set(dev._operation_map.keys())
-        all_gates = set(qml.ops.__all_ops__)
+        op = getattr(qml.ops, g)
+        if op.num_wires <= 0:
+            wires = list(range(3))
+        else:
+            wires = list(range(op.num_wires))
 
-        for g in all_gates - gates:
-            op = getattr(qml.ops, g)
+        @qml.qnode(gaussian_device_3_wires)
+        def circuit(*x):
+            """Test quantum function"""
+            x = prep_par(x, op)
+            op(*x, wires=wires)
+            return qml.expval(qml.X(0)) if issubclass(op, qml.operation.CV) else qml.expval(qml.PauliZ(0))
 
-            if op.num_wires <= 0:
-                wires = list(range(3))
-            else:
-                wires = list(range(op.num_wires))
+        x = np.random.random([op.num_params])
+        with pytest.raises(qml.DeviceError, match="Gate {} not supported on device default.gaussian".format(g)):
+            circuit(*x)
 
-            @qml.qnode(dev)
-            def circuit(*x):
-                """Test quantum function"""
-                x = prep_par(x, op)
-                op(*x, wires=wires)
+    @pytest.mark.parametrize("g", set(qml.ops.__all_obs__) - set(DefaultGaussian._observable_map.keys()))
+    def test_unsupported_observables(self, g, gaussian_dev):
+        """Test error is raised with unsupported observables."""
 
-                if issubclass(op, qml.operation.CV):
-                    return qml.expval(qml.X(0))
+        op = getattr(qml.ops, g)
+        if op.num_wires <= 0:
+            wires = list(range(2))
+        else:
+            wires = list(range(op.num_wires))
 
-                return qml.expval(qml.PauliZ(0))
+        @qml.qnode(gaussian_dev)
+        def circuit(*x):
+            """Test quantum function"""
+            x = prep_par(x, op)
+            return qml.expval(op(*x, wires=wires))
 
-            with self.assertRaisesRegex(qml.DeviceError, "Gate {} not supported on device default.gaussian".format(g)):
-                x = np.random.random([op.num_params])
-                circuit(*x)
+        x = np.random.random([op.num_params])
+        with pytest.raises(qml.DeviceError, match="Observable {} not supported on device default.gaussian".format(g)):
+            circuit(*x)
 
-    def test_unsupported_observables(self):
-        """Test error is raised with unsupported observables"""
-        self.logTestName()
-        dev = qml.device('default.gaussian', wires=2)
-
-        obs = set(dev._observable_map.keys())
-        all_obs = set(qml.ops.__all_obs__)
-
-        for g in all_obs - obs:
-            op = getattr(qml.ops, g)
-
-            if op.num_wires <= 0:
-                wires = list(range(2))
-            else:
-                wires = list(range(op.num_wires))
-
-            @qml.qnode(dev)
-            def circuit(*x):
-                """Test quantum function"""
-                x = prep_par(x, op)
-                return qml.expval(op(*x, wires=wires))
-
-            with self.assertRaisesRegex(qml.DeviceError, "Observable {} not supported on device default.gaussian".format(g)):
-                x = np.random.random([op.num_params])
-                circuit(*x)
-
-    def test_gaussian_circuit(self):
+    def test_gaussian_circuit(self, tol):
         """Test that the default gaussian plugin provides correct result for simple circuit"""
-        self.logTestName()
         dev = qml.device('default.gaussian', wires=1)
 
         p = 0.543
@@ -711,11 +673,10 @@ class TestDefaultGaussianIntegration(BaseTest):
             qml.Displacement(x, 0, wires=0)
             return qml.expval(qml.X(0))
 
-        self.assertAlmostEqual(circuit(p), p*np.sqrt(2*hbar), delta=self.tol)
+        assert circuit(p) == pytest.approx(p*np.sqrt(2*hbar), abs=tol)
 
-    def test_gaussian_identity(self):
+    def test_gaussian_identity(self, tol):
         """Test that the default gaussian plugin provides correct result for the identity expectation"""
-        self.logTestName()
         dev = qml.device('default.gaussian', wires=1)
 
         p = 0.543
@@ -726,11 +687,10 @@ class TestDefaultGaussianIntegration(BaseTest):
             qml.Displacement(x, 0, wires=0)
             return qml.expval(qml.Identity(0))
 
-        self.assertAlmostEqual(circuit(p), 1, delta=self.tol)
+        assert circuit(p) == pytest.approx(1, abs=tol)
 
-    def test_nonzero_shots(self):
+    def test_nonzero_shots(self, tol):
         """Test that the default gaussian plugin provides correct result for high shot number"""
-        self.logTestName()
 
         shots = 10**4
         dev = qml.device('default.gaussian', wires=1, shots=shots)
@@ -747,74 +707,57 @@ class TestDefaultGaussianIntegration(BaseTest):
         for _ in range(100):
             runs.append(circuit(p))
 
-        self.assertAlmostEqual(np.mean(runs), p*np.sqrt(2*hbar), delta=0.01)
+        assert np.mean(runs) == pytest.approx(p*np.sqrt(2*hbar), abs=tol)
 
-    def test_supported_gates(self):
+    @pytest.mark.parametrize("g, qop", set(DefaultGaussian._operation_map.items()))
+    def test_supported_gates(self, g, qop, gaussian_dev):
         """Test that all supported gates work correctly"""
-        self.logTestName()
         a = 0.312
+        dev = gaussian_dev
+        dev.reset()
 
-        dev = qml.device('default.gaussian', wires=2)
+        assert dev.supports_operation(g)
 
-        for g, qop in dev._operation_map.items():
-            log.debug('\tTesting gate %s...', g)
-            self.assertTrue(dev.supports_operation(g))
-            dev.reset()
+        op = getattr(qml.ops, g)
+        if op.num_wires <= 0:
+            wires = list(range(2))
+        else:
+            wires = list(range(op.num_wires))
 
-            op = getattr(qml.ops, g)
-            if op.num_wires <= 0:
-                wires = list(range(2))
-            else:
-                wires = list(range(op.num_wires))
+        @qml.qnode(gaussian_dev)
+        def circuit(*x):
+            """Reference quantum function"""
+            qml.Displacement(a, 0, wires=[0])
+            op(*x, wires=wires)
+            return qml.expval(qml.X(0))
 
-            @qml.qnode(dev)
-            def circuit(*x):
-                """Reference quantum function"""
-                qml.Displacement(a, 0, wires=[0])
-                op(*x, wires=wires)
-                return qml.expval(qml.X(0))
-
-            # compare to reference result
-            def reference(*x):
-                """reference circuit"""
-                if g == 'GaussianState':
-                    return x[0][0]
-
-                if g == 'Displacement':
-                    alpha = x[0]*np.exp(1j*x[1])
-                    return (alpha+a).real*np.sqrt(2*hbar)
-
-                if 'State' in g:
-                    mu, _ = qop(*x, hbar=hbar)
-                    return mu[0]
-
-                S = qop(*x)
-
-                # calculate the expected output
-                if op.num_wires == 1:
-                    S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
-
-                return (S @ np.array([a.real, a.imag, 0, 0])*np.sqrt(2*hbar))[0]
-
+        # compare to reference result
+        def reference(*x):
+            """reference circuit"""
             if g == 'GaussianState':
-                p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
-            elif g == 'Interferometer':
-                p = [np.array(U)]
-            else:
-                p = [0.432423, -0.12312, 0.324, 0.763][:op.num_params]
+                return x[0][0]
 
-            self.assertAllEqual(circuit(*p), reference(*p))
+            if g == 'Displacement':
+                alpha = x[0]*np.exp(1j*x[1])
+                return (alpha+a).real*np.sqrt(2*hbar)
 
+            if 'State' in g:
+                mu, _ = qop(*x, hbar=hbar)
+                return mu[0]
 
-if __name__ == '__main__':
-    print('Testing PennyLane version ' + qml.version() + ', default.gaussian plugin.')
-    # run the tests in this file
-    suite = unittest.TestSuite()
-    for t in (TestAuxillaryFunctions,
-              TestGates,
-              TestStates,
-              TestDefaultGaussianDevice,
-              TestDefaultGaussianIntegration):
-        ttt = unittest.TestLoader().loadTestsFromTestCase(t)
-        suite.addTests(ttt)
-    unittest.TextTestRunner().run(suite)
+            S = qop(*x)
+
+            # calculate the expected output
+            if op.num_wires == 1:
+                S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
+
+            return (S @ np.array([a.real, a.imag, 0, 0])*np.sqrt(2*hbar))[0]
+
+        if g == 'GaussianState':
+            p = [np.array([0.432, 0.123, 0.342, 0.123]), np.diag([0.5234]*4)]
+        elif g == 'Interferometer':
+            p = [np.array(U)]
+        else:
+            p = [0.432423, -0.12312, 0.324, 0.763][:op.num_params]
+
+        assert circuit(*p) == reference(*p)
