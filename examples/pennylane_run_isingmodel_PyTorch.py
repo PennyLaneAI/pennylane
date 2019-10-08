@@ -19,7 +19,7 @@ PennyLane implementation
 ------------------------
 
 This basic tutorial optimizes a 3-qubit Ising model using the PennyLane ``default.qubit``
-Plugin with PyTorch machine learning interface. For simplicity, the first spin can be assumed
+device with the PyTorch machine learning interface. For simplicity, the first spin can be assumed
 to be in the "up" state (+1 eigenstate of Pauli-Z operator) and the coupling matrix can be set to :math:`J = [1,-1]`. The rotation angles for the other two spins are then optimized
 so that the energy of the system is minimized for the given couplings.
 """
