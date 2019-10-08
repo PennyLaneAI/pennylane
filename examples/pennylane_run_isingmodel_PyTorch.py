@@ -79,7 +79,7 @@ p2 = Variable((np.pi * torch.rand(3, dtype=torch.float64)), requires_grad=True)
 var_init = [p1, p2]
 cost_init = cost(p1, p2)
 
-print("Randomly initialized angles:",var_init)
+print("Randomly initialized angles:", var_init)
 print("Corresponding cost before optimization:",cost_init)
 
 ###############################################################################
