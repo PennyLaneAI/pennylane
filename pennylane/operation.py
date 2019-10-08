@@ -333,18 +333,24 @@ class Operation(abc.ABC):
         operation_name = self.__class__.__name__
         return operation_name + self.string_for_inverse if self._inverse else operation_name
 
+    @property
+    def is_inverse(self):
+        r"""Boolean determining if the inverse of the operation is to be used.
+        """
+        return self._inverse
+
     @grad_recipe.setter
     def grad_recipe(self, value):
         """Setter for the grad_recipe property"""
         self._grad_recipe = value
 
     def inv(self):
+        r"""Setting the inverse flag for the operation.
+
+        If set, the conjugate transpose of the operation will be used for the computations.
+        """
         self._inverse = True
         return self
-
-    @property
-    def is_inverse(self):
-        return self._inverse
 
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
