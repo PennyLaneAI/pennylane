@@ -32,7 +32,7 @@ from pennylane import numpy as np
 ###############################################################################
 # A three-qubit quantum circuit is initialized to represent the three spins:
  
-dev = qml.device("default.qubit", wires = 3)
+dev = qml.device("default.qubit", wires=3)
 
 @qml.qnode(dev, interface = "torch") 
 def circuit(p1, p2):
