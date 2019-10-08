@@ -21,10 +21,25 @@ import numpy as np
 import pennylane as qml
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
-from pennylane.templates.state_preparations import (BasisStatePreparation,
+from pennylane.templates.state_preparations import (gray_code,
+                                                    BasisStatePreparation,
                                                     MottonenStatePreparation)
 
+class TestHelperFunctions:
+    """Tests the functionality of helper functions."""
 
+    # fmt: off
+    @pytest.mark.parametrize("rank,expected_gray_code", [
+        (1, ['0', '1']),
+        (2, ['00', '01', '11', '10']),
+        (3, ['000', '001', '011', '010', '110', '111', '101', '100']),
+    ])
+    # fmt: on
+    def test_gray_code(self, rank, expected_gray_code):
+        """Tests that the function gray_code generates the proper
+        Gray code of given rank."""
+
+        assert gray_code(rank) == expected_gray_code
 
 class TestBasisStatePreparation:
     """Tests the template BasisStatePreparation."""
