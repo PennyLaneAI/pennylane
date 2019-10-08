@@ -87,7 +87,7 @@ print("Corresponding cost before optimization:", cost_init)
 # ^^^^^^^^^^^^
 # Now we use the PyTorch gradient descent optimizer to minimize the cost:
 
-opt = torch.optim.SGD(var_init, lr = 0.1)
+opt = torch.optim.SGD(var_init, lr=0.1)
 
 steps = 100
 
