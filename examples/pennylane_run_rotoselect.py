@@ -27,14 +27,17 @@ and improve upon an initial circuit structure ansatz.
 # expectation values using the quantum circuit itself.
 # The output of these calculations, the gradient, is used in optimization methods to minimize
 # the cost function. However,
-# there exists a technique to find the optimal parameters of a quantum circuit through phase-shifted evaluations,
+# there exists a technique to discover the optimal parameters of a quantum circuit through phase-shifted evaluations,
 # without the need for calculating the gradient as an intermediate step (i.e., a gradient-free optimization).
 # It could be desirable, in some cases, to
 # take advantage of this.
 #
 #
-# The Rotoselect algorithm addresses the above two points.
-# It works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1,\dots,\theta_D` and gate choices
+# The Rotoselect algorithm addresses the above two points: it allows on to jump directly to the
+# optimal value for a single parameter
+# with respect to fixed values for the other parameters, skipping gradient descent, and tries various
+# rotation gates along the way.
+# The algorithm works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1,\dots,\theta_D` and gate choices
 # :math:`\boldsymbol{P}=P_1...P_D`
 # one at a time according to a *closed-form expression for the optimal parameter value* :math:`\theta^{*}_d`
 # when the other parameters and gate choices are fixed:
