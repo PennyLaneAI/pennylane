@@ -139,17 +139,13 @@ def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
         gate(theta[0, 0], wires=[target_wire])
         return
 
-    gc = GrayCode(gray_code_rank)
-
-    current_gray = gc.current
-    for i in range(gc.selections):
+    code = gray_code(gray_code_rank)
+    num_selections = len(code)
+    control_indices = [int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2))) for i in range(num_selections)]
+    
+    for i, control_index in enumerate(control_indices):
         gate(theta[i, 0], wires=[target_wire])
-        next_gray = gc.next(i + 1).current
-
-        control_index = int(np.log2(int(current_gray, 2) ^ int(next_gray, 2)))
         qml.CNOT(wires=[control_wires[control_index], target_wire])
-
-        current_gray = next_gray
 
 
 def _unirz_dg(alpha, control_wires, target_wire):
