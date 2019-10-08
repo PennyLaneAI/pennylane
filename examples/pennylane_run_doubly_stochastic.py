@@ -10,6 +10,11 @@ Furthermore, if the optimization involves a linear combination of expectation va
 (such as VQE), sampling from the terms in this linear combination can further reduce required
 resources, allowing for "doubly stochastic gradient descent".
 
+Note that based on very similar observations, `Jonas Kuebler et al. (2019)` 
+recently proposed an optimizer (which they call the *individual Coupled Adaptive 
+Number of Shots (iCANS)* optimizer) that adapts the shot number of 
+measurements during training.
+
 Background
 ----------
 
@@ -34,9 +39,9 @@ descent for several reasons:
 1. Samples of the gradient estimator :math:`g^{(t)}(\theta)` can typically
    be computed much more efficiently than :math:`\mathcal{L}(\theta)`,
 
-2. Stochasticity helps avoid local minima and saddle points,
+2. Stochasticity can help to avoid local minima and saddle points,
 
-3. Convergence is guaranteed to be on par with regular gradient descent.
+3. Numerical evidence shows that convergence properties are superior to regular gradient descent.
 
 In variational quantum algorithms, a parametrized quantum circuit :math:`U(\theta)`
 is optimized by a classical optimization loop in order to minimize a function of the expectation
@@ -60,7 +65,7 @@ Putting these two results together, `Sweke et al. (2019) <https://arxiv.org/abs/
 show that samples of the expectation value fed into the parameter-shift rule provide
 unbiased estimators of the quantum gradient---resulting in a form of stochastic gradient descent.
 Moreover, they show that convergence of the stochastic gradient descent is guaranteed
-to be on par with standard gradient descent, even in the case where the number
+in sufficiently simplified settings, even in the case where the number
 of shots is 1!
 
 .. note::
@@ -201,7 +206,7 @@ print("Stochastic gradient descent (shots=1) min energy = ", qnode_GD(params_SGD
 
 ##############################################################################
 # Amazingly, we see that even the ``shots=1`` optimization converged
-# to a reasonably close approximation of ground-state energy!
+# to a reasonably close approximation of the ground-state energy!
 
 ##############################################################################
 # Doubly stochastic gradient descent for VQE
@@ -214,7 +219,7 @@ print("Stochastic gradient descent (shots=1) min energy = ", qnode_GD(params_SGD
 # amounts and taking the difference), as well as VQE, where the Hamiltonian
 # is usually decomposed into a sum of Pauli expectation values.
 #
-# Consider the Hamiltonian from the previous section. As this Hamiltonian is an
+# Consider the Hamiltonian from the previous section. As this Hamiltonian is a
 # Hermitian observable, we can always express it as a sum of Pauli matrices using
 # the relation
 #
@@ -306,7 +311,7 @@ print("Doubly stochastic gradient descent min energy = ", qnode_GD(params))
 # References
 # ----------
 #
-# 1. Ryan Sweke, Frederik Wilde, Johannes Meyer, Maria Schuld, Paul K. Fährmann,
+# 1. Ryan Sweke, Frederik Wilde, Johannes Jakob Meyer, Maria Schuld, Paul K. Fährmann,
 #    Barthélémy Meynard-Piganeau, Jens Eisert. "Stochastic gradient descent for
 #    hybrid quantum-classical optimization." `arXiv:1910.01155
 #    <https://arxiv.org/abs/1910.01155>`__, 2019.
