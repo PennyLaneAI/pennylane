@@ -16,16 +16,14 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 
-from unittest.mock import MagicMock
-
+import pytest
 import numpy as np
 
 import pennylane as qml
-
 from pennylane.operation import Expectation
 from pennylane.circuit_graph import CircuitGraph
 
-import pytest
+
 
 
 @pytest.fixture()
@@ -225,67 +223,10 @@ class TestCircuitGraph:
         assert nodes[7]["return_type"] == Expectation
         assert nodes[8]["return_type"] == Expectation
 
-    def test_get_nodes(self, circuit, monkeypatch):
-        """Test that `get_nodes` fetches the correct nodes from the graph."""
-        mock_graph = MagicMock()
-        monkeypatch.setattr(circuit, "_graph", mock_graph)
-
-        o_idxs = list(range(10))
-        result = circuit.get_nodes(o_idxs)
-        assert result == [mock_graph.nodes[i] for i in o_idxs]
-
-    def test_get_ops(self, circuit, monkeypatch):
-        """Test that `get_ops` fetches the correct ops based on given nodes."""
-        mock_nodes = MagicMock()
-        mock_ops = MagicMock()
-        mock_get_nodes = MagicMock()
-        mock_get_nodes.return_value = [mock_nodes.a, mock_nodes.b]
-        monkeypatch.setattr(circuit, "get_nodes", mock_get_nodes)
-
-        result = circuit.get_ops(mock_ops)
-        mock_get_nodes.assert_called_once_with(mock_ops)
-        assert result == [mock_nodes.a["op"], mock_nodes.b["op"]]
-
-    def test_update_node(self, circuit, monkeypatch):
-        """Test that `nx.set_node_attributes` is called correctly when updating a node using
-        `update_node` and a given node and op."""
-        mock_command = MagicMock()
-        mock_nx = MagicMock()
-
-        monkeypatch.setattr("pennylane.circuit_graph.nx", mock_nx)
-        monkeypatch.setattr("pennylane.circuit_graph.Command", mock_command)
-
-        node = MagicMock()
-        op = MagicMock()
-
-        circuit.update_node(node, op)
-
-        mock_nx.set_node_attributes.assert_called_once_with(
-            circuit._graph,
-            {
-                node["idx"]: {
-                    **mock_command(
-                        name=op.name, op=op, return_type=op.return_type, idx=node["idx"]
-                    )._asdict()
-                }
-            },
-        )
 
     def test_observables(self, circuit, obs):
         """Test that the `observables` property returns the list of observables in the circuit."""
         assert circuit.observables == obs
-
-    def test_observable_nodes_and_operation_nodes(self, circuit, monkeypatch):
-        """Test that the `observable_nodes` and `operation_nodes` methods return the correct
-        values."""
-        mock_graph = MagicMock()
-        mock_graph.nodes.values.return_value = [
-            {"return_type": None, "idx": 0},
-            {"return_type": MagicMock(), "idx": 1},
-        ]
-        monkeypatch.setattr(circuit, "_graph", mock_graph)
-        assert circuit.observable_nodes == [mock_graph.nodes.values()[1]]
-        assert circuit.operation_nodes == [mock_graph.nodes.values()[0]]
 
     def test_operations(self, circuit, queue):
         """Test that the `operations` property returns the list of operations in the circuit."""
