@@ -144,11 +144,13 @@ class CVGradientTest(BaseTest):
 
         class PolyN(qml.ops.PolyXP):
             "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
+
             def __init__(self, wires):
                 hbar = 2
                 q = np.diag([-0.5, 0.5/hbar, 0.5/hbar])
                 super().__init__(q, wires=wires)
-                self.name = 'PolyXP'
+
+                self.__class__.__name__ = 'PolyXP'
 
         gates = []
         for name in qml.ops._cv__ops__:

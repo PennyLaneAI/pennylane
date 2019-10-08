@@ -366,31 +366,6 @@ class DefaultQubit(Device):
         self.analytic = analytic
 
         self._state = None
-        self.add_inverse_mappings()
-
-    @classmethod
-    def add_inverse_mappings(cls):
-
-        _operation_inverses_map = {
-
-            # Adds the inverse for each operation that does not have a parameter
-            **{
-                op + Operation.string_for_inverse: cls._operation_map[op].conj().T for op in cls._operation_map
-                if not callable(cls._operation_map[op]) and cls._operation_map[op] is not None
-            },
-
-            # Adds the inverse for each operation that has a parameter
-            **{
-                op + Operation.string_for_inverse: cls._operation_map[op] for op in cls._operation_map if callable(cls._operation_map[op])
-            }
-        }
-
-        _observable_inverses_map = {
-            obs + Operation.string_for_inverse: cls._observable_map[obs] for obs in cls._observable_map
-        }
-
-        cls._operation_map = {**cls._operation_map, **_operation_inverses_map}
-        cls._observable_map = {**cls._observable_map, **_observable_inverses_map}
 
     def pre_apply(self):
         self.reset()
@@ -419,7 +394,11 @@ class DefaultQubit(Device):
             self._state[num] = 1.
             return
 
-        A = self._get_operator_matrix(operation, par)
+        if operation.endswith(Operation.string_for_inverse):
+            A = self._get_operator_matrix(operation[:-len(Operation.string_for_inverse)], par).conj().T
+        else:
+            A = self._get_operator_matrix(operation, par)
+
         self._state = self.mat_vec_product(A, self._state, wires)
 
     def mat_vec_product(self, mat, vec, wires):
@@ -485,6 +464,9 @@ class DefaultQubit(Device):
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
 
+        If the inverse was defined for an operation or observable that requires parameters, returns the
+        operator matrix obtained using negated paramaters.
+
         Args:
           operation    (str): name of the operation/observable
           par (tuple[float]): parameter values
@@ -494,8 +476,6 @@ class DefaultQubit(Device):
         A = {**self._operation_map, **self._observable_map}[operation]
         if not callable(A):
             return A
-        elif operation.endswith(Operation.string_for_inverse):
-            return A(*np.negative(par))
         else:
             return A(*par)
 

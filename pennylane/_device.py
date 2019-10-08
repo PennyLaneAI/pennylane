@@ -382,7 +382,6 @@ class Device(abc.ABC):
 
         raise ValueError("The given operation must either be a pennylane.Observable class or a string.")
 
-
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
 
@@ -393,11 +392,11 @@ class Device(abc.ABC):
                 to be evaluated on the device
         """
         for o in queue:
-            if o.name not in self.operations:
+            if o.name not in self.operations and not o.is_inverse:
                 raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
         for o in observables:
-            if o.name not in self.observables:
+            if o.name not in self.observables and not o.is_inverse:
                 raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
 
     @abc.abstractmethod

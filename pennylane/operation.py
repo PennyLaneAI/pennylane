@@ -327,8 +327,8 @@ class Operation(abc.ABC):
     def name(self):
         r"""String for the name of the operation.
 
-        If the inverse of a specific operation was defined, then returns the name
-        of the operation appended with the the inverse string.
+        If the inverse was defined, returns the name of the operation appended
+        with the inverse string.
         """
         operation_name = self.__class__.__name__
         return operation_name + self.string_for_inverse if self._inverse else operation_name
@@ -341,6 +341,10 @@ class Operation(abc.ABC):
     def inv(self):
         self._inverse = True
         return self
+
+    @property
+    def is_inverse(self):
+        return self._inverse
 
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
