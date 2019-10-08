@@ -66,7 +66,7 @@ test1 = torch.tensor([0, np.pi, 0])
 test2 = torch.tensor([0, np.pi, 0])
 
 cost_check = cost(test1, test2)
-print("Energy for [1, -1, -1] spin configuration:",cost_check)
+print("Energy for [1, -1, -1] spin configuration:", cost_check)
 
 ###############################################################################
 # Random initialization
