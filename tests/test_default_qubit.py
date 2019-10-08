@@ -918,6 +918,38 @@ class TestDefaultQubitIntegration:
 
         assert np.isclose(np.mean(runs), -np.sin(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("name,expected_output", [
+        ("PauliX", 1),
+        ("PauliY", 1),
+        ("S", -1),
+    ])
+    def test_inverse_circuit(self, qubit_device_1_wire, tol, name, expected_output):
+        """Tests supported gates that act on a single wire that are not parameterized"""
+
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.BasisState(np.array([1]), wires=[0])
+            op(wires=0).inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
+                                                           multiplier* 0.5432) for multiplier in range(25)
+                                                          ])
+    def test_inverse_circuit_with_parameters(self, qubit_device_1_wire, tol, name, expected_output, phi):
+        """Tests supported gates that act on a single wire that are not parameterized"""
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.RX(phi, wires=0)
+            qml.RX(phi, wires=0).inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
     # This test is ran against the state |0> with one Z expval
     @pytest.mark.parametrize("name,expected_output", [
         ("PauliX", -1),
@@ -960,7 +992,6 @@ class TestDefaultQubitIntegration:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
-
     @pytest.mark.parametrize("name,expected_output", [
         ("CSWAP", [-1, -1, 1]),
     ])
@@ -978,7 +1009,6 @@ class TestDefaultQubitIntegration:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
-
 
     # This test is ran with two Z expvals
     @pytest.mark.parametrize("name,par,expected_output", [
