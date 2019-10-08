@@ -20,7 +20,7 @@ PennyLane implementation
 ------------------------
 
 This basic tutorial optimizes a 3-qubit Ising model using the PennyLane ``default.qubit``
-Plugin with PyTorch machine learning interface. For simplicity, the first spin can be assumed
+device with the PyTorch machine learning interface. For simplicity, the first spin can be assumed
 to be in the "up" state (+1 eigenstate of Pauli-Z operator) and the coupling matrix can be set to :math:`J = [1,-1]`. The rotation angles for the other two spins are then optimized
 so that the energy of the system is minimized for the given couplings.
 """
@@ -33,18 +33,17 @@ from pennylane import numpy as np
 ###############################################################################
 # A three-qubit quantum circuit is initialized to represent the three spins:
  
-dev = qml.device("default.qubit", wires = 3)
+dev = qml.device("default.qubit", wires=3)
 
-@qml.qnode(dev, interface = "torch") 
+@qml.qnode(dev, interface="torch") 
 def circuit(p1, p2):
     # We use the general Rot(phi,theta,omega,wires) single-qubit operation
     qml.Rot(p1[0], p1[1], p1[2], wires=1)
     qml.Rot(p2[0], p2[1], p2[2], wires=2)
-    return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+    return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
 ###############################################################################
-# The cost function can be defined as the energy of the spin configuration which is to be
-# optimized using gradient descent:
+# The cost function to be minimized is defined as the energy of the spin configuration
 
 def cost(var1, var2):
     # the circuit function returns a numpy array of Pauli-Z expectation values
@@ -57,7 +56,7 @@ def cost(var1, var2):
 ###############################################################################
 # Sanity check
 # ^^^^^^^^^^^^^
-# Let’s test the functions above using :math:`[s_1, s_2, s_3] = [1, -1, -1]` spin
+# Let's test the functions above using :math:`[s_1, s_2, s_3] = [1, -1, -1]` spin
 # configuration and the given coupling matrix. The total energy for this Ising model
 # should be:
 #
@@ -68,7 +67,7 @@ test1 = torch.tensor([0, np.pi, 0])
 test2 = torch.tensor([0, np.pi, 0])
 
 cost_check = cost(test1, test2)
-print("Energy for [1, -1, -1] spin configuration:",cost_check)
+print("Energy for [1, -1, -1] spin configuration:", cost_check)
 
 ###############################################################################
 # Random initialization
@@ -81,15 +80,15 @@ p2 = Variable((np.pi * torch.rand(3, dtype=torch.float64)), requires_grad=True)
 var_init = [p1, p2]
 cost_init = cost(p1, p2)
 
-print("Randomly initialized angles:",var_init)
-print("Corresponding cost before optimization:",cost_init)
+print("Randomly initialized angles:", var_init)
+print("Corresponding cost before optimization:", cost_init)
 
 ###############################################################################
 # Optimization
 # ^^^^^^^^^^^^
 # Now we use the PyTorch gradient descent optimizer to minimize the cost:
 
-opt = torch.optim.SGD(var_init, lr = 0.1)
+opt = torch.optim.SGD(var_init, lr=0.1)
 
 steps = 100
 
@@ -116,17 +115,17 @@ for i in range(steps):
 # .. note::
 #     When using the *PyTorch* optimizer, keep in mind that:
 #
-#     1. ``loss.backward()`` computes the gradient of the cost function with respect to all parameters (whcih have ``requires_grad=True``). 
+#     1. ``loss.backward()`` computes the gradient of the cost function with respect to all parameters with ``requires_grad=True``. 
 #     2. ``opt.step()`` performs the parameter update based on this *current* gradient and the learning rate. 
-#     3. ``opt.zero_grad()`` sets all the gradients back to zero. It’s important to call this before ``loss.backward()`` to avoid the accumulation of  gradients from multiple passes.
+#     3. ``opt.zero_grad()`` sets all the gradients back to zero. It's important to call this before ``loss.backward()`` to avoid the accumulation of gradients from multiple passes.
 #
 #     Hence, its standard practice to define the ``closure()`` function that clears up the old gradient, 
 #     evaluates the new gradient and passes it onto the optimizer in each step. 
 #
-# The minimum energy is -2  for the spin configuration :math:`[s_1, s_2, s_3] = [1, 1, -1]`
+# The minimum energy is -2 for the spin configuration :math:`[s_1, s_2, s_3] = [1, 1, -1]`
 # which corresponds to
 # :math:`(\phi, \theta, \omega) = (0, 0, 0)` for the second spin and :math:`(\phi, \theta, \omega) = (0, \pi, 0)` for 
-# the third spin. We might not always see this cost value due to the non-convex cost function.
+# the third spin. Note that gradient descent optimization might not find this global minimum due to the non-convex cost function.
 
 p1_final, p2_final = opt.param_groups[0]["params"]
 print("Optimized angles:",p1_final, p2_final)
