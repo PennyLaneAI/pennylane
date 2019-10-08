@@ -72,7 +72,7 @@ def BasisStatePreparation(basis_state, wires):
 
 
 def _matrix_M_entry(row, col):
-    """The matrix entry for the angle computation.
+    """Returns one entry for the matrix that maps alpha to theta.
 
     Args:
         row (int): one-based row number
@@ -281,12 +281,9 @@ def MottonenStatePreparation(state_vector, wires):
         )
 
     # Change ordering of indices, original code was for IBM machines
-    reorder_indices = np.ravel_multi_index(
-        np.unravel_index(range(2 ** n), [2] * n, order="C"), [2] * n, order="F"
-    )
-
-    state_vector = np.array(state_vector)[reorder_indices, np.newaxis]
+    state_vector = np.array(state_vector).reshape([2] * n).T.flatten()    
     state_vector = sparse.dok_matrix(state_vector)
+    
     wires = np.array(wires)
 
     a = sparse.dok_matrix(state_vector.shape)
