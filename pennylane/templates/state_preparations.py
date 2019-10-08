@@ -43,6 +43,9 @@ from sympy.combinatorics.graycode import GrayCode
 
 # pylint: disable=len-as-condition
 
+def gray_code(rank):
+    return ["{0:0{1}b}".format(i ^ (i >> 1), rank) for i in range(0, 1 << rank)]
+
 def BasisStatePreparation(basis_state, wires):
     r"""
     Prepares a basis state on the given wires using a sequence of Pauli X gates.
@@ -135,7 +138,7 @@ def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
     if gray_code_rank == 0:
         gate(theta[0, 0], wires=[target_wire])
         return
-        
+
     gc = GrayCode(gray_code_rank)
 
     current_gray = gc.current
