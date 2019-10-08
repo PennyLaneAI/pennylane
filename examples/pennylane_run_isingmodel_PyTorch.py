@@ -114,7 +114,7 @@ for i in range(steps):
 # .. note::
 #     When using the *PyTorch* optimizer, keep in mind that:
 #
-#     1. ``loss.backward()`` computes the gradient of the cost function with respect to all parameters (whcih have ``requires_grad=True``). 
+#     1. ``loss.backward()`` computes the gradient of the cost function with respect to all parameters with ``requires_grad=True``. 
 #     2. ``opt.step()`` performs the parameter update based on this *current* gradient and the learning rate. 
 #     3. ``opt.zer_grad()`` sets all the gradients back to zero. It’s important to call this before ``loss.backward()`` to avoid the accumulation of  gradients from multiple passes.
 #
