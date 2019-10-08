@@ -124,7 +124,7 @@ for i in range(steps):
 # The minimum energy is -2 for the spin configuration :math:`[s_1, s_2, s_3] = [1, 1, -1]`
 # which corresponds to
 # :math:`(\phi, \theta, \omega) = (0, 0, 0)` for the second spin and :math:`(\phi, \theta, \omega) = (0, \pi, 0)` for 
-# the third spin. We might not always see this cost value due to the non-convex cost function.
+# the third spin. Note that gradient descent optimization might not find this global minimum due to the non-convex cost function.
 
 p1_final, p2_final = opt.param_groups[0]["params"]
 print("Optimized angles:",p1_final, p2_final)
