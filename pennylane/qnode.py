@@ -520,7 +520,7 @@ class QNode:
         Returns:
             list[Operation]: successors in a topological order
         """
-        succ = self.circuit.descendants((op,))
+        succ = self.circuit.descendants_in_order((op,))
         if only == 'E':
             return [x for x in succ if isinstance(x, qml.operation.Observable)]
         if only == 'G':

@@ -178,7 +178,7 @@ class CircuitGraph:
         Returns:
             set[Operation]: ancestors of the given operations
         """
-        return set.union(*(nx.dag.ancestors(self._graph, o) for o in ops)) - set(ops)
+        return set().union(*(nx.dag.ancestors(self._graph, o) for o in ops)) - set(ops)
 
     def descendants(self, ops):
         """Descendant operations of a given set of operations.
@@ -189,7 +189,7 @@ class CircuitGraph:
         Returns:
             set[Operation]: descendants of the given operations
         """
-        return set.union(*(nx.dag.descendants(self._graph, o) for o in ops)) - set(ops)
+        return set().union(*(nx.dag.descendants(self._graph, o) for o in ops)) - set(ops)
 
     def _in_topological_order(self, ops):
         """Sorts a set of operations in the circuit in a topological order.
