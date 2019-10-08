@@ -87,7 +87,8 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import Device, Operation
+from pennylane import Device
+from pennylane.operation import Operation
 
 
 # tolerance for numerical errors
@@ -496,8 +497,7 @@ class DefaultQubit(Device):
         if not callable(A):
             return A
         elif operation.endswith(self._string_for_inverse):
-            negated_params = (-1*param for param in par)
-            return A(*negated_params)
+            return A(*np.negative(par))
         else:
             return A(*par)
 
