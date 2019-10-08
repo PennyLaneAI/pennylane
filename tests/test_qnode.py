@@ -15,8 +15,6 @@
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
 import math
-from unittest.mock import Mock, PropertyMock, patch
-from conftest import DummyDevice
 
 import pytest
 from autograd import numpy as np
@@ -115,19 +113,17 @@ class TestQNodeOperationQueue:
 
 
 @pytest.fixture(scope="function")
-def operable_mock_device_2_wires():
-    """A mock instance of the abstract Device class that can support
-       qfuncs."""
+def operable_mock_device_2_wires(monkeypatch):
+    """A mock instance of the abstract Device class that can support qfuncs."""
 
-    with patch.multiple(
-        Device,
-        __abstractmethods__=set(),
-        operations=PropertyMock(return_value=["RX", "RY", "CNOT"]),
-        observables=PropertyMock(return_value=["PauliX", "PauliY", "PauliZ"]),
-        reset=Mock(),
-        apply=Mock(),
-        expval=Mock(return_value=1),
-    ):
+    dev = Device
+    with monkeypatch.context() as m:
+        m.setattr(dev, '__abstractmethods__', frozenset())
+        m.setattr(dev, 'operations', ["RX", "RY", "CNOT"])
+        m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, 'reset', lambda self: None)
+        m.setattr(dev, 'apply', lambda self, x, y, z: None)
+        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
         yield Device(wires=2)
 
 
@@ -135,12 +131,11 @@ class TestQNodeBestMethod:
     """
     Test different flows of _best_method
     """
-    def test_best_method_with_non_gaussian_successors(self, tol):
+    def test_best_method_with_non_gaussian_successors(self, tol, gaussian_device_2_wires):
         """Tests that the analytic differentiation method is allowed and matches numerical
         differentiation if a non-Gaussian gate is not succeeded by an observable."""
-        dev = DummyDevice(wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(gaussian_device_2_wires)
         def circuit(x):
             qml.Squeezing(x, 0, wires=[0])
             qml.Beamsplitter(np.pi/4, 0, wires=[0, 1])
@@ -151,12 +146,11 @@ class TestQNodeBestMethod:
         expected = circuit.jacobian([0.321], method='F')
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_best_method_with_gaussian_successors_fails(self):
+    def test_best_method_with_gaussian_successors_fails(self, gaussian_device_2_wires):
         """Tests that the analytic differentiation method is not allowed
         if a non-Gaussian gate is succeeded by an observable."""
-        dev = DummyDevice(wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(gaussian_device_2_wires)
         def circuit(x):
             qml.Squeezing(x, 0, wires=[0])
             qml.Beamsplitter(np.pi/4, 0, wires=[0, 1])
