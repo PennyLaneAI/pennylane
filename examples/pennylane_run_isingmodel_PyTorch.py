@@ -34,7 +34,7 @@ from pennylane import numpy as np
  
 dev = qml.device("default.qubit", wires=3)
 
-@qml.qnode(dev, interface = "torch") 
+@qml.qnode(dev, interface="torch") 
 def circuit(p1, p2):
     # We use the general Rot(phi,theta,omega,wires) single-qubit operation
     qml.Rot(p1[0], p1[1], p1[2], wires=1)
