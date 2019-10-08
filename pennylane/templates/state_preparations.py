@@ -35,15 +35,20 @@ Code details
 """
 import math
 from collections.abc import Iterable
+from scipy import sparse
 
 import numpy as np
 import pennylane as qml
-from scipy import sparse
 
 # pylint: disable=len-as-condition
 
 
 def gray_code(rank):
+    """Generates the Gray code of given rank.
+
+    Args:
+        rank (int): rank of the Gray code (i.e. number of bits)
+    """
     return ["{0:0{1}b}".format(i ^ (i >> 1), rank) for i in range(0, 1 << rank)]
 
 
@@ -142,7 +147,7 @@ def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
 
     code = gray_code(gray_code_rank)
     num_selections = len(code)
-    
+
     control_indices = [
         int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
         for i in range(num_selections)

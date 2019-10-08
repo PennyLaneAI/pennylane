@@ -14,13 +14,14 @@
 """
 Unit tests for the :mod:`pennylane.template.state_preparations` module.
 """
+# pylint: disable=protected-access,cell-var-from-loop
+
 import math
 from unittest.mock import patch
-
 import numpy as np
-import pennylane as qml
-# pylint: disable=protected-access,cell-var-from-loop
 import pytest
+
+import pennylane as qml
 from pennylane.templates.state_preparations import (gray_code,
                                                     BasisStatePreparation,
                                                     MottonenStatePreparation)
