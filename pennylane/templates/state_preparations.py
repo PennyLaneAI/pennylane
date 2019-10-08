@@ -42,8 +42,10 @@ from scipy import sparse
 
 # pylint: disable=len-as-condition
 
+
 def gray_code(rank):
     return ["{0:0{1}b}".format(i ^ (i >> 1), rank) for i in range(0, 1 << rank)]
+
 
 def BasisStatePreparation(basis_state, wires):
     r"""
@@ -140,8 +142,12 @@ def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
 
     code = gray_code(gray_code_rank)
     num_selections = len(code)
-    control_indices = [int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2))) for i in range(num_selections)]
     
+    control_indices = [
+        int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
+        for i in range(num_selections)
+    ]
+
     for i, control_index in enumerate(control_indices):
         gate(theta[i, 0], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
@@ -266,7 +272,7 @@ def MottonenStatePreparation(state_vector, wires):
         )
 
     # Change ordering of indices, original code was for IBM machines
-    state_vector = np.array(state_vector).reshape([2] * n).T.flatten()[:, np.newaxis]    
+    state_vector = np.array(state_vector).reshape([2] * n).T.flatten()[:, np.newaxis]
     state_vector = sparse.dok_matrix(state_vector)
 
     wires = np.array(wires)
