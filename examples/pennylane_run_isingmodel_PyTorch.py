@@ -128,7 +128,7 @@ for i in range(steps):
 
 p1_final, p2_final = opt.param_groups[0]["params"]
 print("Optimized angles:",p1_final, p2_final)
-print("Final cost after optimization:",cost(p1_final, p2_final))
+print("Final cost after optimization:", cost(p1_final, p2_final))
 
 ###############################################################################
 #
