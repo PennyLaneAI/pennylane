@@ -185,16 +185,35 @@ class TestMottonenStatePreparation:
         assert np.isclose(fidelity, 1, atol=tol, rtol=0)
 
     # fmt: off
-    @pytest.mark.parametrize("state_vector,wires,error_message", [
-        ([0, 1, 0], [0, 1], "Number of entries in the state vector must be equal to 2 to the power of the number of wires"),
-        ([0, 1, 0, 0, 0], [0], "Number of entries in the state vector must be equal to 2 to the power of the number of wires"),
-        ([0], 0, "Wires must be passed as a list of integers"),
-        ([1/2, 1/2], [0], "State vector probabilities have to sum up to 1.0"),
-        ([2/3, 0, 2j/3, -2/3], [0, 1], "State vector probabilities have to sum up to 1.0"),
+    @pytest.mark.parametrize("state_vector,wires", [
+        ([1/2, 1/2], [0]),
+        ([2/3, 0, 2j/3, -2/3], [0, 1]),
     ])
     # fmt: on
-    def test_errors(self, state_vector, wires, error_message):
-        """Tests that the correct error messages are raised."""
+    def test_error_state_vector_not_normalized(self, state_vector, wires):
+        """Tests that the correct error messages is raised if
+        the given state vector is not normalized."""
 
-        with pytest.raises(ValueError, match=error_message):
+        with pytest.raises(ValueError, match="State vector probabilities have to sum up to 1.0"):
             MottonenStatePreparation(state_vector, wires)
+
+    # fmt: off
+    @pytest.mark.parametrize("state_vector,wires", [
+        ([0, 1, 0], [0, 1]),
+        ([0, 1, 0, 0, 0], [0]),
+    ])
+    # fmt: on
+    def test_error_num_entries(self, state_vector, wires):
+        """Tests that the correct error messages is raised  if
+        the number of entries in the given state vector does not match
+        with the number of wires in the system."""
+
+        with pytest.raises(ValueError, match="Number of entries in the state vector must be equal to 2 to the power of the number of wires"):
+            MottonenStatePreparation(state_vector, wires)
+
+    def test_error_wires_list(self, basis_state, wires):
+        """Tests that the correct error messages is raised when wires
+        are not passed as a list of integers."""
+
+        with pytest.raises(ValueError, match="Wires must be passed as a list of integers"):
+            MottonenStatePreparation([1, 0], 0)
