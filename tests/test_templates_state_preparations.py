@@ -182,8 +182,9 @@ class TestMottonenStatePreparation:
         ([1/2, 0, 1j/2, 1j/math.sqrt(2)], [0, 1], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
     ])
     # fmt: on
-    def test_state_preparation(self, tol, qubit_device_3_wires, state_vector, wires, target_state):
-        """Tests that the template MottonenStatePreparation integrates correctly with PennyLane."""
+    def test_state_preparation_fidelity(self, tol, qubit_device_3_wires, state_vector, wires, target_state):
+        """Tests that the template MottonenStatePreparation integrates correctly with PennyLane
+        and produces states with correct fidelity."""
 
         @qml.qnode(qubit_device_3_wires)
         def circuit():
@@ -199,6 +200,70 @@ class TestMottonenStatePreparation:
         # We test for fidelity here, because the vector themselves will hardly match
         # due to imperfect state preparation
         assert np.isclose(fidelity, 1, atol=tol, rtol=0)
+
+    # fmt: off
+    @pytest.mark.parametrize("state_vector,wires,target_state", [
+        ([1, 0], [0], [1, 0, 0, 0, 0, 0, 0, 0]),
+        ([1, 0], [1], [1, 0, 0, 0, 0, 0, 0, 0]),
+        ([1, 0], [2], [1, 0, 0, 0, 0, 0, 0, 0]),
+        ([0, 1], [0], [0, 0, 0, 0, 1, 0, 0, 0]),
+        ([0, 1], [1], [0, 0, 1, 0, 0, 0, 0, 0]),
+        ([0, 1], [2], [0, 1, 0, 0, 0, 0, 0, 0]),
+        ([0, 1, 0, 0], [0, 1], [0, 0, 1, 0, 0, 0, 0, 0]),
+        ([0, 0, 0, 1], [0, 2], [0, 0, 0, 0, 0, 1, 0, 0]),
+        ([0, 0, 0, 1], [1, 2], [0, 0, 0, 1, 0, 0, 0, 0]),
+        ([1, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0]),
+        ([0, 0, 0, 0, 1j, 0, 0, 0], [0, 1, 2], [0, 0, 0, 0, 1j, 0, 0, 0]),
+        ([1/2, 0, 0, 0, 1/2, 1j/2, -1/2, 0], [0, 1, 2], [1/2, 0, 0, 0, 1/2, 1j/2, -1/2, 0]),
+        ([1/3, 0, 0, 0, 2j/3, 2j/3, 0, 0], [0, 1, 2], [1/3, 0, 0, 0, 2j/3, 2j/3, 0, 0]),
+        ([2/3, 0, 0, 0, 1/3, 0, 0, 2/3], [0, 1, 2], [2/3, 0, 0, 0, 1/3, 0, 0, 2/3]),
+        (
+            [1/math.sqrt(8), 1j/math.sqrt(8), 1/math.sqrt(8), -1j/math.sqrt(8), 1/math.sqrt(8), 1/math.sqrt(8), 1/math.sqrt(8), 1j/math.sqrt(8)],
+            [0, 1, 2],
+            [1/math.sqrt(8), 1j/math.sqrt(8), 1/math.sqrt(8), -1j/math.sqrt(8), 1/math.sqrt(8), 1/math.sqrt(8), 1/math.sqrt(8), 1j/math.sqrt(8)],
+        ),
+        (
+            [-0.17133152-0.18777771j, 0.00240643-0.40704011j, 0.18684538-0.36315606j, -0.07096948+0.104501j, 0.30357755-0.23831927j, -0.38735106+0.36075556j, 0.12351096-0.0539908j, 0.27942828-0.24810483j],
+            [0, 1, 2],
+            [-0.17133152-0.18777771j, 0.00240643-0.40704011j, 0.18684538-0.36315606j, -0.07096948+0.104501j, 0.30357755-0.23831927j, -0.38735106+0.36075556j, 0.12351096-0.0539908j, 0.27942828-0.24810483j],
+        ),
+        (
+            [-0.29972867+0.04964242j, -0.28309418+0.09873227j, 0.00785743-0.37560696j, -0.3825148 +0.00674343j, -0.03008048+0.31119167j, 0.03666351-0.15935903j, -0.25358831+0.35461265j, -0.32198531+0.33479292j],
+            [0, 1, 2],
+            [-0.29972867+0.04964242j, -0.28309418+0.09873227j, 0.00785743-0.37560696j, -0.3825148 +0.00674343j, -0.03008048+0.31119167j, 0.03666351-0.15935903j, -0.25358831+0.35461265j, -0.32198531+0.33479292j],
+        ),
+        (
+            [-0.39340123+0.05705932j, 0.1980509 -0.24234781j, 0.27265585-0.0604432j, -0.42641249+0.25767258j, 0.40386614-0.39925987j, 0.03924761+0.13193724j, -0.06059103-0.01753834j, 0.21707136-0.15887973j],
+            [0, 1, 2],
+            [-0.39340123+0.05705932j, 0.1980509 -0.24234781j, 0.27265585-0.0604432j, -0.42641249+0.25767258j, 0.40386614-0.39925987j, 0.03924761+0.13193724j, -0.06059103-0.01753834j, 0.21707136-0.15887973j],
+        ),
+        (
+            [-1.33865287e-01+0.09802308j, 1.25060033e-01+0.16087698j, -4.14678130e-01-0.00774832j, 1.10121136e-01+0.37805482j, -3.21284864e-01+0.21521063j, -2.23121454e-04+0.28417422j, 5.64131205e-02+0.38135286j, 2.32694503e-01+0.41331133j],
+            [0, 1, 2],
+            [-1.33865287e-01+0.09802308j, 1.25060033e-01+0.16087698j, -4.14678130e-01-0.00774832j, 1.10121136e-01+0.37805482j, -3.21284864e-01+0.21521063j, -2.23121454e-04+0.28417422j, 5.64131205e-02+0.38135286j, 2.32694503e-01+0.41331133j],
+        ),
+        ([1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0], [0, 1, 2], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
+        ([1/2, 0, 1j/2, 1j/math.sqrt(2)], [0, 1], [1/2, 0, 0, 0, 1j/2, 0, 1j/math.sqrt(2), 0]),
+    ])
+    # fmt: on
+    def test_state_preparation_probability_distribution(self, tol, qubit_device_3_wires, state_vector, wires, target_state):
+        """Tests that the template MottonenStatePreparation integrates correctly with PennyLane
+        and produces states with correct probability distribution."""
+
+        @qml.qnode(qubit_device_3_wires)
+        def circuit():
+            MottonenStatePreparation(state_vector, wires)
+
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+
+        circuit()
+
+        state = qubit_device_3_wires._state
+
+        probabilities = np.abs(state)**2
+        target_probabilities = np.abs(target_state)**2
+
+        assert np.allclose(probabilities, target_probabilities, atol=tol, rtol=0)
 
     # fmt: off
     @pytest.mark.parametrize("state_vector,wires", [
