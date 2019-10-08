@@ -12,98 +12,83 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` utility classes :class:`ParRef`, :class:`Command`.
+Unit tests for :mod:`pennylane.variable`.
 """
-import logging as log
-from string import ascii_lowercase
-
-import numpy as np
+import pytest
 import numpy.random as nr
 
-from defaults import pennylane, BaseTest
 from pennylane.variable import Variable
 
 
 # make test deterministic
 nr.seed(42)
 
+n = 10
+keyword_par_names = ['foo', 'bar']
+par_inds = [0, 9]
+par_mults = [1, 0.4, -2.7]
+
+
+@pytest.fixture(scope="function")
+def par_positional():
+    "QNode: positional parameters"
+    temp = nr.randn(n)
+    Variable.free_param_values = temp  # set the values
+    return temp
+
+@pytest.fixture(scope="function")
+def par_keyword():
+    "QNode: keyword parameters"
+    temp = {name: nr.randn(n) for name in keyword_par_names}
+    Variable.kwarg_values = temp  # set the values
+    return temp
+
 
 def test_variable_str():
     """variable: Tests the positional variable reference string."""
-    n = 10
-    m = nr.randn(n)  # parameter multipliers
-    par_fixed = nr.randn(n)  # fixed parameter values
-    par_free = nr.randn(n)  # free parameter values
-    Variable.free_param_values = par_free
-
-    # test __str__()
     p = Variable(0)
     assert str(p) == "Variable 0: name = None, "
     assert str(-p) == "Variable 0: name = None,  * -1"
     assert str(1.2 * p * 0.4) == "Variable 0: name = None,  * 0.48"
     assert str(1.2 * p / 2.5) == "Variable 0: name = None,  * 0.48"
 
-
-def test_variable_val():
-    """variable: Tests the positional variable values.
-    """
-    # mapping function must yield the correct parameter values
-    n = 10
-    m = nr.randn(n)  # parameter multipliers
-    par_fixed = nr.randn(n)  # fixed parameter values
-    par_free = nr.randn(n)  # free parameter values
-    Variable.free_param_values = par_free
-    assert [(par_free[k] == m[k] * Variable(k)) for k in range(n)]
-    assert [(par_free[k] == (m[k] * Variable(k)).val) for k in range(n)]
-
-    assert [(par_free[k] == Variable(k) * m[k]) for k in range(n)]
-    assert [(par_free[k] == (Variable(k) * m[k]).val) for k in range(n)]
-
-    assert [(-par_free[k] * m ** 2) == m[k] * (-Variable(k)) * m[k] for k in range(n)]
-    assert [
-        (-par_free[k] * m ** 2) == (m[k] * (-Variable(k)) * m[k]).val for k in range(n)
-    ]
-    assert [(par_fixed[k] == par_fixed[k]) for k in range(n)]
-
-
-def test_keyword_variable():
-    """
-    variable: Keyword Variable reference tests.\
-    """
-    n = 10
-    m = nr.randn(n)  # parameter multipliers
-    par_fixed = nr.randn(n)  # fixed parameter values
-    par_free = nr.randn(n)  # free parameter values
-    Variable.kwarg_values = {k: v for k, v in zip(ascii_lowercase, par_free)}
-
-    # test __str__()
     p = Variable(0, name="kw1")
     assert str(p) == "Variable 0: name = kw1, "
     assert str(-p) == "Variable 0: name = kw1,  * -1"
     assert str(1.2 * p * 0.4) == "Variable 0: name = kw1,  * 0.48"
     assert str(1.2 * p / 2.5) == "Variable 0: name = kw1,  * 0.48"
 
-    # mapping function must yield the correct parameter values
-    assert (
-        (par_free[k] * m[k]) == (m[k] * Variable(name=n))
-        for (k, n) in zip(range(n), ascii_lowercase)
-    )
-    assert (
-        (par_free[k] * m[k]) == (Variable(name=n) * m[k])
-        for (k, n) in zip(range(n), ascii_lowercase)
-    )
-    assert (
-        (-par_free[k] * m[k]) == (-Variable(name=n))
-        for (k, n) in zip(range(n), ascii_lowercase)
-    )
-    assert (
-        (-par_free[k] * m[k] ** 2) == (m[k] * -Variable(name=n) * m[k])
-        for (k, n) in zip(range(n), ascii_lowercase)
-    )
 
-    # Check for a single kwarg_value
-    Variable.kwarg_values = {"kw1": 1.0}
-    assert Variable(name="kw1").val == 1.0
+def variable_eval_asserts(v, p, m, tol):
+    """Check that variable evaluation (with scalar multiplication) yields the expected results."""
+    assert v.val == p  # normal evaluation
+    assert (m * v).val == m * p  # left scalar mul
+    assert (v * m).val == m * p  # right scalar mul
+    assert (v / m).val == pytest.approx(p / m, abs=tol)  # right scalar div
+    assert (-v).val == -p   # unary minus
+    assert (m * -v * m).val == -m**2 * p  # compound expression
 
-    # fixed values remain constant
-    assert [(par_fixed[k] == par_fixed[k]) for k in range(n)]
+
+@pytest.mark.parametrize("ind", par_inds)
+@pytest.mark.parametrize("mult", par_mults)
+def test_variable_val(par_positional, ind, mult, tol):
+    """Positional variable evaluation."""
+    v = Variable(ind)
+
+    assert v.name is None
+    assert v.mult == 1
+    assert v.idx == ind
+    variable_eval_asserts(v, par_positional[ind], mult, tol)
+
+
+@pytest.mark.parametrize("ind", par_inds)
+@pytest.mark.parametrize("mult", par_mults)
+@pytest.mark.parametrize("name", keyword_par_names)
+def test_keyword_variable(par_keyword, name, ind, mult, tol):
+    """Keyword variable evaluation."""
+    v = Variable(ind, name)
+
+    assert v.name == name
+    assert v.mult == 1
+    assert v.idx == ind
+    variable_eval_asserts(v, par_keyword[name][ind], mult, tol)

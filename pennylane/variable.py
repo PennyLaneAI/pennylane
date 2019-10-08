@@ -76,29 +76,32 @@ import numpy as np
 
 
 class Variable:
-    """A reference class to dynamically track and update circuit parameters.
+    """A reference to dynamically track and update circuit parameters.
 
-    Represents a placeholder variable. This can either be a free quantum
-    circuit parameter (with a non-fixed value) times an optional scalar multiplier,
+    Represents a free quantum circuit parameter (with a non-fixed value),
     or a placeholder for data/other hard-coded data.
 
-    Each time the circuit is executed, it is given a vector of
-    parameter values, and a dictionary of keyword variable values.
+    Each time the circuit is executed, it is given a vector of flattened positional argument values,
+    and a dictionary mapping keyword-only argument names to vectors of their flattened values.
+    Each element of these vectors corresponds to a Variable instance.
+    Positional arguments are represented by nameless Variables, whereas for keyword-only
+    arguments :attr:`Variable.name` contains the argument name.
+    In both cases :attr:`Variable.idx` is an index into the argument value vector.
 
-    Variable is essentially an index into that vector.
+    The Variable has an optional scalar multiplier for the argument it represents.
 
     .. note:: Variables currently do not implement any arithmetic
         operations other than scalar multiplication.
 
     Args:
-        idx  (int): parameter index >= 0
-        name (str): name of the variable (optional)
+        idx  (int): index into the value vector, >= 0
+        name (None, str): name of the argument
     """
     # pylint: disable=too-few-public-methods
     free_param_values = None  #: array[float]: current free parameter values, set in :meth:`QNode.evaluate`
-    kwarg_values = None #: dict: dictionary containing the keyword argument values, set in :meth:`QNode.evaluate`
+    kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`QNode.evaluate`
 
-    def __init__(self, idx=None, name=None):
+    def __init__(self, idx, name=None):
         self.idx = idx    #: int: parameter index
         self.name = name  #: str: parameter name
         self.mult = 1     #: int, float: parameter scalar multiplier
@@ -137,10 +140,11 @@ class Variable:
         # pylint: disable=unsubscriptable-object
         if self.name is None:
             # The variable is a placeholder for a positional argument
-            return self.free_param_values[self.idx] * self.mult
+            return Variable.free_param_values[self.idx] * self.mult
 
         # The variable is a placeholder for a keyword argument
-        if isinstance(self.kwarg_values[self.name], (Sequence, np.ndarray)):
-            return self.kwarg_values[self.name][self.idx] * self.mult
+        temp = Variable.kwarg_values[self.name]
+        if isinstance(temp, (Sequence, np.ndarray)):
+            return temp[self.idx] * self.mult
 
-        return self.kwarg_values[self.name] * self.mult
+        raise TypeError('Internal: Keyword arguments must map to arrays.')
