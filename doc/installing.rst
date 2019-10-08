@@ -16,7 +16,6 @@ as well as the following Python packages:
 
 * `numpy <http://numpy.org/>`_  >=1.13.3
 * `scipy <http://scipy.org/>`_  >=1.0.0
-* `sympy <http://sympy.org/>`_
 * `networkx <http://networkx.github.io/>`_
 * `autograd <https://github.com/HIPS/autograd>`_
 * `toml <https://github.com/uiri/toml>`_

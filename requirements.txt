@@ -1,6 +1,5 @@
 numpy
 scipy
-sympy
 networkx
 autograd
 toml

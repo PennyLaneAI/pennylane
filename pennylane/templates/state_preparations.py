@@ -39,7 +39,6 @@ from collections.abc import Iterable
 import numpy as np
 import pennylane as qml
 from scipy import sparse
-from sympy.combinatorics.graycode import GrayCode
 
 # pylint: disable=len-as-condition
 
