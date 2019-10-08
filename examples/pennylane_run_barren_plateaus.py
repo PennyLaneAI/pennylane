@@ -76,6 +76,9 @@ import matplotlib.pyplot as plt
 ##################################################
 # Next, we create a randomized variational circuit
 
+# Set a seed for reproducibility
+np.random.seed(20)
+
 num_qubits = 4
 dev = qml.device("default.qubit", wires=num_qubits)
 gate_set = [qml.RX, qml.RY, qml.RZ]
