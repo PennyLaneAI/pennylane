@@ -281,9 +281,9 @@ def MottonenStatePreparation(state_vector, wires):
         )
 
     # Change ordering of indices, original code was for IBM machines
-    state_vector = np.array(state_vector).reshape([2] * n).T.flatten()    
+    state_vector = np.array(state_vector).reshape([2] * n).T.flatten()[:, np.newaxis]    
     state_vector = sparse.dok_matrix(state_vector)
-    
+
     wires = np.array(wires)
 
     a = sparse.dok_matrix(state_vector.shape)

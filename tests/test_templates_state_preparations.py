@@ -98,7 +98,7 @@ class TestBasisStatePreparation:
         with pytest.raises(ValueError, match="Number of qubits must be equal to the number of wires"):
             BasisStatePreparation(basis_state, wires)
 
-    def test_error_wires_list(self, basis_state, wires):
+    def test_error_wires_list(self):
         """Tests that the correct error messages is raised when wires
         are not passed as a list of integers."""
 
@@ -211,7 +211,7 @@ class TestMottonenStatePreparation:
         with pytest.raises(ValueError, match="Number of entries in the state vector must be equal to 2 to the power of the number of wires"):
             MottonenStatePreparation(state_vector, wires)
 
-    def test_error_wires_list(self, basis_state, wires):
+    def test_error_wires_list(self):
         """Tests that the correct error messages is raised when wires
         are not passed as a list of integers."""
 
