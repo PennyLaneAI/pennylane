@@ -40,7 +40,7 @@ from scipy import sparse
 import numpy as np
 import pennylane as qml
 
-# pylint: disable=len-as-condition
+# pylint: disable=len-as-condition,arguments-out-of-order
 
 
 def gray_code(rank):
