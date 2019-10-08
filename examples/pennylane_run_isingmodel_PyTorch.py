@@ -42,7 +42,7 @@ def circuit(p1, p2):
     return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
 ###############################################################################
-# The cost function can be defined as the energy of the spin configuration which is to be
+# The cost function to be minimized is defined as the energy of the spin configuration
 # optimized using gradient descent:
 
 def cost(var1, var2):
