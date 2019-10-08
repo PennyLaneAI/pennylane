@@ -15,9 +15,13 @@
 interfaces.tfe
 ==============
 
-**Module name**: pennylane.interfaces.tfe
+**Module name:** :mod:`pennylane.interfaces.tf`
 
-.. currentmodule:: pennylane.interfaces.tfe
+TensorFlow interface
+********************
+
+
+.. currentmodule:: pennylane.interfaces.tf
 
 This module contains the :func:`TFEQNode` function to convert Numpy-interfacing quantum nodes to TensorFlow
 Eager mode compatible quantum nodes.
@@ -37,12 +41,18 @@ from functools import partial
 
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.eager as tfe # pylint: disable=unused-import
 
 from pennylane.utils import unflatten
 
 
-def TFEQNode(qnode):
+if tf.__version__[0] == "1":
+    import tensorflow.contrib.eager as tfe # pylint: disable=unused-import,ungrouped-imports
+    Variable = tfe.Variable
+else:
+    from tensorflow import Variable # pylint: disable=unused-import,ungrouped-imports
+
+
+def TFQNode(qnode):
     """Function that accepts a :class:`~.QNode`, and returns a TensorFlow eager-execution-compatible QNode.
 
     Args:
@@ -66,10 +76,10 @@ def TFEQNode(qnode):
 
     @qnode_str
     @tf.custom_gradient
-    def _TFEQNode(*input_, **input_kwargs):
+    def _TFQNode(*input_, **input_kwargs):
         # detach all input Tensors, convert to NumPy array
-        args = [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in input_]
-        kwargs = {k:v.numpy() if isinstance(v, (tf.Variable, tf.Tensor)) else v for k, v in input_kwargs.items()}
+        args = [i.numpy() if isinstance(i, (Variable, tf.Tensor)) else i for i in input_]
+        kwargs = {k:v.numpy() if isinstance(v, (Variable, tf.Tensor)) else v for k, v in input_kwargs.items()}
 
         # if NumPy array is scalar, convert to a Python float
         args = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in args]
@@ -101,4 +111,4 @@ def TFEQNode(qnode):
 
         return res, grad
 
-    return _TFEQNode
+    return _TFQNode

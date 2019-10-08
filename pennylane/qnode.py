@@ -259,7 +259,7 @@ class QNode:
         for x in res:
             if x.return_type is None:
                 raise QuantumFunctionError("Observable '{}' does not have the measurement "
-                                           "type specified.")
+                                           "type specified.".format(x.name))
 
         # check that all ev's are returned, in the correct order
         if res != tuple(self.ev):
@@ -1130,17 +1130,17 @@ class QNode:
 
         return TorchQNode(self)
 
-    def to_tfe(self):
-        """Convert the standard PennyLane QNode into a :func:`~.TFEQNode`.
+    def to_tf(self):
+        """Convert the standard PennyLane QNode into a :func:`~.TFQNode`.
         """
         # Placing slow imports here, in case the user does not use the TF interface
         try: # pragma: no cover
-            from .interfaces.tfe import TFEQNode
+            from .interfaces.tf import TFQNode
         except ImportError: # pragma: no cover
-            raise QuantumFunctionError("TensorFlow with eager execution mode not found. Please install "
-                                       "the latest version of TensorFlow to enable the TFEQNode interface.") from None
+            raise QuantumFunctionError("TensorFlow not found. Please install "
+                                       "the latest version of TensorFlow to enable the TFQNode interface.") from None
 
-        return TFEQNode(self)
+        return TFQNode(self)
 
 
 #def QNode_vjp(ans, self, params, *args, **kwargs):
