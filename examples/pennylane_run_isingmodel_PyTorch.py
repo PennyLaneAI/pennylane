@@ -55,7 +55,7 @@ def cost(var1, var2):
 ###############################################################################
 # Sanity check
 # ^^^^^^^^^^^^^
-# Let’s test the functions above using :math:`[s_1, s_2, s_3] = [1, -1, -1]` spin
+# Let's test the functions above using :math:`[s_1, s_2, s_3] = [1, -1, -1]` spin
 # configuration and the given coupling matrix. The total energy for this Ising model
 # should be:
 #
