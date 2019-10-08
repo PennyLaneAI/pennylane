@@ -80,7 +80,7 @@ var_init = [p1, p2]
 cost_init = cost(p1, p2)
 
 print("Randomly initialized angles:", var_init)
-print("Corresponding cost before optimization:",cost_init)
+print("Corresponding cost before optimization:", cost_init)
 
 ###############################################################################
 # Optimization
