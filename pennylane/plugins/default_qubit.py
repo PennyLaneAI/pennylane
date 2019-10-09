@@ -386,9 +386,9 @@ class DefaultQubit(Device):
                                   "on a {} device.".format(operation, self.short_name))
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
                 # create matrix of binary integers ascending along first axis
-                bin_matrix = np.tile(np.arange(0, n_state_vector), (len(wires), 1))
-                bin_matrix = np.array([list(map(lambda x: int(x / 2**(len(wires) - 1 - i)) % 2, bin_matrix[i, :]))
-                                       for i in range(0, len(wires))]).T
+                bin_matrix = np.tile(np.arange(0, n_state_vector, dtype=int), (len(wires), 1))
+                bin_matrix = np.array([bin_matrix[i, :] / 2 ** (len(wires) - 1 - i) % 2 for i in range(0, len(wires))],
+                                      dtype=int).T
                 # get indices for which state is changed to the input state vector elements
                 nums = np.dot(bin_matrix, 2**(n - 1 - np.sort(np.array(wires))))
                 self._state = np.zeros_like(self._state)
