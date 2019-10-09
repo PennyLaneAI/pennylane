@@ -41,7 +41,7 @@ descent for several reasons:
 
 2. Stochasticity can help to avoid local minima and saddle points,
 
-3. Numerical evidence shows that convergence properties are superior to regular gradient descent.
+3. Numerical evidence shows that its convergence properties are superior to those of regular gradient descent.
 
 In variational quantum algorithms, a parametrized quantum circuit :math:`U(\theta)`
 is optimized by a classical optimization loop in order to minimize a function of the expectation
