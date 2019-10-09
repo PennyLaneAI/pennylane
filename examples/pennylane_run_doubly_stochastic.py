@@ -104,7 +104,7 @@ using a finite number of shots.
 # the variational quantum eigensolver (VQE) algorithm.
 #
 # Let's use the ``default.qubit`` simulator for both the analytic gradient,
-# as well as the estimated gradient using number of shots :math:`N\in\{1, 100\}`.
+# as well as the estimated gradient using :math:`N\in\{1, 100\}` number of shots.
 
 import pennylane as qml
 from pennylane import numpy as np
