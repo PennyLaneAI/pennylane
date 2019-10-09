@@ -1,26 +1,26 @@
 r"""
 .. _isingmodel_PyTorch:
 
-Optimization of 3-qubit Ising model in PyTorch
-===============================================
+3-qubit Ising model in PyTorch
+==============================
 
-The Ising model is an example of a system whose optimization landscape is non-convex. Hence,
-using gradient descent may not be the best strategy as the optimization can get
-stuck in local minima. Consequently, Ising models are popularly used to represent and solve
-Quadratic Unconstrained Binary Optimization (QUBO) problems with non-convex cost functions in
-Quantum Annealing (for example on a D-wave system). 
+The interacting spins with variable coupling strengths of an `Ising model <https://en.wikipedia.org/wiki/Ising_model>`__ can be used to simulate various machine learning concepts like `Hopfield networks <https://en.wikipedia.org/wiki/Hopfield_network>`__ and `Boltzmann machines <https://en.wikipedia.org/wiki/Boltzmann_machine>`__ :cite:`schuld2018supervised`. They also closely imitate the underlying mathematics of a subclass of computational problems called
+`Quadratic Unconstrained Binary Optimization (QUBO) <https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization>`__ problems. 
 
-The Hamiltonian for this system is given by:
-
-.. math::  H=-\sum_{<i,j>} J_{ij} \sigma_i \sigma_{j}
-
-where each spin can be in +1 or -1 spin state and :math:`J_{ij}` are the nearest neighbor coupling strengths.
+Despite this adaptability of Ising models, their current use is limited to a subfield of quantum machine learning; quantum adiabatic machine learning. This is because the optimization landscape of this model is non-convex; gradient descent may not be the best strategy as the optimization can get
+stuck in local minima. Optimization techniques like quantum annealing have to be used (for example on a D-wave system). In this tutorial, we get a closer look at this phenomenon using a toy Ising model.  
 
 PennyLane implementation
 ------------------------
 
 This basic tutorial optimizes a 3-qubit Ising model using the PennyLane ``default.qubit``
-device with the PyTorch machine learning interface. For simplicity, the first spin can be assumed
+device with the PyTorch machine learning interface. In the absence of external fields, the Hamiltonian for this system is given by:
+
+.. math::  H=-\sum_{<i,j>} J_{ij} \sigma_i \sigma_{j}
+
+where each spin can be in +1 or -1 spin state and :math:`J_{ij}` are the nearest neighbor coupling strengths.
+
+For simplicity, the first spin can be assumed
 to be in the "up" state (+1 eigenstate of Pauli-Z operator) and the coupling matrix can be set to :math:`J = [1,-1]`. The rotation angles for the other two spins are then optimized
 so that the energy of the system is minimized for the given couplings.
 """
@@ -100,10 +100,12 @@ def closure():
 
 var_pt = [var_init]
 cost_pt = [cost_init]
+x = [0]
 
 for i in range(steps):
     opt.step(closure)
     if (i + 1) % 5 == 0:
+        x.append(i)
         p1n, p2n = opt.param_groups[0]["params"]
         costn = cost(p1n, p2n)
         var_pt.append([p1n, p2n])
@@ -132,20 +134,76 @@ print("Optimized angles:",p1_final, p2_final)
 print("Final cost after optimization:", cost(p1_final, p2_final))
 
 ###############################################################################
-#
+
+import matplotlib
+import matplotlib.pyplot as plt
+
+fig = plt.figure(figsize=(6, 4))
+plt.plot(x, cost_pt, label = 'global minimum')
+plt.xlabel("Optimization steps")
+plt.ylabel("Cost / Energy")
+plt.legend()
+plt.show()
+
+###############################################################################
 # Local minimum
 # ^^^^^^^^^^^^^
 # If the spins are initialized close to the local minimum of zero energy, the optimizer is
-# likely to get stuck here and never find the global minimum at -2. The figure below shows
-# the results from two different initializations on various optimizers.
-# 
+# likely to get stuck here and never find the global minimum at -2. 
+
+torch.manual_seed(9)
+pt3 = Variable((np.pi*torch.rand(3, dtype = torch.float64)), requires_grad = True)
+pt4 = Variable((np.pi*torch.rand(3, dtype = torch.float64)), requires_grad = True)
+var_init_loc = [pt3, pt4]
+cost_init_loc = cost(pt3, pt4)
+print(cost_init_loc)
+
+###############################################################################
+
+opt = torch.optim.SGD(var_init_loc, lr = 0.1)
+
+def closure():
+    opt.zero_grad()
+    loss = cost(pt3, pt4)
+    loss.backward()
+    return loss
+
+
+var_pt_loc = [var_init_loc]
+cost_pt_loc = [cost_init_loc]
+
+for j in range(100):
+    opt.step(closure)
+    if (j + 1) % 5 == 0:
+        pt3, pt4 = opt.param_groups[0]['params']
+        costn = cost(pt3, pt4)
+        var_pt_loc.append([pt3,pt4])
+        cost_pt_loc.append(costn)
+        print('Energy after step {:5d}: {: .7f} | Angles: {}'.format(j+1,costn, [pt3.detach().numpy(), pt4.detach().numpy()]),"\n")
+
+###############################################################################
+
+fig = plt.figure(figsize=(6, 4))
+plt.plot(x, cost_pt_loc, 'r', label = 'local minimum')
+plt.xlabel("Optimization steps")
+plt.ylabel("Cost / Energy")
+plt.legend()
+plt.show()
+
+###############################################################################
 # |
-# .. image:: ../../examples/figures/ising1.png
-#    :width: 48%
-# .. image:: ../../examples/figures/ising2.png
-#    :width: 48%
-# |
-#
 # Try it yourself! Download and run this file with different
 # initialization parameters and see how the results change.
+#
+# Further reading
+# ^^^^^^^^^^^^^^^
+#
+# 1. Maria Schuld and Francesco Petruccione. "Supervised Learning with Quantum Computers."
+# Springer, 2018.
+#
+# 2. Andrew Lucas. "Ising formulations of many NP problems."
+# `arXiv:1302.5843 <https://arxiv.org/pdf/1302.5843>`__, 2014.
+#
+# 3. Gary Kochenberger et al. "The Unconstrained Binary Quadratic Programming Problem: A Survey."
+# `Journal of Combinatorial Optimization <https://link.springer.com/article/10.1007/s10878-014-9734-0>`__, 2014.
 
