@@ -63,7 +63,7 @@ and improve upon an initial circuit structure ansatz.
 #
 # Thus, one might expect the number of circuit evaluations required to be 9 for each parameter (3 for each gate
 # choice). However, since there is a 3-fold
-# degeneracy in the expectation value when :math:`\theta_d=0`,
+# degeneracy in the gates when :math:`\theta_d=0`,
 #
 # .. math:: R_x(0) = R_y(0) = R_z(0) = 1,
 #
