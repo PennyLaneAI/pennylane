@@ -59,6 +59,8 @@ Code details
 from collections import namedtuple
 import networkx as nx
 
+from .utils import _flatten
+
 
 def _by_idx(x):
     """Sorting key for Operations: queue index aka temporal order."""
@@ -105,7 +107,7 @@ class CircuitGraph:
         """
         for k, op in enumerate(ops):
             op.queue_idx = k  # store the queue index in the Operation
-            for w in set(op.wires):
+            for w in set(_flatten(op.wires)):  # flatten the nested wires lists of Tensor observables
                 # Add op to the grid, to the end of wire w
                 self._grid.setdefault(w, []).append(op)
 
