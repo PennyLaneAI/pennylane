@@ -209,8 +209,7 @@ def classproperty(func):
 # Base Operation class
 #=============================================================================
 
-
-class Operation(abc.ABC):
+class Operator(abc.ABC):
     r"""Base class for quantum operations supported by a device.
 
     The following class attributes must be defined for all Operations:
@@ -242,7 +241,6 @@ class Operation(abc.ABC):
             This flag is useful if there is some reason to run an Operation
             outside of a QNode context.
     """
-    _grad_recipe = None
 
     @abc.abstractproperty
     def num_params(self):
@@ -268,63 +266,6 @@ class Operation(abc.ABC):
         """
         raise NotImplementedError
 
-    @property
-    def grad_method(self):
-        """Gradient computation method.
-
-        * ``'A'``: analytic differentiation.
-        * ``'F'``: finite difference numerical differentiation.
-        * ``None``: the operation may not be differentiated.
-
-        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
-        """
-        return None if self.num_params == 0 else 'F'
-
-    @property
-    def grad_recipe(self):
-        r"""Gradient recipe for the analytic differentiation method.
-
-        This is a list with one tuple per operation parameter. For parameter
-        :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in
-        a gradient recipe of
-
-        .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
-
-        If this property returns ``None``, the default gradient recipe
-        :math:`(c_k, s_k)=(1/2, \pi/2)` is assumed for every parameter.
-        """
-        return self._grad_recipe
-
-    @property
-    def generator(self):
-        r"""Generator of the operation.
-
-        A length-2 list ``[generator, scaling_factor]``, where
-
-        * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
-          that acts as the generator of the current operation
-
-        * ``scaling_factor`` represents a scaling factor applied
-          to the generator operation
-
-        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
-        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
-        of operator :math:`U(\theta)`:
-
-        .. code-block:: python
-
-            generator = [PauliX, 0.7]
-
-        Default is ``[None, 1]``, indicating the operation has no generator.
-        """
-        return [None, 1]
-
-    @grad_recipe.setter
-    def grad_recipe(self, value):
-        """Setter for the grad_recipe property"""
-        self._grad_recipe = value
-
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
@@ -348,22 +289,6 @@ class Operation(abc.ABC):
         for p in params:
             self.check_domain(p)
         self.params = list(params)
-
-        # check the grad_method validity
-        if self.par_domain == 'N':
-            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters.'
-        elif self.par_domain == 'A':
-            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method.'
-
-        # check the grad_recipe validity
-        if self.grad_method == 'A':
-            if self.grad_recipe is None:
-                # default recipe for every parameter
-                self.grad_recipe = [None] * self.num_params
-            else:
-                assert len(self.grad_recipe) == self.num_params, 'Gradient recipe must have one entry for each parameter!'
-        else:
-            assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
 
         # apply the operation on the given wires
         if not isinstance(wires, Sequence):
@@ -481,12 +406,124 @@ class Operation(abc.ABC):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
+class Operation(Operator):
+    r"""Base class for quantum operations supported by a device.
+
+    The following class attributes must be defined for all Operations:
+
+    * :attr:`~.Operation.num_params`
+    * :attr:`~.Operation.num_wires`
+    * :attr:`~.Operation.par_domain`
+
+    The following two class attributes are optional, but in most cases
+    should be clearly defined to avoid unexpected behavior during
+    differentiation.
+
+    * :attr:`~.Operation.grad_method`
+    * :attr:`~.Operation.grad_recipe`
+
+    Finally, there are some additional optional class attributes
+    that may be set, and used by certain quantum optimizers:
+
+    * :attr:`~.Operation.generator`
+
+    Args:
+        args (tuple[float, int, array, Variable]): operation parameters
+
+    Keyword Args:
+        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`QNode` circuit queue.
+            This flag is useful if there is some reason to run an Operation
+            outside of a QNode context.
+    """
+    _grad_recipe = None
+
+    @property
+    def grad_method(self):
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
+        return None if self.num_params == 0 else 'F'
+
+    @property
+    def grad_recipe(self):
+        r"""Gradient recipe for the analytic differentiation method.
+
+        This is a list with one tuple per operation parameter. For parameter
+        :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in
+        a gradient recipe of
+
+        .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
+
+        If this property returns ``None``, the default gradient recipe
+        :math:`(c_k, s_k)=(1/2, \pi/2)` is assumed for every parameter.
+        """
+        return self._grad_recipe
+
+    @property
+    def generator(self):
+        r"""Generator of the operation.
+
+        A length-2 list ``[generator, scaling_factor]``, where
+
+        * ``generator`` is an existing PennyLane
+          operation class or :math:`2\times 2` Hermitian array
+          that acts as the generator of the current operation
+
+        * ``scaling_factor`` represents a scaling factor applied
+          to the generator operation
+
+        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
+        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
+        of operator :math:`U(\theta)`:
+
+        .. code-block:: python
+
+            generator = [PauliX, 0.7]
+
+        Default is ``[None, 1]``, indicating the operation has no generator.
+        """
+        return [None, 1]
+
+    @grad_recipe.setter
+    def grad_recipe(self, value):
+        """Setter for the grad_recipe property"""
+        self._grad_recipe = value
+
+    def __init__(self, *args, wires=None, do_queue=True):
+
+        # check the grad_method validity
+        if self.par_domain == 'N':
+            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters.'
+        elif self.par_domain == 'A':
+            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method.'
+
+        # check the grad_recipe validity
+        if self.grad_method == 'A':
+            if self.grad_recipe is None:
+                # default recipe for every parameter
+                self.grad_recipe = [None] * self.num_params
+            else:
+                assert len(self.grad_recipe) == self.num_params, 'Gradient recipe must have one entry for each parameter!'
+        else:
+            assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
+
+        super().__init__(*args, wires=wires, do_queue=do_queue)
+
+
 #=============================================================================
 # Base Observable class
 #=============================================================================
 
 
-class Observable(Operation):
+class Observable(Operator):
     """Base class for observables supported by a device.
 
     :class:`Observable` is used to describe Hermitian quantum observables.
