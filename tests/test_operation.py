@@ -294,7 +294,7 @@ class TestOperationConstruction:
             num_wires = 1
             num_params = 1
             par_domain = 'A'
-            grad_method = 'A'
+            grad_method = 'F'
 
         with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
             DummyOp(ov.Variable(0), wires=[0], do_queue=False)
