@@ -62,12 +62,13 @@ and improve upon an initial circuit structure ansatz.
 # :math:`\langle H \rangle`.
 #
 # Thus, one might expect the number of circuit evaluations required to be 9 for each parameter (3 for each gate
-# choice). However, since there is a 3-fold
-# degeneracy in the gates when :math:`\theta_d=0`,
+# choice). However, since all 3 rotation gates yield identity when :math:`\theta_d=0`,
 #
 # .. math:: R_x(0) = R_y(0) = R_z(0) = 1,
 #
-# the number of evaluations is reduced to 7.
+# the value of :math:`\langle H \rangle_{\theta_d=0}` in the expression for :math:`\theta_d^{*}` above
+# is the same for each of the gate choices, and this 3-fold
+# degeneracy reduces the number of evaluations required to 7.
 #
 # One cycle of the Rotosolve algorithm involves
 # iterating through every parameter and performing the calculation above.
