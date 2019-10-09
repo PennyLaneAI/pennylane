@@ -597,7 +597,7 @@ class Tensor(Observable):
 
         Returns:
             list[list[Any]]: nested list containing the wires per observable
-                in the tensor product
+            in the tensor product
         """
         return [o.wires for o in self.obs]
 
@@ -625,7 +625,7 @@ class Tensor(Observable):
 
         Returns:
             list[list[Any]]: nested list containing the parameters per observable
-                in the tensor product
+            in the tensor product
         """
         return [o.parameters for o in self.obs]
 
