@@ -394,10 +394,7 @@ class DefaultQubit(Device):
             self._state[num] = 1.
             return
 
-        if operation.endswith(Operation.string_for_inverse):
-            A = self._get_operator_matrix(operation[:-len(Operation.string_for_inverse)], par).conj().T
-        else:
-            A = self._get_operator_matrix(operation, par)
+        A = self._get_operator_matrix(operation, par)
 
         self._state = self.mat_vec_product(A, self._state, wires)
 
@@ -473,11 +470,15 @@ class DefaultQubit(Device):
         Returns:
           array: matrix representation.
         """
-        A = {**self._operation_map, **self._observable_map}[operation]
-        if not callable(A):
-            return A
+
+        operation_map = {**self._operation_map, **self._observable_map}
+
+        if operation.endswith(Operation.string_for_inverse):
+            A = operation_map[operation[:-len(Operation.string_for_inverse)]]
+            return A.conj().T if not callable(A) else A(*par).conj().T
         else:
-            return A(*par)
+            A = operation_map[operation]
+            return A if not callable(A) else A(*par)
 
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.

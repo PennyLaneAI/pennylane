@@ -335,7 +335,7 @@ class Operation(abc.ABC):
 
     @property
     def is_inverse(self):
-        r"""Boolean determining if the inverse of the operation is to be used.
+        r"""Boolean determining if the inverse of the operation was determined.
         """
         return self._inverse
 
@@ -347,7 +347,7 @@ class Operation(abc.ABC):
     def inv(self):
         r"""Setting the inverse flag for the operation.
 
-        If set, the conjugate transpose of the operation will be used for the computations.
+        If set, the inverse of the operation will be used for the computations.
         """
         self._inverse = True
         return self
@@ -551,7 +551,6 @@ class Observable(Operation):
             wires = args[-1]
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
-
 
 
 #=============================================================================

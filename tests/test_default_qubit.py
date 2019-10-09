@@ -925,7 +925,7 @@ class TestDefaultQubitIntegration:
         ("S", -1),
     ])
     def test_inverse_circuit(self, qubit_device_1_wire, tol, name, expected_output):
-        """Tests the inverse of supported gates that act on a single wire that are not parameterized"""
+        """Tests the inverse of supported gates that act on a single wire and are not parameterized"""
 
         op = getattr(qml.ops, name)
 
@@ -938,16 +938,28 @@ class TestDefaultQubitIntegration:
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
-                                                           multiplier* 0.5432) for multiplier in range(25)
+                                                           multiplier * 0.5432) for multiplier in range(25)
                                                           ])
     def test_inverse_circuit_with_parameters(self, qubit_device_1_wire, tol, name, expected_output, phi):
-        """Tests supported gates that act on a single wire that are not parameterized"""
+        """Tests the inverse of supported gates that act on a single wire and are parameterized"""
 
         @qml.qnode(qubit_device_1_wire)
         def circuit():
             qml.RX(phi, wires=0)
             qml.RX(phi, wires=0).inv()
             return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
+                                                           multiplier * 0.5432) for multiplier in range(25)
+                                                          ])
+    def test_inverse_circuit_with_parameters_expectation(self, qubit_device_1_wire, tol, name, expected_output, phi):
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.RX(phi, wires=0)
+            qml.RX(phi, wires=0).inv()
+            return qml.expval(qml.PauliZ(0).inv())
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
