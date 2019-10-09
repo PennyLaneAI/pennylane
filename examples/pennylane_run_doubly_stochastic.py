@@ -44,7 +44,7 @@ descent for several reasons:
 3. Numerical evidence shows that its convergence properties are superior to those of regular gradient descent.
 
 In variational quantum algorithms, a parametrized quantum circuit :math:`U(\theta)`
-is optimized by a classical optimization loop in order to minimize a function of the expectation
+is optimized by a classical optimization loop in order to minimize a function of expectation
 values. For example, consider the expectation values
 
 .. math:: \langle A_i \rangle = \langle 0 | U(\theta)^\dagger A_i U(\theta) | 0\rangle
