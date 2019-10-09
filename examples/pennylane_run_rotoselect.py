@@ -53,7 +53,7 @@ and improve upon an initial circuit structure ansatz.
 # The calculation makes use of 3 separate evaluations
 # of the expectation value :math:`\langle H \rangle_{\theta_d}` using the quantum circuit. Although
 # :math:`\langle H \rangle` is really a function of all parameters and gate choices
-# :math:`\boldsymbol{\theta}`, :math:`\boldsymbol{P}`, we
+# (:math:`\boldsymbol{\theta}`, :math:`\boldsymbol{P}`), we
 # are fixing every parameter and gate choice apart from :math:`\theta_d` in this expression so we write it as
 # :math:`\langle H \rangle = \langle H \rangle_{\theta_d}`.
 # For each parameter in the quantum circuit, the algorithm proceeds by evaluating :math:`\theta^{*}_d`
