@@ -17,10 +17,14 @@
 * Added the S and T gates to the set of qubit operations.
   [#343](https://github.com/XanaduAI/pennylane/pull/343)
 
+* Tensor observables are now supported within the `expval`,
+  `var`, and `sample` functions, by using the `@` operator.
+  [#267](https://github.com/XanaduAI/pennylane/pull/267)
+
 ### Breaking changes
 
 * The argument `n` specifying the number of samples in the method `Device.sample` was removed.
-  Instead, the method will always return `Device.shots` many samples. 
+  Instead, the method will always return `Device.shots` many samples.
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
 ### Improvements
@@ -37,11 +41,17 @@
   than the previously used `scipy.linalg.pinv`.
   [#331](https://github.com/XanaduAI/pennylane/pull/331)
 
+* The deprecated `qml.expval.Observable` syntax has been removed.
+  [#267](https://github.com/XanaduAI/pennylane/pull/267)
+
+* Remainder of the unittest-style tests were ported to pytest.
+  [#310](https://github.com/XanaduAI/pennylane/pull/310)
+
 ### Documentation
 
 * Added tutorial for QAOA on MaxCut problem
   [#328](https://github.com/XanaduAI/pennylane/pull/328)
-  
+
 * Added QGAN flow chart figure to its tutorial
   [#333](https://github.com/XanaduAI/pennylane/pull/333)
 
@@ -64,7 +74,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Shahnawaz Ahmed, Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Antal Száva, Roeland Wiersema
+Shahnawaz Ahmed, Ville Bergholm, Aroosa Ijaz, Josh Izaac, Angus Lowe,
+Johannes Jakob Meyer, Antal Száva, Roeland Wiersema.
 
 ---
 

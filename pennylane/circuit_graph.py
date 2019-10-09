@@ -36,6 +36,8 @@ based on operation and observable queues.
 from collections import namedtuple
 import networkx as nx
 
+from .utils import _flatten
+
 
 Command = namedtuple("Command", ["name", "op", "return_type", "idx"])
 Layer = namedtuple("Layer", ["op_idx", "param_idx"])
@@ -70,7 +72,7 @@ class CircuitGraph:
                 name=op.name, op=op, return_type=getattr(op, "return_type", None), idx=idx
             )
 
-            for w in set(op.wires):
+            for w in set(_flatten(op.wires)):
                 if w not in self._grid:
                     # wire is not already in the grid;
                     # add the corresponding wire to the grid
