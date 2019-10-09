@@ -38,7 +38,7 @@ and improve upon an initial circuit structure ansatz.
 # with respect to fixed values for the other parameters, skipping gradient descent, and tries various
 # rotation gates along the way.
 # The algorithm works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1,\dots,\theta_D` and gate choices
-# :math:`\boldsymbol{P}=P_1...P_D`
+# :math:`\boldsymbol{P}=P_1,\dots,P_D`
 # one at a time according to a *closed-form expression for the optimal parameter value* :math:`\theta^{*}_d`
 # when the other parameters and gate choices are fixed:
 #
