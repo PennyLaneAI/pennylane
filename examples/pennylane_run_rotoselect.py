@@ -82,7 +82,7 @@ and improve upon an initial circuit structure ansatz.
 # is
 #
 # .. math::
-#   H = 0.5Y_2 - 0.8Z_1 - 0.2X_1
+#   H = 0.5Y_2 + 0.8Z_1 - 0.2X_1
 #
 # where the subscript denotes the qubit upon which the Pauli operator acts. The
 # expectation value of this quantity acts as the cost function for our
