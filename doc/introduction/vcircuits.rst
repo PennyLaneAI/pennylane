@@ -20,7 +20,7 @@ in the :ref:`Key Concepts <key_concepts>` section.
 Creating quantum nodes
 ----------------------
 
-.. image:: _static/qnode.png
+.. image:: ../_static/qnode.png
     :align: right
     :width: 180px
     :target: javascript:void(0);
@@ -34,7 +34,7 @@ the quantum node :ref:`decorator <intro_vcirc_decorator>`.
 Each classical **interface** uses a different version of a quantum node, and we will here introduce the standard QNode
 to use with the NumPy interface. NumPy-interfacing quantum nodes take NumPy datastructures,
 such as floats and arrays, and return Numpy data structures.
-They can be optimized using NumPy-based :ref:`optimization methods <optimize>`.
+They can be optimized using NumPy-based :ref:`optimization methods <intro_optimizers>`.
 Quantum nodes for other PennyLane interfaces like :ref:`PyTorch <torch_interf>` and
 :ref:`TensorFlow's Eager mode <tf_interf>` are introduced in the section on :ref:`Interfaces <intro_interfaces>`.
 
@@ -163,6 +163,8 @@ observables. These operations can be used exclusively in quantum functions.
 Qubit operations
 ^^^^^^^^^^^^^^^^
 
+.. _intro_vcirc_ops_qubit:
+
 .. currentmodule:: pennylane.ops.qubit
 
 Gates
@@ -209,6 +211,8 @@ Observables
 
 Continuous-variable operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _intro_vcirc_ops_cv:
 
 .. currentmodule:: pennylane.ops.cv
 

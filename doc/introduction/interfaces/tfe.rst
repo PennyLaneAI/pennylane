@@ -27,7 +27,7 @@ it can be done.
 Construction via the decorator
 ******************************
 
-The :ref:`QNode decorator <decorator>` is the recommended way for creating QNodes
+The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating QNodes
 in PennyLane. The only change required to construct a TensorFlow-capable QNode is to
 specify the ``interface='tfe'`` keyword argument:
 
@@ -115,7 +115,7 @@ array([-0.47942549,  0.        ])
 
 To optimize your hybrid classical-quantum model using the TensorFlow eager interface,
 you **must** make use of the TensorFlow optimizers provided in the ``tf.train`` module,
-or your own custom TensorFlow optimizer. **The** :ref:`PennyLane optimizers <optimize>`
+or your own custom TensorFlow optimizer. **The** :ref:`PennyLane optimizers <intro_optimizers>`
 **cannot be used with the TensorFlow interface**.
 
 For example, to optimize a TFE-interfacing QNode (below) such that the weights ``x``

@@ -15,15 +15,15 @@ Currently, there is support for the following three interfaces:
 
 :html:`<br>`
 
-.. image:: _static/numpy.jpeg
+.. image:: ../_static/numpy.jpeg
     :width: 250px
     :target: interfaces/numpy.html
 
-.. image:: _static/pytorch.png
+.. image:: ../_static/pytorch.png
     :width: 300px
     :target: interfaces/torch.html
 
-.. image:: _static/tensorflow.png
+.. image:: ../_static/tensorflow.png
     :width: 100px
     :target: interfaces/tfe.html
 

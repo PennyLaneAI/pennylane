@@ -13,9 +13,9 @@ Bridging the classical and quantum world
 ----------------------------------------
 
 The classical computations, as well as the overall optimization,
-are executed by a **classical interface** . PennyLane's standard interface is :ref:`NumPy <https://numpy.org/>`,
-but there is also support for powerful machine learning interfaces like :ref:`PyTorch <https://pytorch.org/>`
-and :ref:`Tensorflow <https://www.tensorflow.org/>`.
+are executed by a **classical interface** . PennyLane's standard interface is `NumPy <https://numpy.org/>`_,
+but there is also support for powerful machine learning interfaces like `PyTorch <https://pytorch.org/>`_
+and `Tensorflow <https://www.tensorflow.org/>`_.
 
 The quantum computations are sent to a **device** for execution. A device can be a classical
 simulator or real quantum hardware. PennyLane comes with default devices, but it can also use external
@@ -24,7 +24,7 @@ soft- and hardware to run quantum circuits - such as Xanadu's *StrawberryFields*
 The communication between PennyLane and external devices is coordinated by a **plugin**.
 
 
-.. image:: _static/building_blocks.png
+.. image:: ../_static/building_blocks.png
     :align: center
     :width: 650px
     :target: javascript:void(0);

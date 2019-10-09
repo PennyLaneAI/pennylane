@@ -1,23 +1,43 @@
-.. _docs_templates:
+.. _docs_init:
 
-templates
-=========
+qml.init
+========
 
-.. currentmodule:: pennylane.templates
+.. currentmodule:: pennylane.init
 
-Overview
---------
+This module contains functions that generate initial parameters, for example
+to use in templates.
 
-Modules
-*******
+
+Functions
+---------
+
+Strongly Entangling Circuit
 
 .. autosummary::
-    layers
-    embeddings
+    strong_ent_layers_uniform
+    strong_ent_layers_normal
+    strong_ent_layer_uniform
+    strong_ent_layer_normal
 
+Random Circuit
 
-.. toctree::
-    :maxdepth: 2
-    :hidden:
-    qml_templates_layers
-    qml_templates_embeddings
+.. autosummary::
+    random_layers_uniform
+    random_layers_normal
+    random_layer_uniform
+    random_layer_normal
+
+CV Neural Network
+
+.. autosummary::
+    cvqnn_layers_uniform
+    cvqnn_layers_normal
+    cvqnn_layer_uniform
+    cvqnn_layer_normal
+
+Interferometer
+
+.. autosummary::
+    interferometer_uniform
+    interferometer_normal

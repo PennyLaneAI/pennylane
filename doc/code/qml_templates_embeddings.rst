@@ -1,17 +1,25 @@
-.. _docs_templates:
+.. _docs_templates_embeddings:
 
-templates
-=========
+qml.templates.embeddings
+========================
 
-.. currentmodule:: pennylane.templates
+.. currentmodule:: pennylane.templates.embeddings
 
-Overview
---------
+This module provides quantum circuit architectures that can embed classical data into a quantum state.
 
-Modules
-*******
+Classes
+-------
 
 .. autosummary::
-    layers
-    embeddings
+    AmplitudeEmbedding
+    AngleEmbedding
+    BasisEmbedding
+    SqueezingEmbedding
+    DisplacementEmbedding
 
+
+.. note::
+
+    To make the signature of templates resemble other quantum operations used in
+    quantum circuits, we treat them as classes here, even though technically
+    they are functions.

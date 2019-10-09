@@ -98,7 +98,8 @@ To get PennyLane installed and running on your system, begin at the
 :ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's
 :ref:`key concepts <key_concepts>` for machine learning on quantum circuits.
 
-For getting started with PennyLane, check out our basic :ref:`qubit rotation <qubit_rotation>`,
+For getting started with PennyLane, read the :ref:`Introduction <pl_intro>` to learn about the different
+building blocks. For your first hands-on experience, check out our basic :ref:`qubit rotation <qubit_rotation>`,
 and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to
 explore :ref:`hybrid quantum optimization <plugins_hybrid>`, and :ref:`hybrid GPU-QPU optimization
 via PyTorch <pytorch_noise>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs),
@@ -111,7 +112,7 @@ models — these include Strawberry Fields, provided by the
 provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and
 `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins.
 
-Finally, detailed documentation on the PennyLane :ref:`interface <library_overview>` and API is provided.
+Finally, detailed documentation on the PennyLane API :ref:`interface <docs_pennylane>` is provided.
 Look there for full details on available quantum operations and expectations, and detailed guides on
 :ref:`how to write your own <plugin_overview>` PennyLane compatible quantum device.
 
@@ -153,10 +154,11 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Using PennyLane
    :hidden:
 
-   intro_pl
-   intro_vcirc
-   interfaces
-   plugins
+   introduction/pennylane
+   introduction/vcircuits
+   introduction/interfaces
+   introduction/plugins
+   introduction/optimizers
 
 .. toctree::
    :maxdepth: 1
@@ -185,8 +187,11 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: Code documentation
    :hidden:
 
-   code/overview
-   code/module_list
+   code/qml
+   code/qml_templates
+   code/qml_templates_layers
+   code/qml_templates_embeddings
+   code/qml_init
 
 
 :html:`<h2>Indices and tables</h2>`

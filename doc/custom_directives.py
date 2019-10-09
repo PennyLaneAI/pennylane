@@ -83,14 +83,14 @@ class GalleryItemDirective(Directive):
     """
     Create a sphinx gallery thumbnail for insertion anywhere in docs.
 
-    Optionally, you can specify the custom figure and intro/tooltip for the
+    Optionally, you can specify the custom figure and introduction/tooltip for the
     thumbnail.
 
     Example usage:
 
     .. galleryitem:: intermediate/char_rnn_generation_tutorial.py
         :figure: _static/img/char_rnn_generation.png
-        :intro: Put your custom intro here.
+        :introduction: Put your custom introduction here.
 
     If figure is specified, a thumbnail will be made out of it and stored in
     _static/thumbs. Therefore, consider _static/thumbs as a 'built' directory.
@@ -100,7 +100,7 @@ class GalleryItemDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = True
     option_spec = {'figure': directives.unchanged,
-                   'intro': directives.unchanged}
+                   'introduction': directives.unchanged}
     has_content = False
     add_index = False
 
@@ -114,8 +114,8 @@ class GalleryItemDirective(Directive):
         dirname = os.path.dirname(fname)
 
         try:
-            if 'intro' in self.options:
-                intro = self.options['intro'][:195] + '...'
+            if 'introduction' in self.options:
+                intro = self.options['introduction'][:195] + '...'
             else:
                 _, blocks = sphinx_gallery.gen_rst.split_code_and_text_blocks(abs_fname)
                 intro, _ = sphinx_gallery.gen_rst.extract_intro_and_title(abs_fname, blocks[0][1])
