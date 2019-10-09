@@ -289,8 +289,6 @@ def RGen(param, generator, wires):
         qml.RY(param, wires=wires)
     elif generator == "Z":
         qml.RZ(param, wires=wires)
-    else:
-        raise Exception("Invalid generator")
 
 
 def ansatz(params, generators):
