@@ -84,7 +84,7 @@ algorithms using PennyLane and near-term quantum hardware.
     :tooltip: Perform QAOA for MaxCut
     :figure: ../examples/figures/qaoa_maxcut_partition.png
     :description: :ref:`qaoa_maxcut`
-    
+
 .. customgalleryitem::
     :tooltip: Barren plateaus in quantum neural networks
     :figure: ../examples/figures/barren_plateaus/surface.png
