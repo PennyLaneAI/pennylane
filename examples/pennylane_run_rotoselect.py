@@ -304,7 +304,7 @@ def circuit(params, generators=[]):  # generators will be passed as a keyword ar
 
 
 @qml.qnode(dev)
-def circuit2(params, generators=[]):  # generators must be a kwarg in a qnode
+def circuit2(params, generators=[]):  # generators will be passed as a keyword arg
     ansatz(params, generators)
     return qml.expval(qml.PauliX(0))
 
