@@ -9,6 +9,8 @@ it is shown that quantum gradient descent, where a finite number of measurement 
 Furthermore, if the optimization involves a linear combination of expectation values
 (such as VQE), sampling from the terms in this linear combination can further reduce required
 resources, allowing for "doubly stochastic gradient descent".
+Additionally, one could even sample individual terms arising from the parameter shift rule, such that
+in the extreme case only one measurement is needed per parameter per optimization step.
 
 Note that based on very similar observations, `Jonas Kuebler et al. (2019) <https://arxiv.org/abs/1909.09083>`_
 recently proposed an optimizer (which they call the *individual Coupled Adaptive
