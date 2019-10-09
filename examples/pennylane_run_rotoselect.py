@@ -247,8 +247,8 @@ from mpl_toolkits.mplot3d import Axes3D
 fig = plt.figure(figsize=(6, 4))
 ax = fig.gca(projection="3d")
 
-X = np.linspace(-4.0, 4.0, 20)
-Y = np.linspace(-4.0, 4.0, 20)
+X = np.linspace(-4.0, 4.0, 40)
+Y = np.linspace(-4.0, 4.0, 40)
 xx, yy = np.meshgrid(X, Y)
 Z = np.array([[cost([x, y]) for x in X] for y in Y]).reshape(len(Y), len(X))
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
