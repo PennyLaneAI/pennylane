@@ -90,6 +90,11 @@ algorithms using PennyLane and near-term quantum hardware.
     :figure: ../examples/figures/qaoa_maxcut_partition.png
     :description: :ref:`qaoa_maxcut`
 
+.. customgalleryitem::
+    :tooltip: Barren plateaus in quantum neural networks
+    :figure: ../examples/figures/barren_plateaus/surface.png
+    :description: :ref:`barren_plateaus`
+
 :html:`<div style='clear:both'></div>`
 
 
@@ -103,7 +108,7 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_advanced_usage
     tutorials/pennylane_pytorch_noise
     tutorials/pennylane_run_state_preparation
-    tutorials/pennylane_isingmodel_PyTorch
+    tutorials/pennylane_run_isingmodel_PyTorch
     tutorials/pennylane_run_QGAN
     tutorials/pennylane_run_variational_classifier
     tutorials/pennylane_quantum_neural_net
@@ -111,3 +116,4 @@ algorithms using PennyLane and near-term quantum hardware.
     tutorials/pennylane_run_data_reuploading_classifier
     tutorials/pennylane_run_quantum_natural_gradient
     tutorials/pennylane_run_qaoa_maxcut
+    tutorials/pennylane_run_barren_plateaus

@@ -15,12 +15,13 @@
 Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
-from pennylane import numpy as np
-from scipy.linalg import block_diag
 
-from defaults import pennylane
-from pennylane.ops import cv
+from scipy.linalg import block_diag
 import pytest
+
+import pennylane
+from pennylane import numpy as np
+from pennylane.ops import cv
 
 
 s_vals = np.linspace(-3, 3, 13)

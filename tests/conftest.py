@@ -14,10 +14,11 @@
 """
 Pytest configuration file for PennyLane test suite.
 """
-import pytest
-from unittest.mock import PropertyMock, patch
 import os
+
+import pytest
 import numpy as np
+
 import pennylane as qml
 from pennylane.plugins import DefaultGaussian
 
@@ -58,26 +59,9 @@ def qubit_device(n_subsystems):
 def qubit_device_1_wire():
     return qml.device('default.qubit', wires=1)
 
-
 @pytest.fixture(scope="function")
 def qubit_device_2_wires():
     return qml.device('default.qubit', wires=2)
-
-
-@pytest.fixture(scope="function")
-def qubit_device_3_wires():
-    return qml.device('default.qubit', wires=3)
-
-
-@pytest.fixture(scope="function")
-def qubit_device_1_wire():
-    return qml.device('default.qubit', wires=1)
-
-
-@pytest.fixture(scope="function")
-def qubit_device_2_wires():
-    return qml.device('default.qubit', wires=2)
-
 
 @pytest.fixture(scope="function")
 def qubit_device_3_wires():
@@ -89,6 +73,10 @@ def gaussian_device(n_subsystems):
     """Number of qubits or modes."""
     return DummyDevice(wires=n_subsystems)
 
+@pytest.fixture(scope="session")
+def gaussian_device_2_wires():
+    """A 2-mode Gaussian device."""
+    return DummyDevice(wires=2)
 
 @pytest.fixture(scope="session")
 def gaussian_device_4modes():
@@ -109,29 +97,18 @@ def torch_support():
     return torch_support
 
 
-@pytest.fixture(scope='session')
-def tf_support():
-    """Boolean fixture for TensorFlow support"""
-    try:
-        import tensorflow as tf
-        import tensorflow.contrib.eager as tfe
-        tf.enable_eager_execution()
-        tf_support = True
-    except ImportError as e:
-        tf_support = False
-
-    return tf_support
-
-
 @pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):
     """Different seeds."""
     return request.param
 
+
 @pytest.fixture(scope="function")
-def mock_device():
+def mock_device(monkeypatch):
     """A mock instance of the abstract Device class"""
 
-    with patch.multiple(qml.Device, __abstractmethods__=set()):
+    with monkeypatch.context() as m:
+        dev = qml.Device
+        m.setattr(dev, '__abstractmethods__', frozenset())
         yield qml.Device()
