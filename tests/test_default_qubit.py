@@ -85,6 +85,11 @@ H = np.array(
 )
 
 
+THETA = np.linspace(0.11, 1, 3)
+PHI = np.linspace(0.32, 1, 3)
+VARPHI = np.linspace(0.02, 1, 3)
+
+
 def prep_par(par, op):
     "Convert par into a list of parameters that op expects."
     if op.par_domain == "A":
@@ -833,7 +838,7 @@ class TestDefaultQubitIntegration:
         """Test that the default qubit plugin provides correct result for high shot number"""
 
         shots = 10 ** 5
-        dev = qml.device("default.qubit", wires=1, shots=shots)
+        dev = qml.device("default.qubit", wires=1)
 
         p = 0.543
 
@@ -1073,3 +1078,383 @@ class TestDefaultQubitIntegration:
             return qml.expval(obs(*par, wires=[0, 1]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
+class TestTensorExpval:
+    """Test tensor expectation values"""
+
+    def test_paulix_pauliy(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving PauliX and PauliY works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        res = dev.expval(["PauliX", "PauliY"], [[0], [2]], [[], [], []])
+        expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_pauliz_identity(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving PauliZ and Identity works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        res = dev.expval(["PauliZ", "Identity", "PauliZ"], [[0], [1], [2]], [[], [], []])
+        expected = np.cos(varphi)*np.cos(phi)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_pauliz_hadamard(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        res = dev.expval(["PauliZ", "Hadamard", "PauliY"], [[0], [1], [2]], [[], [], []])
+        expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hermitian(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving qml.Hermitian works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        A = np.array(
+            [
+                [-6, 2 + 1j, -3, -5 + 2j],
+                [2 - 1j, 0, 2 - 1j, -5 + 4j],
+                [-3, 2 + 1j, 0, -4 + 3j],
+                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+            ]
+        )
+
+        res = dev.expval(["PauliZ", "Hermitian"], [[0], [1, 2]], [[], [A]])
+        expected = 0.5 * (
+            -6 * np.cos(theta) * (np.cos(varphi) + 1)
+            - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
+            + 3 * np.cos(varphi) * np.sin(phi)
+            + np.sin(phi)
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hermitian_hermitian(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving two Hermitian matrices works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        A1 = np.array([[1, 2],
+                       [2, 4]])
+
+        A2 = np.array(
+            [
+                [-6, 2 + 1j, -3, -5 + 2j],
+                [2 - 1j, 0, 2 - 1j, -5 + 4j],
+                [-3, 2 + 1j, 0, -4 + 3j],
+                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+            ]
+        )
+
+        res = dev.expval(["Hermitian", "Hermitian"], [[0], [1, 2]], [[A1], [A2]])
+        expected = 0.25 * (
+            -30
+            + 4 * np.cos(phi) * np.sin(theta)
+            + 3 * np.cos(varphi) * (-10 + 4 * np.cos(phi) * np.sin(theta) - 3 * np.sin(phi))
+            - 3 * np.sin(phi)
+            - 2 * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
+            * np.sin(varphi)
+            + np.cos(theta)
+            * (
+                18
+                + 5 * np.sin(phi)
+                + 3 * np.cos(varphi) * (6 + 5 * np.sin(phi))
+                + 2 * (3 + 10 * np.cos(phi) - 5 * np.sin(phi)) * np.sin(varphi)
+            )
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
+        dev = qml.device("default.qubit", wires=2)
+        dev.reset()
+        dev.apply("RY", wires=[0], par=[theta])
+        dev.apply("RY", wires=[1], par=[phi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+
+        A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+
+        res = dev.expval(["Hermitian", "Identity"], [[0], [1]], [[A], []])
+
+        a = A[0, 0]
+        re_b = A[0, 1].real
+        d = A[1, 1]
+        expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+class TestTensorVar:
+    """Tests for variance of tensor observables"""
+
+    def test_paulix_pauliy(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving PauliX and PauliY works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        res = dev.var(["PauliX", "PauliY"], [[0], [2]], [[], [], []])
+
+        expected = (
+            8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
+            - np.cos(2 * (theta - phi))
+            - np.cos(2 * (theta + phi))
+            + 2 * np.cos(2 * theta)
+            + 2 * np.cos(2 * phi)
+            + 14
+        ) / 16
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_pauliz_hadamard(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        res = dev.var(["PauliZ", "Hadamard", "PauliY"], [[0], [1], [2]], [[], [], []])
+
+        expected = (
+            3
+            + np.cos(2 * phi) * np.cos(varphi) ** 2
+            - np.cos(2 * theta) * np.sin(varphi) ** 2
+            - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
+        ) / 4
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hermitian(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving qml.Hermitian works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        A = np.array(
+            [
+                [-6, 2 + 1j, -3, -5 + 2j],
+                [2 - 1j, 0, 2 - 1j, -5 + 4j],
+                [-3, 2 + 1j, 0, -4 + 3j],
+                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+            ]
+        )
+
+        res = dev.var(["PauliZ", "Hermitian"], [[0], [1, 2]], [[], [A]])
+
+        expected = (
+            1057
+            - np.cos(2 * phi)
+            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+            + 16 * np.sin(2 * phi)
+            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+            - 8
+            * np.cos(theta)
+            * (
+                4
+                * np.cos(phi)
+                * (
+                    4
+                    + 8 * np.cos(varphi)
+                    + np.cos(2 * varphi)
+                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                )
+                + np.sin(phi)
+                * (
+                    15
+                    + 8 * np.cos(varphi)
+                    - 11 * np.cos(2 * varphi)
+                    + 42 * np.sin(varphi)
+                    + 3 * np.sin(2 * varphi)
+                )
+            )
+        ) / 16
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+class TestTensorSample:
+    """Test tensor expectation values"""
+
+    def test_paulix_pauliy(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving PauliX and PauliY works correctly"""
+        dev = qml.device("default.qubit", wires=3, shots=10000)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        with monkeypatch.context() as m:
+            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
+            s1, p = dev.sample(["PauliX", "PauliY"], [[0], [2]], [[], [], []])
+
+        # s1 should only contain 1 and -1
+        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+
+        mean = s1 @ p
+        expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
+        assert np.allclose(mean, expected, atol=tol, rtol=0)
+
+        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        expected = (
+            8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
+            - np.cos(2 * (theta - phi))
+            - np.cos(2 * (theta + phi))
+            + 2 * np.cos(2 * theta)
+            + 2 * np.cos(2 * phi)
+            + 14
+        ) / 16
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+    def test_pauliz_hadamard(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        with monkeypatch.context() as m:
+            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
+            s1, p = dev.sample(["PauliZ", "Hadamard", "PauliY"], [[0], [1], [2]], [[], [], []])
+
+        # s1 should only contain 1 and -1
+        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+
+        mean = s1 @ p
+        expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
+        assert np.allclose(mean, expected, atol=tol, rtol=0)
+
+        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        expected = (
+            3
+            + np.cos(2 * phi) * np.cos(varphi) ** 2
+            - np.cos(2 * theta) * np.sin(varphi) ** 2
+            - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
+        ) / 4
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+    def test_hermitian(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving qml.Hermitian works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        A = np.array(
+            [
+                [-6, 2 + 1j, -3, -5 + 2j],
+                [2 - 1j, 0, 2 - 1j, -5 + 4j],
+                [-3, 2 + 1j, 0, -4 + 3j],
+                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+            ]
+        )
+
+        with monkeypatch.context() as m:
+            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
+            s1, p = dev.sample(["PauliZ", "Hermitian"], [[0], [1, 2]], [[], [A]])
+
+        # s1 should only contain the eigenvalues of
+        # the hermitian matrix tensor product Z
+        Z = np.diag([1, -1])
+        eigvals = np.linalg.eigvalsh(np.kron(Z, A))
+        assert set(np.round(s1, 8)).issubset(set(np.round(eigvals, 8)))
+
+        mean = s1 @ p
+        expected = 0.5 * (
+            -6 * np.cos(theta) * (np.cos(varphi) + 1)
+            - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
+            + 3 * np.cos(varphi) * np.sin(phi)
+            + np.sin(phi)
+        )
+        assert np.allclose(mean, expected, atol=tol, rtol=0)
+
+        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        expected = (
+            1057
+            - np.cos(2 * phi)
+            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+            + 16 * np.sin(2 * phi)
+            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+            - 8
+            * np.cos(theta)
+            * (
+                4
+                * np.cos(phi)
+                * (
+                    4
+                    + 8 * np.cos(varphi)
+                    + np.cos(2 * varphi)
+                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                )
+                + np.sin(phi)
+                * (
+                    15
+                    + 8 * np.cos(varphi)
+                    - 11 * np.cos(2 * varphi)
+                    + 42 * np.sin(varphi)
+                    + 3 * np.sin(2 * varphi)
+                )
+            )
+        ) / 16
+        assert np.allclose(var, expected, atol=tol, rtol=0)
