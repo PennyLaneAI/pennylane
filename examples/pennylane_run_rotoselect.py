@@ -235,8 +235,8 @@ plt.show()
 # Cost function surface for circuit ansatz
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Now, we plot the cost function surface for later comparison with the surface generated
-# by learning the circuit structure. It is apparent that, based on the structure
-# ansatz chosen above, the cost function does not depend on the angle parameter :math:`\theta_2`
+# by learning the circuit structure. It is apparent that, based on the circuit structure
+# chosen above, the cost function does not depend on the angle parameter :math:`\theta_2`
 # for the rotation gate :math:`R_y`. As we will show in the following sections, this independence is not true
 # for alternative gate choices.
 
