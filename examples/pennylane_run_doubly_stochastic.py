@@ -136,7 +136,7 @@ def circuit(params):
 
 
 ##############################################################################
-# Now, we create three QNodes, each corresponding to a device above,
+# Now, we create two QNodes, each corresponding to a device above,
 # and optimize them using gradient descent via the parameter-shift rule.
 
 qnode_analytic = qml.QNode(circuit, dev_analytic)
