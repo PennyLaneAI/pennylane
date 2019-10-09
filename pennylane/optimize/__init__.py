@@ -12,37 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-optimize
-========
-
-**Module name**: pennylane.optimize
-
-.. currentmodule:: pennylane.optimize
-
 This module contains optimizers for the standard :mod:`QNode` class, which uses the NumPy interface.
-
-.. warning::
-
-  If using the :ref:`PennyLane PyTorch <torch_interf>`
-  or the :ref:`PennyLane TensorFlow <tf_interf>` interfaces,
-  `PyTorch optimizers <https://pytorch.org/docs/stable/optim.html>`_ and
-  TensorFlow optimizers (found in the module ``tf.train``) should be used respectively.
-
-
-Summary
--------
-
-.. autosummary::
-   AdagradOptimizer
-   AdamOptimizer
-   GradientDescentOptimizer
-   MomentumOptimizer
-   NesterovMomentumOptimizer
-   RMSPropOptimizer
-   QNGOptimizer
-
-Code details
-------------
 """
 
 # Python optimizers that are available in PennyLane

@@ -12,29 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-interfaces.tfe
-==============
-
-**Module name:** :mod:`pennylane.interfaces.tf`
-
-TensorFlow interface
-********************
-
-
-.. currentmodule:: pennylane.interfaces.tf
-
 This module contains the :func:`TFEQNode` function to convert Numpy-interfacing quantum nodes to TensorFlow
 Eager mode compatible quantum nodes.
-
-Summary
--------
-
-.. autosummary::
-    TFEQNode
-
-
-Code details
-------------
 """
 # pylint: disable=redefined-outer-name
 from functools import partial

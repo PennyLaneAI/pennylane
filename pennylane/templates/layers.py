@@ -12,47 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-templates.layers
-================
+This module contains templates for trainable 'layers' of quantum gates.
 
-**Module name**: pennylane.templates.layers
-
-.. currentmodule:: pennylane.templates.layers
-
-This module contains templates for trainable 'layers'. In contrast to other templates such as embeddings, layers
+In contrast to other templates such as embeddings, layers
 do typically only take trainable parameters, and get repeated in the circuit -- just like the layers of a
 neural network. This makes the layer 'learnable' within the limits of the architecture.
 
 Most templates in this module have a 'Layer' version that implements a single layer, as well as a 'Layers'
 version which calls the single layer multiple times, possibly using different hyperparameters for the
 sequence in each call.
-
-
-Summary
--------
-
-Layers for qubit architectures
-******************************
-
-.. autosummary::
-
-    StronglyEntanglingLayers
-    StronglyEntanglingLayer
-    RandomLayers
-    RandomLayer
-
-Layers for continuous-variable architectures
-********************************************
-
-.. autosummary::
-
-    CVNeuralNetLayers
-    CVNeuralNetLayer
-    Interferometer
-
-Code details
-------------
-
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Sequence

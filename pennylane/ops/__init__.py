@@ -15,35 +15,8 @@
 #pylint: disable=too-few-public-methods,function-redefined
 
 """
-ops
-===
-
-**Module name**: pennylane.ops
-
-.. currentmodule:: pennylane.ops
-
-This module contains core quantum operations supported by PennyLane - such as gates, state preparations and observables.
-
-PennyLane has two types of operations:
-
-+-------------------------------------------+---------------------------------------------------------+
-| :mod:`ops.cv                              | Operations for continuous-variable architectures        |
-| <pennylane.ops.cv>`                       |                                                         |
-+-------------------------------------------+---------------------------------------------------------+
-| :mod:`ops.qubit                           | Operations for qubit architectures                      |
-| <pennylane.ops.qubit>`                    |                                                         |
-+-------------------------------------------+---------------------------------------------------------+
-
-The only operation shared by both devices is the Identity.
-
-Summary of shared operations
-----------------------------
-
-.. autosummary::
-    Identity
-
-Code details
-------------
+This module contains core quantum operations supported by PennyLane -
+such as gates, state preparations and observables.
 """
 
 from pennylane.operation import Any, Observable, CVObservable

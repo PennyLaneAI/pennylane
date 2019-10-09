@@ -13,54 +13,14 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-operation
-=========
-
-**Module name**: pennylane.operation
-
-.. currentmodule:: pennylane.operation
-
 This module contains base classes to define continuous-variable and discrete-variable operations contained in the
 :mod:`pennylane.ops` module.
-
-Summary
--------
-
-Qubit Operations classes
-************************
-
-.. autosummary::
-   Operation
-   Observable
-
-CV Operations classes
-*********************
-
-.. autosummary::
-   CV
-   CVOperation
-   CVObservable
-
-Auxiliary classes
-*****************
-
-.. autosummary::
-   ClassPropertyDescriptor
-   ObservableReturnTypes
-   Wires
-
-Auxiliary functions
-*******************
-
-.. autosummary::
-    classproperty
-
 
 Usage
 -----
 
 Qubit Operations
-****************
+----------------
 
 The :class:`Operation` and :class:`Observable` classes are subclassed to implement quantum operations
 and measuring observables in PennyLane.

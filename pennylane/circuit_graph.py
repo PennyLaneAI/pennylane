@@ -12,26 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-CircuitGraph
-============
-
-**Module name:** :mod:`pennylane.circuit_graph`
-
-.. currentmodule:: pennylane.circuit_graph
-
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 based on operation and observable queues.
-
-.. raw:: html
-
-    <h3>Summary</h3>
-
-.. autosummary::
-    CircuitGraph
-
-.. raw:: html
-
-    <h3>Code details</h3>
 """
 from collections import namedtuple
 import networkx as nx

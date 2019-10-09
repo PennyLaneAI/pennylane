@@ -12,40 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-__init__
-========
-
-**Module name**: pennylane
-
-.. currentmodule: pennylane
-
-This is the highest-level module in PennyLane, containing the device loader and methods
-to compute derivatives of NumPy-interfacing quantum nodes.
-
-Summary
--------
-
-Device loader
-*************
-
-.. autosummary::
-    device
-
-Gradient methods
-****************
-
-.. autosummary::
-    grad
-    jacobian
-
-Auxiliary functions
-*******************
-
-.. autosummary::
-    version
-
-Code details
-------------
+This is the top level module from which all basic functions and classes of
+PennyLane can be directly imported.
 """
 import os
 from pkg_resources import iter_entry_points
@@ -205,7 +173,6 @@ def jacobian(func, argnum):
     if isinstance(argnum, int):
         return _jacobian(func, argnum)
     return lambda *args, **kwargs: numpy.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
-
 
 
 def version():

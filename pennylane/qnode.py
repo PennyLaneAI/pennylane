@@ -14,36 +14,7 @@
 # pylint: disable=cell-var-from-loop,attribute-defined-outside-init,too-many-branches,too-many-arguments
 
 """
-qnode
-=====
-
-**Module name**: pennylane.qnode
-
-.. currentmodule:: pennylane.qnode
-
 This module contains the :class:`QNode` class and its helper functions.
-
-Summary
--------
-
-The QNode class
-***************
-.. currentmodule:: pennylane.qnode
-
-.. autosummary::
-    QNode
-
-Helper functions
-****************
-.. currentmodule:: pennylane.qnode
-
-.. autosummary::
-    pop_jacobian_kwargs
-    QuantumFunctionError
-    QNode_vjp
-
-Code details
-------------
 """
 from collections.abc import Sequence
 import copy

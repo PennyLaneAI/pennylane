@@ -12,32 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-interfaces.torch
-================
-
-**Module name**: pennylane.interfaces.torch
-
-.. currentmodule:: pennylane.interfaces.torch
-
 This module contains the :func:`TorchQNode` function to convert Numpy-interfacing quantum nodes to PyTorch
 compatible quantum nodes.
-
-Summary
--------
-
-.. autosummary::
-    TorchQNode
-
-Auxiliary functions
-*******************
-
-.. autosummary::
-
-    args_to_numpy
-    kwargs_to_numpy
-
-Code details
-------------
 """
 # pylint: disable=redefined-outer-name,arguments-differ
 import inspect

@@ -12,66 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-init
-====
-
-**Module name**: pennylane.init
-
-.. currentmodule:: pennylane.init
-
-This module contains functions to create arrays of parameters that can be
-used as initial parameters of trainable :mod:`pennylane.templates`.
-
-
-Summary
--------
-
-Qubit architectures
-*******************
-
-Initializations for Strongly Entangling Circuits
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-
-    strong_ent_layers_uniform
-    strong_ent_layers_normal
-    strong_ent_layer_uniform
-    strong_ent_layer_normal
-
-Initializations for Random Circuits
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-
-    random_layers_uniform
-    random_layers_normal
-    random_layer_uniform
-    random_layer_normal
-
-Continuous-variable architectures
-*********************************
-
-Initializations for CV Neural Networks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-
-    cvqnn_layers_uniform
-    cvqnn_layers_normal
-    cvqnn_layer_uniform
-    cvqnn_layer_normal
-
-Initializations for Interferometers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-
-    interferometer_uniform
-    interferometer_normal
-
-Code details
-------------
+This module contains functions that generate initial parameters, for example
+to use in templates.
 """
 # pylint: disable=too-many-arguments
 from math import pi

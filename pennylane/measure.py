@@ -13,27 +13,9 @@
 # limitations under the License.
 # pylint: disable=protected-access
 """
-measure
-=======
-
-**Module name**: pennylane.measure
-
-.. currentmodule:: pennylane.measure
-
 This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples.
-
-Summary
--------
-
-.. autosummary::
-   expval
-   var
-   sample
-
-Code details
-------------
 """
 import warnings
 

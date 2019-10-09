@@ -12,42 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-templates.embeddings
-====================
-
-**Module name**: pennylane.templates.embeddings
-
-.. currentmodule:: pennylane.templates.embeddings
-
 This module provides quantum circuit architectures that can embed features into a quantum state.
-
-Summary
--------
-
-Embeddings for qubit architectures
-**********************************
-
-.. autosummary::
-
-    AmplitudeEmbedding
-    AngleEmbedding
-    BasisEmbedding
-
-Embeddings for continuous-variable architectures
-************************************************
-
-.. autosummary::
-
-    SqueezingEmbedding
-    DisplacementEmbedding
-
-Code details
-------------
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 import numpy as np
+
 
 def AngleEmbedding(features, wires, rotation='X'):
     r"""

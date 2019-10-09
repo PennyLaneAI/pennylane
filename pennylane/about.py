@@ -12,26 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-about
-=====
-
-**Module name**: pennylane.about
-
-.. currentmodule:: pennylane.about
-
 This module contains the :func:`about` function to display all the details of the PennyLane installation,
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
-
-
-Summary
--------
-
-.. autosummary::
-    about
-
-Code details
-------------
-
 """
 import sys
 import platform

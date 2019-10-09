@@ -12,15 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-ops.cv
-======
-
-**Module name**: pennylane.ops.cv
-
-
-.. currentmodule:: pennylane.ops.cv
-
-This section contains the available built-in continuous-variable
+This module contains the available built-in continuous-variable
 quantum operations supported by PennyLane, as well as their conventions.
 
 .. todo:: Add gradient recipes for Gaussian state preparations
@@ -39,56 +31,6 @@ quantum operations supported by PennyLane, as well as their conventions.
    For the Heisenberg matrix representation of CV operations, we use the ordering
    :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
-
-Summary
--------
-
-Gates
-*****
-
-.. autosummary::
-    Rotation
-    Squeezing
-    Displacement
-    Beamsplitter
-    TwoModeSqueezing
-    QuadraticPhase
-    ControlledAddition
-    ControlledPhase
-    Kerr
-    CrossKerr
-    CubicPhase
-    Interferometer
-
-
-State preparation
-*****************
-
-.. autosummary::
-    CoherentState
-    SqueezedState
-    DisplacedSqueezedState
-    ThermalState
-    GaussianState
-    FockState
-    FockStateVector
-    FockDensityMatrix
-    CatState
-
-Observables
-***********
-
-.. autosummary::
-    NumberOperator
-    X
-    P
-    QuadOperator
-    PolyXP
-    FockStateProjector
-
-
-Code details
-------------
 """
 import numpy as np
 from scipy.linalg import block_diag

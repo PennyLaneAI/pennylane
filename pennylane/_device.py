@@ -12,34 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-_device
-=======
-
-**Module name**: pennylane._device
-
-.. currentmodule:: pennylane._device
-
 This module contains the :class:`Device` abstract base class.
-
-
-Summary
--------
-
-The Device class
-****************
-
-.. autosummary::
-    Device
-
-Auxiliary functions
-*******************
-
-.. autosummary::
-    DeviceError
-
-Code details
-------------
-
 """
 # pylint: disable=too-many-format-args
 import abc

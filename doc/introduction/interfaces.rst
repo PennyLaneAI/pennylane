@@ -28,5 +28,13 @@ Currently, there is support for the following three interfaces:
     :target: interfaces/tfe.html
 
 
+.. toctree::
+    :hidden:
+
+    interfaces/numpy
+    interfaces/torch
+    interfaces/tfe
+
+
 
 

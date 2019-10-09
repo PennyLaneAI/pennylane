@@ -12,23 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-configuration
-=============
-
-**Module name**: pennylane.configuration
-
-.. currentmodule:: pennylane.configuration
-
 This module contains the :class:`Configuration` class, which is used to
 load, store, save, and modify configuration options for PennyLane and all
 supported plugins and devices.
-
-
-Summary
--------
-
-.. autosummary::
-    Configuration
 
 Usage
 -----

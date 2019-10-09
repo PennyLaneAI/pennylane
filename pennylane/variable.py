@@ -12,21 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-variable
-========
-
-**Module name**: pennylane.variable
-
-.. currentmodule:: pennylane.variable
-
 This module contains the :class:`Variable` class, which is used to track
 and identify :class:`~pennylane.qnode.QNode` parameters.
-
-Summary
--------
-
-.. autosummary::
-    Variable
 
 Usage
 -----
@@ -72,10 +59,6 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
     property automates the process of unpacking the Variable value.
     The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
-
-Code details
-------------
-
 """
 from collections.abc import Sequence
 import copy

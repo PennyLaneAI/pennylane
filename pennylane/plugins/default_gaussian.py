@@ -13,77 +13,12 @@
 # limitations under the License.
 # pylint: disable=inconsistent-return-statements
 """
-
-plugins.default_gaussian
-========================
-
-**Module name**: pennylane.plugins.default_gaussian
-
-.. currentmodule:: pennylane.plugins.default_gaussian
-
 The :code:`default.gaussian` plugin is meant to be used as a template for writing PennyLane
 device plugins for new CV backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
-
-Summary
--------
-
-The DefaultGaussian device class
-********************************
-
-.. autosummary::
-    DefaultGaussian
-
-Gates and operations
-********************
-
-.. autosummary::
-    rotation
-    displacement
-    squeezing
-    quadratic_phase
-    beamsplitter
-    two_mode_squeezing
-    controlled_addition
-    controlled_phase
-    interferometer
-
-State preparation
-*****************
-
-.. autosummary::
-    squeezed_cov
-    vacuum_state
-    coherent_state
-    squeezed_state
-    displaced_squeezed_state
-    thermal_state
-    gaussian_state
-    set_state
-
-
-Observables
-***********
-
-.. autosummary::
-    photon_number
-    homodyne
-    poly_quad_expectations
-    fock_expectation
-
-
-Auxillary functions
-*******************
-
-.. autosummary::
-    partitions
-    fock_prob
-
-Code details
-------------
 """
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
 import numpy as np
