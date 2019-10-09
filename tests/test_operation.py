@@ -536,3 +536,7 @@ class TestTensor:
         with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
             T = X @ Z
             T @ Y
+
+        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+            T = X @ Z
+            Y @ T

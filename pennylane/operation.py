@@ -645,6 +645,8 @@ class Tensor(Observable):
             self.obs[:0] = [other]
             return self
 
+        raise ValueError("Can only perform tensor products between observables.")
+
     __imatmul__ = __matmul__
 
 
