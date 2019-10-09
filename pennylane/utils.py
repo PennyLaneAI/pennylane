@@ -129,11 +129,10 @@ def _get_default_args(func):
     """Get the default arguments of a function.
 
     Args:
-        func (function): a valid Python function
+        func (callable): a function
 
     Returns:
-        dict: dictionary containing the argument name and tuple
-        (positional idx, default value)
+        dict[str->tuple]: mapping from argument name to (positional idx, default value)
     """
     signature = inspect.signature(func)
     return {
