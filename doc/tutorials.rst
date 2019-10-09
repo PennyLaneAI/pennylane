@@ -52,7 +52,7 @@ algorithms using PennyLane and near-term quantum hardware.
 
 .. customgalleryitem::
     :tooltip: Ising model example with PennyLane PyTorch interface.
-    :figure: ../examples/figures/pytorch.png
+    :figure: ../examples/figures/isingspins.png
     :description: :ref:`isingmodel_PyTorch`
 
 .. customgalleryitem::
