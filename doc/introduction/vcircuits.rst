@@ -8,17 +8,17 @@ Variational Circuits
 ====================
 
 In the following we will see how the concept of a :ref:`variational quantum circuit <varcirc>`, the
-heart piece of hybrid quantum-classical optimization, is implemented in PennyLane.
+heart piece of hybrid quantum-classical optimization, is implemented in PennyLane by
+:ref:`quantum node <intro_vcirc_qnodes>` objects.
 We give an overview of quantum :ref:`operations <intro_vcirc_ops>` and :ref:`measurements <intro_vcirc_measure>`
 that can be used in quantum circuits, and show how a growing library of
 :ref:`templates <intro_vcirc_templates>` allows
 for easy use of common types of ansatze or architectures.
 
-You can read up on the theoretical background of variational circuits and hybrid optimization
-in the :ref:`Key Concepts <key_concepts>` section.
-
 Creating quantum nodes
 ----------------------
+
+.. _intro_vcirc_qnodes:
 
 .. image:: ../_static/qnode.png
     :align: right
@@ -158,7 +158,21 @@ Quantum operations
 .. currentmodule:: pennylane.ops
 
 PennyLane supports a wide variety of quantum operations - such as gates, state preparations and measurement
-observables. These operations can be used exclusively in quantum functions.
+observables. These operations can be used exclusively in quantum functions. Revisiting the
+example from above, we find the ``RZ``, ``CNOT``, ``RY`` gates and the ``PauliZ`` observable:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    def my_quantum_function(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.RY(y, wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+You find a list of all quantum
+operations below.
 
 Qubit operations
 ^^^^^^^^^^^^^^^^
@@ -278,7 +292,22 @@ Quantum measurements
 
 .. currentmodule:: pennylane.measure
 
-PennyLane can extract different types of measurement results:
+PennyLane can extract different types of measurement results: The expectation of an observable
+over multiple measurements, its variance, or a sample of a single measurement.
+
+The quantum function from above, for example, used the ``expval`` measurement:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    def my_quantum_function(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.RY(y, wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+The three measurement functions are found here:
 
 .. autosummary::
     expval
@@ -304,9 +333,34 @@ quantum machine learning literature, such architectures are commonly known as an
     valid** :mod:`pennylane.qnode`.
 
 PennyLane conceptually distinguishes two types of templates, :ref:`layer architectures <intro_vcirc_temp_layer>`
-and :ref:`input embeddings <intro_vcirc_temp_emb>` .
+and :ref:`input embeddings <intro_vcirc_temp_emb>`.
 Most templates are complemented by functions that provide an array of
 random :ref:`initial parameters <intro_vcirc_temp_params>` .
+
+An example of how to use templates is the following:
+
+.. code-block:: python
+
+    import pennylane as qml
+    from pennylane.templates.embeddings import AngleEmbedding
+    from pennylane.templates.layers import StronglyEntanglingLayers
+    from pennylane.init import strong_ent_layer_uniform
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit(weights, x=None):
+        AngleEmbedding(x, [0,1])
+        StronglyEntanglingLayers(weights=weights, wires=[0,1])
+        return qml.expval(qml.PauliZ(0))
+
+    init_weights = strong_ent_layer_uniform(n_wires=2)
+    print(circuit(init_weights, x=[1., 2.]))
+
+
+Here, we used the embedding template ``AngleEmbedding`` together with the layer template
+``StronglyEntanglingLayers``, and the uniform parameter initialization strategy ``strong_ent_layer_uniform``.
+
 
 Layer templates
 ^^^^^^^^^^^^^^^
@@ -353,9 +407,6 @@ Parameter initializations
 Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
 **randomly initialized** arrays for the trainable **parameters**.
 
-Qubit architectures
-~~~~~~~~~~~~~~~~~~~
-
 Strongly entangling circuit
 ***************************
 .. autosummary::
@@ -371,9 +422,6 @@ Random circuit
     random_layers_normal
     random_layer_uniform
     random_layer_normal
-
-Continuous-variable architectures
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Continuous-variable quantum neural network
 ******************************************
