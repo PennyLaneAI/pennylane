@@ -15,11 +15,9 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import pytest
+import numpy as np
 
 import pennylane as qml
-import pennylane.ops
-import pennylane.operation as oo
-import pennylane.variable as ov
 from pennylane.operation import Tensor
 
 # Operation subclasses to test
@@ -151,7 +149,7 @@ class TestOperation:
                 cls(*n*[0.0], wires=ww, do_queue=False)
             # params must not be Variables
             with pytest.raises(TypeError, match='Array parameter expected'):
-                cls(*n*[ov.Variable(0)], wires=ww, do_queue=False)
+                cls(*n*[qml.variable.Variable(0)], wires=ww, do_queue=False)
         elif cls.par_domain == 'N':
             # params must be natural numbers
             with pytest.raises(TypeError, match='Natural number'):
@@ -296,7 +294,7 @@ class TestOperationConstruction:
             grad_method = 'A'
 
         with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
-            DummyOp(ov.Variable(0), wires=[0], do_queue=False)
+            DummyOp(qml.variable.Variable(0), wires=[0], do_queue=False)
 
     def test_array_instead_of_flattened_array(self):
         """Test that an exception is raised if an array is expected, but an array is passed
@@ -428,7 +426,7 @@ class TestTensor:
         assert t.num_wires == 3
 
     def test_wires(self):
-        """Test that the correct nested list of wires returned"""
+        """Test that the correct nested list of wires is returned"""
         p = np.array([0.5])
         X = qml.PauliX(0, do_queue=False)
         Y = qml.Hermitian(p, wires=[1, 2], do_queue=False)

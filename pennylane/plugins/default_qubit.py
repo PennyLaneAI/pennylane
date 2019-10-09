@@ -485,7 +485,7 @@ class DefaultQubit(Device):
         return A(*par)
 
     def _get_tensor_operator_matrix(self, obs, par):
-        """Get the operator matrix for a given tensor of operations.
+        """Get the operator matrix for a given tensor product of operations.
 
         Args:
             obs (list[str]): list of observable names to tensor

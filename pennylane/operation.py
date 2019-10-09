@@ -575,7 +575,7 @@ class Tensor(Observable):
 
     @property
     def name(self):
-        """All consituent observable names making up the tensor product.
+        """All constituent observable names making up the tensor product.
 
         Returns:
             list[str]: list containing all observable names
@@ -589,7 +589,7 @@ class Tensor(Observable):
         Returns:
             int: number of wires
         """
-        return len([w for sublist in [o.wires for o in self.obs] for w in sublist])
+        return len(list(_flatten(self.wires)))
 
     @property
     def wires(self):

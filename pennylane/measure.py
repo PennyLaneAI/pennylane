@@ -109,7 +109,7 @@ def var(op):
         else:
             QNode._current_context.queue.remove(op)
 
-    # set return type to be an expectation value
+    # set return type to be a variance
     op.return_type = Variance
 
     if QNode._current_context is not None:
@@ -139,7 +139,7 @@ def sample(op):
         else:
             QNode._current_context.queue.remove(op)
 
-    # set return type to be an expectation value
+    # set return type to be a sample
     op.return_type = Sample
 
     if QNode._current_context is not None:
