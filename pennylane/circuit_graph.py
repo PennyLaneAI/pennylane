@@ -60,6 +60,11 @@ from collections import namedtuple
 import networkx as nx
 
 
+def _by_idx(x):
+    """Sorting key for Operations: queue index aka temporal order."""
+    return x.queue_idx
+
+
 Layer = namedtuple("Layer", ["ops", "param_inds"])
 """Parametrized layer of the circuit.
 
@@ -105,12 +110,11 @@ class CircuitGraph:
                 self._grid.setdefault(w, []).append(op)
 
         self._graph = nx.DiGraph()  #: nx.DiGraph: DAG representation of the quantum circuit
-        # Iterate over each wire in the grid
+        # Iterate over each (populated) wire in the grid
         for wire in self._grid.values():
-            if wire:
-                # Add the first operation on the wire to the graph
-                # This operation does not depend on any others
-                self._graph.add_node(wire[0])
+            # Add the first operation on the wire to the graph
+            # This operation does not depend on any others
+            self._graph.add_node(wire[0])
 
             for i in range(1, len(wire)):
                 # For subsequent operations on the wire:
@@ -126,25 +130,24 @@ class CircuitGraph:
     def observables(self):
         """Observables in the circuit, sorted by queue index.
 
-        TODO or in any topological order?
-
         Returns:
             list[Observable]: observables
         """
-        #nodes = [node for node in self._graph.nodes if isinstance(node, qml.operation.Observable)]
-        nodes = [node for node in self._graph.nodes if getattr(node, 'return_type', None)]
-        return sorted(nodes, key=lambda x: x.queue_idx)
+        nodes = [node for node in self._graph.nodes if getattr(node, 'return_type', None) is not None]
+        return sorted(nodes, key=_by_idx)
 
     @property
     def operations(self):
         """Non-observable Operations in the circuit, sorted by queue index.
 
+        The complement of :meth:`QNode.observables`. Together they return every :class:`Operation`
+        instance in the circuit.
+
         Returns:
             list[Operation]: operations
         """
-        #nodes = [node for node in self._graph.nodes if not isinstance(node, qml.operation.Observable)]
-        nodes = [node for node in self._graph.nodes if not getattr(node, 'return_type', None)]
-        return sorted(nodes, key=lambda x: x.queue_idx)
+        nodes = [node for node in self._graph.nodes if getattr(node, 'return_type', None) is None]
+        return sorted(nodes, key=_by_idx)
 
     @property
     def graph(self):
@@ -214,9 +217,8 @@ class CircuitGraph:
         Returns:
             list[Operation]: ancestors of the given operations, topologically ordered
         """
-        # TODO returns the original temporal order, could also return an arbitrary topological order
-        #return self._in_topological_order(self.ancestors(ops))
-        return sorted(self.ancestors(ops), key=lambda x: x.queue_idx)
+        #return self._in_topological_order(self.ancestors(ops))  # an abitrary topological order
+        return sorted(self.ancestors(ops), key=_by_idx)
 
     def descendants_in_order(self, ops):
         """Operation descendants in a topological order.
@@ -229,7 +231,7 @@ class CircuitGraph:
         Returns:
             list[Operation]: descendants of the given operations, topologically ordered
         """
-        return sorted(self.descendants(ops), key=lambda x: x.queue_idx)
+        return sorted(self.descendants(ops), key=_by_idx)
 
     @property
     def layers(self):
