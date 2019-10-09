@@ -411,8 +411,8 @@ plt.show()
 fig = plt.figure(figsize=(6, 4))
 ax = fig.gca(projection="3d")
 
-X = np.linspace(-4.0, 4.0, 20)
-Y = np.linspace(-4.0, 4.0, 20)
+X = np.linspace(-4.0, 4.0, 40)
+Y = np.linspace(-4.0, 4.0, 40)
 xx, yy = np.meshgrid(X, Y)
 # plot cost for fixed optimal generators
 Z = np.array([[cost([x, y], generators=generators) for x in X] for y in Y]).reshape(len(Y), len(X))
