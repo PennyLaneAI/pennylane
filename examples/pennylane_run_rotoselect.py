@@ -308,7 +308,6 @@ def circuit_rsel(params, generators=[]):  # generators will be passed as a keywo
     return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
 
-@qml.qnode(dev)
 def circuit_rsel2(params, generators=[]):  # generators will be passed as a keyword arg
     ansatz_rsel(params, generators)
     return qml.expval(qml.PauliX(0))
