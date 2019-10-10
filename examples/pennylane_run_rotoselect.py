@@ -33,7 +33,7 @@ and improve upon an initial circuit structure ansatz.
 # take advantage of this.
 #
 #
-# The Rotoselect algorithm addresses the above two points: it allows on to jump directly to the
+# The Rotoselect algorithm addresses the above two points: it allows one to jump directly to the
 # optimal value for a single parameter
 # with respect to fixed values for the other parameters, skipping gradient descent, and tries various
 # rotation gates along the way.
