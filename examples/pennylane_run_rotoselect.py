@@ -303,12 +303,12 @@ def ansatz_rsel(params, generators):
 
 
 @qml.qnode(dev)
-def circuit_rsel(params, generators=[]):  # generators will be passed as a keyword arg
+def circuit_rsel(params, generators=None):  # generators will be passed as a keyword arg
     ansatz_rsel(params, generators)
     return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-
-def circuit_rsel2(params, generators=[]):  # generators will be passed as a keyword arg
+@qml.qnode(dev)
+def circuit_rsel2(params, generators=None):  # generators will be passed as a keyword arg
     ansatz_rsel(params, generators)
     return qml.expval(qml.PauliX(0))
 
@@ -369,13 +369,13 @@ def rotoselect_cycle(cost, params, generators):
 # In other words, Rotoselect performs better without
 # increasing the depth of the circuit by selecting better gates for the task of minimizing the cost function.
 
-costs_rotoselect = []
-params = init_params.copy()
+costs_rsel = []
+params_rsel = init_params.copy()
 init_generators = ["X", "Y"]
 generators = init_generators
 for _ in range(n_steps):
-    costs_rotoselect.append(cost(params, generators))
-    params, generators = rotoselect_cycle(cost, params, generators)
+    costs_rsel.append(cost_rsel(params_rsel, generators))
+    params_rsel, generators = rotoselect_cycle(cost_rsel, params_rsel, generators)
 
 print("Optimal generators are: {}".format(generators))
 
@@ -387,7 +387,7 @@ plt.title("grad. desc. on original ansatz")
 plt.xlabel("steps")
 plt.ylabel("cost")
 plt.subplot(1, 2, 2)
-plt.plot(steps, costs_rotoselect, "o-")
+plt.plot(steps, costs_rsel, "o-")
 plt.title("rotoselect")
 plt.xlabel("cycles")
 plt.ylabel("cost")
@@ -417,7 +417,7 @@ X = np.linspace(-4.0, 4.0, 40)
 Y = np.linspace(-4.0, 4.0, 40)
 xx, yy = np.meshgrid(X, Y)
 # plot cost for fixed optimal generators
-Z = np.array([[cost([x, y], generators=generators) for x in X] for y in Y]).reshape(len(Y), len(X))
+Z = np.array([[cost_rsel([x, y], generators=generators) for x in X] for y in Y]).reshape(len(Y), len(X))
 surf = ax.plot_surface(xx, yy, Z, cmap=cm.coolwarm, antialiased=False)
 
 ax.set_xlabel(r"$\theta_1$")
