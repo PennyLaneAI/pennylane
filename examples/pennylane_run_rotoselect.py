@@ -20,7 +20,7 @@ and improve upon an initial circuit structure ansatz.
 # one wishes to minimize a cost function with respect to some parameters in the circuit. It is desirable
 # to keep the circuit as shallow as possible to reduce the effects of noise, but an arbitrary
 # choice of gates is generally suboptimal for performing the optimization.
-# Therefore it would be useful to employ an
+# Therefore, it would be useful to employ an
 # algorithm which learns a good circuit structure at fixed depth to minimize the cost function.
 #
 # Furthermore, PennyLane's optimizers perform automatic differentiation of quantum nodes by evaluating phase-shifted
