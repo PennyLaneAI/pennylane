@@ -73,7 +73,8 @@ and improve upon an initial circuit structure ansatz.
 # One cycle of the Rotoselect algorithm involves
 # iterating through every parameter and performing the calculation above.
 # This cycle is repeated for a fixed number of steps or until convergence. In this way, one could learn both
-# the optimal parameters and gate choices for a circuit ansatz. Next, we present an example of this algorithm
+# the optimal parameters and gate choices for the task of minimizing
+# a given cost function. Next, we present an example of this algorithm
 # applied to a VQE Hamiltonian.
 #
 # Example VQE Problem
@@ -92,7 +93,8 @@ and improve upon an initial circuit structure ansatz.
 # Rotosolve
 # ---------
 # As a precursor to implementing Rotoselect we can analyze a version of the algorithm
-# which does not optimize the choice of gates and only optimizes the parameters for a given circuit ansatz, called Rotosolve. Later, we will build on this example
+# which does not optimize the choice of gates and only optimizes the parameters for a given circuit ansatz,
+# called Rotosolve. Later, we will build on this example
 # to implement Rotoselect and vary the circuit structure.
 #
 # Imports
