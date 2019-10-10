@@ -35,7 +35,7 @@ Configuration
 
 Device
 
-.. currentmodule:: pennylane._device
+.. currentmodule:: pennylane
 .. autosummary::
     Device
 
