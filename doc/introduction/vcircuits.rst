@@ -187,40 +187,42 @@ You find a list of all quantum operations here, as well as in the :ref:`user doc
 Qubit operations
 ^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.ops.qubit
-
 .. _intro_vcirc_ops_qgates:
 
 Qubit gates
 ***********
 
-.. autosummary::
+.. toctree::
+    :maxdepth: 2
 
-    CNOT
-    CRot
-    CRX
-    CRY
-    CRZ
-    CSWAP
-    CZ
-    Hadamard
-    PauliX
-    PauliY
-    PauliZ
-    PhaseShift
-    QubitUnitary
-    Rot
-    RX
-    RY
-    RZ
-    SWAP
+    ../code/generated/pennylane.ops.qubit.CNOT
+    ../code/generated/pennylane.ops.qubit.CRot
+    ../code/generated/pennylane.ops.qubit.CRX
+    ../code/generated/pennylane.ops.qubit.CRY
+    ../code/generated/pennylane.ops.qubit.CRZ
+    ../code/generated/pennylane.ops.qubit.CSWAP
+    ../code/generated/pennylane.ops.qubit.CZ
+    ../code/generated/pennylane.ops.qubit.Hadamard
+    ../code/generated/pennylane.ops.qubit.PauliX
+    ../code/generated/pennylane.ops.qubit.PauliY
+    ../code/generated/pennylane.ops.qubit.PauliZ
+    ../code/generated/pennylane.ops.qubit.PhaseShift
+    ../code/generated/pennylane.ops.qubit.QubitUnitary
+    ../code/generated/pennylane.ops.qubit.Rot
+    ../code/generated/pennylane.ops.qubit.RX
+    ../code/generated/pennylane.ops.qubit.RY
+    ../code/generated/pennylane.ops.qubit.RZ
+    ../code/generated/pennylane.ops.qubit.SWAP
+
 
 Qubit state preparation
 ***********************
 
-.. autosummary::
-    BasisState
-    QubitStateVector
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.ops.qubit.BasisState
+    ../code/generated/pennylane.ops.qubit.QubitStateVector
 
 
 .. _intro_vcirc_ops_qobs:
@@ -228,77 +230,83 @@ Qubit state preparation
 Qubit observables
 *****************
 
-.. autosummary::
-    Hadamard
-    Hermitian
-    PauliX
-    PauliY
-    PauliZ
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.ops.qubit.Hadamard
+    ../code/generated/pennylane.ops.qubit.Hermitian
+    ../code/generated/pennylane.ops.qubit.PauliX
+    ../code/generated/pennylane.ops.qubit.PauliY
+    ../code/generated/pennylane.ops.qubit.PauliZ
 
 .. _intro_vcirc_ops_cv:
 
 Continuous-variable (CV) operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.ops.cv
-
 .. _intro_vcirc_ops_cvgates:
 
 CV Gates
 ********
 
-.. autosummary::
-    Beamsplitter
-    ControlledAddition
-    ControlledPhase
-    CrossKerr
-    CubicPhase
-    Displacement
-    Interferometer
-    Kerr
-    QuadraticPhase
-    Rotation
-    Squeezing
-    TwoModeSqueezing
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.ops.cv.Beamsplitter
+    ../code/generated/pennylane.ops.cv.ControlledAddition
+    ../code/generated/pennylane.ops.cv.ControlledPhase
+    ../code/generated/pennylane.ops.cv.CrossKerr
+    ../code/generated/pennylane.ops.cv.CubicPhase
+    ../code/generated/pennylane.ops.cv.Displacement
+    ../code/generated/pennylane.ops.cv.Interferometer
+    ../code/generated/pennylane.ops.cv.Kerr
+    ../code/generated/pennylane.ops.cv.QuadraticPhase
+    ../code/generated/pennylane.ops.cv.Rotation
+    ../code/generated/pennylane.ops.cv.Squeezing
+    ../code/generated/pennylane.ops.cv.TwoModeSqueezing
 
 
 CV state preparation
 ********************
 
-.. autosummary::
-    CatState
-    CoherentState
-    DisplacedSqueezedState
-    FockDensityMatrix
-    FockState
-    FockStateVector
-    GaussianState
-    SqueezedState
-    ThermalState
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.ops.cv.CatState
+    ../code/generated/pennylane.ops.cv.CoherentState
+    ../code/generated/pennylane.ops.cv.DisplacedSqueezedState
+    ../code/generated/pennylane.ops.cv.FockDensityMatrix
+    ../code/generated/pennylane.ops.cv.FockState
+    ../code/generated/pennylane.ops.cv.FockStateVector
+    ../code/generated/pennylane.ops.cv.GaussianState
+    ../code/generated/pennylane.ops.cv.SqueezedState
+    ../code/generated/pennylane.ops.cv.ThermalState
 
 .. _intro_vcirc_ops_cvobs:
 
 CV observables
 **************
 
-.. autosummary::
-    FockStateProjector
-    NumberOperator
-    P
-    PolyXP
-    QuadOperator
-    X
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.ops.cv.FockStateProjector
+    ../code/generated/pennylane.ops.cv.NumberOperator
+    ../code/generated/pennylane.ops.cv.P
+    ../code/generated/pennylane.ops.cv.PolyXP
+    ../code/generated/pennylane.ops.cv.QuadOperator
+    ../code/generated/pennylane.ops.cv.X
 
 
 Shared operations
 ^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.ops
-
 The only operation shared by both qubit and continouous-variable architectures is the Identity.
 
-.. autosummary::
-    Identity
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.ops.Identity
 
 
 .. _intro_vcirc_measure:
@@ -323,12 +331,14 @@ The quantum function from above, for example, used the :func:`expval <pennylane.
         qml.RY(y, wires=1)
         return qml.expval(qml.PauliZ(1))
 
-The signature of the three measurement functions are found here:
+The three measurement functions can be found here:
 
-.. autosummary::
-    expval
-    var
-    sample
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.measure.expval
+    ../code/generated/pennylane.measure.var
+    ../code/generated/pennylane.measure.sample
 
 
 .. _intro_vcirc_templates:
