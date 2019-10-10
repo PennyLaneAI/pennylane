@@ -92,7 +92,7 @@ and improve upon an initial circuit structure ansatz.
 # Rotosolve
 # ---------
 # As a precursor to implementing Rotoselect we can analyze a version of the algorithm
-# which does not optimize the choice of gates, called Rotosolve. Later, we will build on this example
+# which does not optimize the choice of gates and only optimizes the parameters for a given circuit ansatz, called Rotosolve. Later, we will build on this example
 # to implement Rotoselect and vary the circuit structure.
 #
 # Imports
