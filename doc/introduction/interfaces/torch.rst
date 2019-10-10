@@ -5,10 +5,10 @@ PyTorch interface
 
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
-quantum nodes. A basic :class:`QNode` can be translated into a quantum node that interfaces
+quantum nodes. A basic :class:`QNode <pennylane.qnode.QNode>` can be translated into a quantum node that interfaces
 with PyTorch, either by using the ``interface='torch'`` flag in the QNode Decorator, or
-by calling the :func:`QNode.to_torch` function. Internally, the translation is executed by
-the :func:`TorchQNode` function that returns the new quantum node object.
+by calling the :func:`QNode.to_torch <pennylane.qnode.QNode>` function. Internally, the translation is executed by
+the :func:`TorchQNode <pennylane.interfaces.torch.TorchQNode>` function that returns the new quantum node object.
 
 .. note::
 
@@ -78,8 +78,8 @@ using the :meth:`~.QNode.to_torch` method:
 >>> qnode1_torch
 <QNode: device='default.qubit', func=circuit, wires=2, interface=PyTorch>
 
-Internally, the :meth:`~.QNode.to_torch` method uses the :func:`~.TorchQNode` function
-to do the conversion.
+Internally, the :meth:`QNode.to_torch <qnode.QNode.to_torch>` method uses the
+:func:`TorchQNode <interfaces.torch.TorchQNode>` function to do the conversion.
 
 Quantum gradients using PyTorch
 *******************************

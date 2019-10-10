@@ -9,16 +9,17 @@ Variational Circuits
 
 In the following we will see how the concept of a :ref:`variational quantum circuit <varcirc>`, the
 heart piece of hybrid quantum-classical optimization, is implemented in PennyLane by
-:ref:`quantum node <intro_vcirc_qnodes>` objects.
+*quantum node* objects.
 We give an overview of quantum :ref:`operations <intro_vcirc_ops>` and :ref:`measurements <intro_vcirc_measure>`
-that can be used in quantum circuits, and show how a growing library of
+that can be used in circuits, and show how a growing library of
 :ref:`templates <intro_vcirc_templates>` allows
-for easy use of common types of ansatze or architectures.
+for easy use of common types of variational subroutines known as an *ansatz*.
+
+
+.. _intro_vcirc_qnodes:
 
 Creating quantum nodes
 ----------------------
-
-.. _intro_vcirc_qnodes:
 
 .. image:: ../_static/qnode.png
     :align: right
@@ -27,20 +28,23 @@ Creating quantum nodes
 
 
 In PennyLane, variational circuits are represented as quantum nodes. A quantum node
-is a combination of a :ref:`quantum functions <intro_vcirc_qfunc>` that defines the composition of the circuit,
+is a combination of a :ref:`quantum function <intro_vcirc_qfunc>` that composes the circuit,
 and a :ref:`device <intro_vcirc_device>` that runs the computation. One can conveniently create quantum nodes using
 the quantum node :ref:`decorator <intro_vcirc_decorator>`.
 
-Each classical **interface** uses a different version of a quantum node, and we will here introduce the standard QNode
-to use with the NumPy interface. NumPy-interfacing quantum nodes take NumPy datastructures,
+Each classical :ref:`interface <intro_interfaces>` uses a different version of a quantum node,
+and we will introduce the standard QNode to use with the NumPy interface here.
+NumPy-interfacing quantum nodes take NumPy datastructures,
 such as floats and arrays, and return Numpy data structures.
 They can be optimized using NumPy-based :ref:`optimization methods <intro_optimizers>`.
 Quantum nodes for other PennyLane interfaces like :ref:`PyTorch <torch_interf>` and
-:ref:`TensorFlow's Eager mode <tf_interf>` are introduced in the section on :ref:`Interfaces <intro_interfaces>`.
+:ref:`TensorFlow's Eager mode <tf_interf>` are introduced in the section on :ref:`interfaces <intro_interfaces>`.
+
+
+.. _intro_vcirc_qfunc:
 
 Quantum functions
 ^^^^^^^^^^^^^^^^^
-.. _intro_vcirc_qfunc:
 
 A quantum circuit is constructed as a special Python function, a *quantum circuit function*, or *quantum function* in short.
 For example:
@@ -60,11 +64,12 @@ Quantum functions are a restricted subset of Python functions, adhering to the f
 constraints:
 
 * The body of the function must consist of only supported PennyLane
-  :mod:`operations <pennylane.ops>` or sequences of operations called :mod:`templates <pennylane.templates>`, using one instruction per line.
+  :ref:`operations <intro_vcirc_ops>` or sequences of operations called :ref:`templates <intro_vcirc_templates>`,
+  using one instruction per line.
 
 * The function must always return either a single or a tuple of
-  *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
-  to an :mod:`observable <pennylane.ops>`.
+  *measured observable values*, by applying a :ref:`measurement function <intro_vcirc_measure>`
+  to a :ref:`qubit <intro_vcirc_ops_qobs>` or :ref:`continuous-value observable <intro_vcirc_ops_cvobs>`.
 
 * Classical processing of function arguments, either by arithmetic operations
   or external functions, is not allowed. One current exception is simple scalar
@@ -81,30 +86,32 @@ constraints:
     of the circuit function as part of the return statement, and cannot appear in the middle.
 
 
+.. _intro_vcirc_device:
+
 Defining a device
 ^^^^^^^^^^^^^^^^^
-.. _intro_vcirc_device:
 
 To run - and later optimize - a quantum circuit, one needs to first specify a *computational device*.
 
 The device is an instance of the :class:`~_device.Device`
 class, and can represent either a simulator or hardware device. They can be
-instantiated using the :func:`~device` loader.
+instantiated using the :func:`device <pennylane.device>` loader.
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=2)
 
-PennyLane offers some basic devices such as
-some basic devices such as the ``'default.qubit'`` simulator; additional devices can be installed
-as plugins (see :ref:`plugins` for more details). Note that the choice of a device significantly
+PennyLane offers some basic devices such as the ``'default.qubit'`` simulator; additional devices can be installed
+as plugins (see :ref:`plugins <plugins>` for more details). Note that the choice of a device significantly
 determines the speed of your computation.
+
+.. _intro_vcirc_qnode:
 
 Creating a quantum node
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Together, a quantum function and a device are used to create a *quantum node* or
-:class:`QNode` object, which wraps the quantum function and binds it to the device.
+:class:`QNode <pennylane.qnode.QNode>` object, which wraps the quantum function and binds it to the device.
 
 A `QNode` can be explicitly created as follows:
 
@@ -118,19 +125,20 @@ function. It takes the same arguments as the original quantum function:
 >>> qnode(np.pi/4, 0.7)
 0.7648421872844883
 
-The QNode decorator
-^^^^^^^^^^^^^^^^^^^
 
 .. _intro_vcirc_decorator:
 
+The QNode decorator
+^^^^^^^^^^^^^^^^^^^
+
 A more convenient - and in fact the recommended - way for creating `QNodes` is the provided
 quantum node decorator. This decorator converts a quantum function containing PennyLane quantum
-operations to a :mod:`QNode <pennylane.qnode>` that will run on a quantum device.
+operations to a :class:`QNode <pennylane.qnode.QNode>` that will run on a quantum device.
 
 .. note::
     The decorator completely replaces the Python-based quantum function with
-    a :mod:`QNode <pennylane.qnode>` of the same name - as such, the original
-    function is no longer accessible (but is accessible via the :attr:`~.QNode.func` attribute).
+    a :mod:`QNode <pennylane.qnode.QNode>` of the same name - as such, the original
+    function is no longer accessible (but is accessible via the ``func`` attribute).
 
 For example:
 
@@ -149,17 +157,18 @@ For example:
 
 
 
+.. _intro_vcirc_ops:
 
 Quantum operations
 ------------------
-
-.. _intro_vcirc_ops:
 
 .. currentmodule:: pennylane.ops
 
 PennyLane supports a wide variety of quantum operations - such as gates, state preparations and measurement
 observables. These operations can be used exclusively in quantum functions. Revisiting the
-example from above, we find the ``RZ``, ``CNOT``, ``RY`` gates and the ``PauliZ`` observable:
+first example from above, we find the :class:`RZ <pennylane.ops.qubit.RZ>`, :class:`CNOT <pennylane.ops.qubit.CNOT>`,
+:class:`RY <pennylane.ops.qubit.RY>` :ref:`gates <intro_vcirc_ops_qgates>` and the
+:class:`PauliZ <pennylane.ops.qubit.PauliZ>` :ref:`observable <intro_vcirc_ops_qobs>`:
 
 .. code-block:: python
 
@@ -171,108 +180,114 @@ example from above, we find the ``RZ``, ``CNOT``, ``RY`` gates and the ``PauliZ`
         qml.RY(y, wires=1)
         return qml.expval(qml.PauliZ(1))
 
-You find a list of all quantum
-operations below.
+You find a list of all quantum operations here, as well as in the :ref:`user documentation <docs_pennylane>`.
+
+.. _intro_vcirc_ops_qubit:
 
 Qubit operations
 ^^^^^^^^^^^^^^^^
 
-.. _intro_vcirc_ops_qubit:
-
 .. currentmodule:: pennylane.ops.qubit
 
-Gates
-*****
+.. _intro_vcirc_ops_qgates:
+
+Qubit gates
+***********
 
 .. autosummary::
+
+    CNOT
+    CRot
+    CRX
+    CRY
+    CRZ
+    CSWAP
+    CZ
     Hadamard
     PauliX
     PauliY
     PauliZ
-    CNOT
-    CZ
-    SWAP
-    CSWAP
+    PhaseShift
+    QubitUnitary
+    Rot
     RX
     RY
     RZ
-    PhaseShift
-    Rot
-    CRX
-    CRY
-    CRZ
-    CRot
-    QubitUnitary
+    SWAP
 
-
-State preparation
-*****************
+Qubit state preparation
+***********************
 
 .. autosummary::
     BasisState
     QubitStateVector
 
 
-Observables
-***********
+.. _intro_vcirc_ops_qobs:
 
-.. autosummary::
-    Hadamard
-    PauliX
-    PauliY
-    PauliZ
-    Hermitian
-
-Continuous-variable operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. _intro_vcirc_ops_cv:
-
-.. currentmodule:: pennylane.ops.cv
-
-Gates
-*****
-
-.. autosummary::
-    Rotation
-    Squeezing
-    Displacement
-    Beamsplitter
-    TwoModeSqueezing
-    QuadraticPhase
-    ControlledAddition
-    ControlledPhase
-    Kerr
-    CrossKerr
-    CubicPhase
-    Interferometer
-
-
-State preparation
+Qubit observables
 *****************
 
 .. autosummary::
-    CoherentState
-    SqueezedState
-    DisplacedSqueezedState
-    ThermalState
-    GaussianState
-    FockState
-    FockStateVector
-    FockDensityMatrix
-    CatState
+    Hadamard
+    Hermitian
+    PauliX
+    PauliY
+    PauliZ
 
-Observables
-***********
+.. _intro_vcirc_ops_cv:
+
+Continuous-variable (CV) operations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.ops.cv
+
+.. _intro_vcirc_ops_cvgates:
+
+CV Gates
+********
 
 .. autosummary::
-    NumberOperator
-    X
-    P
-    QuadOperator
-    PolyXP
-    FockStateProjector
+    Beamsplitter
+    ControlledAddition
+    ControlledPhase
+    CrossKerr
+    CubicPhase
+    Displacement
+    Interferometer
+    Kerr
+    QuadraticPhase
+    Rotation
+    Squeezing
+    TwoModeSqueezing
 
+
+CV state preparation
+********************
+
+.. autosummary::
+    CatState
+    CoherentState
+    DisplacedSqueezedState
+    FockDensityMatrix
+    FockState
+    FockStateVector
+    GaussianState
+    SqueezedState
+    ThermalState
+
+.. _intro_vcirc_ops_cvobs:
+
+CV observables
+**************
+
+.. autosummary::
+    FockStateProjector
+    NumberOperator
+    P
+    PolyXP
+    QuadOperator
+    X
 
 
 Shared operations
@@ -286,16 +301,17 @@ The only operation shared by both qubit and continouous-variable architectures i
     Identity
 
 
+.. _intro_vcirc_measure:
+
 Quantum measurements
 --------------------
-.. _intro_vcirc_measure:
 
 .. currentmodule:: pennylane.measure
 
 PennyLane can extract different types of measurement results: The expectation of an observable
 over multiple measurements, its variance, or a sample of a single measurement.
 
-The quantum function from above, for example, used the ``expval`` measurement:
+The quantum function from above, for example, used the :func:`expval <pennylane.measure.expval>` measurement:
 
 .. code-block:: python
 
@@ -307,7 +323,7 @@ The quantum function from above, for example, used the ``expval`` measurement:
         qml.RY(y, wires=1)
         return qml.expval(qml.PauliZ(1))
 
-The three measurement functions are found here:
+The signature of the three measurement functions are found here:
 
 .. autosummary::
     expval
@@ -315,22 +331,20 @@ The three measurement functions are found here:
     sample
 
 
+.. _intro_vcirc_templates:
+
 Templates
 ---------
 
-.. _intro_vcirc_templates:
-
-PennyLane provides a growing library of pre-coded templates of common quantum
-machine learning circuit architectures that can be used to easily build,
-evaluate, and train more complex quantum machine learning models. In the
-quantum machine learning literature, such architectures are commonly known as an
-**ansatz**.
+PennyLane provides a growing library of pre-coded templates of common variational circuit architectures
+that can be used to easily build, evaluate, and train more complex models. In the
+literature, such architectures are commonly known as an *ansatz*.
 
 .. note::
 
-    Templates are constructed out of **structured combinations** of the :mod:`quantum operations <pennylane.ops>`
+    Templates are constructed out of **structured combinations** of the :mod:`quantum operations <intro_vcirc_ops>`
     provided by PennyLane. This means that **template functions can only be used within a
-    valid** :mod:`pennylane.qnode`.
+    valid** :mod:`pennylane.qnode.QNode`.
 
 PennyLane conceptually distinguishes two types of templates, :ref:`layer architectures <intro_vcirc_temp_layer>`
 and :ref:`input embeddings <intro_vcirc_temp_emb>`.
@@ -358,34 +372,47 @@ An example of how to use templates is the following:
     print(circuit(init_weights, x=[1., 2.]))
 
 
-Here, we used the embedding template ``AngleEmbedding`` together with the layer template
-``StronglyEntanglingLayers``, and the uniform parameter initialization strategy ``strong_ent_layer_uniform``.
+Here, we used the embedding template :class:`AngleEmbedding <pennylane.templates.embeddings.AngleEmbedding>`
+together with the layer template
+:class:`StronglyEntanglingLayers <pennylane.templates.layers.StronglyEntanglingLayers>`,
+and the uniform parameter initialization strategy
+:func:`strong_ent_layer_uniform <pennylane.init.strong_ent_layer_uniform>`.
 
+
+.. _intro_vcirc_temp_layer:
 
 Layer templates
 ^^^^^^^^^^^^^^^
 
-.. _intro_vcirc_temp_layer:
-
 .. currentmodule:: pennylane.templates.layers
 
-Layer architectures, found in :mod:`pennylane.templates.layers`, define sequences of gates that are
-repeated like the layers in a neural network. They usually contain only trainable parameters.
+Layer architectures, found in the :ref:`templates.layers <docs_templates_layers>` module,
+define sequences of gates that are repeated like the layers in a neural network.
+They usually contain only trainable parameters.
 
 The following layer templates are available:
 
 .. autosummary::
-    StronglyEntanglingLayers
+    CVNeuralNetLayer
+    CVNeuralNetLayers
+    Interferometer
+    RandomLayer
     RandomLayers
+    StronglyEntanglingLayer
+    StronglyEntanglingLayers
+
+
+
+.. _intro_vcirc_temp_emb:
 
 Embedding templates
 ^^^^^^^^^^^^^^^^^^^
-.. _intro_vcirc_temp_emb:
 
 .. currentmodule:: pennylane.templates.embeddings
 
-Embeddings, found in :mod:`pennylane.templates.embeddings`, encode input features into the quantum state
-of the circuit. Hence, they take a feature vector as an argument. These embeddings can also depend on
+Embeddings, found in the :ref:`templates.embeddings <docs_templates_embeddings>` module,
+encode input features into the quantum state of the circuit.
+Hence, they take a feature vector as an argument. These embeddings can also depend on
 trainable parameters, in which case the embedding is learnable.
 
 The following embedding templates are available:
@@ -398,14 +425,15 @@ The following embedding templates are available:
     SqueezingEmbedding
     DisplacementEmbedding
 
+.. _intro_vcirc_temp_params:
+
 Parameter initializations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-.. _intro_vcirc_temp_params:
 
 .. currentmodule:: pennylane.init
 
-Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of
-**randomly initialized** arrays for the trainable **parameters**.
+Each trainable template has a dedicated function in the :ref:`init <docs_init>` module, which generates a list of
+randomly initialized arrays for the trainable parameters.
 
 Strongly entangling circuit
 ***************************

@@ -61,7 +61,7 @@ array([ 0.87758256,  0.68803733])
 Via the QNode class
 ^^^^^^^^^^^^^^^^^^^
 
-In the :ref:`introduction <pl_intro>` it was shown how to instantiate a :class:`~.QNode`
+In the :ref:`introduction <intro_vcirc_qnode>` it was shown how to instantiate a :class:`QNode <pennylane.qnode.QNode>`
 object directly, for example, if you would like to reuse the same quantum function across
 multiple devices, or even use different classical interfaces:
 

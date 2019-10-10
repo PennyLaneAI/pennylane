@@ -6,7 +6,8 @@
 Quantum plugins
 ===============
 
-PennyLane provides a framework for the construction and optimization of hybrid quantum-classical computational models.
+As laid out in the :ref:`introduction <pl_intro>`, PennyLane provides a framework for the construction and optimization
+of hybrid quantum-classical computational models.
 While classical processing is performed using different :ref:`interfaces <intro_interfaces>`,
 quantum nodes are evaluated on 'devices' - corresponding to a quantum simulator or quantum hardware device.
 

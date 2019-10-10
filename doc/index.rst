@@ -98,7 +98,7 @@ To get PennyLane installed and running on your system, begin at the
 :ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's
 :ref:`key concepts <key_concepts>` for machine learning on quantum circuits.
 
-For getting started with PennyLane, read the :ref:`Introduction <pl_intro>` to learn about the different
+For getting started with PennyLane, read the :ref:`introduction <pl_intro>` to learn about the different
 building blocks. For your first hands-on experience, check out our basic :ref:`qubit rotation <qubit_rotation>`,
 and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to
 explore :ref:`hybrid quantum optimization <plugins_hybrid>`, and :ref:`hybrid GPU-QPU optimization
@@ -110,11 +110,11 @@ models — these include Strawberry Fields, provided by the
 `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin, the Rigetti Aspen-1 QPU, provided by the
 `PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_ plugin, and the IBM QX4 quantum chip,
 provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and
-`PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins.
+`PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins. You can also find detailed guides on
+:ref:`how to write your own <plugin_overview>` PennyLane compatible quantum device.
 
 Finally, detailed documentation on the PennyLane API :ref:`interface <docs_pennylane>` is provided.
-Look there for full details on available quantum operations and expectations, and detailed guides on
-:ref:`how to write your own <plugin_overview>` PennyLane compatible quantum device.
+Look there for full details on available tools to construct quantum circuits.
 
 :html:`<h2>How to cite</h2>`
 

@@ -1,13 +1,15 @@
 .. _tf_interf:
 
+.. currentmodule:: pennylane
+
 TensorFlow interface
 --------------------
 
 To use a quantum node in combination with TensorFlow's Eager mode, we have to make it
 compatible with TensorFlow. A TensorFlow-compatible quantum node can be created
 either by using the ``interface='tfe'`` flag in the qnode decorator, or
-by calling the :func:`QNode.to_tfe` function. Internally, the translation is executed by
-the :func:`TFEQNode` function that returns the new quantum node object.
+by calling the :func:`QNode.to_tf <pennylane.qnode.QNode>` function. Internally, the translation is executed by
+the :func:`TFEQNode <interfaces.TFEQNode>` function that returns the new quantum node object.
 
 .. note::
     To use the TensorFlow eager execution interface in PennyLane, you must first install TensorFlow.
