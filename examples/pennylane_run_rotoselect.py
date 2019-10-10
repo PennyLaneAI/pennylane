@@ -283,7 +283,10 @@ plt.show()
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # First, we set up a quantum circuit with a similar structure to the one above, but
 # instead of fixed rotation gates :math:`R_x` and :math:`R_y`, we allow the gates to be specified with the
-# ``generators`` keyword. A helper method ``RGen`` returns the correct unitary gate according to the
+# ``generators`` keyword, which is a list of the generators of rotation that will be used for the gates in the circuit.
+# For example, ``generators=['X', 'Y']`` reproduces the original circuit ansatz used in the Rotosolve example
+# above.
+# A helper method ``RGen`` returns the correct unitary gate according to the
 # rotation specified by an element of ``generators``.
 
 
