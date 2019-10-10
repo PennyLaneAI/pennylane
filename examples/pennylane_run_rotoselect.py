@@ -99,7 +99,7 @@ and improve upon an initial circuit structure ansatz.
 # ~~~~~~~
 # To get started, we import PennyLane and the PennyLane-wrapped version of NumPy. We also
 # create a 2-qubit device using the ``default.qubit`` plugin and set the ``analytic`` keyword to ``True``
-# in order to obtain exact values for any expectation values calculated. In contrast with real
+# in order to obtain exact values for any expectation values calculated. In contrast to real
 # devices, simulators have the capability of doing these calculations without sampling.
 
 import pennylane as qml
