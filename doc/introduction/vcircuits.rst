@@ -4,8 +4,8 @@
 
 .. _intro_vcircuits:
 
-Variational Circuits
-====================
+Quantum Circuits
+================
 
 In the following we will see how the concept of a :ref:`variational quantum circuit <varcirc>`, the
 heart piece of hybrid quantum-classical optimization, is implemented in PennyLane by
