@@ -238,10 +238,7 @@ plt.show()
 # Cost function surface for circuit ansatz
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Now, we plot the cost function surface for later comparison with the surface generated
-# by learning the circuit structure. It is apparent that, based on the circuit structure
-# chosen above, the cost function does not depend on the angle parameter :math:`\theta_2`
-# for the rotation gate :math:`R_y`. As we will show in the following sections, this independence is not true
-# for alternative gate choices.
+# by learning the circuit structure.
 
 from matplotlib import cm
 from matplotlib.ticker import MaxNLocator
@@ -263,6 +260,11 @@ ax.zaxis.set_major_locator(MaxNLocator(nbins=5, prune="lower"))
 plt.show()
 
 ##############################################################################
+# It is apparent that, based on the circuit structure
+# chosen above, the cost function does not depend on the angle parameter :math:`\theta_2`
+# for the rotation gate :math:`R_y`. As we will show in the following sections, this independence is not true
+# for alternative gate choices.
+#
 # Rotoselect
 # ----------
 #
@@ -294,27 +296,27 @@ def RGen(param, generator, wires):
         qml.RZ(param, wires=wires)
 
 
-def ansatz(params, generators):
+def ansatz_rsel(params, generators):
     RGen(params[0], generators[0], wires=0)
     RGen(params[1], generators[1], wires=1)
     qml.CNOT(wires=[0, 1])
 
 
 @qml.qnode(dev)
-def circuit(params, generators=[]):  # generators will be passed as a keyword arg
-    ansatz(params, generators)
+def circuit_rsel(params, generators=[]):  # generators will be passed as a keyword arg
+    ansatz_rsel(params, generators)
     return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
 
 @qml.qnode(dev)
-def circuit2(params, generators=[]):  # generators will be passed as a keyword arg
-    ansatz(params, generators)
+def circuit_rsel2(params, generators=[]):  # generators will be passed as a keyword arg
+    ansatz_rsel(params, generators)
     return qml.expval(qml.PauliX(0))
 
 
-def cost(params, generators):
-    Z_1, Y_2 = circuit(params, generators=generators)
-    X_1 = circuit2(params, generators=generators)
+def cost_rsel(params, generators):
+    Z_1, Y_2 = circuit_rsel(params, generators=generators)
+    X_1 = circuit_rsel2(params, generators=generators)
     return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
 
@@ -381,7 +383,7 @@ print("Optimal generators are: {}".format(generators))
 # plot cost function vs. steps comparison
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3))
 plt.subplot(1, 2, 1)
-plt.plot(steps, costs_grad_desc, "o-")
+plt.plot(steps, costs_gd, "o-")
 plt.title("grad. desc. on original ansatz")
 plt.xlabel("steps")
 plt.ylabel("cost")
