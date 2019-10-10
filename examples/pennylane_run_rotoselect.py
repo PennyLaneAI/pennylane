@@ -70,7 +70,7 @@ and improve upon an initial circuit structure ansatz.
 # is the same for each of the gate choices, and this 3-fold
 # degeneracy reduces the number of evaluations required to 7.
 #
-# One cycle of the Rotosolve algorithm involves
+# One cycle of the Rotoselect algorithm involves
 # iterating through every parameter and performing the calculation above.
 # This cycle is repeated for a fixed number of steps or until convergence. In this way, one could learn both
 # the optimal parameters and gate choices for a circuit ansatz. Next, we present an example of this algorithm
