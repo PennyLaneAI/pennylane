@@ -187,14 +187,14 @@ def rotosolve_cycle(cost, params):
 # Rotosolve algorithm.
 
 init_params = [0.3, 0.25]
-params = init_params.copy()
+params_rsol = init_params.copy()
 n_steps = 30
 
 costs_rotosolve = []
 
 for i in range(n_steps):
-    costs_rotosolve.append(cost(params))
-    params = rotosolve_cycle(cost, params)
+    costs_rotosolve.append(cost(params_rsol))
+    params_rsol = rotosolve_cycle(cost, params_rsol)
 
 ##############################################################################
 # We then compare the results of Rotosolve to an optimization
@@ -205,12 +205,12 @@ for i in range(n_steps):
 # the gradient of the circuit and step in this direction. Evidently, the Rotosolve algorithm
 # converges on the minimum after the first cycle for this simple circuit.
 
-params = init_params.copy()
+params_gd = init_params.copy()
 opt = qml.GradientDescentOptimizer(stepsize=0.5)
-costs_grad_desc = []
+costs_gd = []
 for i in range(n_steps):
-    costs_grad_desc.append(cost(params))
-    params = opt.step(cost, params)
+    costs_gd.append(cost(params_gd))
+    params_gd = opt.step(cost, params_gd)
 
 
 # plot cost function optimization using the 2 techniques
@@ -219,7 +219,7 @@ import matplotlib.pyplot as plt
 steps = np.arange(0, n_steps)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3))
 plt.subplot(1, 2, 1)
-plt.plot(steps, costs_grad_desc, "o-")
+plt.plot(steps, costs_gd, "o-")
 plt.title("grad. desc.")
 plt.xlabel("steps")
 plt.ylabel("cost")
