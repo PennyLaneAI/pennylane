@@ -39,7 +39,7 @@ and improve upon an initial circuit structure ansatz.
 # rotation gates along the way.
 # The algorithm works by updating the parameters :math:`\boldsymbol{\theta}=\theta_1,\dots,\theta_D` and gate choices
 # :math:`\boldsymbol{R}=R_1,\dots,R_D`
-# one at a time according to a *closed-form expression for the optimal value of the :math:`d^{\text{th}}` parameter*
+# one at a time according to a *closed-form expression* for the optimal value of the :math:`d^{\text{th}}` parameter
 # :math:`\theta^{*}_d` when the other parameters and gate choices are fixed:
 #
 # .. math::
