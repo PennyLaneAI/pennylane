@@ -212,7 +212,9 @@ Qubit gates
     ../code/generated/pennylane.ops.qubit.RX
     ../code/generated/pennylane.ops.qubit.RY
     ../code/generated/pennylane.ops.qubit.RZ
+    ../code/generated/pennylane.ops.qubit.S
     ../code/generated/pennylane.ops.qubit.SWAP
+    ../code/generated/pennylane.ops.qubit.T
 
 
 Qubit state preparation
@@ -337,8 +339,8 @@ The three measurement functions can be found here:
     :maxdepth: 1
 
     ../code/generated/pennylane.measure.expval
-    ../code/generated/pennylane.measure.var
     ../code/generated/pennylane.measure.sample
+    ../code/generated/pennylane.measure.var
 
 
 .. _intro_vcirc_templates:
@@ -402,14 +404,16 @@ They usually contain only trainable parameters.
 
 The following layer templates are available:
 
-.. autosummary::
-    CVNeuralNetLayer
-    CVNeuralNetLayers
-    Interferometer
-    RandomLayer
-    RandomLayers
-    StronglyEntanglingLayer
-    StronglyEntanglingLayers
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.templates.layers.CVNeuralNetLayer
+    ../code/generated/pennylane.templates.layers.CVNeuralNetLayers
+    ../code/generated/pennylane.templates.layers.Interferometer
+    ../code/generated/pennylane.templates.layers.RandomLayer
+    ../code/generated/pennylane.templates.layers.RandomLayers
+    ../code/generated/pennylane.templates.layers.StronglyEntanglingLayer
+    ../code/generated/pennylane.templates.layers.StronglyEntanglingLayers
 
 
 
@@ -417,8 +421,6 @@ The following layer templates are available:
 
 Embedding templates
 ^^^^^^^^^^^^^^^^^^^
-
-.. currentmodule:: pennylane.templates.embeddings
 
 Embeddings, found in the :ref:`templates.embeddings <docs_templates_embeddings>` module,
 encode input features into the quantum state of the circuit.
@@ -428,51 +430,63 @@ trainable parameters, in which case the embedding is learnable.
 The following embedding templates are available:
 
 
-.. autosummary::
-    AmplitudeEmbedding
-    BasisEmbedding
-    AngleEmbedding
-    SqueezingEmbedding
-    DisplacementEmbedding
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.templates.embeddings.AmplitudeEmbedding
+    ../code/generated/pennylane.templates.embeddings.BasisEmbedding
+    ../code/generated/pennylane.templates.embeddings.AngleEmbedding
+    ../code/generated/pennylane.templates.embeddings.SqueezingEmbedding
+    ../code/generated/pennylane.templates.embeddings.DisplacementEmbedding
 
 .. _intro_vcirc_temp_params:
 
 Parameter initializations
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.init
-
 Each trainable template has a dedicated function in the :ref:`init <docs_init>` module, which generates a list of
 randomly initialized arrays for the trainable parameters.
 
 Strongly entangling circuit
 ***************************
-.. autosummary::
-    strong_ent_layers_uniform
-    strong_ent_layers_normal
-    strong_ent_layer_uniform
-    strong_ent_layer_normal
+
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.init.strong_ent_layers_uniform
+    ../code/generated/pennylane.init.strong_ent_layers_normal
+    ../code/generated/pennylane.init.strong_ent_layer_uniform
+    ../code/generated/pennylane.init.strong_ent_layer_normal
 
 Random circuit
 **************
-.. autosummary::
-    random_layers_uniform
-    random_layers_normal
-    random_layer_uniform
-    random_layer_normal
+
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.init.random_layers_uniform
+    ../code/generated/pennylane.init.random_layers_normal
+    ../code/generated/pennylane.init.random_layer_uniform
+    ../code/generated/pennylane.init.random_layer_normal
 
 Continuous-variable quantum neural network
 ******************************************
-.. autosummary::
-    cvqnn_layers_uniform
-    cvqnn_layers_normal
-    cvqnn_layer_uniform
-    cvqnn_layer_normal
+
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.init.cvqnn_layers_uniform
+    ../code/generated/pennylane.init.cvqnn_layers_normal
+    ../code/generated/pennylane.init.cvqnn_layer_uniform
+    ../code/generated/pennylane.init.cvqnn_layer_normal
 
 Interferometer
 **************
-.. autosummary::
-    interferometer_uniform
-    interferometer_normal
+
+.. toctree::
+    :maxdepth: 1
+
+    ../code/generated/pennylane.init.interferometer_uniform
+    ../code/generated/pennylane.init.interferometer_normal
 
 
