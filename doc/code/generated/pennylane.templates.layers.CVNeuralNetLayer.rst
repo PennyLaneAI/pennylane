@@ -1,5 +1,7 @@
-pennylane.templates.layers.CVNeuralNetLayer
+CVNeuralNetLayer
 ===========================================
+
+**Module:** pennylane.templates.layers
 
 .. currentmodule:: pennylane.templates.layers
 

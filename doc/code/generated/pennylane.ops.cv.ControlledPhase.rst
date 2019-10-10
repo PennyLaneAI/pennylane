@@ -1,5 +1,8 @@
-pennylane.ops.cv.ControlledPhase
+ControlledPhase
 ================================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

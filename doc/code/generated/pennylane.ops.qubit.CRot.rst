@@ -1,5 +1,7 @@
-pennylane.ops.qubit.CRot
-========================
+CRot
+========
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

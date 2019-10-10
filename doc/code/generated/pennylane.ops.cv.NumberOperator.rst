@@ -1,5 +1,8 @@
-pennylane.ops.cv.NumberOperator
+NumberOperator
 ===============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

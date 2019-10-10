@@ -1,5 +1,7 @@
-pennylane.ops.qubit.CNOT
-========================
+CNOT
+========
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

@@ -1,5 +1,7 @@
-pennylane.ops.qubit.PauliY
+PauliY
 ==========================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

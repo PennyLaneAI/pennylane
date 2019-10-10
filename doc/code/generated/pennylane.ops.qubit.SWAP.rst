@@ -1,5 +1,7 @@
-pennylane.ops.qubit.SWAP
+SWAP
 ========================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

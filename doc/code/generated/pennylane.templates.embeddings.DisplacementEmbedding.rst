@@ -1,5 +1,7 @@
-pennylane.templates.embeddings.DisplacementEmbedding
+DisplacementEmbedding
 ====================================================
+
+**Module:** pennylane.templates.embeddings
 
 .. currentmodule:: pennylane.templates.embeddings
 

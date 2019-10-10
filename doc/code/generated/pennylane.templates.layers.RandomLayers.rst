@@ -1,5 +1,7 @@
-pennylane.templates.layers.RandomLayers
+RandomLayers
 =======================================
+
+**Module:** pennylane.templates.layers
 
 .. currentmodule:: pennylane.templates.layers
 

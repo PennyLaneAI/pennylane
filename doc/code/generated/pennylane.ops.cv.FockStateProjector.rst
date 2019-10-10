@@ -1,5 +1,8 @@
-pennylane.ops.cv.FockStateProjector
+FockStateProjector
 ===================================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

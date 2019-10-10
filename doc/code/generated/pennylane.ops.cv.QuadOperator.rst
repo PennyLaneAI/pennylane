@@ -1,5 +1,8 @@
-pennylane.ops.cv.QuadOperator
+QuadOperator
 =============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

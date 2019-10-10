@@ -1,5 +1,7 @@
-pennylane.ops.qubit.BasisState
-==============================
+BasisState
+==============
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

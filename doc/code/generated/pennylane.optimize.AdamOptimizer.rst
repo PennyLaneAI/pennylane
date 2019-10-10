@@ -1,5 +1,9 @@
-pennylane.optimize.AdamOptimizer
+AdamOptimizer
 ================================
+
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.optimize
 

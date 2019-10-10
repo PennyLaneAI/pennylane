@@ -1,5 +1,8 @@
-pennylane.ops.cv.FockStateVector
+FockStateVector
 ================================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

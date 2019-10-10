@@ -1,5 +1,8 @@
-pennylane.ops.cv.FockState
+FockState
 ==========================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

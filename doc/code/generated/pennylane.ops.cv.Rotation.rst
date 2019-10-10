@@ -1,5 +1,8 @@
-pennylane.ops.cv.Rotation
+Rotation
 =========================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

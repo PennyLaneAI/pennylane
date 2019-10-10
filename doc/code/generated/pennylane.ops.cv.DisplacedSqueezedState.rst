@@ -1,5 +1,8 @@
-pennylane.ops.cv.DisplacedSqueezedState
+DisplacedSqueezedState
 =======================================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

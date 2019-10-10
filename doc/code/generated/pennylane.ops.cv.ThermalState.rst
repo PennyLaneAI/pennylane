@@ -1,5 +1,8 @@
-pennylane.ops.cv.ThermalState
+ThermalState
 =============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

@@ -1,5 +1,8 @@
-pennylane.ops.cv.FockDensityMatrix
+FockDensityMatrix
 ==================================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

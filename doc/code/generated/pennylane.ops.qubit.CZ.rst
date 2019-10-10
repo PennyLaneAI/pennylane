@@ -1,5 +1,7 @@
-pennylane.ops.qubit.CZ
+CZ
 ======================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

@@ -1,5 +1,8 @@
-pennylane.ops.cv.GaussianState
+GaussianState
 ==============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

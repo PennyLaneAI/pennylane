@@ -1,5 +1,8 @@
-pennylane.ops.cv.Kerr
+Kerr
 =====================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

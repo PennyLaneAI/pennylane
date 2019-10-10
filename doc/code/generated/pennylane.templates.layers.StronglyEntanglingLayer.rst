@@ -1,5 +1,7 @@
-pennylane.templates.layers.StronglyEntanglingLayer
+StronglyEntanglingLayer
 ==================================================
+
+**Module:** pennylane.templates.layers
 
 .. currentmodule:: pennylane.templates.layers
 

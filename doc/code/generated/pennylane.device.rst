@@ -1,5 +1,8 @@
-pennylane.device
+device
 ================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane
 

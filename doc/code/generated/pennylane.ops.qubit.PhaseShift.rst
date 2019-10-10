@@ -1,5 +1,7 @@
-pennylane.ops.qubit.PhaseShift
+PhaseShift
 ==============================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

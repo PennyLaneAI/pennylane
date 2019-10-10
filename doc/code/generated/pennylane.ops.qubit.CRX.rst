@@ -1,5 +1,7 @@
-pennylane.ops.qubit.CRX
-=======================
+CRX
+=======
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

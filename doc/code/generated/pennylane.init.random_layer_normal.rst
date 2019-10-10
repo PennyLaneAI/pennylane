@@ -1,5 +1,8 @@
-pennylane.init.random\_layer\_normal
+random\_layer\_normal
 ====================================
+
+**Module:** pennylane.init
+
 
 .. currentmodule:: pennylane.init
 

@@ -1,5 +1,8 @@
-pennylane.ops.cv.QuadraticPhase
+QuadraticPhase
 ===============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

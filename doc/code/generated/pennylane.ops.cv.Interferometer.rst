@@ -1,5 +1,8 @@
-pennylane.ops.cv.Interferometer
+Interferometer
 ===============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

@@ -1,5 +1,7 @@
-pennylane.ops.qubit.QubitUnitary
+QubitUnitary
 ================================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

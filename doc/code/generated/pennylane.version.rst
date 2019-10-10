@@ -1,5 +1,7 @@
-pennylane.version
+version
 =================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane
 

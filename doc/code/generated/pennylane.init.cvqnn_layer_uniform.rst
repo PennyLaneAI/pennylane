@@ -1,5 +1,8 @@
-pennylane.init.cvqnn\_layer\_uniform
+cvqnn\_layer\_uniform
 ====================================
+
+**Module:** pennylane.init
+
 
 .. currentmodule:: pennylane.init
 

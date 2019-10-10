@@ -1,5 +1,8 @@
-pennylane.ops.cv.Displacement
+Displacement
 =============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

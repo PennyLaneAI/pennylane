@@ -1,5 +1,7 @@
-pennylane.optimize.GradientDescentOptimizer
+GradientDescentOptimizer
 ===========================================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.optimize
 

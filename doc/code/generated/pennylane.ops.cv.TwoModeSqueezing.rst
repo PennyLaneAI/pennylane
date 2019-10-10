@@ -1,5 +1,7 @@
-pennylane.ops.cv.TwoModeSqueezing
+TwoModeSqueezing
 =================================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.cv
 

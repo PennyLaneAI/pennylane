@@ -1,5 +1,8 @@
-pennylane.ops.cv.CrossKerr
+CrossKerr
 ==========================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

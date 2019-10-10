@@ -1,5 +1,8 @@
-pennylane.init.interferometer\_normal
+interferometer\_normal
 =====================================
+
+**Module:** pennylane.init
+
 
 .. currentmodule:: pennylane.init
 

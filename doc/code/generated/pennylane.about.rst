@@ -1,5 +1,9 @@
-pennylane.about
+about
 ===============
+
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane
 

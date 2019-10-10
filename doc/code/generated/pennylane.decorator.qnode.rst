@@ -1,5 +1,8 @@
-pennylane.decorator.qnode
+qnode
 =========================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.decorator
 

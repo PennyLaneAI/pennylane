@@ -1,5 +1,7 @@
-pennylane.ops.cv.X
+X
 ==================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.cv
 

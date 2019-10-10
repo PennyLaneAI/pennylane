@@ -1,5 +1,7 @@
-pennylane.ops.qubit.Hadamard
+Hadamard
 ============================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

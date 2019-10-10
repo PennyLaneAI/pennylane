@@ -1,5 +1,8 @@
-pennylane.ops.cv.CatState
+CatState
 =========================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

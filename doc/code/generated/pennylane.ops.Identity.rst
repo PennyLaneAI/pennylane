@@ -1,5 +1,7 @@
-pennylane.ops.Identity
-======================
+Identity
+============
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops
 

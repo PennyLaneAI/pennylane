@@ -1,5 +1,7 @@
-pennylane.init.strong\_ent\_layer\_uniform
+strong\_ent\_layer\_uniform
 ==========================================
+
+**Module:** pennylane.init
 
 .. currentmodule:: pennylane.init
 

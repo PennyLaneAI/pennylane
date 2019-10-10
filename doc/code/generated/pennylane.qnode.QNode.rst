@@ -1,5 +1,8 @@
-pennylane.qnode.QNode
+QNode
 =====================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.qnode
 

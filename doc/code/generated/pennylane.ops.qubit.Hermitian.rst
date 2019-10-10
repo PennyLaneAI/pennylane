@@ -1,5 +1,7 @@
-pennylane.ops.qubit.Hermitian
+Hermitian
 =============================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

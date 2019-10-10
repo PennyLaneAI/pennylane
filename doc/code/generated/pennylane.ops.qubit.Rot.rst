@@ -1,5 +1,7 @@
-pennylane.ops.qubit.Rot
+Rot
 =======================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

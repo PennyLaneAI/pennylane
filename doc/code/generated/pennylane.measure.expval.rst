@@ -1,5 +1,8 @@
-pennylane.measure.expval
+expval
 ========================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.measure
 

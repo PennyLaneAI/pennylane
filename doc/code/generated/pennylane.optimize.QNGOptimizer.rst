@@ -1,5 +1,9 @@
-pennylane.optimize.QNGOptimizer
+QNGOptimizer
 ===============================
+
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.optimize
 

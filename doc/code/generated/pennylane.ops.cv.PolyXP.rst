@@ -1,5 +1,8 @@
-pennylane.ops.cv.PolyXP
+PolyXP
 =======================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

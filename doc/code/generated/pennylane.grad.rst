@@ -1,5 +1,8 @@
-pennylane.grad
+grad
 ==============
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane
 

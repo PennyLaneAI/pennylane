@@ -1,5 +1,8 @@
-pennylane.ops.cv.ControlledAddition
+ControlledAddition
 ===================================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

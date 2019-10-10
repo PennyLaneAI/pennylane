@@ -1,5 +1,8 @@
-pennylane.templates.embeddings.AmplitudeEmbedding
+AmplitudeEmbedding
 =================================================
+
+**Module:** pennylane.templates.embeddings
+
 
 .. currentmodule:: pennylane.templates.embeddings
 

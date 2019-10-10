@@ -1,5 +1,8 @@
-pennylane.ops.cv.Beamsplitter
+Beamsplitter
 =============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

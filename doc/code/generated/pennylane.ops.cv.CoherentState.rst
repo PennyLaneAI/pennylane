@@ -1,5 +1,8 @@
-pennylane.ops.cv.CoherentState
+CoherentState
 ==============================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

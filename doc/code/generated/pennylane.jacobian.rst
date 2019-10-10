@@ -1,5 +1,8 @@
-pennylane.jacobian
+jacobian
 ==================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane
 

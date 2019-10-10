@@ -1,5 +1,7 @@
-pennylane.optimize.NesterovMomentumOptimizer
+NesterovMomentumOptimizer
 ============================================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.optimize
 

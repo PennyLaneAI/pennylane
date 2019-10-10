@@ -1,5 +1,8 @@
-pennylane.measure.var
+var
 =====================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.measure
 

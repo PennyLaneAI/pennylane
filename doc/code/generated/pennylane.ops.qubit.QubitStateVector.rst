@@ -1,5 +1,7 @@
-pennylane.ops.qubit.QubitStateVector
+QubitStateVector
 ====================================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

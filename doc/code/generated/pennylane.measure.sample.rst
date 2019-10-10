@@ -1,5 +1,8 @@
-pennylane.measure.sample
+sample
 ========================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.measure
 

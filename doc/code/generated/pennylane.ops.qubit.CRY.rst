@@ -1,5 +1,7 @@
-pennylane.ops.qubit.CRY
-=======================
+CRY
+=======
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.ops.qubit
 

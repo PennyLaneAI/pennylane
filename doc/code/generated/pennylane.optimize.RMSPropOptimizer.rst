@@ -1,5 +1,9 @@
-pennylane.optimize.RMSPropOptimizer
+RMSPropOptimizer
 ===================================
+
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.optimize
 

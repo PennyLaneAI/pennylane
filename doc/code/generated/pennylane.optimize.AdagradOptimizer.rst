@@ -1,5 +1,7 @@
-pennylane.optimize.AdagradOptimizer
+AdagradOptimizer
 ===================================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.optimize
 

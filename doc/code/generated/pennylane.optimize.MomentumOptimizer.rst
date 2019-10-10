@@ -1,5 +1,7 @@
-pennylane.optimize.MomentumOptimizer
+MomentumOptimizer
 ====================================
+
+**Module:** pennylane
 
 .. currentmodule:: pennylane.optimize
 

@@ -1,5 +1,8 @@
-pennylane.ops.cv.Squeezing
+Squeezing
 ==========================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.ops.cv
 

@@ -1,5 +1,8 @@
-pennylane.configuration.Configuration
+Configuration
 =====================================
+
+**Module:** pennylane
+
 
 .. currentmodule:: pennylane.configuration
 
