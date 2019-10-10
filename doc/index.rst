@@ -162,20 +162,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
 .. toctree::
    :maxdepth: 1
-   :caption: Key concepts
-   :hidden:
-
-   concepts/overview
-   concepts/hybrid_computation
-   concepts/quantum_nodes
-   concepts/concept_embeddings
-   concepts/varcirc
-   concepts/autograd_quantum
-
-   zreferences
-
-.. toctree::
-   :maxdepth: 1
    :caption: Tutorials
    :hidden:
 
@@ -188,10 +174,25 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
-   code/qml_templates
-   code/qml_templates_layers
-   code/qml_templates_embeddings
    code/qml_init
+   code/qml_templates
+   code/qml_templates_embeddings
+   code/qml_templates_layers
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Key concepts
+   :hidden:
+
+   concepts/overview
+   concepts/hybrid_computation
+   concepts/quantum_nodes
+   concepts/concept_embeddings
+   concepts/varcirc
+   concepts/autograd_quantum
+
+   zreferences
 
 
 :html:`<h2>Indices and tables</h2>`
