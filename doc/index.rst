@@ -113,7 +113,7 @@ provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and
 `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins. You can also find detailed guides on
 :ref:`how to write your own <plugin_overview>` PennyLane compatible quantum device.
 
-Finally, detailed documentation on the PennyLane API :ref:`interface <docs_pennylane>` is provided.
+Finally, detailed documentation on the PennyLane API :ref:`interface <api_qml>` is provided.
 Look there for full details on available tools to construct quantum circuits.
 
 :html:`<h2>How to cite</h2>`
@@ -169,10 +169,10 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    introduction/pennylane
-   introduction/vcircuits
+   introduction/circuits
    introduction/interfaces
    introduction/plugins
-   introduction/optimizers
+   introduction/reference
 
 .. toctree::
    :maxdepth: 1
@@ -190,8 +190,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml
    code/qml_init
    code/qml_templates
-   code/qml_templates_embeddings
-   code/qml_templates_layers
 
 
 :html:`<h2>Indices and tables</h2>`

@@ -122,7 +122,7 @@ Optimization using PyTorch
 
 To optimize your hybrid classical-quantum model using the Torch interface,
 you **must** make use of the `PyTorch provided optimizers <https://pytorch.org/docs/stable/optim.html>`_,
-or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <intro_optimizers>`
+or your own custom PyTorch optimizer. **The** :ref:`PennyLane optimizers <intro_ref_opt>`
 **cannot be used with the Torch interface**.
 
 For example, to optimize a Torch-interfacing QNode (below) such that the weights ``x``

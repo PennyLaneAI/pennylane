@@ -117,7 +117,7 @@ array([-0.47942549,  0.        ])
 
 To optimize your hybrid classical-quantum model using the TensorFlow eager interface,
 you **must** make use of the TensorFlow optimizers provided in the ``tf.train`` module,
-or your own custom TensorFlow optimizer. **The** :ref:`PennyLane optimizers <intro_optimizers>`
+or your own custom TensorFlow optimizer. **The** :ref:`PennyLane optimizers <intro_ref_opt>`
 **cannot be used with the TensorFlow interface**.
 
 For example, to optimize a TFE-interfacing QNode (below) such that the weights ``x``

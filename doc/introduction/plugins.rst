@@ -3,8 +3,8 @@
 
 .. _plugins:
 
-Quantum plugins
-===============
+Plugins
+=======
 
 As laid out in the :ref:`introduction <pl_intro>`, PennyLane provides a framework for the construction and optimization
 of hybrid quantum-classical computational models.
@@ -80,12 +80,12 @@ Below, we maintain a list of the installable plugins available for PennyLane.
 +========================+==================================================+=====================================================================================+
 |                        |                                                  | * `Strawberry Fields <https://strawberryfields.readthedocs.io>`_ is a               |
 |                        |                                                  |   Python library for simulating continuous variable quantum optical circuits.       |
-| |sf|                   | * :ref:`CV operations <intro_vcirc_ops_cv>`      | * Combines Strawberry Fields' polished simulator suite                              |
+| |sf|                   | * :ref:`CV operations <intro_ref_ops_cv>`        | * Combines Strawberry Fields' polished simulator suite                              |
 | :html:`<br/><br/>`     |                                                  |   with PennyLane's automatic differentiation and optimization.                      |
 | `(PennyLane-SF)`_      |                                                  | * Provides two devices to be used with PennyLane:                                   |
 |                        |                                                  |   ``strawberryfields.fock`` and ``strawberryfields.gaussian``.                      |
 +------------------------+--------------------------------------------------+-------------------------------------------------------------------------------------+
-| |forest|               | * :ref:`Qubit operations <intro_vcirc_ops_qubit>`| * `pyQuil <https://pyquil.readthedocs.io>`_ and the                                 |
+| |forest|               | * :ref:`Qubit operations <intro_ref_ops_qubit>`  | * `pyQuil <https://pyquil.readthedocs.io>`_ and the                                 |
 | :html:`<br/><br/>`     |                                                  |   `Forest SDK <https://rigetti.com/forest>`_ are an open-source quantum software    |
 | `(PennyLane-forest)`_  |                                                  |   framework designed by Rigetti.                                                    |
 |                        |                                                  | * Supported hardware backends include the Rigetti Aspen-1 QPU.                      |
@@ -93,19 +93,19 @@ Below, we maintain a list of the installable plugins available for PennyLane.
 |                        |                                                  |   ``forest.wavefunction``, ``forest.numpy_wavefunction``, ``forest.qvm`` simulators,|
 |                        |                                                  |   and the ``forest.qpu`` hardware backend.                                          |
 +------------------------+--------------------------------------------------+-------------------------------------------------------------------------------------+
-| |qiskit|               | * :ref:`Qubit operations <intro_vcirc_ops_qubit>`| * `Qiskit-Terra <https://qiskit.org/terra>`_                                        |
+| |qiskit|               | * :ref:`Qubit operations <intro_ref_ops_qubit>`  | * `Qiskit-Terra <https://qiskit.org/terra>`_                                        |
 | :html:`<br/><br/>`     |                                                  |   is an open-source quantum software framework designed by IBM.                     |
 | `(PennyLane-qiskit)`_  |                                                  | * Supported hardware backends include the IBM Quantum Experience.                   |
 |                        |                                                  | * Provides two devices to be used with PennyLane:                                   |
 |                        |                                                  |   ``qiskit.aer`` simulator and ``qiskit.ibm`` hardware backend                      |
 +------------------------+--------------------------------------------------+-------------------------------------------------------------------------------------+
-| |pq|                   | * :ref:`Qubit operations <intro_vcirc_ops_qubit>`| * `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_                      |
+| |pq|                   | * :ref:`Qubit operations <intro_ref_ops_qubit>`  | * `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`_                      |
 | :html:`<br/><br/>`     |                                                  |   is an open-source quantum compilation framework.                                  |
 | `(PennyLane-PQ)`_      |                                                  | * Supported ProjectQ hardware backends include the IBM Quantum Experience.          |
 |                        |                                                  | * Provides three devices to be used with PennyLane:                                 |
 |                        |                                                  |   ``projectq.simulator``, ``projectq.ibm``, and ``projectq.classical``.             |
 +------------------------+--------------------------------------------------+-------------------------------------------------------------------------------------+
-| |qsharp|               | * :ref:`Qubit operations <intro_vcirc_ops_qubit>`| * `Microsoft QDK <https://www.microsoft.com/en-us/quantum/development-kit>`_        |
+| |qsharp|               | * :ref:`Qubit operations <intro_ref_ops_qubit>`  | * `Microsoft QDK <https://www.microsoft.com/en-us/quantum/development-kit>`_        |
 | :html:`<br/><br/>`     |                                                  |   is a library for quantum programming using the .NET Q# quantum programming        |
 | `(PennyLane-Q#)`_      |                                                  |   language.                                                                         |
 |                        |                                                  | * Provides access to the QDK full state simulator ``microsoft.QuantumSimulator``    |

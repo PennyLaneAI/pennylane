@@ -42,16 +42,16 @@ Learn more
 In the following sections you can learn more about quantum circuits, interfaces and plugins to external
 quantum devices in PennyLane, as well as find its custom optimizers:
 
-1. The section on :ref:`variational circuits <intro_vcircuits>` shows you how PennyLane unifies and
+1. :ref:`Quantum circuits <intro_vcircuits>` shows you how PennyLane unifies and
 simplifies the process of programming quantum circuits with trainable parameters.
 
-2. The section on :ref:`interfaces <intro_interfaces>` introduces you to how PennyLane is used
+2. :ref:`Interfaces <intro_interfaces>` introduces you to how PennyLane is used
 with the different classical interfaces to optimize quantum circuits or hybrid computations.
 
-3. The section on :ref:`plugins <plugins>` gives you an overview of PennyLane's plugin ecosystem,
+3. :ref:`Plugins <plugins>` gives you an overview of PennyLane's plugin ecosystem,
 and teaches you how to write a new plugin for a quantum device.
 
-4. The section on :ref:`optimizers <intro_optimizers>` lists the optimizers available in the NumPy interface, some
+4. :ref:`Quick reference <intro_reference>` lists the optimizers available in the NumPy interface, some
 of which are specially designed for quantum optimization.
 
 

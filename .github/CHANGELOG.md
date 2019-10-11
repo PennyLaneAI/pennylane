@@ -40,7 +40,7 @@
 ### Documentation
 
 
-* The code documentation is reordered and updated to be a comprehensive module reference.
+* The docs are rewritten and restructured to contain a code introduction section as well as an API section.
   [#314](https://github.com/XanaduAI/pennylane/pull/275)
 
 * Added tutorial for QAOA on MaxCut problem

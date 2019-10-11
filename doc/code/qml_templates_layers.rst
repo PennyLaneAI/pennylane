@@ -1,4 +1,4 @@
-.. _docs_templates_layers:
+.. _api_qml_temp_lay:
 
 qml.templates.layers
 ====================
@@ -7,23 +7,47 @@ qml.templates.layers
 
 This module contains templates for trainable 'layers' of quantum gates.
 
-Classes
--------
+CV layers
+---------
 
 Single layer
 
 .. autosummary::
-    StronglyEntanglingLayer
-    RandomLayer
     CVNeuralNetLayer
     Interferometer
 
 Multiple layers
 
 .. autosummary::
+    CVNeuralNetLayers
+
+Qubit layers
+------------
+
+Single layer
+
+.. autosummary::
+    StronglyEntanglingLayer
+    RandomLayer
+
+Multiple layers
+
+.. autosummary::
     StronglyEntanglingLayers
     RandomLayers
-    CVNeuralNetLayers
+
+
+.. toctree::
+    :hidden:
+
+    pennylane.templates.layers.CVNeuralNetLayer.rst
+    pennylane.templates.layers.CVNeuralNetLayers.rst
+    pennylane.templates.layers.Interferometer.rst
+    pennylane.templates.layers.RandomLayer.rst
+    pennylane.templates.layers.RandomLayers.rst
+    pennylane.templates.layers.StronglyEntanglingLayer.rst
+    pennylane.templates.layers.StronglyEntanglingLayers.rst
+
 
 .. note::
 

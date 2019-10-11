@@ -1,4 +1,4 @@
-.. _docs_pennylane:
+.. _api_qml:
 
 qml
 ===
@@ -7,7 +7,7 @@ qml
 
 **Module**: qml
 
-This top level module allows the direct import of all basic functions and classes of PennyLane.
+This module allows the direct import of all basic functions and classes of PennyLane.
 
 As a convention, pennylane is imported via:
 
@@ -15,32 +15,58 @@ As a convention, pennylane is imported via:
 
     import pennylane as qml
 
-Modules
--------
+The top-level module contains the following sub-modules:
 
-* :ref:`init <docs_init>` - This module contains functions that generate initial parameters,
+* :ref:`init <api_qml_init>` - This module contains functions that generate initial parameters,
   for example to use in templates.
-* :ref:`templates <docs_templates>` -This module provides a growing library of
+* :ref:`templates <api_qml_temp>` -This module provides a growing library of
   templates of common variational circuit architectures that can be used to easily build,
   evaluate, and train quantum nodes.
 
-Classes
--------
+
+About
+-----
+
+.. currentmodule:: pennylane
+.. autosummary::
+    about
+    version
 
 Configuration
+-------------
 
 .. currentmodule:: pennylane.configuration
 .. autosummary::
     Configuration
 
 Device
+------
 
 .. currentmodule:: pennylane
 .. autosummary::
     Device
+    device
+
+Gradients
+---------
+
+.. currentmodule:: pennylane
+.. autosummary::
+    grad
+    jacobian
 
 
-Operations - Continuous-Variable
+Measurements
+------------
+
+.. currentmodule:: pennylane.measure
+.. autosummary::
+    expval
+    sample
+    var
+
+Operations - CV
+---------------
 
 .. currentmodule:: pennylane.ops.cv
 .. autosummary::
@@ -75,6 +101,7 @@ Operations - Continuous-Variable
 
 
 Operations - Qubits
+-------------------
 
 .. currentmodule:: pennylane.ops.qubit
 .. autosummary::
@@ -103,14 +130,16 @@ Operations - Qubits
     T
 
 Operations - Shared
+-------------------
 
 .. currentmodule:: pennylane.ops
 .. autosummary::
     Identity
 
 Optimizers
+----------
 
-.. _docs_qml_optimize:
+.. _api_qml_opt:
 
 .. currentmodule:: pennylane.optimize
 .. autosummary::
@@ -124,150 +153,87 @@ Optimizers
 
 
 QNode
-
-.. currentmodule:: pennylane.qnode
-.. autosummary::
-    QNode
-
-Functions
----------
-
-About
+-----
 
 .. currentmodule:: pennylane
 .. autosummary::
-    about
-    version
-
-Device
-
-.. currentmodule:: pennylane
-.. autosummary::
-    device
-
-Gradients
-
-.. currentmodule:: pennylane
-.. autosummary::
-    grad
-    jacobian
-
-Measurements
-
-.. currentmodule:: pennylane.measure
-.. autosummary::
-    expval
-    sample
-    var
-
-QNode Decorator
-
-.. _docs_qml_decorator:
-
-.. currentmodule:: pennylane.decorator
-.. autosummary::
-    qnode
+    qnode.QNode
+    decorator.qnode
 
 
 .. toctree::
     :hidden:
 
-    generated/pennylane.about.rst
-    generated/pennylane.configuration.Configuration.rst
-    generated/pennylane.decorator.qnode.rst
-    generated/pennylane._device.Device.rst
-    generated/pennylane.device.rst
-    generated/pennylane.grad.rst
-    generated/pennylane.init.cvqnn_layer_normal.rst
-    generated/pennylane.init.cvqnn_layers_normal.rst
-    generated/pennylane.init.cvqnn_layers_uniform.rst
-    generated/pennylane.init.cvqnn_layer_uniform.rst
-    generated/pennylane.init.interferometer_normal.rst
-    generated/pennylane.init.interferometer_uniform.rst
-    generated/pennylane.init.random_layer_normal.rst
-    generated/pennylane.init.random_layers_normal.rst
-    generated/pennylane.init.random_layers_uniform.rst
-    generated/pennylane.init.random_layer_uniform.rst
-    generated/pennylane.init.strong_ent_layer_normal.rst
-    generated/pennylane.init.strong_ent_layers_normal.rst
-    generated/pennylane.init.strong_ent_layers_uniform.rst
-    generated/pennylane.init.strong_ent_layer_uniform.rst
-    generated/pennylane.jacobian.rst
-    generated/pennylane.measure.expval.rst
-    generated/pennylane.measure.sample.rst
-    generated/pennylane.measure.var.rst
-    generated/pennylane.ops.cv.Beamsplitter.rst
-    generated/pennylane.ops.cv.CatState.rst
-    generated/pennylane.ops.cv.CoherentState.rst
-    generated/pennylane.ops.cv.ControlledAddition.rst
-    generated/pennylane.ops.cv.ControlledPhase.rst
-    generated/pennylane.ops.cv.CrossKerr.rst
-    generated/pennylane.ops.cv.CubicPhase.rst
-    generated/pennylane.ops.cv.DisplacedSqueezedState.rst
-    generated/pennylane.ops.cv.Displacement.rst
-    generated/pennylane.ops.cv.FockDensityMatrix.rst
-    generated/pennylane.ops.cv.FockStateProjector.rst
-    generated/pennylane.ops.cv.FockState.rst
-    generated/pennylane.ops.cv.FockStateVector.rst
-    generated/pennylane.ops.cv.GaussianState.rst
-    generated/pennylane.ops.cv.Interferometer.rst
-    generated/pennylane.ops.cv.Kerr.rst
-    generated/pennylane.ops.cv.NumberOperator.rst
-    generated/pennylane.ops.cv.PolyXP.rst
-    generated/pennylane.ops.cv.P.rst
-    generated/pennylane.ops.cv.QuadOperator.rst
-    generated/pennylane.ops.cv.QuadraticPhase.rst
-    generated/pennylane.ops.cv.Rotation.rst
-    generated/pennylane.ops.cv.SqueezedState.rst
-    generated/pennylane.ops.cv.Squeezing.rst
-    generated/pennylane.ops.cv.ThermalState.rst
-    generated/pennylane.ops.cv.TwoModeSqueezing.rst
-    generated/pennylane.ops.cv.X.rst
-    generated/pennylane.ops.Identity.rst
-    generated/pennylane.ops.qubit.BasisState.rst
-    generated/pennylane.ops.qubit.CNOT.rst
-    generated/pennylane.ops.qubit.CRot.rst
-    generated/pennylane.ops.qubit.CRX.rst
-    generated/pennylane.ops.qubit.CRY.rst
-    generated/pennylane.ops.qubit.CRZ.rst
-    generated/pennylane.ops.qubit.CSWAP.rst
-    generated/pennylane.ops.qubit.CZ.rst
-    generated/pennylane.ops.qubit.Hadamard.rst
-    generated/pennylane.ops.qubit.Hermitian.rst
-    generated/pennylane.ops.qubit.PauliX.rst
-    generated/pennylane.ops.qubit.PauliY.rst
-    generated/pennylane.ops.qubit.PauliZ.rst
-    generated/pennylane.ops.qubit.PhaseShift.rst
-    generated/pennylane.ops.qubit.QubitStateVector.rst
-    generated/pennylane.ops.qubit.QubitUnitary.rst
-    generated/pennylane.ops.qubit.Rot.rst
-    generated/pennylane.ops.qubit.RX.rst
-    generated/pennylane.ops.qubit.RY.rst
-    generated/pennylane.ops.qubit.RZ.rst
-    generated/pennylane.ops.qubit.S.rst
-    generated/pennylane.ops.qubit.SWAP.rst
-    generated/pennylane.ops.qubit.T.rst
-    generated/pennylane.optimize.AdagradOptimizer.rst
-    generated/pennylane.optimize.AdamOptimizer.rst
-    generated/pennylane.optimize.GradientDescentOptimizer.rst
-    generated/pennylane.optimize.MomentumOptimizer.rst
-    generated/pennylane.optimize.NesterovMomentumOptimizer.rst
-    generated/pennylane.optimize.QNGOptimizer.rst
-    generated/pennylane.optimize.RMSPropOptimizer.rst
-    generated/pennylane.qnode.QNode.rst
-    generated/pennylane.templates.embeddings.AmplitudeEmbedding.rst
-    generated/pennylane.templates.embeddings.AngleEmbedding.rst
-    generated/pennylane.templates.embeddings.BasisEmbedding.rst
-    generated/pennylane.templates.embeddings.DisplacementEmbedding.rst
-    generated/pennylane.templates.embeddings.SqueezingEmbedding.rst
-    generated/pennylane.templates.layers.CVNeuralNetLayer.rst
-    generated/pennylane.templates.layers.CVNeuralNetLayers.rst
-    generated/pennylane.templates.layers.Interferometer.rst
-    generated/pennylane.templates.layers.RandomLayer.rst
-    generated/pennylane.templates.layers.RandomLayers.rst
-    generated/pennylane.templates.layers.StronglyEntanglingLayer.rst
-    generated/pennylane.templates.layers.StronglyEntanglingLayers.rst
-    generated/pennylane.version.rst
+    pennylane.about.rst
+    pennylane.configuration.Configuration.rst
+    pennylane.decorator.qnode.rst
+    pennylane._device.Device.rst
+    pennylane.device.rst
+    pennylane.grad.rst
+    pennylane.jacobian.rst
+    pennylane.measure.expval.rst
+    pennylane.measure.sample.rst
+    pennylane.measure.var.rst
+    pennylane.ops.cv.Beamsplitter.rst
+    pennylane.ops.cv.CatState.rst
+    pennylane.ops.cv.CoherentState.rst
+    pennylane.ops.cv.ControlledAddition.rst
+    pennylane.ops.cv.ControlledPhase.rst
+    pennylane.ops.cv.CrossKerr.rst
+    pennylane.ops.cv.CubicPhase.rst
+    pennylane.ops.cv.DisplacedSqueezedState.rst
+    pennylane.ops.cv.Displacement.rst
+    pennylane.ops.cv.FockDensityMatrix.rst
+    pennylane.ops.cv.FockStateProjector.rst
+    pennylane.ops.cv.FockState.rst
+    pennylane.ops.cv.FockStateVector.rst
+    pennylane.ops.cv.GaussianState.rst
+    pennylane.ops.cv.Interferometer.rst
+    pennylane.ops.cv.Kerr.rst
+    pennylane.ops.cv.NumberOperator.rst
+    pennylane.ops.cv.PolyXP.rst
+    pennylane.ops.cv.P.rst
+    pennylane.ops.cv.QuadOperator.rst
+    pennylane.ops.cv.QuadraticPhase.rst
+    pennylane.ops.cv.Rotation.rst
+    pennylane.ops.cv.SqueezedState.rst
+    pennylane.ops.cv.Squeezing.rst
+    pennylane.ops.cv.ThermalState.rst
+    pennylane.ops.cv.TwoModeSqueezing.rst
+    pennylane.ops.cv.X.rst
+    pennylane.ops.Identity.rst
+    pennylane.ops.qubit.BasisState.rst
+    pennylane.ops.qubit.CNOT.rst
+    pennylane.ops.qubit.CRot.rst
+    pennylane.ops.qubit.CRX.rst
+    pennylane.ops.qubit.CRY.rst
+    pennylane.ops.qubit.CRZ.rst
+    pennylane.ops.qubit.CSWAP.rst
+    pennylane.ops.qubit.CZ.rst
+    pennylane.ops.qubit.Hadamard.rst
+    pennylane.ops.qubit.Hermitian.rst
+    pennylane.ops.qubit.PauliX.rst
+    pennylane.ops.qubit.PauliY.rst
+    pennylane.ops.qubit.PauliZ.rst
+    pennylane.ops.qubit.PhaseShift.rst
+    pennylane.ops.qubit.QubitStateVector.rst
+    pennylane.ops.qubit.QubitUnitary.rst
+    pennylane.ops.qubit.Rot.rst
+    pennylane.ops.qubit.RX.rst
+    pennylane.ops.qubit.RY.rst
+    pennylane.ops.qubit.RZ.rst
+    pennylane.ops.qubit.S.rst
+    pennylane.ops.qubit.SWAP.rst
+    pennylane.ops.qubit.T.rst
+    pennylane.optimize.AdagradOptimizer.rst
+    pennylane.optimize.AdamOptimizer.rst
+    pennylane.optimize.GradientDescentOptimizer.rst
+    pennylane.optimize.MomentumOptimizer.rst
+    pennylane.optimize.NesterovMomentumOptimizer.rst
+    pennylane.optimize.QNGOptimizer.rst
+    pennylane.optimize.RMSPropOptimizer.rst
+    pennylane.qnode.QNode.rst
+    pennylane.version.rst
 
 
 

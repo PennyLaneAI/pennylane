@@ -3,8 +3,8 @@
 
 .. _intro_interfaces:
 
-Classical interfaces
-====================
+Interfaces
+==========
 
 PennyLane integrates quantum nodes made up of variational circuits with other programming
 and machine learning frameworks.

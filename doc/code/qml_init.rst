@@ -1,18 +1,16 @@
-.. _docs_init:
+.. _api_qml_init:
 
 qml.init
 ========
 
 .. currentmodule:: pennylane.init
 
-This module contains functions that generate initial parameters, for example
+This module contains helper functions that generate initial parameters, for example
 to use in templates.
 
 
-Functions
----------
-
 Strongly Entangling Circuit
+---------------------------
 
 .. autosummary::
     strong_ent_layers_uniform
@@ -21,6 +19,7 @@ Strongly Entangling Circuit
     strong_ent_layer_normal
 
 Random Circuit
+--------------
 
 .. autosummary::
     random_layers_uniform
@@ -29,6 +28,7 @@ Random Circuit
     random_layer_normal
 
 CV Neural Network
+-----------------
 
 .. autosummary::
     cvqnn_layers_uniform
@@ -37,7 +37,26 @@ CV Neural Network
     cvqnn_layer_normal
 
 Interferometer
+--------------
 
 .. autosummary::
     interferometer_uniform
     interferometer_normal
+
+.. toctree::
+    :hidden:
+
+    pennylane.init.cvqnn_layer_normal.rst
+    pennylane.init.cvqnn_layers_normal.rst
+    pennylane.init.cvqnn_layers_uniform.rst
+    pennylane.init.cvqnn_layer_uniform.rst
+    pennylane.init.interferometer_normal.rst
+    pennylane.init.interferometer_uniform.rst
+    pennylane.init.random_layer_normal.rst
+    pennylane.init.random_layers_normal.rst
+    pennylane.init.random_layers_uniform.rst
+    pennylane.init.random_layer_uniform.rst
+    pennylane.init.strong_ent_layer_normal.rst
+    pennylane.init.strong_ent_layers_normal.rst
+    pennylane.init.strong_ent_layers_uniform.rst
+    pennylane.init.strong_ent_layer_uniform.rst
