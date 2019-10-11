@@ -129,7 +129,6 @@ Shahnawaz Ahmed, Aroosa Ijaz, Angus Lowe, Johannes Jakob Meyer, Maria Schuld, An
   of parametric compilation.
   [#283](https://github.com/XanaduAI/pennylane/pull/283)
 
-
 * Introduces two enumerations: `Any` and `All`, representing any number of wires
   and all wires in the system respectively. They can be imported from
   `pennylane.operation`, and can be used when defining the `Operation.num_wires`
