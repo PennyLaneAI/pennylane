@@ -14,7 +14,7 @@ PennyLane implementation
 ------------------------
 
 This basic tutorial optimizes a 3-qubit Ising model using the PennyLane ``default.qubit``
-device with the PyTorch machine learning interface. In the absence of external fields, the Hamiltonian for this system is given by:
+device with PyTorch. In the absence of external fields, the Hamiltonian for this system is given by:
 
 .. math::  H=-\sum_{<i,j>} J_{ij} \sigma_i \sigma_{j}
 
