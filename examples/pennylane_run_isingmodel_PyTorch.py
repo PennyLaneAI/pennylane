@@ -8,7 +8,7 @@ The interacting spins with variable coupling strengths of an `Ising model <https
 `Quadratic Unconstrained Binary Optimization (QUBO) <https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization>`__ problems. 
 
 Despite this adaptability of Ising models, their current use is limited to a subfield of quantum machine learning; quantum adiabatic machine learning. This is because the optimization landscape of this model is non-convex; gradient descent may not be the best strategy as the optimization can get
-stuck in local minima. Optimization techniques like quantum annealing have to be used (for example on a D-wave system). In this tutorial, we get a closer look at this phenomenon using a toy Ising model.  
+stuck in local minima. Alternative optimization techniques like quantum annealing have to be used (for example on a D-wave system). In this tutorial, we get a closer look at this phenomenon using a toy Ising model.  
 
 PennyLane implementation
 ------------------------
@@ -91,8 +91,6 @@ print("Corresponding cost before optimization:", cost_init)
 
 opt = torch.optim.SGD(var_init, lr=0.1)
 
-steps = 100
-
 def closure():
     opt.zero_grad()
     loss = cost(p1, p2)
@@ -103,7 +101,7 @@ var_pt = [var_init]
 cost_pt = [cost_init]
 x = [0]
 
-for i in range(steps):
+for i in range(100):
     opt.step(closure)
     if (i + 1) % 5 == 0:
         x.append(i)
@@ -174,7 +172,6 @@ def closure():
     loss = cost(p3, p4)
     loss.backward()
     return loss
-
 
 var_pt_loc = [var_init_loc]
 cost_pt_loc = [cost_init_loc]
