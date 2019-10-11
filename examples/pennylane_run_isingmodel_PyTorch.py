@@ -16,7 +16,7 @@ PennyLane implementation
 This basic tutorial optimizes a 3-qubit Ising model using the PennyLane ``default.qubit``
 device with PyTorch. In the absence of external fields, the Hamiltonian for this system is given by:
 
-.. math::  H=-\sum_{<i,j>} J_{ij} \sigma_i \sigma_{j}
+.. math::  H=-\sum_{<i,j>} J_{ij} \sigma_i \sigma_{j},
 
 where each spin can be in +1 or -1 spin state and :math:`J_{ij}` are the nearest neighbor coupling strengths.
 
