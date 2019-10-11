@@ -43,9 +43,10 @@ def circuit(p1, p2):
     return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
 ###############################################################################
-# The cost function to be minimized is defined as the energy of the spin configuration
+# The cost function to be minimized is defined as the energy of the spin configuration:
 
 def cost(var1, var2):
+
     # the circuit function returns a numpy array of Pauli-Z expectation values
     spins = circuit(var1, var2)
 
@@ -110,7 +111,10 @@ for i in range(steps):
         costn = cost(p1n, p2n)
         var_pt.append([p1n, p2n])
         cost_pt.append(costn)
-        print("Energy after step {:5d}: {: .7f} | Angles: {}".format(i + 1, costn, [p1n, p2n]),"\n")
+
+        # for clarity, the anlges are printed as numpy arrays
+        print("Energy after step {:5d}: {: .7f} | Angles: {}".format(i+1, costn, [p1n.detach().numpy(), p2n.detach().numpy()]),"\n")
+        
 
 ###############################################################################
 #
@@ -127,10 +131,10 @@ for i in range(steps):
 # The minimum energy is -2 for the spin configuration :math:`[s_1, s_2, s_3] = [1, 1, -1]`
 # which corresponds to
 # :math:`(\phi, \theta, \omega) = (0, 0, 0)` for the second spin and :math:`(\phi, \theta, \omega) = (0, \pi, 0)` for 
-# the third spin. Note that gradient descent optimization might not find this global minimum due to the non-convex cost function.
+# the third spin. Note that gradient descent optimization might not find this global minimum due to the non-convex cost function, as is shown in the next section.
 
 p1_final, p2_final = opt.param_groups[0]["params"]
-print("Optimized angles:",p1_final, p2_final)
+print("Optimized angles:", p1_final, p2_final)
 print("Final cost after optimization:", cost(p1_final, p2_final))
 
 ###############################################################################
@@ -152,11 +156,14 @@ plt.show()
 # likely to get stuck here and never find the global minimum at -2. 
 
 torch.manual_seed(9)
-pt3 = Variable((np.pi*torch.rand(3, dtype = torch.float64)), requires_grad = True)
-pt4 = Variable((np.pi*torch.rand(3, dtype = torch.float64)), requires_grad = True)
-var_init_loc = [pt3, pt4]
-cost_init_loc = cost(pt3, pt4)
-print(cost_init_loc)
+p3 = Variable((np.pi*torch.rand(3, dtype = torch.float64)), requires_grad = True)
+p4 = Variable((np.pi*torch.rand(3, dtype = torch.float64)), requires_grad = True)
+
+var_init_loc = [p3, p4]
+cost_init_loc = cost(p3, p4)
+
+print("Corresponding cost before optimization:", cost_init_loc)
+
 
 ###############################################################################
 
@@ -164,7 +171,7 @@ opt = torch.optim.SGD(var_init_loc, lr = 0.1)
 
 def closure():
     opt.zero_grad()
-    loss = cost(pt3, pt4)
+    loss = cost(p3, p4)
     loss.backward()
     return loss
 
@@ -175,11 +182,13 @@ cost_pt_loc = [cost_init_loc]
 for j in range(100):
     opt.step(closure)
     if (j + 1) % 5 == 0:
-        pt3, pt4 = opt.param_groups[0]['params']
-        costn = cost(pt3, pt4)
-        var_pt_loc.append([pt3,pt4])
+        p3n, p4n = opt.param_groups[0]['params']
+        costn = cost(p3n, p4n)
+        var_pt_loc.append([p3n, p4n])
         cost_pt_loc.append(costn)
-        print('Energy after step {:5d}: {: .7f} | Angles: {}'.format(j+1,costn, [pt3.detach().numpy(), pt4.detach().numpy()]),"\n")
+
+        # for clarity, the anlges are printed as numpy arrays
+        print('Energy after step {:5d}: {: .7f} | Angles: {}'.format(j+1, costn, [p3n.detach().numpy(), p4n.detach().numpy()]),"\n")
 
 ###############################################################################
 
