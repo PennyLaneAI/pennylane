@@ -82,6 +82,7 @@ Code details
 """
 from collections import OrderedDict
 import itertools
+import functools
 import warnings
 
 import numpy as np
@@ -321,6 +322,7 @@ class DefaultQubit(Device):
     pennylane_requires = '0.6'
     version = '0.6.0'
     author = 'Xanadu Inc.'
+    _capabilities = {"model": "qubit", "tensor_observables": True}
 
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
@@ -427,7 +429,11 @@ class DefaultQubit(Device):
     def expval(self, observable, wires, par):
         if self.analytic:
             # exact expectation value
-            A = self._get_operator_matrix(observable, par)
+            if isinstance(observable, list):
+                A = self._get_tensor_operator_matrix(observable, par)
+            else:
+                A = self._get_operator_matrix(observable, par)
+
             ev = self.ev(A, wires)
         else:
             # estimate the ev
@@ -437,8 +443,12 @@ class DefaultQubit(Device):
 
     def var(self, observable, wires, par):
         if self.analytic:
-            # exact expectation value
-            A = self._get_operator_matrix(observable, par)
+            # exact variance value
+            if isinstance(observable, list):
+                A = self._get_tensor_operator_matrix(observable, par)
+            else:
+                A = self._get_operator_matrix(observable, par)
+
             var = self.ev(A@A, wires) - self.ev(A, wires)**2
         else:
             # estimate the ev
@@ -447,7 +457,11 @@ class DefaultQubit(Device):
         return var
 
     def sample(self, observable, wires, par):
-        A = self._get_operator_matrix(observable, par)
+        if isinstance(observable, list):
+            A = self._get_tensor_operator_matrix(observable, par)
+        else:
+            A = self._get_operator_matrix(observable, par)
+
         a, P = spectral_decomposition(A)
 
         p = np.zeros(a.shape)
@@ -470,16 +484,29 @@ class DefaultQubit(Device):
             return A
         return A(*par)
 
+    def _get_tensor_operator_matrix(self, obs, par):
+        """Get the operator matrix for a given tensor product of operations.
+
+        Args:
+            obs (list[str]): list of observable names to tensor
+            par (list[list[Any]]): parameter values
+
+        Returns:
+            array: matrix representation.
+        """
+        ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
+        return functools.reduce(np.kron, ops)
+
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.
 
          Args:
-          A (array[float]): the observable matrix as array
-          wires (Sequence[int]): target subsystems
+            A (array[float]): the observable matrix as array
+            wires (Sequence[int]): target subsystems
          Returns:
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        As = self.mat_vec_product(A, self._state, wires)
+        As = self.mat_vec_product(A, self._state, np.hstack(wires).tolist())
         expectation = np.vdot(self._state, As)
 
         if np.abs(expectation.imag) > tolerance:

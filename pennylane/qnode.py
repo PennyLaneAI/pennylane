@@ -675,13 +675,13 @@ class QNode:
         self.device.reset()
 
         # check that no wires are measured more than once
-        m_wires = list(w for ex in self.circuit.observables for w in ex.wires)
+        m_wires = list(_flatten(list(w for ex in self.circuit.observables for w in ex.wires)))
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
 
         def check_op(op):
             """Make sure only existing wires are referenced."""
-            for w in op.wires:
+            for w in _flatten(op.wires):
                 if w < 0 or w >= self.num_wires:
                     raise QuantumFunctionError("Operation {} applied to invalid wire {} "
                                                "on device with {} wires.".format(op.name, w, self.num_wires))
