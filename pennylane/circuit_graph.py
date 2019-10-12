@@ -70,13 +70,12 @@ def _by_idx(x):
 Layer = namedtuple("Layer", ["ops", "param_inds"])
 """Parametrized layer of the circuit.
 
-TODO define what a layer is
-
 Args:
 
     ops (list[Operation]): parametrized operations in the layer
     param_inds (tuple[int]): corresponding free parameter indices
 """
+#TODO define what a layer is
 
 LayerData = namedtuple("LayerData", ["pre_ops", "ops", "param_inds", "post_ops"])
 """Parametrized layer of the circuit.
@@ -285,13 +284,11 @@ class CircuitGraph:
     def update_node(self, old, new):
         """Replaces the given circuit graph node with a new one.
 
-        .. note:: Does alter the graph edges in any way. variable_deps is not changed, _grid is not changed.
-           Dangerous, do we need this?
-
         Args:
             old (Operation): node to replace
             new (Operation): replacement
         """
+        # TODO Does alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous, do we need this?
         if new.wires != old.wires:
             raise ValueError('The new Operation must act on the same wires as the old one.')
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
