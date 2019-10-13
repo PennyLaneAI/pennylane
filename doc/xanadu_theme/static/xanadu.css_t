@@ -1642,6 +1642,7 @@ footer.page-footer .footer-copyright {
 
   #mobile-toggle {
     display: block;
+    width: 56px;
     height: 40px;
     display: inline-flex;
     align-items: center;
@@ -1658,8 +1659,8 @@ footer.page-footer .footer-copyright {
     display: none;
     width: 100%;
     float: none;
-    margin: 40px 0 0 0;
     margin-left: 0;
+    box-shadow: none!important;
   }
 
   .sidebar-toc {
