@@ -237,17 +237,7 @@
 {%- block footer %}
 <script type="text/javascript">
   $("#mobile-toggle").click(function () {
-    const mq = window.matchMedia( "(max-width: 768px)" );
-
-    if (mq.matches) {
-        $("#left-column").slideToggle("slow");
-    } else {
-        $('#left-column').toggle(function () {
-            $("#left-column").css({"margin-left": "-300px"});
-        }, function () {
-            $("#left-column").css({"margin-left": "0px"});
-        });
-    }
+    $("#left-column").slideToggle("slow");
   });
 </script>
 

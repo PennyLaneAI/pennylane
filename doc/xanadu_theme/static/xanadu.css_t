@@ -46,20 +46,15 @@ body {
 
 #right-column {
   position: relative;
-  padding: 20px 0px 100px 0px;
+  padding: 20px 0px 20px 0px;
   margin-left: auto;
-  /*background-color: #fff;*/
   max-width: 900px;
-  /*float: left;*/
   width: 100%;
-  /*min-height: calc(100vh - 90px);*/
   height: auto;
   margin-right: auto;
   border-radius: 20px;
   margin-bottom: 100px;
   margin-top: 30px;
-  /*border: 1px #eeeeee solid;*/
-  /*box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0), 0 6px 50px 0 rgba(0, 0, 0, 0.19);*/
 }
 
 .page-shadow {
@@ -72,6 +67,10 @@ a.headerlink {
   color: #ddd;
   padding: 0 4px;
   text-decoration: none;
+}
+
+a {
+  color: #2a6496;
 }
 
 h1:hover > a.headerlink,
@@ -226,9 +225,27 @@ dl.attribute:last-child {
 
 .breadcrumb {
   font-size: 15px;
-  margin-bottom: -20px;
   margin-top: -20px;
   background: none;
+  display: block;
+  padding: 8px 15px;
+  list-style: none;
+  border-radius: 0px;
+  border-bottom: 1px solid lightgray;
+}
+
+.breadcrumb>li {
+  display: inline-block
+}
+
+.breadcrumb>li+li:before {
+  content: "/\00a0";
+  padding: 0 5px;
+  color: #ccc
+}
+
+.breadcrumb>.active {
+  color: #999
 }
 
 blockquote {
@@ -393,11 +410,20 @@ div.sphinxsidebar .sidebar-toc a {
   color: {{ theme_toc_hover }};
 }
 
+.sidebar-toc > ul li.current {
+  list-style-type: disc;
+  margin-left: 25px;
+  color: {{ theme_toc_hover }};
+  font-size: 18px;
+}
+
 .sidebar-toc > ul li.current > a,
 .sidebar-toc > ul li.current > a:hover {
   /*background-color: #e6e6e6;*/
   background-color: #ddd;
   color: #444;
+  margin-left: -25px;
+  font-size: 15px;
 }
 
 .sidebar-toc > ul > li.current > a,
@@ -560,12 +586,10 @@ div.sphinxsidebar input {
 
 .search-block {
   z-index: 1;
-  position: sticky;
-  top: 0px;
   margin-top: -20px;
-  padding-bottom: 10px;
-  width: 90%;
-  margin-left: 15px;
+  width: 92%;
+  margin-left: 12px;
+  padding-top: 20px;
 }
 
 .nano .nano-pane {
@@ -780,15 +804,23 @@ border-radius: 7px;
 /* Next and previous links
 -------------------------------------------------- */
 
+
 .footer-relations {
-  position: absolute;
-  border-top: 1px solid #ccc;
-  padding: 12px 25px;
-  margin-top: 30px;
-  font-size: 24px;
-  max-width: 900px;
-  width: 90%;
-  bottom: 0;
+  font-size: 15px;
+  display: block;
+  padding: 20px 40px 0 40px;
+  border-radius: 0px;
+  border-top: 1px solid lightgray;
+}
+
+.footer-relations > .pull-left {
+  display: inline-block;
+  float: left;
+}
+
+.footer-relations > .pull-right {
+  display: inline-block;
+  float: right;
 }
 
 .rel-spacer {
@@ -1553,7 +1585,7 @@ span.eqno {
 }
 
 .page-footer {
-  z-index: -1;
+  z-index: 0;
   background-color: white;
   position: relative;
   color: black!important;
@@ -1606,6 +1638,13 @@ footer.page-footer .footer-copyright {
   h2 {
     margin-top: 20px;
     font-size: 26px;
+  }
+
+  #mobile-toggle {
+    display: block;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
   }
 
   .container-wrapper {
@@ -1686,13 +1725,6 @@ footer.page-footer .footer-copyright {
     padding: 0px;
   }
 
-  #mobile-toggle {
-    display: block;
-    height: 40px;
-    display: inline-flex;
-    align-items: center;
-  }
-
   p {
     padding: 0;
   }
@@ -1703,11 +1735,6 @@ footer.page-footer .footer-copyright {
 
   .gallery-grid {
     justify-content: center!important;
-  }
-
-  .navbar {
-    box-shadow: none!important;
-    border-bottom: 1px #ddd solid;
   }
 
   .nav-item.active {
@@ -1747,7 +1774,7 @@ footer.page-footer .footer-copyright {
 /* Account for when the left column is closed then page is expanded.
 -------------------------------------------------- */
 
-@media screen and (min-width: 1450px) {
+@media screen and (min-width: 768px) {
   #left-column {
     display: block !important;
   }
@@ -1773,7 +1800,7 @@ footer.page-footer .footer-copyright {
   }
 }
 
-@media screen and (max-width: 1450px) and (min-width: 768px){
+@media screen and (max-width: 1500px) and (min-width: 768px){
   .comment-container {
     margin-left: calc(50% - 300px);
     padding-left: 0;
@@ -1792,15 +1819,8 @@ footer.page-footer .footer-copyright {
     margin-top: -29px;
   }
 
-  #mobile-toggle {
-    display: block;
-    height: 40px;
-    display: inline-flex;
-    align-items: center;
-  }
-
   .page-footer {
-    margin-left: 0;
+    margin-left: 260px;
   }
 
   .xanadu-call-to-action-links {
@@ -1808,18 +1828,31 @@ footer.page-footer .footer-copyright {
   }
 
   #right-column {
-    width: -webkit-calc(100% - 100px);
-    width:    -moz-calc(100% - 100px);
-    width:         calc(100% - 100px);
-    margin-bottom: 20px;
+    width: -webkit-calc(100% - 260px);
+    width:    -moz-calc(100% - 260px);
+    width:         calc(100% - 260px);
+    margin: -30px 0 -20px 260px;
+    padding: 50px 20px 80px 20px;
+    float: none;
   }
 
   #comments {
     display: none;
   }
 
+  #mobile-toggle {
+    display: none;
+  }
+
+  .navbar {
+    box-shadow: none!important;
+    border-bottom: 1px #ddd solid;
+  }
+
   #left-column {
-    margin-left: -300px;
+    box-shadow: none!important;
+    border-right: 1px #ddd solid;
+    width: 260px;
   }
 }
 
