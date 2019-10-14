@@ -1906,7 +1906,7 @@ footer.page-footer .footer-copyright {
 #download-python-link:hover,
 #download-notebook-link:hover,
 #github-view-link:hover {
-  border-bottom-color: {{ theme_download_button }};
+  /*border-bottom-color: {{ theme_download_button }};*/
   color: {{ theme_download_button }};
 }
 
