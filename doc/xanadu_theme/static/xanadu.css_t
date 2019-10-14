@@ -1919,6 +1919,7 @@ footer.page-footer .footer-copyright {
 
 .navbar-nav {
   padding-bottom: 1px;
+  padding-left: 30px;
 }
 
 
