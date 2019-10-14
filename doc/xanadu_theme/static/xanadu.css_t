@@ -1912,6 +1912,13 @@ footer.page-footer .footer-copyright {
 
 /* Navbar */
 
+.section::before {
+  content: "";
+  display: block;
+  height: 50px; /* fixed header height*/
+  margin: -70px 0 0; /* negative fixed header height */
+}
+
 .navbar {
   background-color: white;
   box-shadow: -1px 14px 30px -20px rgba(0,0,0,0.61);
