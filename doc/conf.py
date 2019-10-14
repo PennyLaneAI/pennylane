@@ -44,7 +44,7 @@ extensions = [
     'sphinx_gallery.gen_gallery'
 ]
 
-mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js"
+mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 
 from glob import glob
 import shutil
