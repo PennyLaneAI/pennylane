@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :func:`TFEQNode` function to convert Numpy-interfacing quantum nodes to TensorFlow
-Eager mode compatible quantum nodes.
+This module contains the :func:`TFQNode` function to convert Numpy-interfacing quantum nodes to TensorFlow
+compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name
 from functools import partial
