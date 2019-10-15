@@ -90,10 +90,6 @@ For example, in the above configuration file, the Strawberry Fields
 devices will be loaded with a default of ``shots = 100``, rather than ``shots = 1000``. Finally,
 you can also specify settings on a device-by-device basis, by placing the options under the
 ``[plugin.device]`` settings.
-
-
-Code details
-------------
 """
 import os
 import logging as log

@@ -89,10 +89,6 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
-
-
-Code details
-------------
 """
 import abc
 from enum import Enum, IntEnum
