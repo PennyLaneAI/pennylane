@@ -111,4 +111,5 @@ def mock_device(monkeypatch):
     with monkeypatch.context() as m:
         dev = qml.Device
         m.setattr(dev, '__abstractmethods__', frozenset())
-        yield qml.Device()
+        m.setattr(dev, 'short_name', 'mock_device')
+        yield qml.Device(wires=2)

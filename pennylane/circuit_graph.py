@@ -67,6 +67,20 @@ def _by_idx(x):
     return x.queue_idx
 
 
+def _is_observable(x):
+    """Predicate for deciding if an Operation instance is an observable.
+
+    Note that some :class:`Observable` instances are not observables in this sense,
+    since they can be used as gates as well.
+
+    Args:
+        x (Operation): node in the circuit graph
+    Returns:
+        bool: True iff x is an observable
+    """
+    return getattr(x, 'return_type', None) is not None
+
+
 Layer = namedtuple("Layer", ["ops", "param_inds"])
 """Parametrized layer of the circuit.
 
@@ -90,6 +104,11 @@ Args:
 class CircuitGraph:
     """Represents a quantum circuit as a directed acyclic graph.
 
+    In this representation the :class:`Operation` instances are the nodes of the graph,
+    and each directed edge represent a subsystem (or a group of subsystems) on which the two
+    Operations subsequently act. This representation can describe the causal relationships
+    between arbitrary quantum channels and measurements, not just unitary gates.
+
     Args:
         ops (Iterable[Operation]): quantum operations constituting the circuit, in temporal order
         variable_deps (dict[int, list[ParDep]]): Free parameters of the quantum circuit.
@@ -110,6 +129,8 @@ class CircuitGraph:
                 # Add op to the grid, to the end of wire w
                 self._grid.setdefault(w, []).append(op)
 
+        #TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
+
         self._graph = nx.DiGraph()  #: nx.DiGraph: DAG representation of the quantum circuit
         # Iterate over each (populated) wire in the grid
         for wire in self._grid.values():
@@ -128,18 +149,24 @@ class CircuitGraph:
                 self._graph.add_edge(wire[i - 1], wire[i])
 
     @property
-    def observables(self):
-        """Observables in the circuit, sorted by queue index.
+    def observables_in_order(self):
+        """Observables in the circuit, in a fixed topological order.
+
+        Currently the topological order is determined by the queue index.
 
         Returns:
             list[Observable]: observables
         """
-        nodes = [node for node in self._graph.nodes if getattr(node, 'return_type', None) is not None]
+        nodes = [node for node in self._graph.nodes if _is_observable(node)]
         return sorted(nodes, key=_by_idx)
 
+    observables = observables_in_order
+
     @property
-    def operations(self):
-        """Non-observable Operations in the circuit, sorted by queue index.
+    def operations_in_order(self):
+        """Non-observable Operations in the circuit, in a fixed topological order.
+
+        Currently the topological order is determined by the queue index.
 
         The complement of :meth:`QNode.observables`. Together they return every :class:`Operation`
         instance in the circuit.
@@ -147,8 +174,10 @@ class CircuitGraph:
         Returns:
             list[Operation]: operations
         """
-        nodes = [node for node in self._graph.nodes if getattr(node, 'return_type', None) is None]
+        nodes = [node for node in self._graph.nodes if not _is_observable(node)]
         return sorted(nodes, key=_by_idx)
+
+    operations = operations_in_order
 
     @property
     def graph(self):
