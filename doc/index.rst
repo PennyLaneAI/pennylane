@@ -189,6 +189,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    API/utils
    API/operation
    API/variable
+   API/circuit_graph
 
 
 :html:`<h2>Indices and tables</h2>`
