@@ -81,7 +81,6 @@ This release contains contributions from (in alphabetical order):
 Shahnawaz Ahmed, Ville Bergholm, Aroosa Ijaz, Josh Izaac, Angus Lowe,
 Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
-
 ---
 
 # Release 0.5.0
@@ -139,7 +138,6 @@ Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
   parameters to operation parameters. This will allow plugin devices to take advantage
   of parametric compilation.
   [#283](https://github.com/XanaduAI/pennylane/pull/283)
-
 
 * Introduces two enumerations: `Any` and `All`, representing any number of wires
   and all wires in the system respectively. They can be imported from
