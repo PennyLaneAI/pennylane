@@ -60,18 +60,6 @@ works as follows:
 
 .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
-<<<<<<< HEAD
-=======
-Summary
-^^^^^^^
-
-.. autosummary::
-   Operation
-   Observable
-   Tensor
-
->>>>>>> master
-
 CV Operation base classes
 *************************
 
