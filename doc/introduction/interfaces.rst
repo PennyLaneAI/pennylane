@@ -25,7 +25,7 @@ Currently, there is support for the following three interfaces:
 
 .. image:: ../_static/tensorflow.png
     :height: 80px
-    :target: interfaces/tfe.html
+    :target: interfaces/tf.html
 
 
 .. toctree::
@@ -33,7 +33,7 @@ Currently, there is support for the following three interfaces:
 
     interfaces/numpy
     interfaces/torch
-    interfaces/tfe
+    interfaces/tf
 
 
 
