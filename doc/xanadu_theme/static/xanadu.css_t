@@ -151,7 +151,7 @@ p {
   padding: 0;
   font-family: inherit;
   font-size: inherit;
-  color: #333;
+  color: #353535;
 }
 
 code {
@@ -1579,7 +1579,6 @@ span.eqno {
 }
 
 .footer-heading {
-  font-weight: bolder;
   margin-bottom: -10px;
   font-size:22px;
 }
@@ -1598,8 +1597,12 @@ span.eqno {
   color: #19b37b!important;
 }
 
+.page-footer p {
+  color: #808080;
+}
+
 footer.page-footer .footer-copyright {
-  color: black!important;
+  color: #808080!important;
   background-color: white!important;
 
 }
