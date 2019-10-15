@@ -34,7 +34,7 @@ first example from this section, we find the :class:`RZ <pennylane.ops.qubit.RZ>
         qml.RY(y, wires=1)
         return qml.expval(qml.PauliZ(1))
 
-You find a list of all quantum operations here, as well as in the :ref:`user documentation <api_qml>`.
+You find a list of all quantum operations here, as well as in the :ref:`API <api_qml>`.
 
 .. _intro_ref_ops_qubit:
 
