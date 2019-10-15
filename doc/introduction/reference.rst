@@ -349,7 +349,13 @@ Optimizers
 When using the standard NumPy interface, PennyLane offers some custom-made optimizers.
 Some of these are specific to quantum optimization, such as the :mod:`QNGOptimizer`.
 
-.. automodule:: pennylane.optimize
+* :ref:`AdagradOptimizer <pennylane_optimize_AdagradOptimizer>`
+* :ref:`AdamOptimizer <pennylane_optimize_AdamOptimizer>`
+* :ref:`GradientDescentOptimizer <pennylane_optimize_GradientDescentOptimizer>`
+* :ref:`MomentumOptimizer <pennylane_optimize_MomentumOptimizer>`
+* :ref:`NesterovMomentumOptimizer <pennylane_optimize_NesterovMomentumOptimizer>`
+* :ref:`QNGOptimizer <pennylane_optimize_QNGOptimizer>`
+* :ref:`RMSPropOptimizer <pennylane_optimize_RMSPropOptimizer>`
 
 
 .. warning::
