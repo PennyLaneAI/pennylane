@@ -41,15 +41,15 @@
   than the previously used `scipy.linalg.pinv`.
   [#331](https://github.com/XanaduAI/pennylane/pull/331)
 
-* The new `Operator` base class is now the parent class of the `Observable` class and the `Operation` class
-  as well.
-  [#355](https://github.com/XanaduAI/pennylane/pull/355)
-
 * The deprecated `qml.expval.Observable` syntax has been removed.
   [#267](https://github.com/XanaduAI/pennylane/pull/267)
 
 * Remainder of the unittest-style tests were ported to pytest.
   [#310](https://github.com/XanaduAI/pennylane/pull/310)
+
+* The new `Operator` base class is now the parent class of the `Observable` class and the `Operation` class
+  as well.
+  [#355](https://github.com/XanaduAI/pennylane/pull/355)
 
 ### Documentation
 
