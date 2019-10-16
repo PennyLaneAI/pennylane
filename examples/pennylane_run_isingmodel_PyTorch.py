@@ -8,7 +8,7 @@ The interacting spins with variable coupling strengths of an `Ising model <https
 `Quadratic Unconstrained Binary Optimization (QUBO) <https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization>`__ problems. 
 
 Despite this adaptability of Ising models, their current use is limited to a subfield of quantum machine learning; quantum adiabatic machine learning. This is because the optimization landscape of this model is non-convex; gradient descent may not be the best strategy as the optimization can get
-stuck in local minima. Alternative optimization techniques like quantum annealing have to be used (for example on a D-wave system). In this tutorial, we get a closer look at this phenomenon using a toy Ising model.  
+The optimization landscape of the Ising model is non-convex, which can make finding global minima challenging. In this tutorial, we get a closer look at this phenomenon by applying gradient descent techniques to a toy Ising model.  
 
 PennyLane implementation
 ------------------------
