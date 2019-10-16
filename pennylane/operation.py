@@ -329,6 +329,7 @@ class Operation(abc.ABC):
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
+        self.queue_idx = None  #: int, None: index of the Operation in the circuit queue, or None if not in a queue
 
         if self.num_wires == All:
             if do_queue:
@@ -348,7 +349,7 @@ class Operation(abc.ABC):
         # check the validity of the params
         for p in params:
             self.check_domain(p)
-        self.params = list(params)
+        self.params = list(params)  #: list[Any]: parameters of the operation
 
         # check the grad_method validity
         if self.par_domain == 'N':
@@ -368,9 +369,8 @@ class Operation(abc.ABC):
 
         # apply the operation on the given wires
         if not isinstance(wires, Sequence):
-            self._wires = [wires]
-        else:
-            self._wires = wires
+            wires = [wires]
+        self._wires = wires  #: Sequence[int, Variable]: wires on which the operation acts
 
         if all([isinstance(w, int) for w in self._wires]):
             # If all wires are integers (i.e., not Variable), check
@@ -390,7 +390,7 @@ class Operation(abc.ABC):
         Args:
             wires (Sequence[int, Variable]): wires to check
         Raises:
-            TypeError: list of wires is invalid
+            ValueError: list of wires is invalid
         Returns:
             Number, array, Variable: p
         """
