@@ -25,8 +25,7 @@ from pennylane.circuit_graph import CircuitGraph
 
 
 
-
-@pytest.fixture()
+@pytest.fixture
 def queue():
     """A fixture of a complex example of operations that depend on previous operations."""
     return [
@@ -40,7 +39,7 @@ def queue():
     ]
 
 
-@pytest.fixture()
+@pytest.fixture
 def obs():
     """A fixture of observables to go after the queue fixture."""
     return [
@@ -48,17 +47,21 @@ def obs():
         qml.expval(qml.Hermitian(np.identity(4), wires=[1, 2], do_queue=False)),
     ]
 
+@pytest.fixture
+def ops(queue, obs):
+    """Queue of Operations followed by Observables."""
+    return queue + obs
 
-@pytest.fixture()
-def circuit(queue, obs):
+@pytest.fixture
+def circuit(ops):
     """A fixture of a circuit generated based on the queue and obs fixtures above."""
-    circuit = CircuitGraph(queue, obs)
+    circuit = CircuitGraph(ops, {})
     return circuit
 
 
-@pytest.fixture()
+@pytest.fixture
 def parameterized_circuit():
-    def circuit(a, b, c, d, e, f):
+    def qfunc(a, b, c, d, e, f):
         qml.Rotation(a, wires=0),
         qml.Rotation(b, wires=1),
         qml.Rotation(c, wires=2),
@@ -73,7 +76,7 @@ def parameterized_circuit():
             qml.expval(qml.ops.NumberOperator(wires=2)),
         ]
 
-    return circuit
+    return qfunc
 
 
 class TestCircuitGraph:
@@ -83,72 +86,31 @@ class TestCircuitGraph:
         """Test case where operations do not depend on each other.
         This should result in a graph with no edges."""
 
-        queue = [qml.RX(0.43, wires=0, do_queue=False), qml.RY(0.35, wires=1, do_queue=False)]
+        ops = [qml.RX(0.43, wires=0, do_queue=False), qml.RY(0.35, wires=1, do_queue=False)]
 
-        obs = []
-
-        res = CircuitGraph(queue, obs).graph
+        res = CircuitGraph(ops, {}).graph
         assert len(res) == 2
         assert not res.edges()
 
-    def test_dependence(self, queue, obs):
+    def test_dependence(self, ops):
         """Test a more complex example containing operations
         that do depend on the result of previous operations"""
 
-        circuit = CircuitGraph(queue, obs)
-        res = circuit.graph
-        assert len(res) == 9
+        circuit = CircuitGraph(ops, {})
+        graph = circuit.graph
+        assert len(graph) == 9
+        assert len(graph.edges()) == 9
 
-        nodes = res.nodes().data()
+        # all ops should be nodes in the graph
+        for k in ops:
+            assert k in graph.nodes
 
-        # the three rotations should be starting nodes in the graph
-        assert nodes[0]["name"] == "RX"
-        assert nodes[0]["op"] == queue[0]
-
-        assert nodes[1]["name"] == "RY"
-        assert nodes[1]["op"] == queue[1]
-
-        assert nodes[2]["name"] == "RZ"
-        assert nodes[2]["op"] == queue[2]
-
-        # node 0 and node 1 should then connect to the CNOT gate
-        assert nodes[3]["name"] == "CNOT"
-        assert nodes[3]["op"] == queue[3]
-        assert (0, 3) in res.edges()
-        assert (1, 3) in res.edges()
-
-        # RZ gate connects directly to a hadamard gate
-        assert nodes[4]["name"] == "Hadamard"
-        assert nodes[4]["op"] == queue[4]
-        assert (2, 4) in res.edges()
-
-        # hadamard gate and CNOT gate feed straight into another CNOT
-        assert nodes[5]["name"] == "CNOT"
-        assert nodes[5]["op"] == queue[5]
-        assert (4, 5) in res.edges()
-        assert (3, 5) in res.edges()
-
-        # finally, the first CNOT also connects to a PauliX gate
-        assert nodes[6]["name"] == "PauliX"
-        assert nodes[6]["op"] == queue[6]
-        assert (3, 6) in res.edges()
-
-        # Measurements
-        # PauliX is measured on the output of the second CNOT
-        assert nodes[7]["name"] == "PauliX"
-        assert nodes[7]["op"] == obs[0]
-        assert nodes[7]["op"].return_type == Expectation
-        assert (5, 7) in res.edges()
-
-        # Hermitian is measured on the output of the second CNOT and the PauliX
-        assert nodes[8]["name"] == "Hermitian"
-        assert nodes[8]["op"] == obs[1]
-        assert nodes[8]["op"].return_type == Expectation
-        assert (5, 8) in res.edges()
-        assert (6, 8) in res.edges()
+        # all nodes in the graph should be ops
+        for k in graph.nodes:
+            assert k is ops[k.queue_idx]
 
         # Finally, checking the adjacency of the returned DAG:
-        assert sorted(res.edges()) == [
+        assert set(graph.edges()) == set((ops[a], ops[b]) for a, b in [
             (0, 3),
             (1, 3),
             (2, 4),
@@ -158,71 +120,29 @@ class TestCircuitGraph:
             (5, 7),
             (5, 8),
             (6, 8),
-        ]
+        ])
 
-    def test_ancestors_and_descendants_example(self, queue, obs):
+    def test_ancestors_and_descendants_example(self, ops):
         """
-        Test that the `ancestors` and `descendants` methods return the expected result.
+        Test that the ``ancestors`` and ``descendants`` methods return the expected result.
         """
-        circuit = CircuitGraph(queue, obs)
+        circuit = CircuitGraph(ops, {})
 
-        ancestors = circuit.ancestors([6])
+        ancestors = circuit.ancestors([ops[6]])
         assert len(ancestors) == 3
         for o_idx in (0, 1, 3):
-            assert queue[o_idx] in circuit.get_ops(ancestors)
+            assert ops[o_idx] in ancestors
 
-        descendants = circuit.get_ops(circuit.descendants([6]))
-        assert descendants == [obs[1]]
+        descendants = circuit.descendants([ops[6]])
+        assert descendants == set([ops[8]])
 
-    def test_get_nodes_example(self, queue, obs):
-        """
-        Given a sample circuit, test that the `get_nodes` method returns the expected result.
-        """
-        circuit = CircuitGraph(queue, obs)
+    def test_update_node(self, ops):
+        """Changing nodes in the graph."""
 
-        o_idxs = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        nodes = circuit.get_nodes(o_idxs)
-
-        assert nodes[0]["op"] == queue[0]
-        assert nodes[1]["op"] == queue[1]
-        assert nodes[2]["op"] == queue[2]
-        assert nodes[3]["op"] == queue[3]
-        assert nodes[4]["op"] == queue[4]
-        assert nodes[5]["op"] == queue[5]
-        assert nodes[6]["op"] == queue[6]
-        assert nodes[7]["op"] == obs[0]
-        assert nodes[8]["op"] == obs[1]
-
-        assert nodes[0]["idx"] == 0
-        assert nodes[1]["idx"] == 1
-        assert nodes[2]["idx"] == 2
-        assert nodes[3]["idx"] == 3
-        assert nodes[4]["idx"] == 4
-        assert nodes[5]["idx"] == 5
-        assert nodes[6]["idx"] == 6
-        assert nodes[7]["idx"] == 7
-        assert nodes[8]["idx"] == 8
-
-        assert nodes[0]["name"] == "RX"
-        assert nodes[1]["name"] == "RY"
-        assert nodes[2]["name"] == "RZ"
-        assert nodes[3]["name"] == "CNOT"
-        assert nodes[4]["name"] == "Hadamard"
-        assert nodes[5]["name"] == "CNOT"
-        assert nodes[6]["name"] == "PauliX"
-        assert nodes[7]["name"] == "PauliX"
-        assert nodes[8]["name"] == "Hermitian"
-
-        assert nodes[0]["return_type"] is None
-        assert nodes[1]["return_type"] is None
-        assert nodes[2]["return_type"] is None
-        assert nodes[3]["return_type"] is None
-        assert nodes[4]["return_type"] is None
-        assert nodes[5]["return_type"] is None
-        assert nodes[6]["return_type"] is None
-        assert nodes[7]["return_type"] == Expectation
-        assert nodes[8]["return_type"] == Expectation
-
+        circuit = CircuitGraph(ops, {})
+        new = qml.RX(0.1, wires=0, do_queue=False)
+        circuit.update_node(ops[0], new)
+        assert circuit.operations[0] is new
 
     def test_observables(self, circuit, obs):
         """Test that the `observables` property returns the list of observables in the circuit."""
@@ -232,11 +152,6 @@ class TestCircuitGraph:
         """Test that the `operations` property returns the list of operations in the circuit."""
         assert circuit.operations == queue
 
-    def test_get_names(self, circuit):
-        result = circuit.get_names(range(9))
-        expected = ["RX", "RY", "RZ", "CNOT", "Hadamard", "CNOT", "PauliX", "PauliX", "Hermitian"]
-        assert result == expected
-
     def test_op_indices(self, circuit):
         """Test that for the given circuit, this method will fetch the correct operation indices for
         a given wire"""
@@ -244,49 +159,53 @@ class TestCircuitGraph:
         op_indices_for_wire_1 = [1, 3, 6, 8]
         op_indices_for_wire_2 = [2, 4, 5, 8]
 
-        assert circuit.get_wire_indices(0) == op_indices_for_wire_0
-        assert circuit.get_wire_indices(1) == op_indices_for_wire_1
-        assert circuit.get_wire_indices(2) == op_indices_for_wire_2
+        assert circuit.wire_indices(0) == op_indices_for_wire_0
+        assert circuit.wire_indices(1) == op_indices_for_wire_1
+        assert circuit.wire_indices(2) == op_indices_for_wire_2
 
     def test_layers(self, parameterized_circuit):
         """A test of a simple circuit with 3 layers and 6 parameters"""
-        dev = qml.device("default.qubit", wires=3)
-        circuit = qml.QNode(parameterized_circuit, dev)
-        circuit.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
 
-        layers = circuit.circuit.layers
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(parameterized_circuit, dev)
+        qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
+        circuit = qnode.circuit
+        layers = circuit.layers
+        ops = circuit.operations
 
         assert len(layers) == 3
-        assert layers[0].op_idx == [0, 1, 2]
-        assert layers[0].param_idx == [0, 1, 2]
-        assert layers[1].op_idx == [3]
-        assert layers[1].param_idx == [3]
-        assert layers[2].op_idx == [5, 6]
-        assert layers[2].param_idx == [4, 5]
+        assert layers[0].ops == [ops[x] for x in [0, 1, 2]]
+        assert layers[0].param_inds == [0, 1, 2]
+        assert layers[1].ops == [ops[3]]
+        assert layers[1].param_inds == [3]
+        assert layers[2].ops == [ops[x] for x in [5, 6]]
+        assert layers[2].param_inds == [4, 5]
 
     def test_iterate_layers(self, parameterized_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
+
         dev = qml.device("default.qubit", wires=3)
-        circuit = qml.QNode(parameterized_circuit, dev)
-        circuit.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
-        result = list(circuit.circuit.iterate_layers())
+        qnode = qml.QNode(parameterized_circuit, dev)
+        qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
+        circuit = qnode.circuit
+        result = list(circuit.iterate_layers())
 
         assert len(result) == 3
         assert set(result[0][0]) == set([])
-        assert set(result[0][1]) == set(circuit.circuit.operations[:3])
+        assert set(result[0][1]) == set(circuit.operations[:3])
         assert result[0][2] == (0, 1, 2)
         assert set(result[0][3]) == set(
-            circuit.circuit.operations[3:] + circuit.circuit.observables
+            circuit.operations[3:] + circuit.observables
         )
 
-        assert set(result[1][0]) == set(circuit.circuit.operations[:2])
-        assert set(result[1][1]) == set([circuit.circuit.operations[3]])
+        assert set(result[1][0]) == set(circuit.operations[:2])
+        assert set(result[1][1]) == set([circuit.operations[3]])
         assert result[1][2] == (3,)
         assert set(result[1][3]) == set(
-            circuit.circuit.operations[4:6] + circuit.circuit.observables[:2]
+            circuit.operations[4:6] + circuit.observables[:2]
         )
 
-        assert set(result[2][0]) == set(circuit.circuit.operations[:4])
-        assert set(result[2][1]) == set(circuit.circuit.operations[5:])
+        assert set(result[2][0]) == set(circuit.operations[:4])
+        assert set(result[2][1]) == set(circuit.operations[5:])
         assert result[2][2] == (4, 5)
-        assert set(result[2][3]) == set(circuit.circuit.observables[1:])
+        assert set(result[2][3]) == set(circuit.observables[1:])

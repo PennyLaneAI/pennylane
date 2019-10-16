@@ -14,6 +14,7 @@
 """
 Unit tests for the computing gradients of quantum functions.
 """
+
 import pytest
 import autograd
 import autograd.numpy as np
@@ -22,178 +23,161 @@ import pennylane as qml
 from pennylane.plugins.default_qubit import Rotx as Rx, Roty as Ry, Rotz as Rz
 
 
-def expZ(state):
-    return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
-
+alpha = 0.5  # displacement in tests
 hbar = 2
 mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 sqz_vals = np.linspace(0., 1., 5)
 
+cv_ops = [getattr(qml.ops, name) for name in qml.ops._cv__ops__]
+analytic_cv_ops = [cls for cls in cv_ops if cls.supports_analytic]
 
-@pytest.fixture(scope="function")
+
+class PolyN(qml.ops.PolyXP):
+    "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
+    def __init__(self, wires):
+        hbar = 2
+        q = np.diag([-0.5, 0.5/hbar, 0.5/hbar])
+        super().__init__(q, wires=wires)
+        self.name = 'PolyXP'
+
+
+@pytest.fixture(scope="module")
 def gaussian_dev():
     return qml.device('default.gaussian', wires=2)
 
-@pytest.fixture(scope="function")
-def qubit1_dev():
-    return qml.device('default.qubit', wires=1)
 
-@pytest.fixture(scope="function")
-def qubit2_dev():
-    return qml.device('default.qubit', wires=2)
+@pytest.fixture(scope="module")
+def grad_fn_R(gaussian_dev):
+    @qml.qnode(gaussian_dev)
+    def circuit(y):
+        qml.Displacement(alpha, 0., wires=[0])
+        qml.Rotation(y, wires=[0])
+        return qml.expval(qml.X(0))
+    return autograd.grad(circuit)
+
+
+@pytest.fixture(scope="module")
+def grad_fn_BS(gaussian_dev):
+    @qml.qnode(gaussian_dev)
+    def circuit(y):
+        qml.Displacement(alpha, 0., wires=[0])
+        qml.Beamsplitter(y, 0, wires=[0, 1])
+        return qml.expval(qml.X(0))
+    return autograd.grad(circuit)
+
+
+@pytest.fixture(scope="module")
+def grad_fn_D(gaussian_dev):
+    @qml.qnode(gaussian_dev)
+    def circuit(r, phi):
+        qml.Displacement(r, phi, wires=[0])
+        return qml.expval(qml.X(0))
+    return autograd.grad(circuit)
+
+
+@pytest.fixture(scope="module")
+def grad_fn_S(gaussian_dev):
+    @qml.qnode(gaussian_dev)
+    def circuit(y):
+        qml.Displacement(alpha, 0., wires=[0])
+        qml.Squeezing(y, 0., wires=[0])
+        return qml.expval(qml.X(0))
+    return autograd.grad(circuit)
+
+
+@pytest.fixture(scope="module")
+def grad_fn_S_Fock(gaussian_dev):
+    @qml.qnode(gaussian_dev)
+    def circuit(y):
+        qml.Squeezing(y, 0., wires=[0])
+        return qml.expval(qml.FockStateProjector(np.array([2, 0]), wires=[0, 1]))
+    return autograd.grad(circuit)
 
 
 class TestCVGradient:
-    """Tests of the automatic gradient method for CV circuits.
-    """
-    def test_rotation_gradient(self, gaussian_dev, tol):
+    """Tests of the automatic gradient method for CV circuits."""
+
+    @pytest.mark.parametrize('theta', thetas)
+    def test_rotation_gradient(self, theta, grad_fn_R, tol):
         "Tests that the automatic gradient of a phase space rotation is correct."
 
-        alpha = 0.5
+        autograd_val = grad_fn_R(theta)
+        # qfunc evalutes to hbar * alpha * cos(theta)
+        manualgrad_val = - hbar * alpha * np.sin(theta)
+        assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-        @qml.qnode(gaussian_dev)
-        def circuit(y):
-            qml.Displacement(alpha, 0., wires=[0])
-            qml.Rotation(y, wires=[0])
-            return qml.expval(qml.X(0))
-
-        grad_fn = autograd.grad(circuit)
-
-        for theta in thetas:
-            autograd_val = grad_fn(theta)
-            # qfunc evalutes to hbar * alpha * cos(theta)
-            manualgrad_val = - hbar * alpha * np.sin(theta)
-
-            assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
-
-    def test_beamsplitter_gradient(self, gaussian_dev, tol):
+    @pytest.mark.parametrize('theta', thetas)
+    def test_beamsplitter_gradient(self, theta, grad_fn_BS, tol):
         "Tests that the automatic gradient of a beamsplitter is correct."
 
-        alpha = 0.5
+        autograd_val = grad_fn_BS(theta)
+        # qfunc evalutes to hbar * alpha * cos(theta)
+        manualgrad_val = - hbar * alpha * np.sin(theta)
+        assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-        @qml.qnode(gaussian_dev)
-        def circuit(y):
-            qml.Displacement(alpha, 0., wires=[0])
-            qml.Beamsplitter(y, 0, wires=[0, 1])
-            return qml.expval(qml.X(0))
-
-        grad_fn = autograd.grad(circuit)
-
-        for theta in thetas:
-            autograd_val = grad_fn(theta)
-            # qfunc evalutes to hbar * alpha * cos(theta)
-            manualgrad_val = - hbar * alpha * np.sin(theta)
-
-            assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
-
-    def test_displacement_gradient(self, gaussian_dev, tol):
+    @pytest.mark.parametrize('mag', mag_alphas)
+    @pytest.mark.parametrize('theta', thetas)
+    def test_displacement_gradient(self, mag, theta, grad_fn_D, tol):
         "Tests that the automatic gradient of a phase space displacement is correct."
 
-        @qml.qnode(gaussian_dev)
-        def circuit(r, phi):
-            qml.Displacement(r, phi, wires=[0])
-            return qml.expval(qml.X(0))
+        #alpha = mag * np.exp(1j * theta)
+        autograd_val = grad_fn_D(mag, theta)
+        # qfunc evalutes to hbar * Re(alpha)
+        manualgrad_val = hbar * np.cos(theta)
+        assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-        grad_fn = autograd.grad(circuit)
-
-        for mag in mag_alphas:
-            for theta in thetas:
-                #alpha = mag * np.exp(1j * theta)
-                autograd_val = grad_fn(mag, theta)
-                # qfunc evalutes to hbar * Re(alpha)
-                manualgrad_val = hbar * np.cos(theta)
-
-                assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
-
-    def test_squeeze_gradient(self, gaussian_dev, tol):
+    @pytest.mark.parametrize('r', sqz_vals)
+    def test_squeeze_gradient(self, r, grad_fn_S, tol):
         "Tests that the automatic gradient of a phase space squeezing is correct."
 
-        alpha = 0.5
+        autograd_val = grad_fn_S(r)
+        # qfunc evaluates to -exp(-r) * hbar * Re(alpha)
+        manualgrad_val = -np.exp(-r) * hbar * alpha
+        assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-        @qml.qnode(gaussian_dev)
-        def circuit(y, r=0.5):
-            qml.Displacement(r, 0., wires=[0])
-            qml.Squeezing(y, 0., wires=[0])
-            return qml.expval(qml.X(0))
-
-        grad_fn = autograd.grad(circuit, 0)
-
-        for r in sqz_vals:
-            autograd_val = grad_fn(r)
-            # qfunc evaluates to -exp(-r) * hbar * Re(alpha)
-            manualgrad_val = -np.exp(-r) * hbar * alpha
-            assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
-
-    def test_number_state_gradient(self, gaussian_dev, tol):
+    @pytest.mark.parametrize('r', sqz_vals[1:])  # formula is not valid for r=0
+    def test_number_state_gradient(self, r, grad_fn_S_Fock, tol):
         "Tests that the automatic gradient of a squeezed state with number state expectation is correct."
 
-        @qml.qnode(gaussian_dev)
-        def circuit(y):
-            qml.Squeezing(y, 0., wires=[0])
-            return qml.expval(qml.FockStateProjector(np.array([2, 0]), wires=[0, 1]))
-
-        grad_fn = autograd.grad(circuit, 0)
-
         # (d/dr) |<2|S(r)>|^2 = 0.5 tanh(r)^3 (2 csch(r)^2 - 1) sech(r)
-        for r in sqz_vals[1:]: # formula above is not valid for r=0
-            autograd_val = grad_fn(r)
-            manualgrad_val = 0.5*np.tanh(r)**3 * (2/(np.sinh(r)**2)-1) / np.cosh(r)
-            assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
+        autograd_val = grad_fn_S_Fock(r)
+        manualgrad_val = 0.5*np.tanh(r)**3 * (2/(np.sinh(r)**2)-1) / np.cosh(r)
+        assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    def test_cv_gradients_gaussian_circuit(self, gaussian_dev, tol):
+    @pytest.mark.parametrize('O', [qml.ops.X, qml.ops.NumberOperator, PolyN])
+    @pytest.mark.parametrize('G', analytic_cv_ops)
+    def test_cv_gradients_gaussian_circuit(self, G, O, gaussian_dev, tol):
         """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
 
-        class PolyN(qml.ops.PolyXP):
-            "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
-            def __init__(self, wires):
-                hbar = 2
-                q = np.diag([-0.5, 0.5/hbar, 0.5/hbar])
-                super().__init__(q, wires=wires)
-                self.name = 'PolyXP'
-
-        gates = []
-        for name in qml.ops._cv__ops__:
-            cls = getattr(qml.ops, name)
-
-            if cls.supports_analytic:
-                gates.append(cls)
-
-        obs   = [qml.ops.X, qml.ops.NumberOperator, PolyN]
+        tol = 1e-5
         par = [0.4]
+        def circuit(x):
+            args = [0.3] * G.num_params
+            args[0] = x
+            qml.Displacement(0.5, 0, wires=0)
+            G(*args, wires=range(G.num_wires))
+            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
+            qml.Displacement(-0.5, 0.1, wires=0)
+            qml.Squeezing(0.5, -1.5, wires=0)
+            qml.Rotation(-1.1, wires=0)
+            return qml.expval(O(wires=0))
 
-        for G in reversed(gates):
-            #log.debug('Testing gate %s...', G.__name__[0])
-            for O in obs:
-                #log.debug('Testing observable %s...', O.__name__[0])
-                def circuit(x):
-                    args = [0.3] * G.num_params
-                    args[0] = x
-                    qml.Displacement(0.5, 0, wires=0)
-                    G(*args, wires=range(G.num_wires))
-                    qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
-                    qml.Displacement(-0.5, 0, wires=0)
-                    qml.Squeezing(0.5, -1.5, wires=0)
-                    qml.Rotation(-1.1, wires=0)
-                    return qml.expval(O(wires=0))
+        q = qml.QNode(circuit, gaussian_dev)
+        val = q.evaluate(par)
 
-                q = qml.QNode(circuit, gaussian_dev)
-                val = q.evaluate(par)
-                # log.info('  value:', val)
-                grad_F  = q.jacobian(par, method='F')
-                grad_A2 = q.jacobian(par, method='A', force_order2=True)
-                # log.info('  grad_F: ', grad_F)
-                # log.info('  grad_A2: ', grad_A2)
-                if O.ev_order == 1:
-                    grad_A = q.jacobian(par, method='A')
-                    # log.info('  grad_A: ', grad_A)
-                    # the different methods agree
-                    assert grad_A == pytest.approx(grad_F, abs=tol)
+        grad_F  = q.jacobian(par, method='F')
+        grad_A2 = q.jacobian(par, method='A', force_order2=True)
+        if O.ev_order == 1:
+            grad_A = q.jacobian(par, method='A')
+            # the different methods agree
+            assert grad_A == pytest.approx(grad_F, abs=tol)
 
-                # analytic method works for every parameter
-                assert q.grad_method_for_par == {0:'A'}
-                # the different methods agree
-                assert grad_A2 == pytest.approx(grad_F, abs=tol)
+        # analytic method works for every parameter
+        assert q.grad_method_for_par == {0:'A'}
+        # the different methods agree
+        assert grad_A2 == pytest.approx(grad_F, abs=tol)
+
 
     def test_cv_gradients_multiple_gate_parameters(self, gaussian_dev, tol):
         "Tests that gates with multiple free parameters yield correct gradients."
@@ -292,56 +276,56 @@ class TestCVGradient:
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
-    def test_CVOperation_with_heisenberg_and_no_params(self, gaussian_dev, tol):
+
+    @pytest.mark.parametrize('name', qml.ops._cv__ops__)
+    def test_CVOperation_with_heisenberg_and_no_params(self, name, gaussian_dev, tol):
         """An integration test for CV gates that support analytic differentiation
         if succeeding the gate to be differentiated, but cannot be differentiated
         themselves (for example, they may be Gaussian but accept no parameters).
 
         This ensures that, assuming their _heisenberg_rep is defined, the quantum
-        gradient analytic method can still be used, and returns the correct result."""
+        gradient analytic method can still be used, and returns the correct result.
+        """
 
-        for name in qml.ops._cv__ops__:
-            cls = getattr(qml.ops, name)
-            if cls.supports_heisenberg and (not cls.supports_analytic):
-                dev = qml.device('default.gaussian', wires=2)
+        cls = getattr(qml.ops, name)
+        if cls.supports_heisenberg and (not cls.supports_analytic):
+            U = np.array([[0.51310276+0.81702166j, 0.13649626+0.22487759j],
+                          [0.26300233+0.00556194j, -0.96414101-0.03508489j]])
 
-                U = np.array([[0.51310276+0.81702166j, 0.13649626+0.22487759j],
-                              [0.26300233+0.00556194j, -0.96414101-0.03508489j]])
+            if cls.num_wires <= 0:
+                w = list(range(2))
+            else:
+                w = list(range(cls.num_wires))
 
-                if cls.num_wires <= 0:
-                    w = list(range(2))
+            def circuit(x):
+                qml.Displacement(x, 0, wires=0)
+
+                if cls.par_domain == 'A':
+                    cls(U, wires=w)
                 else:
-                    w = list(range(cls.num_wires))
+                    cls(wires=w)
+                return qml.expval(qml.X(0))
 
-                def circuit(x):
-                    qml.Displacement(x, 0, wires=0)
+            qnode = qml.QNode(circuit, gaussian_dev)
+            grad_F = qnode.jacobian(0.5, method='F')
+            grad_A = qnode.jacobian(0.5, method='A')
+            grad_A2 = qnode.jacobian(0.5, method='A', force_order2=True)
 
-                    if cls.par_domain == 'A':
-                        cls(U, wires=w)
-                    else:
-                        cls(wires=w)
-                    return qml.expval(qml.X(0))
+            # par[0] can use the 'A' method
+            assert qnode.grad_method_for_par == {0: 'A'}
 
-                qnode = qml.QNode(circuit, dev)
-                grad_F = qnode.jacobian(0.5, method='F')
-                grad_A = qnode.jacobian(0.5, method='A')
-                grad_A2 = qnode.jacobian(0.5, method='A', force_order2=True)
-
-                # par[0] can use the 'A' method
-                assert qnode.grad_method_for_par == {0: 'A'}
-
-                # the different methods agree
-                assert grad_A == pytest.approx(grad_F, abs=tol)
-                assert grad_A2 == pytest.approx(grad_F, abs=tol)
+            # the different methods agree
+            assert grad_A == pytest.approx(grad_F, abs=tol)
+            assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
 
 class TestQubitGradient:
     """Tests of the automatic gradient method for qubit gates.
     """
-    def test_RX_gradient(self, qubit1_dev, tol):
+    def test_RX_gradient(self, qubit_device_1_wire, tol):
         "Tests that the automatic gradient of a Pauli X-rotation is correct."
 
-        @qml.qnode(qubit1_dev)
+        @qml.qnode(qubit_device_1_wire)
         def circuit(x):
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
@@ -353,10 +337,10 @@ class TestQubitGradient:
             manualgrad_val = (circuit(theta + np.pi / 2) - circuit(theta - np.pi / 2)) / 2
             assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    def test_RY_gradient(self, qubit1_dev, tol):
+    def test_RY_gradient(self, qubit_device_1_wire, tol):
         "Tests that the automatic gradient of a Pauli Y-rotation is correct."
 
-        @qml.qnode(qubit1_dev)
+        @qml.qnode(qubit_device_1_wire)
         def circuit(x):
             qml.RY(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
@@ -368,10 +352,10 @@ class TestQubitGradient:
             manualgrad_val = (circuit(theta + np.pi / 2) - circuit(theta - np.pi / 2)) / 2
             assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    def test_RZ_gradient(self, qubit1_dev, tol):
+    def test_RZ_gradient(self, qubit_device_1_wire, tol):
         "Tests that the automatic gradient of a Pauli Z-rotation is correct."
 
-        @qml.qnode(qubit1_dev)
+        @qml.qnode(qubit_device_1_wire)
         def circuit(x):
             qml.RZ(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
@@ -383,10 +367,10 @@ class TestQubitGradient:
             manualgrad_val = (circuit(theta + np.pi / 2) - circuit(theta - np.pi / 2)) / 2
             assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    def test_Rot(self, qubit1_dev, tol):
+    def test_Rot(self, qubit_device_1_wire, tol):
         "Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."
 
-        @qml.qnode(qubit1_dev)
+        @qml.qnode(qubit_device_1_wire)
         def circuit(x,y,z):
             qml.Rot(x,y,z, wires=[0])
             return qml.expval(qml.PauliZ(0))
@@ -404,7 +388,7 @@ class TestQubitGradient:
                 manualgrad_val = (circuit(*param1) - circuit(*param2)) / 2
                 assert autograd_val[idx] == pytest.approx(manualgrad_val, abs=tol)
 
-    def test_qfunc_gradients(self, qubit2_dev, tol):
+    def test_qfunc_gradients(self, qubit_device_2_wires, tol):
         "Tests that the various ways of computing the gradient of a qfunc all agree."
 
         def circuit(x, y, z):
@@ -417,7 +401,7 @@ class TestQubitGradient:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, qubit2_dev)
+        qnode = qml.QNode(circuit, qubit_device_2_wires)
         params = np.array([0.1, -1.6, np.pi / 5])
 
         # manual gradients
@@ -434,7 +418,7 @@ class TestQubitGradient:
         assert grad_fd1 == pytest.approx(grad_angle, abs=tol)
         assert grad_fd1 == pytest.approx(grad_auto, abs=tol)
 
-    def test_hybrid_gradients(self, qubit2_dev, tol):
+    def test_hybrid_gradients(self, qubit_device_2_wires, tol):
         "Tests that the various ways of computing the gradient of a hybrid computation all agree."
 
         # input data is the first parameter
@@ -448,7 +432,7 @@ class TestQubitGradient:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        classifier = qml.QNode(classifier_circuit, qubit2_dev)
+        classifier = qml.QNode(classifier_circuit, qubit_device_2_wires)
 
         param = -0.1259
         in_data = np.array([-0.1, -0.88, np.exp(0.5)])
@@ -484,8 +468,11 @@ class TestQubitGradient:
         assert grad_fd1 == pytest.approx(grad_auto, abs=tol)
         assert grad_angle == pytest.approx(grad_auto, abs=tol)
 
-    def test_qnode_gradient_fanout(self, qubit1_dev, tol):
+    def test_qnode_gradient_fanout(self, qubit_device_1_wire, tol):
         "Tests that the correct gradient is computed for qnodes which use the same parameter in multiple gates."
+
+        def expZ(state):
+            return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
         extra_param = 0.31
         def circuit(reused_param, other_param):
@@ -495,7 +482,7 @@ class TestQubitGradient:
             qml.RX(reused_param, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        f = qml.QNode(circuit, qubit1_dev)
+        f = qml.QNode(circuit, qubit_device_1_wire)
         zero_state = np.array([1., 0.])
 
         for reused_p in thetas:
@@ -516,10 +503,10 @@ class TestQubitGradient:
 
                 assert grad_eval == pytest.approx(grad_true, abs=tol)
 
-    def test_gradient_exception_on_sample(self, qubit2_dev):
+    def test_gradient_exception_on_sample(self, qubit_device_2_wires):
         """Tests that the proper exception is raised if differentiation of sampling is attempted."""
 
-        @qml.qnode(qubit2_dev)
+        @qml.qnode(qubit_device_2_wires)
         def circuit(x):
             qml.RX(x, wires=[0])
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))

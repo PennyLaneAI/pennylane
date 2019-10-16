@@ -132,7 +132,7 @@ def _get_default_args(func):
         func (callable): a function
 
     Returns:
-        dict[str->tuple]: mapping from argument name to (positional idx, default value)
+        dict[str, tuple]: mapping from argument name to (positional idx, default value)
     """
     signature = inspect.signature(func)
     return {
