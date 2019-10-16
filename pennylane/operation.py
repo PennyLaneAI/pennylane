@@ -434,14 +434,17 @@ class Operation(Operator):
 
     @property
     def num_params(self):
+        """Property for num_params"""
         return self.num_params
 
     @property
     def num_wires(self):
+        """Property for num_wires"""
         return self.num_wires
 
     @property
     def par_domain(self):
+        """Property for par_domain"""
         return self.par_domain
 
     @property
