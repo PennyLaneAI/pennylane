@@ -18,7 +18,7 @@ device with PyTorch. In the absence of external fields, the Hamiltonian for this
 
 .. math::  H=-\sum_{<i,j>} J_{ij} \sigma_i \sigma_{j},
 
-where each spin can be in +1 or -1 spin state and :math:`J_{ij}` are the nearest-neighbour coupling strengths.
+where each spin can be in the +1 or -1 spin state and :math:`J_{ij}` are the nearest-neighbour coupling strengths.
 
 For simplicity, the first spin can be assumed
 to be in the "up" state (+1 eigenstate of Pauli-Z operator) and the coupling matrix can be set to :math:`J = [1,-1]`. The rotation angles for the other two spins are then optimized
