@@ -44,6 +44,8 @@ extensions = [
     'sphinx_gallery.gen_gallery'
 ]
 
+mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
+
 from glob import glob
 import shutil
 import os
@@ -279,6 +281,19 @@ html_theme_options = {
 
     # Allow the project link to be overriden to a custom URL.
     # "projectlink": "http://myproject.url",
+
+    "large_toc": True,
+    # colors
+    "navigation_button": "#19b37b",
+    "navigation_button_hover": "#0e714d",
+    "toc_caption": "#19b37b",
+    "toc_hover": "#19b37b",
+    "table_header_bg": "#edf7f4",
+    "table_header_border": "#19b37b",
+    "download_button": "#19b37b",
+    # gallery options
+    "github_repo": "XanaduAI/PennyLane",
+    "gallery_dirs": "tutorials",
 }
 
 edit_on_github_project = 'XanaduAI/pennylane'
