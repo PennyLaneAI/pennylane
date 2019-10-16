@@ -431,6 +431,7 @@ class Operation(Operator, abc.ABC):
             This flag is useful if there is some reason to run an Operation
             outside of a QNode context.
     """
+    # pylint: disable=abstract-method
     _grad_recipe = None
 
     @property
@@ -538,6 +539,7 @@ class Observable(Operator, abc.ABC):
             pushed into a :class:`QNode` observable queue. This flag is useful if
             there is some reason to call an observable outside of a QNode context.
     """
+    # pylint: disable=abstract-method
     return_type = None
 
     def __init__(self, *args, wires=None, do_queue=True):
