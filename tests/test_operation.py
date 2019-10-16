@@ -18,10 +18,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane.ops
-import pennylane.operation as oo
 import pennylane.variable as ov
-
+import pennylane.qnode
 
 # Operation subclasses to test
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
@@ -187,12 +185,12 @@ class TestOperation:
 
 
 class TestOperatorConstruction:
-    """Test custom operations construction."""
+    """Test custom operators construction."""
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
 
         class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operation"""
+            r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
             par_domain = 'R'
@@ -204,7 +202,7 @@ class TestOperatorConstruction:
         """Test that an exception is raised if called with identical wires"""
 
         class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operation"""
+            r"""Dummy custom operator"""
             num_wires = 2
             num_params = 1
             par_domain = 'R'
@@ -216,7 +214,7 @@ class TestOperatorConstruction:
         """Test that an exception is raised if called with wrong number of parameters"""
 
         class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operation"""
+            r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
             par_domain = 'R'
@@ -229,7 +227,7 @@ class TestOperatorConstruction:
         """Test that an exception is raised if an incorrect parameter domain is requested"""
 
         class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operation"""
+            r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
             par_domain = 'J'
@@ -410,6 +408,21 @@ class TestObservableConstruction:
         assert DummyObserv(0, wires=[1], do_queue=False).return_type is None
 
     def test_observable_is_not_operation_but_operator(self):
+        """Check that the Observable class inherits from an Operator, not from an Operation"""
 
         assert issubclass(qml.operation.Observable, qml.operation.Operator)
         assert not issubclass(qml.operation.Observable, qml.operation.Operation)
+
+    def test_observable_is_operation_as_well(self):
+        """Check that the Observable class inherits from an Operator class as well"""
+
+        class DummyObserv(qml.operation.Observable, qml.operation.Operation):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'N'
+            grad_method = None
+
+        assert issubclass(DummyObserv, qml.operation.Operator)
+        assert issubclass(DummyObserv, qml.operation.Observable)
+        assert issubclass(DummyObserv, qml.operation.Operation)

@@ -206,52 +206,40 @@ def classproperty(func):
 
 
 #=============================================================================
-# Base Operation class
+# Base Operator class
 #=============================================================================
 
 class Operator(abc.ABC):
-    r"""Base class for quantum operations supported by a device.
+    r"""Base class for quantum operators supported by a device.
 
-    The following class attributes must be defined for all Operations:
+    The following class attributes must be defined for all Operators:
 
-    * :attr:`~.Operation.num_params`
-    * :attr:`~.Operation.num_wires`
-    * :attr:`~.Operation.par_domain`
-
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
-    differentiation.
-
-    * :attr:`~.Operation.grad_method`
-    * :attr:`~.Operation.grad_recipe`
-
-    Finally, there are some additional optional class attributes
-    that may be set, and used by certain quantum optimizers:
-
-    * :attr:`~.Operation.generator`
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
 
     Args:
-        args (tuple[float, int, array, Variable]): operation parameters
+        args (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
-        do_queue (bool): Indicates whether the operation should be
+        do_queue (bool): Indicates whether the operator should be
             immediately pushed into a :class:`QNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
+            This flag is useful if there is some reason to run an Operator
             outside of a QNode context.
     """
 
     @abc.abstractproperty
     def num_params(self):
-        """Number of parameters the operation takes."""
+        """Number of parameters the operator takes."""
         raise NotImplementedError
 
     @abc.abstractproperty
     def num_wires(self):
-        """Number of wires the operation acts on.
+        """Number of wires the operator acts on.
 
-        The value 0 allows the operation to act on any number of wires.
+        The value 0 allows the operator to act on any number of wires.
         """
         raise NotImplementedError
 
@@ -268,12 +256,12 @@ class Operator(abc.ABC):
 
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
-        self.name = self.__class__.__name__   #: str: name of the operation
+        self.name = self.__class__.__name__   #: str: name of the operator
 
         if self.num_wires == All:
             if do_queue:
                 if set(wires) != set(range(QNode._current_context.num_wires)):
-                    raise ValueError("Operation {} must act on all wires".format(self.name))
+                    raise ValueError("Operator {} must act on all wires".format(self.name))
 
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
@@ -290,7 +278,7 @@ class Operator(abc.ABC):
             self.check_domain(p)
         self.params = list(params)
 
-        # apply the operation on the given wires
+        # apply the operator on the given wires
         if not isinstance(wires, Sequence):
             self._wires = [wires]
         else:
@@ -298,18 +286,18 @@ class Operator(abc.ABC):
 
         if all([isinstance(w, int) for w in self._wires]):
             # If all wires are integers (i.e., not Variable), check
-            # that they are valid for the given operation
+            # that they are valid for the given operator
             self.check_wires(self._wires)
 
         if do_queue:
             self.queue()
 
     def __str__(self):
-        """Print the operation name and some information."""
+        """Print the operator name and some information."""
         return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
 
     def check_wires(self, wires):
-        """Check the validity of the operation wires.
+        """Check the validity of the operator wires.
 
         Args:
             wires (Sequence[int, Variable]): wires to check
@@ -398,7 +386,7 @@ class Operator(abc.ABC):
         return _unflatten(temp_val, self.params)[0]
 
     def queue(self):
-        """Append the operation to a QNode queue."""
+        """Append the operator to a QNode queue."""
         if QNode._current_context is None:
             raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
@@ -409,11 +397,12 @@ class Operator(abc.ABC):
 class Operation(Operator):
     r"""Base class for quantum operations supported by a device.
 
-    The following class attributes must be defined for all Operations:
+    As with :class:`~.Operator`, the following class attributes must be
+    defined for all operations:
 
-    * :attr:`~.Operation.num_params`
-    * :attr:`~.Operation.num_wires`
-    * :attr:`~.Operation.par_domain`
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
 
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
@@ -528,19 +517,12 @@ class Observable(Operator):
 
     :class:`Observable` is used to describe Hermitian quantum observables.
 
-    As with :class:`~.Operation`, the following class attributes must be
+    As with :class:`~.Operator`, the following class attributes must be
     defined for all observables:
 
-    * :attr:`~.Operation.num_params`
-    * :attr:`~.Operation.num_wires`
-    * :attr:`~.Operation.par_domain`
-
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
-    differentiation.
-
-    * :attr:`~.Operation.grad_method`
-    * :attr:`~.Operation.grad_recipe`
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
 
     Args:
         args (tuple[float, int, array, Variable]): observable parameters
@@ -548,7 +530,7 @@ class Observable(Operator):
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operation should be immediately
+        do_queue (bool): Indicates whether the operator should be immediately
             pushed into a :class:`QNode` observable queue. This flag is useful if
             there is some reason to call an observable outside of a QNode context.
     """
