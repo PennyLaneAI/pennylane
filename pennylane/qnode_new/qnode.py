@@ -163,18 +163,14 @@ Code details
 
 from collections.abc import Sequence
 from collections import namedtuple, OrderedDict
-import copy
 import inspect
 import itertools
-import numbers
 
-import autograd.extend as ae
-import autograd.builtins
 import numpy as np
 
 import pennylane.operation as plo
 import pennylane.ops as plops
-from pennylane.utils import _flatten, unflatten, _inv_dict, expand
+from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
 from pennylane.qnode import QNode as QNode_old, QuantumFunctionError
@@ -259,6 +255,7 @@ class QNode:
         device (~pennylane._device.Device): computational device to execute the function on
         mutable (bool): whether the circuit is mutable, see above
     """
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, func, device, mutable=True):
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
@@ -277,6 +274,9 @@ class QNode:
         self._metric_tensor_subcircuits = {}  #: TODO define
         # introspect the quantum function signature
         _get_signature(self.func)
+
+        self.output_conversion = None
+        self.output_dim = None
 
 
     def __repr__(self):
@@ -371,6 +371,8 @@ class QNode:
                 Instead, keyword arguments are useful for providing data or 'placeholders'
                 to the quantum function.
         """
+        # pylint: disable=protected-access  # remove when QNode_old is gone
+        # pylint: disable=attribute-defined-outside-init
         self.args_model = args  #: nested Sequence[Number]: nested shape of the arguments for later unflattening
 
         # flatten the args, replace each argument with a Variable instance carrying a unique index
@@ -488,7 +490,7 @@ class QNode:
 
         # TODO: we should enforce plugins using the Device.capabilities dictionary to specify
         # whether they are qubit or CV devices, and remove this logic here.
-        self.type = 'cv' if all(are_cvs) else 'qubit'  #: str: circuit type, in {'cv', 'qubit'}
+        #self.type = 'cv' if all(are_cvs) else 'qubit'  #: str: circuit type, in {'cv', 'qubit'}
 
 
     def _sort_args(self, args, kwargs):
@@ -537,6 +539,7 @@ class QNode:
         Returns:
             tuple[Any], dict[str, Any]: positional arguments, keyword-only arguments
         """
+        # pylint: disable=too-many-branches
         # TODO maybe disallow *args in qfunc signature entirely? it complicates things and may be confusing
 
         forbidden_kinds = (inspect.Parameter.POSITIONAL_ONLY,
@@ -544,13 +547,12 @@ class QNode:
                            inspect.Parameter.VAR_KEYWORD)
 
         # check the validity of kwargs items
-        for name, val in kwargs.items():
+        for name in kwargs:
             s = self.func.sig.get(name)
             if s is None:
                 if self.func.var_keyword:
                     continue  # unknown parameter, but **kwargs will take it
-                else:
-                    raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
+                raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
             if s.par.kind in forbidden_kinds:
                 raise QuantumFunctionError("Quantum function parameter '{}' cannot be given using the keyword syntax.".format(name))
 
@@ -600,13 +602,12 @@ class QNode:
                            inspect.Parameter.VAR_KEYWORD)
 
         # check the validity of kwargs items
-        for name, val in kwargs.items():
+        for name in kwargs:
             s = self.func.sig.get(name)
             if s is None:
                 if self.func.var_keyword:
                     continue  # unknown parameter, but **kwargs will take it TODO should it?
-                else:
-                    raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
+                raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
             if s.par.kind in forbidden_kinds or s.par.default == inspect.Parameter.empty:
                 raise QuantumFunctionError("Quantum function parameter '{}' cannot be given using the keyword syntax.".format(name))
 
@@ -624,7 +625,7 @@ class QNode:
         """Wrapper for :meth:`~.QNode.evaluate`.
         """
         #args, kwargs = self._sort_args(args, kwargs)
-        args = autograd.builtins.tuple(args)  # prevents autograd boxed arguments from going through to evaluate
+        #args = autograd.builtins.tuple(args)  # prevents autograd boxed arguments from going through to evaluate
         return self.evaluate(args, kwargs)
 
 
