@@ -99,8 +99,6 @@ class TestOperation:
             U_high_order = np.array([U] * 3)
             op.heisenberg_expand(U_high_order, len(op.wires))
 
-
-
     @pytest.mark.parametrize("cls", op_classes)
     def test_operation_init(self, cls, monkeypatch):
         "Operation subclass initialization."
@@ -173,8 +171,6 @@ class TestOperation:
         with pytest.raises(ValueError, match='Unknown parameter domain'):
             cls(*pars, wires=ww, do_queue=False)
 
-
-
     def test_operation_outside_queue(self):
         """Test that an error is raised if an operation is called
         outside of a QNode context."""
@@ -190,26 +186,36 @@ class TestOperation:
             pytest.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
 
 
-class TestOperationConstruction:
+class TestOperatorConstruction:
     """Test custom operations construction."""
-
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
 
-        class DummyOp(qml.operation.Operation):
+        class DummyOp(qml.operation.Operator):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
             par_domain = 'R'
-            grad_method = 'A'
 
         with pytest.raises(ValueError, match="wrong number of wires"):
             DummyOp(0.5, wires=[0, 1], do_queue=False)
 
+    def test_non_unique_wires(self):
+        """Test that an exception is raised if called with identical wires"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operation"""
+            num_wires = 2
+            num_params = 1
+            par_domain = 'R'
+
+        with pytest.raises(ValueError, match="wires must be unique"):
+            DummyOp(0.5, wires=[1, 1], do_queue=False)
+
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
 
-        class DummyOp(qml.operation.Operation):
+        class DummyOp(qml.operation.Operator):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -222,7 +228,7 @@ class TestOperationConstruction:
     def test_incorrect_param_domain(self):
         """Test that an exception is raised if an incorrect parameter domain is requested"""
 
-        class DummyOp(qml.operation.Operation):
+        class DummyOp(qml.operation.Operator):
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
@@ -231,6 +237,10 @@ class TestOperationConstruction:
 
         with pytest.raises(ValueError, match="Unknown parameter domain"):
             DummyOp(0.5, wires=0, do_queue=False)
+
+
+class TestOperationConstruction:
+    """Test custom operations construction."""
 
     def test_incorrect_grad_recipe_length(self):
         """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
@@ -383,6 +393,10 @@ class TestOperationConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54, 0, do_queue=False)
 
+
+class TestObservableConstruction:
+    """Test custom observables construction."""
+
     def test_observable_return_type_none(self):
         """Check that the return_type of an observable is initially None"""
 
@@ -394,3 +408,8 @@ class TestOperationConstruction:
             grad_method = None
 
         assert DummyObserv(0, wires=[1], do_queue=False).return_type is None
+
+    def test_observable_is_not_operation_but_operator(self):
+
+        assert issubclass(qml.operation.Observable, qml.operation.Operator)
+        assert not issubclass(qml.operation.Observable, qml.operation.Operation)
