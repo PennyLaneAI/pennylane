@@ -46,7 +46,6 @@ def circuit(p1, p2):
 # The cost function to be minimized is defined as the energy of the spin configuration:
 
 def cost(var1, var2):
-
     # the circuit function returns a numpy array of Pauli-Z expectation values
     spins = circuit(var1, var2)
 
