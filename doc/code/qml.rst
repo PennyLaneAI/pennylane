@@ -65,6 +65,18 @@ Measurements
     sample
     var
 
+Operations base class
+---------------------
+
+.. currentmodule:: pennylane.operation
+.. autosummary::
+    CVObservable
+    CVOperation
+    Observable
+    Operation
+
+
+
 Operations - CV
 ---------------
 
@@ -157,8 +169,8 @@ QNode
 
 .. currentmodule:: pennylane
 .. autosummary::
-    qnode.QNode
-    decorator.qnode
+    QNode
+    qnode
 
 
 .. toctree::
@@ -174,7 +186,10 @@ QNode
     pennylane.measure.expval.rst
     pennylane.measure.sample.rst
     pennylane.measure.var.rst
-    pennylane.ops.cv.Beamsplitter.rst
+    pennylane.operation.CVObservable.rst
+    pennylane.operation.CVOperation.rst
+    pennylane.operation.Observable.rst
+    pennylane.operation.Operation.rst
     pennylane.ops.cv.CatState.rst
     pennylane.ops.cv.CoherentState.rst
     pennylane.ops.cv.ControlledAddition.rst
