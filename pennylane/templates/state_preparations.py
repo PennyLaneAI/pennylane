@@ -185,7 +185,7 @@ def _uniry_dg(alpha, control_wires, target_wire):
 
 
 def _get_alpha_z(omega, n, k):
-    """Computes the rotation angles alpha for the z-rotations
+    """Computes the rotation angles alpha for the z-rotations.
 
     Args:
         omega (float): phase of the input
@@ -208,7 +208,7 @@ def _get_alpha_z(omega, n, k):
 
 
 def _get_alpha_y(a, n, k):
-    """Computes the rotation angles alpha for the z-rotations
+    """Computes the rotation angles alpha for the z-rotations.
 
     Args:
         omega (float): phase of the input
@@ -247,7 +247,13 @@ def _get_alpha_y(a, n, k):
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
-    by Möttönen et al. :cite:`mottonen2005transformation`.
+    by Möttönen et al. :cite:`mottonen2005transformation`. The state is prepared via a sequence
+    of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is 
+    composed from all possible controlled rotations on said qubit and can be used to address individual
+    elements of the state vector. In the work of Mottonen et al., the inverse of their state preparation 
+    is constructed by first equalizing the phases of the state vector via uniformly controlled Z rotations 
+    and then rotating the now real state vector into the direction of the state :math:`|0\rangle` via 
+    uniformly controlled Y rotations.
 
     This code is adapted from code written by Carsten Blank for PennyLane-Qiskit.
 
