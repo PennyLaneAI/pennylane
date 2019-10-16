@@ -39,7 +39,7 @@ The quantum circuit function encapsulated by the QNode must be of the following 
 
 .. code-block:: python
 
-    def my_quantum_function(x, y, *, w):
+    def my_quantum_function(x, y, *, w=None):
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=0)
@@ -158,8 +158,6 @@ Exceptions
 Code details
 ~~~~~~~~~~~~
 """
-
-# DISABLEpylint: disable=cell-var-from-loop,attribute-defined-outside-init,too-many-branches,too-many-arguments
 
 from collections.abc import Sequence
 from collections import namedtuple, OrderedDict
@@ -500,8 +498,8 @@ class QNode:
         differentiable POSITIONAL_OR_KEYWORD arguments given using the keyword syntax,
         in addition to KEYWORD_ONLY arguments.
 
-        This method moves all positional (differentiable) arguments from ``kwargs`` to ``args``,
-        and substitute missing positional arguments with special singleton markers.
+        This method moves all positional arguments from ``kwargs`` to ``args``,
+        and substitutes missing positional arguments with special singleton markers.
 
         Args:
             args (tuple[Any]): positionally given arguments

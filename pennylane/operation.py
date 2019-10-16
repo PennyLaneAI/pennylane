@@ -387,7 +387,7 @@ class Operation(abc.ABC):
         """
         for w in wires:
             if not isinstance(w, numbers.Integral):
-                raise TypeError('{}: Wires must be integers, or integer-valued keyword-only parameters in mutable circuits.'.format(self.name))
+                raise TypeError('{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.'.format(self.name))
 
         if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
             raise ValueError("{}: wrong number of wires. "

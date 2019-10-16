@@ -239,6 +239,18 @@ class TestQNodeExceptions:
         with pytest.raises(QuantumFunctionError, match="can only be measured once"):
             node(0.5)
 
+    def test_invisible_operations(self, operable_mock_device_2_wires):
+        """Error: an operation does not affect the measurements."""
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.RX(x, wires=[1])  # on its own component in the circuit graph
+            return qml.expval(qml.PauliZ(0))
+
+        node = QNode(circuit, operable_mock_device_2_wires)
+        with pytest.raises(QuantumFunctionError, match="cannot affect the output"):
+            node(0.5)
+
     def test_operation_on_nonexistant_wire(self, operable_mock_device_2_wires):
         """Error: an operation is applied to a non-existant wire."""
 
