@@ -9,7 +9,7 @@ pennylane-forest
 pyquil==2.10
 scipy
 sphinx==1.8.5
-sphinxcontrib-bibtex
+sphinxcontrib-bibtex==0.4.2
 sphinx_gallery
 strawberryfields
 tensorflow==1.13.2

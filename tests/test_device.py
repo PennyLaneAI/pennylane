@@ -174,6 +174,45 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         mock_device_supporting_paulis.check_validity(queue, observables)
 
+    def test_check_validity_on_tensor_support(self, mock_device_supporting_paulis):
+        """Tests the function Device.check_validity with tensor support capability"""
+        queue = [
+            qml.PauliX(wires=0, do_queue=False),
+            qml.PauliY(wires=1, do_queue=False),
+            qml.PauliZ(wires=2, do_queue=False),
+        ]
+
+        observables = [qml.expval(qml.PauliZ(0, do_queue=False) @ qml.PauliX(1, do_queue=False))]
+
+        # mock device does not support Tensor product
+        with pytest.raises(DeviceError, match="Tensor observables not supported"):
+            mock_device_supporting_paulis.check_validity(queue, observables)
+
+    def test_check_validity_on_invalid_obserable_with_tensor_support(self, monkeypatch):
+        """Tests the function Device.check_validity with tensor support capability
+        but with an invalid observable"""
+        queue = [
+            qml.PauliX(wires=0, do_queue=False),
+            qml.PauliY(wires=1, do_queue=False),
+            qml.PauliZ(wires=2, do_queue=False),
+        ]
+
+        observables = [qml.expval(qml.PauliZ(0, do_queue=False) @ qml.Hadamard(1, do_queue=False))]
+
+        D = Device
+        with monkeypatch.context() as m:
+            m.setattr(D, '__abstractmethods__', frozenset())
+            m.setattr(D, 'operations', ["PauliX", "PauliY", "PauliZ"])
+            m.setattr(D, 'observables', ["PauliX", "PauliY", "PauliZ"])
+            m.setattr(D, 'capabilities', lambda self: {"tensor_observables": True})
+            m.setattr(D, 'short_name', "Dummy")
+
+            dev = D()
+
+            # mock device supports Tensor products but not hadamard
+            with pytest.raises(DeviceError, match="Observable Hadamard not supported"):
+                dev.check_validity(queue, observables)
+
     def test_check_validity_on_invalid_queue(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with invalid queue and valid observables"""
         queue = [

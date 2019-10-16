@@ -91,7 +91,7 @@ Code details
 import abc
 
 import autograd.numpy as np
-from pennylane.operation import Operation, Observable, Sample, Variance, Expectation
+from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
 from .qnode import QuantumFunctionError
 
 
@@ -245,10 +245,13 @@ class Device(abc.ABC):
             for obs in observables:
                 if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
+
                 elif obs.return_type is Variance:
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
+
                 elif obs.return_type is Sample:
                     results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
+
                 elif obs.return_type is not None:
                     raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
@@ -389,7 +392,7 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
                 to be applied on the device
-            expectations (Iterable[~.operation.Observable]): observables which are intended
+            observables (Iterable[~.operation.Observable]): observables which are intended
                 to be evaluated on the device
         """
         for o in queue:
@@ -397,8 +400,17 @@ class Device(abc.ABC):
                 raise DeviceError("Gate {} not supported on device {}".format(o.name, self.short_name))
 
         for o in observables:
-            if o.name not in self.observables:
-                raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
+
+            if isinstance(o, Tensor):
+                if "tensor_observables" not in self.capabilities() or not self.capabilities()["tensor_observables"]:
+                    raise DeviceError("Tensor observables not supported on device {}".format(self.short_name))
+
+                for i in o.obs:
+                    if i.name not in self.observables:
+                        raise DeviceError("Observable {} not supported on device {}".format(i.name, self.short_name))
+            else:
+                if o.name not in self.observables:
+                    raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
@@ -417,23 +429,29 @@ class Device(abc.ABC):
     def expval(self, observable, wires, par):
         r"""Returns the expectation value of observable on specified wires.
 
+        Note: all arguments accept _lists_, which indicate a tensor
+        product of observables.
+
         Args:
-          observable (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par (tuple[float]): parameter values
+            observable (str or list[str]): name of the observable(s)
+            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
-            """
+            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        """
         raise NotImplementedError
 
     def var(self, observable, wires, par):
         r"""Returns the variance of observable on specified wires.
 
+        Note: all arguments support _lists_, which indicate a tensor
+        product of observables.
+
         Args:
-          observable (str): name of the observable
-          wires (Sequence[int]): target subsystems
-          par (tuple[float]): parameter values
+            observable (str or list[str]): name of the observable(s)
+            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
@@ -446,13 +464,13 @@ class Device(abc.ABC):
         The number of samples is determined by the value of ``Device.shots``,
         which can be directly modified.
 
-        For plugin developers: this function should return the result of an evaluation
-        of the given observable on the device.
+        Note: all arguments support _lists_, which indicate a tensor
+        product of observables.
 
         Args:
-            observable (str): name of the observable
-            wires (Sequence[int]): subsystems the observable is to be measured on
-            par (tuple): parameters for the observable
+            observable (str or list[str]): name of the observable(s)
+            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``

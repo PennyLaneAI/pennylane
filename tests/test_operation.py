@@ -18,7 +18,9 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane.variable as ov
+from pennylane.variable import Variable
+from pennylane.operation import Tensor
+
 
 # Operation subclasses to test
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
@@ -149,7 +151,7 @@ class TestOperation:
                 test_class(*n * [0.0], wires=ww, do_queue=False)
             # params must not be Variables
             with pytest.raises(TypeError, match='Array parameter expected'):
-                test_class(*n * [ov.Variable(0)], wires=ww, do_queue=False)
+                test_class(*n * [Variable(0)], wires=ww, do_queue=False)
         elif test_class.par_domain == 'N':
             # params must be natural numbers
             with pytest.raises(TypeError, match='Natural number'):
@@ -318,7 +320,7 @@ class TestOperationConstruction:
             grad_method = 'F'
 
         with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
-            DummyOp(ov.Variable(0), wires=[0], do_queue=False)
+            DummyOp(qml.variable.Variable(0), wires=[0], do_queue=False)
 
     @staticmethod
     def test_array_instead_of_flattened_array():
@@ -414,8 +416,7 @@ class TestOperationConstruction:
 class TestObservableConstruction:
     """Test custom observables construction."""
 
-    @staticmethod
-    def test_observable_return_type_none():
+    def test_observable_return_type_none(self):
         """Check that the return_type of an observable is initially None"""
 
         class DummyObserv(qml.operation.Observable):
@@ -427,15 +428,13 @@ class TestObservableConstruction:
 
         assert DummyObserv(0, wires=[1], do_queue=False).return_type is None
 
-    @staticmethod
-    def test_observable_is_not_operation_but_operator():
+    def test_observable_is_not_operation_but_operator(self):
         """Check that the Observable class inherits from an Operator, not from an Operation"""
 
         assert issubclass(qml.operation.Observable, qml.operation.Operator)
         assert not issubclass(qml.operation.Observable, qml.operation.Operation)
 
-    @staticmethod
-    def test_observable_is_operation_as_well():
+    def test_observable_is_operation_as_well(self):
         """Check that the Observable class inherits from an Operator class as well"""
 
         class DummyObserv(qml.operation.Observable, qml.operation.Operation):
@@ -448,3 +447,152 @@ class TestObservableConstruction:
         assert issubclass(DummyObserv, qml.operation.Operator)
         assert issubclass(DummyObserv, qml.operation.Observable)
         assert issubclass(DummyObserv, qml.operation.Operation)
+
+
+class TestTensor:
+    """Unit tests for the Tensor class"""
+
+    def test_construct(self):
+        """Test construction of a tensor product"""
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.PauliY(2, do_queue=False)
+        T = Tensor(X, Y)
+        assert T.obs == [X, Y]
+
+        T = Tensor(T, Y)
+        assert T.obs == [X, Y, Y]
+
+        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+            Tensor(T, qml.CNOT(wires=[0, 1], do_queue=False))
+
+    def test_name(self):
+        """Test that the names of the observables are
+        returned as expected"""
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.PauliY(2, do_queue=False)
+        t = Tensor(X, Y)
+        assert t.name == [X.name, Y.name]
+
+    def test_num_wires(self):
+        """Test that the correct number of wires is returned"""
+        p = np.array([0.5])
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.Hermitian(p, wires=[1, 2], do_queue=False)
+        t = Tensor(X, Y)
+        assert t.num_wires == 3
+
+    def test_wires(self):
+        """Test that the correct nested list of wires is returned"""
+        p = np.array([0.5])
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.Hermitian(p, wires=[1, 2], do_queue=False)
+        t = Tensor(X, Y)
+        assert t.wires == [[0], [1, 2]]
+
+    def test_params(self):
+        """Test that the correct flattened list of parameters is returned"""
+        p = np.array([0.5])
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.Hermitian(p, wires=[1, 2], do_queue=False)
+        t = Tensor(X, Y)
+        assert t.params == [p]
+
+    def test_num_params(self):
+        """Test that the correct number of parameters is returned"""
+        p = np.array([0.5])
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.Hermitian(p, wires=[1, 2], do_queue=False)
+        Z = qml.Hermitian(p, wires=[1, 2], do_queue=False)
+        t = Tensor(X, Y, Z)
+        assert t.num_params == 2
+
+    def test_parameters(self):
+        """Test that the correct nested list of parameters is returned"""
+        p = np.array([0.5])
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.Hermitian(p, wires=[1, 2], do_queue=False)
+        t = Tensor(X, Y)
+        assert t.parameters == [[], [p]]
+
+    def test_multiply_obs(self):
+        """Test that multiplying two observables
+        produces a tensor"""
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.Hadamard(2, do_queue=False)
+        t = X @ Y
+        assert isinstance(t, Tensor)
+        assert t.obs == [X, Y]
+
+    def test_multiply_obs_tensor(self):
+        """Test that multiplying an observable by a tensor
+        produces a tensor"""
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.Hadamard(2, do_queue=False)
+        Z = qml.PauliZ(1, do_queue=False)
+
+        t = X @ Y
+        t = Z @ t
+
+        assert isinstance(t, Tensor)
+        assert t.obs == [Z, X, Y]
+
+    def test_multiply_tensor_obs(self):
+        """Test that multiplying a tensor by an observable
+        produces a tensor"""
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.Hadamard(2, do_queue=False)
+        Z = qml.PauliZ(1, do_queue=False)
+
+        t = X @ Y
+        t = t @ Z
+
+        assert isinstance(t, Tensor)
+        assert t.obs == [X, Y, Z]
+
+    def test_multiply_tensor_tensor(self):
+        """Test that multiplying a tensor by a tensor
+        produces a tensor"""
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.PauliY(2, do_queue=False)
+        Z = qml.PauliZ(1, do_queue=False)
+        H = qml.Hadamard(3, do_queue=False)
+
+        t1 = X @ Y
+        t2 = Z @ H
+        t = t2 @ t1
+
+        assert isinstance(t, Tensor)
+        assert t.obs == [Z, H, X, Y]
+
+    def test_multiply_tensor_in_place(self):
+        """Test that multiplying a tensor in-place
+        produces a tensor"""
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.PauliY(2, do_queue=False)
+        Z = qml.PauliZ(1, do_queue=False)
+        H = qml.Hadamard(3, do_queue=False)
+
+        t = X
+        t @= Y
+        t @= Z @ H
+
+        assert isinstance(t, Tensor)
+        assert t.obs == [X, Y, Z, H]
+
+    def test_operation_multiply_invalid(self):
+        """Test that an exception is raised if an observable
+        is multiplied by an operation"""
+        X = qml.PauliX(0, do_queue=False)
+        Y = qml.CNOT(wires=[0, 1], do_queue=False)
+        Z = qml.PauliZ(0, do_queue=False)
+
+        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+            X @ Y
+
+        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+            T = X @ Z
+            T @ Y
+
+        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+            T = X @ Z
+            Y @ T
