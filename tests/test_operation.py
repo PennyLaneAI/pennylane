@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane.variable import Variable
 from pennylane.operation import Tensor
 
+# pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
 # Operation subclasses to test
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
