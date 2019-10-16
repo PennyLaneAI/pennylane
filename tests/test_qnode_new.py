@@ -287,7 +287,7 @@ class TestQNodeExceptions:
     def test_kwarg_as_wire_argument(self, operable_mock_device_2_wires):
         """Error: trying to use a keyword-only parameter as a wire argument in an immutable circuit."""
 
-        def circuit(*, x):
+        def circuit(*, x=None):
             qml.RX(0.5, wires=[x])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
@@ -295,6 +295,7 @@ class TestQNodeExceptions:
         with pytest.raises(TypeError, match='Wires must be integers'):
             node(x=1)
 
+    @pytest.mark.xfail(reason="Tests the keyword-only-marks-nondifferentiable syntax", raises=TypeError, strict=True)
     def test_simple_valid_call(self, operable_mock_device_2_wires):
         """Old QNode gives an error here, "got multiple values for argument 'x'"
         """
@@ -306,7 +307,8 @@ class TestQNodeExceptions:
         node(0.3)
         assert node.ops[0].parameters[0] == 0.3
 
-    def test_check_args_no_kwargs(self, operable_mock_device_2_wires):
+    @pytest.mark.xfail(reason="Tests the keyword-only-marks-nondifferentiable syntax", raises=AssertionError, strict=True)
+    def test_calling_no_kwargs(self, operable_mock_device_2_wires):
         """Various quantum func calling syntax errors."""
 
         def circuit(x, y=0.2, *args, m=0.3, n):
@@ -328,10 +330,12 @@ class TestQNodeExceptions:
 
         # valid calls
         node(x=0.1, n=0.4)
-        node(0.1, n=0.4)
         assert circuit.in_args[2:] == (0.3, 0.4)  # first two are Variables
+        node(0.1, n=0.4)
+        assert circuit.in_args[2:] == (0.3, 0.4)
 
-    def test_check_args_with_kwargs(self, operable_mock_device_2_wires):
+    @pytest.mark.xfail(reason="Tests the keyword-only-marks-nondifferentiable syntax", raises=AssertionError, strict=True)
+    def test_calling_with_kwargs(self, operable_mock_device_2_wires):
         """Various quantum func calling syntax errors."""
 
         def circuit(x, y=0.2, *, m=0.3, n, **kwargs):
@@ -353,9 +357,47 @@ class TestQNodeExceptions:
 
         # valid calls
         node(x=0.1, n=0.4)
-        node(0.1, n=0.4)
         assert circuit.in_args[2:] == (0.3, 0.4)  # first two are Variables
+        node(0.1, n=0.4)
+        assert circuit.in_args[2:] == (0.3, 0.4)
 
+
+    def test_calling_bad_errors(self, operable_mock_device_2_wires):
+        """Confusing quantum func calling errors and bugs (default-value-marks-nondifferentiables syntax)."""
+
+        def circuit(x=0.1):
+            return qml.expval(qml.PauliZ(0))
+        node = QNode(circuit, operable_mock_device_2_wires)
+
+        with pytest.raises(TypeError, match="got multiple values for argument 'x'"):
+            node(0.3)  # default arg given positionally, wrong error message
+
+
+    def test_calling_errors(self, operable_mock_device_2_wires):
+        """Good quantum func calling syntax errors (default-value-marks-nondifferentiables syntax)."""
+
+        def circuit(x, y=0.2, *args, z=0.3):
+            circuit.in_args = (x, y, z)
+            return qml.expval(qml.PauliZ(0))
+
+        node = QNode(circuit, operable_mock_device_2_wires, mutable=True)
+
+        with pytest.raises(QuantumFunctionError, match="'x' cannot be given using the keyword syntax"):
+            node(0.1, x=1.1)
+        with pytest.raises(QuantumFunctionError, match="Unknown quantum function parameter 'foo'"):
+            node(foo=1)
+        with pytest.raises(QuantumFunctionError, match="'args' cannot be given using the keyword syntax"):
+            node(args=1)
+        with pytest.raises(TypeError, match="missing 1 required positional argument: 'x'"):
+            node(z=0.4)
+
+        # valid calls
+        node(0.1)
+        assert circuit.in_args[1:] == (0.2, 0.3)  # first is a Variables
+        node(0.1, y=1.2)
+        assert circuit.in_args[1:] == (1.2, 0.3)
+        node(0.1, z=1.3, y=1.2)
+        assert circuit.in_args[1:] == (1.2, 1.3)
 
 
 class TestQNodeArgs:
@@ -405,7 +447,7 @@ class TestQNodeArgs:
     def test_multiple_keywordargs_used(self, qubit_device_2_wires, tol):
         """Tests that qnodes can use multiple keyword-only arguments."""
 
-        def circuit(w, *, x, y):
+        def circuit(w, *, x=None, y=None):
             qml.RX(x, wires=[0])
             qml.RX(y, wires=[1])
             qml.RZ(w, wires=[0])
@@ -430,7 +472,7 @@ class TestQNodeArgs:
     def test_arraylike_keywordargs_used(self, qubit_device_2_wires, tol):
         """Tests that qnodes use array-like keyword-only arguments."""
 
-        def circuit(w, *, x):
+        def circuit(w, *, x=None):
             qml.RX(x[0], wires=[0])
             qml.RX(x[1], wires=[1])
             qml.RZ(w, wires=[0])
@@ -507,7 +549,7 @@ class TestQNodeCaching:
         """Test that mutable circuit structure changes on subsequent evalutions."""
 
         dev = qml.device("default.qubit", wires=2)
-        def mutable_circuit(x, *, c):
+        def mutable_circuit(x, *, c=None):
             qml.RX(x, wires=0)
             for i in range(c):
                 qml.RX(x, wires=i)
@@ -529,7 +571,7 @@ class TestQNodeCaching:
         """Test that non-mutable circuit structure does not change on subsequent evalutions."""
 
         dev = qml.device("default.qubit", wires=2)
-        def non_mutable_circuit(x, *, c):
+        def non_mutable_circuit(x, *, c=None):
             qml.RX(x, wires=0)
             qml.RX(c, wires=0)
             return qml.expval(qml.PauliZ(0))
