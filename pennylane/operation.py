@@ -230,12 +230,14 @@ class Operator(abc.ABC):
             outside of a QNode context.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def num_params(self):
         """Number of parameters the operator takes."""
         raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def num_wires(self):
         """Number of wires the operator acts on.
 
@@ -243,7 +245,8 @@ class Operator(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def par_domain(self):
         """Domain of the gate parameters.
 
@@ -428,6 +431,18 @@ class Operation(Operator):
             outside of a QNode context.
     """
     _grad_recipe = None
+
+    @property
+    def num_params(self):
+        return self.num_params
+
+    @property
+    def num_wires(self):
+        return self.num_wires
+
+    @property
+    def par_domain(self):
+        return self.par_domain
 
     @property
     def grad_method(self):
