@@ -37,8 +37,8 @@
   than the previously used `scipy.linalg.pinv`.
   [#331](https://github.com/XanaduAI/pennylane/pull/331)
 
-* The `Operator` base class is now the parent class of the `Observable` class. There is also a new
-  `Operation` class that inherits from `Operator`.
+* The new `Operator` base class is now the parent class of the `Observable` class and the `Operation` class
+  as well.
   [#355](https://github.com/XanaduAI/pennylane/pull/355)
 
 ### Documentation
