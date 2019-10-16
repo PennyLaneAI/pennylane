@@ -398,7 +398,7 @@ class Operator(abc.ABC):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
-class Operation(Operator):
+class Operation(Operator, abc.ABC):
     r"""Base class for quantum operations supported by a device.
 
     As with :class:`~.Operator`, the following class attributes must be
@@ -432,21 +432,6 @@ class Operation(Operator):
             outside of a QNode context.
     """
     _grad_recipe = None
-
-    @property
-    def num_params(self):
-        """Property for num_params"""
-        return self.num_params
-
-    @property
-    def num_wires(self):
-        """Property for num_wires"""
-        return self.num_wires
-
-    @property
-    def par_domain(self):
-        """Property for par_domain"""
-        return self.par_domain
 
     @property
     def grad_method(self):
@@ -531,7 +516,7 @@ class Operation(Operator):
 #=============================================================================
 
 
-class Observable(Operator):
+class Observable(Operator, abc.ABC):
     """Base class for observables supported by a device.
 
     :class:`Observable` is used to describe Hermitian quantum observables.
@@ -553,7 +538,6 @@ class Observable(Operator):
             pushed into a :class:`QNode` observable queue. This flag is useful if
             there is some reason to call an observable outside of a QNode context.
     """
-    # pylint: disable=abstract-method
     return_type = None
 
     def __init__(self, *args, wires=None, do_queue=True):
