@@ -36,6 +36,7 @@ The following templates of each type are available:
 
     templates/layers
     templates/embeddings
+    templates/state_preparations
 
 
 Each trainable template has a dedicated function in :mod:`pennylane.init` which generates a list of

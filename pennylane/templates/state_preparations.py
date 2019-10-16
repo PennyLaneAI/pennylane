@@ -88,7 +88,7 @@ def _matrix_M_entry(row, col):
         col (int): one-based column number
 
     Returns:
-        (float): matrix entry
+        (float): transformation matrix entry at given row and column
     """
     # (col >> 1) ^ col is the Gray code of col
     b_and_g = row & ((col >> 1) ^ col)
@@ -103,7 +103,7 @@ def _matrix_M_entry(row, col):
 
 
 def _compute_theta(alpha):
-    """Calculates the rotation angles from the alpha vector
+    """Calculates the rotation angles from the alpha vector.
 
     Args:
         alpha (array[float]): alpha parameters
@@ -127,11 +127,12 @@ def _compute_theta(alpha):
 
 
 def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
-    """Applies a Y or Z rotation to the target qubit
+    """Applies a given inverse rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
     Args:
-        gate (qml.Operation): gate to be applied
+        gate (qml.Operation): gate to be applied, needs to have exactly
+            one parameter
         alpha (array[float]): alpha parameters
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
@@ -159,7 +160,7 @@ def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
 
 
 def _unirz_dg(alpha, control_wires, target_wire):
-    """Applies a Z rotation to the target qubit
+    """Applies the inverse of a Z rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
     Args:
@@ -172,7 +173,7 @@ def _unirz_dg(alpha, control_wires, target_wire):
 
 
 def _uniry_dg(alpha, control_wires, target_wire):
-    """Applies a Y rotation to the target qubit
+    """Applies the inverse of a Y rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
     Args:
@@ -185,7 +186,7 @@ def _uniry_dg(alpha, control_wires, target_wire):
 
 
 def _get_alpha_z(omega, n, k):
-    """Computes the rotation angles alpha for the z-rotations.
+    r"""Computes the rotation angles alpha for the Z rotations.
 
     Args:
         omega (float): phase of the input
@@ -208,7 +209,7 @@ def _get_alpha_z(omega, n, k):
 
 
 def _get_alpha_y(a, n, k):
-    """Computes the rotation angles alpha for the z-rotations.
+    r"""Computes the rotation angles alpha for the Y rotations.
 
     Args:
         omega (float): phase of the input
