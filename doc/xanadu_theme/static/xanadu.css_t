@@ -1927,6 +1927,10 @@ footer.page-footer .footer-copyright {
   box-shadow: -1px 14px 30px -20px rgba(0,0,0,0.61);
 }
 
+.navbar-brand {
+  padding-bottom: 0px;
+}
+
 .navbar-nav {
   padding-bottom: 1px;
   padding-left: 30px;
