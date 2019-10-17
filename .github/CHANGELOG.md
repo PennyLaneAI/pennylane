@@ -49,9 +49,11 @@
 
 ### Documentation
 
-
 * The docs are rewritten and restructured to contain a code introduction section as well as an API section.
   [#314](https://github.com/XanaduAI/pennylane/pull/275)
+
+* Added Ising model example to the tutorials 
+  [#319] (https://github.com/XanaduAI/pennylane/pull/319)
 
 * Added tutorial for QAOA on MaxCut problem
   [#328](https://github.com/XanaduAI/pennylane/pull/328)

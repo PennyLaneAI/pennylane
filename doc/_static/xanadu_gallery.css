@@ -243,7 +243,7 @@ p.sphx-glr-signature a.reference.external {
 #download-notebook-link,
 #github-view-link {
   padding-bottom: 10px;
-  border-bottom: 1px solid #c3c3c3;
+  /*border-bottom: 1px solid #c3c3c3;*/
   padding-right: 40px;
   display: flex;
   align-items: center;
@@ -253,7 +253,7 @@ p.sphx-glr-signature a.reference.external {
 #download-python-link:hover,
 #download-notebook-link:hover,
 #github-view-link:hover {
-  border-bottom-color: #19b37b;
+  /*border-bottom-color: #19b37b;*/
   color: #19b37b;
 }
 
