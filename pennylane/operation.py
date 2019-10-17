@@ -532,7 +532,7 @@ class Observable(Operator):
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operator should be immediately
+        do_queue (bool): Indicates whether the observable should be immediately
             pushed into a :class:`QNode` observable queue. This flag is useful if
             there is some reason to call an observable outside of a QNode context.
     """
