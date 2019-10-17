@@ -12,73 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Default qubit plugin
-====================
-
-**Module name:** :mod:`pennylane.plugins.default_qubit`
-
-**Short name:** ``"default.qubit"``
-
-.. currentmodule:: pennylane.plugins.default_qubit
-
 The default plugin is meant to be used as a template for writing PennyLane device
 plugins for new qubit-based backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
-
-The following is the technical documentation of the implementation of the plugin. You will
-not need to read and understand this to use this plugin.
-
-Auxiliary functions
--------------------
-
-.. autosummary::
-    spectral_decomposition
-    unitary
-    hermitian
-
-Gates and operations
---------------------
-
-.. autosummary::
-    Rphi
-    Rotx
-    Roty
-    Rotz
-    Rot3
-    S
-    T
-    X
-    Y
-    Z
-    H
-    CNOT
-    SWAP
-    CSWAP
-    CZ
-    CRotx
-    CRoty
-    CRotz
-    CRot3
-
-Observables
-------------
-
-.. autosummary::
-    X
-    Y
-    Z
-
-Classes
--------
-
-.. autosummary::
-    DefaultQubit
-
-Code details
-^^^^^^^^^^^^
 """
 from collections import OrderedDict
 import itertools

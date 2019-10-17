@@ -13,17 +13,16 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-Symbolic quantum operations
-===========================
+This module contains base classes to define continuous-variable and discrete-variable operations contained in the
+:mod:`pennylane.ops` module.
 
-**Module name:** :mod:`pennylane.operation`
+Usage
+-----
 
-.. currentmodule:: pennylane.operation
+Qubit Operations
+----------------
 
-Operation base classes
-----------------------
-
-This module contains the symbolic base class for performing quantum operations
+The :class:`Operation` and :class:`Observable` classes are subclassed to implement quantum operations
 and measuring observables in PennyLane.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
@@ -37,7 +36,7 @@ and measuring observables in PennyLane.
   sequence of wires (subsystems).
 
 Differentiation
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 In general, an :class:`Operation` is differentiable (at least using the finite-difference
 method) with respect to a parameter iff
@@ -61,24 +60,15 @@ works as follows:
 
 .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
-Summary
-^^^^^^^
-
-.. autosummary::
-   Operation
-   Observable
-   Tensor
-
-
 CV Operation base classes
--------------------------
+*************************
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
 :class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
 and :class:`~.Observable`.
 
 Differentiation
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to
 provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
@@ -98,17 +88,6 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
-
-Summary
-^^^^^^^
-
-.. autosummary::
-   CV
-   CVOperation
-   CVObservable
-
-Code details
-^^^^^^^^^^^^
 """
 import abc
 from enum import Enum, IntEnum
@@ -766,6 +745,7 @@ class CV:
         succeeds the gate to be differentiated analytically.
         """
         return CV._heisenberg_rep != self._heisenberg_rep
+
 
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""

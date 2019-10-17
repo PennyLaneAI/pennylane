@@ -49,6 +49,9 @@
 
 ### Documentation
 
+* The docs are rewritten and restructured to contain a code introduction section as well as an API section.
+  [#314](https://github.com/XanaduAI/pennylane/pull/275)
+
 * Added Ising model example to the tutorials 
   [#319] (https://github.com/XanaduAI/pennylane/pull/319)
 
@@ -78,7 +81,7 @@
 This release contains contributions from (in alphabetical order):
 
 Shahnawaz Ahmed, Ville Bergholm, Aroosa Ijaz, Josh Izaac, Angus Lowe,
-Johannes Jakob Meyer, Antal Száva, Roeland Wiersema.
+Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 ---
 
