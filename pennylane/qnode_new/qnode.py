@@ -35,7 +35,9 @@ Quantum functions
 
 .. _quantumfunc:
 
-The quantum circuit function encapsulated by the QNode must be of the following form:
+We use the term *quantum function* to refer both to the abstract mathematical function
+represented by the variational quantum circuit, and the concrete Python function that defines it.
+The latter must be of the following form:
 
 .. code-block:: python
 
@@ -46,32 +48,43 @@ The quantum circuit function encapsulated by the QNode must be of the following 
         qml.RY(w, wires=1)
         return qml.expval(qml.PauliZ(0))
 
-Quantum circuit functions are a restricted subset of Python functions, adhering to the following
+Quantum functions are a restricted subset of Python functions, adhering to the following
 constraints:
 
 * The body of the function must consist of only supported PennyLane
   :mod:`operations <pennylane.ops>`, one per line.
-
-* The function must always return either a single or a tuple of
-  *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
-  to an :mod:`observable <pennylane.ops>`.
-
-* Classical processing of function arguments, either by arithmetic operations
-  or external functions, is not allowed. One current exception is simple scalar
-  multiplication.
-
-* The function can only be differentiated with respect to its positional parameters.
-  Additionally it may have keyword-only parameters.
 
 .. note::
 
     The quantum operations cannot be used outside of a quantum circuit function, as all
     :class:`Operations <pennylane.operation.Operation>` require a QNode in order to perform queuing on initialization.
 
+* The function must always return either a single or a tuple of
+  *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
+  to an :mod:`observable <pennylane.ops>`.
+
 .. note::
 
     Measured observables **must** come after all other operations at the end
     of the circuit function as part of the return statement, and cannot appear in the middle.
+
+* The quantum function can take two kinds of parameters: *positional* and *auxiliary*.
+
+  * The function can *only* be differentiated with respect to its positional parameters.
+    Classical processing of positional arguments, either by arithmetic operations
+    or external functions, is not allowed. One current exception is simple scalar multiplication.
+    The positional parameters should be only used as the parameters of the Operations in the
+    function.
+
+  * The auxiliary parameters can not be differentiated with respect to.
+    They are useful for providing data or 'placeholders' to the quantum function.
+    In *mutable* nodes the auxiliary parameters can undergo any kind of classical
+    processing, and also appear in the ``wires`` argument of the Operations.
+    In *immutable* nodes they are subject to the same restrictions as the positional parameters.
+
+    Parameters that have default values are interpreted as auxiliary parameters. They *must* be
+    given using the keyword syntax.
+    TODO ALTERNATIVELY: Keyword-only parameters are interpreted as auxiliary parameters.
 
 The quantum function cannot be executed on its own. Instead, a :class:`~.QNode` object must be
 created, which wraps the function and binds it to a device. The QNode can then be used to evaluate
@@ -130,6 +143,7 @@ QNode methods
    _check_circuit
    _sort_args
    _check_args
+   _default_args
    _set_variables
    _op_descendants
 
@@ -195,7 +209,7 @@ Args:
 """
 
 def _get_signature(func):
-    """Introspects the parameter signature of a function.
+    """Introspect the parameter signature of a function.
 
     Adds the following attributes to func:
         :attr:`func.sig`: OrderedDict[str, ParSig]: mapping from parameters' names to their descriptions
@@ -204,7 +218,7 @@ def _get_signature(func):
         :attr:`func.var_keyword`: bool: can take a variable number of keyword arguments (**kwargs)
 
     Args:
-        func (callable): a function
+        func (callable): the function with added attributes
     """
     sig = inspect.signature(func)
     # count positional args, see if VAR_ args are present
@@ -238,8 +252,8 @@ class QNode:
        to construct the circuit representation.
 
     If the circuit is mutable, the quantum function can contain classical flow control structures
-    that depend on its keyword-only parameters, potentially resulting in a different circuit
-    on each call. The keyword-only parameters may also determine the wires on which operations act.
+    that depend on its auxiliary parameters, potentially resulting in a different circuit
+    on each call. The auxiliary parameters may also determine the wires on which operations act.
 
     For immutable circuits the quantum function must build the same circuit graph consisting of the same
     :class:`.Operation` instances regardless of its arguments; they can only appear as the
@@ -279,7 +293,7 @@ class QNode:
 
     def __repr__(self):
         """String representation."""
-        detail = "<QNode: device='{}', func={}, wires={}, interface=NumPy/Autograd>"
+        detail = "<QNode: device='{}', func={}, wires={}>"
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
 
@@ -289,7 +303,7 @@ class QNode:
 
         Args:
             args (tuple[Any]): values for the positional, differentiable parameters
-            kwargs (dict[str, Any]): values for the keyword-only parameters
+            kwargs (dict[str, Any]): values for the auxiliary parameters
         """
         Variable.free_param_values = np.array(list(_flatten(args)))
         Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
@@ -318,7 +332,7 @@ class QNode:
 
 
     def _append_op(self, op):
-        """Appends a quantum operation into the circuit queue.
+        """Append a quantum operation into the circuit queue.
 
         Args:
             op (~.operation.Operation): quantum operation to be added to the circuit
@@ -346,7 +360,7 @@ class QNode:
 
 
     def _construct(self, args, kwargs):
-        """Constructs the quantum circuit graph by calling the quantum function.
+        """Construct the quantum circuit graph by calling the quantum function.
 
         .. note:: The user should never have to call this method directly.
 
@@ -363,11 +377,8 @@ class QNode:
             args (tuple): Positional arguments passed to the quantum function.
                 During the construction we are not concerned with the numerical values, but with
                 the nesting structure.
-                Each parameter is replaced with a :class:`~.variable.Variable` instance.
-            kwargs (dict): Additional keyword-only arguments may be passed to the quantum function,
-                however PennyLane does not support differentiation with respect to them.
-                Instead, keyword arguments are useful for providing data or 'placeholders'
-                to the quantum function.
+                Each positional argument is replaced with a :class:`~.variable.Variable` instance.
+            kwargs (dict): Auxiliary arguments passed to the quantum function.
         """
         # pylint: disable=protected-access  # remove when QNode_old is gone
         # pylint: disable=attribute-defined-outside-init
@@ -396,7 +407,7 @@ class QNode:
                 res = self.func(*arg_vars, **kwargs)
             else:
                 # caching mode, must use variables for kwargs so they can be updated without re-constructing
-                # replace each keyword argument with a list of named Variables
+                # replace each auxiliary argument with a list of named Variables
                 kwarg_vars = {}
                 for key, val in kwargs.items():
                     temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
@@ -414,7 +425,7 @@ class QNode:
         for k, op in enumerate(self.ops):
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
-                    if p.name is None: # ignore keyword arguments
+                    if p.name is None: # ignore auxiliary arguments
                         self.variable_deps.setdefault(p.idx, []).append(ParDep(op, j))
 
         # generate the DAG
@@ -428,7 +439,7 @@ class QNode:
 
 
     def _check_circuit(self, res):
-        """Checks that the generated operation queue corresponds to a valid quantum circuit.
+        """Check that the generated operation queue corresponds to a valid quantum circuit.
 
         .. note:: The validity of individual Operations is checked already in :meth:`_append_op`.
 
@@ -506,7 +517,7 @@ class QNode:
             kwargs (dict[str, Any]): keyword-given arguments
 
         Returns:
-            tuple[Any], dict[str, Any]: positional arguments, keyword-only arguments
+            tuple[Any], dict[str, Any]: positional arguments, auxiliary arguments
         """
         n_args = len(args)  # number of positionally-given args
         pos = list(args)
@@ -532,10 +543,10 @@ class QNode:
 
         Args:
             args (tuple[Any]): positional (differentiable) arguments
-            kwargs (dict[str, Any]): keyword-only arguments
+            kwargs (dict[str, Any]): auxiliary arguments
 
         Returns:
-            tuple[Any], dict[str, Any]: positional arguments, keyword-only arguments
+            tuple[Any], dict[str, Any]: positional arguments, auxiliary arguments
         """
         # pylint: disable=too-many-branches
         # TODO maybe disallow *args in qfunc signature entirely? it complicates things and may be confusing
@@ -590,10 +601,10 @@ class QNode:
         Here we apply default values for the non-differentiable parameters of :attr:`QNode.func`.
 
         Args:
-            kwargs (dict[str, Any]): given non-differentiable arguments (given using keyword syntax)
+            kwargs (dict[str, Any]): auxiliary arguments (given using the keyword syntax)
 
         Returns:
-            dict[str, Any]: all non-differentiable arguments (with defaults)
+            dict[str, Any]: all auxiliary arguments (with defaults)
         """
         forbidden_kinds = (inspect.Parameter.POSITIONAL_ONLY,
                            inspect.Parameter.VAR_POSITIONAL,
@@ -628,11 +639,11 @@ class QNode:
 
 
     def evaluate(self, args, kwargs):
-        """Evaluates the quantum function on the specified device.
+        """Evaluate the quantum function on the specified device.
 
         Args:
             args (tuple[Any]): positional arguments to the quantum function (differentiable)
-            kwargs (dict[str, Any]): keyword-only arguments (not differentiable)
+            kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
 
         Returns:
             float or array[float]: output measured value(s)
@@ -679,7 +690,7 @@ class QNode:
         Args:
             obs  (Iterable[Observable]): observables to measure
             args (array[float]): positional arguments to the quantum function (differentiable)
-            kwargs (dict[str, Any]): keyword-only arguments (not differentiable)
+            kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
 
         Returns:
             array[float]: measured values

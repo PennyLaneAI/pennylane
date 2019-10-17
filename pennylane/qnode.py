@@ -134,15 +134,12 @@ import numbers
 import autograd.numpy as np
 import autograd.extend as ae
 import autograd.builtins
-
 from scipy import linalg
 
 import pennylane as qml
-
 from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand
 from pennylane.circuit_graph import CircuitGraph
-
-from .variable import Variable
+from pennylane.variable import Variable
 
 
 def pop_jacobian_kwargs(kwargs):
@@ -229,6 +226,10 @@ class QNode:
         Args:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
+        if op.num_wires == qml.operation.Wires.All:
+            if set(op.wires) != set(range(self.num_wires)):
+                raise QuantumFunctionError("Operation {} must act on all wires".format(op.name))
+
         # EVs go to their own, temporary queue
         if isinstance(op, qml.operation.Observable):
             if op.return_type is None:

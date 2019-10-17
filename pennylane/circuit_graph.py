@@ -106,7 +106,7 @@ class CircuitGraph:
 
     In this representation the :class:`Operation` instances are the nodes of the graph,
     and each directed edge represent a subsystem (or a group of subsystems) on which the two
-    Operations subsequently act. This representation can describe the causal relationships
+    Operations act subsequently. This representation can describe the causal relationships
     between arbitrary quantum channels and measurements, not just unitary gates.
 
     Args:
@@ -317,8 +317,8 @@ class CircuitGraph:
             old (Operation): node to replace
             new (Operation): replacement
         """
-        # TODO Does alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous, do we need this?
+        # NOTE Does not alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous!
         if new.wires != old.wires:
             raise ValueError('The new Operation must act on the same wires as the old one.')
-        nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
         new.queue_idx = old.queue_idx
+        nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
