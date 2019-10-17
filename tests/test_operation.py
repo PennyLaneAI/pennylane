@@ -176,12 +176,12 @@ class TestOperation:
         outside of a QNode context."""
 
         with pytest.raises(qml.QuantumFunctionError, match="can only be used inside a qfunc"):
-            qml.ops.qubit.Hadamard(wires=0)
+            qml.ops.Hadamard(wires=0)
 
     def test_operation_no_queue(self):
         """Test that an operation can be called outside a QNode with the do_queue flag"""
         try:
-            qml.ops.qubit.Hadamard(wires=0, do_queue=False)
+            qml.ops.Hadamard(wires=0, do_queue=False)
         except qml.QuantumFunctionError:
             pytest.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
 
@@ -435,7 +435,8 @@ class TestOperatorIntegration:
     """ Integration tests for the Operation class"""
 
     def test_all_wires_defined_but_init_with_one(self):
-        """Test that an exception is raised if  with ALL wires"""
+        """Test that an exception is raised if the class is defined with ALL wires,
+        but then instantiated with only one"""
 
         dev1 = qml.device("default.qubit", wires=2)
 

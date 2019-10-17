@@ -235,7 +235,6 @@ class Operator(abc.ABC):
     @abc.abstractmethod
     def num_params(self):
         """Number of parameters the operator takes."""
-        raise NotImplementedError
 
     @property
     @abc.abstractmethod
@@ -244,7 +243,6 @@ class Operator(abc.ABC):
 
         The value 0 allows the operator to act on any number of wires.
         """
-        raise NotImplementedError
 
     @property
     @abc.abstractmethod
@@ -256,7 +254,6 @@ class Operator(abc.ABC):
         * ``'A'``: arrays of real or complex values.
         * ``None``: if there are no parameters.
         """
-        raise NotImplementedError
 
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
@@ -398,7 +395,7 @@ class Operator(abc.ABC):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
-class Operation(Operator, abc.ABC):
+class Operation(Operator):
     r"""Base class for quantum operations supported by a device.
 
     As with :class:`~.Operator`, the following class attributes must be
@@ -517,7 +514,7 @@ class Operation(Operator, abc.ABC):
 #=============================================================================
 
 
-class Observable(Operator, abc.ABC):
+class Observable(Operator):
     """Base class for observables supported by a device.
 
     :class:`Observable` is used to describe Hermitian quantum observables.
