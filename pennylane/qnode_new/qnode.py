@@ -173,6 +173,7 @@ Code details
 ~~~~~~~~~~~~
 """
 
+from functools import wraps, lru_cache
 from collections.abc import Sequence
 from collections import namedtuple, OrderedDict
 import inspect
@@ -188,6 +189,41 @@ from pennylane.utils import _flatten, unflatten, expand
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
 from pennylane.qnode import QNode as QNode_old, QuantumFunctionError
+
+
+
+def qnode(device, *, mutable=True, properties=None):
+    """Decorator for creating QNodes.
+
+    When applied to a quantum function, this decorator converts it into
+    a (wrapped) :class:`QNode` instance.
+
+    Args:
+        device (~.Device): a PennyLane-compatible device
+        mutable (bool): whether the node is mutable
+        properties (dict[str->Any]): additional keyword properties passed to the QNode
+    """
+    @lru_cache()
+    def qfunc_decorator(func):
+        """The actual decorator"""
+
+        node = QNode(func, device, mutable=mutable, properties=properties)
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            """Wrapper function"""
+            return node(*args, **kwargs)
+
+        # bind the jacobian method to the wrapped function
+        #wrapper.jacobian = node.jacobian
+        wrapper.metric_tensor = node.metric_tensor
+
+        # bind the node attributes to the wrapped function
+        wrapper.__dict__.update(node.__dict__)
+
+        return wrapper
+    return qfunc_decorator
+
 
 
 _MARKER = inspect.Parameter.empty  # singleton marker, could be any singleton class
@@ -209,6 +245,7 @@ Args:
     idx (int): positional index of the parameter in the function signature
     par (inspect.Parameter): parameter description
 """
+
 
 def _get_signature(func):
     """Introspect the parameter signature of a function.
@@ -237,6 +274,7 @@ def _get_signature(func):
 
     func.sig = OrderedDict([(p.name, ParSig(idx, p)) for idx, p in enumerate(sig.parameters.values())])
     func.n_pos = n_pos
+
 
 
 class QNode:
@@ -384,7 +422,7 @@ class QNode:
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
         """
         # pylint: disable=protected-access  # remove when QNode_old is gone
-        # pylint: disable=attribute-defined-outside-init
+        # pylint: disable=attribute-defined-outside-init, too-many-branches
         self.args_model = args  #: nested Sequence[Number]: nested shape of the arguments for later unflattening
 
         # flatten the args, replace each argument with a Variable instance carrying a unique index
@@ -722,7 +760,7 @@ class QNode:
         Args:
             diag_approx (bool): iff True, use the diagonal approximation
         """
-        # pylint: disable=too-many-statements
+        # pylint: disable=too-many-statements, too-many-branches
 
         self._metric_tensor_subcircuits = {}
         for queue, curr_ops, param_idx, _ in self.circuit.iterate_layers():
@@ -841,7 +879,7 @@ class QNode:
             self._construct_metric_tensor(diag_approx=diag_approx)
 
         if only_construct:
-            return
+            return None
 
         # temporarily store the parameter values in the Variable class
         self._set_variables(args, kwargs)
@@ -895,56 +933,3 @@ class QNode:
                 tensor[np.array(params), np.array(params)] = circuit['result']
 
         return tensor
-
-
-from functools import wraps, lru_cache
-
-def qnode(device, *, interface='numpy', mutable=True, properties=None):
-    """Decorator for creating QNodes.
-
-    When applied to a quantum function, this decorator converts it into
-    a :class:`QNode` instance.
-
-    Args:
-        device (~.Device): a PennyLane-compatible device
-        interface (str): the interface that will be used for automatic
-            differentiation and classical processing. This affects
-            the types of objects that can be passed to/returned from the QNode:
-
-            * ``interface='numpy'``: The QNode accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
-              and returns NumPy arrays.
-
-            * ``interface='torch'``: The QNode accepts and returns Torch tensors.
-
-            * ``interface='tfe'``: The QNode accepts and returns eager execution
-              TensorFlow ``tfe.Variable`` objects.
-
-        mutable (bool): Whether the node is mutable.
-            If ``False``, the quantum function used to generate the QNode will
-            only be called to construct the quantum circuit once, on first execution,
-            and this circuit structure (i.e., the placement of templates, gates, measurements, etc.)
-            will be cached for all further executions. The circuit parameters can still change with every call.
-            Only activate this feature if your quantum circuit structure will never change.
-        properties (dict[str->Any]): additional keyword properties passed to the QNode
-    """
-    @lru_cache()
-    def qfunc_decorator(func):
-        """The actual decorator"""
-
-        node = QNode(func, device, mutable=mutable, properties=properties)
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            """Wrapper function"""
-            return node(*args, **kwargs)
-
-        # bind the jacobian method to the wrapped function
-        #wrapper.jacobian = node.jacobian
-        wrapper.metric_tensor = node.metric_tensor
-
-        # bind the node attributes to the wrapped function
-        wrapper.__dict__.update(node.__dict__)
-
-        return wrapper
-    return qfunc_decorator
