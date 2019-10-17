@@ -32,7 +32,7 @@ import numpy as np
 
 
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
-    r"""A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in :cite:`schuld2018circuit`.
+    r"""A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_.
 
     The number of layers :math:`L` is determined by the first dimension of ``weights``. The template is applied to
     the qubits specified by the sequence ``wires``.
@@ -63,7 +63,7 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
     This is an example of two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`, respectively) with
     rotations :math:`R` and CNOTs as imprimitives:
 
-    .. figure:: ../_static/layer_sec.png
+    .. figure:: ../../_static/layer_sec.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -127,7 +127,7 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
     This is an example of two 4-qubit random layers with four Pauli-y/Pauli-z rotations :math:`R_y, R_z`,
     controlled-Z gates as imprimitives, as well as ``ratio_imprim=0.3``:
 
-    .. figure:: ../_static/layer_rnd.png
+    .. figure:: ../../_static/layer_rnd.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -177,7 +177,7 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
 
 
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in :cite:`killoran2018continuous`.
+    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
 
     The number of layers :math:`L` is inferred from the first dimension of the eleven weight parameters. The layers
     act on the :math:`M` modes given in ``wires``, and include interferometers of :math:`K=M(M-1)/2` beamsplitters.
@@ -226,7 +226,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
     Kerr gates :math:`K`. The two big blocks are interferometers of type
     :mod:`pennylane.templates.layers.Interferometer`:
 
-    .. figure:: ../_static/layer_cvqnn.png
+    .. figure:: ../../_static/layer_cvqnn.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -281,25 +281,25 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     may be adjusted:
 
     * ``mesh='rectangular'`` (default): uses the scheme described in
-      :cite:`clements2016optimal`, resulting in a *rectangular* array of
+      `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__, resulting in a *rectangular* array of
       :math:`M(M-1)/2` beamsplitters arranged in :math:`M` slices and ordered from left
       to right and top to bottom in each slice. The first beamsplitter acts on
       wires :math:`0` and :math:`1`:
 
-      .. figure:: ../_static/clements.png
+      .. figure:: ../../_static/clements.png
           :align: center
           :width: 30%
           :target: javascript:void(0);
 
 
-    * ``mesh='triangular'``: uses the scheme described in :cite:`reck1994experimental`,
+    * ``mesh='triangular'``: uses the scheme described in `Reck et al. <https://dx.doi.org/10.1103/PhysRevLett.73.58>`__,
       resulting in a *triangular* array of :math:`M(M-1)/2` beamsplitters arranged in
       :math:`2M-3` slices and ordered from left to right and top to bottom. The
       first and fourth beamsplitters act on wires :math:`M-1` and :math:`M`, the second
       on :math:`M-2` and :math:`M-1`, and the third on :math:`M-3` and :math:`M-2`, and
       so on.
 
-      .. figure:: ../_static/reck.png
+      .. figure:: ../../_static/reck.png
           :align: center
           :width: 30%
           :target: javascript:void(0);
@@ -315,14 +315,14 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     This is an example of a 4-mode interferometer with beamsplitters :math:`B` and rotations :math:`R`,
     using ``mesh='rectangular'``:
 
-    .. figure:: ../_static/layer_interferometer.png
+    .. figure:: ../../_static/layer_interferometer.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
     .. note::
 
-        The decomposition as formulated in :cite:`clements2016optimal` uses a different
+        The decomposition as formulated in `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__ uses a different
         convention for a beamsplitter :math:`T(\theta, \phi)` than PennyLane, namely:
 
         .. math:: T(\theta, \phi) = BS(\theta, 0) R(\phi)
@@ -330,7 +330,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
         For the universality of the decomposition, the used convention is irrelevant, but
         for a given set of angles the resulting interferometers will be different.
 
-        If an interferometer consistent with the convention from :cite:`clements2016optimal`
+        If an interferometer consistent with the convention from `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__
         is needed, the optional keyword argument ``beamsplitter='clements'`` can be specified. This
         will result in each :class:`~pennylane.ops.Beamsplitter` being preceded by a :class:`~pennylane.ops.Rotation` and
         thus increase the number of elementary operations in the circuit.

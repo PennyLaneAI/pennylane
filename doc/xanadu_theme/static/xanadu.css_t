@@ -660,6 +660,9 @@ table.two-column {
 td {
   padding: 5px;
 }
+td:first-child {
+    white-space: nowrap;
+}
 
 .longtable  {
     border-collapse: collapse;
@@ -687,6 +690,43 @@ td {
 
 .longtable tr.row-even > td ~ td {
     border-right: 0px solid #fff;
+}
+
+
+
+.summary-table  {
+    border-collapse: collapse;
+    border: 1px solid #fff;
+}
+.summary-table .longtable {
+    border: 1px solid #fff;
+}
+
+.summary-table tr.row-odd {
+    border-bottom: 1px solid #fff;
+}
+
+.summary-table tr.row-even {
+    border-bottom: 1px solid #fff;
+}
+
+.summary-table tr.row-odd > td {
+    border-right: 1px solid #fff;
+}
+
+.summary-table tr.row-odd > td ~ td {
+    border-right: 0px solid #fff;
+}
+.summary-table tr.row-even > td {
+    border-right: 1px solid #fff;
+}
+
+.summary-table tr.row-even > td ~ td {
+    border-right: 0px solid #fff;
+}
+
+.summary-table td {
+    padding: 0px 25px 1px 5px;
 }
 
 /* Disqus comments styles

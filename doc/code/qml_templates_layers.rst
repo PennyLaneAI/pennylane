@@ -13,12 +13,16 @@ CV layers
 Single layer
 
 .. autosummary::
+    :toctree: api
+
     CVNeuralNetLayer
     Interferometer
 
 Multiple layers
 
 .. autosummary::
+    :toctree: api
+
     CVNeuralNetLayers
 
 Qubit layers
@@ -27,27 +31,18 @@ Qubit layers
 Single layer
 
 .. autosummary::
+    :toctree: api
+
     StronglyEntanglingLayer
     RandomLayer
 
 Multiple layers
 
 .. autosummary::
+    :toctree: api
+
     StronglyEntanglingLayers
     RandomLayers
-
-
-.. toctree::
-    :hidden:
-
-    pennylane.templates.layers.CVNeuralNetLayer.rst
-    pennylane.templates.layers.CVNeuralNetLayers.rst
-    pennylane.templates.layers.Interferometer.rst
-    pennylane.templates.layers.RandomLayer.rst
-    pennylane.templates.layers.RandomLayers.rst
-    pennylane.templates.layers.StronglyEntanglingLayer.rst
-    pennylane.templates.layers.StronglyEntanglingLayers.rst
-
 
 .. note::
 

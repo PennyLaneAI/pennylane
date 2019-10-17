@@ -1,7 +1,7 @@
 .. _installation:
 
-Installation
-############
+Developers guide
+################
 
 Dependencies
 ============

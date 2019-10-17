@@ -1,5 +1,5 @@
-How to add functionality to PennyLane
-=====================================
+Writing documentation
+=====================
 
 This guide lists all doc source files to change when adding functionality to PennyLane.
 
@@ -16,7 +16,7 @@ Adding a quantum operation, measurement, template or optimizer
 
 * Add an entry in the quick references section.
   Example: The 'Qubit gates' section in ``docs/introduction/reference.rst`` gets a new item
-  ``:ref:`NewGate <pennylane_ops_qubit_NewGate>` ``.
+  ``:ref:`NewGate <pennylane_ops_qubit_NewGate>```.
 
 
 Adding a module
@@ -25,7 +25,7 @@ Adding a module
 * Include the module in the API toctree.
   Example:
 
-  .. code-block::
+  .. code-block:: rest
 
       .. toctree::
          :maxdepth: 1
@@ -40,7 +40,7 @@ Adding a module
 * Include submodules as a toc in the parent module.
   Example:
 
-  .. code-block::
+  .. code-block:: rest
 
     This module contains the following sub-modules:
 

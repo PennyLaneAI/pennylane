@@ -89,7 +89,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
     dev = qml.device('default.qubit', wires=2)
 
 PennyLane offers some basic devices such as the ``'default.qubit'`` simulator; additional devices can be installed
-as plugins (see :ref:`plugins <plugins>` for more details). Note that the choice of a device significantly
+as plugins (see `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the choice of a device significantly
 determines the speed of your computation.
 
 .. _intro_vcirc_qnode:

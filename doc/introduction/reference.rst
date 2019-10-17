@@ -19,10 +19,10 @@ Quantum operations
 
 PennyLane supports a wide variety of quantum operations - such as gates, state preparations and measurement
 observables. These operations can be used exclusively in quantum functions. Revisiting the
-first example from this section, we find the :class:`RZ <pennylane.ops.qubit.RZ>`,
-:class:`CNOT <pennylane.ops.qubit.CNOT>`,
-:class:`RY <pennylane.ops.qubit.RY>` :ref:`gates <intro_ref_ops_qgates>` and the
-:class:`PauliZ <pennylane.ops.qubit.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`:
+first example from this section, we find the :class:`RZ <pennylane.RZ>`,
+:class:`CNOT <pennylane.CNOT>`,
+:class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>` and the
+:class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`:
 
 .. code-block:: python
 
@@ -45,36 +45,49 @@ Qubit operations
 
 Qubit gates
 ***********
-* :ref:`CNOT <pennylane_ops_qubit_CNOT>`
-* :ref:`CRot <pennylane_ops_qubit_CRot>`
-* :ref:`CRX <pennylane_ops_qubit_CRX>`
-* :ref:`CRY <pennylane_ops_qubit_CRY>`
-* :ref:`CRZ <pennylane_ops_qubit_CRZ>`
-* :ref:`CSWAP <pennylane_ops_qubit_CSWAP>`
-* :ref:`CZ <pennylane_ops_qubit_CZ>`
-* :ref:`Hadamard <pennylane_ops_qubit_Hadamard>`
-* :ref:`PauliX <pennylane_ops_qubit_PauliX>`
-* :ref:`PauliY <pennylane_ops_qubit_PauliY>`
-* :ref:`PauliZ <pennylane_ops_qubit_PauliZ>`
-* :ref:`PhaseShift <pennylane_ops_qubit_PhaseShift>`
-* :ref:`QubitUnitary <pennylane_ops_qubit_QubitUnitary>`
-* :ref:`Rot <pennylane_ops_qubit_Rot>`
-* :ref:`RX <pennylane_ops_qubit_RX>`
-* :ref:`RY <pennylane_ops_qubit_RY>`
-* :ref:`RZ <pennylane_ops_qubit_RZ>`
-* :ref:`S <pennylane_ops_qubit_S>`
-* :ref:`SWAP <pennylane_ops_qubit_SWAP>`
-* :ref:`T <pennylane_ops_qubit_T>`
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.CNOT
+    ~pennylane.CRot
+    ~pennylane.CRX
+    ~pennylane.CRY
+    ~pennylane.CRZ
+    ~pennylane.CSWAP
+    ~pennylane.CZ
+    ~pennylane.Hadamard
+    ~pennylane.PauliX
+    ~pennylane.PauliY
+    ~pennylane.PauliZ
+    ~pennylane.PhaseShift
+    ~pennylane.QubitUnitary
+    ~pennylane.Rot
+    ~pennylane.RX
+    ~pennylane.RY
+    ~pennylane.RZ
+    ~pennylane.S
+    ~pennylane.SWAP
+    ~pennylane.T
+
+:html:`</div>`
 
 
 Qubit state preparation
 ***********************
 
-.. toctree::
-    :maxdepth: 1
 
-* :ref:`BasisState <pennylane_ops_qubit_BasisState>`
-* :ref:`QubitStateVector <pennylane_ops_qubit_QubitStateVector>`
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.BasisState
+    ~pennylane.QubitStateVector
+
+:html:`</div>`
 
 
 .. _intro_ref_ops_qobs:
@@ -82,14 +95,18 @@ Qubit state preparation
 Qubit observables
 *****************
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`Hadamard <pennylane_ops_qubit_Hadamard>`
-* :ref:`Hermitian <pennylane_ops_qubit_Hermitian>`
-* :ref:`PauliX <pennylane_ops_qubit_PauliX>`
-* :ref:`PauliY <pennylane_ops_qubit_PauliY>`
-* :ref:`PauliZ <pennylane_ops_qubit_PauliZ>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.Hadamard
+    ~pennylane.Hermitian
+    ~pennylane.PauliX
+    ~pennylane.PauliY
+    ~pennylane.PauliZ
+
+:html:`</div>`
 
 .. _intro_ref_ops_cv:
 
@@ -101,64 +118,79 @@ Continuous-variable (CV) operations
 CV Gates
 ********
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`Beamsplitter <pennylane_ops_cv_Beamsplitter>`
-* :ref:`ControlledAddition <pennylane_ops_cv_ControlledAddition>`
-* :ref:`ControlledPhase <pennylane_ops_cv_ControlledPhase>`
-* :ref:`CrossKerr <pennylane_ops_cv_CrossKerr>`
-* :ref:`CubicPhase <pennylane_ops_cv_CubicPhase>`
-* :ref:`Displacement <pennylane_ops_cv_Displacement>`
-* :ref:`Interferometer <pennylane_ops_cv_Interferometer>`
-* :ref:`Kerr <pennylane_ops_cv_Kerr>`
-* :ref:`Kerr <pennylane_ops_cv_QuadraticPhase>`
-* :ref:`QuadraticPhase <pennylane_ops_cv_Rotation>`
-* :ref:`Squeezing <pennylane_ops_cv_Squeezing>`
-* :ref:`TwoModeSqueezing <pennylane_ops_cv_TwoModeSqueezing>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.Beamsplitter
+    ~pennylane.ControlledAddition
+    ~pennylane.ControlledPhase
+    ~pennylane.CrossKerr
+    ~pennylane.CubicPhase
+    ~pennylane.Displacement
+    ~pennylane.Interferometer
+    ~pennylane.Kerr
+    ~pennylane.QuadraticPhase
+    ~pennylane.Rotation
+    ~pennylane.Squeezing
+    ~pennylane.TwoModeSqueezing
+
+:html:`</div>`
 
 
 CV state preparation
 ********************
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`CatState <pennylane_ops_cv_CatState>`
-* :ref:`CoherentState <pennylane_ops_cv_CoherentState>`
-* :ref:`DisplacedSqueezedState <pennylane_ops_cv_DisplacedSqueezedState>`
-* :ref:`FockDensityMatrix <pennylane_ops_cv_FockDensityMatrix>`
-* :ref:`FockState <pennylane_ops_cv_FockState>`
-* :ref:`FockStateVector <pennylane_ops_cv_FockStateVector>`
-* :ref:`GaussianState <pennylane_ops_cv_GaussianState>`
-* :ref:`SqueezedState <pennylane_ops_cv_SqueezedState>`
-* :ref:`ThermalState <pennylane_ops_cv_ThermalState>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.CatState
+    ~pennylane.CoherentState
+    ~pennylane.DisplacedSqueezedState
+    ~pennylane.FockDensityMatrix
+    ~pennylane.FockState
+    ~pennylane.FockStateVector
+    ~pennylane.GaussianState
+    ~pennylane.SqueezedState
+    ~pennylane.ThermalState
+
+:html:`</div>`
 
 .. _intro_ref_ops_cvobs:
 
 CV observables
 **************
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`FockStateProjector <pennylane_ops_cv_FockStateProjector>`
-* :ref:`NumberOperator <pennylane_ops_cv_NumberOperator>`
-* :ref:`P <pennylane_ops_cv_P>`
-* :ref:`PolyXP <pennylane_ops_cv_PolyXP>`
-* :ref:`QuadOperator <pennylane_ops_cv_QuadOperator>`
-* :ref:`X <pennylane_ops_cv_X>`
+.. autosummary::
+    :nosignatures:
 
+    ~pennylane.FockStateProjector
+    ~pennylane.NumberOperator
+    ~pennylane.P
+    ~pennylane.PolyXP
+    ~pennylane.QuadOperator
+    ~pennylane.X
+
+:html:`</div>`
 
 Shared operations
 ^^^^^^^^^^^^^^^^^
 
 The only operation shared by both qubit and continouous-variable architectures is the Identity.
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`Identity <pennylane_ops_Identity>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.Identity
+
+:html:`</div>`
 
 
 .. _intro_ref_meas:
@@ -171,7 +203,7 @@ Measurements
 PennyLane can extract different types of measurement results: The expectation of an observable
 over multiple measurements, its variance, or a sample of a single measurement.
 
-The quantum function from above, for example, used the :func:`expval <pennylane.measure.expval>` measurement:
+The quantum function from above, for example, used the :func:`expval <pennylane.expval>` measurement:
 
 .. code-block:: python
 
@@ -185,12 +217,16 @@ The quantum function from above, for example, used the :func:`expval <pennylane.
 
 The three measurement functions can be found here:
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`expval <pennylane_measure_expval>`
-* :ref:`sample <pennylane_measure_sample>`
-* :ref:`var <pennylane_measure_var>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.expval
+    ~pennylane.sample
+    ~pennylane.var
+
+:html:`</div>`
 
 
 .. _intro_ref_temp:
@@ -204,9 +240,9 @@ literature, such architectures are commonly known as an *ansatz*.
 
 .. note::
 
-    Templates are constructed out of **structured combinations** of the :mod:`quantum operations <intro_ref_ops>`
+    Templates are constructed out of **structured combinations** of the quantum operations
     provided by PennyLane. This means that **template functions can only be used within a
-    valid** :mod:`pennylane.qnode.QNode`.
+    valid** :class:`~.QNode`.
 
 PennyLane conceptually distinguishes two types of templates, :ref:`layer architectures <intro_ref_temp_lay>`
 and :ref:`input embeddings <intro_ref_temp_emb>`.
@@ -234,11 +270,10 @@ An example of how to use templates is the following:
     print(circuit(init_weights, x=[1., 2.]))
 
 
-Here, we used the embedding template :class:`AngleEmbedding <pennylane.templates.embeddings.AngleEmbedding>`
-together with the layer template
-:class:`StronglyEntanglingLayers <pennylane.templates.layers.StronglyEntanglingLayers>`,
+Here, we used the embedding template :func:`~.AngleEmbedding`
+together with the layer template :func:`~.StronglyEntanglingLayers`,
 and the uniform parameter initialization strategy
-:func:`strong_ent_layer_uniform <pennylane.init.strong_ent_layer_uniform>`.
+:func:`~.strong_ent_layer_uniform`.
 
 
 .. _intro_ref_temp_lay:
@@ -248,22 +283,26 @@ Layer templates
 
 .. currentmodule:: pennylane.templates.layers
 
-Layer architectures, found in the :ref:`templates.layers <api_qml_temp_lay>` module,
+Layer architectures, found in the :mod:`pennylane.templates.layers` module,
 define sequences of gates that are repeated like the layers in a neural network.
 They usually contain only trainable parameters.
 
 The following layer templates are available:
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`CVNeuralNetLayer <pennylane_templates_layers_CVNeuralNetLayer>`
-* :ref:`CVNeuralNetLayers <pennylane_templates_layers_CVNeuralNetLayers>`
-* :ref:`Interferometer <pennylane_templates_layers_Interferometer>`
-* :ref:`RandomLayer <pennylane_templates_layers_RandomLayer>`
-* :ref:`RandomLayers <pennylane_templates_layers_RandomLayers>`
-* :ref:`StronglyEntanglingLayer <pennylane_templates_layers_StronglyEntanglingLayer>`
-* :ref:`StronglyEntanglingLayers <pennylane_templates_layers_StronglyEntanglingLayers>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.templates.layers.CVNeuralNetLayer
+    ~pennylane.templates.layers.CVNeuralNetLayers
+    ~pennylane.templates.layers.Interferometer
+    ~pennylane.templates.layers.RandomLayer
+    ~pennylane.templates.layers.RandomLayers
+    ~pennylane.templates.layers.StronglyEntanglingLayer
+    ~pennylane.templates.layers.StronglyEntanglingLayers
+
+:html:`</div>`
 
 
 
@@ -279,15 +318,18 @@ trainable parameters, in which case the embedding is learnable.
 
 The following embedding templates are available:
 
+:html:`<div class="summary-table">`
 
-.. toctree::
-    :maxdepth: 1
+.. autosummary::
+    :nosignatures:
 
-* :ref:`AmplitudeEmbedding <pennylane_templates_embeddings_AmplitudeEmbedding>`
-* :ref:`BasisEmbedding <pennylane_templates_embeddings_BasisEmbedding>`
-* :ref:`AngleEmbedding <pennylane_templates_embeddings_AngleEmbedding>`
-* :ref:`SqueezingEmbedding <pennylane_templates_embeddings_SqueezingEmbedding>`
-* :ref:`DisplacementEmbedding <pennylane_templates_embeddings_DisplacementEmbedding>`
+    ~pennylane.templates.embeddings.AmplitudeEmbedding
+    ~pennylane.templates.embeddings.BasisEmbedding
+    ~pennylane.templates.embeddings.AngleEmbedding
+    ~pennylane.templates.embeddings.SqueezingEmbedding
+    ~pennylane.templates.embeddings.DisplacementEmbedding
+
+:html:`</div>`
 
 .. _intro_ref_temp_params:
 
@@ -300,62 +342,83 @@ randomly initialized arrays for the trainable parameters.
 Strongly entangling circuit
 ***************************
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`strong_ent_layers_uniform <pennylane_init_strong_ent_layers_uniform>`
-* :ref:`strong_ent_layers_normal <pennylane_init_strong_ent_layers_normal>`
-* :ref:`strong_ent_layer_uniform <pennylane_init_strong_ent_layer_uniform>`
-* :ref:`strong_ent_layer_normal <pennylane_init_strong_ent_layer_normal>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.strong_ent_layers_uniform
+    ~pennylane.init.strong_ent_layers_normal
+    ~pennylane.init.strong_ent_layer_uniform
+    ~pennylane.init.strong_ent_layer_normal
+
+:html:`</div>`
 
 Random circuit
 **************
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`random_layers_uniform <pennylane_init_random_layers_uniform>`
-* :ref:`random_layers_normal <pennylane_init_random_layers_normal>`
-* :ref:`random_layer_uniform <pennylane_init_random_layer_uniform>`
-* :ref:`random_layer_normal <pennylane_init_random_layer_normal>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.random_layers_uniform
+    ~pennylane.init.random_layers_normal
+    ~pennylane.init.random_layer_uniform
+    ~pennylane.init.random_layer_normal
+
+:html:`</div>`
 
 Continuous-variable quantum neural network
 ******************************************
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`cvqnn_layers_uniform <pennylane_init_cvqnn_layers_uniform>`
-* :ref:`cvqnn_layers_normal <pennylane_init_cvqnn_layers_normal>`
-* :ref:`cvqnn_layer_uniform <pennylane_init_cvqnn_layer_uniform>`
-* :ref:`cvqnn_layer_normal <pennylane_init_cvqnn_layer_normal>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.cvqnn_layers_uniform
+    ~pennylane.init.cvqnn_layers_normal
+    ~pennylane.init.cvqnn_layer_uniform
+    ~pennylane.init.cvqnn_layer_normal
+
+:html:`</div>`
 
 Interferometer
 **************
 
-.. toctree::
-    :maxdepth: 1
+:html:`<div class="summary-table">`
 
-* :ref:`interferometer_uniform <pennylane_init_interferometer_uniform>`
-* :ref:`interferometer_normal <pennylane_init_interferometer_normal>`
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.interferometer_uniform
+    ~pennylane.init.interferometer_normal
+
+:html:`</div>`
 
 .. _intro_ref_opt:
-
-.. currentmodule:: pennylane.optimize
 
 Optimizers
 ----------
 
 When using the standard NumPy interface, PennyLane offers some custom-made optimizers.
-Some of these are specific to quantum optimization, such as the :mod:`QNGOptimizer`.
+Some of these are specific to quantum optimization, such as the :mod:`~.QNGOptimizer`.
 
-* :ref:`AdagradOptimizer <pennylane_optimize_AdagradOptimizer>`
-* :ref:`AdamOptimizer <pennylane_optimize_AdamOptimizer>`
-* :ref:`GradientDescentOptimizer <pennylane_optimize_GradientDescentOptimizer>`
-* :ref:`MomentumOptimizer <pennylane_optimize_MomentumOptimizer>`
-* :ref:`NesterovMomentumOptimizer <pennylane_optimize_NesterovMomentumOptimizer>`
-* :ref:`QNGOptimizer <pennylane_optimize_QNGOptimizer>`
-* :ref:`RMSPropOptimizer <pennylane_optimize_RMSPropOptimizer>`
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.AdagradOptimizer
+    ~pennylane.AdamOptimizer
+    ~pennylane.GradientDescentOptimizer
+    ~pennylane.MomentumOptimizer
+    ~pennylane.NesterovMomentumOptimizer
+    ~pennylane.QNGOptimizer
+    ~pennylane.RMSPropOptimizer
+
+:html:`</div>`
 
 
 .. warning::
@@ -373,7 +436,7 @@ access, the number of shots, or the cutoff dimension for continuous-variable sim
 defined in a configuration file called `config.toml`.
 
 Behaviour
-*********
+^^^^^^^^^
 
 On first import, PennyLane attempts to load the configuration file by
 scanning the following three directories in order of preference:
@@ -395,7 +458,7 @@ loaded configuration filepath, print the configurations options, access and modi
 them via keys (i.e., ``pennylane.config['main.shots']``), and save/load new configuration files.
 
 Format
-******
+^^^^^^
 
 The configuration file `config.toml` uses the `TOML standard <https://github.com/toml-lang/toml>`_,
 and has the following format:

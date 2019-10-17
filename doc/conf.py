@@ -41,9 +41,15 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
     'edit_on_github',
-    'sphinx_gallery.gen_gallery'
+    # 'sphinx_gallery.gen_gallery',
+    "sphinx.ext.intersphinx",
 ]
 
+autosummary_generate = True
+autosummary_imported_members = True
+
+
+intersphinx_mapping = {"https://pennylane.ai/qml/": None}
 mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 
 from glob import glob
@@ -51,18 +57,18 @@ import shutil
 import os
 import warnings
 
-sphinx_gallery_conf = {
-    # path to your example scripts
-    'examples_dirs': '../examples',
-    # path where to save gallery generated examples
-    'gallery_dirs': 'tutorials',
-    # build files that start 'pennylane_run'
-    'filename_pattern': r'pennylane_run',
-    # first notebook cell in generated Jupyter notebooks
-    'first_notebook_cell': "%matplotlib inline",
-    # thumbnail size
-    'thumbnail_size': (400, 400),
-}
+# sphinx_gallery_conf = {
+#     # path to your example scripts
+#     'examples_dirs': '../examples',
+#     # path where to save gallery generated examples
+#     'gallery_dirs': 'tutorials',
+#     # build files that start 'pennylane_run'
+#     'filename_pattern': r'pennylane_run',
+#     # first notebook cell in generated Jupyter notebooks
+#     'first_notebook_cell': "%matplotlib inline",
+#     # thumbnail size
+#     'thumbnail_size': (400, 400),
+# }
 
 # Remove warnings that occur when generating the the tutorials
 warnings.filterwarnings("ignore", category=UserWarning, message=r"Matplotlib is currently using agg")
@@ -292,8 +298,8 @@ html_theme_options = {
     "table_header_border": "#19b37b",
     "download_button": "#19b37b",
     # gallery options
-    "github_repo": "XanaduAI/PennyLane",
-    "gallery_dirs": "tutorials",
+    # "github_repo": "XanaduAI/PennyLane",
+    # "gallery_dirs": "tutorials",
 }
 
 edit_on_github_project = 'XanaduAI/pennylane'
