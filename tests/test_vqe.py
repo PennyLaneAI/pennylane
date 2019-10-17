@@ -26,7 +26,7 @@ H_TWO_QUBITS = np.array([[0.5, 1.0j, 0.0, -3j],
 H_NONHERMITIAN = np.array([1.0, 0.5j],
                            [0.5j, -1.3])
 
-class Hamiltonian:
+class TestHamiltonian:
     """Test the Hamiltonian class"""
 
     @pytest.mark.parametrize("coeffs,ops", [
@@ -67,4 +67,4 @@ class Hamiltonian:
         H = qml.vqe.Hamiltonian(coeffs, ops)
 
         assert H.terms == (coeffs, ops)
-        
+
