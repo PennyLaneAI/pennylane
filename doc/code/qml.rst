@@ -27,7 +27,6 @@ The top-level module contains the following sub-modules:
 About
 -----
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -37,7 +36,6 @@ About
 CircuitGraph
 ------------
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -46,22 +44,19 @@ CircuitGraph
 Configuration
 -------------
 
-.. currentmodule:: pennylane.configuration
 .. autosummary::
-    :toctree: api
+    :toctree: api/configuration
 
     Configuration
 
 Devices
 -------
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api/_device
 
     Device
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -70,7 +65,6 @@ Devices
 Gradients
 ---------
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -80,7 +74,6 @@ Gradients
 Measurements
 ------------
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -138,7 +131,6 @@ Operations - CV
 Operations - Qubits
 -------------------
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -169,7 +161,6 @@ Operations - Qubits
 Operations - Shared
 -------------------
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -180,7 +171,6 @@ Optimizers
 
 .. _api_qml_opt:
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
@@ -195,7 +185,6 @@ Optimizers
 QNode
 -----
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api/decorator
 

@@ -167,6 +167,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml
    code/qml_init
    code/qml_templates
+   code/qml_plugins
 
 
 :html:`<h2>Indices and tables</h2>`
