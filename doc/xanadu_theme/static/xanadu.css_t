@@ -764,6 +764,7 @@ td:first-child {
   transition-property: opacity;
   transition-duration: 1s;
   opacity: 0.5;
+  height: 100%;
 }
 
 .comment-container:hover {
@@ -839,6 +840,18 @@ border-radius: 7px;
 
 #comments ul li a:hover {
   color: {{ theme_download_button }};
+}
+
+#comments .caption {
+  display: none;
+}
+
+#comments > ul > li:not(.current)  {
+  display: none;
+}
+
+#comments > ul.current > li.current > a  {
+  display: none;
 }
 
 /* Next and previous links
