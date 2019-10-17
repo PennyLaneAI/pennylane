@@ -469,8 +469,8 @@ class TestQubitGradient:
         assert grad_angle == pytest.approx(grad_auto, abs=tol)
 
 
-    def test_hybrid_gradients_numpy(self, qubit_device_2_wires, tol):
-        "Test the gradient of a hybrid computation involving numpy functions."
+    def test_hybrid_gradients_autograd_numpy(self, qubit_device_2_wires, tol):
+        "Test the gradient of a hybrid computation requiring autograd.numpy functions."
 
         def circuit(x, y):
             "Quantum node."
@@ -483,11 +483,11 @@ class TestQubitGradient:
         quantum = qml.QNode(circuit, qubit_device_2_wires)
 
         def classical(p):
-            "Classical node involving autograd.numpy functions."
+            "Classical node, requires autograd.numpy functions."
             return anp.exp(anp.sum(quantum(p[0], anp.log(p[1]))))
 
         def d_classical(a, b, method):
-            "Gradient of classical computed symbolically, and using normal numpy functions."
+            "Gradient of classical computed symbolically, can use normal numpy functions."
             val = classical((a, b))
             J = quantum.jacobian((a, np.log(b)), method=method)
             return val * np.array([J[0, 0] + J[1, 0], (J[0, 1] + J[1, 1]) / b])
