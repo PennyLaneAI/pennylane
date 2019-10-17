@@ -1768,7 +1768,7 @@ footer.page-footer .footer-copyright {
     margin-bottom: unset;
   }
 
-  #comments {
+  .comment-container {
     display: none;
   }
 
@@ -1893,7 +1893,7 @@ footer.page-footer .footer-copyright {
     float: none;
   }
 
-  #comments {
+  .comment-container {
     display: none;
   }
 
