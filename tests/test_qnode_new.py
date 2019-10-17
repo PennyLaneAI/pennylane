@@ -14,8 +14,6 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
-import math
-
 import pytest
 import numpy as np
 
@@ -430,7 +428,7 @@ class TestQNodeArgs:
             return qml.expval(qml.PauliZ(0))
 
         def analytic_expval(x, y):
-            return math.cos(x) ** 2 - math.cos(y) * math.sin(x) ** 2
+            return np.cos(x) ** 2 - np.cos(y) * np.sin(x) ** 2
 
         node = QNode(circuit, qubit_device_1_wire)
         res = node(x, y)
@@ -450,7 +448,7 @@ class TestQNodeArgs:
             return qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(1))
 
         def analytic_expval(a, b, c):
-            return [-1 * math.cos(a) * math.cos(b) * math.sin(c), math.cos(a)]
+            return [-1 * np.cos(a) * np.cos(b) * np.sin(c), np.cos(a)]
 
         node = QNode(circuit, qubit_device_2_wires)
         res = node(a, b, c)

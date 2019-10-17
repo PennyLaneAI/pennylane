@@ -87,7 +87,7 @@ Layer = namedtuple("Layer", ["ops", "param_inds"])
 Args:
 
     ops (list[Operation]): parametrized operations in the layer
-    param_inds (tuple[int]): corresponding free parameter indices
+    param_inds (list[int]): corresponding free parameter indices
 """
 #TODO define what a layer is
 

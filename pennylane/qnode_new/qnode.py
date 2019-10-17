@@ -179,10 +179,12 @@ import inspect
 import itertools
 
 import numpy as np
+from scipy import linalg
 
+import pennylane.measure as pm
 import pennylane.operation as plo
 import pennylane.ops as plops
-from pennylane.utils import _flatten, unflatten
+from pennylane.utils import _flatten, unflatten, expand
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
 from pennylane.qnode import QNode as QNode_old, QuantumFunctionError
@@ -268,7 +270,7 @@ class QNode:
         mutable (bool): whether the circuit is mutable, see above
     """
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, func, device, mutable=True):
+    def __init__(self, func, device, *, mutable=True, properties=None):
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
@@ -277,18 +279,19 @@ class QNode:
         self.circuit = None  #: CircuitGraph: DAG representation of the quantum circuit
 
         self.mutable = mutable  #: bool: is the circuit mutable?
+        self.properties = properties or {}  #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
 
         self.variable_deps = {}
         """dict[int, list[ParDep]]: Mapping from free parameter index to the list of
         :class:`~pennylane.operation.Operation` instances (in this circuit) that depend on it.
         """
 
-        self._metric_tensor_subcircuits = {}  #: TODO define
+        self._metric_tensor_subcircuits = None  #: dict[tuple[int], dict[str, Any]]: circuit descriptions for computing the metric tensor
         # introspect the quantum function signature
         _get_signature(self.func)
 
-        self.output_conversion = None
-        self.output_dim = None
+        self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
+        self.output_dim = None  #: int: dimension of the QNode output vector
 
 
     def __repr__(self):
@@ -302,8 +305,8 @@ class QNode:
         """Temporarily store the values of the free parameters in the Variable class.
 
         Args:
-            args (tuple[Any]): values for the positional, differentiable parameters
-            kwargs (dict[str, Any]): values for the auxiliary parameters
+            args (tuple[Any]): positional (differentiable) arguments
+            kwargs (dict[str, Any]): auxiliary arguments
         """
         Variable.free_param_values = np.array(list(_flatten(args)))
         Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
@@ -374,11 +377,11 @@ class QNode:
            for evaluation we could simply reconstruct the circuit each time.
 
         Args:
-            args (tuple): Positional arguments passed to the quantum function.
+            args (tuple[Any]): Positional arguments passed to the quantum function.
                 During the construction we are not concerned with the numerical values, but with
                 the nesting structure.
                 Each positional argument is replaced with a :class:`~.variable.Variable` instance.
-            kwargs (dict): Auxiliary arguments passed to the quantum function.
+            kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
         """
         # pylint: disable=protected-access  # remove when QNode_old is gone
         # pylint: disable=attribute-defined-outside-init
@@ -432,10 +435,11 @@ class QNode:
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
 
         # check for operations that cannot affect the output
-        visible = self.circuit.ancestors(self.circuit.observables)
-        invisible = set(self.circuit.operations) - visible
-        if invisible:
-            raise QuantumFunctionError("The operations {} cannot affect the output of the circuit.".format(invisible))
+        if self.properties.get('vis_check', True):
+            visible = self.circuit.ancestors(self.circuit.observables)
+            invisible = set(self.circuit.operations) - visible
+            if invisible:
+                raise QuantumFunctionError("The operations {} cannot affect the output of the circuit.".format(invisible))
 
 
     def _check_circuit(self, res):
@@ -634,7 +638,6 @@ class QNode:
         """Wrapper for :meth:`~.QNode.evaluate`.
         """
         #args, kwargs = self._sort_args(args, kwargs)
-        #args = autograd.builtins.tuple(args)  # prevents autograd boxed arguments from going through to evaluate
         return self.evaluate(args, kwargs)
 
 
@@ -703,3 +706,245 @@ class QNode:
         self.device.reset()
         ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
         return ret
+
+
+    def _construct_metric_tensor(self, *, diag_approx=False):
+        """Construct metric tensor subcircuits for qubit circuits.
+
+        Constructs a set of quantum circuits for computing a block-diagonal approximation of the
+        Fubini-Study metric tensor on the parameter space of the variational circuit represented
+        by the QNode, using the Quantum Geometric Tensor.
+
+        If the parameter appears in a gate :math:`G`, the subcircuit contains
+        all gates which precede :math:`G`, and :math:`G` is replaced by the variance
+        value of its generator.
+
+        Args:
+            diag_approx (bool): iff True, use the diagonal approximation
+        """
+        # pylint: disable=too-many-statements
+
+        self._metric_tensor_subcircuits = {}
+        for queue, curr_ops, param_idx, _ in self.circuit.iterate_layers():
+            obs = []
+            scale = []
+
+            Ki_matrices = []
+            KiKj_matrices = []
+            Ki_ev = []
+            KiKj_ev = []
+            V = None
+
+            # for each operator in the layer, get the generator and convert it to a variance
+            for n, op in enumerate(curr_ops):
+                gen, s = op.generator
+                w = op.wires
+
+                if gen is None:
+                    raise QuantumFunctionError("Can't generate metric tensor, operation {}"
+                                               "has no defined generator".format(op))
+
+                # get the observable corresponding to the generator of the current operation
+                if isinstance(gen, np.ndarray):
+                    # generator is a Hermitian matrix
+                    variance = pm.var(plops.Hermitian(gen, w, do_queue=False))
+
+                    if not diag_approx:
+                        Ki_matrices.append((n, expand(gen, w, self.num_wires)))
+
+                elif issubclass(gen, plo.Observable):
+                    # generator is an existing PennyLane operation
+                    variance = pm.var(gen(w, do_queue=False))
+
+                    if not diag_approx:
+                        if issubclass(gen, plops.PauliX):
+                            mat = np.array([[0, 1], [1, 0]])
+                        elif issubclass(gen, plops.PauliY):
+                            mat = np.array([[0, -1j], [1j, 0]])
+                        elif issubclass(gen, plops.PauliZ):
+                            mat = np.array([[1, 0], [0, -1]])
+
+                        Ki_matrices.append((n, expand(mat, w, self.num_wires)))
+
+                else:
+                    raise QuantumFunctionError(
+                        "Can't generate metric tensor, generator {}"
+                        "has no corresponding observable".format(gen)
+                    )
+
+                obs.append(variance)
+                scale.append(s)
+
+            if not diag_approx:
+                # In order to compute the block diagonal portion of the metric tensor,
+                # we need to compute 'second order' <psi|K_i K_j|psi> terms.
+
+                for i, j in itertools.product(range(len(Ki_matrices)), repeat=2):
+                    # compute the matrices representing all K_i K_j terms
+                    obs1 = Ki_matrices[i]
+                    obs2 = Ki_matrices[j]
+                    KiKj_matrices.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
+
+                V = np.identity(2**self.num_wires, dtype=np.complex128)
+
+                # generate the unitary operation to rotate to
+                # the shared eigenbasis of all observables
+                for _, term in Ki_matrices:
+                    _, S = linalg.eigh(V.conj().T @ term @ V)
+                    V = np.round(V @ S, 15)
+
+                V = V.conj().T
+
+                # calculate the eigenvalues for
+                # each observable in the shared eigenbasis
+                for idx, term in Ki_matrices:
+                    eigs = np.diag(V @ term @ V.conj().T).real
+                    Ki_ev.append((idx, eigs))
+
+                for idx, term in KiKj_matrices:
+                    eigs = np.diag(V @ term @ V.conj().T).real
+                    KiKj_ev.append((idx, eigs))
+
+            self._metric_tensor_subcircuits[param_idx] = {
+                "queue": queue,
+                "observable": obs,
+                "Ki_expectations": Ki_ev,
+                "KiKj_expectations": KiKj_ev,
+                "eigenbasis_matrix": V,
+                "result": None,
+                "scale": scale,
+            }
+
+
+    def metric_tensor(self, args, kwargs=None, *, diag_approx=False, only_construct=False):
+        """Evaluate the value of the metric tensor.
+
+        Args:
+            args (tuple[Any]): positional (differentiable) arguments
+            kwargs (dict[str, Any]): auxiliary arguments
+            diag_approx (bool): iff True, use the diagonal approximation
+            only_construct (bool): Iff True, construct the circuits used for computing
+                the metric tensor but do not execute them, and return None.
+
+        Returns:
+            array[float]: metric tensor
+        """
+        kwargs = kwargs or {}
+        #args, kwargs = self._check_args(args, kwargs)
+        kwargs = self._default_args(kwargs)
+
+        if self.circuit is None or self.mutable:
+            # construct the circuit
+            self._construct(args, kwargs)
+
+        if self._metric_tensor_subcircuits is None:
+            self._construct_metric_tensor(diag_approx=diag_approx)
+
+        if only_construct:
+            return
+
+        # temporarily store the parameter values in the Variable class
+        self._set_variables(args, kwargs)
+
+        tensor = np.zeros([self.num_variables, self.num_variables])
+
+        # execute constructed metric tensor subcircuits
+        for params, circuit in self._metric_tensor_subcircuits.items():
+            self.device.reset()
+
+            s = np.array(circuit['scale'])
+            V = circuit['eigenbasis_matrix']
+
+            if not diag_approx:
+                # block diagonal approximation
+
+                unitary_op = plops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
+                self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
+                probs = list(self.device.probability().values())
+
+                first_order_ev = np.zeros([len(params)])
+                second_order_ev = np.zeros([len(params), len(params)])
+
+                for idx, ev in circuit['Ki_expectations']:
+                    first_order_ev[idx] = ev @ probs
+
+                for idx, ev in circuit['KiKj_expectations']:
+                    # idx is a 2-tuple (i, j), representing
+                    # generators K_i, K_j
+                    second_order_ev[idx] = ev @ probs
+
+                    # since K_i and K_j are assumed to commute,
+                    # <psi|K_j K_i|psi> = <psi|K_i K_j|psi>,
+                    # and thus the matrix of second-order expectations
+                    # is symmetric
+                    second_order_ev[idx[1], idx[0]] = second_order_ev[idx]
+
+                g = np.zeros([len(params), len(params)])
+
+                for i, j in itertools.product(range(len(params)), repeat=2):
+                    g[i, j] = s[i] * s[j] * (second_order_ev[i, j] - first_order_ev[i] * first_order_ev[j])
+
+                row = np.array(params).reshape(-1, 1)
+                col = np.array(params).reshape(1, -1)
+                circuit['result'] = np.diag(g)
+                tensor[row, col] = g
+
+            else:
+                # diagonal approximation
+                circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
+                tensor[np.array(params), np.array(params)] = circuit['result']
+
+        return tensor
+
+
+from functools import wraps, lru_cache
+
+def qnode(device, *, interface='numpy', mutable=True, properties=None):
+    """Decorator for creating QNodes.
+
+    When applied to a quantum function, this decorator converts it into
+    a :class:`QNode` instance.
+
+    Args:
+        device (~.Device): a PennyLane-compatible device
+        interface (str): the interface that will be used for automatic
+            differentiation and classical processing. This affects
+            the types of objects that can be passed to/returned from the QNode:
+
+            * ``interface='numpy'``: The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays.
+
+            * ``interface='torch'``: The QNode accepts and returns Torch tensors.
+
+            * ``interface='tfe'``: The QNode accepts and returns eager execution
+              TensorFlow ``tfe.Variable`` objects.
+
+        mutable (bool): Whether the node is mutable.
+            If ``False``, the quantum function used to generate the QNode will
+            only be called to construct the quantum circuit once, on first execution,
+            and this circuit structure (i.e., the placement of templates, gates, measurements, etc.)
+            will be cached for all further executions. The circuit parameters can still change with every call.
+            Only activate this feature if your quantum circuit structure will never change.
+        properties (dict[str->Any]): additional keyword properties passed to the QNode
+    """
+    @lru_cache()
+    def qfunc_decorator(func):
+        """The actual decorator"""
+
+        node = QNode(func, device, mutable=mutable, properties=properties)
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            """Wrapper function"""
+            return node(*args, **kwargs)
+
+        # bind the jacobian method to the wrapped function
+        #wrapper.jacobian = node.jacobian
+        wrapper.metric_tensor = node.metric_tensor
+
+        # bind the node attributes to the wrapped function
+        wrapper.__dict__.update(node.__dict__)
+
+        return wrapper
+    return qfunc_decorator
