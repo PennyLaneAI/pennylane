@@ -12,61 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Layers
-======
+This module contains templates for trainable 'layers' of quantum gates.
 
-**Module name:** :mod:`pennylane.templates.layers`
-
-.. currentmodule:: pennylane.templates.layers
-
-This module contains templates for trainable `layers`. In contrast to other templates such as embeddings, layers
+In contrast to other templates such as embeddings, layers
 do typically only take trainable parameters, and get repeated in the circuit -- just like the layers of a
-neural network. This makes the layer `learnable` within the limits of the architecture.
+neural network. This makes the layer 'learnable' within the limits of the architecture.
 
-Most templates in this module have a ``Layer`` version that implements a single layer, as well as a ``Layers``
+Most templates in this module have a 'Layer' version that implements a single layer, as well as a 'Layers'
 version which calls the single layer multiple times, possibly using different hyperparameters for the
 sequence in each call.
-
-
-Qubit architectures
--------------------
-
-Strongly entangling circuit
-***************************
-
-.. autosummary::
-
-    StronglyEntanglingLayers
-    StronglyEntanglingLayer
-
-Random circuit
-**************
-
-.. autosummary::
-
-    RandomLayers
-    RandomLayer
-
-Continuous-variable architectures
----------------------------------
-
-Continuous-variable quantum neural network
-******************************************
-
-.. autosummary::
-
-    CVNeuralNetLayers
-    CVNeuralNetLayer
-
-Interferometer
-**************
-
-.. autosummary::
-
-    Interferometer
-
-Code details
-^^^^^^^^^^^^
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Sequence
@@ -109,7 +63,7 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
     This is an example of two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`, respectively) with
     rotations :math:`R` and CNOTs as imprimitives:
 
-    .. figure:: ../../_static/layer_sec.png
+    .. figure:: ../_static/layer_sec.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -173,7 +127,7 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
     This is an example of two 4-qubit random layers with four Pauli-y/Pauli-z rotations :math:`R_y, R_z`,
     controlled-Z gates as imprimitives, as well as ``ratio_imprim=0.3``:
 
-    .. figure:: ../../_static/layer_rnd.png
+    .. figure:: ../_static/layer_rnd.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -272,7 +226,7 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
     Kerr gates :math:`K`. The two big blocks are interferometers of type
     :mod:`pennylane.templates.layers.Interferometer`:
 
-    .. figure:: ../../_static/layer_cvqnn.png
+    .. figure:: ../_static/layer_cvqnn.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -332,7 +286,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
       to right and top to bottom in each slice. The first beamsplitter acts on
       wires :math:`0` and :math:`1`:
 
-      .. figure:: ../../_static/clements.png
+      .. figure:: ../_static/clements.png
           :align: center
           :width: 30%
           :target: javascript:void(0);
@@ -345,7 +299,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
       on :math:`M-2` and :math:`M-1`, and the third on :math:`M-3` and :math:`M-2`, and
       so on.
 
-      .. figure:: ../../_static/reck.png
+      .. figure:: ../_static/reck.png
           :align: center
           :width: 30%
           :target: javascript:void(0);
@@ -361,7 +315,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     This is an example of a 4-mode interferometer with beamsplitters :math:`B` and rotations :math:`R`,
     using ``mesh='rectangular'``:
 
-    .. figure:: ../../_static/layer_interferometer.png
+    .. figure:: ../_static/layer_interferometer.png
         :align: center
         :width: 60%
         :target: javascript:void(0);

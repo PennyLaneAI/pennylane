@@ -12,15 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Quantum circuit variables
-=========================
-
-**Module name:** :mod:`pennylane.variable`
-
-.. currentmodule:: pennylane.variable
-
 This module contains the :class:`Variable` class, which is used to track
 and identify :class:`~pennylane.qnode.QNode` parameters.
+
+Usage
+-----
 
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
@@ -63,11 +59,6 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
     property automates the process of unpacking the Variable value.
     The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
-
-
-.. raw:: html
-
-    <h3>Code details</h3>
 """
 from collections.abc import Sequence
 import copy

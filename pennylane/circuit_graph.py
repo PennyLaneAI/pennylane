@@ -12,49 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Circuit graph
-=============
-
-**Module name:** :mod:`pennylane.circuit_graph`
-
-.. currentmodule:: pennylane.circuit_graph
-
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
-representation of a quantum circuit.
-
-
-Classes
--------
-
-.. autosummary::
-   CircuitGraph
-   Layer
-   LayerData
-
-
-CircuitGraph methods
---------------------
-
-.. currentmodule:: pennylane.circuit_graph.CircuitGraph
-
-.. autosummary::
-   operations
-   observables
-   graph
-   wire_indices
-   ancestors
-   descendants
-   ancestors_in_order
-   descendants_in_order
-   _in_topological_order
-   layers
-   iterate_layers
-   update_node
-
-.. currentmodule:: pennylane.circuit_graph
-
-Code details
-~~~~~~~~~~~~
+based on operation and observable queues.
 """
 from collections import namedtuple
 import networkx as nx
