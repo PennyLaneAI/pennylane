@@ -32,6 +32,7 @@ import pennylane.templates.embeddings
 from pennylane.about import about
 
 
+from .circuit_graph import CircuitGraph
 from .configuration import Configuration
 from ._device import Device, DeviceError
 from .measure import expval, var, sample
@@ -73,7 +74,8 @@ def device(name, *args, **kwargs):
       of Gaussian states and operations on continuous-variable circuit architectures.
 
     In addition, additional devices are supported through plugins — see
-    :ref:`plugins` for more details.
+    the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
+    details.
 
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the number of *wires* (subsystems) you wish to initialize.

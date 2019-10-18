@@ -139,30 +139,6 @@ For more details on contributing or performing research with PennyLane, please s
 
 PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.
 
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Getting started
-   :hidden:
-
-   installing
-   Get Help<https://discuss.pennylane.ai/>
-   research
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Key concepts
-   :hidden:
-
-   concepts/overview
-   concepts/hybrid_computation
-   concepts/quantum_nodes
-   concepts/concept_embeddings
-   concepts/varcirc
-   concepts/autograd_quantum
-
-   zreferences
-
 .. toctree::
    :maxdepth: 1
    :caption: Using PennyLane
@@ -171,16 +147,17 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/pennylane
    introduction/circuits
    introduction/interfaces
-   introduction/plugins
    introduction/reference
 
 .. toctree::
    :maxdepth: 1
-   :caption: Tutorials
+   :caption: Development
    :hidden:
 
-   tutorials
-
+   development/guide
+   development/plugins
+   development/docs
+   development/research
 
 .. toctree::
    :maxdepth: 1
@@ -190,6 +167,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml
    code/qml_init
    code/qml_templates
+   code/qml_plugins
 
 
 :html:`<h2>Indices and tables</h2>`
