@@ -171,20 +171,40 @@ class TestOperation:
             cls(*pars, wires=ww, do_queue=False)
 
 
+    @pytest.fixture(scope="function")
+    def qnode(self, mock_device):
+        """Provides a QNode for the subsequent tests of do_queue"""
 
-    def test_operation_outside_queue(self):
-        """Test that an error is raised if an operation is called
-        outside of a QNode context."""
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1], do_queue=False)
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1], do_queue=False)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
-        with pytest.raises(qml.QuantumFunctionError, match="can only be used inside a qfunc"):
-            qml.ops.Hadamard(wires=0)
+        node = qml.QNode(circuit, mock_device)
+        node.construct([1.0])
 
-    def test_operation_no_queue(self):
-        """Test that an operation can be called outside a QNode with the do_queue flag"""
-        try:
-            qml.ops.Hadamard(wires=0, do_queue=False)
-        except qml.QuantumFunctionError:
-            pytest.fail("Operation failed to instantiate outside of QNode with do_queue=False.")
+        return node
+
+    def test_operation_inside_context_do_queue_false(self, qnode):
+        """Test that an operation does not get added to the QNode queue when do_queue=False"""
+        assert len(qnode.ops) == 4
+        assert qnode.ops[0].name == "RX"
+        assert qnode.ops[1].name == "RY"
+        assert qnode.ops[2].name == "PauliX"
+        assert qnode.ops[3].name == "PauliZ"
+
+    def test_operation_outside_context(self):
+        """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
+        op = qml.ops.CNOT(wires=[0, 1], do_queue=False)
+        assert isinstance(op, qml.operation.Operation)
+
+        op = qml.ops.RX(0.5, wires=0, do_queue=True)
+        assert isinstance(op, qml.operation.Operation)
+
+        op = qml.ops.Hadamard(wires=0)
+        assert isinstance(op, qml.operation.Operation)
 
 
 class TestOperationConstruction:
