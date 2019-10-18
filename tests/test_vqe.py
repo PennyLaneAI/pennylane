@@ -31,6 +31,9 @@ H_TWO_QUBITS = np.array([[0.5, 1.0j, 0.0, -3j],
                          [3j, -0.1, 12.0, 0.0]])
 H_NONHERMITIAN = np.array([[1.0, 0.5j],
                            [0.5j, -1.3]])
+COEFFS = [(0.5, 1.2, -0.7),
+          (2.2, -0.2, 0.0),
+          (0.33,)]
 OBSERVABLES = [(qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
                (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
                (qml.Hermitian(H_TWO_QUBITS, [0,1]),)
@@ -134,7 +137,7 @@ class TestVQE:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_vqe_qnodes_evaluate(self, ansatz, observables, params):
         """Tests that the qnodes returned by vqe_qnodes evaluate properly"""
-        qnodes = qml.vqe.vqe_qnodes((ansatz, observables), )
+        qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
         for idx, q in qnodes:
             val = q(*params)
             assert type(val) == float
@@ -171,14 +174,44 @@ class TestVQE:
         with pytest.raises(ValueError, "no valid ansatz was provided"):
             qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
 
-  def test_vqe_cost_evaluate(self, hamiltonian, ansatz, params):
-      """Tests that the vqe_cost function evaluates properly"""
-      pass
+    @pytest.mark.parametrize("ansatz, params", [
+        (amp_embed, EMBED_PARAMS),
+        (strong_ent_layer, LAYER_PARAMS),
+        (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
+    ])
+    @pytest.mark.parameterize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
+    def test_vqe_cost_evaluate(self, params, ansatz, coeffs, observables):
+        """Tests that the vqe_cost function evaluates properly"""
+        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
+        expval = qml.vqe.vqe_cost(*params, ansatz, hamiltonian)
+        assert type(expval) == float
+        assert np.shape(expval) == () # expval should be scalar
 
-  def test_vqe_cost_expvals(self, hamiltonian, ansatz, params):
-      """Tests that the vqe_cost function gives the correct expectation values"""
-      pass
+    @pytest.mark.parametrize("coeffs, observables, expected", [
+        ((-0.6,), (qml.PauliZ(0),), -0.6 * 1.0),
+        ((1.0,), (qml.PauliX(0),), 0.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(0)), 0.5 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(1)), 0.5 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), 0.5 * 1.0 + 1.2 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), 0.5 * 1.0 + 1.2 * 1.0)
+    ])
+    def test_vqe_cost_expvals(self, coeffs, observables, expected):
+        """Tests that the vqe_cost function gives the correct expectation value"""
+        hamiltonian = qml.vqe.vqe_hamiltonian(coeffs, observables)
+        params = []
+        ansatz = lambda x: None
+        cost = qml.vqe.vqe_cost(*params, ansatz, hamiltonian)
+        assert cost == expected
 
-  def test_vqe_cost_invalid_inputs(self, hamiltonian, ansatz, params):
-      """Tests that the vqe_cost function raises an exception if the arguments are not compatible"""
-      pass
+    def test_vqe_cost_invalid_ansatz(self, hamiltonian, ansatz, params):
+        """Tests that the vqe_cost function raises an exception if the ansatz is not valid"""
+        pass
+
+
+        # wires are not consistent between hamiltonian and ansatz
+
+        # params do not fit with ansatz
+
+        # not a valid hamiltonian
+
+        # not a valid ansatz
