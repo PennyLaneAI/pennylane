@@ -50,7 +50,7 @@ Breaking this down, step-by-step:
 3. **Both wires are then incident on a beamsplitter**, with free parameters :math:`\theta`and :math:`\phi`.
    Here, we have the convention that the beamsplitter transmission amplitude is :math:`t=\cos\theta`,
    and the reflection amplitude is
-   :math:`r=e^{i\phi}\sin\theta`. See :ref:`operations` for a full list of operation conventions.
+   :math:`r=e^{i\phi}\sin\theta`. See :ref:`operations <intro_ref_ops_cv>` for a full list of operation conventions.
 
 4. **Finally, we measure the mean photon number** :math:`\left\langle \hat{n}\right\rangle` of the second wire, where
 
@@ -161,7 +161,7 @@ def photon_redirection(params):
 
 ##############################################################################
 # The ``'strawberryfields.fock'`` device supports all CV objects provided by PennyLane;
-# see :ref:`CV operations <cv_ops>`.
+# see :ref:`CV operations <intro_vcircuits>`.
 
 
 ##############################################################################

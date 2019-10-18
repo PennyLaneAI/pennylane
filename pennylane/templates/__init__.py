@@ -11,3 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This module provides a growing library of templates of common variational
+circuit architectures that can be used to easily build,
+evaluate, and train quantum nodes.
+"""
