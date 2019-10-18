@@ -68,3 +68,20 @@ class TestHamiltonian:
 
         assert H.terms == (coeffs, ops)
 
+
+class TestVQE:
+    """Test the core functionality of the VQE module"""
+
+    @pytest.mark.parametrize("ansatz,observables", [
+        ((TEMPLATE_ANSATZ,), (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1))),
+    ])
+    def test_vqe_qnodes_valid_init(self, ansatz, observables):
+        """Tests that a collection of QNodes is properly created"""
+        qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
+
+        assert len(qnodes) == len(observables)
+        assert all(isinstance(qml.QNode, q) for q in qnodes)
+
+
+
+
