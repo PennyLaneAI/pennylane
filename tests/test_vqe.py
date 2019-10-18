@@ -140,12 +140,12 @@ class TestVQE:
             assert type(val) == float
 
     @pytest.mark.parametrize("coeffs, observables, expected", [
-        ((1.0,), (qml.PauliZ(0)), 0.0),
-        ((1.0,), (qml.PauliX(0), ), 0.5),
-        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(0)), 1.2 * 0.5),
-        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(1)), 1.2 * 0.5),
-        ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0)), 0.5 * 0.5 + 1.2 * 0.5),
-        ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(1)), 0.5 * 0.5 + 1.2 * 0.5)
+        ((-0.6,), (qml.PauliZ(0),), -0.6 * 1.0),
+        ((1.0,), (qml.PauliX(0),), 0.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(0)), 0.5 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(1)), 0.5 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), 0.5 * 1.0 + 1.2 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), 0.5 * 1.0 + 1.2 * 1.0)
     ])
     def test_vqe_aggregate_expvals(self, coeffs, observables, expected):
         """Tests that the vqe_aggregate function returns correct expectation values"""
