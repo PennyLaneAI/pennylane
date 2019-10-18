@@ -47,8 +47,8 @@
 * Remainder of the unittest-style tests were ported to pytest.
   [#310](https://github.com/XanaduAI/pennylane/pull/310)
 
-* The new `Operator` base class is now the parent class of the `Observable` class and the `Operation` class
-  as well.
+* A new `Operator` base class is introduced, which is inherited by both the `Observable` class and the
+  `Operation` class.
   [#355](https://github.com/XanaduAI/pennylane/pull/355)
 
 ### Documentation
