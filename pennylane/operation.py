@@ -96,7 +96,7 @@ from collections.abc import Sequence
 
 import autograd.numpy as np
 
-from .qnode import QNode, QuantumFunctionError
+from .qnode import QNode
 from .utils import _flatten, _unflatten
 from .variable import Variable
 
