@@ -30,7 +30,7 @@
 .. |FORUM| image:: https://img.shields.io/discourse/https/discuss.pennylane.ai/posts.svg?style=popout-square
     :alt: Discourse posts
     :target: https://discuss.pennylane.ai
-    
+
 .. |LIC| image:: https://img.shields.io/pypi/l/PennyLane.svg?style=popout-square
     :alt: PyPI - License
     :target: https://www.apache.org/licenses/LICENSE-2.0
@@ -40,16 +40,12 @@
 `PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for quantum machine learning,
 automatic differentiation, and optimization of hybrid quantum-classical computations.
 
-
-
 Features
 ========
-
 
 .. raw:: html
 
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
-
 
 - **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
 
@@ -59,33 +55,49 @@ Features
 
 - **Device independent**. The same quantum circuit model can be **run on different backends**
 
-- **Large plugin ecosystem**. Install plugins to run your computational circuits on more devices, including Strawberry Fields, Rigetti Forest, ProjectQ, and Qiskit
+- **Large plugin ecosystem**. Install plugins to run your computational circuits on more
+  devices, including Strawberry Fields, Rigetti Forest, ProjectQ, and Qiskit
 
-- **Compatible with existing machine learning libraries**. Quantum circuits can interface with PyTorch, Tensorflow, or NumPy (via autograd), allowing hybrid CPU-GPU-QPU computations.
-
+- **Compatible with existing machine learning libraries**. Quantum circuits can interface
+  with PyTorch, Tensorflow, or NumPy (via autograd), allowing hybrid CPU-GPU-QPU computations.
 
 Available plugins
 =================
 
-* `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_: Supports integration with `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack Python library for simulating continuous variable (CV) quantum optical circuits.
+* `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_: Supports integration with
+  `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack
+  Python library for simulating continuous variable (CV) quantum optical circuits.
 
 
-* `PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_: Supports integration with `PyQuil <https://github.com/rigetti/pyquil>`__, the `Rigetti Forest SDK <https://www.rigetti.com/forest>`__, and the `Rigetti QCS <https://www.rigetti.com/qcs>`__, an open-source quantum computation framework by Rigetti. Provides device support for the the Quantum Virtual Machine (QVM) and Quantum Processing Units (QPUs) hardware devices.
+* `PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_: Supports integration
+  with `PyQuil <https://github.com/rigetti/pyquil>`__, the
+  `Rigetti Forest SDK <https://www.rigetti.com/forest>`__, and the
+  `Rigetti QCS <https://www.rigetti.com/qcs>`__, an open-source quantum computation
+  framework by Rigetti. Provides device support for the the Quantum Virtual Machine
+  (QVM) and Quantum Processing Units (QPUs) hardware devices.
 
 
-* `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_: Supports integration with `Qiskit Terra <https://qiskit.org/terra>`__, an open-source quantum computation framework by IBM. Provides device support for the Qiskit Aer quantum simulators, and IBM QX hardware devices.
+* `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_: Supports
+  integration with `Qiskit Terra <https://qiskit.org/terra>`__, an open-source quantum
+  computation framework by IBM. Provides device support for the Qiskit Aer quantum
+  simulators, and IBM QX hardware devices.
 
 
-* `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
+* `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_: Supports integration with
+  `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum
+  computation framework that supports the IBM quantum experience.
 
 
-* `PennyLane-Qsharp <https://github.com/XanaduAI/pennylane-qsharp>`_: Supports integration with the `Microsoft Quantum Development Kit <https://www.microsoft.com/en-us/quantum/development-kit>`__, a quantum computation framework that uses the Q# quantum programming language.
+* `PennyLane-Qsharp <https://github.com/XanaduAI/pennylane-qsharp>`_: Supports integration
+  with the `Microsoft Quantum Development Kit <https://www.microsoft.com/en-us/quantum/development-kit>`__,
+  a quantum computation framework that uses the Q# quantum programming language.
 
 
 Installation
 ============
 
-PennyLane requires Python version 3.5 and above. Installation of PennyLane, as well as all dependencies, can be done using pip:
+PennyLane requires Python version 3.5 and above. Installation of PennyLane, as well
+as all dependencies, can be done using pip:
 
 .. code-block:: bash
 
@@ -95,20 +107,36 @@ PennyLane requires Python version 3.5 and above. Installation of PennyLane, as w
 Getting started
 ===============
 
-For getting started with PennyLane, check out our `qubit rotation <https://pennylane.readthedocs.io/en/latest/tutorials/pennylane_run_qubit_rotation.html>`_, `Gaussian transformation <https://pennylane.readthedocs.io/en/latest/tutorials/pennylane_run_gaussian_transformation.html>`_, `hybrid computation <https://pennylane.readthedocs.io/en/latest/tutorials/pennylane_run_plugins_hybrid.html>`_, and other `machine learning tutorials <https://pennylane.readthedocs.io/en/latest/tutorials.html>`_.
+For getting started with PennyLane, check out some of the
+`key concepts <https://pennylane.ai/qml/concepts.html>`_ behind quantum machine
+learning, before moving on to some `introductory tutorials <https://pennylane.ai/qml/beginner.html>`_.
 
-Our `documentation <https://pennylane.readthedocs.io>`_ is also a great starting point to familiarize yourself with the hybrid classical-quantum machine learning approach, and explore the available optimization tools provided by PennyLane. Play around with the numerous devices and plugins available for running your hybrid optimizations — these include the `IBM QX4 quantum chip <https://quantumexperience.ng.bluemix.net/qx/experience>`__, provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins, as well as the `Rigetti Aspen-1 QPU <https://www.rigetti.com/qpu>`__.
+Then, take a deeper dive into quantum machine learning by
+exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
+with our collection of
+`QML tutorials <https://pennylane.ai/qml/implementations.html>`_.
 
-Finally, detailed documentation on the PennyLane API is provided, for full details on available quantum operations and expectations, and detailed guides on `how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_ PennyLane-compatible quantum device.
+You can also check out our `documentation <https://pennylane.readthedocs.io>`_ for
+more details on the quantum operations, and to explore the available optimization
+tools provided by PennyLane, and detailed guides on
+`how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_
+PennyLane-compatible quantum device.
+
+Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
+available for running your hybrid optimizations — these include
+IBM Q, provided by the PennyLane-Qiskit plugin, as well as the Rigetti Aspen-1 QPU.
 
 
 Contributing to PennyLane
-=================================
+=========================
 
 We welcome contributions — simply fork the PennyLane repository, and then make a
-`pull request <https://help.github.com/articles/about-pull-requests/>`_ containing your contribution.  All contributers to PennyLane will be listed as authors on the releases. All users who contribute significantly to the code (new plugins, new functionality, etc.) will be listed on the PennyLane arXiv paper.
+`pull request <https://help.github.com/articles/about-pull-requests/>`_ containing your contribution.
+All contributers to PennyLane will be listed as authors on the releases. All users who contribute
+significantly to the code (new plugins, new functionality, etc.) will be listed on the PennyLane arXiv paper.
 
-We also encourage bug reports, suggestions for new features and enhancements, and even links to cool projects or applications built on PennyLane.
+We also encourage bug reports, suggestions for new features and enhancements, and even links to
+cool projects or applications built on PennyLane.
 
 See our `contributions page <https://github.com/XanaduAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
 for more details.
@@ -133,7 +161,8 @@ Support
 
 If you are having issues, please let us know by posting the issue on our Github issue tracker.
 
-We also have a `PennyLane discussion forum <https://discuss.pennylane.ai>`_ - come join the discussion and chat with our PennyLane team.
+We also have a `PennyLane discussion forum <https://discuss.pennylane.ai>`_ - come join
+the discussion and chat with our PennyLane team.
 
 
 License
