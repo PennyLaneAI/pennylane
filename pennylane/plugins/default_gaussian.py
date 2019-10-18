@@ -562,6 +562,7 @@ def poly_quad_expectations(mu, cov, wires, params, total_wires, hbar=2.):
     Q = params[0]
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
+    # TODO: maybe we should make heisenberg_obs a class method or a static method to avoid this being a 'hack'?
     op = qml.ops.PolyXP(Q, wires=wires)
     Q = op.heisenberg_obs(total_wires)
 
