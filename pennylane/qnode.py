@@ -329,14 +329,14 @@ class QNode:
                 # to the generator of the current operation
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
-                    variance = qml.var(qml.Hermitian(gen, w, do_queue=False))
+                    variance = qml.var(qml.Hermitian(gen, w))
 
                     if not diag_approx:
                         Ki_matrices.append((n, expand(gen, w, self.num_wires)))
 
                 elif issubclass(gen, qml.operation.Observable):
                     # generator is an existing PennyLane operation
-                    variance = qml.var(gen(w, do_queue=False))
+                    variance = qml.var(gen(w))
 
                     if not diag_approx:
                         if issubclass(gen, qml.ops.PauliX):
@@ -627,7 +627,7 @@ class QNode:
             if not diag_approx:
                 # block diagonal approximation
 
-                unitary_op = qml.ops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
+                unitary_op = qml.ops.QubitUnitary(V, wires=list(range(self.num_wires)))
                 self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
                 probs = list(self.device.probability().values())
 
@@ -878,7 +878,7 @@ class QNode:
         if q.ndim == 2:
             # 2nd order observable
             qp = qp +qp.T
-        return qml.expval(qml.PolyXP(qp, wires=range(w), do_queue=False))
+        return qml.expval(qml.PolyXP(qp, wires=range(w)))
 
 
     def _pd_analytic(self, params, idx, force_order2=False, **kwargs):
@@ -1013,7 +1013,7 @@ class QNode:
 
                     if not np.allclose(A @ A, np.identity(A.shape[0])):
                         # make a copy of the original variance
-                        new = qml.expval(qml.ops.Hermitian(A @ A, w, do_queue=False))
+                        new = qml.expval(qml.ops.Hermitian(A @ A, w))
 
                         # replace the Hermitian variance with <A^2> expectation
                         self.circuit.update_node(e, new)
@@ -1041,7 +1041,7 @@ class QNode:
                 # the square of the observable
                 A = np.kron(A, A.T)
 
-                new = qml.expval(qml.ops.PolyXP(A, w, do_queue=False))
+                new = qml.expval(qml.ops.PolyXP(A, w))
                 # replace the first order observable var(A) with <A^2>
                 self.circuit.update_node(e, new)
 
