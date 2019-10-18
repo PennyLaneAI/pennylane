@@ -152,8 +152,8 @@ class TestVQE:
         ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), 0.5 * 1.0 + 1.2 * 1.0),
         ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), 0.5 * 1.0 + 1.2 * 1.0)
     ])
-    def test_aggregate_expvals(self, coeffs, observables, expected):
-        """Tests that the aggregate function returns correct expectation values"""
+    def test_qnodes_expvals(self, coeffs, observables, expected):
+        """Tests that the qnodes function returns correct expectation values"""
         qnodes = qml.vqe.qnodes(empty_ansatz, observables)
         for q in qnodes:
             val = q(*empty_params)
@@ -173,6 +173,20 @@ class TestVQE:
         """Tests that an exception is raised when no valid ansatz is supplied to qnodes"""
         with pytest.raises(ValueError, match="no valid ansatz was provided"):
             qnodes = qml.vqe.qnodes(ansatz, observables)
+
+    @pytest.mark.parametrize("coeffs, observables, expected", [
+        ((-0.6,), (qml.PauliZ(0),), -0.6 * 1.0),
+        ((1.0,), (qml.PauliX(0),), 0.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(0)), 0.5 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(1)), 0.5 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), 0.5 * 1.0 + 1.2 * 1.0),
+        ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), 0.5 * 1.0 + 1.2 * 1.0)
+    ])
+    def test_aggregate_expval(self, coeffs, observables, expected):
+        """Tests that the aggregate function returns correct expectation values"""
+        qnodes = qml.vqe.qnodes(empty_ansatz, observables)
+        expval = qml.vqe.aggregate(coeffs, qnodes, empty_params)
+        assert expval == expected
 
     @pytest.mark.parametrize("ansatz, params", [
         (amp_embed, EMBED_PARAMS),
