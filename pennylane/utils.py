@@ -20,7 +20,7 @@ import numbers
 import inspect
 import itertools
 
-import autograd.numpy as np
+import numpy as np
 
 from pennylane.variable import Variable
 

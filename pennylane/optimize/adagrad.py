@@ -13,7 +13,8 @@
 # limitations under the License.
 """Adagrad optimizer"""
 
-import autograd.numpy as np
+import numpy as np
+
 from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 

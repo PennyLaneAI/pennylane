@@ -17,7 +17,8 @@ Unit tests for the computing gradients of quantum functions.
 
 import pytest
 import autograd
-import autograd.numpy as np
+import autograd.numpy as anp  # only to be used inside classical computational nodes
+import numpy as np
 
 import pennylane as qml
 from pennylane.plugins.default_qubit import Rotx as Rx, Roty as Ry, Rotz as Rz
@@ -442,7 +443,6 @@ class TestQubitGradient:
             "Total square error of classifier predictions."
             ret = 0
             for d_in, d_out in zip(in_data, out_data):
-                #args = np.array([d_in, p])
                 square_diff = (classifier(d_in, p) - d_out) ** 2
                 ret = ret + square_diff
             return ret
@@ -451,7 +451,7 @@ class TestQubitGradient:
             "Gradient of error, computed manually."
             ret = 0
             for d_in, d_out in zip(in_data, out_data):
-                args = np.array([d_in, p])
+                args = (d_in, p)
                 diff = (classifier(*args) - d_out)
                 ret = ret + 2 * diff * classifier.jacobian(args, which=[1], method=grad_method)
             return ret
@@ -467,6 +467,44 @@ class TestQubitGradient:
         assert grad_fd1 == pytest.approx(grad_angle, abs=tol)
         assert grad_fd1 == pytest.approx(grad_auto, abs=tol)
         assert grad_angle == pytest.approx(grad_auto, abs=tol)
+
+
+    def test_hybrid_gradients_autograd_numpy(self, qubit_device_2_wires, tol):
+        "Test the gradient of a hybrid computation requiring autograd.numpy functions."
+
+        def circuit(x, y):
+            "Quantum node."
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        quantum = qml.QNode(circuit, qubit_device_2_wires)
+
+        def classical(p):
+            "Classical node, requires autograd.numpy functions."
+            return anp.exp(anp.sum(quantum(p[0], anp.log(p[1]))))
+
+        def d_classical(a, b, method):
+            "Gradient of classical computed symbolically, can use normal numpy functions."
+            val = classical((a, b))
+            J = quantum.jacobian((a, np.log(b)), method=method)
+            return val * np.array([J[0, 0] + J[1, 0], (J[0, 1] + J[1, 1]) / b])
+
+        param = np.array([-0.1259, 1.53])
+        y0 = classical(param)
+        grad_classical = autograd.jacobian(classical)
+        grad_auto = grad_classical(param)
+
+        grad_fd1 = d_classical(*param, 'F')
+        grad_angle = d_classical(*param, 'A')
+
+        # gradients computed with different methods must agree
+        assert grad_fd1 == pytest.approx(grad_angle, abs=tol)
+        assert grad_fd1 == pytest.approx(grad_auto, abs=tol)
+        assert grad_angle == pytest.approx(grad_auto, abs=tol)
+
 
     def test_qnode_gradient_fanout(self, qubit_device_1_wire, tol):
         "Tests that the correct gradient is computed for qnodes which use the same parameter in multiple gates."
