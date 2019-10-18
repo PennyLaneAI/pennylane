@@ -11,7 +11,8 @@ Measurements
 PennyLane can extract different types of measurement results: The expectation of an observable
 over multiple measurements, its variance, or a sample of a single measurement.
 
-The quantum function from above, for example, used the :func:`expval <pennylane.expval>` measurement:
+For example, the quantum function shown in the previous section
+used the :func:`expval <pennylane.expval>` measurement:
 
 .. code-block:: python
 

@@ -9,11 +9,8 @@ Quantum operations
 .. currentmodule:: pennylane.ops
 
 PennyLane supports a wide variety of quantum operations - such as gates, state preparations and measurement
-observables. These operations can be used exclusively in quantum functions. Revisiting the
-first example from this section, we find the :class:`RZ <pennylane.RZ>`,
-:class:`CNOT <pennylane.CNOT>`,
-:class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>` and the
-:class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`:
+observables. These operations can be used exclusively in quantum functions, like shown
+in the following example:
 
 .. code-block:: python
 
@@ -25,7 +22,12 @@ first example from this section, we find the :class:`RZ <pennylane.RZ>`,
         qml.RY(y, wires=1)
         return qml.expval(qml.PauliZ(1))
 
-You find a list of all quantum operations here, as well as in the :ref:`API <api_qml>`.
+This quantum function uses  the :class:`RZ <pennylane.RZ>`,
+:class:`CNOT <pennylane.CNOT>`,
+:class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>` as well as the
+:class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`.
+
+You find a list of all quantum operations supported by PennyLane here, linking to the :ref:`API <api_qml>`.
 
 .. _intro_ref_ops_qubit:
 

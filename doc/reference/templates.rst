@@ -112,7 +112,6 @@ Each trainable template has a dedicated function in the :ref:`init <api_qml_init
 randomly initialized arrays for the trainable parameters.
 
 Strongly entangling circuit
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :html:`<div class="summary-table">`
 
@@ -127,7 +126,6 @@ Strongly entangling circuit
 :html:`</div>`
 
 Random circuit
-^^^^^^^^^^^^^^
 
 :html:`<div class="summary-table">`
 
@@ -142,7 +140,6 @@ Random circuit
 :html:`</div>`
 
 Continuous-variable quantum neural network
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :html:`<div class="summary-table">`
 
@@ -157,7 +154,6 @@ Continuous-variable quantum neural network
 :html:`</div>`
 
 Interferometer
-^^^^^^^^^^^^^^
 
 :html:`<div class="summary-table">`
 
