@@ -13,11 +13,11 @@
 # limitations under the License.
 """Quantum natural gradient optimizer"""
 #pylint: disable=too-many-branches
-import autograd.numpy as np
+
+import numpy as np
 from scipy import linalg
 
 from pennylane.utils import _flatten, unflatten
-
 from .gradient_descent import GradientDescentOptimizer
 
 

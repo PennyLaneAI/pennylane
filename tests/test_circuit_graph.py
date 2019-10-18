@@ -29,13 +29,13 @@ from pennylane.circuit_graph import CircuitGraph
 def queue():
     """A fixture of a complex example of operations that depend on previous operations."""
     return [
-        qml.RX(0.43, wires=0, do_queue=False),
-        qml.RY(0.35, wires=1, do_queue=False),
-        qml.RZ(0.35, wires=2, do_queue=False),
-        qml.CNOT(wires=[0, 1], do_queue=False),
-        qml.Hadamard(wires=2, do_queue=False),
-        qml.CNOT(wires=[2, 0], do_queue=False),
-        qml.PauliX(wires=1, do_queue=False),
+        qml.RX(0.43, wires=0),
+        qml.RY(0.35, wires=1),
+        qml.RZ(0.35, wires=2),
+        qml.CNOT(wires=[0, 1]),
+        qml.Hadamard(wires=2),
+        qml.CNOT(wires=[2, 0]),
+        qml.PauliX(wires=1),
     ]
 
 
@@ -43,8 +43,8 @@ def queue():
 def obs():
     """A fixture of observables to go after the queue fixture."""
     return [
-        qml.expval(qml.PauliX(wires=0, do_queue=False)),
-        qml.expval(qml.Hermitian(np.identity(4), wires=[1, 2], do_queue=False)),
+        qml.expval(qml.PauliX(wires=0)),
+        qml.expval(qml.Hermitian(np.identity(4), wires=[1, 2])),
     ]
 
 @pytest.fixture
@@ -86,7 +86,7 @@ class TestCircuitGraph:
         """Test case where operations do not depend on each other.
         This should result in a graph with no edges."""
 
-        ops = [qml.RX(0.43, wires=0, do_queue=False), qml.RY(0.35, wires=1, do_queue=False)]
+        ops = [qml.RX(0.43, wires=0), qml.RY(0.35, wires=1)]
 
         res = CircuitGraph(ops, {}).graph
         assert len(res) == 2
@@ -140,7 +140,7 @@ class TestCircuitGraph:
         """Changing nodes in the graph."""
 
         circuit = CircuitGraph(ops, {})
-        new = qml.RX(0.1, wires=0, do_queue=False)
+        new = qml.RX(0.1, wires=0)
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
 
