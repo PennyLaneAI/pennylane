@@ -38,6 +38,9 @@ class TestHamiltonian:
         ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
         ((1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))),
         ((-0.4, 0.15), (qml.Hermitian(H_TWO_QUBITS, [0, 2]), qml.PauliZ(1))),
+        ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
+        (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0,1]), qml.PauliY(0)]),
+        ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)))
     ])
     def test_hamiltonian_valid_init(self, coeffs, ops):
         """Tests that the Hamiltonian object is created with the correct attributes"""
@@ -50,7 +53,7 @@ class TestHamiltonian:
         ((3.5,), ()),
         ((1.2, -0.4), ()),
         ((0.5, 1.2), (qml.PauliZ(0),)),
-        ((1.0,), (qml.PauliZ(0), qml.PauliY(0)))
+        ((1.0,), (qml.PauliZ(0), qml.PauliY(0))),
     ])
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
         """Tests that an exception is raised when giving an invalid combination of coefficients and ops"""
@@ -79,7 +82,7 @@ class TestVQE:
     #def test_vqe_qnodes_valid_init(self, ansatz, observables):
     #    """Tests that a collection of QNodes is properly created"""
     #    qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
-    #
+
     #    assert len(qnodes) == len(observables)
     #    assert all(isinstance(qml.QNode, q) for q in qnodes)
 
