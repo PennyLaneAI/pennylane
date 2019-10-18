@@ -18,6 +18,7 @@ computations using PennyLane.
 import numpy as np
 from pennylane.ops import Hermitian
 
+
 class Hamiltonian:
     """
     Lightweight class for representing Hamiltonians for Variational Quantum Eigensolver problems.
@@ -69,3 +70,15 @@ class Hamiltonian:
             (coeffs, ops), where coeffs/ops is a tuple of floats/operations of length N
         """
         return self.coeffs, self.ops
+
+
+def qnodes(ansatz, observables):
+    pass
+
+
+def aggregate(coeffs, qnodes, params):
+    pass
+
+
+def cost(params, ansatz, hamiltonian):
+    pass

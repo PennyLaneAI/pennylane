@@ -122,9 +122,9 @@ class TestVQE:
     """Test the core functionality of the VQE module"""
     @pytest.mark.parametrize("ansatz", ANSAETZE)
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_vqe_qnodes_valid_init(self, ansatz, observables):
+    def test_qnodes_valid_init(self, ansatz, observables):
         """Tests that a collection of QNodes is properly created"""
-        qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
+        qnodes = qml.vqe.qnodes(ansatz, observables)
 
         assert len(qnodes) == len(observables)
         assert all(isinstance(qml.QNode, q) for q in qnodes)
@@ -137,9 +137,9 @@ class TestVQE:
         (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
     ])
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_vqe_qnodes_evaluate(self, ansatz, observables, params):
-        """Tests that the qnodes returned by vqe_qnodes evaluate properly"""
-        qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
+    def test_qnodes_evaluate(self, ansatz, observables, params):
+        """Tests that the qnodes returned by qnodes evaluate properly"""
+        qnodes = qml.vqe.qnodes(ansatz, observables)
         for idx, q in qnodes:
             val = q(*params)
             assert type(val) == float
@@ -152,27 +152,27 @@ class TestVQE:
         ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), 0.5 * 1.0 + 1.2 * 1.0),
         ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), 0.5 * 1.0 + 1.2 * 1.0)
     ])
-    def test_vqe_aggregate_expvals(self, coeffs, observables, expected):
-        """Tests that the vqe_aggregate function returns correct expectation values"""
-        qnodes = qml.vqe.vqe_qnodes(empty_ansatz, observables)
+    def test_aggregate_expvals(self, coeffs, observables, expected):
+        """Tests that the aggregate function returns correct expectation values"""
+        qnodes = qml.vqe.qnodes(empty_ansatz, observables)
         for q in qnodes:
             val = q(*empty_params)
             assert val == expected
 
     @pytest.mark.parametrize("ansatz", ANSAETZE)
     @pytest.mark.parametrize("observables", JUNK_INPUTS)
-    def test_vqe_qnodes_no_observables(self, ansatz, observables):
-        """Tests that an exception is raised when no observables are supplied to vqe_qnodes"""
+    def test_qnodes_no_observables(self, ansatz, observables):
+        """Tests that an exception is raised when no observables are supplied to qnodes"""
         with pytest.raises(ValueError, match="no observables were provided"):
             observables = []
-            qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
+            qnodes = qml.vqe.qnodes(ansatz, observables)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_vqe_qnodes_no_ansatz(self, ansatz, observables):
-        """Tests that an exception is raised when no valid ansatz is supplied to vqe_qnodes"""
+    def test_qnodes_no_ansatz(self, ansatz, observables):
+        """Tests that an exception is raised when no valid ansatz is supplied to qnodes"""
         with pytest.raises(ValueError, match="no valid ansatz was provided"):
-            qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
+            qnodes = qml.vqe.qnodes(ansatz, observables)
 
     @pytest.mark.parametrize("ansatz, params", [
         (amp_embed, EMBED_PARAMS),
@@ -180,10 +180,10 @@ class TestVQE:
         (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
     ])
     @pytest.mark.parametrize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
-    def test_vqe_cost_evaluate(self, params, ansatz, coeffs, observables):
-        """Tests that the vqe_cost function evaluates properly"""
+    def test_cost_evaluate(self, params, ansatz, coeffs, observables):
+        """Tests that the cost function evaluates properly"""
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        expval = qml.vqe.vqe_cost(*params, ansatz, hamiltonian)
+        expval = qml.vqe.cost(params, ansatz, hamiltonian)
         assert type(expval) == float
         assert np.shape(expval) == () # expval should be scalar
 
@@ -195,21 +195,21 @@ class TestVQE:
         ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), 0.5 * 1.0 + 1.2 * 1.0),
         ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), 0.5 * 1.0 + 1.2 * 1.0)
     ])
-    def test_vqe_cost_expvals(self, coeffs, observables, expected):
-        """Tests that the vqe_cost function gives the correct expectation value"""
+    def test_cost_expvals(self, coeffs, observables, expected):
+        """Tests that the cost function gives the correct expectation value"""
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
+        cost = qml.vqe.cost(empty_params, empty_ansatz, hamiltonian)
         assert cost == expected
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
-    def test_vqe_cost_invalid_ansatz(self, ansatz):
-        """Tests that the vqe_cost function raises an exception if the ansatz is not valid"""
+    def test_cost_invalid_ansatz(self, ansatz):
+        """Tests that the cost function raises an exception if the ansatz is not valid"""
         hamiltonian = qml.vqe.Hamiltonian((1.0,), (qml.PauliZ(0)))
         with pytest.raises(ValueError, match="no valid ansatz was provided"):
-            cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
+            cost = qml.vqe.cost(empty_params, empty_ansatz, hamiltonian)
 
     @pytest.mark.parametrize("hamiltonian", JUNK_INPUTS)
-    def test_vqe_cost_invalid_ansatz(self, hamiltonian):
-        """Tests that the vqe_cost function raises an exception if the Hamiltonian is not valid"""
+    def test_cost_invalid_ansatz(self, hamiltonian):
+        """Tests that the cost function raises an exception if the Hamiltonian is not valid"""
         with pytest.raises(ValueError, match="the Hamiltonian is invalid"):
-            cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
+            cost = qml.vqe.cost(empty_params, empty_ansatz, hamiltonian)
