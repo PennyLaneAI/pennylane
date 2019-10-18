@@ -96,7 +96,7 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from .qnode import QNode, QuantumFunctionError
+from .qnode import QNode
 from .utils import _flatten, _unflatten
 from .variable import Variable
 
@@ -219,8 +219,9 @@ class Operation(abc.ABC):
             is interpreted as wires.
         do_queue (bool): Indicates whether the operation should be
             immediately pushed into a :class:`QNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
-            outside of a QNode context.
+            The circuit queue is determined by the presence of an
+            applicable `QNode._current_context`. If no context is
+            available, this argument is ignored.
     """
     _grad_recipe = None
 
@@ -309,6 +310,8 @@ class Operation(abc.ABC):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
         self.queue_idx = None  #: int, None: index of the Operation in the circuit queue, or None if not in a queue
+        if QNode._current_context is None:
+            do_queue = False
 
         if self.num_wires == All:
             if do_queue:
@@ -454,8 +457,6 @@ class Operation(abc.ABC):
 
     def queue(self):
         """Append the operation to a QNode queue."""
-        if QNode._current_context is None:
-            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         QNode._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
@@ -491,9 +492,11 @@ class Observable(Operation):
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operation should be immediately
-            pushed into a :class:`QNode` observable queue. This flag is useful if
-            there is some reason to call an observable outside of a QNode context.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`QNode` observable queue.
+            The observable queue is determined by the presence of an
+            applicable `QNode._current_context`. If no context is
+            available, this argument is ignored.
     """
     # pylint: disable=abstract-method
     return_type = None
