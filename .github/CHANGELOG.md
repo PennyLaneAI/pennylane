@@ -49,7 +49,7 @@
 
 * The `do_queue` argument for operations now only takes effect
   within QNodes. Outside of QNodes, operations can now be instantiated
-  without error.
+  without needing to specify `do_queue`.
   [#359](https://github.com/XanaduAI/pennylane/pull/359)
 
 ### Documentation
