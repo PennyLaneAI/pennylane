@@ -12,31 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utilities
-=========
-
-**Module name:** :mod:`pennylane.utils`
-
-.. currentmodule:: pennylane.utils
-
-This module contains utilities and auxiliary functions, which are shared
+This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
-
-.. raw:: html
-
-    <h3>Summary</h3>
-
-.. autosummary::
-    _flatten
-    _unflatten
-    unflatten
-    _inv_dict
-    _get_default_args
-    expand
-
-.. raw:: html
-
-    <h3>Code details</h3>
 """
 from collections.abc import Iterable
 import numbers

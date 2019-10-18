@@ -12,66 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-.. _qubit_ops:
-
-Qubit quantum operations
-========================
-
-.. currentmodule:: pennylane.ops.qubit
-
-**Module name:** :mod:`pennylane.ops.qubit`
-
-This section contains the available built-in discrete-variable
+This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
-
-Gates
------
-
-.. autosummary::
-    Hadamard
-    PauliX
-    PauliY
-    PauliZ
-    S
-    T
-    CNOT
-    CZ
-    SWAP
-    CSWAP
-    RX
-    RY
-    RZ
-    PhaseShift
-    Rot
-    CRX
-    CRY
-    CRZ
-    CRot
-    QubitUnitary
-
-
-
-State preparation
------------------
-
-.. autosummary::
-    BasisState
-    QubitStateVector
-
-
-Observables
------------
-
-.. autosummary::
-    Hadamard
-    PauliX
-    PauliY
-    PauliZ
-    Hermitian
-
-
-Code details
-~~~~~~~~~~~~
 """
 import numpy as np
 
