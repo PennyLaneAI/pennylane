@@ -27,40 +27,56 @@ The top-level module contains the following sub-modules:
 About
 -----
 
-.. currentmodule:: pennylane
 .. autosummary::
+    :toctree: api
+
     about
     version
+
+CircuitGraph
+------------
+
+.. autosummary::
+    :toctree: api
+
+    CircuitGraph
 
 Configuration
 -------------
 
-.. currentmodule:: pennylane.configuration
 .. autosummary::
+    :toctree: api/configuration
+
     Configuration
 
-Device
-------
+Devices
+-------
 
-.. currentmodule:: pennylane
 .. autosummary::
+    :toctree: api/_device
+
     Device
+
+.. autosummary::
+    :toctree: api
+
     device
 
 Gradients
 ---------
 
-.. currentmodule:: pennylane
 .. autosummary::
+    :toctree: api
+
     grad
     jacobian
-
 
 Measurements
 ------------
 
-.. currentmodule:: pennylane.measure
 .. autosummary::
+    :toctree: api
+
     expval
     sample
     var
@@ -70,18 +86,20 @@ Operations base class
 
 .. currentmodule:: pennylane.operation
 .. autosummary::
+    :toctree: api
+
     CVObservable
     CVOperation
     Observable
     Operation
 
-
-
 Operations - CV
 ---------------
 
-.. currentmodule:: pennylane.ops.cv
+.. currentmodule:: pennylane
 .. autosummary::
+    :toctree: api
+
     Beamsplitter
     CatState
     CoherentState
@@ -110,13 +128,12 @@ Operations - CV
     TwoModeSqueezing
     X
 
-
-
 Operations - Qubits
 -------------------
 
-.. currentmodule:: pennylane.ops.qubit
 .. autosummary::
+    :toctree: api
+
     BasisState
     CNOT
     CRot
@@ -144,8 +161,9 @@ Operations - Qubits
 Operations - Shared
 -------------------
 
-.. currentmodule:: pennylane.ops
 .. autosummary::
+    :toctree: api
+
     Identity
 
 Optimizers
@@ -153,8 +171,9 @@ Optimizers
 
 .. _api_qml_opt:
 
-.. currentmodule:: pennylane.optimize
 .. autosummary::
+    :toctree: api
+
     AdagradOptimizer
     AdamOptimizer
     GradientDescentOptimizer
@@ -163,92 +182,15 @@ Optimizers
     QNGOptimizer
     RMSPropOptimizer
 
-
 QNode
 -----
 
-.. currentmodule:: pennylane
 .. autosummary::
-    QNode
+    :toctree: api/decorator
+
     qnode
 
+.. autosummary::
+    :toctree: api
 
-.. toctree::
-    :hidden:
-
-    pennylane.about.rst
-    pennylane.configuration.Configuration.rst
-    pennylane.decorator.qnode.rst
-    pennylane._device.Device.rst
-    pennylane.device.rst
-    pennylane.grad.rst
-    pennylane.jacobian.rst
-    pennylane.measure.expval.rst
-    pennylane.measure.sample.rst
-    pennylane.measure.var.rst
-    pennylane.operation.CVObservable.rst
-    pennylane.operation.CVOperation.rst
-    pennylane.operation.Observable.rst
-    pennylane.operation.Operation.rst
-    pennylane.ops.cv.CatState.rst
-    pennylane.ops.cv.CoherentState.rst
-    pennylane.ops.cv.ControlledAddition.rst
-    pennylane.ops.cv.ControlledPhase.rst
-    pennylane.ops.cv.CrossKerr.rst
-    pennylane.ops.cv.CubicPhase.rst
-    pennylane.ops.cv.DisplacedSqueezedState.rst
-    pennylane.ops.cv.Displacement.rst
-    pennylane.ops.cv.FockDensityMatrix.rst
-    pennylane.ops.cv.FockStateProjector.rst
-    pennylane.ops.cv.FockState.rst
-    pennylane.ops.cv.FockStateVector.rst
-    pennylane.ops.cv.GaussianState.rst
-    pennylane.ops.cv.Interferometer.rst
-    pennylane.ops.cv.Kerr.rst
-    pennylane.ops.cv.NumberOperator.rst
-    pennylane.ops.cv.PolyXP.rst
-    pennylane.ops.cv.P.rst
-    pennylane.ops.cv.QuadOperator.rst
-    pennylane.ops.cv.QuadraticPhase.rst
-    pennylane.ops.cv.Rotation.rst
-    pennylane.ops.cv.SqueezedState.rst
-    pennylane.ops.cv.Squeezing.rst
-    pennylane.ops.cv.ThermalState.rst
-    pennylane.ops.cv.TwoModeSqueezing.rst
-    pennylane.ops.cv.X.rst
-    pennylane.ops.Identity.rst
-    pennylane.ops.qubit.BasisState.rst
-    pennylane.ops.qubit.CNOT.rst
-    pennylane.ops.qubit.CRot.rst
-    pennylane.ops.qubit.CRX.rst
-    pennylane.ops.qubit.CRY.rst
-    pennylane.ops.qubit.CRZ.rst
-    pennylane.ops.qubit.CSWAP.rst
-    pennylane.ops.qubit.CZ.rst
-    pennylane.ops.qubit.Hadamard.rst
-    pennylane.ops.qubit.Hermitian.rst
-    pennylane.ops.qubit.PauliX.rst
-    pennylane.ops.qubit.PauliY.rst
-    pennylane.ops.qubit.PauliZ.rst
-    pennylane.ops.qubit.PhaseShift.rst
-    pennylane.ops.qubit.QubitStateVector.rst
-    pennylane.ops.qubit.QubitUnitary.rst
-    pennylane.ops.qubit.Rot.rst
-    pennylane.ops.qubit.RX.rst
-    pennylane.ops.qubit.RY.rst
-    pennylane.ops.qubit.RZ.rst
-    pennylane.ops.qubit.S.rst
-    pennylane.ops.qubit.SWAP.rst
-    pennylane.ops.qubit.T.rst
-    pennylane.optimize.AdagradOptimizer.rst
-    pennylane.optimize.AdamOptimizer.rst
-    pennylane.optimize.GradientDescentOptimizer.rst
-    pennylane.optimize.MomentumOptimizer.rst
-    pennylane.optimize.NesterovMomentumOptimizer.rst
-    pennylane.optimize.QNGOptimizer.rst
-    pennylane.optimize.RMSPropOptimizer.rst
-    pennylane.qnode.QNode.rst
-    pennylane.version.rst
-
-
-
+    QNode

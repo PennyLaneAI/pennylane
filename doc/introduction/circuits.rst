@@ -15,9 +15,9 @@ Quantum Circuits
 
 
 In PennyLane, variational quantum circuits are represented as *quantum node* objects. A quantum node
-is a combination of a :ref:`quantum function <intro_vcirc_qfunc>` that composes the circuit,
-and a :ref:`device <intro_vcirc_device>` that runs the computation. One can conveniently create quantum nodes using
-the quantum node :ref:`decorator <intro_vcirc_decorator>`.
+is a combination of a quantum function that composes the circuit,
+and a device that runs the computation. One can conveniently create quantum nodes using
+the quantum node decorator.
 
 Each classical :ref:`interface <intro_interfaces>` uses a different version of a quantum node,
 and we will introduce the standard QNode to use with the NumPy interface here.
@@ -78,9 +78,9 @@ constraints:
 Defining a device
 -----------------
 
-To run - and later optimize - a quantum circuit, one needs to first specify a *computational device*.
+To run --- and later optimize - a quantum circuit, one needs to first specify a *computational device*.
 
-The device is an instance of the :class:`~_device.Device`
+The device is an instance of the :class:`~.pennylane.Device`
 class, and can represent either a simulator or hardware device. They can be
 instantiated using the :func:`device <pennylane.device>` loader.
 
@@ -89,7 +89,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
     dev = qml.device('default.qubit', wires=2)
 
 PennyLane offers some basic devices such as the ``'default.qubit'`` simulator; additional devices can be installed
-as plugins (see :ref:`plugins <plugins>` for more details). Note that the choice of a device significantly
+as plugins (see `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the choice of a device significantly
 determines the speed of your computation.
 
 .. _intro_vcirc_qnode:
@@ -98,15 +98,15 @@ Creating a quantum node
 -----------------------
 
 Together, a quantum function and a device are used to create a *quantum node* or
-:class:`QNode <pennylane.qnode.QNode>` object, which wraps the quantum function and binds it to the device.
+:class:`~.pennylane.QNode` object, which wraps the quantum function and binds it to the device.
 
-A `QNode` can be explicitly created as follows:
+A QNode can be explicitly created as follows:
 
 .. code-block:: python
 
     qnode = qml.QNode(my_quantum_function, dev)
 
-The `QNode` can be used to compute the result of a quantum circuit as if it was a standard Python
+The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
 
 >>> qnode(np.pi/4, 0.7)
@@ -118,13 +118,13 @@ function. It takes the same arguments as the original quantum function:
 The QNode decorator
 -------------------
 
-A more convenient - and in fact the recommended - way for creating `QNodes` is the provided
+A more convenient --- and in fact the recommended --- way for creating QNodes is the provided
 quantum node decorator. This decorator converts a quantum function containing PennyLane quantum
-operations to a :class:`QNode <pennylane.qnode.QNode>` that will run on a quantum device.
+operations to a :class:`~.pennylane.QNode` that will run on a quantum device.
 
 .. note::
     The decorator completely replaces the Python-based quantum function with
-    a :mod:`QNode <pennylane.qnode.QNode>` of the same name - as such, the original
+    a :class:`~.pennylane.QNode` of the same name - as such, the original
     function is no longer accessible (but is accessible via the ``func`` attribute).
 
 For example:
@@ -141,8 +141,3 @@ For example:
         return qml.expval(qml.PauliZ(0))
 
     result = qfunc(0.543)
-
-
-
-
-

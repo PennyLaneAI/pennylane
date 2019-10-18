@@ -48,10 +48,7 @@ simplifies the process of programming quantum circuits with trainable parameters
 2. :ref:`Interfaces <intro_interfaces>` introduces you to how PennyLane is used
 with the different classical interfaces to optimize quantum circuits or hybrid computations.
 
-3. :ref:`Plugins <plugins>` gives you an overview of PennyLane's plugin ecosystem,
-and teaches you how to write a new plugin for a quantum device.
-
-4. :ref:`Quick reference <intro_reference>` lists the optimizers available in the NumPy interface, some
+3. :ref:`Quick reference <intro_reference>` lists the optimizers available in the NumPy interface, some
 of which are specially designed for quantum optimization.
 
 

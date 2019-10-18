@@ -13,19 +13,25 @@ how to program :ref:`variational circuits <intro_vcircuits>`, is NumPy.
 
 Currently, there is support for the following three interfaces:
 
-:html:`<br>`
-
-.. image:: ../_static/numpy.jpeg
+.. |numpy| image:: ../_static/numpy.jpeg
     :height: 80px
     :target: interfaces/numpy.html
 
-.. image:: ../_static/pytorch.png
+.. |torch| image:: ../_static/pytorch.png
     :height: 80px
     :target: interfaces/torch.html
 
-.. image:: ../_static/tensorflow.png
+.. |tf| image:: ../_static/tensorflow.png
     :height: 80px
     :target: interfaces/tf.html
+
+
+.. rst-class:: gallery-table
+
++-----------+-----------+---------+
+| |numpy|   | |torch|   |   |tf|  |
++-----------+-----------+---------+
+
 
 
 .. toctree::
@@ -34,7 +40,4 @@ Currently, there is support for the following three interfaces:
     interfaces/numpy
     interfaces/torch
     interfaces/tf
-
-
-
 
