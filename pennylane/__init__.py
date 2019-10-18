@@ -15,7 +15,6 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-import os
 from pkg_resources import iter_entry_points
 
 from autograd import numpy
@@ -29,6 +28,7 @@ import pennylane.operation
 import pennylane.init
 import pennylane.templates.layers
 import pennylane.templates.embeddings
+import pennylane.vqe
 from pennylane.about import about
 
 

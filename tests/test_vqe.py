@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.vqe` submodule.
 """
+import pytest
 import pennylane as qml
 import numpy as np
 
@@ -23,64 +24,64 @@ H_TWO_QUBITS = np.array([[0.5, 1.0j, 0.0, -3j],
                          [-1.0j, -1.1, 0.0, -0.1],
                          [0.0, 0.0, -0.9, 12.0],
                          [3j, -0.1, 12.0, 0.0]])
-H_NONHERMITIAN = np.array([1.0, 0.5j],
-                           [0.5j, -1.3])
+H_NONHERMITIAN = np.array([[1.0, 0.5j],
+                           [0.5j, -1.3]])
+
 
 class TestHamiltonian:
     """Test the Hamiltonian class"""
 
-    @pytest.mark.parametrize("coeffs,ops", [
+    @pytest.mark.parametrize("coeffs, ops", [
+        ((1.0,), (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)),
+        ((-0.8,), (qml.PauliZ(0),)),
+        ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
+        ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
+        ((1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))),
+        ((-0.4, 0.15), (qml.Hermitian(H_TWO_QUBITS, [0, 2]), qml.PauliZ(1))),
+    ])
+    def test_hamiltonian_valid_init(self, coeffs, ops):
+        """Tests that the Hamiltonian object is created with the correct attributes"""
+        H = qml.vqe.Hamiltonian(coeffs, ops)
+        assert H.terms == (coeffs, ops)
+
+    @pytest.mark.parametrize("coeffs, ops", [
         ((), (qml.PauliZ(0),)),
         ((), (qml.PauliZ(0), qml.PauliY(1))),
         ((3.5,), ()),
         ((1.2, -0.4), ()),
         ((0.5, 1.2), (qml.PauliZ(0),)),
-        (1.0,), (qml.PauliZ(0), qml.PauliY(0))
+        ((1.0,), (qml.PauliZ(0), qml.PauliY(0)))
     ])
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
         """Tests that an exception is raised when giving an invalid combination of coefficients and ops"""
-        with pytest.raises(ValueError, match="could not create a valid Hamiltonian"):
+        with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
             H = qml.vqe.Hamiltonian(coeffs, ops)
 
-
-    @pytest.mark.parametrize("coeffs,ops", [
+    @pytest.mark.parametrize("coeffs, ops", [
         ((1.0,), (qml.Hermitian(H_NONHERMITIAN, 0),)),
         ((1j,), (qml.Hermitian(H_ONE_QUBIT, 0),)),
         ((0.5j, -1.2), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 1)))
     ])
     def test_nonhermitian_hamiltonian_exception(self, coeffs, ops):
         """Tests that an exception is raised when attempting to create a non-hermitian Hamiltonian"""
-        with pytest.raises(ValueError, match="Hamiltonian must be Hermitian"):
+        with pytest.raises(ValueError, match=r"((coefficients are not real-valued)|"
+                                             r"(one or more ops are not Hermitian))"):
             H = qml.vqe.Hamiltonian(coeffs, ops)
 
-
-    @pytest.mark.parametrize("coeffs,ops", [
-        ((1.0,), (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)),
-        ((-0.8,), (qml.PauliZ(0),)),
-        ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
-        ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
-        ((1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))),
-        ((-0.4, -0.4, 0.333), (qml.Hermitian(H_TWO_QUBITS, [0, 2]), qml.PauliZ(1))),
-    ])
-    def test_hamiltonian_valid_init(self, coeffs, ops):
-        """Tests that the Hamiltonian object is created with the correct attributes"""
-        H = qml.vqe.Hamiltonian(coeffs, ops)
-
-        assert H.terms == (coeffs, ops)
 
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
-    @pytest.mark.parametrize("ansatz,observables", [
-        ((TEMPLATE_ANSATZ,), (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1))),
-    ])
-    def test_vqe_qnodes_valid_init(self, ansatz, observables):
-        """Tests that a collection of QNodes is properly created"""
-        qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
-
-        assert len(qnodes) == len(observables)
-        assert all(isinstance(qml.QNode, q) for q in qnodes)
+    #@pytest.mark.parametrize("ansatz, observables", [
+    #    ((TEMPLATE_ANSATZ,), (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1))),
+    #])
+    #def test_vqe_qnodes_valid_init(self, ansatz, observables):
+    #    """Tests that a collection of QNodes is properly created"""
+    #    qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
+    #
+    #    assert len(qnodes) == len(observables)
+    #    assert all(isinstance(qml.QNode, q) for q in qnodes)
 
 
 
