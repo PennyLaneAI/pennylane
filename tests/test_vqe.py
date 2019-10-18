@@ -36,8 +36,7 @@ COEFFS = [(0.5, 1.2, -0.7),
           (0.33,)]
 OBSERVABLES = [(qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
                (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
-               (qml.Hermitian(H_TWO_QUBITS, [0,1]),)
-    ]
+               (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)]
 JUNK_INPUTS = [None, [], tuple(), lambda x: x, 5.0]
 
 def custom_fixed_ansatz(_unused_params):
@@ -57,22 +56,28 @@ def custom_var_ansatz(params):
         qml.RX(-p, 1)
     qml.CNOT([0, 1])
 
+
 def amp_embed(params):
-    AmplitudeEmbedding(params, wires=[0,1,2])
+    AmplitudeEmbedding(params, wires=[0, 1, 2])
+
 
 def strong_ent_layer(params):
-    StronglyEntanglingLayer(params, wires=[0,1,2])
+    StronglyEntanglingLayer(params, wires=[0, 1, 2])
+
 
 def amp_embed_and_strong_ent_layer(embed_params, layer_params):
-    amp_embed(embed_params, wires=[0,1,2])
-    strong_ent_layer(layer_params, wires=[0,1,2])
+    amp_embed(embed_params, wires=[0, 1, 2])
+    strong_ent_layer(layer_params, wires=[0, 1, 2])
+
 
 empty_ansatz = lambda x: None
 
-ANSAETZE = [empty_ansatz, custom_fixed_ansatz, custom_var_ansatz, amp_embed, strong_ent_layer, amp_embed_and_strong_ent_layer]
+ANSAETZE = [empty_ansatz, custom_fixed_ansatz, custom_var_ansatz,
+            amp_embed, strong_ent_layer, amp_embed_and_strong_ent_layer]
 empty_params = []
 EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
 LAYER_PARAMS = strong_ent_layer_uniform(n_wires=3)
+
 
 class TestHamiltonian:
     """Test the Hamiltonian class"""
@@ -165,14 +170,14 @@ class TestVQE:
         """Tests that an exception is raised when no observables are supplied to qnodes"""
         with pytest.raises(ValueError, match="no observables were provided"):
             observables = []
-            qnodes = qml.vqe.qnodes(ansatz, observables)
+            qnodes = qml.vqe.qnodes(ansatz, observables, device=mock_device)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_qnodes_no_ansatz(self, ansatz, observables):
         """Tests that an exception is raised when no valid ansatz is supplied to qnodes"""
         with pytest.raises(ValueError, match="no valid ansatz was provided"):
-            qnodes = qml.vqe.qnodes(ansatz, observables)
+            qnodes = qml.vqe.qnodes(ansatz, observables, device=mock_device)
 
     @pytest.mark.parametrize("coeffs, observables, expected", [
         ((-0.6,), (qml.PauliZ(0),), -0.6 * 1.0),

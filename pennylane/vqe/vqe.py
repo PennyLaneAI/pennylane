@@ -17,6 +17,20 @@ computations using PennyLane.
 """
 import numpy as np
 from pennylane.ops import Hermitian
+from pennylane import expval
+
+sum_fn = {"numpy", np.sum}
+try:
+    from tensorflow.math import reduce_sum
+    sum_fn["tf"] = reduce_sum
+except:
+    pass
+
+try:
+    from torch import sum
+    sum_fn["torch"] = sum
+except:
+    pass
 
 
 class Hamiltonian:
@@ -26,7 +40,6 @@ class Hamiltonian:
     Hamiltonians can be expressed as linear combinations of observables, e.g.,
     :math:`\sum_{k=0}^{N-1}` c_k O_k`.
     This class keeps track of the terms (coefficients and observables) separately.
-
 
     Args:
         coeffs (Iterable[float]): coefficients of the Hamiltonian expression
@@ -65,20 +78,85 @@ class Hamiltonian:
         """
         The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1}` c_k O_k`
 
-
         Returns:
-            (coeffs, ops), where coeffs/ops is a tuple of floats/operations of length N
+            (tuple, tuple): tuples of coefficients and operations, each of length N
         """
         return self.coeffs, self.ops
 
 
-def qnodes(ansatz, observables):
-    pass
+def qnodes(ansatz, observables, device, interface='numpy'):
+    """
+    Create a set of :class:`~.QNode`s whose circuits are based on ``ansatz`` and ``observables``.
+
+    One :class:`~.QNode` is created for every observable ``obs`` in ``observables``. The QNode has the following
+    circuit structure:
+
+    .. code-block:: python
+        @qml.qnode(device)
+        def circuit(params):
+            ansatz
+            return qml.expval(obs)
+
+    Args:
+        ansatz (Iterable[:class:`~.Observable`]): the ansatz for the circuit before the final measurement step
+        observables (Iterable[:class:`~.Observable`]): observables to measure during the final step of each circuit
+        device (:class:`~.Device`): device where the :class:`~.QNode`s should be executed
+        interface (str): which interface to use for the :class:`~.QNode`s
+
+    Returns:
+        tuple(:class:`~.QNode`): callable functions which evaluate each observable
+    """
+    # TODO: can be more clever/efficient here for observables which are jointly measurable
+    qnodes = []
+    for obs in observables:
+        @qml.qnode(device=device, interface=interface)
+        def circuit(params):
+            ansatz(params)
+            return expval(obs)
+        qnodes += circuit
+    return qnodes
 
 
-def aggregate(coeffs, qnodes, params):
-    pass
+def aggregate(coeffs, qnodes, params, interface="numpy"):
+    """
+    Aggregate a collection of coefficients and expectation values into a single scalar.
+
+    Suppose that the kth :class:`~.QNode` in ``qnodes`` returns the expectation value :math:`\langle O_k \rangle`, and
+    that the kth element of ``coeffs`` is :math:`c_k`.
+    Then this function returns the sum :math:`\sum_{k} c_k O_k`.
+
+    Args:
+        coeffs (Iterable[float]): the coefficients of each summand
+        qnodes (Iterable[:class:`~.QNode`]): callable :class:`~.QNode` functions which return an expectation value
+        params (Iterable[float, tf.Tensor, torch.Tensor]): parameter values to be used as arguments to each
+            individual :class:`~.QNode`
+        interface (str): which interface to use for the :class:`~.QNode`s
+
+    Returns:
+        float: the result of evaluating each :class:`~.QNode` and summing with the ``coeffs``
+    """
+    expvals = [circuit(params) for circuit in qnodes]
+    return sum_fn[interface](coeffs * expvals)
 
 
-def cost(params, ansatz, hamiltonian):
-    pass
+def cost(params, ansatz, hamiltonian, device, interface="numpy"):
+    """
+    Evaluate the VQE cost function, i.e., the expectation value of a Hamiltonian.
+
+    This function evaluates the expectation value of ``hamiltonian`` for the circuit specified by ``ansatz``
+    with circuit parameters ``params``.
+
+    Args:
+        params (Iterable[float, tf.Tensor, torch.Tensor]): the parameters of the circuit to use when evaluating the
+            expectation value
+        ansatz (function or :class:`~.template`): Callable function which contains a series of PennyLane operations,
+            but no measurements.
+        hamiltonian (:class:`~.Hamiltonian`): the Hamiltonian whose expectation value is to be evaluated
+        interface (str): which interface to use for the underlying circuits
+
+    Returns:
+        float: the result of evaluating each :class:`~.QNode` and summing with the ``coeffs``
+    """
+    coeffs, observables = hamiltonian.terms
+    qnodes = qnodes(ansatz, observables, device, interface)
+    return aggregate(coeffs, qnodes, params, interface)
