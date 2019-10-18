@@ -67,7 +67,10 @@ def amp_embed_and_strong_ent_layer(embed_params, layer_params):
     amp_embed(embed_params, wires=[0,1,2])
     strong_ent_layer(layer_params, wires=[0,1,2])
 
-ANSAETZE = [custom_fixed_ansatz, custom_var_ansatz, amp_embed, strong_ent_layer, amp_embed_and_strong_ent_layer]
+empty_ansatz = lambda x: None
+
+ANSAETZE = [empty_ansatz, custom_fixed_ansatz, custom_var_ansatz, amp_embed, strong_ent_layer, amp_embed_and_strong_ent_layer]
+empty_params = []
 EMBED_PARAMS = np.cumsum(np.arange(2 ** 3))
 EMBED_PARAMS /= np.linalg.norm(EMBED_PARAMS)
 LAYER_PARAMS = strong_ent_layer_uniform(n_wires=3)
@@ -152,11 +155,9 @@ class TestVQE:
     ])
     def test_vqe_aggregate_expvals(self, coeffs, observables, expected):
         """Tests that the vqe_aggregate function returns correct expectation values"""
-        ansatz = lambda x: None
-        params = np.zeros(1)
-        qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
+        qnodes = qml.vqe.vqe_qnodes(empty_ansatz, observables)
         for q in qnodes:
-            val = q(*params)
+            val = q(*empty_params)
             assert val == expected
 
     @pytest.mark.parametrize("ansatz", ANSAETZE)
@@ -198,20 +199,18 @@ class TestVQE:
     def test_vqe_cost_expvals(self, coeffs, observables, expected):
         """Tests that the vqe_cost function gives the correct expectation value"""
         hamiltonian = qml.vqe.vqe_hamiltonian(coeffs, observables)
-        params = []
-        ansatz = lambda x: None
-        cost = qml.vqe.vqe_cost(*params, ansatz, hamiltonian)
+        cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
         assert cost == expected
 
-    def test_vqe_cost_invalid_ansatz(self, hamiltonian, ansatz, params):
+    @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
+    def test_vqe_cost_invalid_ansatz(self, ansatz):
         """Tests that the vqe_cost function raises an exception if the ansatz is not valid"""
-        pass
+        hamiltonian = qml.vqe.Hamiltonian((1.0,), (qml.PauliZ(0)))
+        with pytest.raises(ValueError, "no valid ansatz was provided"):
+            cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
 
-
-        # wires are not consistent between hamiltonian and ansatz
-
-        # params do not fit with ansatz
-
-        # not a valid hamiltonian
-
-        # not a valid ansatz
+    @pytest.mark.parametrize("hamiltonian", JUNK_INPUTS)
+    def test_vqe_cost_invalid_ansatz(self, hamiltonian):
+        """Tests that the vqe_cost function raises an exception if the Hamiltonian is not valid"""
+        with pytest.raises(ValueError, "the Hamiltonian is invalid"):
+            cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
