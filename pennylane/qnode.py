@@ -22,7 +22,7 @@ import copy
 import itertools
 import numbers
 
-import autograd.numpy as np
+import numpy as np
 import autograd.extend as ae
 import autograd.builtins
 

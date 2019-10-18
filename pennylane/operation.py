@@ -94,7 +94,7 @@ from enum import Enum, IntEnum
 import numbers
 from collections.abc import Sequence
 
-import autograd.numpy as np
+import numpy as np
 
 from .qnode import QNode, QuantumFunctionError
 from .utils import _flatten, _unflatten
