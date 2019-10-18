@@ -38,7 +38,7 @@ OBSERVABLES = [(qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
                (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
                (qml.Hermitian(H_TWO_QUBITS, [0,1]),)
     ]
-JUNK_INPUTS = [None, [], (,), lambda x: x, 5.0]
+JUNK_INPUTS = [None, [], tuple(), lambda x: x, 5.0]
 
 def custom_fixed_ansatz(_unused_params):
     qml.RX(0.5, 0)
@@ -71,8 +71,7 @@ empty_ansatz = lambda x: None
 
 ANSAETZE = [empty_ansatz, custom_fixed_ansatz, custom_var_ansatz, amp_embed, strong_ent_layer, amp_embed_and_strong_ent_layer]
 empty_params = []
-EMBED_PARAMS = np.cumsum(np.arange(2 ** 3))
-EMBED_PARAMS /= np.linalg.norm(EMBED_PARAMS)
+EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
 LAYER_PARAMS = strong_ent_layer_uniform(n_wires=3)
 
 class TestHamiltonian:
@@ -164,7 +163,7 @@ class TestVQE:
     @pytest.mark.parametrize("observables", JUNK_INPUTS)
     def test_vqe_qnodes_no_observables(self, ansatz, observables):
         """Tests that an exception is raised when no observables are supplied to vqe_qnodes"""
-        with pytest.raises(ValueError, "no observables were provided"):
+        with pytest.raises(ValueError, match="no observables were provided"):
             observables = []
             qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
 
@@ -172,7 +171,7 @@ class TestVQE:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_vqe_qnodes_no_ansatz(self, ansatz, observables):
         """Tests that an exception is raised when no valid ansatz is supplied to vqe_qnodes"""
-        with pytest.raises(ValueError, "no valid ansatz was provided"):
+        with pytest.raises(ValueError, match="no valid ansatz was provided"):
             qnodes = qml.vqe.vqe_qnodes(ansatz, observables)
 
     @pytest.mark.parametrize("ansatz, params", [
@@ -180,7 +179,7 @@ class TestVQE:
         (strong_ent_layer, LAYER_PARAMS),
         (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
     ])
-    @pytest.mark.parameterize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
+    @pytest.mark.parametrize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
     def test_vqe_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the vqe_cost function evaluates properly"""
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
@@ -198,7 +197,7 @@ class TestVQE:
     ])
     def test_vqe_cost_expvals(self, coeffs, observables, expected):
         """Tests that the vqe_cost function gives the correct expectation value"""
-        hamiltonian = qml.vqe.vqe_hamiltonian(coeffs, observables)
+        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
         cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
         assert cost == expected
 
@@ -206,11 +205,11 @@ class TestVQE:
     def test_vqe_cost_invalid_ansatz(self, ansatz):
         """Tests that the vqe_cost function raises an exception if the ansatz is not valid"""
         hamiltonian = qml.vqe.Hamiltonian((1.0,), (qml.PauliZ(0)))
-        with pytest.raises(ValueError, "no valid ansatz was provided"):
+        with pytest.raises(ValueError, match="no valid ansatz was provided"):
             cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
 
     @pytest.mark.parametrize("hamiltonian", JUNK_INPUTS)
     def test_vqe_cost_invalid_ansatz(self, hamiltonian):
         """Tests that the vqe_cost function raises an exception if the Hamiltonian is not valid"""
-        with pytest.raises(ValueError, "the Hamiltonian is invalid"):
+        with pytest.raises(ValueError, match="the Hamiltonian is invalid"):
             cost = qml.vqe.vqe_cost(*empty_params, empty_ansatz, hamiltonian)
