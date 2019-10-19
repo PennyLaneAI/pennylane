@@ -7,17 +7,17 @@ Optimizers
 ==========
 
 Optimizers are objects which can be used to automatically update the parameters of a quantum 
-or hybrid machine learning model. The Optimizers you should use are dependent on your choice
+or hybrid machine learning model. The optimizers you should use are dependent on your choice
 of classical interface (NumPy, PyTorch, and TensorFlow), and are available from different access
 points. 
 
-Regardless of their origin, all Optimizers provide the same core functionality, 
+Regardless of their origin, all optimizers provide the same core functionality, 
 and PennyLane is fully compatible with all of them. 
 
 NumPy Interface
 ^^^^^^^^^^^^^^^
 
-When using the standard NumPy interface, PennyLane offers some built-in Optimizers.
+When using the standard NumPy interface, PennyLane offers some built-in optimizers.
 Some of these are specific to quantum optimization, such as the :mod:`~.QNGOptimizer`.
 
 :html:`<div class="summary-table">`
