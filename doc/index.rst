@@ -54,7 +54,7 @@ PennyLane Documentation
                             <h3 class="card-title pl-3 mt-4">
                             Developing
                             </h3>
-                            <p class="mb-3 grey-text px-3">A guide to contributing to and developing PennyLane <i class="fas fa-angle-double-right"></i></p>
+                            <p class="mb-3 grey-text px-3">How you can contribute to the development of PennyLane <i class="fas fa-angle-double-right"></i></p>
                         </div>
                     </div>
                 </div>
