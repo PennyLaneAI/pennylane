@@ -16,8 +16,9 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 import numpy as np
-from pennylane.ops import Hermitian
-from pennylane import expval
+from pennylane.ops import Hermitian, Observable
+from pennylane.measure import expval
+from pennylane.decorator import qnode
 
 sum_fn = {"numpy", np.sum}
 try:
@@ -106,15 +107,19 @@ def qnodes(ansatz, observables, device, interface='numpy'):
     Returns:
         tuple(:class:`~.QNode`): callable functions which evaluate each observable
     """
+    if not callable(ansatz):
+        raise ValueError("Could not create QNOdes. The ansatz is not a callable function.")
     # TODO: can be more clever/efficient here for observables which are jointly measurable
-    qnodes = []
+    qnodes_ = []
     for obs in observables:
-        @qml.qnode(device=device, interface=interface)
+        if not isinstance(obs, Observable):
+            raise ValueError("Could not create QNodes. Some or all observables are not valid.")
+        @qnode(device=device, interface=interface)
         def circuit(params):
             ansatz(params)
             return expval(obs)
-        qnodes += circuit
-    return qnodes
+        qnodes_.append(circuit)
+    return qnodes_
 
 
 def aggregate(coeffs, qnodes, params, interface="numpy"):

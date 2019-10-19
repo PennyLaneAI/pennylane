@@ -37,7 +37,7 @@ COEFFS = [(0.5, 1.2, -0.7),
 OBSERVABLES = [(qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
                (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
                (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)]
-JUNK_INPUTS = [None, [], tuple(), lambda x: x, 5.0]
+JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 
 def custom_fixed_ansatz(_unused_params):
     qml.RX(0.5, 0)
@@ -62,7 +62,7 @@ def amp_embed(params):
 
 
 def strong_ent_layer(params):
-    StronglyEntanglingLayer(params, wires=[0, 1, 2])
+    StronglyEntanglingLayer(*params, wires=[0, 1, 2])
 
 
 def amp_embed_and_strong_ent_layer(embed_params, layer_params):
@@ -78,6 +78,19 @@ empty_params = []
 EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
 LAYER_PARAMS = strong_ent_layer_uniform(n_wires=3)
 
+@pytest.fixture(scope="function")
+def mock_device(monkeypatch):
+    """A mock instance of the abstract Device class"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+
+@pytest.fixture(scope="function")
+def mock_device_with_eval(monkeypatch):
+    """A mock instance of the abstract Device class"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, 'expval', lambda self, x, y, z: 0.0)
+        m.setattr(Device, 'apply', lambda self, x, y, z: None)
 
 class TestHamiltonian:
     """Test the Hamiltonian class"""
@@ -125,6 +138,7 @@ class TestHamiltonian:
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
+
     @pytest.mark.parametrize("ansatz", ANSAETZE)
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_qnodes_valid_init(self, ansatz, observables):
@@ -138,15 +152,19 @@ class TestVQE:
 
     @pytest.mark.parametrize("ansatz, params", [
         (amp_embed, EMBED_PARAMS),
-        (strong_ent_layer, LAYER_PARAMS),
-        (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
+        #(strong_ent_layer, LAYER_PARAMS),
+        #(amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
     ])
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_qnodes_evaluate(self, ansatz, observables, params):
         """Tests that the qnodes returned by qnodes evaluate properly"""
-        qnodes = qml.vqe.qnodes(ansatz, observables)
-        for idx, q in qnodes:
-            val = q(*params)
+        dev = mock_device_with_eval
+        dev.num_wires = 3
+        qnodes = qml.vqe.qnodes(ansatz, observables, device=dev)
+        print("qnodes", qnodes)
+        print("params", params)
+        for idx, q in enumerate(qnodes):
+            val = q(params)
             assert type(val) == float
 
     @pytest.mark.parametrize("coeffs, observables, expected", [
@@ -168,15 +186,15 @@ class TestVQE:
     @pytest.mark.parametrize("observables", JUNK_INPUTS)
     def test_qnodes_no_observables(self, ansatz, observables):
         """Tests that an exception is raised when no observables are supplied to qnodes"""
-        with pytest.raises(ValueError, match="no observables were provided"):
-            observables = []
-            qnodes = qml.vqe.qnodes(ansatz, observables, device=mock_device)
+        with pytest.raises(ValueError, match="observables are not valid"):
+            obs = (observables,)
+            qnodes = qml.vqe.qnodes(ansatz, obs, device=mock_device)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_qnodes_no_ansatz(self, ansatz, observables):
         """Tests that an exception is raised when no valid ansatz is supplied to qnodes"""
-        with pytest.raises(ValueError, match="no valid ansatz was provided"):
+        with pytest.raises(ValueError, match="ansatz is not a callable function"):
             qnodes = qml.vqe.qnodes(ansatz, observables, device=mock_device)
 
     @pytest.mark.parametrize("coeffs, observables, expected", [
