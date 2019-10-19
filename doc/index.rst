@@ -147,17 +147,11 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/pennylane
    introduction/circuits
    introduction/interfaces
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Quick Reference
-   :hidden:
-
-   reference/operations
-   reference/measurements
-   reference/templates
-   reference/optimizers
-   reference/configuration
+   introduction/operations
+   introduction/measurements
+   introduction/templates
+   introduction/optimizers
+   introduction/configuration
 
 .. toctree::
    :maxdepth: 1
