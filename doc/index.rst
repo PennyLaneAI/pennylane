@@ -39,7 +39,7 @@ PennyLane Documentation
                                 Using PennyLane
                                 </h3>
                                 <p class="mb-3 grey-text px-3">
-                                    Learn PennyLane through short code snippets <i class="fas fa-angle-double-right"></i>
+                                    A guided tour of the core features of PennyLane <i class="fas fa-angle-double-right"></i>
                                 </p>
                             </div>
                         </div>
@@ -105,7 +105,7 @@ Features
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`_ to run your computational circuits
   on even more devices, including **Strawberry Fields**, **IBM Q**, **Rigetti Forest**,
-  **Microsoft QDK**, and **ProjectQ*.
+  **Microsoft QDK**, and **ProjectQ**.
 
 ..
 
@@ -127,15 +127,16 @@ exploring cutting-edge algorithms using PennyLane and near-term quantum hardware
 with our collection of
 `QML tutorials <https://pennylane.ai/qml/implementations.html>`_.
 
-You can also check out our `documentation <https://pennylane.readthedocs.io>`_ for
-more details on the quantum operations, and to explore the available optimization
-tools provided by PennyLane, and detailed guides on
-`how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_
+You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
+more details on the :doc:`quantum operations <introduction/operations>`, and to explore
+the available :doc:`optimization tools <introduction/optimizers>` provided by PennyLane,
+and detailed guides on :doc:`how to write your own <development/plugins>`
 PennyLane-compatible quantum device.
 
 Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
 available for running your hybrid optimizations—these include
-IBM Q, provided by the PennyLane-Qiskit plugin, as well as the Rigetti Aspen-1 QPU.
+IBM Q, provided by the `PennyLane-Qiskit <https://pennylane-qiskit.rtfd.io>`__ plugin,
+as well as the Rigetti Aspen-1 QPU provided by `PennyLane-Forest <https://pennylane-forest.rtfd.io>`__.
 
 How to cite
 -----------
