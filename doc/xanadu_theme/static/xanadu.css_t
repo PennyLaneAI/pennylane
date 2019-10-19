@@ -660,6 +660,9 @@ table.two-column {
 td {
   padding: 5px;
 }
+td:first-child {
+    white-space: nowrap;
+}
 
 .longtable  {
     border-collapse: collapse;
@@ -687,6 +690,43 @@ td {
 
 .longtable tr.row-even > td ~ td {
     border-right: 0px solid #fff;
+}
+
+
+
+.summary-table  {
+    border-collapse: collapse;
+    border: 1px solid #fff;
+}
+.summary-table .longtable {
+    border: 1px solid #fff;
+}
+
+.summary-table tr.row-odd {
+    border-bottom: 1px solid #fff;
+}
+
+.summary-table tr.row-even {
+    border-bottom: 1px solid #fff;
+}
+
+.summary-table tr.row-odd > td {
+    border-right: 1px solid #fff;
+}
+
+.summary-table tr.row-odd > td ~ td {
+    border-right: 0px solid #fff;
+}
+.summary-table tr.row-even > td {
+    border-right: 1px solid #fff;
+}
+
+.summary-table tr.row-even > td ~ td {
+    border-right: 0px solid #fff;
+}
+
+.summary-table td {
+    padding: 0px 25px 1px 5px;
 }
 
 /* Disqus comments styles
@@ -724,6 +764,7 @@ td {
   transition-property: opacity;
   transition-duration: 1s;
   opacity: 0.5;
+  height: 100%;
 }
 
 .comment-container:hover {
@@ -799,6 +840,18 @@ border-radius: 7px;
 
 #comments ul li a:hover {
   color: {{ theme_download_button }};
+}
+
+#comments .caption {
+  display: none;
+}
+
+#comments > ul > li:not(.current)  {
+  display: none;
+}
+
+#comments > ul.current > li.current > a  {
+  display: none;
 }
 
 /* Next and previous links
@@ -1715,7 +1768,7 @@ footer.page-footer .footer-copyright {
     margin-bottom: unset;
   }
 
-  #comments {
+  .comment-container {
     display: none;
   }
 
@@ -1840,7 +1893,7 @@ footer.page-footer .footer-copyright {
     float: none;
   }
 
-  #comments {
+  .comment-container {
     display: none;
   }
 

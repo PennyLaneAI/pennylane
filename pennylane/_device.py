@@ -17,7 +17,8 @@ This module contains the :class:`Device` abstract base class.
 # pylint: disable=too-many-format-args
 import abc
 
-import autograd.numpy as np
+import numpy as np
+
 from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
 from .qnode import QuantumFunctionError
 

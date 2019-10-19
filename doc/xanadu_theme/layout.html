@@ -243,6 +243,9 @@
 
 <script type="text/javascript" src="{{ pathto('_static/js/nanoscroller.min.js', 1) }}"></script>
 <script type="text/javascript">
+    $(".document > .section").removeClass("section");
+    $(".comment-container .nano-content").css("height", $("#content").height());
+    $(".comment-container").css("height", $("#content").height());
     $(".nano").nanoScroller();
 </script>
  <script type="text/javascript">

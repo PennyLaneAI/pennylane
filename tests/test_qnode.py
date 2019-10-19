@@ -17,10 +17,10 @@ Unit tests for the :mod:`pennylane` :class:`QNode` class.
 import math
 
 import pytest
-from autograd import numpy as np
-from scipy.linalg import block_diag, expm
+import numpy as np
+from scipy.linalg import block_diag
 
-from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, X, Y, Z
+from pennylane.plugins.default_qubit import Y, Z
 
 import pennylane as qml
 from pennylane._device import Device
