@@ -1,40 +1,84 @@
-.. role:: html(raw)
-   :format: html
+PennyLane Documentation
+=======================
 
-:html:`<br>`
+.. rst-class:: lead grey-text ml-2
 
-
-.. image:: _static/pennylane_thin.png
-    :align: center
-    :width: 100%
-    :target: javascript:void(0);
-    :alt: PennyLane
-
------------------------------------------------
-
+:Release: |release|
 
 .. raw:: html
 
     <style>
-    h1 {
-        display: none;
-    }
+        #right-column.card {
+            box-shadow: none!important;
+        }
+        #right-column.card:hover {
+            box-shadow: none!important;
+        }
+        .breadcrumb {
+            display: none;
+        }
+        h1 {
+            text-align: center;
+        }
+        .footer-relations {
+            border-top: 0px;
+        }
     </style>
+    <div class="container mt-2 mb-2">
+        <p class="lead grey-text">
+            PennyLane is a cross-platform Python library for quantum machine learning,
+            automatic differentiation, and optimization of hybrid quantum-classical computations.
+        </p>
+        <div class="row mt-3">
+            <div class="col-lg-4 mb-2 adlign-items-stretch">
+                <a href="introduction/pennylane.html">
+                    <div class="card rounded-lg" style="height:100%;">
+                        <div class="d-flex">
+                            <div>
+                                <h3 class="card-title pl-3 mt-4">
+                                Using PennyLane
+                                </h3>
+                                <p class="mb-3 grey-text px-3">
+                                    A guided tour of the core features of PennyLane <i class="fas fa-angle-double-right"></i>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="development/guide.html">
+                <div class="card rounded-lg" style="height:100%;">
+                    <div class="d-flex">
+                        <div>
+                            <h3 class="card-title pl-3 mt-4">
+                            Developing
+                            </h3>
+                            <p class="mb-3 grey-text px-3">How you can contribute to the development of PennyLane <i class="fas fa-angle-double-right"></i></p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/qml.html">
+                <div class="card rounded-lg" style="height:100%;">
+                    <div class="d-flex">
+                        <div>
+                            <h3 class="card-title pl-3 mt-4">
+                            API
+                            </h3>
+                            <p class="mb-3 grey-text px-3">Explore the PennyLane API <i class="fas fa-angle-double-right"></i></p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            </div>
+        </div>
+    </div>
 
-
-PennyLane
-=========
-
-
-:Release: |release|
-:Date: |today|
-
-PennyLane is a cross-platform Python library for quantum machine learning,
-automatic differentiation, and optimization of hybrid quantum-classical computations.
-
-
-:html:`<h2>Features</h2>`
-
+Features
+--------
 
 .. image:: _static/code.png
     :align: right
@@ -43,99 +87,76 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 
 
 - *Follow the gradient*.
-  Built-in **automatic differentiation** of quantum circuits
+  Built-in **automatic differentiation** of quantum circuits.
 
 ..
 
 - *Best of both worlds*.
-  Support for **hybrid quantum and classical** models
+  Support for **hybrid quantum and classical** models; connect quantum
+  hardware with PyTorch, TensorFlow, and NumPy.
 
 ..
 
 - *Batteries included*.
-  Provides **optimization and machine learning** tools
+  Provides **optimization and machine learning** tools.
 
 ..
 
 - *Device independent*.
-  The same quantum circuit model can be **run on different backends**
-
-..
-
-- *Compatible with existing machine learning libraries*.
-  Quantum circuits can be set up to interface with either **NumPy**, **PyTorch**, or **TensorFlow**,
-  allowing hybrid CPU-GPU-QPU computations.
-
-..
-
-- *Large plugin ecosystem*.
-  Install plugins to run your computational circuits on more devices, including **Strawberry Fields**, **Rigetti Forest**, **ProjectQ**, **Microsoft QDK**, and **IBM Q**
-
-:html:`<h4>Available plugins</h4>`
-
-* `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`__: Supports integration with `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack Python library for simulating continuous variable (CV) quantum optical circuits.
-
-..
-
-* `PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_: Supports integration with `PyQuil <https://github.com/rigetti/pyquil>`__, the `Rigetti Forest SDK <https://www.rigetti.com/forest>`__, and the `Rigetti QCS <https://www.rigetti.com/qcs>`__, an open-source quantum computation framework by Rigetti. Provides device support for the Quantum Virtual Machine (QVM) and Quantum Processing Units (QPUs) hardware devices.
-
-..
-
-* `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`__: Supports integration with `Qiskit Terra <https://qiskit.org/terra>`__, an open-source quantum computation framework by IBM. Provides device support for the Qiskit Aer quantum simulators, and IBM QX hardware devices.
-
-..
-
-* `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`__: Supports integration with `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum computation framework that supports the IBM quantum experience.
-
-..
-
-* `PennyLane-Qsharp <https://github.com/XanaduAI/pennylane-qsharp>`_: Supports integration with the `Microsoft Quantum Development Kit <https://www.microsoft.com/en-us/quantum/development-kit>`__, a quantum computation framework that uses the Q# quantum programming language.
+  The same quantum circuit model can be **run on different backends**. Install
+  `plugins <https://pennylane.ai/plugins.html>`_ to access even more
+  devices, including **Strawberry Fields**, **IBM Q**, **Rigetti Forest**,
+  **Microsoft QDK**, and **ProjectQ**.
 
 
-:html:`<h2>Getting started</h2>`
+Getting started
+---------------
 
-To get PennyLane installed and running on your system, begin at the
-:ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's
-:ref:`key concepts <key_concepts>` for machine learning on quantum circuits.
+For getting started with PennyLane, check out some of the
+`key concepts <https://pennylane.ai/qml/concepts.html>`_ behind quantum machine
+learning, before moving on to some `introductory tutorials <https://pennylane.ai/qml/beginner.html>`_.
 
-For getting started with PennyLane, read the :ref:`introduction <pl_intro>` to learn about the different
-building blocks. For your first hands-on experience, check out our basic :ref:`qubit rotation <qubit_rotation>`,
-and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to
-explore :ref:`hybrid quantum optimization <plugins_hybrid>`, and :ref:`hybrid GPU-QPU optimization
-via PyTorch <pytorch_noise>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs),
-and quantum classifiers.
+Then, take a deeper dive into quantum machine learning by
+exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
+with our collection of
+`QML tutorials <https://pennylane.ai/qml/implementations.html>`_.
 
-Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid
-models — these include Strawberry Fields, provided by the
-`PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin, the Rigetti Aspen-1 QPU, provided by the
-`PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_ plugin, and the IBM QX4 quantum chip,
-provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and
-`PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins. You can also find detailed guides on
-:ref:`how to write your own <plugin_overview>` PennyLane compatible quantum device.
+You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
+more details on the :doc:`quantum operations <introduction/operations>`, and to explore
+the available :doc:`optimization tools <introduction/optimizers>` provided by PennyLane.
+We also have a detailed guide on :doc:`how to write your own <development/plugins>`
+PennyLane-compatible quantum device.
 
-Finally, detailed documentation on the PennyLane API :ref:`interface <api_qml>` is provided.
-Look there for full details on available tools to construct quantum circuits.
+Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
+available for running your hybrid optimizations—these include
+IBM Q, provided by the `PennyLane-Qiskit <https://pennylane-qiskit.rtfd.io>`__ plugin,
+as well as the Rigetti Aspen-1 QPU provided by `PennyLane-Forest <https://pennylane-forest.rtfd.io>`__.
 
-:html:`<h2>How to cite</h2>`
+How to cite
+-----------
 
 If you are doing research using PennyLane, please cite
 
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, Carsten Blank, Keri McKiernan, and Nathan Killoran.
-    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018. `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
+.. rst-class:: admonition warning
 
-:html:`<h2>Support</h2>`
+    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, Carsten Blank, Keri McKiernan,
+    and Nathan Killoran.
+    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018.
+    `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
+
+Support
+-------
 
 - **Source Code:** https://github.com/XanaduAI/PennyLane
 - **Issue Tracker:** https://github.com/XanaduAI/PennyLane/issues
 
-If you are having issues, please let us know by posting the issue on our Github issue tracker.
+If you are having issues, please let us know by posting the issue on our GitHub issue tracker.
 
-We also have a `PennyLane discussion forum <https://discuss.pennylane.ai>`_ - come join the discussion and chat with our PennyLane team.
+We also have a `PennyLane discussion forum <https://discuss.pennylane.ai>`_—come join the
+discussion and chat with our PennyLane team.
 
-For more details on contributing or performing research with PennyLane, please see
-:ref:`research`.
-
-:html:`<h2>License</h2>`
+License
+-------
 
 PennyLane is **free** and **open source**, released under the Apache License, Version 2.0.
 
@@ -172,10 +193,3 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_init
    code/qml_templates
    code/qml_plugins
-
-
-:html:`<h2>Indices and tables</h2>`
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
