@@ -1,29 +1,5 @@
-.. role:: html(raw)
-   :format: html
-
-:html:`<br>`
-
-
-.. image:: _static/pennylane_thin.png
-    :align: center
-    :width: 100%
-    :target: javascript:void(0);
-    :alt: PennyLane
-
------------------------------------------------
-
-
-.. raw:: html
-
-    <style>
-    h1 {
-        display: none;
-    }
-    </style>
-
-
-PennyLane
-=========
+PennyLane Documentation
+=======================
 
 
 :Release: |release|
@@ -33,8 +9,8 @@ PennyLane is a cross-platform Python library for quantum machine learning,
 automatic differentiation, and optimization of hybrid quantum-classical computations.
 
 
-:html:`<h2>Features</h2>`
-
+Features
+--------
 
 .. image:: _static/code.png
     :align: right
@@ -92,31 +68,30 @@ automatic differentiation, and optimization of hybrid quantum-classical computat
 * `PennyLane-Qsharp <https://github.com/XanaduAI/pennylane-qsharp>`_: Supports integration with the `Microsoft Quantum Development Kit <https://www.microsoft.com/en-us/quantum/development-kit>`__, a quantum computation framework that uses the Q# quantum programming language.
 
 
-:html:`<h2>Getting started</h2>`
+Getting started
+---------------
 
-To get PennyLane installed and running on your system, begin at the
-:ref:`download and installation guide <installation>`. Then, familiarize yourself with the PennyLane's
-:ref:`key concepts <key_concepts>` for machine learning on quantum circuits.
+For getting started with PennyLane, check out some of the
+`key concepts <https://pennylane.ai/qml/concepts.html>`_ behind quantum machine
+learning, before moving on to some `introductory tutorials <https://pennylane.ai/qml/beginner.html>`_.
 
-For getting started with PennyLane, read the :ref:`introduction <pl_intro>` to learn about the different
-building blocks. For your first hands-on experience, check out our basic :ref:`qubit rotation <qubit_rotation>`,
-and :ref:`Gaussian transformation <gaussian_transformation>` tutorials, before continuing on to
-explore :ref:`hybrid quantum optimization <plugins_hybrid>`, and :ref:`hybrid GPU-QPU optimization
-via PyTorch <pytorch_noise>`. More advanced tutorials include supervised learning, building quantum GANs (QGANs),
-and quantum classifiers.
+Then, take a deeper dive into quantum machine learning by
+exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
+with our collection of
+`QML tutorials <https://pennylane.ai/qml/implementations.html>`_.
 
-Next, play around with the numerous devices and :ref:`plugins <plugins>` available for running your hybrid
-models — these include Strawberry Fields, provided by the
-`PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_ plugin, the Rigetti Aspen-1 QPU, provided by the
-`PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_ plugin, and the IBM QX4 quantum chip,
-provided by the `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_ and
-`PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_ plugins. You can also find detailed guides on
-:ref:`how to write your own <plugin_overview>` PennyLane compatible quantum device.
+You can also check out our `documentation <https://pennylane.readthedocs.io>`_ for
+more details on the quantum operations, and to explore the available optimization
+tools provided by PennyLane, and detailed guides on
+`how to write your own <https://pennylane.readthedocs.io/en/latest/API/overview.html>`_
+PennyLane-compatible quantum device.
 
-Finally, detailed documentation on the PennyLane API :ref:`interface <api_qml>` is provided.
-Look there for full details on available tools to construct quantum circuits.
+Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
+available for running your hybrid optimizations — these include
+IBM Q, provided by the PennyLane-Qiskit plugin, as well as the Rigetti Aspen-1 QPU.
 
-:html:`<h2>How to cite</h2>`
+How to cite
+-----------
 
 If you are doing research using PennyLane, please cite
 
@@ -172,10 +147,3 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_init
    code/qml_templates
    code/qml_plugins
-
-
-:html:`<h2>Indices and tables</h2>`
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
