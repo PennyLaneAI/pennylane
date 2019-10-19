@@ -92,7 +92,8 @@ Features
 ..
 
 - *Best of both worlds*.
-  Support for **hybrid quantum and classical** models.
+  Support for **hybrid quantum and classical** models; connect quantum
+  hardware with PyTorch, TensorFlow, and NumPy.
 
 ..
 
@@ -103,16 +104,9 @@ Features
 
 - *Device independent*.
   The same quantum circuit model can be **run on different backends**. Install
-  `plugins <https://pennylane.ai/plugins.html>`_ to run your computational circuits
-  on even more devices, including **Strawberry Fields**, **IBM Q**, **Rigetti Forest**,
+  `plugins <https://pennylane.ai/plugins.html>`_ to access even more
+  devices, including **Strawberry Fields**, **IBM Q**, **Rigetti Forest**,
   **Microsoft QDK**, and **ProjectQ**.
-
-..
-
-- *Compatible with existing machine learning libraries*.
-  Quantum circuits can be set up to interface with either **NumPy**, **PyTorch**, or **TensorFlow**,
-  allowing hybrid CPU-GPU-QPU computations.
-
 
 
 Getting started
@@ -129,8 +123,8 @@ with our collection of
 
 You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
 more details on the :doc:`quantum operations <introduction/operations>`, and to explore
-the available :doc:`optimization tools <introduction/optimizers>` provided by PennyLane,
-and detailed guides on :doc:`how to write your own <development/plugins>`
+the available :doc:`optimization tools <introduction/optimizers>` provided by PennyLane.
+We also have a detailed guide on :doc:`how to write your own <development/plugins>`
 PennyLane-compatible quantum device.
 
 Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
