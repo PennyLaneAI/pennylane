@@ -44,7 +44,7 @@ If you are using the :ref:`PennyLane PyTorch interface <torch_interf>`, you shou
 TensorFlow Interface
 ^^^^^^^^^^^^^^^^^^^^
 
-When using the :ref:`PennyLane TensorFlow interface<tf_interf>`, you will need to leverage one of 
+When using the :ref:`PennyLane TensorFlow interface <tf_interf>`, you will need to leverage one of 
 the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Optimizer>`_ 
 (found in ``tf.keras.optimizers``).
 
