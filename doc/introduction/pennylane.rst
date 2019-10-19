@@ -39,17 +39,13 @@ through the computation - an essential process in optimization and machine learn
 Learn more
 ----------
 
-In the following sections you can learn more about quantum circuits, interfaces and plugins to external
-quantum devices in PennyLane, as well as find its custom optimizers:
+In the following sections you can learn more about quantum circuits and interfaces in PennyLane:
 
 1. :ref:`Quantum circuits <intro_vcircuits>` shows you how PennyLane unifies and
 simplifies the process of programming quantum circuits with trainable parameters.
 
 2. :ref:`Interfaces <intro_interfaces>` introduces you to how PennyLane is used
 with the different classical interfaces to optimize quantum circuits or hybrid computations.
-
-3. :ref:`Quick reference <intro_reference>` lists the optimizers available in the NumPy interface, some
-of which are specially designed for quantum optimization.
 
 
 
