@@ -71,8 +71,8 @@ and has the following format:
       device = "ibmqx4"
       num_runs = 1024
 
-Main PennyLane options, that are passed to all loaded devices, are provided under the ``[main]``
-section. Alternatively, options can be specified on a per-plugin basis, by setting the options under
+Standard PennyLane options are provided under the ``[main]``section. These apply to all loaded devices. 
+Alternatively, options can be specified on a per-plugin basis, by setting the options under
 ``[plugin.global]``.
 
 For example, in the above configuration file, the Strawberry Fields
