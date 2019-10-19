@@ -656,7 +656,14 @@ table.two-column {
   border: 0px none !important;
   box-shadow: none;
 }
-
+table td {
+    font-size: 1rem;
+    font-weight: unset!important;
+}
+table th {
+    font-size: 1rem;
+    font-weight: unset!important;
+}
 td {
   padding: 5px;
 }
