@@ -586,10 +586,10 @@ div.sphinxsidebar input {
 
 .search-block {
   z-index: 1;
-  margin-top: -20px;
+  margin-top: -30px;
   width: 92%;
   margin-left: 12px;
-  padding-top: 20px;
+  /*padding-top: 20px;*/
 }
 
 .nano .nano-pane {
@@ -1935,7 +1935,7 @@ footer.page-footer .footer-copyright {
 .xanadu-call-to-action-links {
   /*padding-top: 25px;*/
   /*display: flex;*/
-   justify-content: center; 
+   justify-content: center;
 }
 
 @media (min-width: 1100px) and (max-width: 1239px) {
@@ -2059,6 +2059,87 @@ footer.page-footer .footer-copyright {
     border: 0;
     transition-duration: 0.4s;
     border-radius: 10px!important;
+}
+
+/* Input text
+-----------------------------------------*/
+.md-input {
+  position:relative;
+  left: -10px;
+}
+
+.md-input input {
+  font-size:18px;
+  padding: 15px 10px 10px 20px;
+  display:block;
+  width: 109%;
+  border:none!important;
+  border-bottom:1px solid #ddd!important;
+  font-family: unset;
+  background-color: #f9f9f9;
+}
+
+.md-input input:focus {
+  outline:none;
+}
+
+.md-input label {
+  color: #999;
+  font-size: 18px;
+  font-weight: 300;
+  position: absolute;
+  pointer-events: none;
+  left: 20px;
+  top: 15px;
+  transition:0.2s ease all;
+  -moz-transition:0.2s ease all;
+  -webkit-transition:0.2s ease all;
+}
+
+/* active state */
+.md-input input:focus ~ label,
+.md-input input:valid ~ label {
+  top: 4px;
+  font-size: 10px;
+  color: #5264AE;
+}
+
+.md-input input:invalid {
+  box-shadow: none;
+}
+
+.md-input .bar {
+  position:relative;
+  display:block;
+  width:300px;
+}
+
+.md-input .bar:before,
+.md-input .bar:after {
+  content:'';
+  height:1px;
+  width:0;
+  bottom:1px;
+  position:absolute;
+  background: {{ theme_download_button }};
+  transition:0.2s ease all;
+  -moz-transition:0.2s ease all;
+  -webkit-transition:0.2s ease all;
+  opacity: 0;
+}
+
+.md-input .bar:before {
+  left:50%;
+}
+
+.md-input .bar:after {
+  right:50%;
+}
+
+.md-input input:focus ~ .bar:before,
+.md-input input:focus ~ .bar:after {
+  width:50%;
+  opacity: 1;
 }
 
 /* Syntax highlighting
