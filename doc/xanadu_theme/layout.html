@@ -248,6 +248,18 @@
     $(".comment-container").css("height", $("#content").height());
     $(".nano").nanoScroller();
 </script>
+<script type="text/javascript">
+    $(window).scroll(function(){
+      var scrollBottom = $(document).height() - $(window).height() - $(window).scrollTop();
+      if (scrollBottom < 342) {
+        $('.comment-container').css("height", "calc(100% - " + (342 - scrollBottom) + "px)");
+        $('.comment-container .nano-content').css("height", "calc(100% - 119px)");
+      } else {
+        $(".comment-container .nano-content").css("height", $("#content").height());
+        $(".comment-container").css("height", $("#content").height());
+      }
+    });
+</script>
  <script type="text/javascript">
     if ($('.current').length) {
         var target = $('.current')[0]
