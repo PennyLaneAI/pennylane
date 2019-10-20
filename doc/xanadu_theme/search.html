@@ -1,6 +1,10 @@
 {%- extends "basic/search.html" %}
 
 {% block body %}
+<script type="text/javascript">
+  $("#comments").hide();
+</script>
+
   <h1 id="search-documentation">{{ _('Search') }}</h1>
   <div id="fallback" class="admonition warning">
   <script type="text/javascript">$('#fallback').hide();</script>
@@ -21,9 +25,9 @@
   <div class="search-page-form">
     <form class="form-inline" action="{{ pathto('search') }}" method="GET" role="form">
       <div class="input-group">
-        <input name="q" type="text" class="form-control"  style="border: 1px solid #19B37B; border-radius: 10px 0px 0px 10px;"/>
+        <input name="q" type="text" class="form-control"  style="margin: 0.375rem; font-size: 21px; border-radius: 2px;"/>
         <span class="input-group-btn">
-          <button class="btn btn-xanadu" type="button" style="border: 1px solid #19B37B; border-radius: 0px 10px 10px 0px;">{{ _('Search') }}</button>
+          <button class="btn btn-xanadu" type="button">{{ _('Search') }}</button>
         </span>
       </div>
       <span id="search-progress" style="padding-left: 10px"></span>
@@ -48,3 +52,4 @@
   {% endif %}
   </div>
 {% endblock %}
+
