@@ -657,11 +657,11 @@ table.two-column {
   box-shadow: none;
 }
 table td {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: unset!important;
 }
 table th {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: unset!important;
 }
 td {
@@ -734,7 +734,7 @@ td:first-child {
 
 .summary-table td {
     padding: 0px 25px 1px 5px;
-    font-size: unset!important;
+    font-size: 0.9rem;
 }
 
 /* Disqus comments styles
