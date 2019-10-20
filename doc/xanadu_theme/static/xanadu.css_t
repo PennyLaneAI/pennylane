@@ -657,7 +657,7 @@ table.two-column {
   box-shadow: none;
 }
 table td {
-    font-size: 1rem;
+    font-size: unset!important;
     font-weight: unset!important;
 }
 table th {
@@ -733,7 +733,7 @@ td:first-child {
 }
 
 .summary-table td {
-    padding: 0px 25px 1px 5px;
+    padding: 0px 25px 5px 5px;
 }
 
 /* Disqus comments styles
