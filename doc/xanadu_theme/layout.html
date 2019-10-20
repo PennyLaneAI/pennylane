@@ -254,9 +254,6 @@
       if (scrollBottom < 342) {
         $('.comment-container').css("height", "calc(100% - " + (342 - scrollBottom) + "px)");
         $('.comment-container .nano-content').css("height", "calc(100% - 119px)");
-      } else {
-        $(".comment-container .nano-content").css("height", $("#content").height());
-        $(".comment-container").css("height", $("#content").height());
       }
     });
 </script>
