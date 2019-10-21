@@ -14,9 +14,3 @@ qml.interfaces
     details on available interfaces.
 
 .. automodule:: pennylane.interfaces
-
-.. autosummary::
-    :toctree: api
-
-    tf
-    torch

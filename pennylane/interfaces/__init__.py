@@ -14,4 +14,11 @@
 """
 This subpackage defines quantum nodes that are compatible with different machine
 learning libraries.
+
+.. currentmodule:: pennylane.interfaces
+.. autosummary::
+    :toctree: api
+
+    tf
+    torch
 """

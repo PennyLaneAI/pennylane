@@ -14,9 +14,3 @@ qml.plugins
     details on available plugins.
 
 .. automodule:: pennylane.plugins
-
-.. autosummary::
-    :toctree: api
-
-    default_qubit
-    default_gaussian

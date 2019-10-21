@@ -11,13 +11,3 @@ qml.utils
     to use these utility functions.
 
 .. automodule:: pennylane.utils
-
-.. autosummary::
-    :toctree: api
-
-    _flatten
-    _unflatten
-    _unflatten
-    _inv_dict
-    _get_default_args
-    expand

@@ -59,6 +59,14 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
     property automates the process of unpacking the Variable value.
     The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
+
+Classes
+-------
+
+.. autosummary::
+    :toctree: api
+
+    Variable
 """
 from collections.abc import Sequence
 import copy

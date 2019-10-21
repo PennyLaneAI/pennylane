@@ -11,8 +11,3 @@ qml.variable
     to use the ``Variable`` class.
 
 .. automodule:: pennylane.variable
-
-.. autosummary::
-	:toctree: api
-
-	Variable

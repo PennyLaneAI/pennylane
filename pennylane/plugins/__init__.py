@@ -16,6 +16,13 @@ This subpackage provides reference plugin implementations. The reference plugins
 and CV circuit simulators that can be used with PennyLane without the need for additional
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
+
+.. currentmodule:: pennylane.plugins
+.. autosummary::
+    :toctree: api
+
+    default_qubit
+    default_gaussian
 """
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
