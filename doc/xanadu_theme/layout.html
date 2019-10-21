@@ -14,7 +14,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 
   <!-- Material Design Bootstrap -->
-  <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.10/css/mdb.min.css" rel="stylesheet"> -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.5.14/css/mdb.min.css" rel="stylesheet">
 
   <!-- nanoscroller -->
   <link rel="stylesheet" type="text/css" href="{{ pathto('_static/css/nanoscroller.css', 1) }}" />
@@ -243,7 +243,32 @@
 
 <script type="text/javascript" src="{{ pathto('_static/js/nanoscroller.min.js', 1) }}"></script>
 <script type="text/javascript">
+    $('a.reference.internal').each(function(){
+      var link = $(this).attr("href");
+
+      if (link.includes("api")) {
+        var hash = link.split('#')[1];
+        var page = link.split('#')[0].split('/').slice(-1)[0].replace(".html", "");
+
+        if (hash == page) {
+          $(this).attr('href', link.split('#')[0]);
+        }
+      }
+    });
+
+    $(".document > .section").removeClass("section");
+    $(".comment-container .nano-content").css("height", $("#content").height());
+    $(".comment-container").css("height", $("#content").height());
     $(".nano").nanoScroller();
+</script>
+<script type="text/javascript">
+    $(window).scroll(function(){
+      var scrollBottom = $(document).height() - $(window).height() - $(window).scrollTop();
+      if (scrollBottom < 342) {
+        $('.comment-container').css("height", "calc(100% - " + (342 - scrollBottom) + "px)");
+        $('.comment-container .nano-content').css("height", "calc(100% - 119px)");
+      }
+    });
 </script>
  <script type="text/javascript">
     if ($('.current').length) {
@@ -259,6 +284,12 @@
         $(".css-transitions-only-after-page-load").each(function (index, element) {
             setTimeout(function () { $(element).removeClass("css-transitions-only-after-page-load") }, 10);
         });
+        if (window.location.hash) {
+          var hash = window.location.hash.replace(/\./g, "\\.");
+          o =  $(hash).offset().top;
+          var sT = o - $(".navbar").outerHeight(true) - 25;
+          $('html, body').animate({scrollTop: sT}, 1);
+        }
     });
 </script>
 <script type="text/javascript">
@@ -279,5 +310,6 @@ if (downloadNote.length >= 1) {
     $(".xanadu-call-to-action-links").hide();
 }
 </script>
+<script type="text/javascript">jQuery.noConflict(true);</script>
         {% include "footer.html" %}
 {%- endblock %}

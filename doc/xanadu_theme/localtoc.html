@@ -1,10 +1,17 @@
-<div class="comment-container">
-  {% if display_toc %}
+{%- if pagename != "search" %}
+<div class="comment-container nano has-scrollbar">
+  <div class="nano-content">
   <div id="comments">
     <h3>Contents</h3>
-    {{ toc }}
+    {% set toctree = toctree(maxdepth=3, collapse=True, includehidden=True) %}
+    {% if display_toc %}
+      {{ toc | replace("<li>", "<li class='current'>")
+             | replace("<ul>", "<ul class='current'>")}}
+    {% else %}
+      <ul style="display: none;"><li><a></a></li></ul>
+      {{ toctree }}
+    {% endif %}
   </div>
-  {% endif %}
   <div class="xanadu-call-to-action-links">
     <h3>Downloads</h3>
     <div id="tutorial-type">{{ pagename }}</div>
@@ -22,3 +29,5 @@
     </div>
   </div>
 </div>
+</div>
+{%- endif %}

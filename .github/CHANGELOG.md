@@ -1,4 +1,28 @@
-# Release 0.6.0-dev
+# Release 0.7.0-dev
+
+### New features since last release
+
+### Breaking changes
+
+### Improvements
+
+* A new `Operator` base class is introduced, which is inherited by both the `Observable` class and the
+  `Operation` class.
+  [#355](https://github.com/XanaduAI/pennylane/pull/355)
+
+### Documentation
+
+### Bug fixes
+
+### Contributors
+
+This release contains contributions from (in alphabetical order):
+
+Antal Száva
+
+---
+
+# Release 0.6.0
 
 ### New features since last release
 
@@ -47,16 +71,17 @@
 * Remainder of the unittest-style tests were ported to pytest.
   [#310](https://github.com/XanaduAI/pennylane/pull/310)
 
-* A new `Operator` base class is introduced, which is inherited by both the `Observable` class and the
-  `Operation` class.
-  [#355](https://github.com/XanaduAI/pennylane/pull/355)
+* The `do_queue` argument for operations now only takes effect
+  within QNodes. Outside of QNodes, operations can now be instantiated
+  without needing to specify `do_queue`.
+  [#359](https://github.com/XanaduAI/pennylane/pull/359)
 
 ### Documentation
 
 * The docs are rewritten and restructured to contain a code introduction section as well as an API section.
   [#314](https://github.com/XanaduAI/pennylane/pull/275)
 
-* Added Ising model example to the tutorials 
+* Added Ising model example to the tutorials
   [#319] (https://github.com/XanaduAI/pennylane/pull/319)
 
 * Added tutorial for QAOA on MaxCut problem
@@ -84,7 +109,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Shahnawaz Ahmed, Ville Bergholm, Aroosa Ijaz, Josh Izaac, Angus Lowe,
+Shahnawaz Ahmed, Ville Bergholm, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Angus Lowe,
 Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 ---
