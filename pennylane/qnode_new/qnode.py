@@ -1,4 +1,4 @@
-# Copyright 2018 Xanadu Quantum Technologies Inc.
+# Copyright 2019 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -388,7 +388,7 @@ class QNode:
                 raise QuantumFunctionError("Operation {} applied to invalid wire {} "
                                            "on device with {} wires.".format(op.name, w, self.num_wires))
 
-        # EVs go to their own, temporary queue
+        # observables go to their own, temporary queue
         if isinstance(op, plo.Observable):
             if op.return_type is None:
                 self.queue.append(op)

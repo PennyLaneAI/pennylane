@@ -63,7 +63,7 @@ Args:
 class CircuitGraph:
     """Represents a quantum circuit as a directed acyclic graph.
 
-    In this representation the :class:`Operation` instances are the nodes of the graph,
+    In this representation the :class:`~.Operation` instances are the nodes of the graph,
     and each directed edge represent a subsystem (or a group of subsystems) on which the two
     Operations act subsequently. This representation can describe the causal relationships
     between arbitrary quantum channels and measurements, not just unitary gates.
