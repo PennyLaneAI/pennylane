@@ -6,6 +6,10 @@
 
 ### Improvements
 
+* Removed deprecated `@abstractproperty` decorators
+  in `_device.py`.
+  [#374](https://github.com/XanaduAI/pennylane/pull/374)
+
 ### Documentation
 
 ### Bug fixes
@@ -13,6 +17,8 @@
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
+
+Antal Száva
 
 ---
 
