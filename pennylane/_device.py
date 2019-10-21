@@ -60,48 +60,48 @@ class Device(abc.ABC):
         """Verbose string representation."""
         return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.pennylane_requires, self.version, self.author)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def name(self):
         """The full name of the device."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def short_name(self):
         """Returns the string used to load the device."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def pennylane_requires(self):
         """The current API version that the device plugin was made for."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def version(self):
         """The current version of the plugin."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def author(self):
         """The author(s) of the plugin."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def operations(self):
         """Get the supported set of operations.
 
         Returns:
             set[str]: the set of PennyLane operation names the device supports
         """
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def observables(self):
         """Get the supported set of observables.
 
         Returns:
             set[str]: the set of PennyLane observable names the device supports
         """
-        raise NotImplementedError
 
     @property
     def shots(self):
@@ -313,7 +313,6 @@ class Device(abc.ABC):
 
         raise ValueError("The given operation must either be a pennylane.Observable class or a string.")
 
-
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
 
@@ -340,6 +339,7 @@ class Device(abc.ABC):
                 if o.name not in self.observables:
                     raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
 
+    @property
     @abc.abstractmethod
     def apply(self, operation, wires, par):
         """Apply a quantum operation.
@@ -351,8 +351,8 @@ class Device(abc.ABC):
             wires (Sequence[int]): subsystems the operation is applied on
             par (tuple): parameters for the operation
         """
-        raise NotImplementedError
 
+    @property
     @abc.abstractmethod
     def expval(self, observable, wires, par):
         r"""Returns the expectation value of observable on specified wires.
@@ -368,7 +368,6 @@ class Device(abc.ABC):
         Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        raise NotImplementedError
 
     def var(self, observable, wires, par):
         r"""Returns the variance of observable on specified wires.
@@ -415,6 +414,7 @@ class Device(abc.ABC):
         """
         raise NotImplementedError("Returning probability not currently supported by {}".format(self.short_name))
 
+    @property
     @abc.abstractmethod
     def reset(self):
         """Reset the backend state.
@@ -422,4 +422,3 @@ class Device(abc.ABC):
         After the reset the backend should be as if it was just constructed.
         Most importantly the quantum state is reset to its initial value.
         """
-        raise NotImplementedError
