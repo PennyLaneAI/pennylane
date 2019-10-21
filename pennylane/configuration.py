@@ -12,19 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Configuration
-=============
-
-**Module name:** :mod:`pennylane.configuration`
-
-.. currentmodule:: pennylane.configuration
-
 This module contains the :class:`Configuration` class, which is used to
 load, store, save, and modify configuration options for PennyLane and all
 supported plugins and devices.
 
+Usage
+-----
+
 Behaviour
----------
+*********
 
 On first import, PennyLane attempts to load the configuration file `config.toml`, by
 scanning the following three directories in order of preference:
@@ -45,8 +41,8 @@ The user can access the initialized configuration via `pennylane.config`, view t
 loaded configuration filepath, print the configurations options, access and modify
 them via keys (i.e., ``pennylane.config['main.shots']``), and save/load new configuration files.
 
-Configuration files
--------------------
+Configuration file
+******************
 
 The configuration file `config.toml` uses the `TOML standard <https://github.com/toml-lang/toml>`_,
 and has the following format:
@@ -94,29 +90,6 @@ For example, in the above configuration file, the Strawberry Fields
 devices will be loaded with a default of ``shots = 100``, rather than ``shots = 1000``. Finally,
 you can also specify settings on a device-by-device basis, by placing the options under the
 ``[plugin.device]`` settings.
-
-Summary of methods
-------------------
-
-.. currentmodule:: pennylane.configuration.Configuration
-
-.. autosummary::
-    path
-    load
-    save
-
-Helper methods
---------------
-
-.. autosummary::
-    safe_set
-    safe_get
-
-Code details
-~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.configuration
-
 """
 import os
 import logging as log

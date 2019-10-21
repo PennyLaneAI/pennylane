@@ -12,61 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Layers
-======
+This module contains templates for trainable 'layers' of quantum gates.
 
-**Module name:** :mod:`pennylane.templates.layers`
-
-.. currentmodule:: pennylane.templates.layers
-
-This module contains templates for trainable `layers`. In contrast to other templates such as embeddings, layers
+In contrast to other templates such as embeddings, layers
 do typically only take trainable parameters, and get repeated in the circuit -- just like the layers of a
-neural network. This makes the layer `learnable` within the limits of the architecture.
+neural network. This makes the layer 'learnable' within the limits of the architecture.
 
-Most templates in this module have a ``Layer`` version that implements a single layer, as well as a ``Layers``
+Most templates in this module have a 'Layer' version that implements a single layer, as well as a 'Layers'
 version which calls the single layer multiple times, possibly using different hyperparameters for the
 sequence in each call.
-
-
-Qubit architectures
--------------------
-
-Strongly entangling circuit
-***************************
-
-.. autosummary::
-
-    StronglyEntanglingLayers
-    StronglyEntanglingLayer
-
-Random circuit
-**************
-
-.. autosummary::
-
-    RandomLayers
-    RandomLayer
-
-Continuous-variable architectures
----------------------------------
-
-Continuous-variable quantum neural network
-******************************************
-
-.. autosummary::
-
-    CVNeuralNetLayers
-    CVNeuralNetLayer
-
-Interferometer
-**************
-
-.. autosummary::
-
-    Interferometer
-
-Code details
-^^^^^^^^^^^^
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Sequence
@@ -78,7 +32,7 @@ import numpy as np
 
 
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
-    r"""A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in :cite:`schuld2018circuit`.
+    r"""A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_.
 
     The number of layers :math:`L` is determined by the first dimension of ``weights``. The template is applied to
     the qubits specified by the sequence ``wires``.
@@ -223,7 +177,7 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
 
 
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in :cite:`killoran2018continuous`.
+    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
 
     The number of layers :math:`L` is inferred from the first dimension of the eleven weight parameters. The layers
     act on the :math:`M` modes given in ``wires``, and include interferometers of :math:`K=M(M-1)/2` beamsplitters.
@@ -327,7 +281,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     may be adjusted:
 
     * ``mesh='rectangular'`` (default): uses the scheme described in
-      :cite:`clements2016optimal`, resulting in a *rectangular* array of
+      `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__, resulting in a *rectangular* array of
       :math:`M(M-1)/2` beamsplitters arranged in :math:`M` slices and ordered from left
       to right and top to bottom in each slice. The first beamsplitter acts on
       wires :math:`0` and :math:`1`:
@@ -338,7 +292,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
           :target: javascript:void(0);
 
 
-    * ``mesh='triangular'``: uses the scheme described in :cite:`reck1994experimental`,
+    * ``mesh='triangular'``: uses the scheme described in `Reck et al. <https://dx.doi.org/10.1103/PhysRevLett.73.58>`__,
       resulting in a *triangular* array of :math:`M(M-1)/2` beamsplitters arranged in
       :math:`2M-3` slices and ordered from left to right and top to bottom. The
       first and fourth beamsplitters act on wires :math:`M-1` and :math:`M`, the second
@@ -368,7 +322,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
 
     .. note::
 
-        The decomposition as formulated in :cite:`clements2016optimal` uses a different
+        The decomposition as formulated in `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__ uses a different
         convention for a beamsplitter :math:`T(\theta, \phi)` than PennyLane, namely:
 
         .. math:: T(\theta, \phi) = BS(\theta, 0) R(\phi)
@@ -376,7 +330,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
         For the universality of the decomposition, the used convention is irrelevant, but
         for a given set of angles the resulting interferometers will be different.
 
-        If an interferometer consistent with the convention from :cite:`clements2016optimal`
+        If an interferometer consistent with the convention from `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__
         is needed, the optional keyword argument ``beamsplitter='clements'`` can be specified. This
         will result in each :class:`~pennylane.ops.Beamsplitter` being preceded by a :class:`~pennylane.ops.Rotation` and
         thus increase the number of elementary operations in the circuit.

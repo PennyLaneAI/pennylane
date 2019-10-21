@@ -13,7 +13,8 @@
 # limitations under the License.
 """Adam optimizer"""
 
-import autograd.numpy as np
+import numpy as np
+
 from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
 
@@ -42,7 +43,7 @@ class AdamOptimizer(GradientDescentOptimizer):
 
     The shift :math:`\epsilon` avoids division by zero.
 
-    For more details, see :cite:`kingma2014adam`.
+    For more details, see `arXiv:1412.6980 <https://arxiv.org/abs/1412.6980>`_.
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`

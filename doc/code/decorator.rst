@@ -1,2 +1,0 @@
-.. automodule:: pennylane.decorator
-

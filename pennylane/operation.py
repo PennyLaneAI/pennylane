@@ -13,17 +13,16 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-Symbolic quantum operations
-===========================
+This module contains base classes to define continuous-variable and discrete-variable operations contained in the
+:mod:`pennylane.ops` module.
 
-**Module name:** :mod:`pennylane.operation`
+Usage
+-----
 
-.. currentmodule:: pennylane.operation
+Qubit Operations
+----------------
 
-Operation base classes
-----------------------
-
-This module contains the symbolic base class for performing quantum operations
+The :class:`Operation` and :class:`Observable` classes are subclassed to implement quantum operations
 and measuring observables in PennyLane.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
@@ -37,7 +36,7 @@ and measuring observables in PennyLane.
   sequence of wires (subsystems).
 
 Differentiation
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 In general, an :class:`Operation` is differentiable (at least using the finite-difference
 method) with respect to a parameter iff
@@ -61,23 +60,15 @@ works as follows:
 
 .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
-Summary
-^^^^^^^
-
-.. autosummary::
-   Operation
-   Observable
-
-
 CV Operation base classes
--------------------------
+*************************
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
 :class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
 and :class:`~.Observable`.
 
 Differentiation
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to
 provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
@@ -97,26 +88,15 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
-
-Summary
-^^^^^^^
-
-.. autosummary::
-   CV
-   CVOperation
-   CVObservable
-
-Code details
-^^^^^^^^^^^^
 """
 import abc
 from enum import Enum, IntEnum
 import numbers
 from collections.abc import Sequence
 
-import autograd.numpy as np
+import numpy as np
 
-from .qnode import QNode, QuantumFunctionError
+from .qnode import QNode
 from .utils import _flatten, _unflatten
 from .variable import Variable
 
@@ -239,8 +219,9 @@ class Operation(abc.ABC):
             is interpreted as wires.
         do_queue (bool): Indicates whether the operation should be
             immediately pushed into a :class:`QNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
-            outside of a QNode context.
+            The circuit queue is determined by the presence of an
+            applicable `QNode._current_context`. If no context is
+            available, this argument is ignored.
     """
     _grad_recipe = None
 
@@ -328,6 +309,9 @@ class Operation(abc.ABC):
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
+        self.queue_idx = None  #: int, None: index of the Operation in the circuit queue, or None if not in a queue
+        if QNode._current_context is None:
+            do_queue = False
 
         if self.num_wires == All:
             if do_queue:
@@ -347,7 +331,7 @@ class Operation(abc.ABC):
         # check the validity of the params
         for p in params:
             self.check_domain(p)
-        self.params = list(params)
+        self.params = list(params)  #: list[Any]: parameters of the operation
 
         # check the grad_method validity
         if self.par_domain == 'N':
@@ -367,9 +351,8 @@ class Operation(abc.ABC):
 
         # apply the operation on the given wires
         if not isinstance(wires, Sequence):
-            self._wires = [wires]
-        else:
-            self._wires = wires
+            wires = [wires]
+        self._wires = wires  #: Sequence[int, Variable]: wires on which the operation acts
 
         if all([isinstance(w, int) for w in self._wires]):
             # If all wires are integers (i.e., not Variable), check
@@ -389,7 +372,7 @@ class Operation(abc.ABC):
         Args:
             wires (Sequence[int, Variable]): wires to check
         Raises:
-            TypeError: list of wires is invalid
+            ValueError: list of wires is invalid
         Returns:
             Number, array, Variable: p
         """
@@ -474,8 +457,6 @@ class Operation(abc.ABC):
 
     def queue(self):
         """Append the operation to a QNode queue."""
-        if QNode._current_context is None:
-            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         QNode._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
@@ -511,9 +492,11 @@ class Observable(Operation):
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operation should be immediately
-            pushed into a :class:`QNode` observable queue. This flag is useful if
-            there is some reason to call an observable outside of a QNode context.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`QNode` observable queue.
+            The observable queue is determined by the presence of an
+            applicable `QNode._current_context`. If no context is
+            available, this argument is ignored.
     """
     # pylint: disable=abstract-method
     return_type = None
@@ -528,6 +511,125 @@ class Observable(Operation):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
+    def __matmul__(self, other):
+        if isinstance(other, Tensor):
+            return other.__rmatmul__(self)
+
+        if isinstance(other, Observable):
+            return Tensor(self, other)
+
+        raise ValueError("Can only perform tensor products between observables.")
+
+
+class Tensor(Observable):
+    """Container class representing tensor products of observables.
+
+    To create a tensor, simply initiate it like so:
+
+    >>> T = Tensor(qml.PauliX(0), qml.Hermitian(A, [1, 2]))
+
+    You can also create a tensor from other Tensors:
+
+    >>> T = Tensor(T, qml.PauliZ(4))
+
+    The ``@`` symbol can be used as a tensor product operation:
+
+    >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+    """
+    return_type = None
+    tensor = True
+    par_domain = None
+
+    def __init__(self, *args): #pylint: disable=super-init-not-called
+        self.obs = []
+
+        for o in args:
+            if isinstance(o, Tensor):
+                self.obs.extend(o.obs)
+            elif isinstance(o, Observable):
+                self.obs.append(o)
+            else:
+                raise ValueError("Can only perform tensor products between observables.")
+
+    def __str__(self):
+        """Print the tensor product and some information."""
+        return 'Tensor product {}: {} params, wires {}'.format([i.name for i in self.obs], len(self.params), self.wires)
+
+    @property
+    def name(self):
+        """All constituent observable names making up the tensor product.
+
+        Returns:
+            list[str]: list containing all observable names
+        """
+        return [o.name for o in self.obs]
+
+    @property
+    def num_wires(self):
+        """Number of wires the tensor product acts on.
+
+        Returns:
+            int: number of wires
+        """
+        return len(list(_flatten(self.wires)))
+
+    @property
+    def wires(self):
+        """All wires in the system the tensor product acts on.
+
+        Returns:
+            list[list[Any]]: nested list containing the wires per observable
+            in the tensor product
+        """
+        return [o.wires for o in self.obs]
+
+    @property
+    def params(self):
+        """Raw parameters of all constituent observables in the tensor product.
+
+        Returns:
+            list[Any]: flattened list containing all dependent parameters
+        """
+        return [p for sublist in [o.params for o in self.obs] for p in sublist]
+
+    @property
+    def num_params(self):
+        """Raw parameters of all constituent observables in the tensor product.
+
+        Returns:
+            list[Any]: flattened list containing all dependent parameters
+        """
+        return len(self.params)
+
+    @property
+    def parameters(self):
+        """Evaluated parameter values of all constituent observables in the tensor product.
+
+        Returns:
+            list[list[Any]]: nested list containing the parameters per observable
+            in the tensor product
+        """
+        return [o.parameters for o in self.obs]
+
+    def __matmul__(self, other):
+        if isinstance(other, Tensor):
+            self.obs.extend(other.obs)
+            return self
+
+        if isinstance(other, Observable):
+            self.obs.append(other)
+            return self
+
+        raise ValueError("Can only perform tensor products between observables.")
+
+    def __rmatmul__(self, other):
+        if isinstance(other, Observable):
+            self.obs[:0] = [other]
+            return self
+
+        raise ValueError("Can only perform tensor products between observables.")
+
+    __imatmul__ = __matmul__
 
 
 #=============================================================================
@@ -646,6 +748,7 @@ class CV:
         succeeds the gate to be differentiated analytically.
         """
         return CV._heisenberg_rep != self._heisenberg_rep
+
 
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""

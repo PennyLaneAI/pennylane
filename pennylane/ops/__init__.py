@@ -11,51 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Submodule containing core quantum operations supported by PennyLane.
 
-.. currentmodule:: pennylane.ops
-
-PennyLane supports a collection of built-in quantum operations and observables,
-including both discrete-variable (DV) operations as used in the qubit model,
-and continuous-variable (CV) operations as used in the qumode model of quantum
-computation.
-
-Here, we summarize the built-in operations and observables supported by PennyLane,
-as well as the conventions chosen for their implementation.
-
-.. note::
-
-    When writing a plugin device for PennyLane, make sure that your plugin
-    supports as many of the PennyLane built-in operations defined here as possible.
-
-    If the convention differs between the built-in PennyLane operation
-    and the corresponding operation in the targeted framework, ensure that the
-    conversion between the two conventions takes places automatically
-    by the plugin device.
-
-.. raw:: html
-
-    <style>
-    div.topic.contents > ul {
-        max-height: 100px;
-    }
-    </style>
-
-.. rst-class:: contents local topic
-
-.. toctree::
-    :maxdepth: 2
-
-    ops/qubit
-    ops/cv
-
-
-General operations
-------------------
-
-Operations and observables that can be used on both qubit and CV devices.
-"""
 #pylint: disable=too-few-public-methods,function-redefined
+
+"""
+This module contains core quantum operations supported by PennyLane -
+such as gates, state preparations and observables.
+"""
 
 from pennylane.operation import Any, Observable, CVObservable
 
@@ -72,7 +34,7 @@ from .qubit import obs as _qubit__obs__
 
 
 class Identity(CVObservable, Observable):
-    r"""pennylane.ops.Identity(wires)
+    r"""pennylane.Identity(wires)
     The identity observable :math:`\I`.
 
     The expectation of this observable
