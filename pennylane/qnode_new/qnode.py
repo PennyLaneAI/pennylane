@@ -19,7 +19,7 @@ Quantum nodes
 
 .. currentmodule:: pennylane
 
-The :class:`~qnode.QNode` class represents *quantum nodes*,
+The :class:`~pennylane.qnode_new.qnode.QNode` class represents *quantum nodes*,
 encapsulating a *quantum function* or :ref:`variational circuit <varcirc>`
 and the computational device it is executed on.
 
@@ -42,22 +42,25 @@ The latter must be of the following form:
 .. code-block:: python
 
     def my_quantum_function(x, y, *, w=None):
-        qml.RZ(x, wires=0)
+        qml.RX(x, wires=0)
+        qml.RY(2 * y, wires=1)
         qml.CNOT(wires=[0,1])
-        qml.RY(y, wires=0)
-        qml.RY(w, wires=1)
-        return qml.expval(qml.PauliZ(0))
+        for k in range(2):
+            qml.RY(w, wires=k)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
 Quantum functions are a restricted subset of Python functions, adhering to the following
 constraints:
 
-* The body of the function must consist of only supported PennyLane
+* The body of the function should consist of only supported PennyLane
   :mod:`operations <pennylane.ops>`, one per line.
+  The function can contain classical flow control structures such as ``for`` loops,
+  but they must not depend on the parameters of the function.
 
 .. note::
 
     The quantum operations cannot be used outside of a quantum circuit function, as all
-    :class:`Operations <pennylane.operation.Operation>` require a QNode in order to perform queuing on initialization.
+    :class:`Operations <pennylane.operation.Operation>` require a QNode to work.
 
 * The function must always return either a single or a tuple of
   *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
@@ -71,12 +74,12 @@ constraints:
 * The quantum function can take two kinds of parameters: *positional* and *auxiliary*.
 
   * The function can *only* be differentiated with respect to its positional parameters.
-    Classical processing of positional arguments, either by arithmetic operations
-    or external functions, is not allowed. One current exception is simple scalar multiplication.
     The positional parameters should be only used as the parameters of the Operations in the
     function.
+    Classical processing of positional parameters, either by arithmetic operations
+    or external functions, is not allowed. One current exception is simple scalar multiplication.
 
-  * The auxiliary parameters can not be differentiated with respect to.
+  * The auxiliary parameters can *not* be differentiated with respect to.
     They are useful for providing data or 'placeholders' to the quantum function.
     In *mutable* nodes the auxiliary parameters can undergo any kind of classical
     processing, and also appear in the ``wires`` argument of the Operations.
@@ -88,7 +91,7 @@ constraints:
 
 The quantum function cannot be executed on its own. Instead, a :class:`~.QNode` object must be
 created, which wraps the function and binds it to a device. The QNode can then be used to evaluate
-the quantum circuit function on the particular device.
+the variational quantum circuit defined by the function on the particular device.
 
 For example:
 
@@ -110,7 +113,7 @@ For example:
                 qml.RZ(x, wires=0)
                 qml.CNOT(wires=[0,1])
                 qml.RY(y, wires=1)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(1))
 
             result = my_quantum_function(np.pi/4, 0.7)
 
@@ -182,9 +185,9 @@ import itertools
 import numpy as np
 from scipy import linalg
 
+from pennylane.operation import Operation, Observable, CV, Wires, ObservableReturnTypes
+import pennylane.ops as qml
 import pennylane.measure as pm
-import pennylane.operation as plo
-import pennylane.ops as plops
 from pennylane.utils import _flatten, unflatten, expand
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
@@ -251,13 +254,14 @@ def _get_signature(func):
     """Introspect the parameter signature of a function.
 
     Adds the following attributes to func:
-        :attr:`func.sig`: OrderedDict[str, ParSig]: mapping from parameters' names to their descriptions
-        :attr:`func.n_pos`: int: number of required positional arguments
-        :attr:`func.var_pos`: bool: can take a variable number of positional arguments (*args)
-        :attr:`func.var_keyword`: bool: can take a variable number of keyword arguments (**kwargs)
+
+    * :attr:`func.sig`: OrderedDict[str, ParSig]: mapping from parameters' names to their descriptions
+    * :attr:`func.n_pos`: int: number of required positional arguments
+    * :attr:`func.var_pos`: bool: can take a variable number of positional arguments (``*args``)
+    * :attr:`func.var_keyword`: bool: can take a variable number of keyword arguments (``**kwargs``)
 
     Args:
-        func (callable): the function with added attributes
+        func (callable): function to introspect
     """
     sig = inspect.signature(func)
     # count positional args, see if VAR_ args are present
@@ -298,7 +302,7 @@ class QNode:
     For immutable circuits the quantum function must build the same circuit graph consisting of the same
     :class:`.Operation` instances regardless of its arguments; they can only appear as the
     arguments of the Operations in the circuit. Immutable circuits are slightly faster to execute, and
-    can be optimized, but can be used only if the layout of the circuit is always fixed.
+    can be optimized, but require that the layout of the circuit is fixed.
 
     Args:
         func (callable): The *quantum function* of the QNode.
@@ -306,6 +310,7 @@ class QNode:
             and returning a tuple of measured :class:`~.operation.Observable` instances.
         device (~pennylane._device.Device): computational device to execute the function on
         mutable (bool): whether the circuit is mutable, see above
+        properties (dict[str, Any] or None): additional keyword properties for adjusting the QNode behavior
     """
     # pylint: disable=too-many-instance-attributes
     def __init__(self, func, device, *, mutable=True, properties=None):
@@ -338,16 +343,18 @@ class QNode:
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
 
-    @staticmethod
-    def _set_variables(args, kwargs):
-        """Temporarily store the values of the free parameters in the Variable class.
+    def _set_variables(self, args, kwargs):
+        """Store the current values of the free parameters in the Variable class
+        so the Operations may access them.
 
         Args:
             args (tuple[Any]): positional (differentiable) arguments
             kwargs (dict[str, Any]): auxiliary arguments
         """
         Variable.free_param_values = np.array(list(_flatten(args)))
-        Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
+        if not self.mutable:
+            # only immutable circuits access auxiliary arguments through Variables
+            Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
 
 
     def _op_descendants(self, op, only):
@@ -378,7 +385,7 @@ class QNode:
         Args:
             op (~.operation.Operation): quantum operation to be added to the circuit
         """
-        if op.num_wires == plo.Wires.All:
+        if op.num_wires == Wires.All:
             if set(op.wires) != set(range(self.num_wires)):
                 raise QuantumFunctionError("Operation {} must act on all wires".format(op.name))
 
@@ -389,7 +396,7 @@ class QNode:
                                            "on device with {} wires.".format(op.name, w, self.num_wires))
 
         # observables go to their own, temporary queue
-        if isinstance(op, plo.Observable):
+        if isinstance(op, Observable):
             if op.return_type is None:
                 self.queue.append(op)
             else:
@@ -403,10 +410,9 @@ class QNode:
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
 
-        .. note:: The user should never have to call this method directly.
-
-        This method is called automatically the first time :meth:`QNode.evaluate`
-        or :meth:`QNode.jacobian` is called. It executes the quantum function,
+        For immutable nodes this method is called the first time :meth:`QNode.evaluate`
+        or :meth:`QNode.jacobian` is called, and for mutable nodes *each time*
+        they are called. It executes the quantum function,
         stores the resulting sequence of :class:`.Operation` instances,
         converts it into a circuit graph, and creates the Variable mapping.
 
@@ -443,12 +449,11 @@ class QNode:
         try:
             # generate the program queue by executing the quantum circuit function
             if self.mutable:
-                # no caching, it's ok to directly pass kwarg values
+                # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
                 # (positional args must be replaced because parameter-shift differentiation requires Variables)
                 res = self.func(*arg_vars, **kwargs)
             else:
-                # caching mode, must use variables for kwargs so they can be updated without re-constructing
-                # replace each auxiliary argument with a list of named Variables
+                # must convert auxiliary arguments to named Variables so they can be updated without re-constructing the circuit
                 kwarg_vars = {}
                 for key, val in kwargs.items():
                     temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
@@ -492,8 +497,8 @@ class QNode:
             QuantumFunctionError: an error was discovered in the circuit
         """
         # check the return value
-        if isinstance(res, plo.Observable):
-            if res.return_type is plo.Sample:
+        if isinstance(res, Observable):
+            if res.return_type is ObservableReturnTypes.Sample:
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
                 self.output_conversion = np.squeeze
@@ -501,7 +506,7 @@ class QNode:
                 self.output_conversion = float
             self.output_dim = 1
             res = (res,)
-        elif isinstance(res, Sequence) and res and all(isinstance(x, plo.Observable) for x in res):
+        elif isinstance(res, Sequence) and res and all(isinstance(x, Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.
 
@@ -534,7 +539,7 @@ class QNode:
         del self.obs_queue
 
         # True if op is a CV, False if it is a discrete variable (Identity could be either)
-        are_cvs = [isinstance(op, plo.CV) for op in self.ops if not isinstance(op, plops.Identity)]
+        are_cvs = [isinstance(op, CV) for op in self.ops if not isinstance(op, qml.Identity)]
         if not all(are_cvs) and any(are_cvs):
             raise QuantumFunctionError(
                 "Continuous and discrete operations are not allowed in the same quantum circuit.")
@@ -638,9 +643,9 @@ class QNode:
 
 
     def _default_args(self, kwargs):
-        """Validate the quantum function arguments, apply defaults.
+        """OLD: Validate the quantum function arguments, apply defaults.
 
-        Here we apply default values for the non-differentiable parameters of :attr:`QNode.func`.
+        Here we apply default values for the auxiliary parameters of :attr:`QNode.func`.
 
         Args:
             kwargs (dict[str, Any]): auxiliary arguments (given using the keyword syntax)
@@ -706,7 +711,7 @@ class QNode:
 
                     # FIXME maybe we require that if extra args are given, the caller must _construct()
 
-                    # unflatten arguments,  why??? (because _pd_parameter_shift passes a flat array!)
+                    # unflatten arguments (because _pd_parameter_shift passes a flat array)
                     shaped_args = unflatten(flat_args, self.args_model)
 
                     # construct the circuit
@@ -785,21 +790,21 @@ class QNode:
                 # get the observable corresponding to the generator of the current operation
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
-                    variance = pm.var(plops.Hermitian(gen, w, do_queue=False))
+                    variance = pm.var(qml.Hermitian(gen, w, do_queue=False))
 
                     if not diag_approx:
                         Ki_matrices.append((n, expand(gen, w, self.num_wires)))
 
-                elif issubclass(gen, plo.Observable):
+                elif issubclass(gen, Observable):
                     # generator is an existing PennyLane operation
                     variance = pm.var(gen(w, do_queue=False))
 
                     if not diag_approx:
-                        if issubclass(gen, plops.PauliX):
+                        if issubclass(gen, qml.PauliX):
                             mat = np.array([[0, 1], [1, 0]])
-                        elif issubclass(gen, plops.PauliY):
+                        elif issubclass(gen, qml.PauliY):
                             mat = np.array([[0, -1j], [1j, 0]])
-                        elif issubclass(gen, plops.PauliZ):
+                        elif issubclass(gen, qml.PauliZ):
                             mat = np.array([[1, 0], [0, -1]])
 
                         Ki_matrices.append((n, expand(mat, w, self.num_wires)))
@@ -896,7 +901,7 @@ class QNode:
             if not diag_approx:
                 # block diagonal approximation
 
-                unitary_op = plops.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
+                unitary_op = qml.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
                 self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
                 probs = list(self.device.probability().values())
 

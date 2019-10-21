@@ -305,7 +305,7 @@ class TestQNodeExceptions:
         with pytest.raises(TypeError, match='Wires must be integers'):
             node(x=1)
 
-    @pytest.mark.xfail(reason="Tests the keyword-only-marks-nondifferentiable syntax", raises=TypeError, strict=True)
+    @pytest.mark.xfail(reason="Tests the auxiliary-equals-keyword-only syntax", raises=TypeError, strict=True)
     def test_simple_valid_call(self, operable_mock_device_2_wires):
         """Old QNode gives an error here, "got multiple values for argument 'x'"
         """
@@ -317,7 +317,7 @@ class TestQNodeExceptions:
         node(0.3)
         assert node.ops[0].parameters[0] == 0.3
 
-    @pytest.mark.xfail(reason="Tests the keyword-only-marks-nondifferentiable syntax", raises=AssertionError, strict=True)
+    @pytest.mark.xfail(reason="Tests the auxiliary-equals-keyword-only syntax", raises=AssertionError, strict=True)
     def test_calling_no_kwargs(self, operable_mock_device_2_wires):
         """Various quantum func calling syntax errors."""
 
@@ -344,7 +344,7 @@ class TestQNodeExceptions:
         node(0.1, n=0.4)
         assert circuit.in_args[2:] == (0.3, 0.4)
 
-    @pytest.mark.xfail(reason="Tests the keyword-only-marks-nondifferentiable syntax", raises=AssertionError, strict=True)
+    @pytest.mark.xfail(reason="Tests the auxiliary-equals-keyword-only syntax", raises=AssertionError, strict=True)
     def test_calling_with_kwargs(self, operable_mock_device_2_wires):
         """Various quantum func calling syntax errors."""
 
@@ -373,7 +373,7 @@ class TestQNodeExceptions:
 
 
     def test_calling_bad_errors(self, operable_mock_device_2_wires):
-        """Confusing quantum func calling errors and bugs (default-value-marks-nondifferentiables syntax)."""
+        """Confusing quantum func calling errors and bugs (auxiliary-equals-parameters-with-default syntax)."""
 
         def circuit(x=0.1):
             return qml.expval(qml.PauliZ(0))
@@ -384,7 +384,7 @@ class TestQNodeExceptions:
 
 
     def test_calling_errors(self, operable_mock_device_2_wires):
-        """Good quantum func calling syntax errors (default-value-marks-nondifferentiables syntax)."""
+        """Good quantum func calling syntax errors (auxiliary-equals-parameters-with-default syntax)."""
 
         def circuit(x, y=0.2, *args, z=0.3):
             circuit.in_args = (x, y, z)
@@ -403,7 +403,7 @@ class TestQNodeExceptions:
 
         # valid calls
         node(0.1)
-        assert circuit.in_args[1:] == (0.2, 0.3)  # first is a Variables
+        assert circuit.in_args[1:] == (0.2, 0.3)  # first is a Variable
         node(0.1, y=1.2)
         assert circuit.in_args[1:] == (1.2, 0.3)
         node(0.1, z=1.3, y=1.2)
