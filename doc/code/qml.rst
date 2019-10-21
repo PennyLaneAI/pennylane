@@ -81,8 +81,8 @@ Measurements
     sample
     var
 
-Operations base class
----------------------
+Operators base class
+--------------------
 
 .. currentmodule:: pennylane.operation
 .. autosummary::
@@ -92,6 +92,7 @@ Operations base class
     CVOperation
     Observable
     Operation
+    Operator
 
 Operations - CV
 ---------------

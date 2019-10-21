@@ -21,9 +21,17 @@ Usage
 
 Qubit Operations
 ----------------
+The :class:`Operator` class serves as a base class for operators,
+it is inherited by both the :class:`Observable` class and the
+:class:`Operation` class. These classes are subclassed to implement quantum operations
+and measure observables in PennyLane.
 
-The :class:`Operation` and :class:`Observable` classes are subclassed to implement quantum operations
-and measuring observables in PennyLane.
+* Each :class:`~.Operator` subclass represents a general type of
+  map between physical states. Each instance of these subclasses
+  represents either
+  - an application of the operator or
+  - an instruction to measure and return the respective result.
+  Operators act on a sequence of wires (subsystems) using given parameter values.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
   for example a unitary quantum gate. Each instance of these subclasses
@@ -374,6 +382,9 @@ class Operator(abc.ABC):
         QNode._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
+#=============================================================================
+# Base Operation class
+#=============================================================================
 
 class Operation(Operator):
     r"""Base class for quantum operations supported by a device.
