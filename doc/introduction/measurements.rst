@@ -9,7 +9,7 @@ Measurements
 .. currentmodule:: pennylane.measure
 
 PennyLane can extract different types of measurement results: the expectation of an observable
-over multiple measurements, its variance, or samples of a single measurement.
+its variance, or samples of a single measurement.
 
 For example, the quantum function shown in the previous section
 used the :func:`~pennylane.expval` measurement:
