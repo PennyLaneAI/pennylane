@@ -334,7 +334,6 @@ class Device(abc.ABC):
                 if o.name not in self.observables:
                     raise DeviceError("Observable {} not supported on device {}".format(o.name, self.short_name))
 
-    @property
     @abc.abstractmethod
     def apply(self, operation, wires, par):
         """Apply a quantum operation.
@@ -347,7 +346,6 @@ class Device(abc.ABC):
             par (tuple): parameters for the operation
         """
 
-    @property
     @abc.abstractmethod
     def expval(self, observable, wires, par):
         r"""Returns the expectation value of observable on specified wires.
@@ -409,7 +407,6 @@ class Device(abc.ABC):
         """
         raise NotImplementedError("Returning probability not currently supported by {}".format(self.short_name))
 
-    @property
     @abc.abstractmethod
     def reset(self):
         """Reset the backend state.
