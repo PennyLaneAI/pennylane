@@ -12,7 +12,7 @@ PennyLane can extract different types of measurement results from quantum
 devices: the expectation of an observable, its variance, or
 samples of a single measurement.
 
-For example, a QNode that returns the expectation value of the
+For example, the following circuit returns the expectation value of the
 :class:`~pennylane.PauliZ` observable on wire 1:
 
 .. code-block:: python
@@ -82,7 +82,7 @@ the ``@`` notation. For example, to measure the expectation value of
         qml.CNOT(wires=[0, 2])
         return qml.expval(qml.PauliZ(0) @ qml.PauliX(2))
 
-Note that we don't need to declare the identity term on wire 1; this is
+Note that we don't need to declare the identity observable on wire 1; this is
 implicitly assumed.
 
 The tensor observable notation can be used inside all measurement functions,
