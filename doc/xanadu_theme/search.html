@@ -10,26 +10,8 @@
   </p>
   </div>
   <p>
-    From here you can search the full
-  {{ theme_project_nav_name or shorttitle }} documentation.
-  </p>
-  <p>
     {% trans %} Note that the search function will only return results containing <i>all</i> of the search terms; if you can't find the page you are looking for, try removing some search terms and searching again.{% endtrans %}
   </p>
-  <br>
-
-  <div class="search-page-form">
-    <form class="form-inline" action="{{ pathto('search') }}" method="GET" role="form">
-      <div class="input-group">
-        <input name="q" type="text" class="form-control"  style="border: 1px solid #19B37B; border-radius: 10px 0px 0px 10px;"/>
-        <span class="input-group-btn">
-          <button class="btn btn-xanadu" type="button" style="border: 1px solid #19B37B; border-radius: 0px 10px 10px 0px;">{{ _('Search') }}</button>
-        </span>
-      </div>
-      <span id="search-progress" style="padding-left: 10px"></span>
-    </form>
-  </div>
-
   {% if search_performed %}
     <h2>{{ _('Search Results') }}</h2>
     {% if not search_results %}
@@ -48,3 +30,4 @@
   {% endif %}
   </div>
 {% endblock %}
+
