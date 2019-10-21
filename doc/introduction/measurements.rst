@@ -8,11 +8,12 @@ Measurements
 
 .. currentmodule:: pennylane.measure
 
-PennyLane can extract different types of measurement results: the expectation of an observable
-its variance, or samples of a single measurement.
+PennyLane can extract different types of measurement results from quantum
+devices: the expectation of an observable, its variance, or
+samples of a single measurement.
 
-For example, the quantum function shown in the previous section
-used the :func:`~pennylane.expval` measurement:
+For example, a QNode that returns the expectation value of the
+:class:`~pennylane.PauliZ` observable on wire 1:
 
 .. code-block:: python
 
@@ -22,7 +23,7 @@ used the :func:`~pennylane.expval` measurement:
         qml.RY(y, wires=1)
         return qml.expval(qml.PauliZ(1))
 
-For more details on the available measurement functions:
+The available measurement functions are
 
 :html:`<div class="summary-table">`
 
@@ -81,7 +82,12 @@ the ``@`` notation. For example, to measure the expectation value of
         qml.CNOT(wires=[0, 2])
         return qml.expval(qml.PauliZ(0) @ qml.PauliX(2))
 
-The tensor observable notation can be used inside all measurement functions.
+Note that we don't need to declare the identity term on wire 1; this is
+implicitly assumed.
+
+The tensor observable notation can be used inside all measurement functions,
+including :func:`~.pennylane.expval`, :func:`~.pennylane.var`,
+and :func:`~.pennylane.sample`.
 
 Changing the number of shots
 ----------------------------
