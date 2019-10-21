@@ -27,7 +27,6 @@ class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
     """
-    pass
 
 
 class Device(abc.ABC):
@@ -248,19 +247,15 @@ class Device(abc.ABC):
 
     def pre_apply(self):
         """Called during :meth:`execute` before the individual operations are executed."""
-        pass
 
     def post_apply(self):
         """Called during :meth:`execute` after the individual operations have been executed."""
-        pass
 
     def pre_measure(self):
         """Called during :meth:`execute` before the individual observables are measured."""
-        pass
 
     def post_measure(self):
         """Called during :meth:`execute` after the individual observables have been measured."""
-        pass
 
     def execution_context(self):
         """The device execution context used during calls to :meth:`execute`.
