@@ -10,6 +10,10 @@
   `Operation` class.
   [#355](https://github.com/XanaduAI/pennylane/pull/355)
 
+* Removed deprecated `@abstractproperty` decorators
+  in `_device.py`.
+  [#374](https://github.com/XanaduAI/pennylane/pull/374)
+
 ### Documentation
 
 ### Bug fixes
