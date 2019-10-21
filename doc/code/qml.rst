@@ -61,6 +61,7 @@ Devices
     :toctree: api
 
     device
+    DeviceError
 
 Gradients
 ---------
@@ -80,18 +81,6 @@ Measurements
     expval
     sample
     var
-
-Operations base class
----------------------
-
-.. currentmodule:: pennylane.operation
-.. autosummary::
-    :toctree: api
-
-    CVObservable
-    CVOperation
-    Observable
-    Operation
 
 Operations - CV
 ---------------
@@ -194,3 +183,4 @@ QNode
     :toctree: api
 
     QNode
+    QuantumFunctionError

@@ -15,8 +15,8 @@
 This module contains the :class:`Variable` class, which is used to track
 and identify :class:`~pennylane.qnode.QNode` parameters.
 
-Usage
------
+Description
+-----------
 
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`

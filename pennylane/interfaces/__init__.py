@@ -12,5 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module defines quantum nodes that are compatible with different :ref:`interfaces <intro_interfaces>`.
+This subpackage defines quantum nodes that are compatible with different machine
+learning libraries.
 """
