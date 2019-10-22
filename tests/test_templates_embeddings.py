@@ -245,9 +245,13 @@ class TestAmplitudeEmbedding:
                                              'Set ``normalize=True`` to automatically normalize it.'):
             circuit(x=[1, 1])
 
-    def test_amplitude_embedding_normalizes_lists(self):
-        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() normalizes an input if
-        `normalize` is set to `True`."""
+    @pytest.mark.parametrize("inpt, expected", [(np.array([0, 2]), [0, 1]),
+                                                (1/np.sqrt(2)*np.array([2, 2]), [1/np.sqrt(2), 1/np.sqrt(2)]),
+                                                ([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3)], [-0.5, 0.8660254]),
+                                                ([0, 2], [0, 1])])
+    def test_amplitude_embedding_normalizes_keywordargs(self, inpt, expected):
+        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() normalizes an input passed as a keyword
+         argument if `normalize` is set to `True`."""
 
         dev = qml.device('default.qubit', wires=1)
 
@@ -256,28 +260,17 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=0, pad=False, normalize=True)
             return qml.expval(qml.PauliZ(0))
 
-        circuit(x=[0.1, 0.1])
+        circuit(x=inpt)
         state = dev._state
-        assert np.allclose(state, [1/np.sqrt(2), 1/np.sqrt(2)])
+        assert np.allclose(state, expected)
 
-    def test_amplitude_embedding_normalizes_arrays(self):
-        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() normalizes an input if
-        `normalize` is set to `True`."""
-
-        dev = qml.device('default.qubit', wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=0, pad=False, normalize=True)
-            return qml.expval(qml.PauliZ(0))
-
-        circuit(x=np.array([0.1, 0.1]))
-        state = dev._state
-        assert np.allclose(state, [1/np.sqrt(2), 1/np.sqrt(2)])
-
-    def test_amplitude_embedding_exception_normalizes_variables(self):
-        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() normalizes an input that
-        is fed as a Variable."""
+    @pytest.mark.parametrize("inpt, expected", [(np.array([0, 2]), [0, 1]),
+                                                (1/np.sqrt(2)*np.array([2, 2]), [1/np.sqrt(2), 1/np.sqrt(2)]),
+                                                ([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3)], [-0.5, 0.8660254]),
+                                                ([0, 2], [0, 1])])
+    def test_amplitude_embedding_normalizes_positionalargs(self, inpt, expected):
+        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() normalizes an input passed as a positional
+        argument if `normalize` is set to `True`."""
 
         dev = qml.device('default.qubit', wires=1)
 
@@ -286,9 +279,9 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=0, pad=False, normalize=True)
             return qml.expval(qml.PauliZ(0))
 
-        circuit([0.1, 0.1])
+        circuit(inpt)
         state = dev._state
-        assert np.allclose(state, [1 / np.sqrt(2), 1 / np.sqrt(2)])
+        assert np.allclose(state, expected)
 
 
 class TestSqueezingEmbedding:
