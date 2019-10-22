@@ -85,12 +85,12 @@ class Hamiltonian:
         return self.coeffs, self.ops
 
 
-def qnodes(ansatz, observables, device, interface='numpy'):
+def circuits(ansatz, observables, device, interface='numpy'):
     """
-    Create a set of :class:`~.QNode`s whose circuits are based on ``ansatz`` and ``observables``.
+    Create a set of callable functions which evaluate quantum circuits based on ``ansatz`` and ``observables``.
 
-    One :class:`~.QNode` is created for every observable ``obs`` in ``observables``. The QNode has the following
-    circuit structure:
+    One circuit function is created for every observable ``obs`` in ``observables``. The circuits have the following
+    structure:
 
     .. code-block:: python
         @qml.qnode(device)
@@ -101,25 +101,26 @@ def qnodes(ansatz, observables, device, interface='numpy'):
     Args:
         ansatz (Iterable[:class:`~.Observable`]): the ansatz for the circuit before the final measurement step
         observables (Iterable[:class:`~.Observable`]): observables to measure during the final step of each circuit
-        device (:class:`~.Device`): device where the :class:`~.QNode`s should be executed
-        interface (str): which interface to use for the :class:`~.QNode`s
+        device (:class:`~.Device`): device where the circuits should be executed
+        interface (str): which interface to use for the :class:`~.QNode`s of the circuits
 
     Returns:
-        tuple(:class:`~.QNode`): callable functions which evaluate each observable
+        tuple: callable functions which evaluate each observable
     """
     if not callable(ansatz):
-        raise ValueError("Could not create QNOdes. The ansatz is not a callable function.")
+        raise ValueError("Could not create quantum circuits. The ansatz is not a callable function.")
     # TODO: can be more clever/efficient here for observables which are jointly measurable
-    qnodes_ = []
+    circuits = []
     for obs in observables:
         if not isinstance(obs, Observable):
-            raise ValueError("Could not create QNodes. Some or all observables are not valid.")
+            raise ValueError("Could not create circuits. Some or all observables are not valid.")
         @qnode(device=device, interface=interface)
-        def circuit(params):
-            ansatz(params)
+        def circuit(*params):
+            ansatz(*params)
+            obs.queue()  # HACK: logic for observables assumes that they are in a queue
             return expval(obs)
-        qnodes_.append(circuit)
-    return qnodes_
+        circuits.append(circuit)
+    return circuits
 
 
 def aggregate(coeffs, qnodes, params, interface="numpy"):

@@ -39,7 +39,7 @@ OBSERVABLES = [(qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
                (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)]
 JUNK_INPUTS = [None, [], tuple(), 5.0, {"junk": -1}]
 
-def custom_fixed_ansatz(_unused_params):
+def CUSTOM_FIXED_ANSATZ(_unused_params):
     qml.RX(0.5, 0)
     qml.RX(-1.2, 1)
     qml.Hadamard(0)
@@ -48,7 +48,7 @@ def custom_fixed_ansatz(_unused_params):
     qml.CNOT([0, 1])
 
 
-def custom_var_ansatz(params):
+def CUSTOM_VAR_ANSATZ(params):
     for p in params:
         qml.RX(p, 0)
     qml.CNOT([0, 1])
@@ -70,27 +70,16 @@ def amp_embed_and_strong_ent_layer(embed_params, layer_params):
     strong_ent_layer(layer_params, wires=[0, 1, 2])
 
 
-empty_ansatz = lambda x: None
+def EMPTY_ANSATZ():
+    pass
 
-ANSAETZE = [empty_ansatz, custom_fixed_ansatz, custom_var_ansatz,
+ANSAETZE = [EMPTY_ANSATZ, CUSTOM_FIXED_ANSATZ, CUSTOM_VAR_ANSATZ,
             amp_embed, strong_ent_layer, amp_embed_and_strong_ent_layer]
-empty_params = []
+EMPTY_PARAMS = []
+VAR_PARAMS = [0.5]
 EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
 LAYER_PARAMS = strong_ent_layer_uniform(n_wires=3)
 
-@pytest.fixture(scope="function")
-def mock_device(monkeypatch):
-    """A mock instance of the abstract Device class"""
-    with monkeypatch.context() as m:
-        m.setattr(Device, '__abstractmethods__', frozenset())
-
-@pytest.fixture(scope="function")
-def mock_device_with_eval(monkeypatch):
-    """A mock instance of the abstract Device class"""
-    with monkeypatch.context() as m:
-        m.setattr(Device, '__abstractmethods__', frozenset())
-        m.setattr(Device, 'expval', lambda self, x, y, z: 0.0)
-        m.setattr(Device, 'apply', lambda self, x, y, z: None)
 
 class TestHamiltonian:
     """Test the Hamiltonian class"""
@@ -141,30 +130,31 @@ class TestVQE:
 
     @pytest.mark.parametrize("ansatz", ANSAETZE)
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_qnodes_valid_init(self, ansatz, observables):
-        """Tests that a collection of QNodes is properly created"""
-        qnodes = qml.vqe.qnodes(ansatz, observables)
+    def test_circuits_valid_init(self, ansatz, observables, mock_device):
+        """Tests that a collection of circuits is properly created by vqe.circuits"""
+        circuits = qml.vqe.circuits(ansatz, observables, device=mock_device)
 
-        assert len(qnodes) == len(observables)
-        assert all(isinstance(qml.QNode, q) for q in qnodes)
-        assert all(len(q.circuit.observables) == 1 for q in qnodes)
-        assert all(q.circuit.observables[0] == observables[idx] for idx, q in enumerate(qnodes))
+        assert len(circuits) == len(observables)
+        assert all(callable(c) for c in circuits)
+        assert all(c.device == mock_device for c in circuits)
+        assert all(hasattr(c, "jacobian") for c in circuits)
 
     @pytest.mark.parametrize("ansatz, params", [
-        (amp_embed, EMBED_PARAMS),
-        #(strong_ent_layer, LAYER_PARAMS),
+        (EMPTY_ANSATZ, EMPTY_PARAMS),
+        (CUSTOM_FIXED_ANSATZ, EMPTY_PARAMS),
+        (CUSTOM_VAR_ANSATZ, VAR_PARAMS),
+        (strong_ent_layer, LAYER_PARAMS),
+        # FIXME uncomment when https://github.com/XanaduAI/pennylane/issues/365 is addressed
+        #(amp_embed, EMBED_PARAMS),
         #(amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
     ])
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_qnodes_evaluate(self, ansatz, observables, params):
-        """Tests that the qnodes returned by qnodes evaluate properly"""
-        dev = mock_device_with_eval
-        dev.num_wires = 3
-        qnodes = qml.vqe.qnodes(ansatz, observables, device=dev)
-        print("qnodes", qnodes)
-        print("params", params)
-        for idx, q in enumerate(qnodes):
-            val = q(params)
+    def test_circuits_evaluate(self, ansatz, observables, params, mock_device):
+        """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
+        mock_device.num_wires = 3
+        circuits = qml.vqe.circuits(ansatz, observables, device=mock_device)
+        for idx, c in enumerate(circuits):
+            val = c(params)
             assert type(val) == float
 
     @pytest.mark.parametrize("coeffs, observables, expected", [
@@ -175,27 +165,28 @@ class TestVQE:
         ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), 0.5 * 1.0 + 1.2 * 1.0),
         ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), 0.5 * 1.0 + 1.2 * 1.0)
     ])
-    def test_qnodes_expvals(self, coeffs, observables, expected):
-        """Tests that the qnodes function returns correct expectation values"""
-        qnodes = qml.vqe.qnodes(empty_ansatz, observables)
-        for q in qnodes:
-            val = q(*empty_params)
+    def test_circuits_expvals(self, coeffs, observables, expected):
+        """Tests that the vqe.circuits function returns correct expectation values"""
+        dev = qml.device('default.qubit', wires=2)
+        circuits = qml.vqe.circuits(EMPTY_ANSATZ, observables, dev)
+        for c in circuits:
+            val = c(*EMPTY_PARAMS)
             assert val == expected
 
     @pytest.mark.parametrize("ansatz", ANSAETZE)
     @pytest.mark.parametrize("observables", JUNK_INPUTS)
-    def test_qnodes_no_observables(self, ansatz, observables):
-        """Tests that an exception is raised when no observables are supplied to qnodes"""
+    def test_circuits_no_observables(self, ansatz, observables, mock_device):
+        """Tests that an exception is raised when no observables are supplied to vqe.circuits"""
         with pytest.raises(ValueError, match="observables are not valid"):
             obs = (observables,)
-            qnodes = qml.vqe.qnodes(ansatz, obs, device=mock_device)
+            circuits = qml.vqe.circuits(ansatz, obs, device=mock_device)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_qnodes_no_ansatz(self, ansatz, observables):
-        """Tests that an exception is raised when no valid ansatz is supplied to qnodes"""
+    def test_circuits_no_ansatz(self, ansatz, observables, mock_device):
+        """Tests that an exception is raised when no valid ansatz is supplied to vqe.circuits"""
         with pytest.raises(ValueError, match="ansatz is not a callable function"):
-            qnodes = qml.vqe.qnodes(ansatz, observables, device=mock_device)
+            circuits = qml.vqe.circuits(ansatz, observables, device=mock_device)
 
     @pytest.mark.parametrize("coeffs, observables, expected", [
         ((-0.6,), (qml.PauliZ(0),), -0.6 * 1.0),
@@ -207,7 +198,7 @@ class TestVQE:
     ])
     def test_aggregate_expval(self, coeffs, observables, expected):
         """Tests that the aggregate function returns correct expectation values"""
-        qnodes = qml.vqe.qnodes(empty_ansatz, observables)
+        qnodes = qml.vqe.qnodes(EMPTY_ANSATZ, observables)
         expval = qml.vqe.aggregate(coeffs, qnodes, empty_params)
         assert expval == expected
 
@@ -235,7 +226,7 @@ class TestVQE:
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function gives the correct expectation value"""
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        cost = qml.vqe.cost(empty_params, empty_ansatz, hamiltonian)
+        cost = qml.vqe.cost(empty_params, EMPTY_ANSATZ, hamiltonian)
         assert cost == expected
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
@@ -243,10 +234,10 @@ class TestVQE:
         """Tests that the cost function raises an exception if the ansatz is not valid"""
         hamiltonian = qml.vqe.Hamiltonian((1.0,), (qml.PauliZ(0)))
         with pytest.raises(ValueError, match="no valid ansatz was provided"):
-            cost = qml.vqe.cost(empty_params, empty_ansatz, hamiltonian)
+            cost = qml.vqe.cost(empty_params, EMPTY_ANSATZ, hamiltonian)
 
     @pytest.mark.parametrize("hamiltonian", JUNK_INPUTS)
     def test_cost_invalid_ansatz(self, hamiltonian):
         """Tests that the cost function raises an exception if the Hamiltonian is not valid"""
         with pytest.raises(ValueError, match="the Hamiltonian is invalid"):
-            cost = qml.vqe.cost(empty_params, empty_ansatz, hamiltonian)
+            cost = qml.vqe.cost(empty_params, EMPTY_ANSATZ, hamiltonian)

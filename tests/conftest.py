@@ -109,6 +109,5 @@ def mock_device(monkeypatch):
     """A mock instance of the abstract Device class"""
 
     with monkeypatch.context() as m:
-        dev = qml.Device
-        m.setattr(dev, '__abstractmethods__', frozenset())
-        yield qml.Device()
+        m.setattr(qml.Device, '__abstractmethods__', frozenset())
+        return qml.Device()
