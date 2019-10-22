@@ -1,5 +1,3 @@
-.. _api_qml_utils:
-
 qml.utils
 =========
 
@@ -10,4 +8,8 @@ qml.utils
     Unless you are a PennyLane or plugin developer, you likely do not need
     to use these utility functions.
 
-.. automodule:: pennylane.utils
+.. automodapi:: pennylane.utils
+    :no-heading:
+    :include-all-objects:
+    :no-inheritance-diagram:
+    :skip: Iterable, Variable

@@ -1,5 +1,3 @@
-.. _api_qml_variable:
-
 qml.variable
 ============
 
@@ -10,4 +8,8 @@ qml.variable
     Unless you are a PennyLane or plugin developer, you likely do not need
     to use the ``Variable`` class.
 
-.. automodule:: pennylane.variable
+.. automodapi:: pennylane.variable
+    :no-heading:
+    :include-all-objects:
+    :no-inheritance-diagram:
+    :skip: Sequence

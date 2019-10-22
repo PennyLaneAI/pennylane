@@ -14,16 +14,6 @@
 """
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
-
-.. autosummary::
-    :toctree: api
-
-    _flatten
-    _unflatten
-    _unflatten
-    _inv_dict
-    _get_default_args
-    expand
 """
 from collections.abc import Iterable
 import numbers

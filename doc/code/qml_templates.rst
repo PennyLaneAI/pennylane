@@ -1,5 +1,3 @@
-.. _api_qml_temp:
-
 qml.templates
 =============
 

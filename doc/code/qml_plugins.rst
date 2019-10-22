@@ -1,5 +1,3 @@
-.. _api_qml_plugins:
-
 qml.plugins
 ===========
 
@@ -12,5 +10,7 @@ qml.plugins
 
     See the `main plugins page <https://pennylane.ai/plugins.html>`_ for more
     details on available plugins.
+
+.. rubric:: Modules
 
 .. automodule:: pennylane.plugins

@@ -1,5 +1,3 @@
-.. _api_qml_interfaces:
-
 qml.interfaces
 ==============
 
@@ -12,5 +10,7 @@ qml.interfaces
 
     See the :doc:`main interfaces page <../introduction/interfaces>` for more
     details on available interfaces.
+
+.. rubric:: Modules
 
 .. automodule:: pennylane.interfaces

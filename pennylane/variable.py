@@ -59,14 +59,6 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
     property automates the process of unpacking the Variable value.
     The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
-
-Classes
--------
-
-.. autosummary::
-    :toctree: api
-
-    Variable
 """
 from collections.abc import Sequence
 import copy
@@ -97,8 +89,8 @@ class Variable:
         name (None, str): name of the argument
     """
     # pylint: disable=too-few-public-methods
-    free_param_values = None  #: array[float]: current free parameter values, set in :meth:`QNode.evaluate`
-    kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`QNode.evaluate`
+    free_param_values = None  #: array[float]: current free parameter values, set in :meth:`~.QNode.evaluate`
+    kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`~.QNode.evaluate`
 
     def __init__(self, idx, name=None):
         self.idx = idx    #: int: parameter index
