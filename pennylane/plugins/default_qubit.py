@@ -12,76 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Default qubit plugin
-====================
-
-**Module name:** :mod:`pennylane.plugins.default_qubit`
-
-**Short name:** ``"default.qubit"``
-
-.. currentmodule:: pennylane.plugins.default_qubit
-
 The default plugin is meant to be used as a template for writing PennyLane device
 plugins for new qubit-based backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
-
-The following is the technical documentation of the implementation of the plugin. You will
-not need to read and understand this to use this plugin.
-
-Auxiliary functions
--------------------
-
-.. autosummary::
-    spectral_decomposition
-    unitary
-    hermitian
-
-Gates and operations
---------------------
-
-.. autosummary::
-    Rphi
-    Rotx
-    Roty
-    Rotz
-    Rot3
-    S
-    T
-    X
-    Y
-    Z
-    H
-    CNOT
-    SWAP
-    CSWAP
-    CZ
-    CRotx
-    CRoty
-    CRotz
-    CRot3
-
-Observables
-------------
-
-.. autosummary::
-    X
-    Y
-    Z
-
-Classes
--------
-
-.. autosummary::
-    DefaultQubit
-
-Code details
-^^^^^^^^^^^^
 """
 from collections import OrderedDict
 import itertools
+import functools
 import warnings
 
 import numpy as np
@@ -319,9 +259,10 @@ class DefaultQubit(Device):
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
-    pennylane_requires = '0.6'
-    version = '0.6.0'
+    pennylane_requires = '0.7'
+    version = '0.7.0'
     author = 'Xanadu Inc.'
+    _capabilities = {"model": "qubit", "tensor_observables": True}
 
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
@@ -429,7 +370,11 @@ class DefaultQubit(Device):
     def expval(self, observable, wires, par):
         if self.analytic:
             # exact expectation value
-            A = self._get_operator_matrix(observable, par)
+            if isinstance(observable, list):
+                A = self._get_tensor_operator_matrix(observable, par)
+            else:
+                A = self._get_operator_matrix(observable, par)
+
             ev = self.ev(A, wires)
         else:
             # estimate the ev
@@ -439,8 +384,12 @@ class DefaultQubit(Device):
 
     def var(self, observable, wires, par):
         if self.analytic:
-            # exact expectation value
-            A = self._get_operator_matrix(observable, par)
+            # exact variance value
+            if isinstance(observable, list):
+                A = self._get_tensor_operator_matrix(observable, par)
+            else:
+                A = self._get_operator_matrix(observable, par)
+
             var = self.ev(A@A, wires) - self.ev(A, wires)**2
         else:
             # estimate the ev
@@ -449,7 +398,11 @@ class DefaultQubit(Device):
         return var
 
     def sample(self, observable, wires, par):
-        A = self._get_operator_matrix(observable, par)
+        if isinstance(observable, list):
+            A = self._get_tensor_operator_matrix(observable, par)
+        else:
+            A = self._get_operator_matrix(observable, par)
+
         a, P = spectral_decomposition(A)
 
         p = np.zeros(a.shape)
@@ -480,16 +433,29 @@ class DefaultQubit(Device):
             A = operation_map[operation]
             return A if not callable(A) else A(*par)
 
+    def _get_tensor_operator_matrix(self, obs, par):
+        """Get the operator matrix for a given tensor product of operations.
+
+        Args:
+            obs (list[str]): list of observable names to tensor
+            par (list[list[Any]]): parameter values
+
+        Returns:
+            array: matrix representation.
+        """
+        ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
+        return functools.reduce(np.kron, ops)
+
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.
 
          Args:
-          A (array[float]): the observable matrix as array
-          wires (Sequence[int]): target subsystems
+            A (array[float]): the observable matrix as array
+            wires (Sequence[int]): target subsystems
          Returns:
-          float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        As = self.mat_vec_product(A, self._state, wires)
+        As = self.mat_vec_product(A, self._state, np.hstack(wires).tolist())
         expectation = np.vdot(self._state, As)
 
         if np.abs(expectation.imag) > tolerance:

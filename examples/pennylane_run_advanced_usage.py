@@ -82,7 +82,7 @@ def circuit1(param):
 #
 # PennyLane uses the pattern that *all positional arguments to quantum functions are available
 # to be differentiated*, while *keyword arguments are never differentiated*. Thus, when using the
-# gradient-descent-based :ref:`optimizers <optimization_methods>` included in PennyLane, all
+# gradient-descent-based optimizers included in PennyLane, all
 # numerical parameters appearing in non-keyword arguments will be updated, while all numerical
 # values included as keyword arguments will not be updated.
 #

@@ -12,115 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=protected-access
-r"""
-Measurements
-============
-
-**Module name:** :mod:`pennylane.measure`
-
-.. currentmodule:: pennylane.measure
-
-This module contains the functions for computing expectation values,
-variances, and measurement samples of quantum observables.
-
-These are used to indicate to the quantum device how to measure
-and return the requested observables. For example, the following
-QNode returns the expectation value of observable :class:`~.PauliZ`
-on wire 1, and the variance of observable :class:`~.PauliX` on
-wire 2.
-
-.. code-block:: python
-
-    import pennylane as qml
-    from pennylane import expval, var
-
-    dev = qml.device('default.qubit', wires=2)
-
-    @qml.qnode(dev)
-    def circuit(x, y):
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=[0,1])
-        qml.RY(y, wires=1)
-        return expval(qml.PauliZ(0)), var(qml.PauliX(1))
-
-Note that *all* returned observables must be within
-a measurement function; they cannot be 'bare'.
-
-Summary
-^^^^^^^
-
-.. autosummary::
-   expval
-   var
-   sample
-
-Code details
-^^^^^^^^^^^^
 """
-import warnings
-
-import pennylane as qml
-
+This module contains the functions for computing different types of measurement
+outcomes from quantum observables - expectation values, variances of expectations,
+and measurement samples.
+"""
 from .qnode import QNode, QuantumFunctionError
-from .operation import Observable, Sample, Variance, Expectation
+from .operation import Observable, Sample, Variance, Expectation, Tensor
 
 
-class ExpvalFactory:
+def expval(op):
     r"""Expectation value of the supplied observable.
 
     Args:
         op (Observable): a quantum observable object
     """
-
-    def __call__(self, op):
-        if not isinstance(op, Observable):
-            raise QuantumFunctionError(
-                "{} is not an observable: cannot be used with expval".format(op.name)
-            )
-
-        if QNode._current_context is not None:
-            # delete operations from QNode queue
-            QNode._current_context.queue.remove(op)
-
-        # set return type to be an expectation value
-        op.return_type = Expectation
-
-        if QNode._current_context is not None:
-            # add observable to QNode observable queue
-            QNode._current_context._append_op(op)
-
-        return op
-
-    def __getattr__(self, name):
-        # This to allow backwards compatibility with the previous
-        # module/attribute UI for requesting expectation values. Note that a deprecation
-        # warning will be raised if this UI is used.
-        #
-        # Once fully deprecated, this method can be removed,
-        # and the ExpvalFactory function can be converted into a
-        # simple expval() function using the code within __call__.
-        warnings.warn(
-            "Calling qml.expval.Observable() is deprecated. "
-            "Please use the new qml.expval(qml.Observable()) form.",
-            DeprecationWarning,
+    if not isinstance(op, Observable):
+        raise QuantumFunctionError(
+            "{} is not an observable: cannot be used with expval".format(op._name)
         )
 
-        if name in qml.ops.__all_obs__:  # pylint: disable=no-member
-            obs_class = getattr(qml.ops, name)
-            return type(name, (obs_class,), {"return_type": Expectation})
+    if QNode._current_context is not None:
+        # delete operations from QNode queue
+        if isinstance(op, Tensor):
+            for o in op.obs:
+                QNode._current_context.queue.remove(o)
+        else:
+            QNode._current_context.queue.remove(op)
 
-        if name in qml.ops.__all_ops__:  # pylint: disable=no-member
-            raise AttributeError("{} is not an observable: cannot be used with expval".format(name))
+    # set return type to be an expectation value
+    op.return_type = Expectation
 
-        raise AttributeError("module 'pennylane' has no observable '{}'".format(name))
+    if QNode._current_context is not None:
+        # add observable to QNode observable queue
+        QNode._current_context._append_op(op)
 
-
-expval = ExpvalFactory()
-r"""Expectation value of the supplied observable.
-
-Args:
-    op (Observable): a quantum observable object
-"""
+    return op
 
 
 def var(op):
@@ -131,12 +58,16 @@ def var(op):
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(
-            "{} is not an observable: cannot be used with var".format(op.name)
+            "{} is not an observable: cannot be used with var".format(op._name)
         )
 
     if QNode._current_context is not None:
         # delete operations from QNode queue
-        QNode._current_context.queue.remove(op)
+        if isinstance(op, Tensor):
+            for o in op.obs:
+                QNode._current_context.queue.remove(o)
+        else:
+            QNode._current_context.queue.remove(op)
 
     # set return type to be a variance
     op.return_type = Variance
@@ -157,18 +88,22 @@ def sample(op):
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(
-            "{} is not an observable: cannot be used with sample".format(op.name)
+            "{} is not an observable: cannot be used with sample".format(op._name)
         )
 
     if QNode._current_context is not None:
-        # delete operation from QNode queue
-        QNode._current_context.queue.remove(op)
+        # delete operations from QNode queue
+        if isinstance(op, Tensor):
+            for o in op.obs:
+                QNode._current_context.queue.remove(o)
+        else:
+            QNode._current_context.queue.remove(op)
 
     # set return type to be a sample
     op.return_type = Sample
 
     if QNode._current_context is not None:
-        # add observable back to QNode observable queue
+        # add observable to QNode observable queue
         QNode._current_context._append_op(op)
 
     return op

@@ -12,38 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utilities
-=========
-
-**Module name:** :mod:`pennylane.utils`
-
-.. currentmodule:: pennylane.utils
-
-This module contains utilities and auxiliary functions, which are shared
+This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
-
-.. raw:: html
-
-    <h3>Summary</h3>
-
-.. autosummary::
-    _flatten
-    _unflatten
-    unflatten
-    _inv_dict
-    _get_default_args
-    expand
-
-.. raw:: html
-
-    <h3>Code details</h3>
 """
 from collections.abc import Iterable
 import numbers
 import inspect
 import itertools
 
-import autograd.numpy as np
+import numpy as np
 
 from pennylane.variable import Variable
 
@@ -129,11 +106,10 @@ def _get_default_args(func):
     """Get the default arguments of a function.
 
     Args:
-        func (function): a valid Python function
+        func (callable): a function
 
     Returns:
-        dict: dictionary containing the argument name and tuple
-        (positional idx, default value)
+        dict[str, tuple]: mapping from argument name to (positional idx, default value)
     """
     signature = inspect.signature(func)
     return {

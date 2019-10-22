@@ -15,14 +15,12 @@
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
 import math
-from unittest.mock import Mock, PropertyMock, patch
-from conftest import DummyDevice
 
 import pytest
-from autograd import numpy as np
-from scipy.linalg import block_diag, expm
+import numpy as np
+from scipy.linalg import block_diag
 
-from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, X, Y, Z
+from pennylane.plugins.default_qubit import Y, Z
 
 import pennylane as qml
 from pennylane._device import Device
@@ -33,7 +31,7 @@ class TestQNodeOperationQueue:
     """Tests that the QNode operation queue is properly filled and interacted with"""
 
     @pytest.fixture(scope="function")
-    def opqueue_test_node(self, mock_device):
+    def qnode(self, mock_device):
         """Provides a circuit for the subsequent tests of the operation queue"""
 
         def circuit(x):
@@ -48,86 +46,84 @@ class TestQNodeOperationQueue:
 
         return node
 
-    def test_operation_ordering(self, opqueue_test_node):
+    def test_operation_ordering(self, qnode):
         """Tests that the ordering of the operations is correct"""
 
-        assert opqueue_test_node.ops[0].name == "RX"
-        assert opqueue_test_node.ops[1].name == "CNOT"
-        assert opqueue_test_node.ops[2].name == "RY"
-        assert opqueue_test_node.ops[3].name == "RZ"
-        assert opqueue_test_node.ops[4].name == "PauliX"
-        assert opqueue_test_node.ops[5].name == "PauliZ"
+        assert qnode.ops[0].name == "RX"
+        assert qnode.ops[1].name == "CNOT"
+        assert qnode.ops[2].name == "RY"
+        assert qnode.ops[3].name == "RZ"
+        assert qnode.ops[4].name == "PauliX"
+        assert qnode.ops[5].name == "PauliZ"
 
-    def test_op_successors_operations_only(self, opqueue_test_node):
+    def test_op_successors_operations_only(self, qnode):
         """Tests that _op_successors properly extracts the successors that are operations"""
 
-        operation_successors = opqueue_test_node._op_successors(0, only="G")
+        operation_successors = qnode._op_successors(qnode.ops[0], only="G")
 
-        assert opqueue_test_node.ops[0] not in operation_successors
-        assert opqueue_test_node.ops[1] in operation_successors
-        assert opqueue_test_node.ops[4] not in operation_successors
+        assert qnode.ops[0] not in operation_successors
+        assert qnode.ops[1] in operation_successors
+        assert qnode.ops[4] not in operation_successors
 
-    def test_op_successors_observables_only(self, opqueue_test_node):
+    def test_op_successors_observables_only(self, qnode):
         """Tests that _op_successors properly extracts the successors that are observables"""
 
-        observable_successors = opqueue_test_node._op_successors(0, only="E")
+        observable_successors = qnode._op_successors(qnode.ops[0], only="E")
 
-        assert opqueue_test_node.ops[0] not in observable_successors
-        assert opqueue_test_node.ops[1] not in observable_successors
-        assert opqueue_test_node.ops[4] in observable_successors
+        assert qnode.ops[0] not in observable_successors
+        assert qnode.ops[1] not in observable_successors
+        assert qnode.ops[4] in observable_successors
 
-    def test_op_successors_both_operations_and_observables(self, opqueue_test_node):
+    def test_op_successors_both_operations_and_observables(self, qnode):
         """Tests that _op_successors properly extracts all successors"""
 
-        successors = opqueue_test_node._op_successors(0, only=None)
+        successors = qnode._op_successors(qnode.ops[0], only=None)
 
-        assert opqueue_test_node.ops[0] not in successors
-        assert opqueue_test_node.ops[1] in successors
-        assert opqueue_test_node.ops[4] in successors
+        assert qnode.ops[0] not in successors
+        assert qnode.ops[1] in successors
+        assert qnode.ops[4] in successors
 
-    def test_op_successors_both_operations_and_observables_nodes(self, opqueue_test_node):
+    def test_op_successors_both_operations_and_observables_nodes(self, qnode):
         """Tests that _op_successors properly extracts all successor nodes"""
 
-        successors = opqueue_test_node._op_successors(0, only=None, get_nodes=True)
+        successors = qnode._op_successors(qnode.ops[0], only=None)
 
-        assert opqueue_test_node.circuit.operation_nodes[0] not in successors
-        assert opqueue_test_node.circuit.operation_nodes[1] in successors
-        assert opqueue_test_node.circuit.operation_nodes[2] in successors
-        assert opqueue_test_node.circuit.operation_nodes[3] in successors
-        assert opqueue_test_node.circuit.observable_nodes[0] in successors
+        assert qnode.circuit.operations[0] not in successors
+        assert qnode.circuit.operations[1] in successors
+        assert qnode.circuit.operations[2] in successors
+        assert qnode.circuit.operations[3] in successors
+        assert qnode.circuit.observables[0] in successors
 
-    def test_op_successors_both_operations_and_observables_strict_ordering(self, opqueue_test_node):
+    def test_op_successors_both_operations_and_observables_strict_ordering(self, qnode):
         """Tests that _op_successors properly extracts all successors"""
 
-        successors = opqueue_test_node._op_successors(2, only=None)
+        successors = qnode._op_successors(qnode.ops[2], only=None)
 
-        assert opqueue_test_node.circuit.operations[0] not in successors
-        assert opqueue_test_node.circuit.operations[1] not in successors
-        assert opqueue_test_node.circuit.operations[2] not in successors
-        assert opqueue_test_node.circuit.operations[3] not in successors
-        assert opqueue_test_node.circuit.observables[0] in successors
+        assert qnode.circuit.operations[0] not in successors
+        assert qnode.circuit.operations[1] not in successors
+        assert qnode.circuit.operations[2] not in successors
+        assert qnode.circuit.operations[3] not in successors
+        assert qnode.circuit.observables[0] in successors
 
-    def test_op_successors_extracts_all_successors(self, opqueue_test_node):
+    def test_op_successors_extracts_all_successors(self, qnode):
         """Tests that _op_successors properly extracts all successors"""
-        successors = opqueue_test_node._op_successors(2, only=None)
-        assert opqueue_test_node.ops[4] in successors
-        assert opqueue_test_node.ops[5] not in successors
+        successors = qnode._op_successors(qnode.ops[2], only=None)
+        assert qnode.ops[4] in successors
+        assert qnode.ops[5] not in successors
 
 
 @pytest.fixture(scope="function")
-def operable_mock_device_2_wires():
-    """A mock instance of the abstract Device class that can support
-       qfuncs."""
+def operable_mock_device_2_wires(monkeypatch):
+    """A mock instance of the abstract Device class that can support qfuncs."""
 
-    with patch.multiple(
-        Device,
-        __abstractmethods__=set(),
-        operations=PropertyMock(return_value=["RX", "RY", "CNOT"]),
-        observables=PropertyMock(return_value=["PauliX", "PauliY", "PauliZ"]),
-        reset=Mock(),
-        apply=Mock(),
-        expval=Mock(return_value=1),
-    ):
+    dev = Device
+    with monkeypatch.context() as m:
+        m.setattr(dev, '__abstractmethods__', frozenset())
+        m.setattr(dev, 'operations', ["RX", "RY", "CNOT"])
+        m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, 'reset', lambda self: None)
+        m.setattr(dev, 'apply', lambda self, x, y, z: None)
+        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
         yield Device(wires=2)
 
 
@@ -135,12 +131,11 @@ class TestQNodeBestMethod:
     """
     Test different flows of _best_method
     """
-    def test_best_method_with_non_gaussian_successors(self, tol):
+    def test_best_method_with_non_gaussian_successors(self, tol, gaussian_device_2_wires):
         """Tests that the analytic differentiation method is allowed and matches numerical
         differentiation if a non-Gaussian gate is not succeeded by an observable."""
-        dev = DummyDevice(wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(gaussian_device_2_wires)
         def circuit(x):
             qml.Squeezing(x, 0, wires=[0])
             qml.Beamsplitter(np.pi/4, 0, wires=[0, 1])
@@ -151,12 +146,11 @@ class TestQNodeBestMethod:
         expected = circuit.jacobian([0.321], method='F')
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_best_method_with_gaussian_successors_fails(self):
+    def test_best_method_with_gaussian_successors_fails(self, gaussian_device_2_wires):
         """Tests that the analytic differentiation method is not allowed
         if a non-Gaussian gate is succeeded by an observable."""
-        dev = DummyDevice(wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(gaussian_device_2_wires)
         def circuit(x):
             qml.Squeezing(x, 0, wires=[0])
             qml.Beamsplitter(np.pi/4, 0, wires=[0, 1])
@@ -1558,13 +1552,17 @@ class TestMetricTensor:
         assert len(res) == 4
 
         # first layer subcircuit
-        assert len(res[(0,)]['queue']) == 0
-        assert isinstance(res[(0,)]['observable'][0], qml.PauliX)
+        layer = res[(0,)]
+        assert len(layer['queue']) == 0
+        assert len(layer['observable']) == 1
+        assert isinstance(layer['observable'][0], qml.PauliX)
 
         # second layer subcircuit
-        assert len(res[(1,)]['queue']) == 1
-        assert isinstance(res[(1,)]['queue'][0], qml.RX)
-        assert isinstance(res[(1,)]['observable'][0], qml.PauliY)
+        layer = res[(1,)]
+        assert len(layer['queue']) == 1
+        assert len(layer['observable']) == 1
+        assert isinstance(layer['queue'][0], qml.RX)
+        assert isinstance(layer['observable'][0], qml.PauliY)
 
         # third layer subcircuit
         layer = res[(2, 3, 4)]
