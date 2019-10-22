@@ -1,13 +1,13 @@
-{%- if pagename != "search" %}
 <div class="sidebar-block search-block">
     <div id="main-search">
-      <form class="form-inline" action="{{ pathto('search') }}" method="GET" role="form">
-        <div class="input-group">
-          <input name="q" type="text" class="form-control" placeholder="Search...">
+      <form action="{{ pathto('search') }}" method="GET" role="form">
+        <div class="md-input">
+          <input name="q" type="text" required>
+          <span class="bar"></span>
+          <label>Search</label>
         </div>
         <input type="hidden" name="check_keywords" value="yes" />
         <input type="hidden" name="area" value="default" />
       </form>
     </div>
   </div>
-{%- endif %}
