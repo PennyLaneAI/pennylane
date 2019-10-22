@@ -395,7 +395,7 @@ class Device(abc.ABC):
             wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
-        Returns:_
+        Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
         raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))

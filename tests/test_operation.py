@@ -499,7 +499,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert t.name == [X._name, Y._name]
+        assert t.name == [X.name, Y.name]
 
     def test_num_wires(self):
         """Test that the correct number of wires is returned"""

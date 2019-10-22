@@ -29,7 +29,7 @@ def expval(op):
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(
-            "{} is not an observable: cannot be used with expval".format(op._name)
+            "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
     if QNode._current_context is not None:
@@ -58,7 +58,7 @@ def var(op):
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(
-            "{} is not an observable: cannot be used with var".format(op._name)
+            "{} is not an observable: cannot be used with var".format(op.name)
         )
 
     if QNode._current_context is not None:
@@ -88,7 +88,7 @@ def sample(op):
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(
-            "{} is not an observable: cannot be used with sample".format(op._name)
+            "{} is not an observable: cannot be used with sample".format(op.name)
         )
 
     if QNode._current_context is not None:
