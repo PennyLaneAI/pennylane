@@ -1,15 +1,13 @@
 .. _tf_interf:
 
-.. currentmodule:: pennylane
-
 TensorFlow interface
---------------------
+====================
 
 To use a quantum node in combination with TensorFlow's Eager mode, we have to make it
 compatible with TensorFlow. A TensorFlow-compatible quantum node can be created
 either by using the ``interface='tf'`` flag in the qnode decorator, or
-by calling the :func:`QNode.to_tf <pennylane.qnode.QNode>` function. Internally, the translation is executed by
-the :func:`TFQNode <interfaces.TFQNode>` function that returns the new quantum node object.
+by calling the :meth:`QNode.to_tf <pennylane.QNode.to_tf>` method. Internally, the translation is executed by
+the :func:`TFQNode <pennylane.interfaces.tf.TFQNode>` function that returns the new quantum node object.
 
 .. note::
     To use the TensorFlow eager execution interface in PennyLane, you must first install TensorFlow.
@@ -27,7 +25,7 @@ Using the TensorFlow interface is easy in PennyLane --- let's consider a few way
 it can be done.
 
 Construction via the decorator
-******************************
+------------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating QNodes
 in PennyLane. The only change required to construct a TensorFlow-capable QNode is to
@@ -53,7 +51,7 @@ as input, and returning ``tf.Tensor`` objects.
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
 Construction from a basic QNode
-*******************************
+-------------------------------
 
 Let us first create two basic, NumPy-interfacing QNodes.
 
@@ -83,7 +81,7 @@ Internally, the :meth:`~.QNode.to_tf` method uses the :func:`~.TFQNode` function
 to do the conversion.
 
 Quantum gradients using TensorFlow
-**********************************
+----------------------------------
 
 Since a TensorFlow-interfacing QNode acts like any other TensorFlow function,
 the standard method used to calculate gradients in eager mode with TensorFlow can be used.
@@ -95,18 +93,20 @@ For example:
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='tf')
-    def circuit3(phi, theta):
+    def circuit(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = tf.Variable([0.5, 0.1])
-    theta = tf.Variable(0.2)
+    phi = Variable([0.5, 0.1])
+    theta = Variable(0.2)
 
-    grad_fn = tf.implicit_value_and_gradients(circuit3)
-    result, [(phi_grad, phi_var), (theta_grad, theta_var)] = grad_fn(phi, theta)
+    with tf.GradientTape() as tape:
+        # Use the circuit to calculate the loss value
+        loss = circuit(phi, theta)
+        phi_grad, theta_grad = tape.gradient(loss, [phi, theta])
 
 Now, printing the gradients, we get:
 
@@ -114,6 +114,9 @@ Now, printing the gradients, we get:
 array([-0.47942549,  0.        ])
 >>> theta_grad
 -5.5511151231257827e-17
+
+Optimization using TensorFlow
+-----------------------------
 
 To optimize your hybrid classical-quantum model using the TensorFlow eager interface,
 you **must** make use of the TensorFlow optimizers provided in the ``tf.train`` module,
