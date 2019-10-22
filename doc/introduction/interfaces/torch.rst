@@ -1,13 +1,12 @@
 .. _torch_interf:
 
 PyTorch interface
------------------
-
+=================
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
 quantum nodes. A basic :class:`QNode <pennylane.qnode.QNode>` can be translated into a quantum node that interfaces
 with PyTorch, either by using the ``interface='torch'`` flag in the QNode Decorator, or
-by calling the :func:`QNode.to_torch <pennylane.qnode.QNode>` function. Internally, the translation is executed by
+by calling the :meth:`QNode.to_torch <pennylane.QNode.to_torch>` method. Internally, the translation is executed by
 the :func:`TorchQNode <pennylane.interfaces.torch.TorchQNode>` function that returns the new quantum node object.
 
 .. note::
@@ -23,7 +22,7 @@ the :func:`TorchQNode <pennylane.interfaces.torch.TorchQNode>` function that ret
 
 
 Construction via the decorator
-******************************
+------------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating
 a PyTorch-capable QNode in PennyLane. Simply specify the ``interface='torch'`` keyword argument:
@@ -50,7 +49,7 @@ it can now be used like any other PyTorch function:
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
 Construction from a NumPy QNode
-*******************************
+-------------------------------
 
 Sometimes, it is more convenient to instantiate a :class:`~.QNode` object directly, for example,
 if you would like to reuse the same quantum function across multiple devices, or even
@@ -82,7 +81,7 @@ Internally, the :meth:`QNode.to_torch <qnode.QNode.to_torch>` method uses the
 :func:`TorchQNode <interfaces.torch.TorchQNode>` function to do the conversion.
 
 Quantum gradients using PyTorch
-*******************************
+-------------------------------
 
 Since a PyTorch-interfacing QNode acts like any other ``torch.autograd.Function``,
 the standard method used to calculate gradients with PyTorch can be used.
@@ -118,7 +117,7 @@ tensor(-5.5511e-17)
 .. _pytorch_optimize:
 
 Optimization using PyTorch
-**************************
+--------------------------
 
 To optimize your hybrid classical-quantum model using the Torch interface,
 you **must** make use of the `PyTorch provided optimizers <https://pytorch.org/docs/stable/optim.html>`_,
