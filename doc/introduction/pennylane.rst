@@ -54,7 +54,7 @@ provided in PennyLane.
 the output of quantum circuits.
 
 5. :doc:`templates` gives an overview of different larger-scale composable 
-subcomponents for building quantum algorithms.
+layers for building quantum algorithms.
 
 6. :doc:`optimizers` details the built-in tools for optimizing and training 
 quantum computing and quantum machine learning circuits.
