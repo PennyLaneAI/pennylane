@@ -15,4 +15,11 @@
 This module provides a growing library of templates of common variational
 circuit architectures that can be used to easily build,
 evaluate, and train quantum nodes.
+
+.. currentmodule:: pennylane.templates
+.. autosummary::
+    :toctree: api
+
+    embeddings
+    layers
 """
