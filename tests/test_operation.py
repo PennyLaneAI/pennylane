@@ -18,7 +18,10 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane.variable import Variable
 from pennylane.operation import Tensor
+
+# pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
 # Operation subclasses to test
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
@@ -29,29 +32,29 @@ op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
 class TestOperation:
     """Operation class tests."""
 
-    @pytest.mark.parametrize("cls", op_classes_gaussian)
-    def test_heisenberg(self, cls, tol):
+    @pytest.mark.parametrize("test_class", op_classes_gaussian)
+    def test_heisenberg(self, test_class, tol):
         "Heisenberg picture adjoint actions of CV Operations."
 
-        ww = list(range(cls.num_wires))
+        ww = list(range(test_class.num_wires))
 
         # fixed parameter values
-        if cls.par_domain == 'A':
-            if cls.__name__ == "Interferometer":
+        if test_class.par_domain == 'A':
+            if test_class.__name__ == "Interferometer":
                 ww = list(range(2))
                 par = [np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
                                  [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])]
             else:
-                par = [np.array([[-1.82624687]])] * cls.num_params
+                par = [np.array([[-1.82624687]])] * test_class.num_params
         else:
-            par = [-0.069125, 0.51778, 0.91133, 0.95904][:cls.num_params]
+            par = [-0.069125, 0.51778, 0.91133, 0.95904][:test_class.num_params]
 
-        op = cls(*par, wires=ww)
+        op = test_class(*par, wires=ww)
 
-        if issubclass(cls, qml.operation.Observable):
+        if issubclass(test_class, qml.operation.Observable):
             Q = op.heisenberg_obs(0)
             # ev_order equals the number of dimensions of the H-rep array
-            assert Q.ndim == cls.ev_order
+            assert Q.ndim == test_class.ev_order
             return
 
         # not an Expectation
@@ -70,7 +73,7 @@ class TestOperation:
             # compare gradient recipe to numerical gradient
             h = 1e-7
             U = op.heisenberg_tr(0)
-            for k in range(cls.num_params):
+            for k in range(test_class.num_params):
                 D = op.heisenberg_pd(k)  # using the recipe
                 # using finite difference
                 op.params[k] += h
@@ -96,79 +99,77 @@ class TestOperation:
             U_high_order = np.array([U] * 3)
             op.heisenberg_expand(U_high_order, len(op.wires))
 
-
-
-    @pytest.mark.parametrize("cls", op_classes)
-    def test_operation_init(self, cls, monkeypatch):
+    @pytest.mark.parametrize("test_class", op_classes)
+    def test_operation_init(self, test_class, monkeypatch):
         "Operation subclass initialization."
 
-        n = cls.num_params
-        w = cls.num_wires
+        n = test_class.num_params
+        w = test_class.num_wires
         ww = list(range(w))
         # valid pars
-        if cls.par_domain == 'A':
+        if test_class.par_domain == 'A':
             pars = [np.eye(2)] * n
-        elif cls.par_domain == 'N':
+        elif test_class.par_domain == 'N':
             pars = [0] * n
         else:
             pars = [0.0] * n
 
         # valid call
-        op = cls(*pars, wires=ww)
-        assert op.name == cls.__name__
+        op = test_class(*pars, wires=ww)
+        assert op.name == test_class.__name__
         assert op.params == pars
         assert op._wires == ww
 
         # too many parameters
         with pytest.raises(ValueError, match='wrong number of parameters'):
-            cls(*(n+1)*[0], wires=ww)
+            test_class(*(n+1)*[0], wires=ww)
 
         # too few parameters
         if n > 0:
             with pytest.raises(ValueError, match='wrong number of parameters'):
-                cls(*(n-1)*[0], wires=ww)
+                test_class(*(n-1)*[0], wires=ww)
 
         if w > 0:
             # too many or too few wires
             with pytest.raises(ValueError, match='wrong number of wires'):
-                cls(*pars, wires=list(range(w+1)))
+                test_class(*pars, wires=list(range(w+1)))
             with pytest.raises(ValueError, match='wrong number of wires'):
-                cls(*pars, wires=list(range(w-1)))
+                test_class(*pars, wires=list(range(w-1)))
             # repeated wires
             if w > 1:
                 with pytest.raises(ValueError, match='wires must be unique'):
-                    cls(*pars, wires=w*[0])
+                    test_class(*pars, wires=w*[0])
 
         if n == 0:
             return
 
         # wrong parameter types
-        if cls.par_domain == 'A':
+        if test_class.par_domain == 'A':
             # params must be arrays
             with pytest.raises(TypeError, match='Array parameter expected'):
-                cls(*n*[0.0], wires=ww)
+                test_class(*n*[0.0], wires=ww)
             # params must not be Variables
             with pytest.raises(TypeError, match='Array parameter expected'):
-                cls(*n*[qml.variable.Variable(0)], wires=ww)
-        elif cls.par_domain == 'N':
+                test_class(*n*[qml.variable.Variable(0)], wires=ww)
+        elif test_class.par_domain == 'N':
             # params must be natural numbers
             with pytest.raises(TypeError, match='Natural number'):
-                cls(*n*[0.7], wires=ww)
+                test_class(*n*[0.7], wires=ww)
             with pytest.raises(TypeError, match='Natural number'):
-                cls(*n*[-1], wires=ww)
-        elif cls.par_domain == 'R':
+                test_class(*n*[-1], wires=ww)
+        elif test_class.par_domain == 'R':
             # params must be real numbers
             with pytest.raises(TypeError, match='Real scalar parameter expected'):
-                cls(*n*[1j], wires=ww)
+                test_class(*n*[1j], wires=ww)
 
         # if par_domain ever gets overridden to an unsupported value, should raise exception
-        monkeypatch.setattr(cls, 'par_domain', 'junk')
+        monkeypatch.setattr(test_class, 'par_domain', 'junk')
         with pytest.raises(ValueError, match='Unknown parameter domain'):
-            cls(*pars, wires=ww)
+            test_class(*pars, wires=ww)
 
-        monkeypatch.setattr(cls, 'par_domain', 7)
+        monkeypatch.setattr(test_class, 'par_domain', 7)
         with pytest.raises(ValueError, match='Unknown parameter domain'):
-            cls(*pars, wires=ww)
+            test_class(*pars, wires=ww)
 
 
     @pytest.fixture(scope="function")
@@ -207,27 +208,38 @@ class TestOperation:
         assert isinstance(op, qml.operation.Operation)
 
 
-class TestOperationConstruction:
-    """Test custom operations construction."""
+class TestOperatorConstruction:
+    """Test custom operators construction."""
 
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
 
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
             par_domain = 'R'
-            grad_method = 'A'
 
         with pytest.raises(ValueError, match="wrong number of wires"):
             DummyOp(0.5, wires=[0, 1])
 
+    def test_non_unique_wires(self):
+        """Test that an exception is raised if called with identical wires"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 2
+            num_params = 1
+            par_domain = 'R'
+
+        with pytest.raises(ValueError, match="wires must be unique"):
+            DummyOp(0.5, wires=[1, 1], do_queue=False)
+
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
 
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
             par_domain = 'R'
@@ -239,8 +251,8 @@ class TestOperationConstruction:
     def test_incorrect_param_domain(self):
         """Test that an exception is raised if an incorrect parameter domain is requested"""
 
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
             par_domain = 'J'
@@ -248,6 +260,10 @@ class TestOperationConstruction:
 
         with pytest.raises(ValueError, match="Unknown parameter domain"):
             DummyOp(0.5, wires=0)
+
+
+class TestOperationConstruction:
+    """Test custom operations construction."""
 
     def test_incorrect_grad_recipe_length(self):
         """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
@@ -311,7 +327,7 @@ class TestOperationConstruction:
             num_wires = 1
             num_params = 1
             par_domain = 'A'
-            grad_method = 'A'
+            grad_method = 'F'
 
         with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
             DummyOp(qml.variable.Variable(0), wires=[0])
@@ -400,6 +416,10 @@ class TestOperationConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54, 0)
 
+
+class TestObservableConstruction:
+    """Test custom observables construction."""
+
     def test_observable_return_type_none(self):
         """Check that the return_type of an observable is initially None"""
 
@@ -411,6 +431,50 @@ class TestOperationConstruction:
             grad_method = None
 
         assert DummyObserv(0, wires=[1]).return_type is None
+
+    def test_observable_is_not_operation_but_operator(self):
+        """Check that the Observable class inherits from an Operator, not from an Operation"""
+
+        assert issubclass(qml.operation.Observable, qml.operation.Operator)
+        assert not issubclass(qml.operation.Observable, qml.operation.Operation)
+
+    def test_observable_is_operation_as_well(self):
+        """Check that the Observable class inherits from an Operator class as well"""
+
+        class DummyObserv(qml.operation.Observable, qml.operation.Operation):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'N'
+            grad_method = None
+
+        assert issubclass(DummyObserv, qml.operation.Operator)
+        assert issubclass(DummyObserv, qml.operation.Observable)
+        assert issubclass(DummyObserv, qml.operation.Operation)
+
+
+class TestOperatorIntegration:
+    """ Integration tests for the Operation class"""
+
+    def test_all_wires_defined_but_init_with_one(self):
+        """Test that an exception is raised if the class is defined with ALL wires,
+        but then instantiated with only one"""
+
+        dev1 = qml.device("default.qubit", wires=2)
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = qml.operation.Wires.All
+            num_params = 1
+            par_domain = 'R'
+
+        @qml.qnode(dev1)
+        def circuit():
+            DummyOp(wires=[0], do_queue=True)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
+            circuit()
 
 
 class TestTensor:
