@@ -15,8 +15,8 @@
 This module contains the :class:`Variable` class, which is used to track
 and identify :class:`~pennylane.qnode.QNode` parameters.
 
-Usage
------
+Description
+-----------
 
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
@@ -89,8 +89,8 @@ class Variable:
         name (None, str): name of the argument
     """
     # pylint: disable=too-few-public-methods
-    free_param_values = None  #: array[float]: current free parameter values, set in :meth:`QNode.evaluate`
-    kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`QNode.evaluate`
+    free_param_values = None  #: array[float]: current free parameter values, set in :meth:`~.QNode.evaluate`
+    kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`~.QNode.evaluate`
 
     def __init__(self, idx, name=None):
         self.idx = idx    #: int: parameter index

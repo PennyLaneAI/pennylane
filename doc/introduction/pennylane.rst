@@ -41,23 +41,23 @@ Learn more
 
 In the following sections you can learn more about the key features of PennyLane:
 
-1. :doc:`circuits` shows how PennyLane unifies and simplifies 
+1. :doc:`circuits` shows how PennyLane unifies and simplifies
 the process of programming quantum circuits with trainable parameters.
 
-2. :doc:`interfaces` introduces how PennyLane is used with different 
+2. :doc:`interfaces` introduces how PennyLane is used with different
 machine learning libraries to optimize quantum circuits or hybrid computations.
 
-3. :doc:`operations` outlines the various quantum circuit building blocks 
+3. :doc:`operations` outlines the various quantum circuit building blocks
 provided in PennyLane.
 
 4. :doc:`measurements` presents the different options available to measure
 the output of quantum circuits.
 
-5. :doc:`templates` gives an overview of different larger-scale composable 
+5. :doc:`templates` gives an overview of different larger-scale composable
 layers for building quantum algorithms.
 
-6. :doc:`optimizers` details the built-in tools for optimizing and training 
+6. :doc:`optimizers` details the built-in tools for optimizing and training
 quantum computing and quantum machine learning circuits.
 
-7. :doc:`configuration` provides details about how to customize 
+7. :doc:`configuration` provides details about how to customize
 PennyLane and provide credentials for quantum hardware access.
