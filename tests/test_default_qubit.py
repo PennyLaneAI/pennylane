@@ -365,7 +365,6 @@ class TestOperatorMatrices:
 
         assert res is None
 
-
 class TestApply:
     """Tests that operations and inverses of certain operations are applied correctly or that the proper
     errors are raised.
@@ -948,7 +947,7 @@ class TestDefaultQubitIntegration:
         ("S", -1),
     ])
     def test_inverse_circuit_calling_inv_multiple_times(self, qubit_device_1_wire, tol, name, expected_output):
-        """Tests the inverse of supported gates that act on a single wire and are not parameterized"""
+        """Tests that multiple calls to the inverse of an operation works"""
 
         op = getattr(qml.ops, name)
 
@@ -973,6 +972,8 @@ class TestDefaultQubitIntegration:
             return qml.expval(qml.PauliZ(0))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+
 
     @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
                                                            multiplier * 0.5432) for multiplier in range(25)

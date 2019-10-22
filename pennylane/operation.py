@@ -247,13 +247,12 @@ class Operator(abc.ABC):
 
     @property
     def name(self):
-        """String for the name of the operator.
+        """Get and set the name of the operator.
         """
         return self._name
 
     @name.setter
     def name(self, value):
-        """Setter for the name of the operator."""
         self._name = value
 
     def __init__(self, *args, wires=None, do_queue=True):
@@ -492,7 +491,7 @@ class Operation(Operator):
 
     @property
     def is_inverse(self):
-        """Boolean determining if the inverse of the operation was determined.
+        """Boolean determining if the inverse of the operation was requested.
         """
         return str.endswith(self._name, self.string_for_inverse)
 
@@ -502,13 +501,18 @@ class Operation(Operator):
         self._grad_recipe = value
 
     def inv(self):
-        """Concatenating the string used to indicate the inverse of the operation,
-        so that it will be used for the computations.
+        """Inverts the operation, such that the inverse will
+        be used for the computations by the specific device.
+
+        This method concatenates a string to the name of the operation,
+        to indicate that the inverse will be used for computations.
 
         Any subsequent call of this method will toggle between the original
         operation and the inverse of the operation.
-        """
 
+        Returns:
+            :class:`Operator`: operation to be inverted
+        """
         self._name = self._name + self.string_for_inverse\
             if not self.is_inverse else self._name[:-len(self.string_for_inverse)]
         return self
