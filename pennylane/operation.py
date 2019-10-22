@@ -22,15 +22,17 @@ Usage
 Qubit Operations
 ----------------
 The :class:`Operator` class serves as a base class for operators,
-it is inherited by both the :class:`Observable` class and the
+and is inherited by both the :class:`Observable` class and the
 :class:`Operation` class. These classes are subclassed to implement quantum operations
 and measure observables in PennyLane.
 
 * Each :class:`~.Operator` subclass represents a general type of
   map between physical states. Each instance of these subclasses
   represents either
+
   - an application of the operator or
   - an instruction to measure and return the respective result.
+
   Operators act on a sequence of wires (subsystems) using given parameter values.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
