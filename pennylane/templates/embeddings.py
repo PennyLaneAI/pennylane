@@ -18,7 +18,6 @@ This module provides quantum circuit architectures that can embed features into 
 from collections.abc import Iterable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 import numpy as np
-from pennylane.variable import Variable
 
 
 def AngleEmbedding(features, wires, rotation='X'):
