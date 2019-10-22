@@ -77,7 +77,7 @@ import matplotlib.pyplot as plt
 # Next, we create a randomized variational circuit
 
 # Set a seed for reproducibility
-np.random.seed(20)
+np.random.seed(2)
 
 num_qubits = 4
 dev = qml.device("default.qubit", wires=num_qubits)
@@ -127,7 +127,7 @@ for i in range(num_samples):
     params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
     grad_vals.append(grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits))
 
-print("Variance of the gradient for {} samples: {}".format(num_samples, np.var(grad_vals)))
+print("Variance of the gradient for {} samples: {}".format(num_samples, np.var(grad_vals[0])))
 
 
 ###########################################################
@@ -155,8 +155,6 @@ def generate_random_circuit(num_qubits):
 qubits = [2, 3, 4, 5, 6]
 variances = []
 
-num_samples = 200
-
 
 for num_qubits in qubits:
     qcircuit, gate_sequence = generate_random_circuit(num_qubits)
@@ -165,7 +163,7 @@ for num_qubits in qubits:
     for i in range(num_samples):
         params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
         grad_vals.append(grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits))
-    vargrad = np.var(grad_vals)
+    vargrad = np.var(grad_vals[0])
     variances.append(vargrad)
     print("Variance of the gradient for {} qubits: {}".format(num_qubits, vargrad))
     
