@@ -429,9 +429,9 @@ class DefaultQubit(Device):
         if operation.endswith(Operation.string_for_inverse):
             A = operation_map[operation[:-len(Operation.string_for_inverse)]]
             return A.conj().T if not callable(A) else A(*par).conj().T
-        else:
-            A = operation_map[operation]
-            return A if not callable(A) else A(*par)
+
+        A = operation_map[operation]
+        return A if not callable(A) else A(*par)
 
     def _get_tensor_operator_matrix(self, obs, par):
         """Get the operator matrix for a given tensor product of operations.
