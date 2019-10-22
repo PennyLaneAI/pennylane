@@ -1,6 +1,8 @@
 .. role:: html(raw)
    :format: html
 
+.. _intro_ref_config:
+
 Configuration
 =============
 
