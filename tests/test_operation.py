@@ -18,7 +18,6 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.variable import Variable
 from pennylane.operation import Tensor
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -195,6 +194,29 @@ class TestOperation:
         assert qnode.ops[1].name == "RY"
         assert qnode.ops[2].name == "PauliX"
         assert qnode.ops[3].name == "PauliZ"
+
+    @pytest.fixture(scope="function")
+    def qnode_for_inverse(self, mock_device):
+        """Provides a QNode for the subsequent tests of inv"""
+
+        def circuit(x):
+            qml.RZ(x, wires=[1]).inv()
+            qml.RZ(x, wires=[1]).inv().inv()
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+        node = qml.QNode(circuit, mock_device)
+        node.construct([1.0])
+
+        return node
+
+    def test_operation_inverse_defined(self, qnode_for_inverse):
+        """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
+        of the original class"""
+        assert qnode_for_inverse.ops[0].name == "RZ" + qml.operation.Operation.string_for_inverse
+        assert qnode_for_inverse.ops[0].is_inverse
+        assert issubclass(qnode_for_inverse.ops[0].__class__, qml.operation.Operation)
+        assert qnode_for_inverse.ops[1].name == "RZ"
+        assert issubclass(qnode_for_inverse.ops[1].__class__, qml.operation.Operation)
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
