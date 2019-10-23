@@ -343,13 +343,10 @@ where
 
 * :attr:`~.Operator.num_wires`: the number of wires the operation acts on.
 
-  - You may use :attr:`pennylane.operation.All` to represent an operation that
-    acts on all wires.
-
-  - You may use :attr:`pennylane.operation.Any` to represent an operation that
-    can act on any number of wires (for example, operations where the number of
-    wires they act on is a function of the operation parameter).
-
+  You may use :attr:`pennylane.operation.All` to represent an operation that
+  acts on all wires, or :attr:`pennylane.operation.Any` to represent an operation that
+  can act on any number of wires (for example, operations where the number of
+  wires they act on is a function of the operation parameter).
 
 * :attr:`~.Operator.par_domain`: the domain of the gate parameters; ``'N'`` for natural
   numbers (including zero), ``'R'`` for floats, ``'A'`` for arrays of floats/complex numbers,
@@ -366,7 +363,7 @@ where
 
   where :math:`f` is an expectation value that depends on :math:`O(\phi_k)`, an example being
 
-  .. math:: f(O(\phi_k)) = \braket{0 | O-{\dagger}(\phi_k) \hat{B} O(\phi_k) | 0}
+  .. math:: f(O(\phi_k)) = \braket{0 | O^{\dagger}(\phi_k) \hat{B} O(\phi_k) | 0}
 
   which is the simple expectation value of the operator :math:`\hat{B}` evolved via the gate
   :math:`O(\phi_k)`.
