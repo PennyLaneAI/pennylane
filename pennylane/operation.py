@@ -434,7 +434,6 @@ class Operation(Operator):
     # pylint: disable=abstract-method
     _grad_recipe = None
     string_for_inverse = ".inv"
-    _inverse = False
 
     @property
     def grad_method(self):
