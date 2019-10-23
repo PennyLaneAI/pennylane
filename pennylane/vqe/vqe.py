@@ -16,55 +16,45 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 import numpy as np
-from pennylane.ops import Hermitian, Observable
+from pennylane.ops import Observable
 from pennylane.measure import expval
-from pennylane.decorator import qnode
-
-sum_fn = {"numpy", np.sum}
-try:
-    from tensorflow.math import reduce_sum
-    sum_fn["tf"] = reduce_sum
-except:
-    pass
-
-try:
-    from torch import sum
-    sum_fn["torch"] = sum
-except:
-    pass
+from pennylane.qnode import QNode
 
 
 class Hamiltonian:
-    """
-    Lightweight class for representing Hamiltonians for Variational Quantum Eigensolver problems.
+    r"""Lightweight class for representing Hamiltonians for Variational Quantum Eigensolver problems.
 
     Hamiltonians can be expressed as linear combinations of observables, e.g.,
     :math:`\sum_{k=0}^{N-1}` c_k O_k`.
+
     This class keeps track of the terms (coefficients and observables) separately.
 
     Args:
         coeffs (Iterable[float]): coefficients of the Hamiltonian expression
-        ops (Iterable[Observable]): observables in the Hamiltonian expression
-        tol (float): tolerance used to determine if ops are Hermitian
+        observables (Iterable[Observable]): observables in the Hamiltonian expression
     """
 
-    def __init__(self, coeffs, ops, tol=1e-5):
+    def __init__(self, coeffs, observables):
 
-        if len(coeffs) != len(ops):
-            raise ValueError("Could not create valid Hamiltonian; "
-                             "number of coefficients and operators does not match.")
+        if len(coeffs) != len(observables):
+            raise ValueError(
+                "Could not create valid Hamiltonian; "
+                "number of coefficients and operators does not match."
+            )
+
         if any(np.imag(coeffs) != 0):
-            raise ValueError("Could not create valid Hamiltonian; "
-                             "coefficients are not real-valued.")
-        # TODO: to make easier, add a boolean attribute `hermitian` to all pennylane ops
-        numeric_ops = [op.parameters[0] for op in ops if isinstance(op, Hermitian)]
-        for A in numeric_ops:
-            if not np.allclose(A, np.conj(A).T, rtol=tol, atol=0):
-                raise ValueError("Could not create valid Hamiltonian; "
-                                 "one or more ops are not Hermitian.")
+            raise ValueError(
+                "Could not create valid Hamiltonian; " "coefficients are not real-valued."
+            )
+
+        for obs in observables:
+            if not isinstance(obs, Observable):
+                raise ValueError(
+                    "Could not create circuits. Some or all observables are not valid."
+                )
 
         self._coeffs = coeffs
-        self._ops = ops
+        self._ops = observables
 
     @property
     def coeffs(self):
@@ -76,8 +66,7 @@ class Hamiltonian:
 
     @property
     def terms(self):
-        """
-        The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1}` c_k O_k`
+        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1}` c_k O_k`
 
         Returns:
             (tuple, tuple): tuples of coefficients and operations, each of length N
@@ -85,21 +74,21 @@ class Hamiltonian:
         return self.coeffs, self.ops
 
 
-def circuits(ansatz, observables, device, interface='numpy'):
-    """
-    Create a set of callable functions which evaluate quantum circuits based on ``ansatz`` and ``observables``.
+def circuits(ansatz, observables, device, interface="numpy"):
+    """Create a set of callable functions which evaluate quantum circuits based on
+    ``ansatz`` and ``observables``.
 
-    One circuit function is created for every observable ``obs`` in ``observables``. The circuits have the following
-    structure:
+    One circuit function is created for every observable ``obs`` in ``observables``.
+    The circuits have the following structure:
 
     .. code-block:: python
         @qml.qnode(device)
-        def circuit(params):
-            ansatz
+        def circuit(*params):
+            ansatz(*params)
             return qml.expval(obs)
 
     Args:
-        ansatz (Iterable[:class:`~.Observable`]): the ansatz for the circuit before the final measurement step
+        ansatz (callable): the ansatz for the circuit before the final measurement step
         observables (Iterable[:class:`~.Observable`]): observables to measure during the final step of each circuit
         device (:class:`~.Device`): device where the circuits should be executed
         interface (str): which interface to use for the :class:`~.QNode`s of the circuits
@@ -108,61 +97,77 @@ def circuits(ansatz, observables, device, interface='numpy'):
         tuple: callable functions which evaluate each observable
     """
     if not callable(ansatz):
-        raise ValueError("Could not create quantum circuits. The ansatz is not a callable function.")
+        raise ValueError(
+            "Could not create quantum circuits. The ansatz is not a callable function."
+        )
+
     # TODO: can be more clever/efficient here for observables which are jointly measurable
     circuits = []
     for obs in observables:
         if not isinstance(obs, Observable):
             raise ValueError("Could not create circuits. Some or all observables are not valid.")
-        @qnode(device=device, interface=interface)
-        def circuit(*params):
-            ansatz(*params)
-            obs.queue()  # HACK: logic for observables assumes that they are in a queue
+
+        def circuit(params):
+            ansatz(*params, wires=range(device.num_wires))
             return expval(obs)
-        circuits.append(circuit)
+
+        qnode = QNode(circuit, device)
+
+        if interface == "tf":
+            qnode = qnode.to_tf()
+        elif interface == "torch":
+            qnode = qnode.to_torch()
+
+        circuits.append(qnode)
+
     return circuits
 
 
-def aggregate(coeffs, qnodes, params, interface="numpy"):
-    """
-    Aggregate a collection of coefficients and expectation values into a single scalar.
+def aggregate(coeffs, qnodes, params):
+    r"""Aggregate a collection of coefficients and expectation values into a single scalar.
 
-    Suppose that the kth :class:`~.QNode` in ``qnodes`` returns the expectation value :math:`\langle O_k \rangle`, and
-    that the kth element of ``coeffs`` is :math:`c_k`.
+    Suppose that the kth :class:`~.QNode` in ``qnodes`` returns the expectation value
+    :math:`\langle O_k \rangle`, and that the kth element of ``coeffs`` is :math:`c_k`.
     Then this function returns the sum :math:`\sum_{k} c_k O_k`.
 
     Args:
         coeffs (Iterable[float]): the coefficients of each summand
-        qnodes (Iterable[:class:`~.QNode`]): callable :class:`~.QNode` functions which return an expectation value
-        params (Iterable[float, tf.Tensor, torch.Tensor]): parameter values to be used as arguments to each
-            individual :class:`~.QNode`
-        interface (str): which interface to use for the :class:`~.QNode`s
+        qnodes (Iterable[:class:`~.QNode`]): Callable :class:`~.QNode` functions which return
+            an expectation value. All QNodes provided must use the same interface.
+        params (Iterable[float, tf.Tensor, torch.Tensor]): parameter values to be
+            used as arguments to each individual :class:`~.QNode`
 
     Returns:
         float: the result of evaluating each :class:`~.QNode` and summing with the ``coeffs``
     """
-    expvals = [circuit(params) for circuit in qnodes]
-    return sum_fn[interface](coeffs * expvals)
+    interfaces = {q.interface for q in qnodes}
+
+    if len(interfaces) != 1:
+        raise ValueError("Provided QNodes must all use the same interface.")
+
+    expvals = [c*circuit(params) for c, circuit in zip(coeffs, qnodes)]
+    return sum(expvals)
 
 
 def cost(params, ansatz, hamiltonian, device, interface="numpy"):
     """
     Evaluate the VQE cost function, i.e., the expectation value of a Hamiltonian.
 
-    This function evaluates the expectation value of ``hamiltonian`` for the circuit specified by ``ansatz``
-    with circuit parameters ``params``.
+    This function evaluates the expectation value of ``hamiltonian`` for the circuit
+    specified by ``ansatz`` with circuit parameters ``params``.
 
     Args:
-        params (Iterable[float, tf.Tensor, torch.Tensor]): the parameters of the circuit to use when evaluating the
-            expectation value
-        ansatz (function or :class:`~.template`): Callable function which contains a series of PennyLane operations,
-            but no measurements.
-        hamiltonian (:class:`~.Hamiltonian`): the Hamiltonian whose expectation value is to be evaluated
+        params (Iterable[float, tf.Tensor, torch.Tensor]): the parameters of the circuit
+            to use when evaluating the expectation value
+        ansatz (function or :class:`~.template`): Callable function which contains a
+            series of PennyLane operations, but no measurements.
+        hamiltonian (:class:`~.Hamiltonian`): the Hamiltonian whose expectation value
+            is to be evaluated
         interface (str): which interface to use for the underlying circuits
 
     Returns:
         float: the result of evaluating each :class:`~.QNode` and summing with the ``coeffs``
     """
     coeffs, observables = hamiltonian.terms
-    qnodes = qnodes(ansatz, observables, device, interface)
-    return aggregate(coeffs, qnodes, params, interface)
+    qnodes = circuits(ansatz, observables, device, interface)
+    return aggregate(coeffs, qnodes, params)
