@@ -22,12 +22,17 @@ from pennylane.operation import Sample, Variance, Expectation
 from pennylane.qnode import QuantumFunctionError
 
 
+mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
+
+
 @pytest.fixture(scope="function")
 def mock_device_with_operations(monkeypatch):
     """A mock instance of the abstract Device class with non-empty operations"""
     with monkeypatch.context() as m:
         m.setattr(Device, '__abstractmethods__', frozenset())
-        m.setattr(Device, 'operations', ["PauliX", "PauliZ", "CNOT"])
+        m.setattr(Device, 'operations', mock_device_paulis)
+        m.setattr(Device, 'observables', mock_device_paulis)
+        m.setattr(Device, 'short_name', 'MockDevice')
         yield Device()
 
 
@@ -36,11 +41,11 @@ def mock_device_with_observables(monkeypatch):
     """A mock instance of the abstract Device class with non-empty observables"""
     with monkeypatch.context() as m:
         m.setattr(Device, '__abstractmethods__', frozenset())
-        m.setattr(Device, 'observables', ["PauliX", "PauliZ"])
+        m.setattr(Device, 'operations', mock_device_paulis)
+        m.setattr(Device, 'observables', mock_device_paulis)
+        m.setattr(Device, 'short_name', 'MockDevice')
         yield Device()
 
-
-mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
 @pytest.fixture(scope="function")
 def mock_device_supporting_paulis(monkeypatch):
@@ -99,8 +104,6 @@ def mock_device(monkeypatch):
         yield Device()
 
 
-
-
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
@@ -111,8 +114,17 @@ class TestDeviceSupportedLogic:
         assert mock_device_with_operations.supports_operation("PauliX")
         assert mock_device_with_operations.supports_operation(qml.PauliX)
 
-        assert not mock_device_with_operations.supports_operation("PauliY")
-        assert not mock_device_with_operations.supports_operation(qml.PauliY)
+        with pytest.raises(
+            DeviceError,
+            match="Gate {} not supported on device {}".format("S", 'MockDevice'),
+        ):
+            mock_device_with_operations.supports_operation("S")
+
+        with pytest.raises(
+            DeviceError,
+            match="Gate {} not supported on device {}".format(qml.CNOT.__name__, mock_device_with_operations.short_name),
+        ):
+            mock_device_with_operations.supports_operation(qml.CNOT)
 
     def test_supports_observable_argument_types(self, mock_device_with_observables):
         """Checks that device.supports_observable returns the correct result
@@ -121,8 +133,17 @@ class TestDeviceSupportedLogic:
         assert mock_device_with_observables.supports_observable("PauliX")
         assert mock_device_with_observables.supports_observable(qml.PauliX)
 
-        assert not mock_device_with_observables.supports_observable("PauliY")
-        assert not mock_device_with_observables.supports_observable(qml.PauliY)
+        with pytest.raises(
+            DeviceError,
+            match="Observable {} not supported on device {}".format("S", 'MockDevice'),
+        ):
+            mock_device_with_observables.supports_observable("S")
+
+        with pytest.raises(
+            DeviceError,
+            match="Observable {} not supported on device {}".format(qml.S.__name__, 'MockDevice'),
+        ):
+            mock_device_with_observables.supports_observable(qml.S)
 
     def test_supports_operation_exception(self, mock_device):
         """check that device.supports_operation raises proper errors
@@ -135,8 +156,8 @@ class TestDeviceSupportedLogic:
             mock_device.supports_operation(3)
 
         with pytest.raises(
-            ValueError,
-            match="The given operation must either be a pennylane.Operation class or a string.",
+            DeviceError,
+            match="Gate {} not supported on device {}".format(Device.__name__, mock_device.short_name),
         ):
             mock_device.supports_operation(Device)
 
@@ -146,16 +167,17 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
             ValueError,
-            match="The given operation must either be a pennylane.Observable class or a string.",
+            match="The given observable must either be a pennylane.Observable class or a string.",
         ):
             mock_device.supports_observable(3)
 
-        with pytest.raises(
-            ValueError,
-            match="The given operation must either be a pennylane.Observable class or a string.",
-        ):
-            mock_device.supports_observable(qml.CNOT)
+        operation = qml.CNOT
 
+        with pytest.raises(
+            DeviceError,
+            match="Observable {} not supported on device {}".format(operation.__name__, 'MockDevice'),
+        ):
+            mock_device.supports_observable(operation)
 
 
 class TestInternalFunctions:
