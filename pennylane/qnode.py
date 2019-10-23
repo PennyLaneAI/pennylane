@@ -119,7 +119,7 @@ class QNode:
         """
         if op.num_wires == qml.operation.Wires.All:
             if set(op.wires) != set(range(self.num_wires)):
-                raise QuantumFunctionError("Operation {} must act on all wires".format(op.name))
+                raise ValueError("Operator {} must act on all wires".format(op.name))
 
         # EVs go to their own, temporary queue
         if isinstance(op, qml.operation.Observable):

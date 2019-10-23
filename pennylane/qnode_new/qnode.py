@@ -60,7 +60,7 @@ constraints:
 .. note::
 
     The quantum operations cannot be used outside of a quantum circuit function, as all
-    :class:`Operations <pennylane.operation.Operation>` require a QNode to work.
+    :class:`Operators <pennylane.operation.Operator>` require a QNode to work.
 
 * The function must always return either a single or a tuple of
   *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
@@ -74,15 +74,15 @@ constraints:
 * The quantum function can take two kinds of parameters: *positional* and *auxiliary*.
 
   * The function can *only* be differentiated with respect to its positional parameters.
-    The positional parameters should be only used as the parameters of the Operations in the
-    function.
+    The positional parameters should be only used as the parameters of the :class:`.Operator`
+    constructors in the function.
     Classical processing of positional parameters, either by arithmetic operations
     or external functions, is not allowed. One current exception is simple scalar multiplication.
 
   * The auxiliary parameters can *not* be differentiated with respect to.
     They are useful for providing data or 'placeholders' to the quantum function.
     In *mutable* nodes the auxiliary parameters can undergo any kind of classical
-    processing, and also appear in the ``wires`` argument of the Operations.
+    processing, and also appear in the ``wires`` argument of the Operators.
     In *immutable* nodes they are subject to the same restrictions as the positional parameters.
 
     Parameters that have default values are interpreted as auxiliary parameters. They *must* be
@@ -185,7 +185,7 @@ import itertools
 import numpy as np
 from scipy import linalg
 
-from pennylane.operation import Operation, Observable, CV, Wires, ObservableReturnTypes
+from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
 import pennylane.ops as qml
 import pennylane.measure as pm
 from pennylane.utils import _flatten, unflatten, expand
@@ -233,11 +233,11 @@ _MARKER = inspect.Parameter.empty  # singleton marker, could be any singleton cl
 
 
 ParDep = namedtuple("ParDep", ["op", "par_idx"])
-"""Represents the dependence of an Operation on a free parameter.
+"""Represents the dependence of an Operator on a free parameter.
 
 Args:
-    op (Operation): operation depending on the free parameter in question
-    par_idx (int): operation parameter index of the corresponding :class:`~.Variable` instance
+    op (Operator): operator depending on the free parameter in question
+    par_idx (int): operator parameter index of the corresponding :class:`~.Variable` instance
 """
 
 
@@ -297,11 +297,11 @@ class QNode:
 
     If the circuit is mutable, the quantum function can contain classical flow control structures
     that depend on its auxiliary parameters, potentially resulting in a different circuit
-    on each call. The auxiliary parameters may also determine the wires on which operations act.
+    on each call. The auxiliary parameters may also determine the wires on which operators act.
 
     For immutable circuits the quantum function must build the same circuit graph consisting of the same
-    :class:`.Operation` instances regardless of its arguments; they can only appear as the
-    arguments of the Operations in the circuit. Immutable circuits are slightly faster to execute, and
+    :class:`.Operator` instances regardless of its arguments; they can only appear as the
+    arguments of the Operators in the circuit. Immutable circuits are slightly faster to execute, and
     can be optimized, but require that the layout of the circuit is fixed.
 
     Args:
@@ -318,7 +318,7 @@ class QNode:
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
         self.num_variables = None  #: int: number of differentiable parameters in the circuit
-        self.ops = []  #: List[Operation]: quantum circuit, in the order the quantum function defines it
+        self.ops = []  #: List[Operator]: quantum circuit, in the order the quantum function defines it
         self.circuit = None  #: CircuitGraph: DAG representation of the quantum circuit
 
         self.mutable = mutable  #: bool: is the circuit mutable?
@@ -326,7 +326,7 @@ class QNode:
 
         self.variable_deps = {}
         """dict[int, list[ParDep]]: Mapping from free parameter index to the list of
-        :class:`~pennylane.operation.Operation` instances (in this circuit) that depend on it.
+        :class:`~pennylane.operation.Operator` instances (in this circuit) that depend on it.
         """
 
         self._metric_tensor_subcircuits = None  #: dict[tuple[int], dict[str, Any]]: circuit descriptions for computing the metric tensor
@@ -345,7 +345,7 @@ class QNode:
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the free parameters in the Variable class
-        so the Operations may access them.
+        so the Operators may access them.
 
         Args:
             args (tuple[Any]): positional (differentiable) arguments
@@ -358,10 +358,10 @@ class QNode:
 
 
     def _op_descendants(self, op, only):
-        """Descendants of the given operation in the quantum circuit.
+        """Descendants of the given operator in the quantum circuit.
 
         Args:
-            op (Operation): operation in the quantum circuit
+            op (Operator): operator in the quantum circuit
             only (str, None): the type of descendants to return.
 
                 - ``'G'``: only return non-observables (default)
@@ -369,7 +369,7 @@ class QNode:
                 - ``None``: return all descendants
 
         Returns:
-            list[Operation]: descendants in a topological order
+            list[Operator]: descendants in a topological order
         """
         succ = self.circuit.descendants_in_order((op,))
         if only == 'E':
@@ -383,11 +383,11 @@ class QNode:
         """Append a quantum operation into the circuit queue.
 
         Args:
-            op (~.operation.Operation): quantum operation to be added to the circuit
+            op (~.operation.Operator): quantum operation to be added to the circuit
         """
         if op.num_wires == Wires.All:
             if set(op.wires) != set(range(self.num_wires)):
-                raise QuantumFunctionError("Operation {} must act on all wires".format(op.name))
+                raise ValueError("Operator {} must act on all wires".format(op.name))
 
         # Make sure only existing wires are used.
         for w in op.wires:
@@ -413,7 +413,7 @@ class QNode:
         For immutable nodes this method is called the first time :meth:`QNode.evaluate`
         or :meth:`QNode.jacobian` is called, and for mutable nodes *each time*
         they are called. It executes the quantum function,
-        stores the resulting sequence of :class:`.Operation` instances,
+        stores the resulting sequence of :class:`.Operator` instances,
         converts it into a circuit graph, and creates the Variable mapping.
 
         .. note::
@@ -441,7 +441,7 @@ class QNode:
         self.queue = []   #: list[Operation]: applied operations
         self.obs_queue = []  #: list[Observable]: applied observables
 
-        # set up the context for Operation entry
+        # set up the context for Operator entry
         if QNode_old._current_context is None:
             QNode_old._current_context = self
         else:
@@ -466,7 +466,7 @@ class QNode:
         # check the validity of the circuit
         self._check_circuit(res)
 
-        # map each free variable to the operations which depend on it
+        # map each free variable to the operators which depend on it
         self.variable_deps = {}
         for k, op in enumerate(self.ops):
             for j, p in enumerate(_flatten(op.params)):
@@ -486,9 +486,9 @@ class QNode:
 
 
     def _check_circuit(self, res):
-        """Check that the generated operation queue corresponds to a valid quantum circuit.
+        """Check that the generated Operator queue corresponds to a valid quantum circuit.
 
-        .. note:: The validity of individual Operations is checked already in :meth:`_append_op`.
+        .. note:: The validity of individual Operators is checked already in :meth:`_append_op`.
 
         Args:
             res (Sequence[Observable], Observable): output returned by the quantum function
@@ -698,27 +698,7 @@ class QNode:
         kwargs = self._default_args(kwargs)
 
         if self.circuit is None or self.mutable:
-            if self.circuit is not None:
-                # circuit construction has previously been called
-                flat_args = list(_flatten(args))
-                if len(flat_args) == self.num_variables:
-                    # only construct the circuit if the number
-                    # of arguments matches the allowed number
-                    # of variables.
-                    # This avoids construction happening
-                    # via self._pd_analytic, where temporary
-                    # variables are appended to the positional argument list.
-
-                    # FIXME maybe we require that if extra args are given, the caller must _construct()
-
-                    # unflatten arguments (because _pd_parameter_shift passes a flat array)
-                    shaped_args = unflatten(flat_args, self.args_model)
-
-                    # construct the circuit
-                    self._construct(shaped_args, kwargs)
-            else:
-                # circuit has not yet been constructed
-                self._construct(args, kwargs)
+            self._construct(args, kwargs)
 
         # temporarily store the parameter values in the Variable class
         self._set_variables(args, kwargs)
@@ -778,7 +758,7 @@ class QNode:
             KiKj_ev = []
             V = None
 
-            # for each operator in the layer, get the generator and convert it to a variance
+            # for each operation in the layer, get the generator and convert it to a variance
             for n, op in enumerate(curr_ops):
                 gen, s = op.generator
                 w = op.wires

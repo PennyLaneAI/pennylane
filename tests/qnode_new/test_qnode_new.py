@@ -141,17 +141,6 @@ class TestQNodeExceptions:
                                match="QNode._current_context must not be modified outside this method."):
                 node(0.5)
 
-    def test_operation_for_all_wires(self, operable_mock_device_2_wires):
-        """Error: operation should act on all the wires."""
-
-        def circuit():
-            qml.QubitStateVector(np.array([0, 0, 0, 1]), wires=[0])
-            return qml.expval(qml.PauliZ(wires=0))
-
-        node = QNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(QuantumFunctionError, match="must act on all wires"):
-            node()
-
     def test_operations_after_observables(self, operable_mock_device_2_wires):
         """Error: qfunc contains operations after observables."""
 
