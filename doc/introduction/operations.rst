@@ -27,7 +27,7 @@ This quantum function uses  the :class:`RZ <pennylane.RZ>`,
 :class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>` as well as the
 :class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`.
 
-You find a list of all quantum operations supported by PennyLane here, linking to the :ref:`API <api_qml>`.
+Below is a list of all quantum operations supported by PennyLane.
 
 .. _intro_ref_ops_qubit:
 

@@ -83,7 +83,7 @@ The following layer templates are available:
 Embedding templates
 -------------------
 
-Embeddings, found in the :ref:`templates.embeddings <api_qml_temp_emb>` module,
+Embeddings, found in the :mod:`pennylane.templates.embeddings` module,
 encode input features into the quantum state of the circuit.
 Hence, they take a feature vector as an argument. These embeddings can also depend on
 trainable parameters, in which case the embedding is learnable.
@@ -108,7 +108,7 @@ The following embedding templates are available:
 Parameter initializations
 -------------------------
 
-Each trainable template has a dedicated function in the :ref:`init <api_qml_init>` module, which generates a list of
+Each trainable template has a dedicated function in the :mod:`pennylane.init` module, which generates a list of
 randomly initialized arrays for the trainable parameters.
 
 Strongly entangling circuit

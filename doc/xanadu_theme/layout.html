@@ -246,13 +246,11 @@
     $('a.reference.internal').each(function(){
       var link = $(this).attr("href");
 
-      if (link.includes("api")) {
-        var hash = link.split('#')[1];
-        var page = link.split('#')[0].split('/').slice(-1)[0].replace(".html", "");
+      var hash = link.split('#')[1];
+      var page = link.split('#')[0].split('/').slice(-1)[0].replace(".html", "");
 
-        if (hash == page) {
-          $(this).attr('href', link.split('#')[0]);
-        }
+      if (hash == page) {
+        $(this).attr('href', link.split('#')[0]);
       }
     });
 

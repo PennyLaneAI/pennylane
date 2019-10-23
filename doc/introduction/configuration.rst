@@ -73,7 +73,7 @@ and has the following format:
       device = "ibmqx4"
       num_runs = 1024
 
-Standard PennyLane options are provided under the ``[main]``section. These apply to all loaded devices. 
+Standard PennyLane options are provided under the ``[main]`` section. These apply to all loaded devices.
 Alternatively, options can be specified on a per-plugin basis, by setting the options under
 ``[plugin.global]``.
 
