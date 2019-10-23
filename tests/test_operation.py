@@ -218,6 +218,31 @@ class TestOperation:
         assert qnode_for_inverse.ops[1].name == "RZ"
         assert issubclass(qnode_for_inverse.ops[1].__class__, qml.operation.Operation)
 
+    def test_operation_inverse_using_dummy_operation(self):
+
+        some_param = 0.5
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom Operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+
+        # Check that the name of the Operation is initialized fine
+        dummy_op = DummyOp(some_param, wires=[1])
+
+        assert not dummy_op.is_inverse
+
+        dummy_op_class_name = dummy_op.name
+
+        # Check that the name of the Operation was modified when applying the inverse
+        assert dummy_op.inv().name == dummy_op_class_name + qml.operation.Operation.string_for_inverse
+        assert dummy_op.is_inverse
+
+        # Check that the name of the Operation is the original again, once applying the inverse a second time
+        assert dummy_op.inv().name == dummy_op_class_name
+        assert not dummy_op.is_inverse
+
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
         op = qml.ops.CNOT(wires=[0, 1], do_queue=False)
@@ -476,7 +501,7 @@ class TestObservableConstruction:
 
 
 class TestOperatorIntegration:
-    """ Integration tests for the Operation class"""
+    """ Integration tests for the Operator class"""
 
     def test_all_wires_defined_but_init_with_one(self):
         """Test that an exception is raised if the class is defined with ALL wires,
@@ -497,6 +522,32 @@ class TestOperatorIntegration:
 
         with pytest.raises(ValueError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
             circuit()
+
+
+class TestOperationIntegration:
+    """ Integration tests for the Operation class"""
+
+    def test_inverse_of_operation(self):
+        """Test that an exception is raised if the class is defined with ALL wires,
+        but then instantiated with only one"""
+
+        dev1 = qml.device("default.qubit", wires=2)
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operator"""
+            num_wires = qml.operation.Wires.All
+            num_params = 1
+            par_domain = 'R'
+
+        @qml.qnode(dev1)
+        def circuit():
+            DummyOp(wires=[0], do_queue=True)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
+            circuit()
+
+
 
 
 class TestTensor:
