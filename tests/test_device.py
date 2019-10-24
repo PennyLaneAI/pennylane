@@ -57,6 +57,16 @@ def mock_device_supporting_paulis(monkeypatch):
         m.setattr(Device, 'short_name', 'MockDevice')
         yield Device()
 
+@pytest.fixture(scope="function")
+def mock_device_supporting_paulis_and_inverse(monkeypatch):
+    """A mock instance of the abstract Device class with non-empty operations and supporting inverses"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, 'operations', mock_device_paulis)
+        m.setattr(Device, 'observables', mock_device_paulis)
+        m.setattr(Device, 'short_name', 'MockDevice')
+        m.setattr(Device, '_capabilities', {"inverse_operations": True})
+        yield Device()
 
 mock_device_capabilities = {
     "measurements": "everything",
@@ -196,6 +206,23 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         mock_device_supporting_paulis.check_validity(queue, observables)
 
+    def test_check_validity_on_valid_queue_with_inverses(self, mock_device_supporting_paulis_and_inverse):
+        """Tests the function Device.check_validity with valid queue and the inverse of operations"""
+        queue = [
+            qml.PauliX(wires=0).inv(),
+            qml.PauliY(wires=1).inv(),
+            qml.PauliZ(wires=2).inv(),
+
+            qml.PauliX(wires=0).inv().inv(),
+            qml.PauliY(wires=1).inv().inv(),
+            qml.PauliZ(wires=2).inv().inv(),
+        ]
+
+        observables = [qml.expval(qml.PauliZ(0))]
+
+        # Raises an error if queue or observables are invalid
+        mock_device_supporting_paulis_and_inverse.check_validity(queue, observables)
+
     def test_check_validity_on_tensor_support(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with tensor support capability"""
         queue = [
@@ -210,7 +237,7 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Tensor observables not supported"):
             mock_device_supporting_paulis.check_validity(queue, observables)
 
-    def test_check_validity_on_invalid_obserable_with_tensor_support(self, monkeypatch):
+    def test_check_validity_on_invalid_observable_with_tensor_support(self, monkeypatch):
         """Tests the function Device.check_validity with tensor support capability
         but with an invalid observable"""
         queue = [
@@ -260,6 +287,29 @@ class TestInternalFunctions:
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             mock_device_supporting_paulis.check_validity(queue, observables)
+
+    def test_check_validity_on_invalid_queue_of_inverses(self, mock_device_supporting_paulis_and_inverse):
+        """Tests the function Device.check_validity with invalid queue and valid inverses of operations"""
+        queue = [
+            qml.PauliY(wires=1).inv(),
+            qml.PauliZ(wires=2).inv(),
+            qml.RX(1.0, wires=0).inv(),
+        ]
+
+        observables = [qml.expval(qml.PauliZ(0))]
+
+        with pytest.raises(DeviceError, match="Gate RX not supported on device"):
+            mock_device_supporting_paulis_and_inverse.check_validity(queue, observables)
+
+    def test_supports_inverse(self, mock_device_supporting_paulis_and_inverse):
+        """Tests the function Device.supports_inverse on device which supports inverses"""
+        assert mock_device_supporting_paulis_and_inverse.supports_inverse()
+
+    def test_supports_inverse_device_does_not_support_inverses(self, mock_device_supporting_paulis):
+        """Tests the function Device.supports_inverse on device which does not support inverses"""
+        with pytest.raises(DeviceError, match="The inverse of gates are not supported on device {}".
+                format(mock_device_supporting_paulis.short_name)):
+            mock_device_supporting_paulis.supports_inverse()
 
 
 class TestClassmethods:

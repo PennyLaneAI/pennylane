@@ -294,10 +294,10 @@ class Device(abc.ABC):
         elif not isinstance(op_name, str):
             raise ValueError("The given operation must either be a pennylane.Operation class or a string.")
 
-        if op_name in self.operations:
-            return True
-        else:
+        if op_name not in self.operations:
             raise DeviceError("Gate {} not supported on device {}".format(op_name, self.short_name))
+
+        return True
 
     def supports_observable(self, observable):
         """Checks if an observable is supported by this device.
@@ -317,24 +317,24 @@ class Device(abc.ABC):
         elif not isinstance(obs_name, str):
             raise ValueError("The given observable must either be a pennylane.Observable class or a string.")
 
-        if obs_name in self.observables:
-            return True
-        else:
+        if obs_name not in self.observables:
             raise DeviceError("Observable {} not supported on device {}".format(obs_name, self.short_name))
 
-    def supports_inverse(self, operation):
+        return True
+
+    def supports_inverse(self):
+        """Checks if this device supports inverse operations.
+
+        Returns:
+            bool: ``True`` iff inverse operations are supported by the device
+        """
         if "inverse_operations" not in self.capabilities() or not self.capabilities()["inverse_operations"]:
             raise DeviceError("The inverse of gates are not supported on device {}".format(self.short_name))
-
-        original_operation = operation.name[:-len(Operation.string_for_inverse)]
-
-        if issubclass(operation.__class__, Observable):
-            self.supports_observable(original_operation)
-        else:
-            self.supports_operation(original_operation)
+        return True
 
     def check_validity(self, queue, observables):
-        """Checks whether the operations and observables in queue are all supported by the device.
+        """Checks whether the operations and observables in queue are all supported by the device. Includes checks for
+        inverse operations.
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
@@ -345,10 +345,13 @@ class Device(abc.ABC):
 
         for o in queue:
 
+            operation_name = o.name
+
             if o.inverse:
-                self.supports_inverse(o)
-            else:
-                self.supports_operation(o)
+                if self.supports_inverse():
+                    operation_name = o.name[:-len(Operation.string_for_inverse)]
+
+            self.supports_operation(operation_name)
 
         for o in observables:
 
@@ -359,10 +362,15 @@ class Device(abc.ABC):
                 for i in o.obs:
                     if i.name not in self.observables:
                         raise DeviceError("Observable {} not supported on device {}".format(i.name, self.short_name))
-            elif issubclass(o.__class__, Operation) and o.inverse:
-                self.supports_inverse(o)
             else:
-                self.supports_observable(o)
+
+                observable_name = o.name
+
+                if issubclass(o.__class__, Operation) and o.inverse:
+                    if self.supports_inverse():
+                        observable_name = observable_name[:-len(Operation.string_for_inverse)]
+
+                self.supports_observable(observable_name)
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
