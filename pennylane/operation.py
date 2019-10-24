@@ -247,7 +247,7 @@ class Operator(abc.ABC):
 
     @property
     def name(self):
-        """Get and set the name of the operator.
+        """String for the name of the operator.
         """
         return self._name
 
@@ -265,17 +265,17 @@ class Operator(abc.ABC):
         if self.num_wires == All:
             if do_queue:
                 if set(wires) != set(range(QNode._current_context.num_wires)):
-                    raise ValueError("Operator {} must act on all wires".format(self._name))
+                    raise ValueError("Operator {} must act on all wires".format(self.name))
 
         if wires is None:
-            raise ValueError("Must specify the wires that {} acts on".format(self._name))
+            raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
         # extract the arguments
         params = args
 
         if len(params) != self.num_params:
             raise ValueError("{}: wrong number of parameters. "
-                             "{} parameters passed, {} expected.".format(self._name, params, self.num_params))
+                             "{} parameters passed, {} expected.".format(self.name, params, self.num_params))
 
         # check the validity of the params
         for p in params:
@@ -297,7 +297,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Print the operator name and some information."""
-        return self._name + ': {} params, wires {}'.format(len(self.params), self.wires)
+        return self.name + ': {} params, wires {}'.format(len(self.params), self.wires)
 
     def check_wires(self, wires):
         """Check the validity of the operator wires.
@@ -311,10 +311,10 @@ class Operator(abc.ABC):
         """
         if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
             raise ValueError("{}: wrong number of wires. "
-                             "{} wires given, {} expected.".format(self._name, len(wires), self.num_wires))
+                             "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
 
         if len(set(wires)) != len(wires):
-            raise ValueError('{}: wires must be unique, got {}.'.format(self._name, wires))
+            raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
 
         return wires
 
@@ -334,28 +334,29 @@ class Operator(abc.ABC):
         """
         if isinstance(p, Variable):
             if self.par_domain == 'A':
-                raise TypeError('{}: Array parameter expected, got a Variable, which can only represent real scalars.'.format(self._name))
+                raise TypeError('{}: Array parameter expected, got a Variable,'
+                                'which can only represent real scalars.'.format(self.name))
             return p
 
         # p is not a Variable
         if self.par_domain == 'A':
             if flattened:
                 if isinstance(p, np.ndarray):
-                    raise TypeError('{}: Flattened array parameter expected, got {}.'.format(self._name, type(p)))
+                    raise TypeError('{}: Flattened array parameter expected, got {}.'.format(self.name, type(p)))
             else:
                 if not isinstance(p, np.ndarray):
-                    raise TypeError('{}: Array parameter expected, got {}.'.format(self._name, type(p)))
+                    raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
         elif self.par_domain in ('R', 'N'):
             if not isinstance(p, numbers.Real):
-                raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self._name, type(p)))
+                raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
 
             if self.par_domain == 'N':
                 if not isinstance(p, numbers.Integral):
-                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self._name, type(p)))
+                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, type(p)))
                 if p < 0:
-                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self._name, p))
+                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, p))
         else:
-            raise ValueError('{}: Unknown parameter domain \'{}\'.'.format(self._name, self.par_domain))
+            raise ValueError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
         return p
 
     @property
@@ -488,10 +489,14 @@ class Operation(Operator):
         return [None, 1]
 
     @property
-    def is_inverse(self):
+    def inverse(self):
         """Boolean determining if the inverse of the operation was requested.
         """
-        return str.endswith(self._name, self.string_for_inverse)
+        return self._inverse
+
+    @inverse.setter
+    def inverse(self, boolean):
+        self._inverse = boolean
 
     @grad_recipe.setter
     def grad_recipe(self, value):
@@ -511,11 +516,18 @@ class Operation(Operator):
         Returns:
             :class:`Operator`: operation to be inverted
         """
-        self._name = self._name + self.string_for_inverse\
-            if not self.is_inverse else self._name[:-len(self.string_for_inverse)]
+        self.inverse = not self._inverse
         return self
 
+    @property
+    def name(self):
+        """Get and set the name of the operator.
+        """
+        return self._name + Operation.string_for_inverse if self.inverse else self._name
+
     def __init__(self, *args, wires=None, do_queue=True):
+
+        self._inverse = False
 
         # check the grad_method validity
         if self.par_domain == 'N':
@@ -620,7 +632,7 @@ class Tensor(Observable):
 
     def __str__(self):
         """Print the tensor product and some information."""
-        return 'Tensor product {}: {} params, wires {}'.format([i._name for i in self.obs], len(self.params), self.wires)
+        return 'Tensor product {}: {} params, wires {}'.format([i.name for i in self.obs], len(self.params), self.wires)
 
     @property
     def name(self):
@@ -629,7 +641,7 @@ class Tensor(Observable):
         Returns:
             list[str]: list containing all observable names
         """
-        return [o._name for o in self.obs]
+        return [o.name for o in self.obs]
 
     @property
     def num_wires(self):
@@ -872,7 +884,7 @@ class CVOperation(CV, Operation):
         p = self.parameters
 
         if self._heisenberg_rep(p) is None:
-            raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self._name))
+            raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
 
         if inverse:
             if self.par_domain == 'A':

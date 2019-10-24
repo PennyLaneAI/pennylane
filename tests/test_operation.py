@@ -213,7 +213,7 @@ class TestOperation:
         """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
         of the original class"""
         assert qnode_for_inverse.ops[0].name == "RZ" + qml.operation.Operation.string_for_inverse
-        assert qnode_for_inverse.ops[0].is_inverse
+        assert qnode_for_inverse.ops[0].inverse
         assert issubclass(qnode_for_inverse.ops[0].__class__, qml.operation.Operation)
         assert qnode_for_inverse.ops[1].name == "RZ"
         assert issubclass(qnode_for_inverse.ops[1].__class__, qml.operation.Operation)
@@ -231,17 +231,17 @@ class TestOperation:
         # Check that the name of the Operation is initialized fine
         dummy_op = DummyOp(some_param, wires=[1])
 
-        assert not dummy_op.is_inverse
+        assert not dummy_op.inverse
 
         dummy_op_class_name = dummy_op.name
 
         # Check that the name of the Operation was modified when applying the inverse
         assert dummy_op.inv().name == dummy_op_class_name + qml.operation.Operation.string_for_inverse
-        assert dummy_op.is_inverse
+        assert dummy_op.inverse
 
         # Check that the name of the Operation is the original again, once applying the inverse a second time
         assert dummy_op.inv().name == dummy_op_class_name
-        assert not dummy_op.is_inverse
+        assert not dummy_op.inverse
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""

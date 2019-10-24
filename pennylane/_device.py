@@ -345,7 +345,7 @@ class Device(abc.ABC):
 
         for o in queue:
 
-            if o.is_inverse:
+            if o.inverse:
                 self.supports_inverse(o)
             else:
                 self.supports_operation(o)
@@ -359,7 +359,7 @@ class Device(abc.ABC):
                 for i in o.obs:
                     if i.name not in self.observables:
                         raise DeviceError("Observable {} not supported on device {}".format(i.name, self.short_name))
-            elif issubclass(o.__class__, Operation) and o.is_inverse:
+            elif issubclass(o.__class__, Operation) and o.inverse:
                 self.supports_inverse(o)
             else:
                 self.supports_observable(o)
