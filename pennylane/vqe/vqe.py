@@ -83,8 +83,8 @@ def circuits(ansatz, observables, device, interface="numpy"):
 
     .. code-block:: python
         @qml.qnode(device)
-        def circuit(*params):
-            ansatz(*params)
+        def circuit(params):
+            ansatz(*params, wires=range(device.num_wires))
             return qml.expval(obs)
 
     Args:
@@ -103,11 +103,11 @@ def circuits(ansatz, observables, device, interface="numpy"):
 
     # TODO: can be more clever/efficient here for observables which are jointly measurable
     circuits = []
-    for obs in observables:
+    for idx, obs in enumerate(observables):
         if not isinstance(obs, Observable):
             raise ValueError("Could not create circuits. Some or all observables are not valid.")
 
-        def circuit(params):
+        def circuit(params, obs=obs):
             ansatz(*params, wires=range(device.num_wires))
             return expval(obs)
 

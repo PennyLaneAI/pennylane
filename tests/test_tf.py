@@ -43,25 +43,6 @@ def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
 
-@pytest.fixture(scope='module')
-def tf_support():
-    """Boolean fixture for TensorFlow support"""
-    try:
-        import tensorflow as tf
-        tf_support = True
-
-    except ImportError as e:
-        tf_support = False
-
-    return tf_support
-
-
-@pytest.fixture()
-def skip_if_no_tf_support(tf_support):
-    if not tf_support:
-        pytest.skip("Skipped, no tf support")
-
-
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFQNodeExceptions():
     """TFQNode basic tests."""

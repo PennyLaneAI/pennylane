@@ -35,11 +35,6 @@ from pennylane._device import DeviceError
 def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
-@pytest.fixture()
-def skip_if_no_torch_support(torch_support):
-    if not torch_support:
-        pytest.skip("Skipped, no torch support")   
-
 
 @pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestTorchQNodeExceptions():

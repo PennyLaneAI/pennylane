@@ -97,6 +97,31 @@ def torch_support():
     return torch_support
 
 
+@pytest.fixture()
+def skip_if_no_torch_support(torch_support):
+    if not torch_support:
+        pytest.skip("Skipped, no torch support")
+
+
+@pytest.fixture(scope='module')
+def tf_support():
+    """Boolean fixture for TensorFlow support"""
+    try:
+        import tensorflow as tf
+        tf_support = True
+
+    except ImportError as e:
+        tf_support = False
+
+    return tf_support
+
+
+@pytest.fixture()
+def skip_if_no_tf_support(tf_support):
+    if not tf_support:
+        pytest.skip("Skipped, no tf support")
+
+
 @pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):
