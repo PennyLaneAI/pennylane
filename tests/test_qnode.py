@@ -1314,6 +1314,60 @@ class TestQNodeGradients:
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("x, y", [
+        (0.5, -0.1),
+        (0.0, np.pi),
+        (-3.6, -3.6),
+        (1.0, 2.5),
+    ])
+    def test_combine_qnodes_gradient(self, x, y):
+        """Test the gradient of arithmetic functions of two QNode circuits"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def f(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def g(y):
+            qml.RY(y, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        def add(a, b):
+            return a + b
+
+        def subtract(a, b):
+            return a - b
+
+        def mult(a, b):
+            return a * b
+
+        def div(a, b):
+            return a / b
+
+        def compose(f, x):
+            return f(x)
+
+        a = f(x)
+        b = g(y)
+
+        assert qml.grad(add, argnum=0)(a, b) == 1.0
+        assert qml.grad(add, argnum=1)(a, b) == 1.0
+
+        assert qml.grad(subtract, argnum=0)(a, b) == 1.0
+        assert qml.grad(subtract, argnum=1)(a, b) == -1.0
+
+        assert qml.grad(mult, argnum=0)(a, b) == b
+        assert qml.grad(mult, argnum=1)(a, b) == a
+
+        assert qml.grad(div, argnum=0)(a, b) == 1 / b
+        assert qml.grad(div, argnum=1)(a, b) == -a / b ** 2
+
+        assert qml.grad(compose, argnum=1)(f, x) == qml.grad(f, argnum=0)(x)
+        assert qml.grad(compose, argnum=1)(f, a) == qml.grad(f, argnum=0)(a)
+        assert qml.grad(compose, argnum=1)(f, b) == qml.grad(f, argnum=0)(b)
+
 
 class TestQNodeVariance:
     """Qnode variance tests."""
