@@ -14,7 +14,10 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
+import contextlib
+import io
 import math
+import textwrap
 
 import pytest
 import numpy as np
@@ -110,6 +113,53 @@ class TestQNodeOperationQueue:
         successors = qnode._op_successors(qnode.ops[2], only=None)
         assert qnode.ops[4] in successors
         assert qnode.ops[5] not in successors
+
+    def test_print_applied(self, mock_device):
+        """Test that printing applied gates works correctly"""
+
+        H = np.array([[0, 1], [1, 0]])
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1])
+            return qml.expval(qml.PauliX(0)), qml.var(qml.Hermitian(H, wires=1))
+
+        expected_qnode_print = textwrap.dedent("""\
+            Operations
+            ==========
+            RX({x}, wires=[0])
+            CNOT(wires=[0, 1])
+            RY(0.4, wires=[0])
+            RZ(-0.2, wires=[1])
+
+            Observables
+            ===========
+            expval(PauliX(wires=[0]))
+            var(Hermitian([[0 1]
+             [1 0]], wires=[1]))""")
+
+        node = qml.QNode(circuit, mock_device)
+
+        # test before construction
+        f = io.StringIO()
+
+        with contextlib.redirect_stdout(f):
+            node.print_applied()
+            out = f.getvalue().strip()
+
+        assert out == "QNode has not yet been executed."
+
+        # construct QNode
+        f = io.StringIO()
+        node.construct([0.1])
+
+        with contextlib.redirect_stdout(f):
+            node.print_applied()
+            out = f.getvalue().strip()
+
+        assert out == expected_qnode_print.format(x=0.1)
 
 
 @pytest.fixture(scope="function")

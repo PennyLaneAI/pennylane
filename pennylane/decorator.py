@@ -68,6 +68,7 @@ def qnode(device, interface='numpy', cache=False):
         wrapper.jacobian = qnode.jacobian
         wrapper.metric_tensor = qnode.metric_tensor
         wrapper.interface = interface
+        wrapper.print_applied = qnode.print_applied
 
         # bind the qnode attributes to the wrapped function
         wrapper.__dict__.update(qnode.__dict__)
