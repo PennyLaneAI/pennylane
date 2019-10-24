@@ -17,8 +17,8 @@ This module provides quantum circuit architectures that can embed features into 
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
-import numpy as np
 from pennylane.variable import Variable
+import numpy as np
 
 
 def AngleEmbedding(features, wires, rotation='X'):
@@ -118,7 +118,7 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
     # Get normalization
     norm = 0
     for f in features:
-        if type(f) is Variable:
+        if isinstance(f) is Variable:
             norm += np.conj(f.val)*f.val
         else:
             norm += np.conj(f)*f
