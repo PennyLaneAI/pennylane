@@ -21,9 +21,9 @@ from pennylane import Device, DeviceError
 from pennylane.operation import Sample, Variance, Expectation
 from pennylane.qnode import QuantumFunctionError
 
-
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
+# pylint: disable=abstract-class-instantiated
 
 @pytest.fixture(scope="function")
 def mock_device_with_operations(monkeypatch):
@@ -57,6 +57,7 @@ def mock_device_supporting_paulis(monkeypatch):
         m.setattr(Device, 'short_name', 'MockDevice')
         yield Device()
 
+
 @pytest.fixture(scope="function")
 def mock_device_supporting_paulis_and_inverse(monkeypatch):
     """A mock instance of the abstract Device class with non-empty operations and supporting inverses"""
@@ -67,6 +68,7 @@ def mock_device_supporting_paulis_and_inverse(monkeypatch):
         m.setattr(Device, 'short_name', 'MockDevice')
         m.setattr(Device, '_capabilities', {"inverse_operations": True})
         yield Device()
+
 
 mock_device_capabilities = {
     "measurements": "everything",
@@ -117,6 +119,8 @@ def mock_device(monkeypatch):
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
+    # pylint: disable=no-self-use, redefined-outer-name
+
     def test_supports_operation_argument_types(self, mock_device_with_operations):
         """Checks that device.supports_operations returns the correct result
            when passed both string and Operation class arguments"""
@@ -125,14 +129,15 @@ class TestDeviceSupportedLogic:
         assert mock_device_with_operations.supports_operation(qml.PauliX)
 
         with pytest.raises(
-            DeviceError,
-            match="Gate {} not supported on device {}".format("S", 'MockDevice'),
+                DeviceError,
+                match="Gate {} not supported on device {}".format("S", 'MockDevice'),
         ):
             mock_device_with_operations.supports_operation("S")
 
         with pytest.raises(
-            DeviceError,
-            match="Gate {} not supported on device {}".format(qml.CNOT.__name__, mock_device_with_operations.short_name),
+                DeviceError,
+                match="Gate {} not supported on device {}".format(qml.CNOT.__name__,
+                                                                  mock_device_with_operations.short_name),
         ):
             mock_device_with_operations.supports_operation(qml.CNOT)
 
@@ -144,14 +149,14 @@ class TestDeviceSupportedLogic:
         assert mock_device_with_observables.supports_observable(qml.PauliX)
 
         with pytest.raises(
-            DeviceError,
-            match="Observable {} not supported on device {}".format("S", 'MockDevice'),
+                DeviceError,
+                match="Observable {} not supported on device {}".format("S", 'MockDevice'),
         ):
             mock_device_with_observables.supports_observable("S")
 
         with pytest.raises(
-            DeviceError,
-            match="Observable {} not supported on device {}".format(qml.S.__name__, 'MockDevice'),
+                DeviceError,
+                match="Observable {} not supported on device {}".format(qml.S.__name__, 'MockDevice'),
         ):
             mock_device_with_observables.supports_observable(qml.S)
 
@@ -160,14 +165,14 @@ class TestDeviceSupportedLogic:
            if the argument is of the wrong type"""
 
         with pytest.raises(
-            ValueError,
-            match="The given operation must either be a pennylane.Operation class or a string.",
+                ValueError,
+                match="The given operation must either be a pennylane.Operation class or a string.",
         ):
             mock_device.supports_operation(3)
 
         with pytest.raises(
-            DeviceError,
-            match="Gate {} not supported on device {}".format(Device.__name__, mock_device.short_name),
+                DeviceError,
+                match="Gate {} not supported on device {}".format(Device.__name__, mock_device.short_name),
         ):
             mock_device.supports_operation(Device)
 
@@ -176,22 +181,24 @@ class TestDeviceSupportedLogic:
            if the argument is of the wrong type"""
 
         with pytest.raises(
-            ValueError,
-            match="The given observable must either be a pennylane.Observable class or a string.",
+                ValueError,
+                match="The given observable must either be a pennylane.Observable class or a string.",
         ):
             mock_device.supports_observable(3)
 
         operation = qml.CNOT
 
         with pytest.raises(
-            DeviceError,
-            match="Observable {} not supported on device {}".format(operation.__name__, 'MockDevice'),
+                DeviceError,
+                match="Observable {} not supported on device {}".format(operation.__name__, 'MockDevice'),
         ):
             mock_device.supports_observable(operation)
 
 
 class TestInternalFunctions:
     """Test the internal functions of the abstract Device class"""
+
+    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_check_validity_on_valid_queue(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with valid queue and observables"""
@@ -315,6 +322,8 @@ class TestInternalFunctions:
 class TestClassmethods:
     """Test the classmethods of Device"""
 
+    # pylint: disable=no-self-use, redefined-outer-name
+
     def test_capabilities(self, mock_device_with_capabilities):
         """check that device can give a dict of further capabilities"""
 
@@ -323,6 +332,8 @@ class TestClassmethods:
 
 class TestOperations:
     """Tests the logic related to operations"""
+
+    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
@@ -345,7 +356,7 @@ class TestOperations:
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
         with pytest.raises(
-            ValueError, match="Cannot access the operation queue outside of the execution context!"
+                ValueError, match="Cannot access the operation queue outside of the execution context!"
         ):
             mock_device.op_queue
 
@@ -416,12 +427,14 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
+    # pylint: disable=no-self-use, redefined-outer-name
+
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
         with pytest.raises(
-            ValueError,
-            match="Cannot access the observable value queue outside of the execution context!",
+                ValueError,
+                match="Cannot access the observable value queue outside of the execution context!",
         ):
             mock_device.obs_queue
 
@@ -462,14 +475,13 @@ class TestObservables:
         sample_args = []
         with monkeypatch.context() as m:
             m.setattr(Device, 'expval', lambda self, *args: expval_args.extend(args))
-            m.setattr(Device, 'var',    lambda self, *args: var_args.extend(args))
+            m.setattr(Device, 'var', lambda self, *args: var_args.extend(args))
             m.setattr(Device, 'sample', lambda self, *args: sample_args.extend(args))
             mock_device_with_paulis_and_methods.execute([], observables)
 
         assert expval_args == ["PauliX", [0], []]
         assert var_args == ["PauliY", [1], []]
         assert sample_args == ["PauliZ", [2], []]
-
 
     def test_unsupported_observables_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
@@ -502,23 +514,23 @@ class TestObservables:
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
 
-
 class TestParameters:
     """Test for checking device parameter mappings"""
+
+    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_parameters_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
 
         with pytest.raises(
-            ValueError,
-            match="Cannot access the free parameter mapping outside of the execution context!",
+                ValueError,
+                match="Cannot access the free parameter mapping outside of the execution context!",
         ):
             mock_device.parameters
 
     def test_parameters_available_at_pre_measure(self, mock_device, monkeypatch):
         """Tests that the parameter mapping is available when pre_measure is called and that accessing
            Device.parameters raises no error"""
-
 
         p0 = 0.54
         p1 = -0.32
@@ -548,6 +560,8 @@ class TestParameters:
 
 class TestDeviceInit:
     """Tests for device loader in __init__.py"""
+
+    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_no_device(self):
         """Test that an exception is raised for a device that doesn't exist"""

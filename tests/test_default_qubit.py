@@ -27,7 +27,6 @@ from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
                                              Rphi, Z, hermitian,
                                              spectral_decomposition, unitary)
 
-
 U = np.array(
     [
         [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],

@@ -262,7 +262,7 @@ class DefaultQubit(Device):
     pennylane_requires = '0.7'
     version = '0.7.0'
     author = 'Xanadu Inc.'
-    _capabilities = {"model": "qubit", "tensor_observables": True,  "inverse_operations": True}
+    _capabilities = {"model": "qubit", "tensor_observables": True, "inverse_operations": True}
 
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
