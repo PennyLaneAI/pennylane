@@ -229,7 +229,7 @@ class TestAmplitudeEmbedding:
                                         'of size 2**len(wires), which is 4; got 2. Use ``pad=True`` to ' \
                                         'automatically pad the features with zeros.'
 
-    def test_amplitude_embedding_exception_notnormalized(self):
+    def test_amplitude_embedding_throws_exception_notnormalized(self):
         """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() raises an exception if input is not
         normalized and 'normalization' is set to False."""
 
