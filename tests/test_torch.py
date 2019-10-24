@@ -528,10 +528,16 @@ class TestIntegration():
 
 
 @pytest.mark.usefixtures("skip_if_no_torch_support")
-class TestTorchGradients():
+class TestTorchGradients:
     """Integration tests involving gradients of QNodes and hybrid computations using the torch interface"""
 
-    def test_combine_qnodes_gradient(self, tol):
+    @pytest.mark.parametrize("x, y", [
+        (0.5, -0.1),
+        (0.0, np.pi),
+        (-3.6, -3.6),
+        (1.0, 2.5),
+    ])
+    def test_combine_qnodes_gradient(self, x, y):
         """Test the gradient of arithmetic functions of two QNode circuits"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -560,22 +566,79 @@ class TestTorchGradients():
         def compose(f, x):
             return f(x)
 
-        x, y = 0.5, -0.1
-        a = f(x)
-        b = g(y)
+        xt = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
+        yt = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
 
-        assert qml.grad(add, argnum=0)(a, b) == 1.0
-        assert qml.grad(add, argnum=1)(a, b) == 1.0
+        # Note: Torch is define-by-run, so we have to re-execute the forward/backward passes each time
 
-        assert qml.grad(subtract, argnum=0)(a, b) == 1.0
-        assert qml.grad(subtract, argnum=1)(a, b) == -1.0
+        a = f(xt)
+        b = g(yt)
+        a.retain_grad()
+        b.retain_grad()
 
-        assert qml.grad(mult, argnum=0)(a, b) == b
-        assert qml.grad(mult, argnum=1)(a, b) == a
+        add(a, b).backward()
+        assert a.grad == 1.0
+        assert b.grad == 1.0
 
-        assert qml.grad(div, argnum=0)(a, b) == 1 / b
-        assert qml.grad(div, argnum=1)(a, b) == -a / b ** 2
+        a = f(xt)
+        b = g(yt)
+        a.retain_grad()
+        b.retain_grad()
 
-        assert qml.grad(compose, argnum=1)(f, x) == qml.grad(f, argnum=0)(x)
-        assert qml.grad(compose, argnum=1)(f, a) == qml.grad(f, argnum=0)(a)
-        assert qml.grad(compose, argnum=1)(f, b) == qml.grad(f, argnum=0)(b)
+        subtract(a, b).backward()
+        assert a.grad == 1.0
+        assert b.grad == -1.0
+
+        a = f(xt)
+        b = g(yt)
+        a.retain_grad()
+        b.retain_grad()
+
+        mult(a, b).backward()
+        assert a.grad == b
+        assert b.grad == a
+
+        a = f(xt)
+        b = g(yt)
+        a.retain_grad()
+        b.retain_grad()
+
+        div(a, b).backward()
+        assert a.grad == 1 / b
+        assert b.grad == -a / b ** 2
+
+        # compose function with xt as input
+        compose(f, xt).backward()
+        grad1 = xt.grad.detach().numpy()
+
+        f(xt).backward()
+        grad2 = xt.grad.detach().numpy()
+        assert grad1 == grad2
+
+        # compose function with a as input
+        a = f(xt)
+        a.retain_grad()
+
+        compose(f, a).backward()
+        grad1 = a.grad.detach().numpy()
+
+        a = f(xt)
+        a.retain_grad()
+
+        f(a).backward()
+        grad2 = a.grad.detach().numpy()
+        assert grad1 == grad2
+
+        # compose function with b as input
+        b = g(yt)
+        b.retain_grad()
+
+        compose(f, b).backward()
+        grad1 = b.grad.detach().numpy()
+
+        b = g(yt)
+        b.retain_grad()
+
+        f(b).backward()
+        grad2 = b.grad.detach().numpy()
+        assert grad1 == grad2
