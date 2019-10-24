@@ -546,44 +546,40 @@ class TestIntegration:
         assert np.allclose(autograd_grad[1], tf_grad[1], atol=tol, rtol=0)
 
 
+gradient_test_data = [
+    (0.5, -0.1),
+    (0.0, np.pi),
+    (-3.6, -3.6),
+    (1.0, 2.5),
+]
+
+
+dev = qml.device("default.qubit", wires=2)
+
+
+@qml.qnode(dev, interface="tf")
+def f(x):
+    qml.RX(x, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
+@qml.qnode(dev, interface="tf")
+def g(y):
+    qml.RY(y, wires=0)
+    return qml.expval(qml.PauliX(0))
+
+
+
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFGradients:
     """Integration tests involving gradients of QNodes and hybrid computations using the tf interface"""
 
-    @pytest.mark.parametrize("x, y", [
-        (0.5, -0.1),
-        (0.0, np.pi),
-        (-3.6, -3.6),
-        (1.0, 2.5),
-    ])
-    def test_combine_qnodes_gradient(self, x, y, tol):
-        """Test the gradient of arithmetic functions of two QNode circuits"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="tf")
-        def f(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        @qml.qnode(dev, interface="tf")
-        def g(y):
-            qml.RY(y, wires=0)
-            return qml.expval(qml.PauliX(0))
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_addition_qnodes_gradient(self, x, y):
+        """Test the gradient of addition of two QNode circuits"""
 
         def add(a, b):
             return a + b
-
-        def subtract(a, b):
-            return a - b
-
-        def mult(a, b):
-            return a * b
-
-        def div(a, b):
-            return a / b
-
-        def compose(f, x):
-            return f(x)
 
         xt = Variable(x)
         yt = Variable(y)
@@ -622,6 +618,16 @@ class TestTFGradients:
         assert grad[0].numpy() == 1.0
         assert grad[1].numpy() == 1.0
 
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_subtraction_qnodes_gradient(self, x, y):
+        """Test the gradient of subtraction of two QNode circuits"""
+
+        def subtract(a, b):
+            return a - b
+
+        xt = Variable(x)
+        yt = Variable(y)
+
         # subtraction
         with tf.GradientTape() as tape:
             tape.watch([xt, yt])
@@ -632,6 +638,16 @@ class TestTFGradients:
 
         assert grad[0].numpy() == 1.0
         assert grad[1].numpy() == -1.0
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_multiplication_qnodes_gradient(self, x, y):
+        """Test the gradient of multiplication of two QNode circuits"""
+
+        def mult(a, b):
+            return a * b
+
+        xt = Variable(x)
+        yt = Variable(y)
 
         # multiplication
         with tf.GradientTape() as tape:
@@ -644,6 +660,16 @@ class TestTFGradients:
         assert grad[0].numpy() == b.numpy()
         assert grad[1].numpy() == a.numpy()
 
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_division_qnodes_gradient(self, x, y, tol):
+        """Test the gradient of division of two QNode circuits"""
+
+        def div(a, b):
+            return a / b
+
+        xt = Variable(x)
+        yt = Variable(y)
+
         # division
         with tf.GradientTape() as tape:
             tape.watch([xt, yt])
@@ -655,10 +681,17 @@ class TestTFGradients:
         assert grad[0].numpy() == 1 / b.numpy()
         assert np.allclose(grad[1].numpy(), -a.numpy() / b.numpy() ** 2, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_composition_qnodes_gradient(self, x, y):
+        """Test the gradient of composition of two QNode circuits"""
+
+        xt = Variable(x)
+        yt = Variable(y)
+
         # compose function with xt as input
         with tf.GradientTape() as tape:
             tape.watch([xt])
-            y = compose(f, xt)
+            y = f(xt)
             grad1 = tape.gradient(y, xt)
 
         with tf.GradientTape() as tape:
@@ -672,7 +705,7 @@ class TestTFGradients:
         with tf.GradientTape() as tape:
             tape.watch([xt])
             a = f(xt)
-            y = compose(f, a)
+            y = f(a)
             grad1 = tape.gradient(y, a)
 
         with tf.GradientTape() as tape:
@@ -687,7 +720,7 @@ class TestTFGradients:
         with tf.GradientTape() as tape:
             tape.watch([xt])
             b = g(xt)
-            y = compose(g, b)
+            y = g(b)
             grad1 = tape.gradient(y, b)
 
         with tf.GradientTape() as tape:

@@ -527,49 +527,42 @@ class TestIntegration():
         assert np.allclose(autograd_grad[1], theta_t.grad.detach().numpy(), atol=tol, rtol=0)
 
 
+gradient_test_data = [
+    (0.5, -0.1),
+    (0.0, np.pi),
+    (-3.6, -3.6),
+    (1.0, 2.5),
+]
+
+
+dev = qml.device("default.qubit", wires=2)
+
+
+@qml.qnode(dev, interface="torch")
+def f(x):
+    qml.RX(x, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
+@qml.qnode(dev, interface="torch")
+def g(y):
+    qml.RY(y, wires=0)
+    return qml.expval(qml.PauliX(0))
+
+
 @pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestTorchGradients:
     """Integration tests involving gradients of QNodes and hybrid computations using the torch interface"""
 
-    @pytest.mark.parametrize("x, y", [
-        (0.5, -0.1),
-        (0.0, np.pi),
-        (-3.6, -3.6),
-        (1.0, 2.5),
-    ])
-    def test_combine_qnodes_gradient(self, x, y):
-        """Test the gradient of arithmetic functions of two QNode circuits"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="torch")
-        def f(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        @qml.qnode(dev, interface="torch")
-        def g(y):
-            qml.RY(y, wires=0)
-            return qml.expval(qml.PauliX(0))
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_addition_qnodes_gradient(self, x, y):
+        """Test the gradient of addition of two QNode circuits"""
 
         def add(a, b):
             return a + b
 
-        def subtract(a, b):
-            return a - b
-
-        def mult(a, b):
-            return a * b
-
-        def div(a, b):
-            return a / b
-
-        def compose(f, x):
-            return f(x)
-
         xt = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
         yt = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
-
-        # Note: Torch is define-by-run, so we have to re-execute the forward/backward passes each time
 
         # addition
         a = f(xt)
@@ -589,6 +582,16 @@ class TestTorchGradients:
         add(a, a).backward()
         assert a.grad == 2.0
 
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_subtraction_qnodes_gradient(self, x, y):
+        """Test the gradient of subtraction of two QNode circuits"""
+
+        def subtract(a, b):
+            return a - b
+
+        xt = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
+        yt = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
+
         # subtraction
         a = f(xt)
         b = g(yt)
@@ -598,6 +601,16 @@ class TestTorchGradients:
         subtract(a, b).backward()
         assert a.grad == 1.0
         assert b.grad == -1.0
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_multiplication_qnodes_gradient(self, x, y):
+        """Test the gradient of multiplication of two QNode circuits"""
+
+        def mult(a, b):
+            return a * b
+
+        xt = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
+        yt = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
 
         # multiplication
         a = f(xt)
@@ -614,10 +627,36 @@ class TestTorchGradients:
         a.retain_grad()
         b.retain_grad()
 
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_division_qnodes_gradient(self, x, y):
+        """Test the gradient of division of two QNode circuits"""
+
+        def div(a, b):
+            return a / b
+
+        xt = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
+        yt = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
+
         # division
+        # multiplication
+        a = f(xt)
+        b = g(yt)
+        a.retain_grad()
+        b.retain_grad()
+
         div(a, b).backward()
         assert a.grad == 1 / b
         assert b.grad == -a / b ** 2
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_composition_qnodes_gradient(self, x, y):
+        """Test the gradient of composition of two QNode circuits"""
+
+        def compose(f, x):
+            return f(x)
+
+        xt = torch.autograd.Variable(torch.tensor(x), requires_grad=True)
+        yt = torch.autograd.Variable(torch.tensor(y), requires_grad=True)
 
         # compose function with xt as input
         compose(f, xt).backward()
