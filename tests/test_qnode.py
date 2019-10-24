@@ -1352,18 +1352,24 @@ class TestQNodeGradients:
         a = f(x)
         b = g(y)
 
+        # addition
         assert qml.grad(add, argnum=0)(a, b) == 1.0
         assert qml.grad(add, argnum=1)(a, b) == 1.0
+        assert qml.grad(add, argnum=0)(a, a) == 1.0 # same value added to itself; autograd doesn't distinguish inputs
 
+        # subtraction
         assert qml.grad(subtract, argnum=0)(a, b) == 1.0
         assert qml.grad(subtract, argnum=1)(a, b) == -1.0
 
+        # multipication
         assert qml.grad(mult, argnum=0)(a, b) == b
         assert qml.grad(mult, argnum=1)(a, b) == a
 
+        # division
         assert qml.grad(div, argnum=0)(a, b) == 1 / b
         assert qml.grad(div, argnum=1)(a, b) == -a / b ** 2
 
+        # composition
         assert qml.grad(compose, argnum=1)(f, x) == qml.grad(f, argnum=0)(x)
         assert qml.grad(compose, argnum=1)(f, a) == qml.grad(f, argnum=0)(a)
         assert qml.grad(compose, argnum=1)(f, b) == qml.grad(f, argnum=0)(b)

@@ -571,6 +571,7 @@ class TestTorchGradients:
 
         # Note: Torch is define-by-run, so we have to re-execute the forward/backward passes each time
 
+        # addition
         a = f(xt)
         b = g(yt)
         a.retain_grad()
@@ -580,6 +581,15 @@ class TestTorchGradients:
         assert a.grad == 1.0
         assert b.grad == 1.0
 
+        # same tensor added to itself
+
+        a = f(xt)
+        a.retain_grad()
+
+        add(a, a).backward()
+        assert a.grad == 2.0
+
+        # subtraction
         a = f(xt)
         b = g(yt)
         a.retain_grad()
@@ -589,6 +599,7 @@ class TestTorchGradients:
         assert a.grad == 1.0
         assert b.grad == -1.0
 
+        # multiplication
         a = f(xt)
         b = g(yt)
         a.retain_grad()
@@ -603,6 +614,7 @@ class TestTorchGradients:
         a.retain_grad()
         b.retain_grad()
 
+        # division
         div(a, b).backward()
         assert a.grad == 1 / b
         assert b.grad == -a / b ** 2
