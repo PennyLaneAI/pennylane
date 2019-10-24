@@ -230,6 +230,20 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         mock_device_supporting_paulis_and_inverse.check_validity(queue, observables)
 
+    def test_check_validity_with_not_supported_operation_inverse(self, mock_device_supporting_paulis_and_inverse):
+        """Tests the function Device.check_validity with an valid queue and the inverse of not supported operations"""
+        queue = [
+            qml.CNOT(wires=[0, 1]).inv(),
+        ]
+
+        observables = [qml.expval(qml.PauliZ(0))]
+
+        with pytest.raises(
+                DeviceError,
+                match="Gate {} not supported on device {}".format("CNOT", 'MockDevice'),
+        ):
+            mock_device_supporting_paulis_and_inverse.check_validity(queue, observables)
+
     def test_check_validity_on_tensor_support(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with tensor support capability"""
         queue = [
