@@ -118,7 +118,7 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
     # Get normalization
     norm = 0
     for f in features:
-        if isinstance(f) is Variable:
+        if isinstance(f, Variable):
             norm += np.conj(f.val)*f.val
         else:
             norm += np.conj(f)*f
