@@ -58,10 +58,20 @@ class Hamiltonian:
 
     @property
     def coeffs(self):
+        """Return the coefficients defining the Hamiltonian.
+
+        Returns:
+            Iterable[float]): coefficients in the Hamiltonian expression
+        """
         return self._coeffs
 
     @property
     def ops(self):
+        """Return the operators defining the Hamiltonian.
+
+        Returns:
+            Iterable[Observable]): observables in the Hamiltonian expression
+        """
         return self._ops
 
     @property
@@ -102,8 +112,8 @@ def circuits(ansatz, observables, device, interface="numpy"):
         )
 
     # TODO: can be more clever/efficient here for observables which are jointly measurable
-    circuits = []
-    for idx, obs in enumerate(observables):
+    qnodes = []
+    for obs in observables:
         if not isinstance(obs, Observable):
             raise ValueError("Could not create circuits. Some or all observables are not valid.")
 
@@ -118,9 +128,9 @@ def circuits(ansatz, observables, device, interface="numpy"):
         elif interface == "torch":
             qnode = qnode.to_torch()
 
-        circuits.append(qnode)
+        qnodes.append(qnode)
 
-    return circuits
+    return qnodes
 
 
 def aggregate(coeffs, qnodes, params):
