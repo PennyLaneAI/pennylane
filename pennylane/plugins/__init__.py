@@ -12,20 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides reference plugin implementations. The reference plugins provide basic built-in qubit
+This subpackage provides reference plugin implementations. The reference plugins provide basic built-in qubit
 and CV circuit simulators that can be used with PennyLane without the need for additional
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
 
-PennyLane comes with two reference plugins:
+.. currentmodule:: pennylane.plugins
+.. autosummary::
+    :toctree: api
 
-+-------------------------------------------+---------------------------------------------------------+
-| :mod:`'default.qubit'                     | Reference plugin for qubit architectures.               |
-| <pennylane.plugins.default_qubit>`        |                                                         |
-+-------------------------------------------+---------------------------------------------------------+
-| :mod:`'default.gaussian'                  | Reference plugin for continuous-variable architectures. |
-| <pennylane.plugins.default_gaussian>`     |                                                         |
-+-------------------------------------------+---------------------------------------------------------+
+    default_qubit
+    default_gaussian
 """
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
