@@ -104,7 +104,7 @@ as well as potential further capabilities, by providing the following class attr
 
   .. code-block:: python
 
-    observables = {"QuadOperator", "NumberOperator", "X", "P"}
+    observables = {"PauliX", "PauliZ", "Hadamard", "Hermitian"}
 
   This is used to decide whether an observable is supported by your device in the
   default implementation of the public method :meth:`.Device.supports_observable`.
@@ -325,12 +325,12 @@ Supporting new operations
 If you would like to support an operation or observable that is not currently supported by
 PennyLane, you can subclass the :class:`~.Operation` and :class:`~.Observable` classes, and
 define the number of parameters the operation takes, and the number of wires the operation
-acts on. For example, to define the Ising gate :math:`XX_\phi` depending on parameter :math:`\phi`,
+acts on. For example, to define a custom gate depending on parameter :math:`\phi`,
 
 .. code-block:: python
 
-    class Ising(Operation):
-        """Ising gate"""
+    class CustomGate(Operation):
+        """Custom gate"""
         num_params = 1
         num_wires = 2
         par_domain = 'R'
@@ -376,12 +376,12 @@ The user can then import this operation directly from your plugin, and use it wh
 .. code-block:: python
 
     import pennylane as qml
-    from MyModule.MySubModule import Ising
+    from MyModule.MySubModule import CustomGate
 
     @qnode(dev1)
     def my_qfunc(phi):
         qml.Hadamard(wires=0)
-        Ising(phi, wires=[0,1])
+        CustomGate(phi, wires=[0,1])
         return qml.expval(qml.PauliZ(0))
 
 .. warning::
