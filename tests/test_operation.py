@@ -170,7 +170,6 @@ class TestOperation:
         with pytest.raises(ValueError, match='Unknown parameter domain'):
             test_class(*pars, wires=ww)
 
-
     @pytest.fixture(scope="function")
     def qnode(self, mock_device):
         """Provides a QNode for the subsequent tests of do_queue"""
@@ -533,22 +532,13 @@ class TestOperationIntegration:
 
         dev1 = qml.device("default.qubit", wires=2)
 
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operator"""
-            num_wires = qml.operation.Wires.All
-            num_params = 1
-            par_domain = 'R'
-
         @qml.qnode(dev1)
         def circuit():
-            DummyOp(wires=[0], do_queue=True)
+            qml.PauliZ(wires=[0], do_queue=True)
+            qml.PauliZ(wires=[0], do_queue=True).inv()
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
-            circuit()
-
-
-
+        assert circuit() == 1
 
 class TestTensor:
     """Unit tests for the Tensor class"""

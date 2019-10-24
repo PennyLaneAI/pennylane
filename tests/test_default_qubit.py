@@ -97,11 +97,13 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
+
 def inv_name(name):
     return name + Operation.string_for_inverse
 
-def get_test_data_including_inverses(test_data):
-    return test_data + [(item[0] + Operation.string_for_inverse, item[1], item[2]) for item in test_data]
+
+def include_inverses_with_test_data(test_data):
+    return test_data + [(inv_name(item[0]), item[1], item[2]) for item in test_data]
 
 
 class TestAuxillaryFunctions:
@@ -427,7 +429,7 @@ class TestApply:
     ]
 
     @pytest.mark.parametrize("name,input,expected_output",
-                             get_test_data_including_inverses(test_data_two_wires_no_parameters))
+                             include_inverses_with_test_data(test_data_two_wires_no_parameters))
     def test_apply_operation_two_wires_no_parameters(self, qubit_device_2_wires, tol, name, input, expected_output):
         """Tests that applying an operation yields the expected output state for two wire
            operations that have no parameters."""
@@ -444,7 +446,7 @@ class TestApply:
     ]
 
     @pytest.mark.parametrize("name,input,expected_output",
-                             get_test_data_including_inverses(test_data_three_wires_no_parameters))
+                             include_inverses_with_test_data(test_data_three_wires_no_parameters))
     def test_apply_operation_three_wires_no_parameters(self, qubit_device_3_wires, tol, name, input, expected_output):
         """Tests that applying an operation yields the expected output state for three wire
            operations that have no parameters."""
