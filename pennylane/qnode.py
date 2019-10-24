@@ -131,6 +131,36 @@ class QNode:
                 raise QuantumFunctionError('State preparations and gates must precede measured observables.')
             self.queue.append(op)
 
+    def print_applied(self):
+        """Prints the most recently applied operations from the QNode."""
+        if not self.ops:
+            print("QNode has not yet been executed.")
+            return
+
+        print("Operations")
+        print("==========")
+        for op in self.queue:
+            if op.parameters:
+                params = ", ".join([str(p) for p in op.parameters])
+                print("{}({}, wires={})".format(op.name, params, op.wires))
+            else:
+                print("{}(wires={})".format(op.name, op.wires))
+
+        return_map = {
+            qml.operation.Expectation: "expval",
+            qml.operation.Variance: "var",
+            qml.operation.Sample: "sample"
+        }
+
+        print("\nObservables")
+        print("===========")
+        for op in self.ev:
+            return_type = return_map[op.return_type]
+            if op.parameters:
+                params = "".join([str(p) for p in op.parameters])
+                print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
+            else:
+                print("{}({}(wires={}))".format(return_type, op.name, op.wires))
 
     def construct(self, args, kwargs=None):
         """Constructs a representation of the quantum circuit.
