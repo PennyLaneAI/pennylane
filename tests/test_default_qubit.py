@@ -97,6 +97,8 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
+def inv_name(name):
+    return name + Operation.string_for_inverse
 
 def get_test_data_including_inverses(test_data):
     return test_data + [(item[0] + Operation.string_for_inverse, item[1], item[2]) for item in test_data]
@@ -370,6 +372,7 @@ class TestApply:
     errors are raised.
     """
 
+
     test_data_no_parameters = [
         ("PauliX", [1, 0], np.array([0, 1])),
         ("PauliX", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/math.sqrt(2)]),
@@ -385,18 +388,20 @@ class TestApply:
         ("Hadamard", [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1]),
     ]
 
-    test_data_no_parameters_inverses = [(item[0] + Operation.string_for_inverse, item[1], item[2])
-                                        for item in test_data_no_parameters
-                                        if item[0] != "S" and item[0] != "T"] + \
-                                       [
-                                               ("S" + Operation.string_for_inverse, [1, 0], [1, 0]),
-                                               ("S" + Operation.string_for_inverse,
-                                                [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1j/math.sqrt(2)]),
-                                               ("T" + Operation.string_for_inverse, [1, 0], [1, 0]),
-                                               ("T" + Operation.string_for_inverse, [1 / math.sqrt(2),
-                                                                                     1 / math.sqrt(2)],
-                                                [1 / math.sqrt(2), np.exp(-1j * np.pi / 4) / math.sqrt(2)]),
-                                            ]
+    test_data_no_parameters_inverses  = [
+        (inv_name("PauliX"), [1, 0], np.array([0, 1])),
+        (inv_name("PauliX"), [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/math.sqrt(2)]),
+        (inv_name("PauliY"), [1, 0], [0, 1j]),
+        (inv_name("PauliY"), [1/math.sqrt(2), 1/math.sqrt(2)], [-1j/math.sqrt(2), 1j/math.sqrt(2)]),
+        (inv_name("PauliZ"), [1, 0], [1, 0]),
+        (inv_name("PauliZ"), [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1/math.sqrt(2)]),
+        (inv_name("S"), [1, 0], [1, 0]),
+        (inv_name("S"), [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1j/math.sqrt(2)]),
+        (inv_name("T"), [1, 0], [1, 0]),
+        (inv_name("T"), [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), np.exp(-1j * np.pi / 4) / math.sqrt(2)]),
+        (inv_name("Hadamard"), [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)]),
+        (inv_name("Hadamard"), [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1]),
+    ]
 
     @pytest.mark.parametrize("name,input,expected_output", test_data_no_parameters +
                              test_data_no_parameters_inverses)
