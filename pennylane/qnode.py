@@ -62,7 +62,7 @@ class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
 
 
-ParDep = namedtuple("ParDep", ["op", "par_idx"])
+ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
 """Represents the dependence of an Operation on a free parameter.
 
 Args:
@@ -96,7 +96,7 @@ class QNode:
         self.cache = cache
 
         self.variable_deps = {}
-        """dict[int, list[ParDep]]: Mapping from free parameter index to the list of
+        """dict[int, list[ParameterDependency]]: Mapping from free parameter index to the list of
         :class:`~pennylane.operation.Operation` instances (in this circuit) that depend on it.
         """
 
@@ -299,7 +299,7 @@ class QNode:
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     if p.name is None: # ignore keyword arguments
-                        self.variable_deps.setdefault(p.idx, []).append(ParDep(op, j))
+                        self.variable_deps.setdefault(p.idx, []).append(ParameterDependency(op, j))
 
         # generate directed acyclic graph
         self.circuit = CircuitGraph(self.ops, self.variable_deps)

@@ -143,7 +143,7 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
             observables (Iterable[~.operation.Observable]): observables to measure and return
-            parameters (dict[int->list[ParDep]]): Mapping from free parameter index to the list of
+            parameters (dict[int->list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
 
         Returns:
@@ -234,7 +234,7 @@ class Device(abc.ABC):
         of :meth:`~.execute`.
 
         Returns:
-            dict[int->list[ParDep]]: the mapping
+            dict[int->list[ParameterDependency]]: the mapping
         """
         if self._parameters is None:
             raise ValueError("Cannot access the free parameter mapping outside of the execution context!")

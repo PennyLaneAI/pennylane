@@ -70,10 +70,8 @@ class CircuitGraph:
 
     Args:
         ops (Iterable[Operation]): quantum operations constituting the circuit, in temporal order
-        variable_deps (dict[int, list[ParDep]]): Free parameters of the quantum circuit.
+        variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
-            The first element of the ParDep namedtuple is the operation index,
-            the second the index of the parameter within the operation.
     """
     def __init__(self, ops, variable_deps):
         self.variable_deps = variable_deps
