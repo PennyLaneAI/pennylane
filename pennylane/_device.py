@@ -328,7 +328,7 @@ class Device(abc.ABC):
         Returns:
             bool: ``True`` iff inverse operations are supported by the device
         """
-        if "inverse_operations" not in self.capabilities() or not self.capabilities()["inverse_operations"]:
+        if not self.capabilities().get("inverse_operations", False):
             raise DeviceError("The inverse of gates are not supported on device {}".format(self.short_name))
         return True
 
@@ -356,12 +356,11 @@ class Device(abc.ABC):
         for o in observables:
 
             if isinstance(o, Tensor):
-                if "tensor_observables" not in self.capabilities() or not self.capabilities()["tensor_observables"]:
+                if not self.capabilities().get("tensor_observables", False):
                     raise DeviceError("Tensor observables not supported on device {}".format(self.short_name))
 
                 for i in o.obs:
-                    if i.name not in self.observables:
-                        raise DeviceError("Observable {} not supported on device {}".format(i.name, self.short_name))
+                    self.supports_observable(i)
             else:
 
                 observable_name = o.name

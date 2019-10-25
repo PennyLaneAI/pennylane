@@ -23,7 +23,7 @@ from pennylane.qnode import QuantumFunctionError
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
-# pylint: disable=abstract-class-instantiated
+# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
 
 @pytest.fixture(scope="function")
 def mock_device_with_operations(monkeypatch):
@@ -60,7 +60,8 @@ def mock_device_supporting_paulis(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_device_supporting_paulis_and_inverse(monkeypatch):
-    """A mock instance of the abstract Device class with non-empty operations and supporting inverses"""
+    """A mock instance of the abstract Device class with non-empty operations
+    and supporting inverses"""
     with monkeypatch.context() as m:
         m.setattr(Device, '__abstractmethods__', frozenset())
         m.setattr(Device, 'operations', mock_device_paulis)
@@ -136,8 +137,8 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
                 DeviceError,
-                match="Gate {} not supported on device {}".format(qml.CNOT.__name__,
-                                                                  mock_device_with_operations.short_name),
+                match="Gate {} not supported on "
+                      "device {}".format(qml.CNOT.__name__, mock_device_with_operations.short_name),
         ):
             mock_device_with_operations.supports_operation(qml.CNOT)
 
@@ -156,7 +157,8 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
                 DeviceError,
-                match="Observable {} not supported on device {}".format(qml.S.__name__, 'MockDevice'),
+                match="Observable {} not supported on "
+                      "device {}".format(qml.S.__name__, 'MockDevice'),
         ):
             mock_device_with_observables.supports_observable(qml.S)
 
@@ -172,7 +174,8 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
                 DeviceError,
-                match="Gate {} not supported on device {}".format(Device.__name__, mock_device.short_name),
+                match="Gate {} not supported on "
+                      "device {}".format(Device.__name__, mock_device.short_name),
         ):
             mock_device.supports_operation(Device)
 
@@ -182,7 +185,8 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
                 ValueError,
-                match="The given observable must either be a pennylane.Observable class or a string.",
+                match="The given observable must "
+                      "either be a pennylane.Observable class or a string.",
         ):
             mock_device.supports_observable(3)
 
@@ -190,15 +194,14 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
                 DeviceError,
-                match="Observable {} not supported on device {}".format(operation.__name__, 'MockDevice'),
+                match="Observable {} not supported on "
+                      "device {}".format(operation.__name__, 'MockDevice'),
         ):
             mock_device.supports_observable(operation)
 
 
 class TestInternalFunctions:
     """Test the internal functions of the abstract Device class"""
-
-    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_check_validity_on_valid_queue(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with valid queue and observables"""
@@ -213,8 +216,10 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         mock_device_supporting_paulis.check_validity(queue, observables)
 
-    def test_check_validity_on_valid_queue_with_inverses(self, mock_device_supporting_paulis_and_inverse):
-        """Tests the function Device.check_validity with valid queue and the inverse of operations"""
+    def test_check_validity_on_valid_queue_with_inverses(self,
+                                                         mock_device_supporting_paulis_and_inverse):
+        """Tests the function Device.check_validity with valid queue
+        and the inverse of operations"""
         queue = [
             qml.PauliX(wires=0).inv(),
             qml.PauliY(wires=1).inv(),
@@ -231,7 +236,8 @@ class TestInternalFunctions:
         mock_device_supporting_paulis_and_inverse.check_validity(queue, observables)
 
     def test_check_validity_with_not_supported_operation_inverse(self, mock_device_supporting_paulis_and_inverse):
-        """Tests the function Device.check_validity with an valid queue and the inverse of not supported operations"""
+        """Tests the function Device.check_validity with an valid queue
+        and the inverse of not supported operations"""
         queue = [
             qml.CNOT(wires=[0, 1]).inv(),
         ]
@@ -336,8 +342,6 @@ class TestInternalFunctions:
 class TestClassmethods:
     """Test the classmethods of Device"""
 
-    # pylint: disable=no-self-use, redefined-outer-name
-
     def test_capabilities(self, mock_device_with_capabilities):
         """check that device can give a dict of further capabilities"""
 
@@ -346,8 +350,6 @@ class TestClassmethods:
 
 class TestOperations:
     """Tests the logic related to operations"""
-
-    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
@@ -531,8 +533,6 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
-    # pylint: disable=no-self-use, redefined-outer-name
-
     def test_parameters_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
 
@@ -574,8 +574,6 @@ class TestParameters:
 
 class TestDeviceInit:
     """Tests for device loader in __init__.py"""
-
-    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_no_device(self):
         """Test that an exception is raised for a device that doesn't exist"""

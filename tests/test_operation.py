@@ -527,8 +527,7 @@ class TestOperationIntegration:
     """ Integration tests for the Operation class"""
 
     def test_inverse_of_operation(self):
-        """Test that an exception is raised if the class is defined with ALL wires,
-        but then instantiated with only one"""
+        """Test that the inverse of an operation is """
 
         dev1 = qml.device("default.qubit", wires=2)
 
@@ -539,6 +538,22 @@ class TestOperationIntegration:
             return qml.expval(qml.PauliZ(0))
 
         assert circuit() == 1
+
+    def test_inverse_operations_not_supported(self):
+        """Test that the inverse of operations is not currently
+        supported on the default gaussian device"""
+
+        dev1 = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev1)
+        def mean_photon_gaussian(mag_alpha, phase_alpha, phi):
+            qml.Displacement(mag_alpha, phase_alpha, wires=0)
+            qml.Rotation(phi, wires=0).inv()
+            return qml.expval(qml.NumberOperator(0))
+
+        with pytest.raises(qml.DeviceError, match="The inverse of gates are not "
+                                             "supported on device {}".format(dev1.short_name)):
+            mean_photon_gaussian(0.015, 0.02, 0.005)
 
 class TestTensor:
     """Unit tests for the Tensor class"""

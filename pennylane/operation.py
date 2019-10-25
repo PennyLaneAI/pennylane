@@ -426,7 +426,6 @@ class Operation(Operator):
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
-        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
         do_queue (bool): Indicates whether the operation should be
             immediately pushed into a :class:`QNode` circuit queue.
