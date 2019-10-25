@@ -314,8 +314,6 @@ class DefaultQubit(Device):
     def apply(self, operation, wires, par):
         # number of wires on device
         n = self.num_wires
-        if len(wires) > n:
-            raise ValueError("Length of wires parameter must not exceed {}.".format(n))
 
         if operation == 'QubitStateVector':
             input_state = np.asarray(par[0], dtype=np.complex128)
