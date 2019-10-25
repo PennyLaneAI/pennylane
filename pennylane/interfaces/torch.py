@@ -181,6 +181,10 @@ def TorchQNode(qnode):
             """REPL representation"""
             return self.__str__()
 
+        print_applied = qnode.print_applied
+        jacobian = qnode.jacobian
+        metric_tensor = qnode.metric_tensor
+
     @qnode_str
     def custom_apply(*args, **kwargs):
         """Custom apply wrapper, to allow passing kwargs to the TorchQNode"""

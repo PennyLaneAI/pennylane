@@ -186,24 +186,29 @@ class TestBasisEmbedding:
 class TestAmplitudeEmbedding:
     """ Tests the pennylane.templates.embeddings.AmplitudeEmbedding method."""
 
-    def test_amplitude_embedding_state(self):
-        """Checks the state produced by pennylane.templates.embeddings.AmplitudeEmbedding()."""
+    @pytest.mark.parametrize("inpt", [np.array([0, 1, 0, 0]),
+                                      1/np.sqrt(4)*np.array([1, 1, 1, 1]),
+                                      np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
+                                                np.complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])])
+    def test_amplitude_embedding_prepares_state(self, inpt):
+        """Checks the state produced by pennylane.templates.embeddings.AmplitudeEmbedding() for real and complex
+        inputs."""
 
-        features = np.array([0, 1, 0, 0])
         n_qubits = 2
-        dev = qml.device('default.qubit', wires=n_qubits)
+        dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
         def circuit(x=None):
             AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        res = circuit(x=features)
-        assert np.allclose(res, [1, -1])
+        circuit(x=inpt)
+        state = dev._state
+        assert np.allclose(state, inpt)
 
-    def test_amplitude_embedding_exception_subsystems(self):
+    def test_amplitude_embedding_throws_exception_if_wrong_number_of_subsystems(self):
         """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() throws exception
-        if number of subsystems wrong."""
+        if number of subsystems is wrong."""
 
         n_qubits = 2
         dev = qml.device('default.qubit', wires=n_qubits)
@@ -215,26 +220,68 @@ class TestAmplitudeEmbedding:
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
-        assert excinfo.value.args[0] == "AmplitudeEmbedding requires the size of feature vector to be smaller than or equal to 2**len(wires), which is 4; got 5."
+        assert excinfo.value.args[0] == "AmplitudeEmbedding requires the size of feature vector to " \
+                                        "be smaller than or equal to 2**len(wires), which is 4; got 5."
 
         with pytest.raises(ValueError) as excinfo:
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8)])
-        assert excinfo.value.args[0] == 'AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), which is 4; got 2.'
+        assert excinfo.value.args[0] == 'AmplitudeEmbedding must get a feature vector ' \
+                                        'of size 2**len(wires), which is 4; got 2. Use ``pad=True`` to ' \
+                                        'automatically pad the features with zeros.'
 
-    def test_amplitude_embedding_exception_wiresnolist(self):
-        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() raises an exception if ``wires`` is not
-        iterable."""
+    def test_amplitude_embedding_throws_exception_notnormalized(self):
+        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() raises an exception if input is not
+        normalized and 'normalization' is set to False."""
 
         n_subsystems = 5
         dev = qml.device('default.qubit', wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=3, pad=False, normalize=False)
+            AmplitudeEmbedding(features=x, wires=1, pad=False, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
-            circuit(x=[1])
+        with pytest.raises(ValueError, match='AmplitudeEmbedding requires a normalized feature vector. '
+                                             'Set ``normalize=True`` to automatically normalize it.'):
+            circuit(x=[1, 1])
+
+    @pytest.mark.parametrize("inpt, expected", [(np.array([0, 2]), [0, 1]),
+                                                (1/np.sqrt(2)*np.array([2, 2]), [1/np.sqrt(2), 1/np.sqrt(2)]),
+                                                ([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3)], [-0.5, 0.8660254]),
+                                                ([0, 2], [0, 1])])
+    def test_amplitude_embedding_normalizes_keywordargs(self, inpt, expected):
+        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() normalizes an input passed as a keyword
+         argument if `normalize` is set to `True`."""
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(features=x, wires=0, pad=False, normalize=True)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit(x=inpt)
+        state = dev._state
+        assert np.allclose(state, expected)
+
+    @pytest.mark.parametrize("inpt, expected", [(np.array([0, 2]), [0, 1]),
+                                                (1/np.sqrt(2)*np.array([2, 2]), [1/np.sqrt(2), 1/np.sqrt(2)]),
+                                                ([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3)], [-0.5, 0.8660254]),
+                                                ([0, 2], [0, 1])])
+    def test_amplitude_embedding_normalizes_positionalargs(self, inpt, expected):
+        """Verifies that pennylane.templates.embeddings.AmplitudeEmbedding() normalizes an input passed as a positional
+        argument if `normalize` is set to `True`."""
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            AmplitudeEmbedding(features=x, wires=0, pad=False, normalize=True)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit(inpt)
+        state = dev._state
+        assert np.allclose(state, expected)
 
 
 class TestSqueezingEmbedding:
