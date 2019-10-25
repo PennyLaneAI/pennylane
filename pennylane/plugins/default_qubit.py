@@ -342,7 +342,7 @@ class DefaultQubit(Device):
             # length of basis state parameter
             n_basis_state = len(par[0])
 
-            if not (set(par[0]) == {0, 1} or set(par[0]) == {0} or set(par[0]) == {1}):
+            if not set(par[0]).issubset({0, 1}):
                 raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
             if n_basis_state != len(wires):
                 raise ValueError("BasisState parameter and wires must be of equal length.")
