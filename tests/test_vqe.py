@@ -29,6 +29,7 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
+        print(tf.__version__)
         import tensorflow.contrib.eager as tfe
         tf.enable_eager_execution()
         Variable = tfe.Variable
@@ -142,7 +143,7 @@ ANSAETZE = [
 
 EMPTY_PARAMS = []
 VAR_PARAMS = [0.5]
-EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
+EMBED_PARAMS = [np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)]
 LAYER_PARAMS = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=3)
 
 CIRCUITS = [
@@ -150,8 +151,8 @@ CIRCUITS = [
     (custom_fixed_ansatz, EMPTY_PARAMS),
     (custom_var_ansatz, VAR_PARAMS),
     (qml.templates.layers.StronglyEntanglingLayers, LAYER_PARAMS),
-    (amp_embed, EMBED_PARAMS),
-    (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
+    (qml.templates.embeddings.AmplitudeEmbedding, EMBED_PARAMS),
+    #(amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
 ]
 
 #####################################################
@@ -162,7 +163,7 @@ def mock_device(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(qml.Device, "__abstractmethods__", frozenset())
         m.setattr(qml.Device, "_capabilities", {"tensor_observables": True})
-        m.setattr(qml.Device, "operations", ["RX", "Rot", "CNOT", "Hadamard"])
+        m.setattr(qml.Device, "operations", ["RX", "Rot", "CNOT", "Hadamard", "QubitStateVector"])
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
         )
@@ -273,7 +274,7 @@ class TestVQE:
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
         expval = qml.vqe.cost(params, ansatz, hamiltonian, dev)
         assert type(expval) == float
         assert np.shape(expval) == ()  # expval should be scalar
