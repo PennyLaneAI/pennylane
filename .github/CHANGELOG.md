@@ -14,6 +14,10 @@
   in `_device.py`.
   [#374](https://github.com/XanaduAI/pennylane/pull/374)
 
+* Default qubit state vector preparation operations can now be applied to subsets of qubits, and
+  are restricted to being the first operation in a circuit
+  [#346](https://github.com/XanaduAI/pennylane/pull/346)
+
 ### Documentation
 
 ### Bug fixes
@@ -56,10 +60,6 @@ Antal Száva
   [#317](https://github.com/XanaduAI/pennylane/pull/317)
 
 ### Improvements
-
-* Default qubit state vector preparation operations can now be applied to subsets of qubits, and
-  are restricted to being the first operation in a circuit
-  [#346](https://github.com/XanaduAI/pennylane/pull/346)
 
 * The number of shots / random samples used to estimate expectation values and variances, `Device.shots`,
   can now be changed after device creation.
