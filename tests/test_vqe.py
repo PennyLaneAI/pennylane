@@ -152,7 +152,7 @@ CIRCUITS = [
     (custom_var_ansatz, VAR_PARAMS),
     (qml.templates.layers.StronglyEntanglingLayers, LAYER_PARAMS),
     (qml.templates.embeddings.AmplitudeEmbedding, EMBED_PARAMS),
-    #(amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
+    (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
 ]
 
 #####################################################
@@ -234,7 +234,6 @@ class TestVQE:
         """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
         mock_device.num_wires = 3
         circuits = qml.vqe.circuits(ansatz, observables, device=mock_device)
-
         res = [c(params) for c in circuits]
         assert all(val == 1.0 for val in res)
 
@@ -389,7 +388,7 @@ class TestTFInterface:
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
-        """Test that QNodes have the torch interface"""
+        """Test that QNodes have the tf interface"""
         mock_device.num_wires = 3
         circuits = qml.vqe.circuits(ansatz, observables, device=mock_device, interface="tf")
         assert all(c.interface == "tf" for c in circuits)
