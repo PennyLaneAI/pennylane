@@ -500,7 +500,7 @@ class TestApply:
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
-    def test_apply_errors(self, qubit_device_2_wires):
+    def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
         with pytest.raises(
             ValueError,
@@ -527,8 +527,9 @@ class TestApply:
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply("RZ", wires=[0], par=[0.5])
-            qubit_device_2_wires.apply("QubitStateVector", wires=[0,1], par=[np.array([0, 1, 0, 0])])
+            qubit_device_2_wires.apply("QubitStateVector", wires=[0, 1], par=[np.array([0, 1, 0, 0])])
 
+    def test_apply_errors_basis_state(self, qubit_device_2_wires):
         with pytest.raises(
             ValueError,
             match="BasisState parameter must consist of 0 or 1 integers."
@@ -548,7 +549,7 @@ class TestApply:
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply("RZ", wires=[0], par=[0.5])
-            qubit_device_2_wires.apply("BasisState", wires=[0,1], par=[[1,1]])
+            qubit_device_2_wires.apply("BasisState", wires=[0, 1], par=[[1, 1]])
 
 
 class TestExpval:
