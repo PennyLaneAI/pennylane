@@ -330,8 +330,8 @@ class DefaultQubit(Device):
                 # create matrix of binary integers ascending along first axis
                 bin_matrix = np.array(list(itertools.product([0, 1], repeat=len(wires))))
 
-                # get indices for which state is changed to the input state vector elements
-                nums = np.dot(bin_matrix, 2**(n - 1 - np.sort(np.array(wires))))
+                # get indices for which the state is changed to the input state vector elements
+                nums = np.dot(bin_matrix, 2**(n - 1 - np.array(wires)))
                 self._state = np.zeros_like(self._state)
                 self._state[nums] = input_state
             else:
