@@ -90,7 +90,6 @@ constraints:
 
     Parameters that have default values are interpreted as auxiliary parameters. They *must* be
     given using the keyword syntax.
-    TODO ALTERNATIVELY: Keyword-only parameters are interpreted as auxiliary parameters.
 
 The quantum function cannot be executed on its own. Instead, a :class:`~.QNode` object must be
 created, which wraps the function and binds it to a device. The QNode can then be used to evaluate
@@ -150,8 +149,6 @@ QNode methods
    _append_op
    _construct
    _check_circuit
-   _sort_args
-   _check_args
    _default_args
    _set_variables
    _op_descendants
@@ -555,101 +552,8 @@ class QNode:
         self.type = 'cv' if all(are_cvs) else 'qubit'  #: str: circuit type, in {'cv', 'qubit'}
 
 
-    def _sort_args(self, args, kwargs):
-        """NEW: Sort the quantum function arguments to positional and keyword-only.
-
-        When the QNode is evaluated via :meth:`~QNode.__call__`, ``kwargs`` may also contain
-        differentiable POSITIONAL_OR_KEYWORD arguments given using the keyword syntax,
-        in addition to KEYWORD_ONLY arguments.
-
-        This method moves all positional arguments from ``kwargs`` to ``args``,
-        and substitutes missing positional arguments with special singleton markers.
-
-        Args:
-            args (tuple[Any]): positionally given arguments
-            kwargs (dict[str, Any]): keyword-given arguments
-
-        Returns:
-            tuple[Any], dict[str, Any]: positional arguments, auxiliary arguments
-        """
-        n_args = len(args)  # number of positionally-given args
-        pos = list(args)
-        for name, s in self.func.sig.items():
-            # is it positional?
-            if s.par.kind <= inspect.Parameter.POSITIONAL_OR_KEYWORD:
-                if s.idx < n_args:
-                    # this parameter is already given in args
-                    if name in kwargs:
-                        raise QuantumFunctionError("Quantum function parameter '{}' given twice.".format(name))
-                else:
-                    # not in args, maybe we find it in kwargs?
-                    p = kwargs.pop(name, _MARKER)  # None may be a valid parameter value, hence _MARKER
-                    pos.append(p)
-        return tuple(pos), kwargs
-
-
-    def _check_args(self, args, kwargs):
-        """NEW: Validate the quantum function arguments, apply defaults.
-
-        Here we apply all the default values for the parameters found in the signature of
-        :attr:`QNode.func`, and check if any arguments are invalid or missing.
-
-        Args:
-            args (tuple[Any]): positional (differentiable) arguments
-            kwargs (dict[str, Any]): auxiliary arguments
-
-        Returns:
-            tuple[Any], dict[str, Any]: positional arguments, auxiliary arguments
-        """
-        # pylint: disable=too-many-branches
-        # TODO maybe disallow *args in qfunc signature entirely? it complicates things and may be confusing
-
-        forbidden_kinds = (inspect.Parameter.POSITIONAL_ONLY,
-                           inspect.Parameter.VAR_POSITIONAL,
-                           inspect.Parameter.VAR_KEYWORD)
-
-        # check the validity of kwargs items
-        for name in kwargs:
-            s = self.func.sig.get(name)
-            if s is None:
-                if self.func.var_keyword:
-                    continue  # unknown parameter, but **kwargs will take it
-                raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
-            if s.par.kind in forbidden_kinds:
-                raise QuantumFunctionError("Quantum function parameter '{}' cannot be given using the keyword syntax.".format(name))
-
-        n_args = len(args)  # number of positional args given
-        if n_args < self.func.n_pos or (n_args > self.func.n_pos and not self.func.var_pos):
-            raise QuantumFunctionError("Quantum function takes {} positional parameters, {} given.".format(self.func.n_pos, n_args))
-
-        # apply defaults, check for missing parameters
-        pos = list(args)
-        for name, s in self.func.sig.items():
-            default = s.par.default
-            if s.idx < n_args:
-                # positional
-                if pos[s.idx] == _MARKER:
-                    # missing
-                    if default != inspect.Parameter.empty:
-                        pos[s.idx] = default
-                    else:
-                        raise QuantumFunctionError("Quantum function positional parameter '{}' missing.".format(name))
-            else:
-                # keyword-only
-                # can we find the parameter in kwargs?
-                p = kwargs.get(name, _MARKER)  # None may be a valid parameter value, hence _MARKER
-                if p is _MARKER and s.par.kind not in forbidden_kinds:
-                    # missing
-                    if default != inspect.Parameter.empty:
-                        kwargs[name] = default
-                    else:
-                        raise QuantumFunctionError("Quantum function keyword-only parameter '{}' missing.".format(name))
-
-        return tuple(pos), kwargs
-
-
     def _default_args(self, kwargs):
-        """OLD: Validate the quantum function arguments, apply defaults.
+        """Validate the quantum function arguments, apply defaults.
 
         Here we apply default values for the auxiliary parameters of :attr:`QNode.func`.
 
@@ -686,7 +590,6 @@ class QNode:
     def __call__(self, *args, **kwargs):
         """Wrapper for :meth:`~.QNode.evaluate`.
         """
-        #args, kwargs = self._sort_args(args, kwargs)
         return self.evaluate(args, kwargs)
 
 
@@ -700,7 +603,6 @@ class QNode:
         Returns:
             float or array[float]: output measured value(s)
         """
-        #args, kwargs = self._check_args(args, kwargs)
         kwargs = self._default_args(kwargs)
 
         if self.circuit is None or self.mutable:
@@ -727,8 +629,6 @@ class QNode:
         Returns:
             array[float]: measured values
         """
-        #args, kwargs = self._check_args(args, kwargs)
-
         # temporarily store the parameter values in the Variable class
         self._set_variables(args, kwargs)
 
@@ -859,7 +759,6 @@ class QNode:
             array[float]: metric tensor
         """
         kwargs = kwargs or {}
-        #args, kwargs = self._check_args(args, kwargs)
         kwargs = self._default_args(kwargs)
 
         if self.circuit is None or self.mutable:
