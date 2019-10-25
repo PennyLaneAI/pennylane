@@ -699,7 +699,7 @@ class TestTFGradients:
             y = f(xt)
             grad2 = tape.gradient(y, xt)
 
-        assert grad1 == grad2
+        assert tf.equal(grad1, grad2)
 
         # compose function with a as input
         with tf.GradientTape() as tape:
@@ -714,7 +714,7 @@ class TestTFGradients:
             y = f(a)
             grad2 = tape.gradient(y, a)
 
-        assert grad1 == grad2
+        assert tf.equal(grad1, grad2)
 
         # compose function with b as input
         with tf.GradientTape() as tape:
@@ -729,4 +729,4 @@ class TestTFGradients:
             y = g(b)
             grad2 = tape.gradient(y, b)
 
-        assert grad1 == grad2
+        assert tf.equal(grad1, grad2)
