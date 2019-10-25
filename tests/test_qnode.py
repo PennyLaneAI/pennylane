@@ -1315,6 +1315,106 @@ class TestQNodeGradients:
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
 
+gradient_test_data = [
+    (0.5, -0.1),
+    (0.0, np.pi),
+    (-3.6, -3.6),
+    (1.0, 2.5),
+]
+
+
+dev = qml.device("default.qubit", wires=2)
+
+
+@qml.qnode(dev)
+def f(x):
+    qml.RX(x, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
+@qml.qnode(dev)
+def g(y):
+    qml.RY(y, wires=0)
+    return qml.expval(qml.PauliX(0))
+
+
+class TestMultiQNodeGradients:
+    """Multi Qnode gradient tests."""
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_add_qnodes_gradient(self, x, y):
+        """Test the gradient of addition of two QNode circuits"""
+
+        def add(a, b):
+            return a + b
+
+        a = f(x)
+        b = g(y)
+
+        # addition
+        assert qml.grad(add, argnum=0)(a, b) == 1.0
+        assert qml.grad(add, argnum=1)(a, b) == 1.0
+
+        # same value added to itself; autograd doesn't distinguish inputs
+        assert qml.grad(add, argnum=0)(a, a) == 1.0
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_subtract_qnodes_gradient(self, x, y):
+        """Test the gradient of subtraction of two QNode circuits"""
+
+        def subtract(a, b):
+            return a - b
+
+        a = f(x)
+        b = g(y)
+
+        # subtraction
+        assert qml.grad(subtract, argnum=0)(a, b) == 1.0
+        assert qml.grad(subtract, argnum=1)(a, b) == -1.0
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_multiply_qnodes_gradient(self, x, y):
+        """Test the gradient of multiplication of two QNode circuits"""
+
+        def mult(a, b):
+            return a * b
+
+        a = f(x)
+        b = g(y)
+
+        # multipication
+        assert qml.grad(mult, argnum=0)(a, b) == b
+        assert qml.grad(mult, argnum=1)(a, b) == a
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_division_qnodes_gradient(self, x, y):
+        """Test the gradient of division of two QNode circuits"""
+
+        def div(a, b):
+            return a / b
+
+        a = f(x)
+        b = g(y)
+
+        # division
+        assert qml.grad(div, argnum=0)(a, b) == 1 / b
+        assert qml.grad(div, argnum=1)(a, b) == -a / b ** 2
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_composing_qnodes_gradient(self, x, y):
+        """Test the gradient of composing of two QNode circuits"""
+
+        def compose(f, x):
+            return f(x)
+
+        a = f(x)
+        b = g(y)
+
+        # composition
+        assert qml.grad(compose, argnum=1)(f, x) == qml.grad(f, argnum=0)(x)
+        assert qml.grad(compose, argnum=1)(f, a) == qml.grad(f, argnum=0)(a)
+        assert qml.grad(compose, argnum=1)(f, b) == qml.grad(f, argnum=0)(b)
+
 class TestQNodeVariance:
     """Qnode variance tests."""
 
