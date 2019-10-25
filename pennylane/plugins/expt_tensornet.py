@@ -77,10 +77,10 @@ class TensorNetwork(Device):
         super().__init__(wires, shots=1)
         self.eng = None
         self.analytic = True
+        self._nodes = []
         self._zero_state = np.zeros([2] * wires)
         self._zero_state[[0] * wires] = 1.0
-        self._input_state_node = tn.Node(self._zero_state)
-        self._nodes = [(self._input_state_node, tuple(idx for idx in range(wires)))]
+        self._input_state_node = self._add_node(self._zero_state, tuple(idx for idx in range(wires)))
 
     def pre_apply(self):
         self.reset()
@@ -88,8 +88,7 @@ class TensorNetwork(Device):
     def apply(self, operation, wires, par):
         A = self._get_operator_matrix(operation, par)
         A = np.reshape(A, [2] * len(wires) * 2)
-        op_node = tn.Node(A)
-        self._nodes.append((op_node, tuple(wires)))
+        op_node = self._add_node(A, wires)
         state = self._state
         for idx, w in enumerate(wires):
             # TODO: confirm "right-multiplication" indices for tensor A
@@ -99,10 +98,17 @@ class TensorNetwork(Device):
 
     def expval(self, observable, wires, par):
         if isinstance(observable, list):
-            A = self._get_tensor_operator_matrix(observable, par)
+            matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
         else:
-            A = self._get_operator_matrix(observable, par)
-        return self.ev(A, wires)
+            matrices = [self._get_operator_matrix(observable, par)]
+            wires = [wires]
+        nodes = [self._add_node(A, w) for A, w in zip(matrices, wires)]
+        return self.ev(nodes, wires)
+
+    def _add_node(self, A, wires):
+        node = tn.Node(A)
+        self._nodes.append((node, tuple(wires)))
+        return node
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
@@ -118,33 +124,18 @@ class TensorNetwork(Device):
             return A
         return A(*par)
 
-    def _get_tensor_operator_matrix(self, obs, par):
-        """Get the operator matrix for a given tensor product of operations.
-
-        Args:
-            obs (list[str]): list of observable names to tensor
-            par (list[list[Any]]): parameter values
-
-        Returns:
-            array: matrix representation.
-        """
-        ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
-        return functools.reduce(np.kron, ops)
-
     def ev(self, A, wires):
         r"""Expectation value of observable on specified wires.
 
          Args:
-            A (array[float]): the observable matrix as array
+            A (tn.Node): the observable matrix as a tensornetwork Node
             wires (Sequence[int]): target subsystems
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        obs_node = tn.Node(A)
-        self._nodes.append((obs_node, tuple(wires)))
         ket = self._state
         bra = tn.conj(ket)
-        self._nodes.append((bra, tuple(idx for idx in range(self.num_wires))))
+        obs_node = self._add_node(bra, tuple(idx for idx in range(self.num_wires)))
         for w in range(self.num_wires):
             if w in wires:
                 tn.connect(obs_node[1], ket[w])
