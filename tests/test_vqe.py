@@ -150,9 +150,8 @@ CIRCUITS = [
     (custom_fixed_ansatz, EMPTY_PARAMS),
     (custom_var_ansatz, VAR_PARAMS),
     (qml.templates.layers.StronglyEntanglingLayers, LAYER_PARAMS),
-    # FIXME uncomment when https://github.com/XanaduAI/pennylane/issues/365 is addressed
-    # (amp_embed, EMBED_PARAMS),
-    # (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
+    (amp_embed, EMBED_PARAMS),
+    (amp_embed_and_strong_ent_layer, (EMBED_PARAMS, LAYER_PARAMS)),
 ]
 
 #####################################################
