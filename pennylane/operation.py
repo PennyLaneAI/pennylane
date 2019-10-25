@@ -13,18 +13,27 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-Symbolic quantum operations
-===========================
+This module contains the abstract base classes for defining PennyLane
+operations and observables.
 
-**Module name:** :mod:`pennylane.operation`
+Description
+-----------
 
-.. currentmodule:: pennylane.operation
+Qubit Operations
+----------------
+The :class:`Operator` class serves as a base class for operators,
+and is inherited by both the :class:`Observable` class and the
+:class:`Operation` class. These classes are subclassed to implement quantum operations
+and measure observables in PennyLane.
 
-Operation base classes
-----------------------
+* Each :class:`~.Operator` subclass represents a general type of
+  map between physical states. Each instance of these subclasses
+  represents either
 
-This module contains the symbolic base class for performing quantum operations
-and measuring observables in PennyLane.
+  - an application of the operator or
+  - an instruction to measure and return the respective result.
+
+  Operators act on a sequence of wires (subsystems) using given parameter values.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
   for example a unitary quantum gate. Each instance of these subclasses
@@ -61,16 +70,8 @@ works as follows:
 
 .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
-Summary
-^^^^^^^
-
-.. autosummary::
-   Operation
-   Observable
-
-
 CV Operation base classes
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
 :class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
@@ -97,26 +98,15 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
-
-Summary
-^^^^^^^
-
-.. autosummary::
-   CV
-   CVOperation
-   CVObservable
-
-Code details
-^^^^^^^^^^^^
 """
 import abc
 from enum import Enum, IntEnum
 import numbers
 from collections.abc import Sequence
 
-import autograd.numpy as np
+import numpy as np
 
-from .qnode import QNode, QuantumFunctionError
+from .qnode import QNode
 from .utils import _flatten, _unflatten
 from .variable import Variable
 
@@ -206,58 +196,46 @@ def classproperty(func):
 
 
 #=============================================================================
-# Base Operation class
+# Base Operator class
 #=============================================================================
 
+class Operator(abc.ABC):
+    r"""Base class for quantum operators supported by a device.
 
-class Operation(abc.ABC):
-    r"""Base class for quantum operations supported by a device.
+    The following class attributes must be defined for all Operators:
 
-    The following class attributes must be defined for all Operations:
-
-    * :attr:`~.Operation.num_params`
-    * :attr:`~.Operation.num_wires`
-    * :attr:`~.Operation.par_domain`
-
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
-    differentiation.
-
-    * :attr:`~.Operation.grad_method`
-    * :attr:`~.Operation.grad_recipe`
-
-    Finally, there are some additional optional class attributes
-    that may be set, and used by certain quantum optimizers:
-
-    * :attr:`~.Operation.generator`
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
 
     Args:
-        args (tuple[float, int, array, Variable]): operation parameters
+        args (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
-        do_queue (bool): Indicates whether the operation should be
+        do_queue (bool): Indicates whether the operator should be
             immediately pushed into a :class:`QNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
-            outside of a QNode context.
+            The circuit queue is determined by the presence of an
+            applicable `QNode._current_context`. If no context is
+            available, this argument is ignored.
     """
-    _grad_recipe = None
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def num_params(self):
-        """Number of parameters the operation takes."""
-        raise NotImplementedError
+        """Number of parameters the operator takes."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def num_wires(self):
-        """Number of wires the operation acts on.
+        """Number of wires the operator acts on.
 
-        The value 0 allows the operation to act on any number of wires.
+        The value 0 allows the operator to act on any number of wires.
         """
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def par_domain(self):
         """Domain of the gate parameters.
 
@@ -266,73 +244,18 @@ class Operation(abc.ABC):
         * ``'A'``: arrays of real or complex values.
         * ``None``: if there are no parameters.
         """
-        raise NotImplementedError
-
-    @property
-    def grad_method(self):
-        """Gradient computation method.
-
-        * ``'A'``: analytic differentiation.
-        * ``'F'``: finite difference numerical differentiation.
-        * ``None``: the operation may not be differentiated.
-
-        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
-        """
-        return None if self.num_params == 0 else 'F'
-
-    @property
-    def grad_recipe(self):
-        r"""Gradient recipe for the analytic differentiation method.
-
-        This is a list with one tuple per operation parameter. For parameter
-        :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in
-        a gradient recipe of
-
-        .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
-
-        If this property returns ``None``, the default gradient recipe
-        :math:`(c_k, s_k)=(1/2, \pi/2)` is assumed for every parameter.
-        """
-        return self._grad_recipe
-
-    @property
-    def generator(self):
-        r"""Generator of the operation.
-
-        A length-2 list ``[generator, scaling_factor]``, where
-
-        * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
-          that acts as the generator of the current operation
-
-        * ``scaling_factor`` represents a scaling factor applied
-          to the generator operation
-
-        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
-        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
-        of operator :math:`U(\theta)`:
-
-        .. code-block:: python
-
-            generator = [PauliX, 0.7]
-
-        Default is ``[None, 1]``, indicating the operation has no generator.
-        """
-        return [None, 1]
-
-    @grad_recipe.setter
-    def grad_recipe(self, value):
-        """Setter for the grad_recipe property"""
-        self._grad_recipe = value
 
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self.name = self.__class__.__name__   #: str: name of the operation
+        self.queue_idx = None  #: int, None: index of the Operation in the circuit queue, or None if not in a queue
+        if QNode._current_context is None:
+            do_queue = False
 
         if self.num_wires == All:
             if do_queue:
                 if set(wires) != set(range(QNode._current_context.num_wires)):
-                    raise ValueError("Operation {} must act on all wires".format(self.name))
+                    raise ValueError("Operator {} must act on all wires".format(self.name))
 
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
@@ -347,49 +270,32 @@ class Operation(abc.ABC):
         # check the validity of the params
         for p in params:
             self.check_domain(p)
-        self.params = list(params)
+        self.params = list(params)  #: list[Any]: parameters of the operation
 
-        # check the grad_method validity
-        if self.par_domain == 'N':
-            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters.'
-        elif self.par_domain == 'A':
-            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method.'
-
-        # check the grad_recipe validity
-        if self.grad_method == 'A':
-            if self.grad_recipe is None:
-                # default recipe for every parameter
-                self.grad_recipe = [None] * self.num_params
-            else:
-                assert len(self.grad_recipe) == self.num_params, 'Gradient recipe must have one entry for each parameter!'
-        else:
-            assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
-
-        # apply the operation on the given wires
+        # apply the operator on the given wires
         if not isinstance(wires, Sequence):
-            self._wires = [wires]
-        else:
-            self._wires = wires
+            wires = [wires]
+        self._wires = wires  #: Sequence[int, Variable]: wires on which the operation acts
 
         if all([isinstance(w, int) for w in self._wires]):
             # If all wires are integers (i.e., not Variable), check
-            # that they are valid for the given operation
+            # that they are valid for the given operator
             self.check_wires(self._wires)
 
         if do_queue:
             self.queue()
 
     def __str__(self):
-        """Print the operation name and some information."""
+        """Print the operator name and some information."""
         return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
 
     def check_wires(self, wires):
-        """Check the validity of the operation wires.
+        """Check the validity of the operator wires.
 
         Args:
             wires (Sequence[int, Variable]): wires to check
         Raises:
-            TypeError: list of wires is invalid
+            ValueError: list of wires is invalid
         Returns:
             Number, array, Variable: p
         """
@@ -474,29 +380,23 @@ class Operation(abc.ABC):
 
     def queue(self):
         """Append the operation to a QNode queue."""
-        if QNode._current_context is None:
-            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
 
         QNode._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
-
 #=============================================================================
-# Base Observable class
+# Base Operation class
 #=============================================================================
 
+class Operation(Operator):
+    r"""Base class for quantum operations supported by a device.
 
-class Observable(Operation):
-    """Base class for observables supported by a device.
+    As with :class:`~.Operator`, the following class attributes must be
+    defined for all operations:
 
-    :class:`Observable` is used to describe Hermitian quantum observables.
-
-    As with :class:`~.Operation`, the following class attributes must be
-    defined for all observables:
-
-    * :attr:`~.Operation.num_params`
-    * :attr:`~.Operation.num_wires`
-    * :attr:`~.Operation.par_domain`
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
 
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
@@ -505,15 +405,131 @@ class Observable(Operation):
     * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
 
+    Finally, there are some additional optional class attributes
+    that may be set, and used by certain quantum optimizers:
+
+    * :attr:`~.Operation.generator`
+
+    Args:
+        args (tuple[float, int, array, Variable]): operation parameters
+
+    Keyword Args:
+        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`QNode` circuit queue.
+            This flag is useful if there is some reason to run an Operation
+            outside of a QNode context.
+    """
+    # pylint: disable=abstract-method
+    _grad_recipe = None
+
+    @property
+    def grad_method(self):
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
+        return None if self.num_params == 0 else 'F'
+
+    @property
+    def grad_recipe(self):
+        r"""Gradient recipe for the analytic differentiation method.
+
+        This is a list with one tuple per operation parameter. For parameter
+        :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in
+        a gradient recipe of
+
+        .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
+
+        If this property returns ``None``, the default gradient recipe
+        :math:`(c_k, s_k)=(1/2, \pi/2)` is assumed for every parameter.
+        """
+        return self._grad_recipe
+
+    @property
+    def generator(self):
+        r"""Generator of the operation.
+
+        A length-2 list ``[generator, scaling_factor]``, where
+
+        * ``generator`` is an existing PennyLane
+          operation class or :math:`2\times 2` Hermitian array
+          that acts as the generator of the current operation
+
+        * ``scaling_factor`` represents a scaling factor applied
+          to the generator operation
+
+        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
+        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
+        of operator :math:`U(\theta)`:
+
+        .. code-block:: python
+
+            generator = [PauliX, 0.7]
+
+        Default is ``[None, 1]``, indicating the operation has no generator.
+        """
+        return [None, 1]
+
+    @grad_recipe.setter
+    def grad_recipe(self, value):
+        """Setter for the grad_recipe property"""
+        self._grad_recipe = value
+
+    def __init__(self, *args, wires=None, do_queue=True):
+
+        # check the grad_method validity
+        if self.par_domain == 'N':
+            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters.'
+        elif self.par_domain == 'A':
+            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method.'
+
+        # check the grad_recipe validity
+        if self.grad_method == 'A':
+            if self.grad_recipe is None:
+                # default recipe for every parameter
+                self.grad_recipe = [None] * self.num_params
+            else:
+                assert len(self.grad_recipe) == self.num_params, 'Gradient recipe must have one entry for each parameter!'
+        else:
+            assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
+
+        super().__init__(*args, wires=wires, do_queue=do_queue)
+
+
+#=============================================================================
+# Base Observable class
+#=============================================================================
+
+
+class Observable(Operator):
+    """Base class for observables supported by a device.
+
+    :class:`Observable` is used to describe Hermitian quantum observables.
+
+    As with :class:`~.Operator`, the following class attributes must be
+    defined for all observables:
+
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
+
     Args:
         args (tuple[float, int, array, Variable]): observable parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operation should be immediately
-            pushed into a :class:`QNode` observable queue. This flag is useful if
-            there is some reason to call an observable outside of a QNode context.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`QNode` observable queue.
+            The observable queue is determined by the presence of an
+            applicable `QNode._current_context`. If no context is
+            available, this argument is ignored.
     """
     # pylint: disable=abstract-method
     return_type = None
@@ -528,6 +544,125 @@ class Observable(Operation):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
+    def __matmul__(self, other):
+        if isinstance(other, Tensor):
+            return other.__rmatmul__(self)
+
+        if isinstance(other, Observable):
+            return Tensor(self, other)
+
+        raise ValueError("Can only perform tensor products between observables.")
+
+
+class Tensor(Observable):
+    """Container class representing tensor products of observables.
+
+    To create a tensor, simply initiate it like so:
+
+    >>> T = Tensor(qml.PauliX(0), qml.Hermitian(A, [1, 2]))
+
+    You can also create a tensor from other Tensors:
+
+    >>> T = Tensor(T, qml.PauliZ(4))
+
+    The ``@`` symbol can be used as a tensor product operation:
+
+    >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+    """
+    return_type = None
+    tensor = True
+    par_domain = None
+
+    def __init__(self, *args): #pylint: disable=super-init-not-called
+        self.obs = []
+
+        for o in args:
+            if isinstance(o, Tensor):
+                self.obs.extend(o.obs)
+            elif isinstance(o, Observable):
+                self.obs.append(o)
+            else:
+                raise ValueError("Can only perform tensor products between observables.")
+
+    def __str__(self):
+        """Print the tensor product and some information."""
+        return 'Tensor product {}: {} params, wires {}'.format([i.name for i in self.obs], len(self.params), self.wires)
+
+    @property
+    def name(self):
+        """All constituent observable names making up the tensor product.
+
+        Returns:
+            list[str]: list containing all observable names
+        """
+        return [o.name for o in self.obs]
+
+    @property
+    def num_wires(self):
+        """Number of wires the tensor product acts on.
+
+        Returns:
+            int: number of wires
+        """
+        return len(list(_flatten(self.wires)))
+
+    @property
+    def wires(self):
+        """All wires in the system the tensor product acts on.
+
+        Returns:
+            list[list[Any]]: nested list containing the wires per observable
+            in the tensor product
+        """
+        return [o.wires for o in self.obs]
+
+    @property
+    def params(self):
+        """Raw parameters of all constituent observables in the tensor product.
+
+        Returns:
+            list[Any]: flattened list containing all dependent parameters
+        """
+        return [p for sublist in [o.params for o in self.obs] for p in sublist]
+
+    @property
+    def num_params(self):
+        """Raw parameters of all constituent observables in the tensor product.
+
+        Returns:
+            list[Any]: flattened list containing all dependent parameters
+        """
+        return len(self.params)
+
+    @property
+    def parameters(self):
+        """Evaluated parameter values of all constituent observables in the tensor product.
+
+        Returns:
+            list[list[Any]]: nested list containing the parameters per observable
+            in the tensor product
+        """
+        return [o.parameters for o in self.obs]
+
+    def __matmul__(self, other):
+        if isinstance(other, Tensor):
+            self.obs.extend(other.obs)
+            return self
+
+        if isinstance(other, Observable):
+            self.obs.append(other)
+            return self
+
+        raise ValueError("Can only perform tensor products between observables.")
+
+    def __rmatmul__(self, other):
+        if isinstance(other, Observable):
+            self.obs[:0] = [other]
+            return self
+
+        raise ValueError("Can only perform tensor products between observables.")
+
+    __imatmul__ = __matmul__
 
 
 #=============================================================================
@@ -630,14 +765,6 @@ class CV:
         return None
 
     @classproperty
-    def supports_analytic(self):
-        """Returns True if the CV Operation has ``grad_method='A'`` and
-        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
-        that analytic differentiation is supported.
-        """
-        return self.grad_method == 'A' and self.supports_heisenberg
-
-    @classproperty
     def supports_heisenberg(self):
         """Returns True if the CV Operation has
         overwritten the :meth:`~.CV._heisenberg_rep` static method
@@ -647,9 +774,18 @@ class CV:
         """
         return CV._heisenberg_rep != self._heisenberg_rep
 
+
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""
     # pylint: disable=abstract-method
+
+    @classproperty
+    def supports_analytic(self):
+        """Returns True if the CV Operation has ``grad_method='A'`` and
+        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
+        that analytic differentiation is supported.
+        """
+        return self.grad_method == 'A' and self.supports_heisenberg
 
     def heisenberg_pd(self, idx):
         """Partial derivative of the Heisenberg picture transform matrix.
