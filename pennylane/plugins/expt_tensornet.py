@@ -87,13 +87,15 @@ class TensorNetwork(Device):
 
     def apply(self, operation, wires, par):
         A = self._get_operator_matrix(operation, par)
+        A = np.reshape(A, [2] * len(wires) * 2)
         op_node = tn.Node(A)
         self._nodes.append((op_node, tuple(wires)))
-        # TODO: modify for multi-wire ops
-        wires = wires[0]
-        # TODO: can be smarter here about collecting contractions
-        # TODO: confirm op_node[0] or op_node[1] for matrix-vector multiplication
-        self._state = tn.contract(tn.connect(op_node[1],  self._state[wires]))
+        state = self._state
+        for idx, w in enumerate(wires):
+            # TODO: confirm "right-multiplication" indices for tensor A
+            tn.connect(op_node[-1 - idx], state[w])
+            # TODO: can be smarter here about collecting contractions
+        self._state = tn.contract_between(op_node, state)
 
     def expval(self, observable, wires, par):
         if isinstance(observable, list):
