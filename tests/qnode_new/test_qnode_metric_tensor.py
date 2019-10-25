@@ -250,7 +250,7 @@ class TestMetricTensor:
         b = 0.1
         c = 0.5
 
-        @qnode(dev, properties={'vis_check': False})
+        @qnode(dev)
         def final(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -329,7 +329,7 @@ class TestMetricTensor:
         # Note: since this layer only consists of a single parameter,
         # only need to compute a single diagonal element.
 
-        @qnode(dev, properties={'vis_check': False})
+        @qnode(dev)
         def layer2_diag(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -354,7 +354,7 @@ class TestMetricTensor:
         #   qml.RZ(g, wires=2)
         G3 = np.zeros([2, 2])
 
-        @qnode(dev, properties={'vis_check': False})
+        @qnode(dev)
         def layer3_diag(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -363,7 +363,7 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
 
-        @qnode(dev, properties={'vis_check': False})
+        @qnode(dev)
         def layer3_off_diag_first_order(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -372,7 +372,7 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliY(1))
 
-        @qnode(dev, properties={'vis_check': False})
+        @qnode(dev)
         def layer3_off_diag_second_order(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -450,7 +450,7 @@ class TestMetricTensor:
         # Note: since this layer only consists of a single parameter,
         # only need to compute a single diagonal element.
 
-        @qnode(dev, properties={'vis_check': False})
+        @qnode(dev)
         def layer2_diag(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -475,7 +475,7 @@ class TestMetricTensor:
         #   qml.RZ(g, wires=2)
         G3 = np.zeros([2, 2])
 
-        @qnode(dev, properties={'vis_check': False})
+        @qnode(dev)
         def layer3_diag(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)

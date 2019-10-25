@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 Quantum nodes
 =============
 
@@ -19,15 +19,15 @@ Quantum nodes
 
 .. currentmodule:: pennylane
 
-The :class:`~pennylane.qnode_new.qnode.QNode` class represents *quantum nodes*,
-encapsulating a *quantum function* or :ref:`variational circuit <varcirc>`
+The :class:`~pennylane.qnode_new.qnode.QNode` class represents a *quantum node*,
+encapsulating a *quantum function* (aka :ref:`variational circuit <varcirc>`)
 and the computational device it is executed on.
 
 The computational device is an instance of the :class:`~_device.Device`
 class, and can represent either a simulator or hardware device. They can be
 instantiated using the :func:`~device` loader. PennyLane comes included with
 some basic devices; additional devices can be installed as plugins
-(see :ref:`plugins` for more details).
+(see :ref:`plugin_overview` for more details).
 
 
 Quantum functions
@@ -35,9 +35,9 @@ Quantum functions
 
 .. _quantumfunc:
 
-We use the term *quantum function* to refer both to the abstract mathematical function
-represented by the variational quantum circuit, and the concrete Python function that defines it.
-The latter must be of the following form:
+We use the term *quantum function* to refer both to the abstract mathematical
+:math:`\mathbb{R}^m \to \mathbb{R}^n` function represented by the variational quantum circuit,
+and the concrete Python function that defines it. The latter must be of the following form:
 
 .. code-block:: python
 
@@ -53,9 +53,9 @@ Quantum functions are a restricted subset of Python functions, adhering to the f
 constraints:
 
 * The body of the function should consist of only supported PennyLane
-  :mod:`operations <pennylane.ops>`, one per line.
+  :mod:`operations <pennylane.ops>`, one per line for clarity.
   The function can contain classical flow control structures such as ``for`` loops,
-  but they must not depend on the parameters of the function.
+  but in general they must not depend on the parameters of the function.
 
 .. note::
 
@@ -75,15 +75,18 @@ constraints:
 
   * The function can *only* be differentiated with respect to its positional parameters.
     The positional parameters should be only used as the parameters of the :class:`.Operator`
-    constructors in the function.
+    constructors in the function, and they must take the values of nested sequences of real numbers.
     Classical processing of positional parameters, either by arithmetic operations
     or external functions, is not allowed. One current exception is simple scalar multiplication.
 
   * The auxiliary parameters can *not* be differentiated with respect to.
     They are useful for providing data or 'placeholders' to the quantum function.
-    In *mutable* nodes the auxiliary parameters can undergo any kind of classical
-    processing, and also appear in the ``wires`` argument of the Operators.
-    In *immutable* nodes they are subject to the same restrictions as the positional parameters.
+
+    * In *mutable* nodes the auxiliary parameters can undergo any kind of classical
+      processing, appear as the ``wires`` argument of Operators, and even affect the
+      classical flow control structures of the quantum function.
+
+    * In *immutable* nodes they are subject to the same restrictions as the positional parameters.
 
     Parameters that have default values are interpreted as auxiliary parameters. They *must* be
     given using the keyword syntax.
@@ -118,18 +121,21 @@ For example:
             result = my_quantum_function(np.pi/4, 0.7)
 
 
-.. currentmodule:: pennylane.qnode
-
+.. currentmodule:: pennylane.qnode_new.qnode
 
 Classes
 -------
 
 .. autosummary::
    QNode
-   JacobianQNode
-   ParSig
+   SignatureParameter
    ParDep
+
+.. currentmodule:: pennylane.qnode_new.jacobian
+
+.. autosummary::
    AutogradMixin
+   _JacobianQNode
 
 
 QNode methods
@@ -237,12 +243,12 @@ ParDep = namedtuple("ParDep", ["op", "par_idx"])
 
 Args:
     op (Operator): operator depending on the free parameter in question
-    par_idx (int): operator parameter index of the corresponding :class:`~.Variable` instance
+    par_idx (int): operator parameter index of the corresponding :class:`~pennylane.variable.Variable` instance
 """
 
 
-ParSig = namedtuple("ParSig", ["idx", "par"])
-"""Describes a parameter in a function signature.
+SignatureParameter = namedtuple("SignatureParameter", ["idx", "par"])
+"""Describes a single parameter in a function signature.
 
 Args:
     idx (int): positional index of the parameter in the function signature
@@ -255,7 +261,7 @@ def _get_signature(func):
 
     Adds the following attributes to func:
 
-    * :attr:`func.sig`: OrderedDict[str, ParSig]: mapping from parameters' names to their descriptions
+    * :attr:`func.sig`: OrderedDict[str, SignatureParameter]: mapping from parameters' names to their descriptions
     * :attr:`func.n_pos`: int: number of required positional arguments
     * :attr:`func.var_pos`: bool: can take a variable number of positional arguments (``*args``)
     * :attr:`func.var_keyword`: bool: can take a variable number of keyword arguments (``**kwargs``)
@@ -276,7 +282,7 @@ def _get_signature(func):
         elif p.kind == inspect.Parameter.VAR_KEYWORD:
             func.var_keyword = True
 
-    func.sig = OrderedDict([(p.name, ParSig(idx, p)) for idx, p in enumerate(sig.parameters.values())])
+    func.sig = OrderedDict([(p.name, SignatureParameter(idx, p)) for idx, p in enumerate(sig.parameters.values())])
     func.n_pos = n_pos
 
 
@@ -478,7 +484,7 @@ class QNode:
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
 
         # check for operations that cannot affect the output
-        if self.properties.get('vis_check', True):
+        if self.properties.get('vis_check', False):
             visible = self.circuit.ancestors(self.circuit.observables)
             invisible = set(self.circuit.operations) - visible
             if invisible:
@@ -546,7 +552,7 @@ class QNode:
 
         # TODO: we should enforce plugins using the Device.capabilities dictionary to specify
         # whether they are qubit or CV devices, and remove this logic here.
-        #self.type = 'cv' if all(are_cvs) else 'qubit'  #: str: circuit type, in {'cv', 'qubit'}
+        self.type = 'cv' if all(are_cvs) else 'qubit'  #: str: circuit type, in {'cv', 'qubit'}
 
 
     def _sort_args(self, args, kwargs):

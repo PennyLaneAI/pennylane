@@ -14,6 +14,13 @@
   in `_device.py`.
   [#374](https://github.com/XanaduAI/pennylane/pull/374)
 
+* The `QNode` class is split into a hierarchy of simpler classes.
+  [#354](https://github.com/XanaduAI/pennylane/pull/354)
+
+* The `CircuitGraph` class is updated to deal with `Operation` instances directly.
+  [#344](https://github.com/XanaduAI/pennylane/pull/344)
+
+
 ### Documentation
 
 ### Bug fixes
@@ -22,7 +29,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Antal Száva
+Ville Bergholm, Antal Száva
 
 ---
 

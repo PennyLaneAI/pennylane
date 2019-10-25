@@ -234,7 +234,7 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[1])  # on its own component in the circuit graph
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = QNode(circuit, operable_mock_device_2_wires, properties={'vis_check': True})
         with pytest.raises(QuantumFunctionError, match="cannot affect the output"):
             node(0.5)
 
