@@ -188,9 +188,9 @@ import itertools
 import numpy as np
 from scipy import linalg
 
+import pennylane as qml
+from pennylane.measure import var
 from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
-import pennylane.ops as qml
-import pennylane.measure as pm
 from pennylane.utils import _flatten, unflatten, expand
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
@@ -324,7 +324,7 @@ class QNode:
         self.ops = []  #: List[Operator]: quantum circuit, in the order the quantum function defines it
         self.circuit = None  #: CircuitGraph: DAG representation of the quantum circuit
 
-        self.mutable = mutable  #: bool: is the circuit mutable?
+        self.mutable = mutable  #: bool: whether the circuit is mutable
         self.properties = properties or {}  #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
 
         self.variable_deps = {}
@@ -338,6 +338,7 @@ class QNode:
 
         self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
         self.output_dim = None  #: int: dimension of the QNode output vector
+        self.type = 'qubit'  #: str: circuit type, in {'cv', 'qubit'}
 
 
     def __repr__(self):
@@ -407,7 +408,7 @@ class QNode:
         else:
             if self.obs_queue:
                 raise QuantumFunctionError('State preparations and gates must precede measured observables.')
-            self.queue.append(op)
+            self.queue.append(op)  # TODO rename self.queue to self.op_queue
 
 
     def _construct(self, args, kwargs):
@@ -549,7 +550,7 @@ class QNode:
 
         # TODO: we should enforce plugins using the Device.capabilities dictionary to specify
         # whether they are qubit or CV devices, and remove this logic here.
-        self.type = 'cv' if all(are_cvs) else 'qubit'  #: str: circuit type, in {'cv', 'qubit'}
+        self.type = 'cv' if all(are_cvs) else 'qubit'
 
 
     def _default_args(self, kwargs):
@@ -676,14 +677,14 @@ class QNode:
                 # get the observable corresponding to the generator of the current operation
                 if isinstance(gen, np.ndarray):
                     # generator is a Hermitian matrix
-                    variance = pm.var(qml.Hermitian(gen, w, do_queue=False))
+                    variance = var(qml.Hermitian(gen, w, do_queue=False))
 
                     if not diag_approx:
                         Ki_matrices.append((n, expand(gen, w, self.num_wires)))
 
                 elif issubclass(gen, Observable):
                     # generator is an existing PennyLane operation
-                    variance = pm.var(gen(w, do_queue=False))
+                    variance = var(gen(w, do_queue=False))
 
                     if not diag_approx:
                         if issubclass(gen, qml.PauliX):
