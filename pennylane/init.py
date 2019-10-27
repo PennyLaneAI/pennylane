@@ -44,7 +44,7 @@ def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
         np.random.seed(seed)
 
     params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires, 3))
-    return [params]
+    return params
 
 
 def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
@@ -71,7 +71,7 @@ def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
         np.random.seed(seed)
 
     params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires, 3))
-    return [params]
+    return params
 
 
 def strong_ent_layer_uniform(n_wires, low=0, high=2 * pi, seed=None):
@@ -97,7 +97,7 @@ def strong_ent_layer_uniform(n_wires, low=0, high=2 * pi, seed=None):
         np.random.seed(seed)
 
     params = np.random.uniform(low=low, high=high, size=(n_wires, 3))
-    return [params]
+    return params
 
 
 def strong_ent_layer_normal(n_wires, mean=0, std=0.1, seed=None):
@@ -123,7 +123,7 @@ def strong_ent_layer_normal(n_wires, mean=0, std=0.1, seed=None):
         np.random.seed(seed)
 
     params = np.random.normal(loc=mean, scale=std, size=(n_wires, 3))
-    return [params]
+    return params
 
 
 def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
@@ -153,7 +153,7 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
         n_rots = n_wires
 
     params = np.random.uniform(low=low, high=high, size=(n_layers, n_rots))
-    return [params]
+    return params
 
 
 def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=None):
@@ -183,7 +183,7 @@ def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=N
         n_rots = n_wires
 
     params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_rots))
-    return [params]
+    return params
 
 
 def random_layer_uniform(n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
@@ -212,7 +212,7 @@ def random_layer_uniform(n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
         n_rots = n_wires
 
     params = np.random.uniform(low=low, high=high, size=(n_rots,))
-    return [params]
+    return params
 
 
 def random_layer_normal(n_wires, n_rots=None, mean=0, std=0.1, seed=None):
@@ -241,7 +241,7 @@ def random_layer_normal(n_wires, n_rots=None, mean=0, std=0.1, seed=None):
         n_rots = n_wires
 
     params = np.random.normal(loc=mean, scale=std, size=(n_rots,))
-    return [params]
+    return params
 
 
 def cvqnn_layers_uniform(n_layers, n_wires, low=0, high=2*pi, mean_active=0, std_active=0.1, seed=None):
