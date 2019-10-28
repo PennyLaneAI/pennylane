@@ -69,6 +69,17 @@ Available plugins
   Python library for simulating continuous variable (CV) quantum optical circuits.
 
 
+* `PennyLane-qiskit <https://github.com/XanaduAI/pennylane-qiskit>`_: Supports
+  integration with `Qiskit <https://qiskit.org>`__, an open-source quantum
+  computation framework by IBM. Provides device support for the Qiskit Aer quantum
+  simulators, and IBM Q hardware devices.
+
+
+* `PennyLane-cirq <https://github.com/XanaduAI/pennylane-cirq>`_: Supports
+  integration with `Cirq <https://github.com/quantumlib/cirq>`__, an open-source quantum
+  computation framework by Google.
+
+
 * `PennyLane-Forest <https://github.com/rigetti/pennylane-forest>`_: Supports integration
   with `PyQuil <https://github.com/rigetti/pyquil>`__, the
   `Rigetti Forest SDK <https://www.rigetti.com/forest>`__, and the
@@ -77,21 +88,12 @@ Available plugins
   (QVM) and Quantum Processing Units (QPUs) hardware devices.
 
 
-* `PennyLane-qiskit <https://github.com/carstenblank/pennylane-qiskit>`_: Supports
-  integration with `Qiskit Terra <https://qiskit.org/terra>`__, an open-source quantum
-  computation framework by IBM. Provides device support for the Qiskit Aer quantum
-  simulators, and IBM QX hardware devices.
-
-
-* `PennyLane-PQ <https://github.com/XanaduAI/pennylane-pq>`_: Supports integration with
-  `ProjectQ <https://github.com/ProjectQ-Framework/ProjectQ>`__, an open-source quantum
-  computation framework that supports the IBM quantum experience.
-
-
 * `PennyLane-Qsharp <https://github.com/XanaduAI/pennylane-qsharp>`_: Supports integration
   with the `Microsoft Quantum Development Kit <https://www.microsoft.com/en-us/quantum/development-kit>`__,
   a quantum computation framework that uses the Q# quantum programming language.
 
+
+For a full list of PennyLane plugins, see `the PennyLane website <https://pennylane.ai/plugins.html>`__.
 
 Installation
 ============
