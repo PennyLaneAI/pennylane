@@ -82,7 +82,7 @@ class TensorNetwork(Device):
         self._nodes = []
         self._edges = []
         self._zero_state = np.zeros([2] * wires)
-        self._zero_state[[0] * wires] = 1.0
+        self._zero_state[tuple([0] * wires)] = 1.0
         self._input_state_node = self._add_node(self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState")
 
     def _add_node(self, A, wires, name="UnnamedNode"):
@@ -142,11 +142,11 @@ class TensorNetwork(Device):
         return A(*par)
 
     def ev(self, obs_nodes, wires):
-        r"""Expectation value of observable on specified wires.
+        r"""Expectation value of observables on specified wires.
 
          Args:
-            obs_nodes (tn.Node): the observable matrix as a tensornetwork Node
-            wires (Sequence[int]): measured subsystems
+            obs_nodes (tn.Node): the observables as tensornetwork Nodes
+            wires (Sequence[int]): measured subsystems for each observable
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
