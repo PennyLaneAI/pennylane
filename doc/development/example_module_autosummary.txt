@@ -1,0 +1,6 @@
+.. currentmodule:: pennylane.package_name
+.. autosummary::
+   :toctree: api
+
+   module1
+   module2
