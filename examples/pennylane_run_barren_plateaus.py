@@ -82,7 +82,6 @@ np.random.seed(2)
 num_qubits = 4
 dev = qml.device("default.qubit", wires=num_qubits)
 gate_set = [qml.RX, qml.RY, qml.RZ]
-gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
 
 
 def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
@@ -113,21 +112,25 @@ def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
 
 ############################################################
 # Now we can compute the gradient and calculate the variance.
-# While we only take 200 samples to allow the code to run in
+# While we only take 20 steps to allow the code to run in
 # a reasonable amount of time, this can be increased
 # for more accurate results.
 
 qcircuit = qml.QNode(rand_circuit, dev)
 grad = qml.grad(qcircuit, argnum=0)
+steps = 50
 
-num_samples = 200
 grad_vals = []
+gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
+params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
+cost = lambda x: qcircuit(x, random_gate_sequence=gate_sequence, num_qubits=num_qubits)
+opt = qml.GradientDescentOptimizer(0.01)
 
-for i in range(num_samples):
-    params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
+for i in range(steps):
     grad_vals.append(grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits))
+    params = opt.step(cost, params)
 
-print("Variance of the gradient for {} samples: {}".format(num_samples, np.var(grad_vals[0])))
+print("Variance of the gradient for {} samples: {}".format(steps, np.var(grad_vals[0])))
 
 
 ###########################################################
@@ -152,17 +155,19 @@ def generate_random_circuit(num_qubits):
     return qcircuit, random_gate_sequence
 
 
-qubits = [2, 3, 4, 5, 6]
+qubits = [2, 3, 4, 5, 6, 7, 8]
 variances = []
 
 
 for num_qubits in qubits:
-    qcircuit, gate_sequence = generate_random_circuit(num_qubits)
-    grad = qml.grad(qcircuit, argnum=0)
     grad_vals = []
-    for i in range(num_samples):
-        params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
+    qcircuit, gate_sequence = generate_random_circuit(num_qubits)
+    cost = lambda x: qcircuit(x, random_gate_sequence=gate_sequence, num_qubits=num_qubits)
+    params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
+    for i in range(steps):
+        grad = qml.grad(qcircuit, argnum=0)
         grad_vals.append(grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits))
+        params = opt.step(cost, params)
     vargrad = np.var(grad_vals[0])
     variances.append(vargrad)
     print("Variance of the gradient for {} qubits: {}".format(num_qubits, vargrad))
