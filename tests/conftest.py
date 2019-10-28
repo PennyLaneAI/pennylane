@@ -52,7 +52,6 @@ def n_subsystems(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    """Number of qubits or modes."""
     return qml.device('default.qubit', wires=n_subsystems)
 
 @pytest.fixture(scope="function")
@@ -66,6 +65,22 @@ def qubit_device_2_wires():
 @pytest.fixture(scope="function")
 def qubit_device_3_wires():
     return qml.device('default.qubit', wires=3)
+
+@pytest.fixture(scope="session")
+def tensornet_device(n_subsystems):
+    return qml.device('expt.tensornet', wires=n_subsystems)
+
+@pytest.fixture(scope="function")
+def tensornet_device_1_wire():
+    return qml.device('expt.tensornet', wires=1)
+
+@pytest.fixture(scope="function")
+def tensornet_device_2_wires():
+    return qml.device('expt.tensornet', wires=2)
+
+@pytest.fixture(scope="function")
+def tensornet_device_3_wires():
+    return qml.device('expt.tensornet', wires=3)
 
 
 @pytest.fixture(scope="session")

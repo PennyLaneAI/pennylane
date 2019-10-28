@@ -22,7 +22,8 @@ import tensornetwork as tn
 from pennylane.utils import _flatten
 from pennylane import Device
 from pennylane.plugins.default_qubit import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, \
-    Rphi, Rotx, Roty, Rotz, Rot3, CRot3, CRotx, CRoty, CRotz, CRot3, hermitian
+    Rphi, Rotx, Roty, Rotz, Rot3, CRot3, CRotx, CRoty, CRotz, CRot3, hermitian, identity, \
+    unitary
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -46,6 +47,9 @@ class TensorNetwork(Device):
     _capabilities = {"model": "qubit", "tensor_observables": True}
 
     _operation_map = {
+        'QubitStateVector': None,
+        'BasisState': None,
+        'QubitUnitary': unitary,
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
@@ -72,7 +76,8 @@ class TensorNetwork(Device):
         'PauliY': Y,
         'PauliZ': Z,
         'Hadamard': H,
-        'Hermitian': hermitian
+        'Hermitian': hermitian,
+        'Identity': identity
     }
 
     def __init__(self, wires):
@@ -152,9 +157,8 @@ class TensorNetwork(Device):
         """
         # first need to connect together nodes representing measurement
         all_wires = tuple(w for w in range(self.num_wires))
-        ket = self._state
-        ket.set_name("Ket{}".format(all_wires))
-        bra = self._add_node(tn.conj(ket), wires=all_wires, name="PreMeasurementBra")
+        ket = self._add_node(self._state, wires=all_wires, name="Ket{}".format(all_wires))
+        bra = self._add_node(tn.conj(ket), wires=all_wires, name="Bra{}".format(all_wires))
         meas_wires = []
         for obs_node, obs_wires in zip(obs_nodes, wires):
             meas_wires.extend(obs_wires)
