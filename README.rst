@@ -57,9 +57,9 @@ Features
 
 - **Device independent**.
   The same quantum circuit model can be **run on different backends**. Install
-  `plugins <https://pennylane.ai/plugins.html>`_ to access even more
-  devices, including **Strawberry Fields**, **IBM Q**, **Rigetti Forest**,
-  **Microsoft QDK**, and **ProjectQ**.
+  `plugins <https://pennylane.ai/plugins.html>`__ to access even more
+  devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
+  **Microsoft QDK**.
 
 Available plugins
 =================
