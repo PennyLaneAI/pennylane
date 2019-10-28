@@ -28,24 +28,24 @@ An example of how to use templates is the following:
     import pennylane as qml
     from pennylane.templates.embeddings import AngleEmbedding
     from pennylane.templates.layers import StronglyEntanglingLayers
-    from pennylane.init import strong_ent_layer_uniform
+    from pennylane.init import strong_ent_layers_uniform
 
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev)
     def circuit(weights, x=None):
         AngleEmbedding(x, [0,1])
-        StronglyEntanglingLayers(weights=weights, wires=[0,1])
+        StronglyEntanglingLayers(*weights, wires=[0,1])
         return qml.expval(qml.PauliZ(0))
 
-    init_weights = strong_ent_layer_uniform(n_wires=2)
+    init_weights = strong_ent_layers_uniform(n_layers=3, n_wires=2)
     print(circuit(init_weights, x=[1., 2.]))
 
 
 Here, we used the embedding template :func:`~.AngleEmbedding`
 together with the layer template :func:`~.StronglyEntanglingLayers`,
 and the uniform parameter initialization strategy
-:func:`~.strong_ent_layer_uniform`.
+:func:`~.strong_ent_layers_uniform`.
 
 
 .. _intro_ref_temp_lay:
@@ -112,6 +112,7 @@ Each trainable template has a dedicated function in the :mod:`pennylane.init` mo
 randomly initialized arrays for the trainable parameters.
 
 Strongly entangling circuit
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :html:`<div class="summary-table">`
 
@@ -126,6 +127,7 @@ Strongly entangling circuit
 :html:`</div>`
 
 Random circuit
+~~~~~~~~~~~~~~
 
 :html:`<div class="summary-table">`
 
@@ -140,6 +142,7 @@ Random circuit
 :html:`</div>`
 
 Continuous-variable quantum neural network
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :html:`<div class="summary-table">`
 
@@ -154,6 +157,7 @@ Continuous-variable quantum neural network
 :html:`</div>`
 
 Interferometer
+~~~~~~~~~~~~~~
 
 :html:`<div class="summary-table">`
 
@@ -164,6 +168,3 @@ Interferometer
     ~pennylane.init.interferometer_normal
 
 :html:`</div>`
-
-
-

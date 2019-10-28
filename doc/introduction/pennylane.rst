@@ -14,30 +14,31 @@ Bridging the classical and quantum world
 ----------------------------------------
 
 The classical computations, as well as the overall optimization,
-are executed by a **classical interface** . PennyLane's standard interface is `NumPy <https://numpy.org/>`_,
+are executed by an **interface** . PennyLane's standard interface is `NumPy <https://numpy.org/>`_,
 but there is also support for powerful machine learning interfaces like `PyTorch <https://pytorch.org/>`_
 and `Tensorflow <https://www.tensorflow.org/>`_.
 
 The quantum computations are sent to a **device** for execution. A device can be a classical
 simulator or real quantum hardware. PennyLane comes with default simulator devices, but it can also use external
-software and hardware to run quantum circuits - such as Xanadu's *StrawberryFields*,
-Rigetti's *Forest*, IBM's *Quiskit*, *ProjectQ* or Microsoft's *Q#*.
-The communication between PennyLane and external devices is coordinated by a **plugin**.
+software and hardware to run quantum circuits---such as Xanadu's Strawberry Fields,
+Rigetti's Forest, IBM's Qiskit, or Google's Cirq.
 
+The communication the machine learning interface and external devices is coordinated by
+PennyLane via a suite of **plugins**:
 
-.. image:: ../_static/building_blocks.png
+.. image:: ../_static/intro.png
     :align: center
     :width: 650px
     :target: javascript:void(0);
 
 The main job of PennyLane is to manage the computation or estimation of gradients
 of parametrized quantum circuits (so called *variational circuits*) on quantum devices,
-and to make them accessible to the classical interface.
-The classical interface uses the gradient information to automatically differentiate
+and to make them accessible to the machine learning libraries via an interface.
+The chosen machine learning library uses the gradient information to automatically differentiate
 through the computation - an essential process in optimization and machine learning.
 
-Learn more
-----------
+More details
+------------
 
 In the following sections you can learn more about the key features of PennyLane:
 
