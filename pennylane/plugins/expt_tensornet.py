@@ -19,9 +19,10 @@ import functools
 import numpy as np
 import tensornetwork as tn
 
+from pennylane.utils import _flatten
 from pennylane import Device
 from pennylane.plugins.default_qubit import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, \
-    Rphi, Rotx, Roty, Rotz, Rot3, CRot3, CRotx, CRoty, CRotz, CRot3
+    Rphi, Rotx, Roty, Rotz, Rot3, CRot3, CRotx, CRoty, CRotz, CRot3, hermitian
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -70,7 +71,8 @@ class TensorNetwork(Device):
         'PauliX': X,
         'PauliY': Y,
         'PauliZ': Z,
-        'Hadamard': H
+        'Hadamard': H,
+        'Hermitian': hermitian
     }
 
     def __init__(self, wires):
@@ -78,37 +80,52 @@ class TensorNetwork(Device):
         self.eng = None
         self.analytic = True
         self._nodes = []
+        self._edges = []
         self._zero_state = np.zeros([2] * wires)
         self._zero_state[[0] * wires] = 1.0
-        self._input_state_node = self._add_node(self._zero_state, tuple(idx for idx in range(wires)))
+        self._input_state_node = self._add_node(self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState")
+
+    def _add_node(self, A, wires, name="UnnamedNode"):
+        name = "{}{}".format(name, tuple(w for w in wires))
+        if isinstance(A, tn.Node):
+            A.set_name(name)
+            node = A
+        else:
+            node = tn.Node(A, name=name)
+        self._nodes.append(node)
+        return node
+
+    def _add_edge(self, node1, idx1, node2, idx2):
+        edge = tn.connect(node1[idx1], node2[idx2])
+        self._edges.append(edge)
+        return edge
 
     def pre_apply(self):
         self.reset()
 
     def apply(self, operation, wires, par):
         A = self._get_operator_matrix(operation, par)
-        A = np.reshape(A, [2] * len(wires) * 2)
-        op_node = self._add_node(A, wires)
-        state = self._state
+        num_mult_idxs = len(wires)
+        A = np.reshape(A, [2] * num_mult_idxs * 2)
+        op_node = self._add_node(A, wires=wires, name=operation)
         for idx, w in enumerate(wires):
             # TODO: confirm "right-multiplication" indices for tensor A
-            tn.connect(op_node[-1 - idx], state[w])
-            # TODO: can be smarter here about collecting contractions
-        self._state = tn.contract_between(op_node, state)
+            self._add_edge(op_node, num_mult_idxs + idx, self._state, w)
+        # TODO: can be smarter here about collecting contractions
+        self._state = tn.contract_between(op_node, self._state)
 
     def expval(self, observable, wires, par):
-        if isinstance(observable, list):
-            matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
-        else:
-            matrices = [self._get_operator_matrix(observable, par)]
+        if not isinstance(observable, list):
+            observable = [observable]
             wires = [wires]
-        nodes = [self._add_node(A, w) for A, w in zip(matrices, wires)]
+            par = [par]
+        matrices = []
+        for o, p, w in zip(observable, par, wires):
+            A = self._get_operator_matrix(o, p)
+            num_mult_idxs = len(w)
+            matrices.append(np.reshape(A, [2] * num_mult_idxs * 2))
+        nodes = [self._add_node(A, w, name=o) for A, w, o in zip(matrices, wires, observable)]
         return self.ev(nodes, wires)
-
-    def _add_node(self, A, wires):
-        node = tn.Node(A)
-        self._nodes.append((node, tuple(wires)))
-        return node
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
@@ -124,26 +141,36 @@ class TensorNetwork(Device):
             return A
         return A(*par)
 
-    def ev(self, A, wires):
+    def ev(self, obs_nodes, wires):
         r"""Expectation value of observable on specified wires.
 
          Args:
-            A (tn.Node): the observable matrix as a tensornetwork Node
-            wires (Sequence[int]): target subsystems
+            obs_nodes (tn.Node): the observable matrix as a tensornetwork Node
+            wires (Sequence[int]): measured subsystems
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
+        # first need to connect together nodes representing measurement
+        all_wires = tuple(w for w in range(self.num_wires))
         ket = self._state
-        bra = tn.conj(ket)
-        obs_node = self._add_node(bra, tuple(idx for idx in range(self.num_wires)))
-        for w in range(self.num_wires):
-            if w in wires:
-                tn.connect(obs_node[1], ket[w])
-                tn.connect(bra[w], obs_node[0])
-            else:
-                tn.connect(bra[w], ket[w])
-        obs_ket = tn.contract_between(obs_node, ket)
-        expval = tn.contract_between(bra, obs_ket).tensor
+        ket.set_name("Ket{}".format(all_wires))
+        bra = self._add_node(tn.conj(ket), wires=all_wires, name="PreMeasurementBra")
+        meas_wires = []
+        for obs_node, obs_wires in zip(obs_nodes, wires):
+            meas_wires.extend(obs_wires)
+            for idx, w in enumerate(obs_wires):
+                left_mult_index = idx
+                right_mult_index = len(obs_wires) + idx
+                self._add_edge(obs_node, right_mult_index, ket, w)  # A|psi>
+                self._add_edge(bra, w, obs_node, left_mult_index)  # <psi|A
+        for w in set(all_wires) - set(meas_wires):
+            self._add_edge(bra, w, ket, w)  # |psi[w]|**2
+
+        # contractions
+        contracted_ket = ket
+        for obs_node in obs_nodes:
+            contracted_ket = tn.contract_between(obs_node, contracted_ket)
+        expval = tn.contract_between(bra, contracted_ket).tensor
         if np.abs(expval.imag) > tolerance:
             warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expval.imag), RuntimeWarning)
         return expval.real
