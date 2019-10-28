@@ -216,7 +216,7 @@ automatically to the comment box when you create a new issue.
 * Once you have submitted the pull request, three things will automatically occur:
 
   - The **test suite** will automatically run on `Travis CI <https://travis-ci.org/XanaduAI/pennylane>`_
-    to ensure that the all tests continue to pass.
+    to ensure that all tests continue to pass.
 
   - Once the test suite is finished, a **code coverage report** will be generated on
     `Codecov <https://codecov.io/gh/XanaduAI/pennylane>`_. This will calculate the percentage
