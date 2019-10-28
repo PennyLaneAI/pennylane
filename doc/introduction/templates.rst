@@ -111,8 +111,7 @@ Parameter initializations
 Each trainable template has a dedicated function in the :mod:`pennylane.init` module, which generates a list of
 randomly initialized arrays for the trainable parameters.
 
-Strongly entangling circuit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. rubric:: Strongly entangling circuit
 
 :html:`<div class="summary-table">`
 
@@ -126,8 +125,7 @@ Strongly entangling circuit
 
 :html:`</div>`
 
-Random circuit
-~~~~~~~~~~~~~~
+.. rubric:: Random circuit
 
 :html:`<div class="summary-table">`
 
@@ -141,8 +139,7 @@ Random circuit
 
 :html:`</div>`
 
-Continuous-variable quantum neural network
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. rubric:: Continuous-variable quantum neural network
 
 :html:`<div class="summary-table">`
 
@@ -156,8 +153,7 @@ Continuous-variable quantum neural network
 
 :html:`</div>`
 
-Interferometer
-~~~~~~~~~~~~~~
+.. rubric:: Interferometer
 
 :html:`<div class="summary-table">`
 

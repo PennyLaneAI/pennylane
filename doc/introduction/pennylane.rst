@@ -28,8 +28,10 @@ PennyLane via a suite of **plugins**:
 
 .. image:: ../_static/intro.png
     :align: center
-    :width: 650px
+    :width: 70%
     :target: javascript:void(0);
+
+|
 
 The main job of PennyLane is to manage the computation or estimation of gradients
 of parametrized quantum circuits (so called *variational circuits*) on quantum devices,

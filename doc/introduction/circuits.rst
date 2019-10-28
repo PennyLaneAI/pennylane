@@ -103,25 +103,20 @@ the available options that can be passed to the device loader.
 Device options
 ~~~~~~~~~~~~~~
 
-When loading a device, there is one argument that must always be specified:
-
-* ``name`` (*str*): the name of the device.
-
-Further options can be passed as keyword arguments; these options can differ based
+When loading a device, the name of the device must always be specified.
+Further options can then be passed as keyword arguments; these options can differ based
 on the device. For the in-built ``'default.qubit'`` and ``'default.gaussian'``
 devices, the options are:
 
 * ``wires`` (*int*): The number of wires to initialize the device with.
 
-* ``shots=1000`` (*int*): How many times the circuit should be evaluated (or sampled) to estimate
-    the expectation values. Defaults to 1000 if not specified.
+* ``analytic`` (*bool*): Indicates if the device should calculate expectations
+  and variances analytically. Default to ``True``.
 
-    If ``analytic == True``, then the number of shots is ignored in the calculation of
-    expectation values and variances, and only controls the number of samples returned
-    by ``sample``.
+* ``shots`` (*int*): How many times the circuit should be evaluated (or sampled) to estimate
+  the expectation values. Defaults to 1000 if not specified.
 
-* ``analytic=True`` (*bool*): Indicates if the device should calculate expectations
-    and variances analytically.
+For a plugin device, refer to the plugin documentation for available device options.
 
 .. _intro_vcirc_qnode:
 
