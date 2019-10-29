@@ -81,9 +81,9 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/code.png
+.. image:: _static/intro.png
     :align: right
-    :width: 320px
+    :width: 400px
     :target: javascript:void(0);
 
 
@@ -106,7 +106,7 @@ Features
 - *Device independent*.
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`_ to access even more
-  devices, including **Strawberry Fields**, **IBM Q**, **Rigetti Forest**,
+  devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
   **Microsoft QDK**, and **ProjectQ**.
 
 
