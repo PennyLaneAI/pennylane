@@ -15,13 +15,17 @@
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
+# pylint: disable=protected-access
 from collections.abc import Iterable
+import contextlib
 import numbers
 import inspect
+import io
 import itertools
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.variable import Variable
 
 
@@ -163,3 +167,98 @@ def expand(U, wires, num_wires):
 
     # permute U to take into account rearranged wires
     return U[:, perm][perm]
+
+
+class Recorder:
+    """Recorder class used by the :class:`~.OperationRecorder`.
+
+    The Recorder class is a very minimal QNode, that simply
+    acts as a QNode context for operator queueing."""
+    # pylint: disable=too-few-public-methods
+    def __init__(self, old_context):
+        self.old_context = old_context
+        self.ops = []
+        self.queue = []
+        self.ev = []
+
+    def _append_op(self, op):
+        """:class:`~.Operator` objects call this method
+        and append themselves upon initialization."""
+        self.ops.append(op)
+
+        if isinstance(op, qml.operation.Observable):
+            if op.return_type is None:
+                self.queue.append(op)
+            else:
+                self.ev.append(op)
+        else:
+            self.queue.append(op)
+
+        # this ensure the recorder does not interfere with
+        # any QNode contexts
+        if self.old_context:
+            self.old_context._append_op(op)
+
+
+class OperationRecorder:
+    """A template and quantum function inspector,
+    allowing easy introspection of operators that have been
+    applied without requiring a QNode.
+
+    **Example**:
+
+    The OperationRecorder is a context manager. Executing templates
+    or quantum functions stores resulting applied operators in the
+    recorder, which can then be printed.
+
+    >>> weights = qml.init.strong_ent_layers_normal(n_layers=1, n_wires=2)
+    >>>
+    >>> with qml.utils.OperationRecorder() as rec:
+    >>>    qml.templates.layers.StronglyEntanglingLayers(*weights, wires=[0, 1])
+    >>>
+    >>> print(rec)
+    Operations
+    ==========
+    Rot(-0.10832656163640327, 0.14429091013664083, -0.010835826725765343, wires=[0])
+    Rot(-0.11254523669444501, 0.0947222564914006, -0.09139600968423377, wires=[1])
+    CNOT(wires=[0, 1])
+    CNOT(wires=[1, 0])
+
+    Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
+    to directly accessed the applied :class:`~.Operation` and :class:`~.Observable`
+    objects.
+
+    Attributes:
+        rec (~.Recorder): a very minimal QNode, that simply
+            acts as a QNode context for operator queueing
+        queue (List[~.Operators]): list of operations applied within
+            the OperatorRecorder context
+    """
+    def __init__(self):
+        self.rec = None
+        self.queue = None
+        self.old_context = None
+
+    def __enter__(self):
+        self.rec = Recorder(qml.QNode._current_context)
+
+        # store the old context to be returned later
+        self.old_context = qml.QNode._current_context
+
+        # set the recorder as the QNode context
+        qml.QNode._current_context = self.rec
+
+        self.queue = None
+
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.queue = self.rec.ops
+        qml.QNode._current_context = self.old_context
+
+    def __str__(self):
+        with io.StringIO() as buf, contextlib.redirect_stdout(buf):
+            qml.QNode.print_applied(self.rec)
+            output = buf.getvalue()
+
+        return output
