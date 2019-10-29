@@ -81,9 +81,9 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/code.png
+.. image:: _static/intro.png
     :align: right
-    :width: 320px
+    :width: 400px
     :target: javascript:void(0);
 
 

@@ -14,13 +14,13 @@ Quantum Circuits
     :target: javascript:void(0);
 
 
-In PennyLane, quantum circuits are represented as *quantum node* objects. A quantum node is used to 
-declare the quantum circuit, and also ties the computation to a specific device that executes it. 
+In PennyLane, quantum circuits are represented as *quantum node* objects. A quantum node is used to
+declare the quantum circuit, and also ties the computation to a specific device that executes it.
 Quantum nodes can be easily created by using the :ref:`qnode <intro_vcirc_decorator>` decorator.
 
-QNodes can interface with any of the supported numerical and machine learning libraries---:ref:`NumPy <numpy_interf>`, :ref:`PyTorch <torch_interf>`, and :ref:`TensorFlow <tf_interf>`---indicated by providing an optional ``interface`` argument when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with library-specific data structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and :ref:`optimizers <intro_ref_opt>`. 
+QNodes can interface with any of the supported numerical and machine learning libraries---:ref:`NumPy <numpy_interf>`, :ref:`PyTorch <torch_interf>`, and :ref:`TensorFlow <tf_interf>`---indicated by providing an optional ``interface`` argument when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with library-specific data structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and :ref:`optimizers <intro_ref_opt>`.
 
-By default, QNodes use the NumPy interface. The other PennyLane interfaces are 
+By default, QNodes use the NumPy interface. The other PennyLane interfaces are
 introduced in more detail in the section on :ref:`interfaces <intro_interfaces>`.
 
 
@@ -66,8 +66,7 @@ constraints:
 
 .. note::
 
-    :doc:`operations` can be created outside of a quantum circuit function; however,
-    quantum operations can only be *executed* from within a QNode.
+    Quantum operations can only be executed on a device from within a QNode.
 
 .. note::
 
