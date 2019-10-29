@@ -201,7 +201,7 @@ a.internal em {
 }
 
 dl dd {
-  margin: 3px 0 10px 30px;
+  margin: 3px 0 5px 30px;
 }
 
 dl.method,
@@ -209,12 +209,13 @@ dl.staticmethod,
 dl.classmethod,
 dl.attribute {
   border-bottom: 1px solid #ccc;
+  margin-bottom: -30px;
 }
 
-dl.class dl:first-of-type {
+/*dl.class dl:first-of-type {
   padding-top: 10px;
   border-top: 1px solid #ccc;
-}
+}*/
 
 dl.method:last-child,
 dl.staticmethod:last-child,
@@ -1481,11 +1482,12 @@ dt:target, .highlight {
 }
 
 dt:target {
-    background-color: #fff176 !important;
+    /*background-color: white !important;*/
 }
 
 dt:target code {
-    background-color: #fff176 !important;
+    background-color: white !important;
+    border-bottom: 3px {{theme_download_button}} solid;
 }
 
 .method dt:target,
@@ -1494,7 +1496,7 @@ dt:target code {
 .classmethod dt:target
  {
     padding: 5px;
-    border-radius: 5px;
+    /*border-radius: 5px;*/
 }
 
 .exception > dt {
@@ -2149,6 +2151,31 @@ footer.page-footer .footer-copyright {
     visibility: hidden;
 }
 
+dl.attribute > dt:before,
+dl.method > dt:before {
+    content: '';
+    display: block;
+    position: relative;
+    width: 0;
+    margin-top: 60px
+}
+
+dl.class {
+  padding-bottom: 20px;
+}
+
+dl.class dd > .rubric {
+  margin-top: 60px;
+}
+
+dl.class dd > .rubric:last-of-type {
+  margin-bottom: -40px;
+}
+
+dl.class > dd > table.docutils {
+    margin-bottom: -40px;
+    border-bottom: 1px solid lightgray;
+}
 /* Syntax highlighting
 -------------------------------------------------- */
 
