@@ -2142,6 +2142,13 @@ footer.page-footer .footer-copyright {
   opacity: 1;
 }
 
+.section > span {
+    display: block;
+    position: relative;
+    top: -40px;
+    visibility: hidden;
+}
+
 /* Syntax highlighting
 -------------------------------------------------- */
 

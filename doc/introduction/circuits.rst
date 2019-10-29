@@ -18,10 +18,10 @@ In PennyLane, quantum circuits are represented as *quantum node* objects. A quan
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
 Quantum nodes can be easily created by using the :ref:`qnode <intro_vcirc_decorator>` decorator.
 
-QNodes can interface with any of the supported numerical and machine learning libraries---:ref:`NumPy <numpy_interf>`, :ref:`PyTorch <torch_interf>`, and :ref:`TensorFlow <tf_interf>`---indicated by providing an optional ``interface`` argument when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with library-specific data structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and :ref:`optimizers <intro_ref_opt>`.
+QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch <interfaces/torch>`, and :doc:`TensorFlow <interfaces/tf>`---indicated by providing an optional ``interface`` argument when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with library-specific data structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and :doc:`optimizers <optimizers>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
-introduced in more detail in the section on :ref:`interfaces <intro_interfaces>`.
+introduced in more detail in the section on :doc:`interfaces <interfaces>`.
 
 
 .. _intro_vcirc_qfunc:
@@ -57,8 +57,8 @@ constraints:
   using one instruction per line.
 
 * The quantum function must always return either a single or a tuple of
-  *measured observable values*, by applying a :ref:`measurement function <intro_ref_meas>`
-  to a :ref:`qubit <intro_ref_ops_qobs>` or :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
+  *measured observable values*, by applying a :doc:`measurement function <measurements>`
+  to a :ref:`qubit observable <intro_ref_ops_qobs>` or :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
 
 * Classical processing of function arguments, either by arithmetic operations
   or external functions, is not allowed. One current exception is simple scalar
