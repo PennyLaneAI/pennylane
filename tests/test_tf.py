@@ -554,29 +554,31 @@ gradient_test_data = [
 ]
 
 
-dev = qml.device("default.qubit", wires=2)
-
-
-@qml.qnode(dev, interface="tf")
-def f(x):
-    qml.RX(x, wires=0)
-    return qml.expval(qml.PauliZ(0))
-
-
-@qml.qnode(dev, interface="tf")
-def g(y):
-    qml.RY(y, wires=0)
-    return qml.expval(qml.PauliX(0))
-
-
-
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFGradients:
     """Integration tests involving gradients of QNodes and hybrid computations using the tf interface"""
 
+    @pytest.fixture
+    def qnodes(self):
+        """Two QNodes to be used for the gradient tests"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def f(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev, interface="tf")
+        def g(y):
+            qml.RY(y, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        return f, g
+
     @pytest.mark.parametrize("x, y", gradient_test_data)
-    def test_addition_qnodes_gradient(self, x, y):
+    def test_addition_qnodes_gradient(self, qnodes, x, y):
         """Test the gradient of addition of two QNode circuits"""
+        f, g = qnodes
 
         def add(a, b):
             return a + b
@@ -619,8 +621,9 @@ class TestTFGradients:
         assert grad[1].numpy() == 1.0
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
-    def test_subtraction_qnodes_gradient(self, x, y):
+    def test_subtraction_qnodes_gradient(self, qnodes, x, y):
         """Test the gradient of subtraction of two QNode circuits"""
+        f, g = qnodes
 
         def subtract(a, b):
             return a - b
@@ -640,8 +643,9 @@ class TestTFGradients:
         assert grad[1].numpy() == -1.0
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
-    def test_multiplication_qnodes_gradient(self, x, y):
+    def test_multiplication_qnodes_gradient(self, qnodes, x, y):
         """Test the gradient of multiplication of two QNode circuits"""
+        f, g = qnodes
 
         def mult(a, b):
             return a * b
@@ -661,8 +665,9 @@ class TestTFGradients:
         assert grad[1].numpy() == a.numpy()
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
-    def test_division_qnodes_gradient(self, x, y, tol):
+    def test_division_qnodes_gradient(self, qnodes, x, y, tol):
         """Test the gradient of division of two QNode circuits"""
+        f, g = qnodes
 
         def div(a, b):
             return a / b
@@ -682,8 +687,9 @@ class TestTFGradients:
         assert np.allclose(grad[1].numpy(), -a.numpy() / b.numpy() ** 2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
-    def test_composition_qnodes_gradient(self, x, y):
+    def test_composition_qnodes_gradient(self, qnodes, x, y):
         """Test the gradient of composition of two QNode circuits"""
+        f, g = qnodes
 
         xt = Variable(x)
         yt = Variable(y)
