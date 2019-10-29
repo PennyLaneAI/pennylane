@@ -88,7 +88,9 @@ class TensorNetwork(Device):
         self._edges = []
         self._zero_state = np.zeros([2] * wires)
         self._zero_state[tuple([0] * wires)] = 1.0
-        self._input_state_node = self._add_node(self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState")
+        # TODO: since this state is separable, can be more intelligent about not making a dense matrix
+        self._state = self._add_node(self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState")
+        self._free_edges = [e for e in self._state.edges]  # we need this list to be distinct from self._state.edges
 
     def _add_node(self, A, wires, name="UnnamedNode"):
         name = "{}{}".format(name, tuple(w for w in wires))
@@ -105,34 +107,19 @@ class TensorNetwork(Device):
         self._edges.append(edge)
         return edge
 
-    def _permute(self, axes):
-        """Permute a set of indices from (i1, i2, i3,..., j1, j2, j3,...) ordering to (i1, j1, i2, j3, ...) ordering."""
-        p = []
-        for idx in range(len(axes) // 2):
-            p += [axes[idx], axes[len(axes)//2 + idx]]
-        #return p
-        return axes[::2] + axes[1::2]
-
-    def _reshape(self, A, num_axes, order='C'):
-        A = np.reshape(A, [2] * num_axes, order=order)
-        A = np.transpose(A, axes=self._permute([idx for idx in range(num_axes)]))
-        return A
-
     def pre_apply(self):
         self.reset()
 
     def apply(self, operation, wires, par):
         A = self._get_operator_matrix(operation, par)
         num_mult_idxs = len(wires)
-        A = self._reshape(A, num_mult_idxs * 2)
+        A = np.reshape(A, [2] * num_mult_idxs * 2)
         op_node = self._add_node(A, wires=wires, name=operation)
-        output_edge_order = self._state.edges  # tensornetwork needs this info to preserve edge order
         for idx, w in enumerate(wires):
-            # TODO: confirm "right-multiplication" indices for tensor A
             self._add_edge(op_node, num_mult_idxs + idx, self._state, w)
-            output_edge_order[idx] = op_node[idx]
+            self._free_edges[w] = op_node[idx]
         # TODO: can be smarter here about collecting contractions?
-        self._state = tn.contract_between(op_node, self._state, output_edge_order=output_edge_order)
+        self._state = tn.contract_between(op_node, self._state, output_edge_order=self._free_edges)
         print(self._state._tensor.reshape(-1))
         print("\n")
 
@@ -145,7 +132,7 @@ class TensorNetwork(Device):
         for o, p, w in zip(observable, par, wires):
             A = self._get_operator_matrix(o, p)
             num_mult_idxs = len(w)
-            matrices.append(self._reshape(A, num_mult_idxs * 2))
+            matrices.append(np.reshape(A, [2] * num_mult_idxs * 2))
         nodes = [self._add_node(A, w, name=o) for A, w, o in zip(matrices, wires, observable)]
         return self.ev(nodes, wires)
 
@@ -198,7 +185,7 @@ class TensorNetwork(Device):
 
     def reset(self):
         """Reset the device"""
-        self._state = self._input_state_node
+        self.__init__(self.num_wires)
 
     @property
     def operations(self):
