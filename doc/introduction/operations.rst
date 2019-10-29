@@ -8,8 +8,7 @@ Quantum operations
 
 .. currentmodule:: pennylane.ops
 
-PennyLane supports a wide variety of quantum operations - such as gates, state preparations and measurement
-observables. These operations can be used exclusively in quantum functions, like shown
+PennyLane supports a wide variety of quantum operations---such as gates, state preparations and measurements. These operations can be used exclusively in quantum functions, like shown
 in the following example:
 
 .. code-block:: python

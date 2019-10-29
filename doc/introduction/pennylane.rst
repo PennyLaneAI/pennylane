@@ -13,7 +13,7 @@ easy to build and optimize hybrid computations. Prominent examples are
 Bridging the classical and quantum world
 ----------------------------------------
 
-Classical computations, as well as optimization or training of models, are executed using 
+Classical computations, as well as optimization or training, are executed using 
 one of the standard scientific computing or machine learning libraries. PennyLane provides an 
 **interface** to these libraries, making them quantum-aware. 
 PennyLane's standard interface is `NumPy <https://numpy.org/>`_,
@@ -51,7 +51,7 @@ In the following sections you can learn more about the key features of PennyLane
 the process of programming quantum circuits with trainable parameters.
 
 2. :doc:`interfaces` introduces how PennyLane is used with different
-machine learning libraries to optimize quantum circuits or hybrid computations.
+classical computing libraries to optimize quantum circuits or hybrid computations.
 
 3. :doc:`operations` outlines the various quantum circuit building blocks
 provided in PennyLane.
