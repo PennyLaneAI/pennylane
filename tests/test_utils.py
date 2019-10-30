@@ -282,12 +282,17 @@ class TestRecorder:
 
     def test_context_method_spoofing(self):
         """Test that unknown attributes are properly relaied to the underlying context."""
-        qnode_mock = MagicMock()
+        class MethodMock:
+            args = []
+            def construct(self, arg):
+                self.args.append(arg)
+
+        qnode_mock = MethodMock()
 
         rec = pu.Recorder(qnode_mock)
 
         rec.construct("Test")
-        assert qnode_mock.construct.call_args[0][0] == "Test"
+        assert qnode_mock.args[0] == "Test"
 
     def test_context_attribute_spoofing(self):
         """Test that unknown attributes are properly relaied to the underlying context."""
@@ -305,6 +310,14 @@ class TestRecorder:
         assert rec.queue == ["A", "B"]
         assert qnode_mock.queue == ["A", "B"]
 
+    def test_attribute_spoofing_error(self):
+        """Test that the proper error is raised if attribute spoofing is attemped
+        with no underlying QNode."""
+        rec = pu.Recorder(None)
+
+        with pytest.raises(AttributeError, match="Attribute queue of Recorder mock QNode does not exist"):
+            rec.queue
+
 
 class TestOperationRecorder:
     """Test the OperationRecorder class."""
@@ -314,7 +327,7 @@ class TestOperationRecorder:
         monkeypatch.setattr(qml.QNode, "_current_context", "Test")
 
         assert qml.QNode._current_context == "Test"
-        
+
         with pu.OperationRecorder() as recorder:
             assert recorder.old_context == "Test"
             assert qml.QNode._current_context == recorder.rec
