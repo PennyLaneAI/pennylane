@@ -507,11 +507,6 @@ class TestApply:
             match="Sum of amplitudes-squared does not equal one."
         ):
             qubit_device_2_wires.apply("QubitStateVector", wires=[0], par=[np.array([1, -1])])
-        with pytest.raises(
-            ValueError,
-            match="Length of wires parameter must not exceed 2."
-        ):
-            qubit_device_2_wires.apply("QubitStateVector", wires=[0, 1, 2], par=[np.array([1, 0, 0, 0, 0, 0, 0, 0])])
 
         with pytest.raises(
             ValueError,
@@ -990,7 +985,9 @@ class TestDefaultQubitIntegration:
     @pytest.mark.parametrize("name,par,wires,expected_output", [
         ("QubitStateVector", [0, 1], [1], [1, -1]),
         ("QubitStateVector", [0, 1], [0], [-1, 1]),
-        ("QubitStateVector", [1, 1], [1], [1, 0])
+        ("QubitStateVector", [1./np.sqrt(2), 1./np.sqrt(2)], [1], [1, 0]),
+        ("QubitStateVector", [1j/2., np.sqrt(3)/2.], [1], [1, -0.5]),
+        ("QubitStateVector", [(2-1j)/3., 2j/3.], [0], [1/9., 1])
     ])
     def test_state_vector_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
         """Tests qubit state vector preparation on subsets of qubits"""
@@ -999,7 +996,6 @@ class TestDefaultQubitIntegration:
 
         # normalize par
         par = np.array(par)
-        par = par / np.linalg.norm(par, ord=2)
 
         @qml.qnode(qubit_device_2_wires)
         def circuit():
