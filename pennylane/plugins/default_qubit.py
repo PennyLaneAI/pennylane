@@ -336,8 +336,6 @@ class DefaultQubit(Device):
 
         A = self._get_operator_matrix(operation, par)
         self._state = self.mat_vec_product(A, self._state, wires)
-        print(self._state)
-        print("\n")
 
     def mat_vec_product(self, mat, vec, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
