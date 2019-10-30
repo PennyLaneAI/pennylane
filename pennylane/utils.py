@@ -176,29 +176,34 @@ class Recorder:
     acts as a QNode context for operator queueing."""
     # pylint: disable=too-few-public-methods
     def __init__(self, old_context):
-        self.old_context = old_context
-        self.ops = []
-        self.queue = []
-        self.ev = []
+        self._old_context = old_context
+        self._ops = []
+        self._queue = []
+        self._ev = []
 
     def _append_op(self, op):
         """:class:`~.Operator` objects call this method
         and append themselves upon initialization."""
-        self.ops.append(op)
+        self._ops.append(op)
 
         if isinstance(op, qml.operation.Observable):
             if op.return_type is None:
-                self.queue.append(op)
+                self._queue.append(op)
             else:
-                self.ev.append(op)
+                self._ev.append(op)
         else:
-            self.queue.append(op)
+            self._queue.append(op)
 
         # this ensure the recorder does not interfere with
         # any QNode contexts
-        if self.old_context:
-            self.old_context._append_op(op)
+        if self._old_context:
+            self._old_context._append_op(op)
 
+    # Spoof all attributes of the underlying QNode if there is one
+    def __getattr__(self, name):
+        if self._old_context:
+            return self._old_context.__getattr__(name)
+        
 
 class OperationRecorder:
     """A template and quantum function inspector,
@@ -267,7 +272,7 @@ class OperationRecorder:
     def operations(self):
         """The recorded operations."""
         return self.rec.queue
-    
+
     @property
     def observables(self):
         """The recorded observables"""
