@@ -2144,6 +2144,7 @@ footer.page-footer .footer-copyright {
   opacity: 1;
 }
 
+div.body > div > span,
 .section > span {
     display: block;
     position: relative;
