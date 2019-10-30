@@ -282,12 +282,6 @@
         $(".css-transitions-only-after-page-load").each(function (index, element) {
             setTimeout(function () { $(element).removeClass("css-transitions-only-after-page-load") }, 10);
         });
-        if (window.location.hash) {
-          var hash = window.location.hash.replace(/\./g, "\\.");
-          o =  $(hash).offset().top;
-          var sT = o - $(".navbar").outerHeight(true) - 25;
-          $('html, body').animate({scrollTop: sT}, 1);
-        }
     });
 </script>
 <script type="text/javascript">
