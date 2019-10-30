@@ -229,14 +229,18 @@ class OperationRecorder:
     CNOT(wires=[0, 1])
     CNOT(wires=[1, 0])
 
-    Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
+    Alternatively, the :attr:`~.OperationRecorder.operations` attribute can be used
     to directly accessed the applied :class:`~.Operation` and :class:`~.Observable`
     objects.
 
     Attributes:
         rec (~.Recorder): a very minimal QNode, that simply
             acts as a QNode context for operator queueing
-        queue (List[~.Operators]): list of operations applied within
+        operations (List[~.Operators]): list of all operations applied within
+            the OperatorRecorder context, includes gates and observables
+        gates (List[~.Operators]): list of all gates applied within
+            the OperatorRecorder context
+        observables (List[~.Operators]): list of all observables applied within
             the OperatorRecorder context
     """
     def __init__(self):
