@@ -359,7 +359,10 @@ class TestOperationRecorder:
             "PauliY(wires=[1])\n" + \
             "RZ(0.4, wires=[0])\n" + \
             "RZ(0.4, wires=[1])\n" + \
-            "CNOT(wires=[0, 1])\n"
+            "CNOT(wires=[0, 1])\n" + \
+            "\n" + \
+            "Observables\n" + \
+            "==========\n"
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -394,11 +397,42 @@ class TestOperationRecorder:
             "RZ(3, wires=[0])\n" + \
             "RZ(6, wires=[0])\n" + \
             "RZ(9, wires=[0])\n" + \
-            "RZ(12, wires=[0])\n"
+            "RZ(12, wires=[0])\n" + \
+            "\n" + \
+            "Observables\n" + \
+            "==========\n"
 
         def template(x):
             for i in range(5):
                 qml.RZ(i * x, wires=0)
+
+        with pu.OperationRecorder() as recorder:
+            template(3)
+
+        assert str(recorder) == expected_output
+
+    def test_template_with_return_integration(self):
+        """Tests that the OperationRecorder integrates well with the
+        core behaviour of PennyLane."""        
+        expected_output = \
+            "Operations\n" + \
+            "==========\n" + \
+            "RZ(0, wires=[0])\n" + \
+            "RZ(3, wires=[0])\n" + \
+            "RZ(6, wires=[0])\n" + \
+            "RZ(9, wires=[0])\n" + \
+            "RZ(12, wires=[0])\n" + \
+            "\n" + \
+            "Observables\n" + \
+            "==========\n" + \
+            "var(PauliZ(wires=[0]))\n" + \
+            "sample(PauliX(wires=[1]))\n"
+
+        def template(x):
+            for i in range(5):
+                qml.RZ(i * x, wires=0)
+
+            return qml.var(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         with pu.OperationRecorder() as recorder:
             template(3)

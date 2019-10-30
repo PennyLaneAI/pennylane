@@ -190,11 +190,11 @@ class Recorder:
 
     @property
     def queue(self):
-        """Queue of the underlying QNode if existant, otherwise an empty list."""
+        """Queue of the underlying QNode if existant, otherwise a copy of the internal operator list."""
         if self._old_context:
             return self._old_context.queue
 
-        return []
+        return self._ops.copy()
 
     # Spoof all attributes of the underlying QNode if there is one
     def __getattr__(self, name):
@@ -235,12 +235,20 @@ class OperationRecorder:
     Attributes:
         rec (~.Recorder): a very minimal QNode, that simply
             acts as a QNode context for operator queueing
-        queue (List[~.Operators]): list of operations applied within
+        queue (List[~.Operators]): list of operators applied within
+            the OperatorRecorder context, includes operations and observables
+        operations (List[~.Operations]): list of operations applied within
+            the OperatorRecorder context
+        observables (List[~.Observables]): list of observables applied within
             the OperatorRecorder context
     """
     def __init__(self):
         self.rec = None
+
         self.queue = None
+        self.operations = None
+        self.observables = None
+
         self.old_context = None
 
     def __enter__(self):
@@ -253,11 +261,16 @@ class OperationRecorder:
         qml.QNode._current_context = self.rec
 
         self.queue = None
+        self.operations = None
+        self.observables = None
 
         return self
 
     def __exit__(self, *args, **kwargs):
-        self.queue = self.rec._ops
+        # Remove duplciates that might have arisen from measurements
+        self.queue = list(dict.fromkeys(self.rec._ops))
+        self.operations = list(filter(lambda op: not (isinstance(op, qml.operation.Observable) and not op.return_type is None), self.queue))
+        self.observables = list(filter(lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None, self.queue))
 
         qml.QNode._current_context = self.old_context
 
@@ -265,11 +278,26 @@ class OperationRecorder:
         output = ""
         output += "Operations\n"
         output += "==========\n"
-        for op in self.queue:
+        for op in self.operations:
             if op.parameters:
                 params = ", ".join([str(p) for p in op.parameters])
                 output += "{}({}, wires={})\n".format(op.name, params, op.wires)
             else:
                 output += "{}(wires={})\n".format(op.name, op.wires)
+
+        return_map = {
+            qml.operation.Expectation: "expval",
+            qml.operation.Variance: "var",
+            qml.operation.Sample: "sample"
+        }
+        output += "\n"
+        output += "Observables\n"
+        output += "==========\n"
+        for op in self.observables:
+            if op.parameters:
+                params = ", ".join([str(p) for p in op.parameters])
+                output += "{}({}({}, wires={}))\n".format(return_map[op.return_type], op.name, params, op.wires)
+            else:
+                output += "{}({}(wires={}))\n".format(return_map[op.return_type], op.name, op.wires)
 
         return output
