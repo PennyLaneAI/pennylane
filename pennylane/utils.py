@@ -193,6 +193,8 @@ class Recorder:
         if self._old_context:
             return self._old_context.__getattribute__(name)
 
+        raise AttributeError("Attribute {} of Recorder mock QNode does not exist.".format(name))
+
 
 class OperationRecorder:
     """A template and quantum function inspector,
