@@ -257,8 +257,8 @@ class TestExpand:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-class TestOperationRecorder:
-    """Test the OperationRecorder class and the Recorder QNode replacement"""
+class TestRecorder:
+    """Test the Recorder QNode replacement"""
 
     def test_append_op_calls_underlying_context(self):
         """Test that the underlying context is called in _append_op."""
@@ -305,3 +305,16 @@ class TestOperationRecorder:
         assert rec.queue == ["A", "B"]
         assert qnode_mock.queue == ["A", "B"]
     
+
+class TestOperationRecorder:
+    """Test the OperationRecorder class."""
+
+    def test_context_switching(self):
+        """Test that the current QNode context is properly switched."""
+        qml.QNode._current_context = "Test"
+
+        with pu.OperationRecorder() as recorder:
+            assert recorder.old_context == "Test"
+            assert qml.QNode._current_context == recorder.rec
+
+        assert qml.QNode._current_context == "Test"
