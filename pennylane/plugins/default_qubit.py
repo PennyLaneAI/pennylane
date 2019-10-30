@@ -258,8 +258,8 @@ class DefaultQubit(Device):
     """
     name = 'Default qubit PennyLane plugin'
     short_name = 'default.qubit'
-    pennylane_requires = '0.6'
-    version = '0.6.1'
+    pennylane_requires = '0.7'
+    version = '0.7.1'
     author = 'Xanadu Inc.'
     _capabilities = {"model": "qubit", "tensor_observables": True}
 
