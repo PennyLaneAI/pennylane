@@ -193,7 +193,7 @@ class Recorder:
         """Queue of the underlying QNode if existant, otherwise an empty list."""
         if self._old_context:
             return self._old_context.queue
-        
+
         return []
 
     # Spoof all attributes of the underlying QNode if there is one
