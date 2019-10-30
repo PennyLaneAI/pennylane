@@ -20,7 +20,6 @@ from collections.abc import Iterable
 import contextlib
 import numbers
 import inspect
-import io
 import itertools
 
 import numpy as np
@@ -253,8 +252,14 @@ class OperationRecorder:
         qml.QNode._current_context = self.old_context
 
     def __str__(self):
-        with io.StringIO() as buf, contextlib.redirect_stdout(buf):
-            qml.QNode.print_applied(self.rec)
-            output = buf.getvalue()
+        output = ""
+        output += "Operations\n"
+        output += "==========\n"
+        for op in self.queue:
+            if op.parameters:
+                params = ", ".join([str(p) for p in op.parameters])
+                output += "{}({}, wires={})\n".format(op.name, params, op.wires)
+            else:
+                output += "{}(wires={})\n".format(op.name, op.wires)
 
         return output
