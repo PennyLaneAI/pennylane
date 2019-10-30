@@ -262,3 +262,13 @@ class OperationRecorder:
             output = buf.getvalue()
 
         return output
+
+    @property
+    def operations(self):
+        """The recorded operations."""
+        return self.rec.queue
+    
+    @property
+    def observables(self):
+        """The recorded observables"""
+        return self.rec.ev
