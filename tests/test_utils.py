@@ -16,9 +16,11 @@ Unit tests for the :mod:`pennylane.utils` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 import pytest
+from unittest.mock import MagicMock
 
 import numpy as np
 
+import pennylane as qml
 import pennylane.utils as pu
 
 flat_dummy_array = np.linspace(-1, 1, 64)
@@ -254,3 +256,52 @@ class TestExpand:
             @ np.kron(SWAP, np.kron(I, I))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+class TestOperationRecorder:
+    """Test the OperationRecorder class and the Recorder QNode replacement"""
+
+    def test_append_op_calls_underlying_context(self):
+        """Test that the underlying context is called in _append_op."""
+        qnode_mock = MagicMock()
+
+        rec = pu.Recorder(qnode_mock)
+        op = qml.PauliZ(3)
+        rec._append_op(op)
+
+        assert qnode_mock._append_op.call_args[0][0] == op
+        assert rec._ops == [op]
+
+    def test_append_op_no_context(self):
+        """Test that the operation is appended when no context is supplied."""
+        rec = pu.Recorder(None)
+
+        op = qml.PauliZ(3)
+        rec._append_op(op)
+
+        assert rec._ops == [op]
+
+    def test_context_method_spoofing(self):
+        """Test that unknown attributes are properly relaied to the underlying context."""
+        qnode_mock = MagicMock()
+
+        rec = pu.Recorder(qnode_mock)
+
+        rec.construct("Test")
+        assert qnode_mock.construct.call_args[0][0] == "Test"
+
+    def test_context_attribute_spoofing(self):
+        """Test that unknown attributes are properly relaied to the underlying context."""
+        class AssignmentMock:
+            queue = ["A"]
+            
+        qnode_mock = AssignmentMock()
+        rec = pu.Recorder(qnode_mock)
+
+        assert rec.queue == ["A"]
+        assert qnode_mock.queue == ["A"]
+        
+        rec.queue.append("B")
+
+        assert rec.queue == ["A", "B"]
+        assert qnode_mock.queue == ["A", "B"]
+    
