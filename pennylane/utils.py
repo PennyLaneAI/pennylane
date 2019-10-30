@@ -188,6 +188,14 @@ class Recorder:
         if self._old_context:
             self._old_context._append_op(op)
 
+    @property
+    def queue(self):
+        """Queue of the underlying QNode if existant, otherwise an empty list."""
+        if self._old_context:
+            return self._old_context.queue
+        
+        return []
+
     # Spoof all attributes of the underlying QNode if there is one
     def __getattr__(self, name):
         if self._old_context:

@@ -315,8 +315,23 @@ class TestRecorder:
         with no underlying QNode."""
         rec = pu.Recorder(None)
 
-        with pytest.raises(AttributeError, match="Attribute queue of Recorder mock QNode does not exist"):
-            rec.queue
+        with pytest.raises(AttributeError, match="Attribute test of Recorder mock QNode does not exist"):
+            rec.test
+
+    def test_queue_no_context(self):
+        """Test that the queue property returns an empty list if there is no underlying context."""
+        qnode_mock = MagicMock()
+        qnode_mock.queue = ["A"]
+
+        rec = pu.Recorder(qnode_mock)
+
+        assert rec.queue == ["A"]
+
+    def test_queue_no_context(self):
+        """Test that the queue property returns an empty list if there is no underlying context."""
+        rec = pu.Recorder(None)
+
+        assert rec.queue == []
 
 
 class TestOperationRecorder:
