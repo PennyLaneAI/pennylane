@@ -293,28 +293,86 @@ class TestRecorder:
         """Test that unknown attributes are properly relaied to the underlying context."""
         class AssignmentMock:
             queue = ["A"]
-            
+
         qnode_mock = AssignmentMock()
         rec = pu.Recorder(qnode_mock)
 
         assert rec.queue == ["A"]
         assert qnode_mock.queue == ["A"]
-        
+
         rec.queue.append("B")
 
         assert rec.queue == ["A", "B"]
         assert qnode_mock.queue == ["A", "B"]
-    
+
 
 class TestOperationRecorder:
     """Test the OperationRecorder class."""
 
-    def test_context_switching(self):
+    def test_context_switching(self, monkeypatch):
         """Test that the current QNode context is properly switched."""
-        qml.QNode._current_context = "Test"
+        monkeypatch.setattr(qml.QNode, "_current_context", "Test")
 
+        assert qml.QNode._current_context == "Test"
+        
         with pu.OperationRecorder() as recorder:
             assert recorder.old_context == "Test"
             assert qml.QNode._current_context == recorder.rec
 
         assert qml.QNode._current_context == "Test"
+
+    def test_circuit_integration(self):
+        """Tests that the OperationRecorder integrates well with the
+        core behaviour of PennyLane."""
+        expected_output = \
+            "Operations\n" + \
+            "==========\n" + \
+            "PauliY(wires=[0])\n" + \
+            "PauliY(wires=[1])\n" + \
+            "RZ(0.4, wires=[0])\n" + \
+            "RZ(0.4, wires=[1])\n" + \
+            "CNOT(wires=[0, 1])\n"
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+
+            with pu.OperationRecorder() as recorder:
+                ops = [
+                    qml.PauliY(0),
+                    qml.PauliY(1),
+                    qml.RZ(c, wires=0),
+                    qml.RZ(c, wires=1),
+                    qml.CNOT(wires=[0, 1]),
+                ]
+
+            assert str(recorder) == expected_output
+            assert recorder.queue == ops
+            
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        circuit(0.1, 0.2, 0.4)
+
+    def test_template_integration(self):
+        """Tests that the OperationRecorder integrates well with the
+        core behaviour of PennyLane."""        
+        expected_output = \
+            "Operations\n" + \
+            "==========\n" + \
+            "RZ(0, wires=[0])\n" + \
+            "RZ(3, wires=[0])\n" + \
+            "RZ(6, wires=[0])\n" + \
+            "RZ(9, wires=[0])\n" + \
+            "RZ(12, wires=[0])\n"
+
+        def template(x):
+            for i in range(5):
+                qml.RZ(i * x, wires=0)
+
+        with pu.OperationRecorder() as recorder:
+            template(3)
+
+        assert str(recorder) == expected_output
