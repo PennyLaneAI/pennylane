@@ -178,21 +178,11 @@ class Recorder:
     def __init__(self, old_context):
         self._old_context = old_context
         self._ops = []
-        self._queue = []
-        self._ev = []
 
     def _append_op(self, op):
         """:class:`~.Operator` objects call this method
         and append themselves upon initialization."""
         self._ops.append(op)
-
-        if isinstance(op, qml.operation.Observable):
-            if op.return_type is None:
-                self._queue.append(op)
-            else:
-                self._ev.append(op)
-        else:
-            self._queue.append(op)
 
         # this ensure the recorder does not interfere with
         # any QNode contexts
