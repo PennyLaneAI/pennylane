@@ -261,6 +261,9 @@ also be implemented:
     a suitable subset of the methods provided above.
 
 
+.. _installing_plugin:
+
+
 Identifying and installing your device
 --------------------------------------
 
