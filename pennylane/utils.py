@@ -203,7 +203,7 @@ class Recorder:
     def __getattr__(self, name):
         if self._old_context:
             return self._old_context.__getattr__(name)
-        
+
 
 class OperationRecorder:
     """A template and quantum function inspector,
@@ -241,7 +241,9 @@ class OperationRecorder:
     """
     def __init__(self):
         self.rec = None
-        self.queue = None
+        self.operations = None
+        self.gates = None
+        self.observables = None
         self.old_context = None
 
     def __enter__(self):
@@ -253,12 +255,17 @@ class OperationRecorder:
         # set the recorder as the QNode context
         qml.QNode._current_context = self.rec
 
-        self.queue = None
+        self.operations = None
+        self.gates = None
+        self.observables = None
 
         return self
 
     def __exit__(self, *args, **kwargs):
-        self.queue = self.rec.ops
+        self.operations = self.rec._ops
+        self.gates = self.rec._queue
+        self.observables = self.rec._ev
+
         qml.QNode._current_context = self.old_context
 
     def __str__(self):
@@ -267,13 +274,3 @@ class OperationRecorder:
             output = buf.getvalue()
 
         return output
-
-    @property
-    def operations(self):
-        """The recorded operations."""
-        return self.rec.queue
-
-    @property
-    def observables(self):
-        """The recorded observables"""
-        return self.rec.ev
