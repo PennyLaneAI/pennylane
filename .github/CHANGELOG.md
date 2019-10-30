@@ -1,28 +1,55 @@
-# Release 0.7.0-dev
+# Release 0.6.1
 
 ### New features since last release
 
-### Breaking changes
+* Added a `print_applied` method to QNodes, allowing the operation
+  and observable queue to be printed as last constructed.
+  [#378](https://github.com/XanaduAI/pennylane/pull/378)
 
 ### Improvements
 
-* A new `Operator` base class is introduced, which is inherited by both the `Observable` class and the
-  `Operation` class.
+* A new `Operator` base class is introduced, which is inherited by both the
+  `Observable` class and the `Operation` class.
   [#355](https://github.com/XanaduAI/pennylane/pull/355)
 
 * Removed deprecated `@abstractproperty` decorators
   in `_device.py`.
   [#374](https://github.com/XanaduAI/pennylane/pull/374)
 
+* Comprehensive gradient tests have been added for the interfaces.
+  [#381](https://github.com/XanaduAI/pennylane/pull/381)
+
 ### Documentation
 
+* The new restructured documentation has been polished and updated.
+  [#387](https://github.com/XanaduAI/pennylane/pull/387)
+  [#375](https://github.com/XanaduAI/pennylane/pull/375)
+  [#372](https://github.com/XanaduAI/pennylane/pull/372)
+  [#370](https://github.com/XanaduAI/pennylane/pull/370)
+  [#369](https://github.com/XanaduAI/pennylane/pull/369)
+  [#367](https://github.com/XanaduAI/pennylane/pull/367)
+  [#364](https://github.com/XanaduAI/pennylane/pull/364)
+
+* Updated the development guides.
+  [#382](https://github.com/XanaduAI/pennylane/pull/382)
+  [#379](https://github.com/XanaduAI/pennylane/pull/379)
+
+* Added all modules, classes, and functions to the API section
+  in the documentation.
+  [#373](https://github.com/XanaduAI/pennylane/pull/373)
+
 ### Bug fixes
+
+* Replaces the existing `np.linalg.norm` normalization with hand-coded
+  normalization, allowing `AmplitudeEmbedding` to be used with differentiable
+  parameters. AmplitudeEmbedding tests have been added and improved.
+  [#376](https://github.com/XanaduAI/pennylane/pull/376)
 
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
 
-Antal Száva
+Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva
 
 ---
 
