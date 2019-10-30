@@ -192,7 +192,7 @@ class Recorder:
     # Spoof all attributes of the underlying QNode if there is one
     def __getattr__(self, name):
         if self._old_context:
-            return self._old_context.__getattr__(name)
+            return self._old_context.__getattribute__(name)
 
 
 class OperationRecorder:
