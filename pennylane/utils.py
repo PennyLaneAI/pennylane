@@ -266,7 +266,7 @@ class OperationRecorder:
         return self
 
     def __exit__(self, *args, **kwargs):
-        # Remove duplciates that might have arisen from measurements
+        # Remove duplicates that might have arisen from measurements
         self.queue = list(dict.fromkeys(self.rec._ops))
         self.operations = list(filter(lambda op: not (isinstance(op, qml.operation.Observable) and not op.return_type is None), self.queue))
         self.observables = list(filter(lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None, self.queue))
