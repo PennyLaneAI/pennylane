@@ -245,10 +245,6 @@ class QNode:
                 self.queue,
             )
         )
-        
-        print("self.ev = ", self.ev)
-        print("self.queue = ", self.queue)
-        print("self.ev.return_type = ", [e.return_type for e in self.ev])
 
         if self.ev:        
             # Check that no gate follows an ev
@@ -295,10 +291,6 @@ class QNode:
                                            "type specified.".format(x.name))
 
         # check that all ev's are returned, in the correct order
-        print("res = ", res)
-        print("res.return_type = ", [x.return_type for x in res])
-        print("self.ev = ", self.ev)
-
         if res != tuple(self.ev):
             raise QuantumFunctionError("All measured observables must be returned in the "
                                        "order they are measured.")
