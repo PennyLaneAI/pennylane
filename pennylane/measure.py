@@ -32,20 +32,8 @@ def expval(op):
             "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
-    if QNode._current_context is not None:
-        # delete operations from QNode queue
-        if isinstance(op, Tensor):
-            for o in op.obs:
-                QNode._current_context.queue.remove(o)
-        else:
-            QNode._current_context.queue.remove(op)
-
     # set return type to be an expectation value
     op.return_type = Expectation
-
-    if QNode._current_context is not None:
-        # add observable to QNode observable queue
-        QNode._current_context._append_op(op)
 
     return op
 
@@ -61,20 +49,8 @@ def var(op):
             "{} is not an observable: cannot be used with var".format(op.name)
         )
 
-    if QNode._current_context is not None:
-        # delete operations from QNode queue
-        if isinstance(op, Tensor):
-            for o in op.obs:
-                QNode._current_context.queue.remove(o)
-        else:
-            QNode._current_context.queue.remove(op)
-
     # set return type to be a variance
     op.return_type = Variance
-
-    if QNode._current_context is not None:
-        # add observable to QNode observable queue
-        QNode._current_context._append_op(op)
 
     return op
 
@@ -91,19 +67,7 @@ def sample(op):
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
 
-    if QNode._current_context is not None:
-        # delete operations from QNode queue
-        if isinstance(op, Tensor):
-            for o in op.obs:
-                QNode._current_context.queue.remove(o)
-        else:
-            QNode._current_context.queue.remove(op)
-
     # set return type to be a sample
     op.return_type = Sample
-
-    if QNode._current_context is not None:
-        # add observable to QNode observable queue
-        QNode._current_context._append_op(op)
 
     return op
