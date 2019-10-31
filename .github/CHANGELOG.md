@@ -2,6 +2,11 @@
 
 ### New features since last release
 
+* Added an `OperationRecorder()` context manager, that allows templates
+  and quantum functions to be executed while recording events. The
+  recorder can be used with and without QNodes as a debugging utility.
+  [#388](https://github.com/XanaduAI/pennylane/pull/388)
+
 ### Breaking changes
 
 ### Improvements
@@ -13,6 +18,8 @@
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
+
+Josh Izaac, Johannes Jakob Meyer
 
 ---
 
