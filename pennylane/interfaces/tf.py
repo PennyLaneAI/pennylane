@@ -53,6 +53,10 @@ def TFQNode(qnode):
             """REPL representation"""
             return self.__str__()
 
+        print_applied = qnode.print_applied
+        jacobian = qnode.jacobian
+        metric_tensor = qnode.metric_tensor
+
     @qnode_str
     @tf.custom_gradient
     def _TFQNode(*input_, **input_kwargs):
@@ -86,7 +90,15 @@ def TFQNode(qnode):
 
             # restore the nested structure of the input args
             grad_input = unflatten(temp.flat, args)
-            return tuple(grad_input)
+
+            if isinstance(grad_input, list):
+                grad_input = [tf.convert_to_tensor(i) for i in grad_input]
+            elif isinstance(grad_input, tuple):
+                grad_input = tuple(tf.convert_to_tensor(i) for i in grad_input)
+            else:
+                grad_input = tf.convert_to_tensor(grad_input)
+
+            return grad_input
 
         return res, grad
 

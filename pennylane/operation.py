@@ -13,11 +13,11 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-This module contains base classes to define continuous-variable and discrete-variable operations contained in the
-:mod:`pennylane.ops` module.
+This module contains the abstract base classes for defining PennyLane
+operations and observables.
 
-Usage
------
+Description
+-----------
 
 Qubit Operations
 ----------------
@@ -46,7 +46,7 @@ and measure observables in PennyLane.
   sequence of wires (subsystems).
 
 Differentiation
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 In general, an :class:`Operation` is differentiable (at least using the finite-difference
 method) with respect to a parameter iff
@@ -71,14 +71,14 @@ works as follows:
 .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
 CV Operation base classes
-*************************
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
 :class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
 and :class:`~.Observable`.
 
 Differentiation
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 To enable gradient computation using the analytic method for Gaussian CV operations, in addition, you need to
 provide the static class method :meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of
@@ -765,14 +765,6 @@ class CV:
         return None
 
     @classproperty
-    def supports_analytic(self):
-        """Returns True if the CV Operation has ``grad_method='A'`` and
-        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
-        that analytic differentiation is supported.
-        """
-        return self.grad_method == 'A' and self.supports_heisenberg
-
-    @classproperty
     def supports_heisenberg(self):
         """Returns True if the CV Operation has
         overwritten the :meth:`~.CV._heisenberg_rep` static method
@@ -786,6 +778,14 @@ class CV:
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""
     # pylint: disable=abstract-method
+
+    @classproperty
+    def supports_analytic(self):
+        """Returns True if the CV Operation has ``grad_method='A'`` and
+        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
+        that analytic differentiation is supported.
+        """
+        return self.grad_method == 'A' and self.supports_heisenberg
 
     def heisenberg_pd(self, idx):
         """Partial derivative of the Heisenberg picture transform matrix.

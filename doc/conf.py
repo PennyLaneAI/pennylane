@@ -43,10 +43,12 @@ extensions = [
     'edit_on_github',
     # 'sphinx_gallery.gen_gallery',
     "sphinx.ext.intersphinx",
+    "sphinx_automodapi.automodapi",
 ]
 
 autosummary_generate = True
 autosummary_imported_members = True
+automodapi_toctreedirnm = "code/api"
 
 
 intersphinx_mapping = {"https://pennylane.ai/qml/": None}
