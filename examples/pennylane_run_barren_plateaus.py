@@ -114,19 +114,23 @@ def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
 # Now we can compute the gradient and calculate the variance.
 # While we only sample 200 random circuits to allow the code
 # to run in a reasonable amount of time, this can be
-# increased for more accurate results.
+# increased for more accurate results. We only consider the
+# gradient of the output wr.t. to the last parameter in the
+# circuit. Hence we choose to save gradient[-1] only.
 
 grad_vals = []
-num_samples = 500
+num_samples = 200
 
 for i in range(num_samples):
     gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
     qcircuit = qml.QNode(rand_circuit, dev)
     grad = qml.grad(qcircuit, argnum=0)
     params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
-    grad_vals.append(grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits))
+    gradient = grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits)
+    grad_vals.append(gradient[-1])
 
 print("Variance of the gradients for {} random circuits: {}".format(num_samples, np.var(grad_vals)))
+print("Mean of the gradients for {} random circuits: {}".format(num_samples, np.mean(grad_vals)))
 
 
 ###########################################################
@@ -136,7 +140,7 @@ print("Variance of the gradients for {} random circuits: {}".format(num_samples,
 # of qubits.
 
 
-qubits = [1, 2, 3, 4, 5]
+qubits = [2, 3, 4, 5, 6]
 variances = []
 
 
@@ -155,7 +159,7 @@ for num_qubits in qubits:
 
         params = np.random.uniform(0, np.pi, size=num_qubits)
         gradient = grad(params, random_gate_sequence=random_gate_sequence, num_qubits=num_qubits)
-        grad_vals.append(gradient)
+        grad_vals.append(gradient[-1])
     variances.append(np.var(grad_vals))
 
 variances = np.array(variances)
