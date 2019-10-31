@@ -57,6 +57,9 @@ default_config = Configuration("config.toml")
 # get list of installed plugin devices
 plugin_devices = {entry.name: entry for entry in iter_entry_points("pennylane.plugins")}
 
+# get list of installed plugin converters
+plugin_converters = {entry.name: entry for entry in iter_entry_points("pennylane.io")}
+
 
 def device(name, *args, **kwargs):
     r"""device(name, wires=1, *args, **kwargs)
@@ -130,6 +133,53 @@ def device(name, *args, **kwargs):
 
     raise DeviceError(
         "Device does not exist. Make sure the required plugin is installed."
+    )
+
+
+def load(name, *args, **kwargs):
+    r"""load(name, wires=1, *args, **kwargs)
+    Load a plugin :class:`~.converter` and return the .
+
+    This function is used to load a particular plugin converter,
+    which can then be used to convert quantum objects from other
+    frameworks.
+
+    Args:
+        name (str): the name of the device to load
+        wires (int): the number of wires (subsystems) to initialise
+            the device with
+
+    Keyword Args:
+        config (pennylane.Configuration): a PennyLane configuration object
+            that contains global and/or device specific configurations.
+    """
+
+    if name in plugin_converters:
+        options = {}
+
+        # load global configuration settings if available
+        config = kwargs.get("config", default_config)
+
+        if config:
+            # combine configuration options with keyword arguments.
+            # Keyword arguments take preference, followed by device options,
+            # followed by plugin options, followed by global options.
+            options.update(config["main"])
+            options.update(config[name.split(".")[0] + ".global"])
+            options.update(config[name])
+
+        kwargs.pop("config", None)
+        options.update(kwargs)
+
+        # loads the plugin device class
+        plugin_converter = plugin_converters[name].load()
+
+        # plugin converter function
+        return plugin_converter(*args, **options)
+
+    raise ValueError(
+        "Converter does not exist. Make sure the required plugin is installed"
+        "and supports conversion."
     )
 
 
