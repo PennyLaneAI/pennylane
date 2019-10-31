@@ -171,7 +171,7 @@ class Recorder:
     """Recorder class used by the :class:`~.OperationRecorder`.
 
     The Recorder class is a very minimal QNode, that simply
-    acts as a QNode context for operator queueing."""
+    provides a QNode context for operator queueing."""
     # pylint: disable=too-few-public-methods
     def __init__(self, old_context):
         self._old_context = old_context
