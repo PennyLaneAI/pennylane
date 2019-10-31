@@ -77,12 +77,11 @@ import matplotlib.pyplot as plt
 # Next, we create a randomized variational circuit
 
 # Set a seed for reproducibility
-np.random.seed(20)
+np.random.seed(42)
 
 num_qubits = 4
 dev = qml.device("default.qubit", wires=num_qubits)
 gate_set = [qml.RX, qml.RY, qml.RZ]
-gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
 
 
 def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
@@ -113,21 +112,25 @@ def rand_circuit(params, random_gate_sequence=None, num_qubits=None):
 
 ############################################################
 # Now we can compute the gradient and calculate the variance.
-# While we only take 200 samples to allow the code to run in
-# a reasonable amount of time, this can be increased
-# for more accurate results.
+# While we only sample 200 random circuits to allow the code
+# to run in a reasonable amount of time, this can be
+# increased for more accurate results. We only consider the
+# gradient of the output wr.t. to the last parameter in the
+# circuit. Hence we choose to save gradient[-1] only.
 
-qcircuit = qml.QNode(rand_circuit, dev)
-grad = qml.grad(qcircuit, argnum=0)
-
-num_samples = 200
 grad_vals = []
+num_samples = 200
 
 for i in range(num_samples):
+    gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
+    qcircuit = qml.QNode(rand_circuit, dev)
+    grad = qml.grad(qcircuit, argnum=0)
     params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
-    grad_vals.append(grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits))
+    gradient = grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits)
+    grad_vals.append(gradient[-1])
 
-print("Variance of the gradient for {} samples: {}".format(num_samples, np.var(grad_vals)))
+print("Variance of the gradients for {} random circuits: {}".format(num_samples, np.var(grad_vals)))
+print("Mean of the gradients for {} random circuits: {}".format(num_samples, np.mean(grad_vals)))
 
 
 ###########################################################
@@ -137,38 +140,24 @@ print("Variance of the gradient for {} samples: {}".format(num_samples, np.var(g
 # of qubits.
 
 
-def generate_random_circuit(num_qubits):
-    """
-    Generates a random quantum circuit based on (McClean et. al., 2019).
-
-    Args:
-        num_qubits (int): the number of qubits in the circuit
-    """
-    dev = qml.device("default.qubit", wires=num_qubits)
-    gate_set = [qml.RX, qml.RY, qml.RZ]
-    random_gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
-    qcircuit = qml.QNode(rand_circuit, dev)
-
-    return qcircuit, random_gate_sequence
-
-
 qubits = [2, 3, 4, 5, 6]
 variances = []
 
-num_samples = 200
-
 
 for num_qubits in qubits:
-    qcircuit, gate_sequence = generate_random_circuit(num_qubits)
-    grad = qml.grad(qcircuit, argnum=0)
     grad_vals = []
     for i in range(num_samples):
-        params = np.random.uniform(0, 2 * np.pi, size=num_qubits)
-        grad_vals.append(grad(params, random_gate_sequence=gate_sequence, num_qubits=num_qubits))
-    vargrad = np.var(grad_vals)
-    variances.append(vargrad)
-    print("Variance of the gradient for {} qubits: {}".format(num_qubits, vargrad))
-    
+        dev = qml.device("default.qubit", wires=num_qubits)
+        qcircuit = qml.QNode(rand_circuit, dev)
+        grad = qml.grad(qcircuit, argnum=0)
+
+        gate_set = [qml.RX, qml.RY, qml.RZ]
+        random_gate_sequence = {i: np.random.choice(gate_set) for i in range(num_qubits)}
+
+        params = np.random.uniform(0, np.pi, size=num_qubits)
+        gradient = grad(params, random_gate_sequence=random_gate_sequence, num_qubits=num_qubits)
+        grad_vals.append(gradient[-1])
+    variances.append(np.var(grad_vals))
 
 variances = np.array(variances)
 qubits = np.array(qubits)
@@ -180,13 +169,11 @@ p = np.polyfit(qubits, np.log(variances), 1)
 
 # Plot the straight line fit to the semilog
 plt.semilogy(qubits, variances, "o")
-plt.semilogy(qubits, np.exp(p[0] * qubits + p[1]), "o-.",
-             label="Slope {:3.2f}".format(p[0]))
+plt.semilogy(qubits, np.exp(p[0] * qubits + p[1]), "o-.", label="Slope {:3.2f}".format(p[0]))
 plt.xlabel(r"N Qubits")
 plt.ylabel(r"$\langle \partial \theta_{1, 1} E\rangle$ variance")
 plt.legend()
 plt.show()
-
 
 
 ##############################################################################
