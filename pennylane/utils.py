@@ -17,6 +17,7 @@ across the PennyLane submodules.
 """
 # pylint: disable=protected-access
 from collections.abc import Iterable
+from collections import OrderedDict
 import numbers
 import inspect
 import itertools
@@ -267,7 +268,7 @@ class OperationRecorder:
 
     def __exit__(self, *args, **kwargs):
         # Remove duplicates that might have arisen from measurements
-        self.queue = list(dict.fromkeys(self.rec._ops))
+        self.queue = list(OrderedDict.fromkeys(self.rec._ops))
         self.operations = list(filter(lambda op: not (isinstance(op, qml.operation.Observable) and not op.return_type is None), self.queue))
         self.observables = list(filter(lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None, self.queue))
 
