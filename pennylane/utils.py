@@ -173,6 +173,7 @@ class Recorder:
 
     The Recorder class is a very minimal QNode, that simply
     provides a QNode context for operator queueing."""
+
     # pylint: disable=too-few-public-methods
     def __init__(self, old_context):
         self._old_context = old_context
@@ -242,6 +243,7 @@ class OperationRecorder:
         observables (List[~.Observables]): list of observables applied within
             the OperatorRecorder context
     """
+
     def __init__(self):
         self.rec = None
 
@@ -269,8 +271,20 @@ class OperationRecorder:
     def __exit__(self, *args, **kwargs):
         # Remove duplicates that might have arisen from measurements
         self.queue = list(OrderedDict.fromkeys(self.rec._ops))
-        self.operations = list(filter(lambda op: not (isinstance(op, qml.operation.Observable) and not op.return_type is None), self.queue))
-        self.observables = list(filter(lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None, self.queue))
+        self.operations = list(
+            filter(
+                lambda op: not (
+                    isinstance(op, qml.operation.Observable) and not op.return_type is None
+                ),
+                self.queue,
+            )
+        )
+        self.observables = list(
+            filter(
+                lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None,
+                self.queue,
+            )
+        )
 
         qml.QNode._current_context = self.old_context
 
@@ -288,7 +302,7 @@ class OperationRecorder:
         return_map = {
             qml.operation.Expectation: "expval",
             qml.operation.Variance: "var",
-            qml.operation.Sample: "sample"
+            qml.operation.Sample: "sample",
         }
         output += "\n"
         output += "Observables\n"
@@ -296,7 +310,9 @@ class OperationRecorder:
         for op in self.observables:
             if op.parameters:
                 params = ", ".join([str(p) for p in op.parameters])
-                output += "{}({}({}, wires={}))\n".format(return_map[op.return_type], op.name, params, op.wires)
+                output += "{}({}({}, wires={}))\n".format(
+                    return_map[op.return_type], op.name, params, op.wires
+                )
             else:
                 output += "{}({}(wires={}))\n".format(return_map[op.return_type], op.name, op.wires)
 

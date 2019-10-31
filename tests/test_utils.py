@@ -109,7 +109,7 @@ class TestArgumentHelpers:
         """Test that empty dict is returned if function has
         no default arguments"""
 
-        def dummy_func(a, b): # pylint: disable=unused-argument
+        def dummy_func(a, b):  # pylint: disable=unused-argument
             pass
 
         res = pu._get_default_args(dummy_func)
@@ -118,7 +118,9 @@ class TestArgumentHelpers:
     def test_get_default_args(self):
         """Test that default arguments are correctly extracted"""
 
-        def dummy_func(a, b, c=8, d=[0, 0.65], e=np.array([4]), f=None):  # pylint: disable=unused-argument,dangerous-default-value
+        def dummy_func(
+            a, b, c=8, d=[0, 0.65], e=np.array([4]), f=None
+        ):  # pylint: disable=unused-argument,dangerous-default-value
             pass
 
         res = pu._get_default_args(dummy_func)
@@ -257,6 +259,7 @@ class TestExpand:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 class TestRecorder:
     """Test the Recorder QNode replacement"""
 
@@ -282,8 +285,10 @@ class TestRecorder:
 
     def test_context_method_spoofing(self):
         """Test that unknown methods are properly relayed to the underlying context."""
+
         class MethodMock:
             args = []
+
             def construct(self, arg):
                 self.args.append(arg)
 
@@ -296,6 +301,7 @@ class TestRecorder:
 
     def test_context_attribute_spoofing(self):
         """Test that unknown attributes are properly relayed to the underlying context."""
+
         class AssignmentMock:
             queue = ["A"]
 
@@ -315,7 +321,9 @@ class TestRecorder:
         with no underlying QNode."""
         rec = pu.Recorder(None)
 
-        with pytest.raises(AttributeError, match="Attribute test of Recorder mock QNode does not exist"):
+        with pytest.raises(
+            AttributeError, match="Attribute test of Recorder mock QNode does not exist"
+        ):
             rec.test
 
     def test_queue_no_context(self):
@@ -352,17 +360,18 @@ class TestOperationRecorder:
     def test_circuit_integration(self):
         """Tests that the OperationRecorder integrates well with the
         core behaviour of PennyLane."""
-        expected_output = \
-            "Operations\n" + \
-            "==========\n" + \
-            "PauliY(wires=[0])\n" + \
-            "PauliY(wires=[1])\n" + \
-            "RZ(0.4, wires=[0])\n" + \
-            "RZ(0.4, wires=[1])\n" + \
-            "CNOT(wires=[0, 1])\n" + \
-            "\n" + \
-            "Observables\n" + \
-            "==========\n"
+        expected_output = (
+            "Operations\n"
+            + "==========\n"
+            + "PauliY(wires=[0])\n"
+            + "PauliY(wires=[1])\n"
+            + "RZ(0.4, wires=[0])\n"
+            + "RZ(0.4, wires=[1])\n"
+            + "CNOT(wires=[0, 1])\n"
+            + "\n"
+            + "Observables\n"
+            + "==========\n"
+        )
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -382,25 +391,26 @@ class TestOperationRecorder:
 
             assert str(recorder) == expected_output
             assert recorder.queue == ops
-            
+
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         circuit(0.1, 0.2, 0.4)
 
     def test_template_integration(self):
         """Tests that the OperationRecorder integrates well with the
-        core behaviour of PennyLane."""        
-        expected_output = \
-            "Operations\n" + \
-            "==========\n" + \
-            "RZ(0, wires=[0])\n" + \
-            "RZ(3, wires=[0])\n" + \
-            "RZ(6, wires=[0])\n" + \
-            "RZ(9, wires=[0])\n" + \
-            "RZ(12, wires=[0])\n" + \
-            "\n" + \
-            "Observables\n" + \
-            "==========\n"
+        core behaviour of PennyLane."""
+        expected_output = (
+            "Operations\n"
+            + "==========\n"
+            + "RZ(0, wires=[0])\n"
+            + "RZ(3, wires=[0])\n"
+            + "RZ(6, wires=[0])\n"
+            + "RZ(9, wires=[0])\n"
+            + "RZ(12, wires=[0])\n"
+            + "\n"
+            + "Observables\n"
+            + "==========\n"
+        )
 
         def template(x):
             for i in range(5):
@@ -413,20 +423,21 @@ class TestOperationRecorder:
 
     def test_template_with_return_integration(self):
         """Tests that the OperationRecorder integrates well with the
-        core behaviour of PennyLane."""        
-        expected_output = \
-            "Operations\n" + \
-            "==========\n" + \
-            "RZ(0, wires=[0])\n" + \
-            "RZ(3, wires=[0])\n" + \
-            "RZ(6, wires=[0])\n" + \
-            "RZ(9, wires=[0])\n" + \
-            "RZ(12, wires=[0])\n" + \
-            "\n" + \
-            "Observables\n" + \
-            "==========\n" + \
-            "var(PauliZ(wires=[0]))\n" + \
-            "sample(PauliX(wires=[1]))\n"
+        core behaviour of PennyLane."""
+        expected_output = (
+            "Operations\n"
+            + "==========\n"
+            + "RZ(0, wires=[0])\n"
+            + "RZ(3, wires=[0])\n"
+            + "RZ(6, wires=[0])\n"
+            + "RZ(9, wires=[0])\n"
+            + "RZ(12, wires=[0])\n"
+            + "\n"
+            + "Observables\n"
+            + "==========\n"
+            + "var(PauliZ(wires=[0]))\n"
+            + "sample(PauliX(wires=[1]))\n"
+        )
 
         def template(x):
             for i in range(5):
