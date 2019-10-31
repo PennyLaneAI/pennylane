@@ -573,7 +573,7 @@ class Tensor(Observable):
     tensor = True
     par_domain = None
 
-    def __init__(self, *args): #pylint: disable=super-init-not-called
+    def __init__(self, *args): #pylint: disable=super-init-not-called        
         self.obs = []
 
         for o in args:
@@ -583,6 +583,9 @@ class Tensor(Observable):
                 self.obs.append(o)
             else:
                 raise ValueError("Can only perform tensor products between observables.")
+
+        if QNode._current_context:
+            self.queue()
 
     def __str__(self):
         """Print the tensor product and some information."""
@@ -651,6 +654,10 @@ class Tensor(Observable):
 
         if isinstance(other, Observable):
             self.obs.append(other)
+
+            if QNode._current_context:
+                QNode._current_context.queue.remove(other)
+
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
@@ -658,11 +665,22 @@ class Tensor(Observable):
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
+            
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
 
     __imatmul__ = __matmul__
+
+    def queue(self):
+        """Append the operation to a QNode queue."""
+
+        QNode._current_context._append_op(self)
+
+        for obs in self.obs:
+            QNode._current_context.queue.remove(obs)
+
+        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
 #=============================================================================

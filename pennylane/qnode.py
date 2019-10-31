@@ -248,6 +248,7 @@ class QNode:
         
         print("self.ev = ", self.ev)
         print("self.queue = ", self.queue)
+        print("self.ev.return_type = ", [e.return_type for e in self.ev])
 
         if self.ev:        
             # Check that no gate follows an ev
