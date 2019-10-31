@@ -17,7 +17,6 @@ across the PennyLane submodules.
 """
 # pylint: disable=protected-access
 from collections.abc import Iterable
-
 import numbers
 import inspect
 import itertools
