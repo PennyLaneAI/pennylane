@@ -295,7 +295,7 @@ class TestRecorder:
         assert qnode_mock.args[0] == "Test"
 
     def test_context_attribute_spoofing(self):
-        """Test that unknown attributes are properly relaied to the underlying context."""
+        """Test that unknown attributes are properly relayed to the underlying context."""
         class AssignmentMock:
             queue = ["A"]
 
