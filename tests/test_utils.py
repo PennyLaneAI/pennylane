@@ -281,7 +281,7 @@ class TestRecorder:
         assert rec._ops == [op]
 
     def test_context_method_spoofing(self):
-        """Test that unknown attributes are properly relaied to the underlying context."""
+        """Test that unknown methods are properly relayed to the underlying context."""
         class MethodMock:
             args = []
             def construct(self, arg):
