@@ -18,7 +18,6 @@ Unit tests for the :mod:`pennylane` :class:`Device` class.
 import pytest
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.operation import Sample, Variance, Expectation
 from pennylane.qnode import QuantumFunctionError
 
 
