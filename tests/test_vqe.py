@@ -426,9 +426,8 @@ class TestTFInterface:
 
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 @pytest.mark.usefixtures("skip_if_no_torch_support")
-class TestTemplateGradientIntegration:
-    """Tests to ensure that all interfaces can compute
-    VQE gradients when using templates as ansatz"""
+class TestMultipleInterfaceIntegration:
+    """Tests to ensure that interfaces agree and integrate correctly"""
 
 
     def test_all_interfaces_gradient_agree(self, tol):
@@ -469,3 +468,19 @@ class TestTemplateGradientIntegration:
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)
+
+    def test_aggregate_expval_different_interfaces(self):
+        """Tests that the aggregate function raises an exception if passed
+        QNodes with different interfaces"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit1():
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def circuit2():
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="must all use the same interface"):
+            qml.vqe.aggregate([1, 1], [circuit1, circuit2], [])
