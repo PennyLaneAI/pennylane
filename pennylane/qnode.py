@@ -105,6 +105,11 @@ class QNode:
 
         self._metric_tensor_subcircuits = {}
 
+    @property
+    def interface(self):
+        """String representing the QNode interface"""
+        return "numpy"
+
     def __str__(self):
         """String representation"""
         detail = "<QNode: device='{}', func={}, wires={}, interface=NumPy/Autograd>"
