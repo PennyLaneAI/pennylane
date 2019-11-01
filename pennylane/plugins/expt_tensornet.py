@@ -21,16 +21,38 @@ import numpy as np
 import tensornetwork as tn
 
 from pennylane import Device
-from pennylane.plugins.default_qubit import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, \
-    Rphi, Rotx, Roty, Rotz, Rot3, CRotx, CRoty, CRotz, CRot3, hermitian, identity, \
-    unitary
+from pennylane.plugins.default_qubit import (
+    I,
+    X,
+    Y,
+    Z,
+    H,
+    CNOT,
+    SWAP,
+    CZ,
+    S,
+    T,
+    CSWAP,
+    Rphi,
+    Rotx,
+    Roty,
+    Rotz,
+    Rot3,
+    CRotx,
+    CRoty,
+    CRotz,
+    CRot3,
+    hermitian,
+    identity,
+    unitary,
+)
 
 # tolerance for numerical errors
 tolerance = 1e-10
 
-#========================================================
+# ========================================================
 #  device
-#========================================================
+# ========================================================
 
 
 class TensorNetwork(Device):
@@ -39,45 +61,46 @@ class TensorNetwork(Device):
     Args:
         wires (int): the number of modes to initialize the device in
     """
-    name = 'PennyLane TensorNetwork simulator plugin'
-    short_name = 'expt.tensornet'
-    pennylane_requires = '0.7'
-    version = '0.7.0'
-    author = 'Xanadu Inc.'
+
+    name = "PennyLane TensorNetwork simulator plugin"
+    short_name = "expt.tensornet"
+    pennylane_requires = "0.7"
+    version = "0.7.0"
+    author = "Xanadu Inc."
     _capabilities = {"model": "qubit", "tensor_observables": True}
 
     _operation_map = {
-        'QubitStateVector': None,
-        'BasisState': None,
-        'QubitUnitary': unitary,
-        'PauliX': X,
-        'PauliY': Y,
-        'PauliZ': Z,
-        'Hadamard': H,
-        'S': S,
-        'T': T,
-        'CNOT': CNOT,
-        'SWAP': SWAP,
-        'CSWAP':CSWAP,
-        'CZ': CZ,
-        'PhaseShift': Rphi,
-        'RX': Rotx,
-        'RY': Roty,
-        'RZ': Rotz,
-        'Rot': Rot3,
-        'CRX': CRotx,
-        'CRY': CRoty,
-        'CRZ': CRotz,
-        'CRot': CRot3
+        "QubitStateVector": None,
+        "BasisState": None,
+        "QubitUnitary": unitary,
+        "PauliX": X,
+        "PauliY": Y,
+        "PauliZ": Z,
+        "Hadamard": H,
+        "S": S,
+        "T": T,
+        "CNOT": CNOT,
+        "SWAP": SWAP,
+        "CSWAP": CSWAP,
+        "CZ": CZ,
+        "PhaseShift": Rphi,
+        "RX": Rotx,
+        "RY": Roty,
+        "RZ": Rotz,
+        "Rot": Rot3,
+        "CRX": CRotx,
+        "CRY": CRoty,
+        "CRZ": CRotz,
+        "CRot": CRot3,
     }
 
     _observable_map = {
-        'PauliX': X,
-        'PauliY': Y,
-        'PauliZ': Z,
-        'Hadamard': H,
-        'Hermitian': hermitian,
-        'Identity': identity
+        "PauliX": X,
+        "PauliY": Y,
+        "PauliZ": Z,
+        "Hadamard": H,
+        "Hermitian": hermitian,
+        "Identity": identity,
     }
 
     def __init__(self, wires):
@@ -89,8 +112,12 @@ class TensorNetwork(Device):
         self._zero_state = np.zeros([2] * wires)
         self._zero_state[tuple([0] * wires)] = 1.0
         # TODO: since this state is separable, can be more intelligent about not making a dense matrix
-        self._state = self._add_node(self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState")
-        self._free_edges = self._state.edges[:]  # we need this list to be distinct from self._state.edges
+        self._state = self._add_node(
+            self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState"
+        )
+        self._free_edges = self._state.edges[
+            :
+        ]  # we need this list to be distinct from self._state.edges
 
     def _add_node(self, A, wires, name="UnnamedNode"):
         """Adds a node to the underlying tensor network.
@@ -182,7 +209,7 @@ class TensorNetwork(Device):
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        
+
         all_wires = tuple(w for w in range(self.num_wires))
         ket = self._add_node(self._state, wires=all_wires, name="Ket")
         bra = self._add_node(tn.conj(ket), wires=all_wires, name="Bra")
@@ -204,14 +231,17 @@ class TensorNetwork(Device):
         for w in set(all_wires) - set(meas_wires):
             self._add_edge(bra, w, ket, w)  # |psi[w]|**2
 
-        # At this stage, all nodes are connected, and the contraction yields a 
-        # scalar value. 
+        # At this stage, all nodes are connected, and the contraction yields a
+        # scalar value.
         contracted_ket = ket
         for obs_node in obs_nodes:
             contracted_ket = tn.contract_between(obs_node, contracted_ket)
         expval = tn.contract_between(bra, contracted_ket).tensor
         if np.abs(expval.imag) > tolerance:
-            warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expval.imag), RuntimeWarning)
+            warnings.warn(
+                "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
+                RuntimeWarning,
+            )
         return expval.real
 
     def reset(self):
@@ -225,4 +255,3 @@ class TensorNetwork(Device):
     @property
     def observables(self):
         return set(self._observable_map.keys())
-
