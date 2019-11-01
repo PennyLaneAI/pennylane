@@ -294,18 +294,6 @@ class TestVQE:
             cost = qml.vqe.cost([], 4, hamiltonian, mock_device)
 
 
-expected_temp_grad = np.array(
-[[[[ 0.,         -0.01122543, -0.03279903],
-   [ 0.,          0.00902561,  0.00348476]],
-
-  [[ 0.00348476, -0.00378435,  0.00143849],
-   [-0.02929114,  0.03075758,  0.04892518]],
-
-  [[ 0.04892518,  0.00725504,  0.04911137],
-   [ 0.04700805, -0.00247055,  0.04653097]]]]
-)
-
-
 class TestNumPyInterface:
     """Tests for the NumPy interface"""
 
@@ -347,24 +335,6 @@ class TestNumPyInterface:
         ]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_gradient_templates(self, tol):
-        """Test differentiation works with templates"""
-        dev = qml.device("default.qubit", wires=2)
-
-        coeffs = [0.2, 0.5]
-        observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
-
-        H = qml.vqe.Hamiltonian(coeffs, observables)
-        params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
-
-        ansatz = qml.templates.layers.StronglyEntanglingLayers
-        cost = qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
-
-        cost2 = lambda params: qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
-        dcost = qml.grad(cost2, argnum=[0])
-        res = dcost(params)
-        assert np.allclose(res, expected_temp_grad, atol=tol, rtol=0)
 
 
 @pytest.mark.usefixtures("skip_if_no_torch_support")
@@ -409,24 +379,6 @@ class TestTorchInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_gradient_templates(self, tol):
-        """Test differentiation works with templates"""
-        dev = qml.device("default.qubit", wires=2)
-
-        coeffs = [0.2, 0.5]
-        observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
-
-        H = qml.vqe.Hamiltonian(coeffs, observables)
-        params = torch.tensor(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
-        params = torch.autograd.Variable(params, requires_grad=True)
-        ansatz = qml.templates.layers.StronglyEntanglingLayers
-
-        cost = qml.vqe.cost(params, ansatz, H, dev, interface="torch")
-        cost.backward()
-
-        res = params.grad.numpy()
-        assert np.allclose(res, expected_temp_grad, atol=tol, rtol=0)
-
 
 
 @pytest.mark.usefixtures("skip_if_no_tf_support")
@@ -470,14 +422,25 @@ class TestTFInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_gradient_templates(self, tol):
-        """Test differentiation works with templates"""
+
+
+@pytest.mark.usefixtures("skip_if_no_tf_support")
+@pytest.mark.usefixtures("skip_if_no_torch_support")
+class TestTemplateGradientIntegration:
+    """Tests to ensure that all interfaces can compute
+    VQE gradients when using templates as ansatz"""
+
+
+    def test_all_interfaces_gradient_agree(self, tol):
+        """Test the gradient agrees across all interfaces"""
         dev = qml.device("default.qubit", wires=2)
 
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
 
         H = qml.vqe.Hamiltonian(coeffs, observables)
+
+        # TensorFlow interface
         params = [Variable(i) for i in qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
@@ -485,6 +448,24 @@ class TestTFInterface:
 
         with tf.GradientTape() as tape:
             cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
-            res = np.array(tape.gradient(cost, params))
+            res_tf = np.array(tape.gradient(cost, params))
 
-        assert np.allclose(res, expected_temp_grad, atol=tol, rtol=0)
+        # Torch interface
+        params = torch.tensor(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
+        params = torch.autograd.Variable(params, requires_grad=True)
+        ansatz = qml.templates.layers.StronglyEntanglingLayers
+
+        cost = qml.vqe.cost(params, ansatz, H, dev, interface="torch")
+        cost.backward()
+        res_torch = params.grad.numpy()
+
+        # NumPy interface
+        params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
+        ansatz = qml.templates.layers.StronglyEntanglingLayers
+        cost = qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        cost2 = lambda params: qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        dcost = qml.grad(cost2, argnum=[0])
+        res = dcost(params)
+
+        assert np.allclose(res, res_tf, atol=tol, rtol=0)
+        assert np.allclose(res, res_torch, atol=tol, rtol=0)
