@@ -26,6 +26,9 @@ from pennylane.plugins.expt_tensornet import (CRot3, CRotx, CRoty, CRotz,
                                               Rphi, Z, hermitian, unitary)
 
 
+tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
+
+
 U = np.array(
     [
         [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
