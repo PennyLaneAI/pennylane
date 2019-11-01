@@ -117,7 +117,7 @@ def circuits(ansatz, observables, device, interface="numpy"):
         if not isinstance(obs, Observable):
             raise ValueError("Could not create circuits. Some or all observables are not valid.")
 
-        def circuit(params, obs=obs):
+        def circuit(*params, obs=obs):
             ansatz(*params, wires=range(device.num_wires))
             return expval(obs)
 
@@ -155,7 +155,7 @@ def aggregate(coeffs, qnodes, params):
     if len(interfaces) != 1:
         raise ValueError("Provided QNodes must all use the same interface.")
 
-    expvals = [c*circuit(params) for c, circuit in zip(coeffs, qnodes)]
+    expvals = [c*circuit(*params) for c, circuit in zip(coeffs, qnodes)]
     return sum(expvals)
 
 

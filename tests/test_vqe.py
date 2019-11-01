@@ -234,7 +234,7 @@ class TestVQE:
         """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
         mock_device.num_wires = 3
         circuits = qml.vqe.circuits(ansatz, observables, device=mock_device)
-        res = [c(params) for c in circuits]
+        res = [c(*params) for c in circuits]
         assert all(val == 1.0 for val in res)
 
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
@@ -294,6 +294,18 @@ class TestVQE:
             cost = qml.vqe.cost([], 4, hamiltonian, mock_device)
 
 
+expected_temp_grad = np.array(
+[[[[ 0.,         -0.01122543, -0.03279903],
+   [ 0.,          0.00902561,  0.00348476]],
+
+  [[ 0.00348476, -0.00378435,  0.00143849],
+   [-0.02929114,  0.03075758,  0.04892518]],
+
+  [[ 0.04892518,  0.00725504,  0.04911137],
+   [ 0.04700805, -0.00247055,  0.04653097]]]]
+)
+
+
 class TestNumPyInterface:
     """Tests for the NumPy interface"""
 
@@ -305,7 +317,7 @@ class TestNumPyInterface:
         circuits = qml.vqe.circuits(ansatz, observables, device=mock_device, interface="numpy")
         assert all(c.interface == "numpy" for c in circuits)
 
-        res = [c(params) for c in circuits]
+        res = [c(*params) for c in circuits]
         assert all(isinstance(val, float) for val in res)
 
     def test_gradient(self, tol):
@@ -336,6 +348,24 @@ class TestNumPyInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_gradient_templates(self, tol):
+        """Test differentiation works with templates"""
+        dev = qml.device("default.qubit", wires=2)
+
+        coeffs = [0.2, 0.5]
+        observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
+
+        H = qml.vqe.Hamiltonian(coeffs, observables)
+        params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
+
+        ansatz = qml.templates.layers.StronglyEntanglingLayers
+        cost = qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
+
+        cost2 = lambda params: qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        dcost = qml.grad(cost2, argnum=[0])
+        res = dcost(params)
+        assert np.allclose(res, expected_temp_grad, atol=tol, rtol=0)
+
 
 @pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestTorchInterface:
@@ -349,7 +379,7 @@ class TestTorchInterface:
         circuits = qml.vqe.circuits(ansatz, observables, device=mock_device, interface="torch")
         assert all(c.interface == "torch" for c in circuits)
 
-        res = [c(params) for c in circuits]
+        res = [c(*params) for c in circuits]
         assert all(isinstance(val, torch.Tensor) for val in res)
 
     def test_gradient(self, tol):
@@ -379,6 +409,24 @@ class TestTorchInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_gradient_templates(self, tol):
+        """Test differentiation works with templates"""
+        dev = qml.device("default.qubit", wires=2)
+
+        coeffs = [0.2, 0.5]
+        observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
+
+        H = qml.vqe.Hamiltonian(coeffs, observables)
+        params = torch.tensor(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
+        params = torch.autograd.Variable(params, requires_grad=True)
+        ansatz = qml.templates.layers.StronglyEntanglingLayers
+
+        cost = qml.vqe.cost(params, ansatz, H, dev, interface="torch")
+        cost.backward()
+
+        res = params.grad.numpy()
+        assert np.allclose(res, expected_temp_grad, atol=tol, rtol=0)
+
 
 
 @pytest.mark.usefixtures("skip_if_no_tf_support")
@@ -393,7 +441,7 @@ class TestTFInterface:
         circuits = qml.vqe.circuits(ansatz, observables, device=mock_device, interface="tf")
         assert all(c.interface == "tf" for c in circuits)
 
-        res = [c(params) for c in circuits]
+        res = [c(*params) for c in circuits]
         assert all(isinstance(val, (Variable, tf.Tensor)) for val in res)
 
     def test_gradient(self, tol):
@@ -409,7 +457,7 @@ class TestTFInterface:
 
         H = qml.vqe.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
-        params = Variable([a, b], dtype=tf.float64)
+        params = [Variable(i, dtype=tf.float64) for i in [a, b]]
 
         with tf.GradientTape() as tape:
             cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
@@ -421,3 +469,22 @@ class TestTFInterface:
         ]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_gradient_templates(self, tol):
+        """Test differentiation works with templates"""
+        dev = qml.device("default.qubit", wires=2)
+
+        coeffs = [0.2, 0.5]
+        observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
+
+        H = qml.vqe.Hamiltonian(coeffs, observables)
+        params = [Variable(i) for i in qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]
+        ansatz = qml.templates.layers.StronglyEntanglingLayers
+
+        cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
+
+        with tf.GradientTape() as tape:
+            cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
+            res = np.array(tape.gradient(cost, params))
+
+        assert np.allclose(res, expected_temp_grad, atol=tol, rtol=0)
