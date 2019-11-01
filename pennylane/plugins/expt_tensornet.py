@@ -22,7 +22,6 @@ import tensornetwork as tn
 
 from pennylane import Device
 from pennylane.plugins.default_qubit import (
-    I,
     X,
     Y,
     Z,
@@ -121,14 +120,14 @@ class TensorNetwork(Device):
 
     def _add_node(self, A, wires, name="UnnamedNode"):
         """Adds a node to the underlying tensor network.
-        
+
         The node is also added to ``self._nodes`` for bookkeeping.
-        
+
         Args:
             A (array): numerical data values for the operator (i.e., matrix form)
             wires (list[int]): wires that this operator acts on
             name (str): optional name for the node
-            
+
         Returns:
             tn.Node: the newly created node
         """
@@ -143,15 +142,15 @@ class TensorNetwork(Device):
 
     def _add_edge(self, node1, idx1, node2, idx2):
         """Adds an edge to the underlying tensor network.
-        
+
         The edge is also added to ``self._edges`` for bookkeeping.
-        
+
         Args:
             node1 (tn.Node): first node to connect
             idx1 (int): index of node1 to add the edge to
             node2 (tn.Node): second node to connect
             idx2 (int): index of node2 to add the edge to
-            
+
         Returns:
             tn.Edge: the newly created edge
         """
