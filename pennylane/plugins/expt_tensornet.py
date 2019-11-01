@@ -203,8 +203,8 @@ class TensorNetwork(Device):
         r"""Expectation value of observables on specified wires.
 
          Args:
-            obs_nodes (tn.Node): the observables as tensornetwork Nodes
-            wires (Sequence[int]): measured subsystems for each observable
+            obs_nodes (Sequence[tn.Node]): the observables as tensornetwork Nodes
+            wires (Sequence[Sequence[[int]]): measured subsystems for each observable
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
