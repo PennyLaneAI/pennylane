@@ -969,7 +969,7 @@ class TestDefaultQubitIntegration:
         ("BasisState", [1], [0], [-1, 1]),
         ("BasisState", [1], [1], [1, -1])
     ])
-    def test_basis_state_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
+    def test_basis_state_2_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
         """Tests qubit basis state preparation on subsets of qubits"""
 
         op = getattr(qml.ops, name)
@@ -989,7 +989,7 @@ class TestDefaultQubitIntegration:
         ("QubitStateVector", [1j/2., np.sqrt(3)/2.], [1], [1, -0.5]),
         ("QubitStateVector", [(2-1j)/3., 2j/3.], [0], [1/9., 1])
     ])
-    def test_state_vector_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
+    def test_state_vector_2_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
         """Tests qubit state vector preparation on subsets of qubits"""
 
         op = getattr(qml.ops, name)
@@ -1004,6 +1004,17 @@ class TestDefaultQubitIntegration:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
+    # This test is ran with two Z expvals
+    @pytest.mark.parametrize("name,par,wires,expected_output", [
+        ("QubitStateVector", [0, 1], [1], [1, -1]),
+        ("QubitStateVector", [0, 1], [0], [-1, 1]),
+        ("QubitStateVector", [1. / np.sqrt(2), 1. / np.sqrt(2)], [1], [1, 0]),
+        ("QubitStateVector", [1j / 2., np.sqrt(3) / 2.], [1], [1, -0.5]),
+        ("QubitStateVector", [(2 - 1j) / 3., 2j / 3.], [0], [1 / 9., 1])
+    ])
+    def test_state_vector_3_qubit_subset(self, qubit_device_3_wires, tol, name, par, wires, expected_output):
+        
+        assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
     # This test is ran on the state |0> with one Z expvals
     @pytest.mark.parametrize("name,par,expected_output", [
