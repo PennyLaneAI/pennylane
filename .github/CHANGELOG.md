@@ -45,10 +45,6 @@ Josh Izaac, Angus Lowe, Johannes Jakob Meyer
   in `_device.py`.
   [#374](https://github.com/XanaduAI/pennylane/pull/374)
 
-* Default qubit state vector preparation operations can now be applied to subsets of qubits, and
-  are restricted to being the first operation in a circuit
-  [#346](https://github.com/XanaduAI/pennylane/pull/346)
-
 * Comprehensive gradient tests have been added for the interfaces.
   [#381](https://github.com/XanaduAI/pennylane/pull/381)
 
