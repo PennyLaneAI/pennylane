@@ -16,9 +16,11 @@ Unit tests for the :mod:`pennylane.utils` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 import pytest
+from unittest.mock import MagicMock
 
 import numpy as np
 
+import pennylane as qml
 import pennylane.utils as pu
 
 flat_dummy_array = np.linspace(-1, 1, 64)
@@ -107,7 +109,7 @@ class TestArgumentHelpers:
         """Test that empty dict is returned if function has
         no default arguments"""
 
-        def dummy_func(a, b): # pylint: disable=unused-argument
+        def dummy_func(a, b):  # pylint: disable=unused-argument
             pass
 
         res = pu._get_default_args(dummy_func)
@@ -116,7 +118,9 @@ class TestArgumentHelpers:
     def test_get_default_args(self):
         """Test that default arguments are correctly extracted"""
 
-        def dummy_func(a, b, c=8, d=[0, 0.65], e=np.array([4]), f=None):  # pylint: disable=unused-argument,dangerous-default-value
+        def dummy_func(
+            a, b, c=8, d=[0, 0.65], e=np.array([4]), f=None
+        ):  # pylint: disable=unused-argument,dangerous-default-value
             pass
 
         res = pu._get_default_args(dummy_func)
@@ -254,3 +258,194 @@ class TestExpand:
             @ np.kron(SWAP, np.kron(I, I))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestRecorder:
+    """Test the Recorder QNode replacement"""
+
+    def test_append_op_calls_underlying_context(self):
+        """Test that the underlying context is called in _append_op."""
+        qnode_mock = MagicMock()
+
+        rec = pu.Recorder(qnode_mock)
+        op = qml.PauliZ(3)
+        rec._append_op(op)
+
+        assert qnode_mock._append_op.call_args[0][0] == op
+        assert rec._ops == [op]
+
+    def test_append_op_no_context(self):
+        """Test that the operation is appended when no context is supplied."""
+        rec = pu.Recorder(None)
+
+        op = qml.PauliZ(3)
+        rec._append_op(op)
+
+        assert rec._ops == [op]
+
+    def test_context_method_spoofing(self):
+        """Test that unknown methods are properly relayed to the underlying context."""
+
+        class MethodMock:
+            args = []
+
+            def construct(self, arg):
+                self.args.append(arg)
+
+        qnode_mock = MethodMock()
+
+        rec = pu.Recorder(qnode_mock)
+
+        rec.construct("Test")
+        assert qnode_mock.args[0] == "Test"
+
+    def test_context_attribute_spoofing(self):
+        """Test that unknown attributes are properly relayed to the underlying context."""
+
+        class AssignmentMock:
+            queue = ["A"]
+
+        qnode_mock = AssignmentMock()
+        rec = pu.Recorder(qnode_mock)
+
+        assert rec.queue == ["A"]
+        assert qnode_mock.queue == ["A"]
+
+        rec.queue.append("B")
+
+        assert rec.queue == ["A", "B"]
+        assert qnode_mock.queue == ["A", "B"]
+
+    def test_attribute_spoofing_error(self):
+        """Test that the proper error is raised if attribute spoofing is attemped
+        with no underlying QNode."""
+        rec = pu.Recorder(None)
+
+        with pytest.raises(
+            AttributeError, match="Attribute test of Recorder mock QNode does not exist"
+        ):
+            rec.test
+
+    def test_queue_no_context(self):
+        """Test that the queue property returns an empty list if there is no underlying context."""
+        qnode_mock = MagicMock()
+        qnode_mock.queue = ["A"]
+
+        rec = pu.Recorder(qnode_mock)
+
+        assert rec.queue == ["A"]
+
+    def test_queue_no_context(self):
+        """Test that the queue property returns an empty list if there is no underlying context."""
+        rec = pu.Recorder(None)
+
+        assert rec.queue == []
+
+
+class TestOperationRecorder:
+    """Test the OperationRecorder class."""
+
+    def test_context_switching(self, monkeypatch):
+        """Test that the current QNode context is properly switched."""
+        monkeypatch.setattr(qml.QNode, "_current_context", "Test")
+
+        assert qml.QNode._current_context == "Test"
+
+        with pu.OperationRecorder() as recorder:
+            assert recorder.old_context == "Test"
+            assert qml.QNode._current_context == recorder.rec
+
+        assert qml.QNode._current_context == "Test"
+
+    def test_circuit_integration(self):
+        """Tests that the OperationRecorder integrates well with the
+        core behaviour of PennyLane."""
+        expected_output = (
+            "Operations\n"
+            + "==========\n"
+            + "PauliY(wires=[0])\n"
+            + "PauliY(wires=[1])\n"
+            + "RZ(0.4, wires=[0])\n"
+            + "RZ(0.4, wires=[1])\n"
+            + "CNOT(wires=[0, 1])\n"
+            + "\n"
+            + "Observables\n"
+            + "==========\n"
+        )
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+
+            with pu.OperationRecorder() as recorder:
+                ops = [
+                    qml.PauliY(0),
+                    qml.PauliY(1),
+                    qml.RZ(c, wires=0),
+                    qml.RZ(c, wires=1),
+                    qml.CNOT(wires=[0, 1]),
+                ]
+
+            assert str(recorder) == expected_output
+            assert recorder.queue == ops
+
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        circuit(0.1, 0.2, 0.4)
+
+    def test_template_integration(self):
+        """Tests that the OperationRecorder integrates well with the
+        core behaviour of PennyLane."""
+        expected_output = (
+            "Operations\n"
+            + "==========\n"
+            + "RZ(0, wires=[0])\n"
+            + "RZ(3, wires=[0])\n"
+            + "RZ(6, wires=[0])\n"
+            + "RZ(9, wires=[0])\n"
+            + "RZ(12, wires=[0])\n"
+            + "\n"
+            + "Observables\n"
+            + "==========\n"
+        )
+
+        def template(x):
+            for i in range(5):
+                qml.RZ(i * x, wires=0)
+
+        with pu.OperationRecorder() as recorder:
+            template(3)
+
+        assert str(recorder) == expected_output
+
+    def test_template_with_return_integration(self):
+        """Tests that the OperationRecorder integrates well with the
+        core behaviour of PennyLane."""
+        expected_output = (
+            "Operations\n"
+            + "==========\n"
+            + "RZ(0, wires=[0])\n"
+            + "RZ(3, wires=[0])\n"
+            + "RZ(6, wires=[0])\n"
+            + "RZ(9, wires=[0])\n"
+            + "RZ(12, wires=[0])\n"
+            + "\n"
+            + "Observables\n"
+            + "==========\n"
+            + "var(PauliZ(wires=[0]))\n"
+            + "sample(PauliX(wires=[1]))\n"
+        )
+
+        def template(x):
+            for i in range(5):
+                qml.RZ(i * x, wires=0)
+
+            return qml.var(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+
+        with pu.OperationRecorder() as recorder:
+            template(3)
+
+        assert str(recorder) == expected_output
