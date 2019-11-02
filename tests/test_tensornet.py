@@ -21,9 +21,8 @@ import math
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.plugins.expt_tensornet import (CRot3, CRotx, CRoty, CRotz,
-                                              Rot3, Rotx, Roty, Rotz,
-                                              Rphi, Z, hermitian, unitary)
+
+tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
 
 
 U = np.array(
@@ -428,6 +427,18 @@ class TestTensornetIntegration:
             return qml.expval(obs(*par, wires=[0, 1]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    def test_expval_warnings(self):
+        """Tests that expval raises a warning if the given observable is complex."""
+
+        dev = qml.device("expt.tensornet", wires=1)
+
+        A = np.array([[2j, 1j], [-3j, 1j]])
+        obs_node = dev._add_node(A, wires=[0])
+
+        # text warning raised if matrix is complex
+        with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
+            dev.ev([obs_node], wires=[[0]])
 
     def test_cannot_overwrite_state(self, tensornet_device_2_wires):
         """Tests that _state is a property and cannot be overwritten."""
