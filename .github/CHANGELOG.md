@@ -11,6 +11,10 @@
 
 ### Improvements
 
+* Default qubit state vector preparation operations can now be applied to subsets of wires, and
+  are restricted to being the first operation in a circuit.
+  [#346](https://github.com/XanaduAI/pennylane/pull/346)
+
 ### Documentation
 
 ### Bug fixes
@@ -19,7 +23,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Johannes Jakob Meyer
+Josh Izaac, Angus Lowe, Johannes Jakob Meyer
 
 ---
 
