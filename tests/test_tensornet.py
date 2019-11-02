@@ -232,7 +232,7 @@ class TestTensornetIntegration:
         ("SWAP", [-1/2, -1/2]),
         ("CZ", [-1/2, -1/2]),
     ])
-    def _test_supported_gate_two_wires_no_parameters(self, tensornet_device_2_wires, tol, name, expected_output):  # TODO: change name when QubitStateVector is supported
+    def test_supported_gate_two_wires_no_parameters(self, tensornet_device_2_wires, tol, name, expected_output):
         """Tests supported gates that act on two wires that are not parameterized"""
 
         op = getattr(qml.ops, name)
@@ -250,7 +250,7 @@ class TestTensornetIntegration:
     @pytest.mark.parametrize("name,expected_output", [
         ("CSWAP", [-1, -1, 1]),
     ])
-    def _test_supported_gate_three_wires_no_parameters(self, tensornet_device_3_wires, tol, name, expected_output):  # TODO: change name when BasisState is supported
+    def test_supported_gate_three_wires_no_parameters(self, tensornet_device_3_wires, tol, name, expected_output):
         """Tests supported gates that act on three wires that are not parameterized"""
 
         op = getattr(qml.ops, name)
@@ -274,7 +274,7 @@ class TestTensornetIntegration:
         ("QubitStateVector", [0, 0, 1, 0], [-1, 1]),
         ("QubitStateVector", [0, 1, 0, 0], [1, -1]),
     ])
-    def _test_supported_state_preparation(self, tensornet_device_2_wires, tol, name, par, expected_output):   # TODO: change name when QubitStateVector and BasisState are supported
+    def test_supported_state_preparation(self, tensornet_device_2_wires, tol, name, par, expected_output):
         """Tests supported state preparations"""
 
         op = getattr(qml.ops, name)
@@ -341,7 +341,7 @@ class TestTensornetIntegration:
         ("QubitUnitary", [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])], [-1/2, -1/2]),
         ("QubitUnitary", [np.array([[-1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, -1]])], [-1/2, -1/2]),
     ])
-    def _test_supported_gate_two_wires_with_parameters(self, tensornet_device_2_wires, tol, name, par, expected_output):  # TODO: change name when QubitStateVector is supported
+    def test_supported_gate_two_wires_with_parameters(self, tensornet_device_2_wires, tol, name, par, expected_output):
         """Tests supported gates that act on two wires wires that are parameterized"""
 
         op = getattr(qml.ops, name)
@@ -370,7 +370,7 @@ class TestTensornetIntegration:
         ("Hadamard", [0, 1], -1/math.sqrt(2)),
         ("Hadamard", [1/math.sqrt(2), 1/math.sqrt(2)], 1/math.sqrt(2)),
     ])
-    def _test_supported_observable_single_wire_no_parameters(self, tensornet_device_1_wire, tol, name, state, expected_output):  # TODO: change name when QubitStateVector is supported
+    def test_supported_observable_single_wire_no_parameters(self, tensornet_device_1_wire, tol, name, state, expected_output):
         """Tests supported observables on single wires without parameters."""
 
         obs = getattr(qml.ops, name)
@@ -392,7 +392,7 @@ class TestTensornetIntegration:
         ("Hermitian", [0, 1], 1, [np.array([[1, 1j], [-1j, 1]])]),
         ("Hermitian", [1/math.sqrt(2), -1/math.sqrt(2)], 1, [np.array([[1, 1j], [-1j, 1]])]),
     ])
-    def _test_supported_observable_single_wire_with_parameters(self, tensornet_device_1_wire, tol, name, state, expected_output, par):  # TODO: change name when QubitStateVector is supported
+    def test_supported_observable_single_wire_with_parameters(self, tensornet_device_1_wire, tol, name, state, expected_output, par):
         """Tests supported observables on single wires with parameters."""
 
         obs = getattr(qml.ops, name)
@@ -414,7 +414,7 @@ class TestTensornetIntegration:
         ("Hermitian", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], 1, [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])]),
         ("Hermitian", [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], -1, [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])]),
     ])
-    def _test_supported_observable_two_wires_with_parameters(self, tensornet_device_2_wires, tol, name, state, expected_output, par):  # TODO: change name when QubitStateVector is supported
+    def test_supported_observable_two_wires_with_parameters(self, tensornet_device_2_wires, tol, name, state, expected_output, par):
         """Tests supported observables on two wires with parameters."""
 
         obs = getattr(qml.ops, name)
