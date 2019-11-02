@@ -1,0 +1,9 @@
+qml.module_name
+===============
+
+.. currentmodule:: pennylane.module_name
+
+.. automodapi:: pennylane.module_name
+    :no-heading:
+    :include-all-objects:
+    :skip: <Place objects that shouldn't be documented here>
