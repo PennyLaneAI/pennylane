@@ -118,7 +118,7 @@ class TensorNetwork(Device):
 
     def _add_node(self, A, wires, name="UnnamedNode"):
         """Adds a node to the underlying tensor network.
-        
+
         The node is also added to ``self._nodes`` for bookkeeping.
 
         Args:
@@ -160,21 +160,33 @@ class TensorNetwork(Device):
         self.reset()
 
     def apply(self, operation, wires, par):
-        if operation == 'QubitStateVector':
+        if operation == "QubitStateVector":
             state = np.asarray(par[0], dtype=np.complex128)
-            if state.ndim == 1 and state.shape[0] == 2**self.num_wires:
+            if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
                 self._state_node.tensor = np.reshape(state, [2] * self.num_wires)
             else:
-                raise ValueError('State vector must be of length 2**wires.')
+                raise ValueError("State vector must be of length 2**wires.")
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-                raise ValueError("The expt.tensornet plugin can apply QubitStateVector only to all of the {} wires.".format(self.num_wires))
+                raise ValueError(
+                    "The expt.tensornet plugin can apply QubitStateVector only to all of the {} wires.".format(
+                        self.num_wires
+                    )
+                )
             return
-        if operation == 'BasisState':
+        if operation == "BasisState":
             n = len(par[0])
-            if n==0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
-                raise ValueError("BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(self.num_wires))
+            if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
+                raise ValueError(
+                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
+                        self.num_wires
+                    )
+                )
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-                raise ValueError("The expt.tensornet plugin can apply BasisState only to all of the {} wires.".format(self.num_wires))
+                raise ValueError(
+                    "The expt.tensornet plugin can apply BasisState only to all of the {} wires.".format(
+                        self.num_wires
+                    )
+                )
 
             self._state_node.tensor[tuple([0] * len(wires))] = 0
             self._state_node.tensor[tuple(par[0])] = 1
@@ -188,7 +200,9 @@ class TensorNetwork(Device):
             self._add_edge(op_node, num_mult_idxs + idx, self._state_node, w)
             self._free_edges[w] = op_node[idx]
         # TODO: can be smarter here about collecting contractions?
-        self._state_node = tn.contract_between(op_node, self._state_node, output_edge_order=self._free_edges)
+        self._state_node = tn.contract_between(
+            op_node, self._state_node, output_edge_order=self._free_edges
+        )
 
     def expval(self, observable, wires, par):
         if not isinstance(observable, list):
@@ -257,7 +271,7 @@ class TensorNetwork(Device):
         if np.abs(expval.imag) > tolerance:
             warnings.warn(
                 "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
-                RuntimeWarning
+                RuntimeWarning,
             )
         return expval.real
 
