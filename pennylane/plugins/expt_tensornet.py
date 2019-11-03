@@ -168,7 +168,9 @@ class TensorNetwork(Device):
             self._add_edge(op_node, num_mult_idxs + idx, self._state_node, w)
             self._free_edges[w] = op_node[idx]
         # TODO: can be smarter here about collecting contractions?
-        self._state_node = tn.contract_between(op_node, self._state_node, output_edge_order=self._free_edges)
+        self._state_node = tn.contract_between(
+            op_node, self._state_node, output_edge_order=self._free_edges
+        )
 
     def expval(self, observable, wires, par):
         if not isinstance(observable, list):
@@ -237,7 +239,7 @@ class TensorNetwork(Device):
         if np.abs(expval.imag) > tolerance:
             warnings.warn(
                 "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
-                RuntimeWarning
+                RuntimeWarning,
             )
         return expval.real
 
