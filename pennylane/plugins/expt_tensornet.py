@@ -118,7 +118,7 @@ class TensorNetwork(Device):
 
     def _add_node(self, A, wires, name="UnnamedNode"):
         """Adds a node to the underlying tensor network.
-        
+
         The node is also added to ``self._nodes`` for bookkeeping.
 
         Args:
