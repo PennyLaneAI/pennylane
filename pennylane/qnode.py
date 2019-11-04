@@ -75,10 +75,8 @@ def _decompose_queue(ops, device):
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:
-            with OperationRecorder() as rec:
-                op.decomposition(*op.params, wires=op.wires)
-
-            decomposition = _decompose_queue(rec.operations, device)
+            decomposed_ops = op.decomposition(*op.params, wires=op.wires)
+            decomposition = _decompose_queue(decomposed_ops, device)
             new_ops.extend(decomposition)
 
     return new_ops

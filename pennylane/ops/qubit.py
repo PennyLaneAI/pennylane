@@ -257,11 +257,11 @@ class Toffoli(Operation):
         1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
         0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
         0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
-        0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
+        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
         0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
         0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
-        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
-        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
+        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0
         \end{pmatrix}
 
     **Details:**
@@ -402,6 +402,11 @@ class Rot(Operation):
       where :math:`f` is an expectation value depending on :math:`R(\phi, \theta, \omega)`.
       This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
 
+    .. note::
+
+        If the ``Rot`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.RZ` and :class:`~.RY` gates.
+
     Args:
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
@@ -415,9 +420,12 @@ class Rot(Operation):
 
     @staticmethod
     def decomposition(phi, theta, omega, wires=None):
-        RZ(phi, wires=wires)
-        RY(theta, wires=wires)
-        RZ(omega, wires=wires)
+        ops = [
+            RZ(phi, wires=wires),
+            RY(theta, wires=wires),
+            RZ(omega, wires=wires)
+        ]
+        return ops
 
 
 class CRX(Operation):
@@ -562,6 +570,11 @@ class U2(Operation):
 
         U_2(\phi, \lambda) = R_\phi(\phi+\lambda) R(\lambda,\pi/2,-\lambda)
 
+    .. note::
+
+        If the :math:`U_2` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.Rot` and :class:`~.PhaseShift` gates.
+
     Args:
         phi (float): azimuthal angle :math:`\phi`
         lambda (float): quantum phase :math:`\lambda`
@@ -574,9 +587,12 @@ class U2(Operation):
 
     @staticmethod
     def decomposition(phi, lam, wires=None):
-        Rot(lam, np.pi/2, -lam, wires=wires)
-        PhaseShift(lam, wires=wires)
-        PhaseShift(phi, wires=wires)
+        ops = [
+            Rot(lam, np.pi/2, -lam, wires=wires),
+            PhaseShift(lam, wires=wires),
+            PhaseShift(phi, wires=wires)
+        ]
+        return ops
 
 
 class U3(Operation):
@@ -595,6 +611,11 @@ class U3(Operation):
 
         U_3(\theta, \phi, \lambda) = R_\phi(\phi+\lambda) R(\lambda,\theta,-\lambda)
 
+    .. note::
+
+        If the ``U3`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.PhaseShift` and :class:`~.Rot` gates.
+
     Args:
         theta (float): polar angle :math:`\theta`
         phi (float): azimuthal angle :math:`\phi`
@@ -608,9 +629,12 @@ class U3(Operation):
 
     @staticmethod
     def decomposition(theta, phi, lam, wires=None):
-        Rot(lam, theta, -lam, wires=wires)
-        PhaseShift(lam, wires=wires)
-        PhaseShift(phi, wires=wires)
+        ops = [
+            Rot(lam, theta, -lam, wires=wires),
+            PhaseShift(lam, wires=wires),
+            PhaseShift(phi, wires=wires)
+        ]
+        return ops
 
 
 # =============================================================================
@@ -653,6 +677,12 @@ class BasisState(Operation):
     * Number of parameters: 1
     * Gradient recipe: None (integer parameters not supported)
 
+    .. note::
+
+        If the ``BasisState`` operation is not supported natively on the
+        target device, PennyLane will attempt to decompose the operation
+        into :class:`~.PauliX` operations.
+
     Args:
         n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
             array of integers from the set :math:`\{0, 1\}`, i.e.,
@@ -666,9 +696,12 @@ class BasisState(Operation):
 
     @staticmethod
     def decomposition(n, wires=None):
+        ops = []
         for w, p in enumerate(n.flatten()):
             if p == 1:
-                PauliX(wires=wires[w])
+                ops.append(PauliX(wires=wires[w]))
+
+        return ops
 
 
 class QubitStateVector(Operation):
