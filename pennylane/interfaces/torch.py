@@ -172,10 +172,15 @@ def TorchQNode(qnode):
         """Torch QNode"""
         # pylint: disable=too-few-public-methods
 
+        @property
+        def interface(self):
+            """String representing the QNode interface"""
+            return "torch"
+
         def __str__(self):
             """String representation"""
-            detail = "<QNode: device='{}', func={}, wires={}, interface=PyTorch>"
-            return detail.format(qnode.device.short_name, qnode.func.__name__, qnode.num_wires)
+            detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
+            return detail.format(qnode.device.short_name, qnode.func.__name__, qnode.num_wires, self.interface)
 
         def __repr__(self):
             """REPL representation"""
