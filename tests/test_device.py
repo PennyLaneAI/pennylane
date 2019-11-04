@@ -128,18 +128,8 @@ class TestDeviceSupportedLogic:
         assert mock_device_with_operations.supports_operation("PauliX")
         assert mock_device_with_operations.supports_operation(qml.PauliX)
 
-        with pytest.raises(
-                DeviceError,
-                match="Gate {} not supported on device {}".format("S", 'MockDevice'),
-        ):
-            mock_device_with_operations.supports_operation("S")
-
-        with pytest.raises(
-                DeviceError,
-                match="Gate {} not supported on "
-                      "device {}".format(qml.CNOT.__name__, mock_device_with_operations.short_name),
-        ):
-            mock_device_with_operations.supports_operation(qml.CNOT)
+        assert not mock_device_with_operations.supports_operation("S")
+        assert not mock_device_with_operations.supports_operation(qml.CNOT)
 
     def test_supports_observable_argument_types(self, mock_device_with_observables):
         """Checks that device.supports_observable returns the correct result
@@ -148,18 +138,8 @@ class TestDeviceSupportedLogic:
         assert mock_device_with_observables.supports_observable("PauliX")
         assert mock_device_with_observables.supports_observable(qml.PauliX)
 
-        with pytest.raises(
-                DeviceError,
-                match="Observable {} not supported on device {}".format("S", 'MockDevice'),
-        ):
-            mock_device_with_observables.supports_observable("S")
-
-        with pytest.raises(
-                DeviceError,
-                match="Observable {} not supported on "
-                      "device {}".format(qml.S.__name__, 'MockDevice'),
-        ):
-            mock_device_with_observables.supports_observable(qml.S)
+        assert not mock_device_with_observables.supports_observable("Identity")
+        assert not mock_device_with_observables.supports_observable(qml.Identity)
 
     def test_supports_operation_exception(self, mock_device):
         """check that device.supports_operation raises proper errors
@@ -172,9 +152,8 @@ class TestDeviceSupportedLogic:
             mock_device.supports_operation(3)
 
         with pytest.raises(
-                DeviceError,
-                match="Gate {} not supported on "
-                      "device {}".format(Device.__name__, mock_device.short_name),
+                ValueError,
+                match="The given operation must either be a pennylane.Operation class or a string.",
         ):
             mock_device.supports_operation(Device)
 
@@ -184,17 +163,15 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
                 ValueError,
-                match="The given observable must "
-                      "either be a pennylane.Observable class or a string.",
+                match="The given observable must either be a pennylane.Observable class or a string.",
         ):
             mock_device.supports_observable(3)
 
         operation = qml.CNOT
 
         with pytest.raises(
-                DeviceError,
-                match="Observable {} not supported on "
-                      "device {}".format(operation.__name__, 'MockDevice'),
+                ValueError,
+                match="The given observable must either be a pennylane.Observable class or a string.",
         ):
             mock_device.supports_observable(operation)
 
