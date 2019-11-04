@@ -1005,8 +1005,14 @@ class TestDefaultQubitIntegration:
 
     # This test is run with three expvals
     @pytest.mark.parametrize("name,par,wires,expected_output", [
+        ("QubitStateVector", [1j/np.sqrt(10), (1-2j)/np.sqrt(10), 0, 0, 0, 2/np.sqrt(10), 0, 0],
+         [0, 1, 2], [1/5., 1., -4/5.]),
         ("QubitStateVector", [1/np.sqrt(2), 0, 0, 1/np.sqrt(2)], [0, 2], [0., 1., 0.]),
-        ("QubitStateVector", [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], [0, 1], [0., 0., 1.])
+        ("QubitStateVector", [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], [0, 1], [0., 0., 1.]),
+        ("QubitStateVector", [0, 1, 0, 0, 0, 0, 0, 0], [2, 1, 0], [-1., 1., 1.]),
+        ("QubitStateVector", [0, 1j, 0, 0, 0, 0, 0, 0], [0, 2, 1], [1., -1., 1.]),
+        ("QubitStateVector", [0, 1/np.sqrt(2), 0, 1/np.sqrt(2)], [1, 0], [-1., 0., 1.]),
+        ("QubitStateVector", [0, 1 / np.sqrt(2), 0, 1 / np.sqrt(2)], [0, 1], [0., -1., 1.])
     ])
     def test_state_vector_3_qubit_subset(self, qubit_device_3_wires, tol, name, par, wires, expected_output):
         """Tests qubit state vector preparation on subsets of 3 qubits"""

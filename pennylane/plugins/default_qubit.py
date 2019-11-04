@@ -325,17 +325,21 @@ class DefaultQubit(Device):
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
                                   "on a {} device.".format(operation, self.short_name))
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
-                # generate N qubit basis states via the cartesian product
-                tuples = np.array(list(itertools.product([0, 1], repeat=n)))
 
-                # wires not acted on by the operator
+                # get inactive wires, for which corresponding subsets of the tuple must be zero
                 inactive_wires = list(set(range(n)) - set(wires))
 
-                # move active wires to end of the list of wires
-                rearranged_wires = np.array(inactive_wires + list(wires))
+                # get ordering of tuples depending on active wires
+                rearranged_wires = np.array(wires + inactive_wires)
+
+                # generate N qubit basis states via the cartesian product
+                tuples = np.array(list(itertools.product([0, 1], repeat=n)))[:, rearranged_wires]
+
+                # keep tuples with all-zero entries for inactive wires
+                tuples = filter(lambda x: np.array_equal(x[inactive_wires], np.zeros(len(inactive_wires))), tuples)
 
                 # get indices for which the state is changed to the input state vector elements
-                nums = np.ravel_multi_index(tuples[:, rearranged_wires][:2**len(wires)].T, [2] * n)
+                nums = np.ravel_multi_index(np.array(list(tuples)).T, [2] * n)
                 self._state = np.zeros_like(self._state)
                 self._state[nums] = input_state
             else:
