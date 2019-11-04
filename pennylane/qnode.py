@@ -85,11 +85,10 @@ def _decompose_queue(ops, device):
 
 
 def decompose_queue(ops, device):
-    """Recursively loop through a queue and decompose
-    operations that are not supported by a device.
+    """Decompose operations in a queue that are not supported by a device.
 
     This is a wrapper function for :func:`~._decompose_queue`,
-    which raises an error if an operation nor its decomposition
+    which raises an error if an operation or its decomposition
     is not supported by the device.
 
     Args:
