@@ -21,7 +21,7 @@ requirements = [
     "numpy",
     "scipy",
     "networkx",
-    "tensornetwork",
+    "tensornetwork==0.1.1",
     "autograd",
     "toml",
     "appdirs",
