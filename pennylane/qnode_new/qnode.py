@@ -11,172 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-Quantum nodes
-=============
-
-**Module name:** :mod:`pennylane.qnode`
-
-.. currentmodule:: pennylane
-
-The :class:`~pennylane.qnode_new.qnode.QNode` class represents a *quantum node*,
-encapsulating a *quantum function* (aka :ref:`variational circuit <varcirc>`)
-and the computational device it is executed on.
-
-The computational device is an instance of the :class:`~_device.Device`
-class, and can represent either a simulator or hardware device. They can be
-instantiated using the :func:`~device` loader. PennyLane comes included with
-some basic devices; additional devices can be installed as plugins
-(see :ref:`plugin_overview` for more details).
-
-
-Quantum functions
------------------
-
-.. _quantumfunc:
-
-We use the term *quantum function* to refer both to the abstract mathematical
-:math:`\mathbb{R}^m \to \mathbb{R}^n` function represented by the variational quantum circuit,
-and the concrete Python function that defines it. The latter must be of the following form:
-
-.. code-block:: python
-
-    def my_quantum_function(x, y, *, w=None):
-        qml.RX(x, wires=0)
-        qml.RY(2 * y, wires=1)
-        qml.CNOT(wires=[0,1])
-        for k in range(2):
-            qml.RY(w, wires=k)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-Quantum functions are a restricted subset of Python functions, adhering to the following
-constraints:
-
-* The body of the function should consist of only supported PennyLane
-  :mod:`operations <pennylane.ops>`, one per line for clarity.
-  The function can contain classical flow control structures such as ``for`` loops,
-  but in general they must not depend on the parameters of the function.
-
-.. note::
-
-    The quantum operations cannot be used outside of a quantum circuit function, as all
-    :class:`Operators <pennylane.operation.Operator>` require a QNode to work.
-
-* The function must always return either a single or a tuple of
-  *measured observable values*, by applying a :mod:`measurement function <pennylane.measure>`
-  to an :mod:`observable <pennylane.ops>`.
-
-.. note::
-
-    Measured observables **must** come after all other operations at the end
-    of the circuit function as part of the return statement, and cannot appear in the middle.
-
-* The quantum function can take two kinds of parameters: *positional* and *auxiliary*.
-
-  * The function can *only* be differentiated with respect to its positional parameters.
-    The positional parameters should be only used as the parameters of the :class:`.Operator`
-    constructors in the function, and they must take the values of nested sequences of real numbers.
-    Classical processing of positional parameters, either by arithmetic operations
-    or external functions, is not allowed. One current exception is simple scalar multiplication.
-
-  * The auxiliary parameters can *not* be differentiated with respect to.
-    They are useful for providing data or 'placeholders' to the quantum function.
-
-    * In *mutable* nodes the auxiliary parameters can undergo any kind of classical
-      processing, appear as the ``wires`` argument of Operators, and even affect the
-      classical flow control structures of the quantum function.
-
-    * In *immutable* nodes they are subject to the same restrictions as the positional parameters.
-
-    Parameters that have default values are interpreted as auxiliary parameters. They *must* be
-    given using the keyword syntax.
-
-The quantum function cannot be executed on its own. Instead, a :class:`~.QNode` object must be
-created, which wraps the function and binds it to a device. The QNode can then be used to evaluate
-the variational quantum circuit defined by the function on the particular device.
-
-For example:
-
-.. code-block:: python
-
-    device = qml.device('default.qubit', wires=2)
-    qnode1 = qml.QNode(my_quantum_function, device)
-    result = qnode1(np.pi/4, 0.7)
-
-.. note::
-
-        The :func:`~pennylane.decorator.qnode` decorator is provided as a convenience
-        to automate the process of creating quantum nodes. The decorator is used as follows:
-
-        .. code-block:: python
-
-            @qml.qnode(device)
-            def my_quantum_function(x, y):
-                qml.RZ(x, wires=0)
-                qml.CNOT(wires=[0,1])
-                qml.RY(y, wires=1)
-                return qml.expval(qml.PauliZ(1))
-
-            result = my_quantum_function(np.pi/4, 0.7)
-
-
-.. currentmodule:: pennylane.qnode_new.qnode
-
-Classes
--------
-
-.. autosummary::
-   QNode
-   SignatureParameter
-   ParameterDependency
-
-.. currentmodule:: pennylane.qnode_new.jacobian
-
-.. autosummary::
-   AutogradMixin
-   _JacobianQNode
-
-
-QNode methods
--------------
-
-.. currentmodule:: pennylane.qnode_new.qnode.QNode
-
-.. autosummary::
-   __call__
-   evaluate
-   evaluate_obs
-   _append_op
-   _construct
-   _check_circuit
-   _default_args
-   _set_variables
-   _op_descendants
-
-
-JacobianQNode methods
----------------------
-
-.. currentmodule:: pennylane.qnode_new.jacobian.JacobianQNode
-
-.. autosummary::
-   jacobian
-   _best_method
-   _pd_finite_diff
-   _pd_parameter_shift
-   _pd_analytic_var
-   _transform_observable
-
-.. currentmodule:: pennylane.qnode_new.qnode
-
-Exceptions
-----------
-
-.. autosummary::
-   QuantumFunctionError
-
-Code details
-~~~~~~~~~~~~
+"""
+Base class and utilities for quantum nodes.
 """
 
 from functools import wraps, lru_cache
@@ -287,7 +123,7 @@ def _get_signature(func):
 class QNode:
     """Base class for quantum nodes in the hybrid computational graph.
 
-    A QNode encapsulates a :ref:`quantum function <quantumfunc>`
+    A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`
     (corresponding to a :ref:`variational circuit <varcirc>`)
     and the computational device it is executed on.
 
@@ -296,14 +132,15 @@ class QNode:
 
     * *mutable*, which means the quantum function is called each time the QNode is evaluated, or
     * *immutable*, which means the quantum function is called only once, on first evaluation,
-       to construct the circuit representation.
+      to construct the circuit representation.
 
-    If the circuit is mutable, the quantum function can contain classical flow control structures
-    that depend on its auxiliary parameters, potentially resulting in a different circuit
+    If the circuit is mutable, its **auxiliary** parameters can undergo any kind of classical
+    processing inside the quantum function. It can also contain classical flow control structures
+    that depend on the auxiliary parameters, potentially resulting in a different circuit
     on each call. The auxiliary parameters may also determine the wires on which operators act.
 
     For immutable circuits the quantum function must build the same circuit graph consisting of the same
-    :class:`.Operator` instances regardless of its arguments; they can only appear as the
+    :class:`.Operator` instances regardless of its parameters; they can only appear as the
     arguments of the Operators in the circuit. Immutable circuits are slightly faster to execute, and
     can be optimized, but require that the layout of the circuit is fixed.
 
