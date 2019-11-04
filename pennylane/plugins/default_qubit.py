@@ -326,20 +326,15 @@ class DefaultQubit(Device):
                                   "on a {} device.".format(operation, self.short_name))
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
 
-                # get inactive wires, for which corresponding subset of the tuple must be zero
-                inactive_wires = list(set(range(n)) - set(wires))
+                # generate basis states on subset of qubits via the cartesian product
+                tuples = np.array(list(itertools.product([0, 1], repeat=len(wires))))
 
-                # get ordering of tuples depending on active wires
-                rearranged_wires = np.array(wires + inactive_wires)
+                # get basis states to alter on full set of qubits
+                unravelled_nums = np.zeros((2 ** len(wires), n), dtype=int)
+                unravelled_nums[:, wires] = tuples
 
-                # generate N qubit basis states via the cartesian product and re-order
-                tuples = np.array(list(itertools.product([0, 1], repeat=n)))[:, rearranged_wires]
-
-                # keep tuples with all-zero entries for inactive wires
-                tuples = filter(lambda x: np.array_equal(x[inactive_wires], np.zeros(len(inactive_wires))), tuples)
-
-                # get indices for which the state is changed to the input state vector elements
-                nums = np.ravel_multi_index(np.array(list(tuples)).T, [2] * n)
+                # get indices for which the state is changed to input state vector elements
+                nums = np.ravel_multi_index(unravelled_nums.T, [2] * n)
                 self._state = np.zeros_like(self._state)
                 self._state[nums] = input_state
             else:
