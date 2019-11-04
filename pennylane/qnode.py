@@ -30,7 +30,7 @@ from scipy import linalg
 
 import pennylane as qml
 
-from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand
+from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, OperationRecorder
 from pennylane.circuit_graph import CircuitGraph
 
 from .variable import Variable
@@ -59,6 +59,52 @@ def pop_jacobian_kwargs(kwargs):
         circuit_kwargs.pop(k, None)
 
     return circuit_kwargs
+
+
+def _decompose_queue(ops, device):
+    """Recursively loop through a queue and decompose
+    operations that are not supported by a device.
+
+    Args:
+        ops (List[~.Operation]): operation queue
+        device (~.Device): a PennyLane device
+    """
+    new_ops = []
+
+    for idx, op in enumerate(ops):
+        if device.supports_operation(op.name):
+            new_ops.append(op)
+        else:
+            with OperationRecorder() as rec:
+                op.decomposition(*op.params, wires=op.wires)
+
+            decomposition = _decompose_queue(rec.operations, device)
+            new_ops.extend(decomposition)
+
+    return new_ops
+
+
+def decompose_queue(ops, device):
+    """Recursively loop through a queue and decompose
+    operations that are not supported by a device.
+
+    This is a wrapper function for :func:`~._decompose_queue`,
+    which raises an error if an operation nor its decomposition
+    is not supported by the device.
+
+    Args:
+        ops (List[~.Operation]): operation queue
+        device (~.Device): a PennyLane device
+    """
+    new_ops = []
+
+    for op in ops:
+        try:
+            new_ops.extend(_decompose_queue([op], device))
+        except NotImplementedError:
+            raise qml.DeviceError("Gate {} not supported on device {}".format(op.name, device.short_name))
+
+    return new_ops
 
 
 class QuantumFunctionError(Exception):
@@ -296,6 +342,11 @@ class QNode:
         # TODO: we should enforce plugins using the Device.capabilities dictionary to specify
         # whether they are qubit or CV devices, and remove this logic here.
         self.type = 'CV' if all(are_cvs) else 'qubit'
+
+        if self.device.operations:
+            # replace operations in the queue with any decompositions if required
+            self.queue = decompose_queue(self.queue, self.device)
+            self.ops = self.queue + self.ev
 
         # map each free variable to the operations which depend on it
         self.variable_deps = {}

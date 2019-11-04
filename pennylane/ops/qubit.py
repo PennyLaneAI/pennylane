@@ -18,6 +18,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane.operation import All, Any, Observable, Operation
+from pennylane.variable import Variable
 
 
 class Hadamard(Observable, Operation):
@@ -245,6 +246,37 @@ class CSWAP(Operation):
     par_domain = None
 
 
+class Toffoli(Operation):
+    r"""Toffoli(wires)
+    Toffoli (controlled-controlled-X) gate.
+
+    .. math::
+
+        Toffoli =
+        \begin{pmatrix}
+        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
+        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0
+        \end{pmatrix}
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (int): the subsystem the gate acts on
+    """
+    num_params = 0
+    num_wires = 3
+    par_domain = None
+
+
 class RX(Operation):
     r"""RX(phi, wires)
     The single qubit X rotation
@@ -381,6 +413,12 @@ class Rot(Operation):
     par_domain = "R"
     grad_method = "A"
 
+    @staticmethod
+    def decomposition(phi, theta, omega, wires=None):
+        RZ(phi, wires=wires)
+        RY(theta, wires=wires)
+        RZ(omega, wires=wires)
+
 
 class CRX(Operation):
     r"""CRX(phi, wires)
@@ -508,6 +546,73 @@ class CRot(Operation):
     grad_method = "A"
 
 
+class U2(Operation):
+    r"""U2(phi, lambda, wires)
+    U2 gate.
+
+    .. math::
+
+        U_2(\phi, \lambda) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \lambda)
+        \\ \exp(i \phi) & \exp(i (\phi + \lambda)) \end{bmatrix}
+
+    The :math:`U_2` gate is related to the single-qubit rotation :class:`Rot` and the
+    :class:`PhaseShift` gates via the following relation:
+
+    .. math::
+
+        U_2(\phi, \lambda) = R_\phi(\phi+\lambda) R(\lambda,\pi/2,-\lambda)
+
+    Args:
+        phi (float): azimuthal angle :math:`\phi`
+        lambda (float): quantum phase :math:`\lambda`
+        wires (Sequence[int] or int): the subsystem the gate acts on
+    """
+    num_params = 2
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def decomposition(phi, lam, wires=None):
+        Rot(lam, np.pi/2, -lam, wires=wires)
+        PhaseShift(lam, wires=wires)
+        PhaseShift(phi, wires=wires)
+
+
+class U3(Operation):
+    r"""U3(theta, phi, lambda, wires)
+    Arbitrary single qubit unitary.
+
+    .. math::
+
+        U_3(\theta, \phi, \lambda) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \lambda)\sin(\theta/2) \\
+        \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \lambda))\cos(\theta/2) \end{bmatrix}
+
+    The :math:`U_3` gate is related to the single-qubit rotation :class:`Rot` and the
+    :class:`PhaseShift` gates via the following relation:
+
+    .. math::
+
+        U_3(\theta, \phi, \lambda) = R_\phi(\phi+\lambda) R(\lambda,\theta,-\lambda)
+
+    Args:
+        theta (float): polar angle :math:`\theta`
+        phi (float): azimuthal angle :math:`\phi`
+        lambda (float): quantum phase :math:`\lambda`
+        wires (Sequence[int] or int): the subsystem the gate acts on
+    """
+    num_params = 3
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def decomposition(theta, phi, lam, wires=None):
+        Rot(lam, theta, -lam, wires=wires)
+        PhaseShift(lam, wires=wires)
+        PhaseShift(phi, wires=wires)
+
+
 # =============================================================================
 # Arbitrary operations
 # =============================================================================
@@ -558,6 +663,12 @@ class BasisState(Operation):
     num_wires = Any
     par_domain = "A"
     grad_method = None
+
+    @staticmethod
+    def decomposition(n, wires=None):
+        for w, p in enumerate(n.flatten()):
+            if p == 1:
+                PauliX(wires=w)
 
 
 class QubitStateVector(Operation):
@@ -626,6 +737,7 @@ ops = {
     "CZ",
     "SWAP",
     "CSWAP",
+    "Toffoli",
     "RX",
     "RY",
     "RZ",
@@ -635,6 +747,8 @@ ops = {
     "CRY",
     "CRZ",
     "CRot",
+    "U2",
+    "U3",
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
