@@ -759,7 +759,7 @@ class Hermitian(Observable):
     grad_method = "F"
 
 
-decomp_ops = {
+ops = {
     "Hadamard",
     "PauliX",
     "PauliY",
