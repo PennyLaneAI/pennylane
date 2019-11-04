@@ -43,7 +43,8 @@ def qnode(device, interface='numpy', cache=False):
 
         cache (bool): If ``True``, the quantum function used to generate the QNode will
             only be called to construct the quantum circuit once, on first execution,
-            and this circuit structure (i.e., the placement of templates, gates, measurements, etc.) will be cached for all further executions. The circuit parameters can still change with every call. Only activate this
+            and this circuit structure (i.e., the placement of templates, gates, measurements, etc.) will be cached for
+            all further executions. The circuit parameters can still change with every call. Only activate this
             feature if your quantum circuit structure will never change.
     """
     @lru_cache()
@@ -66,6 +67,7 @@ def qnode(device, interface='numpy', cache=False):
         # bind the jacobian method to the wrapped function
         wrapper.jacobian = qnode.jacobian
         wrapper.metric_tensor = qnode.metric_tensor
+        wrapper.interface = interface
         wrapper.print_applied = qnode.print_applied
 
         # bind the qnode attributes to the wrapped function

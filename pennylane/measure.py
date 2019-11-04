@@ -21,6 +21,12 @@ from .qnode import QNode, QuantumFunctionError
 from .operation import Observable, Sample, Variance, Expectation, Tensor
 
 
+def _remove_if_in_queue(op):
+    r"""Helper function to handle removing ops from the QNode queue"""
+    if op in QNode._current_context.queue:
+        QNode._current_context.queue.remove(op)
+
+
 def expval(op):
     r"""Expectation value of the supplied observable.
 
@@ -33,12 +39,12 @@ def expval(op):
         )
 
     if QNode._current_context is not None:
-        # delete operations from QNode queue
+        # delete observables from QNode operation queue if needed
         if isinstance(op, Tensor):
             for o in op.obs:
-                QNode._current_context.queue.remove(o)
+                _remove_if_in_queue(o)
         else:
-            QNode._current_context.queue.remove(op)
+            _remove_if_in_queue(op)
 
     # set return type to be an expectation value
     op.return_type = Expectation
