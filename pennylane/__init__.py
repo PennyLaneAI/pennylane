@@ -136,51 +136,48 @@ def device(name, *args, **kwargs):
     )
 
 
-def load(name, *args, **kwargs):
-    r"""load(name, wires=1, *args, **kwargs)
-    Load a plugin :class:`~.converter` and return the .
-
-    This function is used to load a particular plugin converter,
-    which can then be used to convert quantum objects from other
-    frameworks.
+def load(name: str, quantum_circuit_object):
+    """load(name, quantum_circuit_object)
+    Load a plugin :func:`~.load` which can then be used to convert objects of
+    quantum circuits from other frameworks.
 
     Args:
-        name (str): the name of the device to load
-        wires (int): the number of wires (subsystems) to initialise
-            the device with
+        name (str): the name of the plugin to convert from
+        quantum_circuit_object: the quantum circuit that will be converted
+            to a PennyLane template
 
-    Keyword Args:
-        config (pennylane.Configuration): a PennyLane configuration object
-            that contains global and/or device specific configurations.
+    Returns:
+        _function: the PennyLane template created from the quantum circuit
+            object
     """
 
     if name in plugin_converters:
-        options = {}
 
-        # load global configuration settings if available
-        config = kwargs.get("config", default_config)
-
-        if config:
-            # combine configuration options with keyword arguments.
-            # Keyword arguments take preference, followed by device options,
-            # followed by plugin options, followed by global options.
-            options.update(config["main"])
-            options.update(config[name.split(".")[0] + ".global"])
-            options.update(config[name])
-
-        kwargs.pop("config", None)
-        options.update(kwargs)
-
-        # loads the plugin device class
+        # loads the plugin load function
         plugin_converter = plugin_converters[name].load()
 
-        # plugin converter function
-        return plugin_converter(*args, **options)
+        # calls the load function of the converter on the quantum circuit object
+        return plugin_converter(quantum_circuit_object)
 
     raise ValueError(
-        "Converter does not exist. Make sure the required plugin is installed"
+        "Converter does not exist. Make sure the required plugin is installed "
         "and supports conversion."
     )
+
+
+def from_qasm(quantum_circuit: str):
+    """load(name, quantum_circuit)
+    Loads quantum circuits defined in QASM by using the converter in the
+    PennyLane-Qiskit plugin.
+
+    Args:
+        quantum_circuit (str): the name for the QASM file or string
+
+    Returns:
+        _function: the PennyLane template created from the quantum circuit
+            object
+    """
+    return load('qasm', quantum_circuit)
 
 
 def grad(func, argnum):
