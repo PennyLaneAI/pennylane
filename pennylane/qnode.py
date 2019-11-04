@@ -71,7 +71,7 @@ def _decompose_queue(ops, device):
     """
     new_ops = []
 
-    for idx, op in enumerate(ops):
+    for op in ops:
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:

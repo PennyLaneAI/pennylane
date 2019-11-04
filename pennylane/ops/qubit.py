@@ -15,10 +15,10 @@
 This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
+# pylint:disable=abstract-method,arguments-differ
 import numpy as np
 
 from pennylane.operation import All, Any, Observable, Operation
-from pennylane.variable import Variable
 
 
 class Hadamard(Observable, Operation):
@@ -668,7 +668,7 @@ class BasisState(Operation):
     def decomposition(n, wires=None):
         for w, p in enumerate(n.flatten()):
             if p == 1:
-                PauliX(wires=w)
+                PauliX(wires=wires[w])
 
 
 class QubitStateVector(Operation):
