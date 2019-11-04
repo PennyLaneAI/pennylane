@@ -178,6 +178,7 @@ class Recorder:
     def __init__(self, old_context):
         self._old_context = old_context
         self._ops = []
+        self.num_wires = 1
 
     def _append_op(self, op):
         """:class:`~.Operator` objects call this method
