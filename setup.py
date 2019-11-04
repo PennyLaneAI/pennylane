@@ -15,7 +15,7 @@
 from setuptools import setup
 
 with open("pennylane/_version.py") as f:
-	version = f.readlines()[-1].split()[-1].strip("\"'")
+    version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
     "numpy",
