@@ -420,12 +420,12 @@ class Rot(Operation):
 
     @staticmethod
     def decomposition(phi, theta, omega, wires=None):
-        ops = [
+        decomp_ops = [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
             RZ(omega, wires=wires)
         ]
-        return ops
+        return decomp_ops
 
 
 class CRX(Operation):
@@ -587,12 +587,12 @@ class U2(Operation):
 
     @staticmethod
     def decomposition(phi, lam, wires=None):
-        ops = [
+        decomp_ops = [
             Rot(lam, np.pi/2, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
             PhaseShift(phi, wires=wires)
         ]
-        return ops
+        return decomp_ops
 
 
 class U3(Operation):
@@ -629,12 +629,12 @@ class U3(Operation):
 
     @staticmethod
     def decomposition(theta, phi, lam, wires=None):
-        ops = [
+        decomp_ops = [
             Rot(lam, theta, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
             PhaseShift(phi, wires=wires)
         ]
-        return ops
+        return decomp_ops
 
 
 # =============================================================================
@@ -696,12 +696,12 @@ class BasisState(Operation):
 
     @staticmethod
     def decomposition(n, wires=None):
-        ops = []
+        decomp_ops = []
         for w, p in enumerate(n.flatten()):
             if p == 1:
                 ops.append(PauliX(wires=wires[w]))
 
-        return ops
+        return decomp_ops
 
 
 class QubitStateVector(Operation):
@@ -759,7 +759,7 @@ class Hermitian(Observable):
     grad_method = "F"
 
 
-ops = {
+decomp_ops = {
     "Hadamard",
     "PauliX",
     "PauliY",

@@ -30,7 +30,7 @@ from scipy import linalg
 
 import pennylane as qml
 
-from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand, OperationRecorder
+from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand
 from pennylane.circuit_graph import CircuitGraph
 
 from .variable import Variable
