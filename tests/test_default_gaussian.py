@@ -623,6 +623,8 @@ class TestDefaultGaussianIntegration:
     @pytest.mark.parametrize("g", set(qml.ops.__all_ops__) - set(DefaultGaussian._operation_map.keys()))
     def test_unsupported_gates(self, g, gaussian_device_3_wires):
         """Test error is raised with unsupported gates"""
+        if g == "BasisState":
+            pytest.skip("Test not set up properly for gates with array parameters, needs refactoring.")
 
         op = getattr(qml.ops, g)
         if op.num_wires <= 0:
