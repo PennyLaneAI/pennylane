@@ -326,13 +326,13 @@ class DefaultQubit(Device):
                                   "on a {} device.".format(operation, self.short_name))
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
 
-                # get inactive wires, for which corresponding subsets of the tuple must be zero
+                # get inactive wires, for which corresponding subset of the tuple must be zero
                 inactive_wires = list(set(range(n)) - set(wires))
 
                 # get ordering of tuples depending on active wires
                 rearranged_wires = np.array(wires + inactive_wires)
 
-                # generate N qubit basis states via the cartesian product
+                # generate N qubit basis states via the cartesian product and re-order
                 tuples = np.array(list(itertools.product([0, 1], repeat=n)))[:, rearranged_wires]
 
                 # keep tuples with all-zero entries for inactive wires
