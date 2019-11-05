@@ -25,15 +25,12 @@ import numbers
 import numpy as np
 import autograd.extend as ae
 import autograd.builtins
-
 from scipy import linalg
 
 import pennylane as qml
-
 from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand
 from pennylane.circuit_graph import CircuitGraph
-
-from .variable import Variable
+from pennylane.variable import Variable
 
 
 def pop_jacobian_kwargs(kwargs):
@@ -65,7 +62,7 @@ class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
 
 
-ParDep = namedtuple("ParDep", ["op", "par_idx"])
+ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
 """Represents the dependence of an Operation on a free parameter.
 
 Args:
@@ -99,7 +96,7 @@ class QNode:
         self.cache = cache
 
         self.variable_deps = {}
-        """dict[int, list[ParDep]]: Mapping from free parameter index to the list of
+        """dict[int, list[ParameterDependency]]: Mapping from free parameter index to the list of
         :class:`~pennylane.operation.Operation` instances (in this circuit) that depend on it.
         """
 
@@ -125,6 +122,10 @@ class QNode:
         Args:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
+        if op.num_wires == qml.operation.Wires.All:
+            if set(op.wires) != set(range(self.num_wires)):
+                raise ValueError("Operator {} must act on all wires".format(op.name))
+
         # EVs go to their own, temporary queue
         if isinstance(op, qml.operation.Observable):
             if op.return_type is None:
@@ -303,7 +304,7 @@ class QNode:
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     if p.name is None: # ignore keyword arguments
-                        self.variable_deps.setdefault(p.idx, []).append(ParDep(op, j))
+                        self.variable_deps.setdefault(p.idx, []).append(ParameterDependency(op, j))
 
         # generate directed acyclic graph
         self.circuit = CircuitGraph(self.ops, self.variable_deps)

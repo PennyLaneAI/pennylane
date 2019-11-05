@@ -465,12 +465,12 @@ class TestOperatorIntegration:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = qml.operation.Wires.All
-            num_params = 1
+            num_params = 0
             par_domain = 'R'
 
         @qml.qnode(dev1)
         def circuit():
-            DummyOp(wires=[0], do_queue=True)
+            DummyOp(wires=[0])
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
