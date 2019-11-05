@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Base class and utilities for quantum nodes.
+Base QNode class and utilities
 """
-
-from functools import wraps, lru_cache
 from collections.abc import Sequence
 from collections import namedtuple, OrderedDict
+from functools import wraps, lru_cache
 import inspect
 import itertools
 
@@ -33,7 +32,6 @@ from pennylane.variable import Variable
 from pennylane.qnode import QNode as QNode_old, QuantumFunctionError
 
 
-
 def qnode(device, *, mutable=True, properties=None):
     """Decorator for creating QNodes.
 
@@ -45,6 +43,7 @@ def qnode(device, *, mutable=True, properties=None):
         mutable (bool): whether the node is mutable
         properties (dict[str->Any]): additional keyword properties passed to the QNode
     """
+
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
@@ -57,15 +56,15 @@ def qnode(device, *, mutable=True, properties=None):
             return node(*args, **kwargs)
 
         # bind the jacobian method to the wrapped function
-        #wrapper.jacobian = node.jacobian
+        # wrapper.jacobian = node.jacobian
         wrapper.metric_tensor = node.metric_tensor
 
         # bind the node attributes to the wrapped function
         wrapper.__dict__.update(node.__dict__)
 
         return wrapper
-    return qfunc_decorator
 
+    return qfunc_decorator
 
 
 _MARKER = inspect.Parameter.empty  # singleton marker, could be any singleton class
@@ -76,7 +75,8 @@ ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
 
 Args:
     op (Operator): operator depending on the free parameter in question
-    par_idx (int): operator parameter index of the corresponding :class:`~pennylane.variable.Variable` instance
+    par_idx (int): operator parameter index of the corresponding
+        :class:`~pennylane.variable.Variable` instance
 """
 
 
@@ -115,9 +115,10 @@ def _get_signature(func):
         elif p.kind == inspect.Parameter.VAR_KEYWORD:
             func.var_keyword = True
 
-    func.sig = OrderedDict([(p.name, SignatureParameter(idx, p)) for idx, p in enumerate(sig.parameters.values())])
+    func.sig = OrderedDict(
+        [(p.name, SignatureParameter(idx, p)) for idx, p in enumerate(sig.parameters.values())]
+    )
     func.n_pos = n_pos
-
 
 
 class QNode:
@@ -152,37 +153,84 @@ class QNode:
         mutable (bool): whether the circuit is mutable, see above
         properties (dict[str, Any] or None): additional keyword properties for adjusting the QNode behavior
     """
+
     # pylint: disable=too-many-instance-attributes
     def __init__(self, func, device, *, mutable=True, properties=None):
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
         self.num_variables = None  #: int: number of differentiable parameters in the circuit
-        self.ops = []  #: List[Operator]: quantum circuit, in the order the quantum function defines it
+        self.ops = (
+            []
+        )  #: List[Operator]: quantum circuit, in the order the quantum function defines it
         self.circuit = None  #: CircuitGraph: DAG representation of the quantum circuit
 
         self.mutable = mutable  #: bool: whether the circuit is mutable
-        self.properties = properties or {}  #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
+        self.properties = (
+            properties or {}
+        )  #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
 
         self.variable_deps = {}
         """dict[int, list[ParameterDependency]]: Mapping from free parameter index to the list of
         :class:`~pennylane.operation.Operator` instances (in this circuit) that depend on it.
         """
 
-        self._metric_tensor_subcircuits = None  #: dict[tuple[int], dict[str, Any]]: circuit descriptions for computing the metric tensor
+        self._metric_tensor_subcircuits = None
+        """dict[tuple[int], dict[str, Any]]: circuit descriptions for computing the metric tensor"""
+
         # introspect the quantum function signature
         _get_signature(self.func)
 
         self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
         self.output_dim = None  #: int: dimension of the QNode output vector
-        self.type = 'qubit'  #: str: circuit type, in {'cv', 'qubit'}
+        self.type = self.device.capabilities()["model"] #: str: circuit type, in {'cv', 'qubit'}
 
+    @property
+    def interface(self):
+        """String representing the QNode interface"""
+        return "numpy"
+
+    def __str__(self):
+        """String representation"""
+        detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
+        return detail.format(
+            self.device.short_name, self.func.__name__, self.num_wires, self.interface
+        )
 
     def __repr__(self):
-        """String representation."""
-        detail = "<QNode: device='{}', func={}, wires={}>"
-        return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
+        """REPL representation"""
+        return self.__str__()
 
+    def print_applied(self):
+        """Prints the most recently applied operations from the QNode."""
+        if self.circuit is None:
+            print("QNode has not yet been executed.")
+            return
+
+        print("Operations")
+        print("==========")
+        for op in self.circuit.operations:
+            if op.parameters:
+                params = ", ".join([str(p) for p in op.parameters])
+                print("{}({}, wires={})".format(op.name, params, op.wires))
+            else:
+                print("{}(wires={})".format(op.name, op.wires))
+
+        return_map = {
+            qml.operation.Expectation: "expval",
+            qml.operation.Variance: "var",
+            qml.operation.Sample: "sample",
+        }
+
+        print("\nObservables")
+        print("===========")
+        for op in self.circuit.observables:
+            return_type = return_map[op.return_type]
+            if op.parameters:
+                params = "".join([str(p) for p in op.parameters])
+                print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
+            else:
+                print("{}({}(wires={}))".format(return_type, op.name, op.wires))
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the free parameters in the Variable class
@@ -196,7 +244,6 @@ class QNode:
         if not self.mutable:
             # only immutable circuits access auxiliary arguments through Variables
             Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
-
 
     def _op_descendants(self, op, only):
         """Descendants of the given operator in the quantum circuit.
@@ -213,12 +260,11 @@ class QNode:
             list[Operator]: descendants in a topological order
         """
         succ = self.circuit.descendants_in_order((op,))
-        if only == 'E':
+        if only == "E":
             return list(filter(_is_observable, succ))
-        if only == 'G':
+        if only == "G":
             return list(itertools.filterfalse(_is_observable, succ))
         return succ
-
 
     def _append_op(self, op):
         """Append a quantum operation into the circuit queue.
@@ -228,13 +274,15 @@ class QNode:
         """
         if op.num_wires == Wires.All:
             if set(op.wires) != set(range(self.num_wires)):
-                raise ValueError("Operator {} must act on all wires".format(op.name))
+                raise QuantumFunctionError("Operator {} must act on all wires".format(op.name))
 
         # Make sure only existing wires are used.
-        for w in op.wires:
+        for w in _flatten(op.wires):
             if w < 0 or w >= self.num_wires:
-                raise QuantumFunctionError("Operation {} applied to invalid wire {} "
-                                           "on device with {} wires.".format(op.name, w, self.num_wires))
+                raise QuantumFunctionError(
+                    "Operation {} applied to invalid wire {} "
+                    "on device with {} wires.".format(op.name, w, self.num_wires)
+                )
 
         # observables go to their own, temporary queue
         if isinstance(op, Observable):
@@ -244,9 +292,10 @@ class QNode:
                 self.obs_queue.append(op)
         else:
             if self.obs_queue:
-                raise QuantumFunctionError('State preparations and gates must precede measured observables.')
+                raise QuantumFunctionError(
+                    "State preparations and gates must precede measured observables."
+                )
             self.queue.append(op)  # TODO rename self.queue to self.op_queue
-
 
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
@@ -270,7 +319,9 @@ class QNode:
         """
         # pylint: disable=protected-access  # remove when QNode_old is gone
         # pylint: disable=attribute-defined-outside-init, too-many-branches
-        self.args_model = args  #: nested Sequence[Number]: nested shape of the arguments for later unflattening
+        self.args_model = (
+            args  #: nested Sequence[Number]: nested shape of the arguments for later unflattening
+        )
 
         # flatten the args, replace each argument with a Variable instance carrying a unique index
         arg_vars = [Variable(idx) for idx, _ in enumerate(_flatten(args))]
@@ -279,14 +330,16 @@ class QNode:
         arg_vars = unflatten(arg_vars, args)
 
         # temporary queues for operations and observables
-        self.queue = []   #: list[Operation]: applied operations
+        self.queue = []  #: list[Operation]: applied operations
         self.obs_queue = []  #: list[Observable]: applied observables
 
         # set up the context for Operator entry
         if QNode_old._current_context is None:
             QNode_old._current_context = self
         else:
-            raise QuantumFunctionError('QNode._current_context must not be modified outside this method.')
+            raise QuantumFunctionError(
+                "QNode._current_context must not be modified outside this method."
+            )
         try:
             # generate the program queue by executing the quantum circuit function
             if self.mutable:
@@ -312,19 +365,20 @@ class QNode:
         for k, op in enumerate(self.ops):
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
-                    if p.name is None: # ignore auxiliary arguments
+                    if p.name is None:  # ignore auxiliary arguments
                         self.variable_deps.setdefault(p.idx, []).append(ParameterDependency(op, j))
 
         # generate the DAG
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
 
         # check for operations that cannot affect the output
-        if self.properties.get('vis_check', False):
+        if self.properties.get("vis_check", False):
             visible = self.circuit.ancestors(self.circuit.observables)
             invisible = set(self.circuit.operations) - visible
             if invisible:
-                raise QuantumFunctionError("The operations {} cannot affect the output of the circuit.".format(invisible))
-
+                raise QuantumFunctionError(
+                    "The operations {} cannot affect the output of the circuit.".format(invisible)
+                )
 
     def _check_circuit(self, res):
         """Check that the generated Operator queue corresponds to a valid quantum circuit.
@@ -356,24 +410,30 @@ class QNode:
             self.output_dim = len(res)
             res = tuple(res)
         else:
-            raise QuantumFunctionError("A quantum function must return either a single measured observable "
-                                       "or a nonempty sequence of measured observables.")
+            raise QuantumFunctionError(
+                "A quantum function must return either a single measured observable "
+                "or a nonempty sequence of measured observables."
+            )
 
         # check that all returned observables have a return_type specified
         for x in res:
             if x.return_type is None:
                 raise QuantumFunctionError(
-                    "Observable '{}' does not have the measurement type specified.".format(x))
+                    "Observable '{}' does not have the measurement type specified.".format(x)
+                )
 
         # check that all ev's are returned, in the correct order
         if res != tuple(self.obs_queue):
             raise QuantumFunctionError(
-                "All measured observables must be returned in the order they are measured.")
+                "All measured observables must be returned in the order they are measured."
+            )
 
         # check that no wires are measured more than once
-        m_wires = list(w for ob in res for w in ob.wires)
+        m_wires = list(w for ob in res for w in _flatten(ob.wires))
         if len(m_wires) != len(set(m_wires)):
-            raise QuantumFunctionError('Each wire in the quantum circuit can only be measured once.')
+            raise QuantumFunctionError(
+                "Each wire in the quantum circuit can only be measured once."
+            )
 
         self.ops = self.queue + list(res)
         del self.queue
@@ -381,14 +441,21 @@ class QNode:
 
         # True if op is a CV, False if it is a discrete variable (Identity could be either)
         are_cvs = [isinstance(op, CV) for op in self.ops if not isinstance(op, qml.Identity)]
+
         if not all(are_cvs) and any(are_cvs):
             raise QuantumFunctionError(
-                "Continuous and discrete operations are not allowed in the same quantum circuit.")
+                "Continuous and discrete operations are not allowed in the same quantum circuit."
+            )
 
-        # TODO: we should enforce plugins using the Device.capabilities dictionary to specify
-        # whether they are qubit or CV devices, and remove this logic here.
-        self.type = 'cv' if all(are_cvs) else 'qubit'
+        if any(are_cvs) and self.type == "qubit":
+            raise QuantumFunctionError(
+                "Device {} is a qubit device; CV operations are not allowed.".format(self.device.short_name)
+            )
 
+        if not all(are_cvs) and self.type == "cv":
+            raise QuantumFunctionError(
+                "Device {} is a CV device; qubit operations are not allowed.".format(self.device.short_name)
+            )
 
     def _default_args(self, kwargs):
         """Validate the quantum function arguments, apply defaults.
@@ -401,9 +468,11 @@ class QNode:
         Returns:
             dict[str, Any]: all auxiliary arguments (with defaults)
         """
-        forbidden_kinds = (inspect.Parameter.POSITIONAL_ONLY,
-                           inspect.Parameter.VAR_POSITIONAL,
-                           inspect.Parameter.VAR_KEYWORD)
+        forbidden_kinds = (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.VAR_KEYWORD,
+        )
 
         # check the validity of kwargs items
         for name in kwargs:
@@ -413,7 +482,11 @@ class QNode:
                     continue  # unknown parameter, but **kwargs will take it TODO should it?
                 raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
             if s.par.kind in forbidden_kinds or s.par.default == inspect.Parameter.empty:
-                raise QuantumFunctionError("Quantum function parameter '{}' cannot be given using the keyword syntax.".format(name))
+                raise QuantumFunctionError(
+                    "Quantum function parameter '{}' cannot be given using the keyword syntax.".format(
+                        name
+                    )
+                )
 
         # apply defaults
         for name, s in self.func.sig.items():
@@ -424,12 +497,10 @@ class QNode:
 
         return kwargs
 
-
     def __call__(self, *args, **kwargs):
         """Wrapper for :meth:`~.QNode.evaluate`.
         """
         return self.evaluate(args, kwargs)
-
 
     def evaluate(self, args, kwargs):
         """Evaluate the quantum function on the specified device.
@@ -450,9 +521,10 @@ class QNode:
         self._set_variables(args, kwargs)
 
         self.device.reset()
-        ret = self.device.execute(self.circuit.operations, self.circuit.observables, self.variable_deps)
+        ret = self.device.execute(
+            self.circuit.operations, self.circuit.observables, self.variable_deps
+        )
         return self.output_conversion(ret)
-
 
     def evaluate_obs(self, obs, args, kwargs):
         """Evaluate the value of the given observables.
@@ -473,7 +545,6 @@ class QNode:
         self.device.reset()
         ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
         return ret
-
 
     def _construct_metric_tensor(self, *, diag_approx=False):
         """Construct metric tensor subcircuits for qubit circuits.
@@ -508,8 +579,10 @@ class QNode:
                 w = op.wires
 
                 if gen is None:
-                    raise QuantumFunctionError("Can't generate metric tensor, operation {}"
-                                               "has no defined generator".format(op))
+                    raise QuantumFunctionError(
+                        "Can't generate metric tensor, operation {}"
+                        "has no defined generator".format(op)
+                    )
 
                 # get the observable corresponding to the generator of the current operation
                 if isinstance(gen, np.ndarray):
@@ -552,7 +625,7 @@ class QNode:
                     obs2 = Ki_matrices[j]
                     KiKj_matrices.append(((obs1[0], obs2[0]), obs1[1] @ obs2[1]))
 
-                V = np.identity(2**self.num_wires, dtype=np.complex128)
+                V = np.identity(2 ** self.num_wires, dtype=np.complex128)
 
                 # generate the unitary operation to rotate to
                 # the shared eigenbasis of all observables
@@ -581,7 +654,6 @@ class QNode:
                 "result": None,
                 "scale": scale,
             }
-
 
     def metric_tensor(self, args, kwargs=None, *, diag_approx=False, only_construct=False):
         """Evaluate the value of the metric tensor.
@@ -618,23 +690,23 @@ class QNode:
         for params, circuit in self._metric_tensor_subcircuits.items():
             self.device.reset()
 
-            s = np.array(circuit['scale'])
-            V = circuit['eigenbasis_matrix']
+            s = np.array(circuit["scale"])
+            V = circuit["eigenbasis_matrix"]
 
             if not diag_approx:
                 # block diagonal approximation
 
                 unitary_op = qml.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
-                self.device.execute(circuit['queue'] + [unitary_op], circuit['observable'])
+                self.device.execute(circuit["queue"] + [unitary_op], circuit["observable"])
                 probs = list(self.device.probability().values())
 
                 first_order_ev = np.zeros([len(params)])
                 second_order_ev = np.zeros([len(params), len(params)])
 
-                for idx, ev in circuit['Ki_expectations']:
+                for idx, ev in circuit["Ki_expectations"]:
                     first_order_ev[idx] = ev @ probs
 
-                for idx, ev in circuit['KiKj_expectations']:
+                for idx, ev in circuit["KiKj_expectations"]:
                     # idx is a 2-tuple (i, j), representing
                     # generators K_i, K_j
                     second_order_ev[idx] = ev @ probs
@@ -648,16 +720,22 @@ class QNode:
                 g = np.zeros([len(params), len(params)])
 
                 for i, j in itertools.product(range(len(params)), repeat=2):
-                    g[i, j] = s[i] * s[j] * (second_order_ev[i, j] - first_order_ev[i] * first_order_ev[j])
+                    g[i, j] = (
+                        s[i]
+                        * s[j]
+                        * (second_order_ev[i, j] - first_order_ev[i] * first_order_ev[j])
+                    )
 
                 row = np.array(params).reshape(-1, 1)
                 col = np.array(params).reshape(1, -1)
-                circuit['result'] = np.diag(g)
+                circuit["result"] = np.diag(g)
                 tensor[row, col] = g
 
             else:
                 # diagonal approximation
-                circuit['result'] = s**2 * self.device.execute(circuit['queue'], circuit['observable'])
-                tensor[np.array(params), np.array(params)] = circuit['result']
+                circuit["result"] = s ** 2 * self.device.execute(
+                    circuit["queue"], circuit["observable"]
+                )
+                tensor[np.array(params), np.array(params)] = circuit["result"]
 
         return tensor

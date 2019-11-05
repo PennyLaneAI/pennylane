@@ -14,6 +14,10 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
+import contextlib
+import io
+import textwrap
+
 import pytest
 import numpy as np
 
@@ -37,18 +41,20 @@ def mock_qnode(mock_device):
     node._construct([1.0], {})
     return node
 
+
 @pytest.fixture(scope="function")
 def operable_mock_device_2_wires(monkeypatch):
     """A mock instance of the abstract Device class that can support qfuncs."""
 
     dev = Device
     with monkeypatch.context() as m:
-        m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, 'operations', ["RX", "RY", "CNOT"])
-        m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
-        m.setattr(dev, 'reset', lambda self: None)
-        m.setattr(dev, 'apply', lambda self, x, y, z: None)
-        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
+        m.setattr(dev, "__abstractmethods__", frozenset())
+        m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
+        m.setattr(dev, "operations", ["RX", "RY", "CNOT"])
+        m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, "reset", lambda self: None)
+        m.setattr(dev, "apply", lambda self, x, y, z: None)
+        m.setattr(dev, "expval", lambda self, x, y, z: 1)
         yield Device(wires=2)
 
 
@@ -123,11 +129,63 @@ class TestQNodeOperationQueue:
         assert qnode.ops[4] in successors
         assert qnode.ops[5] not in successors
 
+    def test_print_applied(self, mock_device):
+        """Test that printing applied gates works correctly"""
+
+        H = np.array([[0, 1], [1, 0]])
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1])
+            return qml.expval(qml.PauliX(0)), qml.var(qml.Hermitian(H, wires=1))
+
+        expected_qnode_print = textwrap.dedent(
+            """\
+            Operations
+            ==========
+            RX({x}, wires=[0])
+            CNOT(wires=[0, 1])
+            RY(0.4, wires=[0])
+            RZ(-0.2, wires=[1])
+
+            Observables
+            ===========
+            expval(PauliX(wires=[0]))
+            var(Hermitian([[0 1]
+             [1 0]], wires=[1]))"""
+        )
+
+        node = QNode(circuit, mock_device)
+
+        # test before construction
+        f = io.StringIO()
+
+        with contextlib.redirect_stdout(f):
+            node.print_applied()
+            out = f.getvalue().strip()
+
+        assert out == "QNode has not yet been executed."
+
+        # construct QNode
+        f = io.StringIO()
+        node._set_variables([0.1], {})
+        node._construct([0.1], {})
+
+        with contextlib.redirect_stdout(f):
+            node.print_applied()
+            out = f.getvalue().strip()
+
+        assert out == expected_qnode_print.format(x=0.1)
+
 
 class TestQNodeExceptions:
     """Tests that QNode raises proper errors"""
 
-    def test_current_context_modified_outside_construct(self, operable_mock_device_2_wires, monkeypatch):
+    def test_current_context_modified_outside_construct(
+        self, operable_mock_device_2_wires, monkeypatch
+    ):
         """Error: _current_context was modified outside of construct."""
 
         def circuit(x):
@@ -137,8 +195,10 @@ class TestQNodeExceptions:
         node = QNode(circuit, operable_mock_device_2_wires)
         with monkeypatch.context() as m:
             m.setattr(QNode_old, "_current_context", node)
-            with pytest.raises(QuantumFunctionError,
-                               match="QNode._current_context must not be modified outside this method."):
+            with pytest.raises(
+                QuantumFunctionError,
+                match="QNode._current_context must not be modified outside this method.",
+            ):
                 node(0.5)
 
     def test_operations_after_observables(self, operable_mock_device_2_wires):
@@ -173,8 +233,9 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(wires=0)), qml.PauliZ(wires=1)
 
         node = QNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(QuantumFunctionError,
-                           match="does not have the measurement type specified"):
+        with pytest.raises(
+            QuantumFunctionError, match="does not have the measurement type specified"
+        ):
             node(0.5)
 
     def test_observable_not_returned(self, operable_mock_device_2_wires):
@@ -210,8 +271,36 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0))
 
         node = QNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(QuantumFunctionError,
-                           match="Continuous and discrete operations are not allowed"):
+        with pytest.raises(
+            QuantumFunctionError, match="Continuous and discrete operations are not allowed"
+        ):
+            node(0.5)
+
+    def test_cv_operations_on_qubit_device(self, operable_mock_device_2_wires):
+        """Error: cannot use CV operations on a qubit device."""
+
+        def circuit(x):
+            qml.Displacement(0.5, 0, wires=[0])
+            return qml.expval(qml.X(0))
+
+        node = QNode(circuit, operable_mock_device_2_wires)
+        with pytest.raises(
+            QuantumFunctionError, match="a qubit device; CV operations are not allowed"
+        ):
+            node(0.5)
+
+    def test_qubit_operations_on_CV_device(self, operable_mock_device_2_wires, monkeypatch):
+        """Error: cannot use qubit operations on a CV device."""
+        monkeypatch.setattr(operable_mock_device_2_wires, "capabilities", lambda: {"model": "cv"})
+
+        def circuit(x):
+            qml.RX(0.5, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = QNode(circuit, operable_mock_device_2_wires)
+        with pytest.raises(
+            QuantumFunctionError, match="a CV device; qubit operations are not allowed"
+        ):
             node(0.5)
 
     def test_multiple_measurements_on_same_wire(self, operable_mock_device_2_wires):
@@ -234,9 +323,26 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[1])  # on its own component in the circuit graph
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires, properties={'vis_check': True})
+        node = QNode(circuit, operable_mock_device_2_wires, properties={"vis_check": True})
         with pytest.raises(QuantumFunctionError, match="cannot affect the output"):
             node(0.5)
+
+    def test_operation_requiring_all_wires(self, operable_mock_device_2_wires):
+        """Error: an operation that must be applied to all wires is not
+        applied to all wires."""
+        class DummyOp(qml.operation.Operation):
+            """Dummy operation"""
+            num_wires = qml.operation.Wires.All
+            num_params = 0
+            par_domain = None
+
+        def circuit():
+            DummyOp(wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = QNode(circuit, operable_mock_device_2_wires)
+        with pytest.raises(QuantumFunctionError, match="must act on all wires"):
+            node()
 
     def test_operation_on_nonexistant_wire(self, operable_mock_device_2_wires):
         """Error: an operation is applied to a non-existant wire."""
@@ -269,7 +375,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = QNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(TypeError, match='Wires must be integers'):
+        with pytest.raises(TypeError, match="Wires must be integers"):
             node(1)
 
     def test_arg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -280,7 +386,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = QNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(TypeError, match='Wires must be integers'):
+        with pytest.raises(TypeError, match="Wires must be integers"):
             node(1)
 
     def test_kwarg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -291,13 +397,16 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = QNode(circuit, operable_mock_device_2_wires, mutable=False)
-        with pytest.raises(TypeError, match='Wires must be integers'):
+        with pytest.raises(TypeError, match="Wires must be integers"):
             node(x=1)
 
-    @pytest.mark.xfail(reason="Tests the auxiliary-equals-keyword-only syntax", raises=TypeError, strict=True)
+    @pytest.mark.xfail(
+        reason="Tests the auxiliary-equals-keyword-only syntax", raises=TypeError, strict=True
+    )
     def test_simple_valid_call(self, operable_mock_device_2_wires):
         """Old QNode gives an error here, "got multiple values for argument 'x'"
         """
+
         def circuit(x=0):
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
@@ -306,7 +415,9 @@ class TestQNodeExceptions:
         node(0.3)
         assert node.ops[0].parameters[0] == 0.3
 
-    @pytest.mark.xfail(reason="Tests the auxiliary-equals-keyword-only syntax", raises=AssertionError, strict=True)
+    @pytest.mark.xfail(
+        reason="Tests the auxiliary-equals-keyword-only syntax", raises=AssertionError, strict=True
+    )
     def test_calling_no_kwargs(self, operable_mock_device_2_wires):
         """Various quantum func calling syntax errors."""
 
@@ -320,7 +431,9 @@ class TestQNodeExceptions:
             node(0.1, x=1.1)
         with pytest.raises(QuantumFunctionError, match="Unknown quantum function parameter 'foo'"):
             node(foo=1)
-        with pytest.raises(QuantumFunctionError, match="'args' cannot be given using the keyword syntax"):
+        with pytest.raises(
+            QuantumFunctionError, match="'args' cannot be given using the keyword syntax"
+        ):
             node(args=1)
         with pytest.raises(QuantumFunctionError, match="positional parameter 'x' missing"):
             node(n=0.4)
@@ -333,7 +446,9 @@ class TestQNodeExceptions:
         node(0.1, n=0.4)
         assert circuit.in_args[2:] == (0.3, 0.4)
 
-    @pytest.mark.xfail(reason="Tests the auxiliary-equals-keyword-only syntax", raises=AssertionError, strict=True)
+    @pytest.mark.xfail(
+        reason="Tests the auxiliary-equals-keyword-only syntax", raises=AssertionError, strict=True
+    )
     def test_calling_with_kwargs(self, operable_mock_device_2_wires):
         """Various quantum func calling syntax errors."""
 
@@ -345,7 +460,9 @@ class TestQNodeExceptions:
 
         with pytest.raises(QuantumFunctionError, match="parameter 'x' given twice"):
             node(0.1, x=1.1)
-        with pytest.raises(QuantumFunctionError, match="'kwargs' cannot be given using the keyword syntax"):
+        with pytest.raises(
+            QuantumFunctionError, match="'kwargs' cannot be given using the keyword syntax"
+        ):
             node(kwargs=1)
         with pytest.raises(QuantumFunctionError, match="takes 2 positional parameters, 3 given"):
             node(0.1, 0.2, 100, n=0.4)
@@ -360,17 +477,16 @@ class TestQNodeExceptions:
         node(0.1, n=0.4)
         assert circuit.in_args[2:] == (0.3, 0.4)
 
-
     def test_calling_bad_errors(self, operable_mock_device_2_wires):
         """Confusing quantum func calling errors and bugs (auxiliary-equals-parameters-with-default syntax)."""
 
         def circuit(x=0.1):
             return qml.expval(qml.PauliZ(0))
+
         node = QNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(TypeError, match="got multiple values for argument 'x'"):
             node(0.3)  # default arg given positionally, wrong error message
-
 
     def test_calling_errors(self, operable_mock_device_2_wires):
         """Good quantum func calling syntax errors (auxiliary-equals-parameters-with-default syntax)."""
@@ -381,11 +497,15 @@ class TestQNodeExceptions:
 
         node = QNode(circuit, operable_mock_device_2_wires, mutable=True)
 
-        with pytest.raises(QuantumFunctionError, match="'x' cannot be given using the keyword syntax"):
+        with pytest.raises(
+            QuantumFunctionError, match="'x' cannot be given using the keyword syntax"
+        ):
             node(0.1, x=1.1)
         with pytest.raises(QuantumFunctionError, match="Unknown quantum function parameter 'foo'"):
             node(foo=1)
-        with pytest.raises(QuantumFunctionError, match="'args' cannot be given using the keyword syntax"):
+        with pytest.raises(
+            QuantumFunctionError, match="'args' cannot be given using the keyword syntax"
+        ):
             node(args=1)
         with pytest.raises(TypeError, match="missing 1 required positional argument: 'x'"):
             node(z=0.4)
@@ -453,7 +573,7 @@ class TestQNodeArgs:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = QNode(circuit, qubit_device_2_wires)
-        c = node(1.0, x=np.pi, y=np.pi/2)
+        c = node(1.0, x=np.pi, y=np.pi / 2)
         assert c == pytest.approx([-1.0, 0.0], abs=tol)
 
     def test_arraylike_args_used(self, qubit_device_2_wires, tol):
@@ -478,13 +598,14 @@ class TestQNodeArgs:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = QNode(circuit, qubit_device_2_wires)
-        c = node(1.0, x=[np.pi, np.pi/2])
+        c = node(1.0, x=[np.pi, np.pi / 2])
         assert c == pytest.approx([-1.0, 0.0], abs=tol)
 
     def test_keywordargs_for_wires(self, qubit_device_2_wires, tol):
         """Tests that wires can be passed as keyword-only arguments in mutable circuits."""
 
         default_q = 0
+
         def circuit(x, *, q=default_q):
             qml.RX(x, wires=[q])
             return qml.expval(qml.PauliZ(q))
@@ -539,8 +660,6 @@ class TestQNodeArgs:
         assert c == pytest.approx([1.0, -1.0], abs=tol)
 
 
-
-
 class TestQNodeCaching:
     """Tests for the QNode construction caching"""
 
@@ -548,6 +667,7 @@ class TestQNodeCaching:
         """Test that mutable circuit structure changes on subsequent evalutions."""
 
         dev = qml.device("default.qubit", wires=2)
+
         def mutable_circuit(x, *, c=None):
             qml.RX(x, wires=0)
             for i in range(c):
@@ -570,6 +690,7 @@ class TestQNodeCaching:
         """Test that non-mutable circuit structure does not change on subsequent evalutions."""
 
         dev = qml.device("default.qubit", wires=2)
+
         def non_mutable_circuit(x, *, c=None):
             qml.RX(x, wires=0)
             qml.RX(c, wires=0)
@@ -586,3 +707,61 @@ class TestQNodeCaching:
         node(0, c=1)
         assert len(node.circuit.operations) == 2
         node.ops[0] is temp  # it's the same circuit with the same objects
+
+
+class TestQNodeInterface:
+    """Test for the classical interface"""
+
+    def test_interface_property(self, mock_qnode):
+        """Test that the default interface value is 'numpy'"""
+        assert mock_qnode.interface == "numpy"
+
+
+class TestQNodeEvaluate:
+    """Test for observable statistic evaluation"""
+
+    @pytest.mark.parametrize(
+        "x,y",
+        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+    )
+    def test_evaluate(self, x, y, tol):
+        """Tests correct evaluation"""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node = QNode(circuit, dev)
+        res = node.evaluate([x, y], {})
+        expected = np.sin(y)*np.cos(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "x,y",
+        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+    )
+    def test_obs_evaluate(self, x, y, tol):
+        """Tests correct evaluation swapping out the observables"""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node = QNode(circuit, dev)
+
+        # test standard evaluation
+        node = QNode(circuit, dev)
+        res = node.evaluate([x, y], {})
+        expected = np.sin(y)*np.cos(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # hot-swap the observable
+        res = node.evaluate_obs([qml.PauliZ(0) @ qml.PauliZ(1)], [x, y], {})
+        expected = np.cos(y)
+        assert np.allclose(res, expected, atol=tol, rtol=0)

@@ -23,14 +23,13 @@ from pennylane.qnode_new.qnode import QNode, QuantumFunctionError, qnode
 from pennylane.plugins.default_qubit import Y, Z
 
 
-
 class TestMetricTensor:
     """Tests for metric tensor subcircuit construction and evaluation"""
 
     def test_no_generator(self):
         """Test exception is raised if subcircuit contains an
         operation with no generator"""
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qnode(dev)
         def circuit(a):
@@ -43,7 +42,7 @@ class TestMetricTensor:
     def test_generator_no_expval(self, monkeypatch):
         """Test exception is raised if subcircuit contains an
         operation with generator object that is not an observable"""
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qnode(dev)
         def circuit(a):
@@ -51,14 +50,14 @@ class TestMetricTensor:
             return qml.expval(qml.PauliX(0))
 
         with monkeypatch.context() as m:
-            m.setattr('pennylane.RX.generator', [qml.RX, 1])
+            m.setattr("pennylane.RX.generator", [qml.RX, 1])
 
             with pytest.raises(QuantumFunctionError, match="no corresponding observable"):
                 circuit.metric_tensor([1], only_construct=True)
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def circuit(a, b, c):
             qml.RX(a, wires=0)
@@ -72,29 +71,29 @@ class TestMetricTensor:
         res = circuit._metric_tensor_subcircuits
 
         # first parameter subcircuit
-        assert len(res[(0,)]['queue']) == 0
-        assert res[(0,)]['scale'] == [-0.5]
-        assert isinstance(res[(0,)]['observable'][0], qml.PauliX)
+        assert len(res[(0,)]["queue"]) == 0
+        assert res[(0,)]["scale"] == [-0.5]
+        assert isinstance(res[(0,)]["observable"][0], qml.PauliX)
 
         # second parameter subcircuit
-        assert len(res[(1,)]['queue']) == 1
-        assert res[(1,)]['scale'] == [-0.5]
-        assert isinstance(res[(1,)]['queue'][0], qml.RX)
-        assert isinstance(res[(1,)]['observable'][0], qml.PauliY)
+        assert len(res[(1,)]["queue"]) == 1
+        assert res[(1,)]["scale"] == [-0.5]
+        assert isinstance(res[(1,)]["queue"][0], qml.RX)
+        assert isinstance(res[(1,)]["observable"][0], qml.PauliY)
 
         # third parameter subcircuit
-        assert len(res[(2,)]['queue']) == 3
-        assert res[(2,)]['scale'] == [1]
-        assert isinstance(res[(2,)]['queue'][0], qml.RX)
-        assert isinstance(res[(2,)]['queue'][1], qml.RY)
-        assert isinstance(res[(2,)]['queue'][2], qml.CNOT)
-        assert isinstance(res[(2,)]['observable'][0], qml.Hermitian)
-        assert np.all(res[(2,)]['observable'][0].params[0] == qml.PhaseShift.generator[0])
+        assert len(res[(2,)]["queue"]) == 3
+        assert res[(2,)]["scale"] == [1]
+        assert isinstance(res[(2,)]["queue"][0], qml.RX)
+        assert isinstance(res[(2,)]["queue"][1], qml.RY)
+        assert isinstance(res[(2,)]["queue"][2], qml.CNOT)
+        assert isinstance(res[(2,)]["observable"][0], qml.Hermitian)
+        assert np.all(res[(2,)]["observable"][0].params[0] == qml.PhaseShift.generator[0])
 
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
         when a layer structure exists"""
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         def circuit(params):
             # section 1
@@ -129,49 +128,49 @@ class TestMetricTensor:
 
         # first layer subcircuit
         layer = res[(0,)]
-        assert len(layer['queue']) == 0
-        assert len(layer['observable']) == 1
-        assert isinstance(layer['observable'][0], qml.PauliX)
+        assert len(layer["queue"]) == 0
+        assert len(layer["observable"]) == 1
+        assert isinstance(layer["observable"][0], qml.PauliX)
 
         # second layer subcircuit
         layer = res[(1,)]
-        assert len(layer['queue']) == 1
-        assert len(layer['observable']) == 1
-        assert isinstance(layer['queue'][0], qml.RX)
-        assert isinstance(layer['observable'][0], qml.PauliY)
+        assert len(layer["queue"]) == 1
+        assert len(layer["observable"]) == 1
+        assert isinstance(layer["queue"][0], qml.RX)
+        assert isinstance(layer["observable"][0], qml.PauliY)
 
         # third layer subcircuit
         layer = res[(2, 3, 4)]
-        assert len(layer['queue']) == 4
-        assert len(layer['observable']) == 3
-        assert isinstance(layer['queue'][0], qml.RX)
-        assert isinstance(layer['queue'][1], qml.RY)
-        assert isinstance(layer['queue'][2], qml.CNOT)
-        assert isinstance(layer['queue'][3], qml.CNOT)
-        assert isinstance(layer['observable'][0], qml.PauliX)
-        assert isinstance(layer['observable'][1], qml.PauliY)
-        assert isinstance(layer['observable'][2], qml.PauliZ)
+        assert len(layer["queue"]) == 4
+        assert len(layer["observable"]) == 3
+        assert isinstance(layer["queue"][0], qml.RX)
+        assert isinstance(layer["queue"][1], qml.RY)
+        assert isinstance(layer["queue"][2], qml.CNOT)
+        assert isinstance(layer["queue"][3], qml.CNOT)
+        assert isinstance(layer["observable"][0], qml.PauliX)
+        assert isinstance(layer["observable"][1], qml.PauliY)
+        assert isinstance(layer["observable"][2], qml.PauliZ)
 
         # fourth layer subcircuit
         layer = res[(5, 6, 7)]
-        assert len(layer['queue']) == 9
-        assert len(layer['observable']) == 3
-        assert isinstance(layer['queue'][0], qml.RX)
-        assert isinstance(layer['queue'][1], qml.RY)
-        assert isinstance(layer['queue'][2], qml.CNOT)
-        assert isinstance(layer['queue'][3], qml.CNOT)
-        assert isinstance(layer['queue'][4], qml.RX)
-        assert isinstance(layer['queue'][5], qml.RY)
-        assert isinstance(layer['queue'][6], qml.RZ)
-        assert isinstance(layer['queue'][7], qml.CNOT)
-        assert isinstance(layer['queue'][8], qml.CNOT)
-        assert isinstance(layer['observable'][0], qml.PauliX)
-        assert isinstance(layer['observable'][1], qml.PauliY)
-        assert isinstance(layer['observable'][2], qml.PauliZ)
+        assert len(layer["queue"]) == 9
+        assert len(layer["observable"]) == 3
+        assert isinstance(layer["queue"][0], qml.RX)
+        assert isinstance(layer["queue"][1], qml.RY)
+        assert isinstance(layer["queue"][2], qml.CNOT)
+        assert isinstance(layer["queue"][3], qml.CNOT)
+        assert isinstance(layer["queue"][4], qml.RX)
+        assert isinstance(layer["queue"][5], qml.RY)
+        assert isinstance(layer["queue"][6], qml.RZ)
+        assert isinstance(layer["queue"][7], qml.CNOT)
+        assert isinstance(layer["queue"][8], qml.CNOT)
+        assert isinstance(layer["observable"][0], qml.PauliX)
+        assert isinstance(layer["observable"][1], qml.PauliY)
+        assert isinstance(layer["observable"][2], qml.PauliZ)
 
     def test_evaluate_subcircuits(self, tol):
         """Test subcircuits evaluate correctly"""
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def circuit(a, b, c):
             qml.RX(a, wires=0)
@@ -190,23 +189,23 @@ class TestMetricTensor:
         circuit.metric_tensor((a, b, c))
 
         # first parameter subcircuit
-        res = circuit._metric_tensor_subcircuits[(0,)]['result']
+        res = circuit._metric_tensor_subcircuits[(0,)]["result"]
         expected = 0.25
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # second parameter subcircuit
-        res = circuit._metric_tensor_subcircuits[(1,)]['result']
-        expected = np.cos(a)**2/4
+        res = circuit._metric_tensor_subcircuits[(1,)]["result"]
+        expected = np.cos(a) ** 2 / 4
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # third parameter subcircuit
-        res = circuit._metric_tensor_subcircuits[(2,)]['result']
-        expected = (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/16
+        res = circuit._metric_tensor_subcircuits[(2,)]["result"]
+        expected = (3 - 2 * np.cos(a) ** 2 * np.cos(2 * b) - np.cos(2 * a)) / 16
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_evaluate_diag_metric_tensor(self, tol):
         """Test that a diagonal metric tensor evaluates correctly"""
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def circuit(a, b, c):
             qml.RX(a, wires=0)
@@ -225,14 +224,19 @@ class TestMetricTensor:
         g = circuit.metric_tensor((a, b, c))
 
         # check that the metric tensor is correct
-        expected = np.array([1, np.cos(a)**2, (3-2*np.cos(a)**2*np.cos(2*b)-np.cos(2*a))/4])/4
+        expected = (
+            np.array(
+                [1, np.cos(a) ** 2, (3 - 2 * np.cos(a) ** 2 * np.cos(2 * b) - np.cos(2 * a)) / 4]
+            )
+            / 4
+        )
         assert np.allclose(g, np.diag(expected), atol=tol, rtol=0)
 
     @pytest.fixture
     def sample_circuit(self):
         """Sample variational circuit fixture used in the
         next couple of tests"""
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         def non_parametrized_layer(a, b, c):
             qml.RX(a, wires=0)
@@ -287,7 +291,7 @@ class TestMetricTensor:
         G1 = np.zeros([3, 3])
 
         # diag elements
-        G1[0, 0] = np.sin(a)**2/4
+        G1[0, 0] = np.sin(a) ** 2 / 4
         G1[1, 1] = (
             16 * np.cos(a) ** 2 * np.sin(b) ** 3 * np.cos(b) * np.sin(2 * c)
             + np.cos(2 * b) * (2 - 8 * np.cos(a) ** 2 * np.sin(b) ** 2 * np.cos(2 * c))
@@ -296,18 +300,22 @@ class TestMetricTensor:
             - 2 * np.cos(2 * a)
             + 14
         ) / 64
-        G1[2, 2] = (3-np.cos(2*a)-2*np.cos(a)**2*np.cos(2*(b+c)))/16
+        G1[2, 2] = (3 - np.cos(2 * a) - 2 * np.cos(a) ** 2 * np.cos(2 * (b + c))) / 16
 
         # off diag elements
-        G1[0, 1] = np.sin(a)**2 * np.sin(b) * np.cos(b+c)/4
-        G1[0, 2] = np.sin(a)**2 * np.cos(b+c)/4
-        G1[1, 2] = -np.sin(b) * (
-            np.cos(2 * (a - b - c))
-            + np.cos(2 * (a + b + c))
-            + 2 * np.cos(2 * a)
-            + 2 * np.cos(2 * (b + c))
-            - 6
-        ) / 32
+        G1[0, 1] = np.sin(a) ** 2 * np.sin(b) * np.cos(b + c) / 4
+        G1[0, 2] = np.sin(a) ** 2 * np.cos(b + c) / 4
+        G1[1, 2] = (
+            -np.sin(b)
+            * (
+                np.cos(2 * (a - b - c))
+                + np.cos(2 * (a + b + c))
+                + 2 * np.cos(2 * a)
+                + 2 * np.cos(2 * (b + c))
+                - 6
+            )
+            / 32
+        )
 
         G1[1, 0] = G1[0, 1]
         G1[2, 0] = G1[0, 2]
@@ -339,7 +347,7 @@ class TestMetricTensor:
             qml.RY(f, wires=2)
             return qml.var(qml.PauliX(1))
 
-        G2 = layer2_diag(x, y, z, h, g, f)/4
+        G2 = layer2_diag(x, y, z, h, g, f) / 4
         assert np.allclose(G[3:4, 3:4], G2, atol=tol, rtol=0)
 
         # =============================================
@@ -383,15 +391,15 @@ class TestMetricTensor:
 
         # calculate the diagonal terms
         varK0, varK1 = layer3_diag(x, y, z, h, g, f)
-        G3[0, 0] = varK0/4
-        G3[1, 1] = varK1/4
+        G3[0, 0] = varK0 / 4
+        G3[1, 1] = varK1 / 4
 
         # calculate the off-diagonal terms
         exK0, exK1 = layer3_off_diag_first_order(x, y, z, h, g, f)
         exK01 = layer3_off_diag_second_order(x, y, z, h, g, f)
 
-        G3[0, 1] = (exK01 - exK0*exK1)/4
-        G3[1, 0] = (exK01 - exK0*exK1)/4
+        G3[0, 1] = (exK01 - exK0 * exK1) / 4
+        G3[1, 0] = (exK01 - exK0 * exK1) / 4
 
         assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
 
@@ -423,7 +431,7 @@ class TestMetricTensor:
         G1 = np.zeros([3, 3])
 
         # diag elements
-        G1[0, 0] = np.sin(a)**2/4
+        G1[0, 0] = np.sin(a) ** 2 / 4
         G1[1, 1] = (
             16 * np.cos(a) ** 2 * np.sin(b) ** 3 * np.cos(b) * np.sin(2 * c)
             + np.cos(2 * b) * (2 - 8 * np.cos(a) ** 2 * np.sin(b) ** 2 * np.cos(2 * c))
@@ -432,7 +440,7 @@ class TestMetricTensor:
             - 2 * np.cos(2 * a)
             + 14
         ) / 64
-        G1[2, 2] = (3-np.cos(2*a)-2*np.cos(a)**2*np.cos(2*(b+c)))/16
+        G1[2, 2] = (3 - np.cos(2 * a) - 2 * np.cos(a) ** 2 * np.cos(2 * (b + c))) / 16
 
         assert np.allclose(G[:3, :3], G1, atol=tol, rtol=0)
 
@@ -460,7 +468,7 @@ class TestMetricTensor:
             qml.RY(f, wires=2)
             return qml.var(qml.PauliX(1))
 
-        G2 = layer2_diag(x, y, z, h, g, f)/4
+        G2 = layer2_diag(x, y, z, h, g, f) / 4
         assert np.allclose(G[3:4, 3:4], G2, atol=tol, rtol=0)
 
         # =============================================
@@ -486,8 +494,8 @@ class TestMetricTensor:
 
         # calculate the diagonal terms
         varK0, varK1 = layer3_diag(x, y, z, h, g, f)
-        G3[0, 0] = varK0/4
-        G3[1, 1] = varK1/4
+        G3[0, 0] = varK0 / 4
+        G3[1, 1] = varK1 / 4
 
         assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
 
