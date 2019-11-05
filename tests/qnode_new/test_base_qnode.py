@@ -659,6 +659,17 @@ class TestQNodeArgs:
         c = classical_node(0.0, x=np.pi)
         assert c == pytest.approx([1.0, -1.0], abs=tol)
 
+    def test_keywordargs_with_kwargs(self, qubit_device_1_wire, tol):
+        """Tests that nothing happens if unknown keyword arg passed with
+        qnodes accepting **kwargs."""
+        def circuit(w, x=None, **kwargs):
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = QNode(circuit, qubit_device_1_wire)
+        c = node(1.0, x=np.pi, y=10)
+        assert c == pytest.approx(-1.0, abs=tol)
+
 
 class TestQNodeCaching:
     """Tests for the QNode construction caching"""
@@ -765,3 +776,19 @@ class TestQNodeEvaluate:
         res = node.evaluate_obs([qml.PauliZ(0) @ qml.PauliZ(1)], [x, y], {})
         expected = np.cos(y)
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_single_mode_sample(self):
+        """Test that there is only one array of values returned
+        for single mode samples"""
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node = QNode(circuit, dev)
+        res = node(0.432, 0.12)
+        assert res.shape == (10,)
