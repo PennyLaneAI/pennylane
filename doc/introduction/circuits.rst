@@ -4,7 +4,7 @@
 
 .. _intro_vcircuits:
 
-Quantum Circuits
+Quantum circuits
 ================
 
 
@@ -14,11 +14,14 @@ Quantum Circuits
     :target: javascript:void(0);
 
 
-In PennyLane, quantum circuits are represented as *quantum node* objects. A quantum node is used to
+In PennyLane, quantum computations are represented as *quantum node* objects. A quantum node is used to
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
 Quantum nodes can be easily created by using the :ref:`qnode <intro_vcirc_decorator>` decorator.
 
-QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch <interfaces/torch>`, and :doc:`TensorFlow <interfaces/tf>`---indicated by providing an optional ``interface`` argument when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with library-specific data structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and :doc:`optimizers <optimizers>`.
+QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
+:doc:`PyTorch <interfaces/torch>`, and :doc:`TensorFlow <interfaces/tf>`---indicated by providing an optional ``interface``
+argument when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with library-specific data
+structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and :doc:`optimizers <optimizers>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
 introduced in more detail in the section on :doc:`interfaces <interfaces>`.
@@ -45,7 +48,7 @@ For example:
 
 .. note::
 
-    PennyLane uses the term '*wires*' to refer to a quantum subsystem---for most
+    PennyLane uses the term *wires* to refer to a quantum subsystem---for most
     devices, this corresponds to a qubit. For continuous-variable
     devices, a wire corresponds to a quantum mode.
 
@@ -53,25 +56,25 @@ Quantum functions are a restricted subset of Python functions, adhering to the f
 constraints:
 
 * The quantum function accepts classical inputs, and consists of
-  :doc:`operations` or sequences of operations called :doc:`templates`,
+  :doc:`quantum operations <operations>` or sequences of operations called :doc:`templates`,
   using one instruction per line.
+
+* The function can contain classical flow control structures such as ``for`` loops,
+  but in general they must not depend on the parameters of the function.
 
 * The quantum function must always return either a single or a tuple of
   *measured observable values*, by applying a :doc:`measurement function <measurements>`
   to a :ref:`qubit observable <intro_ref_ops_qobs>` or :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
 
-* Classical processing of function arguments, either by arithmetic operations
-  or external functions, is not allowed. One current exception is simple scalar
-  multiplication.
-
-.. note::
-
-    Quantum operations can only be executed on a device from within a QNode.
-
 .. note::
 
     Measured observables **must** come after all other operations at the end
     of the circuit function as part of the return statement, and cannot appear in the middle.
+
+.. note::
+
+    Quantum functions can only be evaluated on a device from within a QNode.
+
 
 
 .. _intro_vcirc_device:
@@ -159,6 +162,6 @@ For example:
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(x, wires=1)
-        return qml.expval(qml.PauliZ(0))
+        return qml.expval(qml.PauliZ(1))
 
     result = circuit(0.543)
