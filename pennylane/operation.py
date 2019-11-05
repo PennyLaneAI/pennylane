@@ -252,11 +252,6 @@ class Operator(abc.ABC):
         if QNode._current_context is None:
             do_queue = False
 
-        if self.num_wires == All:
-            if do_queue:
-                if set(wires) != set(range(QNode._current_context.num_wires)):
-                    raise ValueError("Operator {} must act on all wires".format(self.name))
-
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
@@ -275,12 +270,8 @@ class Operator(abc.ABC):
         # apply the operator on the given wires
         if not isinstance(wires, Sequence):
             wires = [wires]
-        self._wires = wires  #: Sequence[int, Variable]: wires on which the operation acts
-
-        if all([isinstance(w, int) for w in self._wires]):
-            # If all wires are integers (i.e., not Variable), check
-            # that they are valid for the given operator
-            self.check_wires(self._wires)
+        self._check_wires(wires)
+        self._wires = wires  #: tuple[int]: wires on which the operation acts
 
         if do_queue:
             self.queue()
@@ -289,16 +280,20 @@ class Operator(abc.ABC):
         """Print the operator name and some information."""
         return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
 
-    def check_wires(self, wires):
-        """Check the validity of the operator wires.
+    def _check_wires(self, wires):
+        """Check the validity of the operation wires.
 
         Args:
-            wires (Sequence[int, Variable]): wires to check
+            wires (Sequence[Any]): wires to check
         Raises:
-            ValueError: list of wires is invalid
+            TypeError, ValueError: list of wires is invalid
         Returns:
-            Number, array, Variable: p
+            tuple[int]: wires converted to integers
         """
+        for w in wires:
+            if not isinstance(w, numbers.Integral):
+                raise TypeError('{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.'.format(self.name))
+
         if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
             raise ValueError("{}: wrong number of wires. "
                              "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
@@ -306,7 +301,7 @@ class Operator(abc.ABC):
         if len(set(wires)) != len(wires):
             raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
 
-        return wires
+        return tuple(int(w) for w in wires)
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -350,18 +345,12 @@ class Operator(abc.ABC):
 
     @property
     def wires(self):
-        """Current wire values.
-
-        Fixed wires are returned as is, free wires represented by
-        :class:`~.variable.Variable` instances are replaced by their
-        current numerical value.
+        """Wire values.
 
         Returns:
-            list[int]: wire values
+            tuple[int]: wire values
         """
-        w = [i.val if isinstance(i, Variable) else i for i in self._wires]
-        self.check_wires(w)
-        return [int(i) for i in w]
+        return self._wires
 
     @property
     def parameters(self):
