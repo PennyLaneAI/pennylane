@@ -111,12 +111,10 @@ class TensorNetwork(Device):
         self._zero_state = np.zeros([2] * wires)
         self._zero_state[tuple([0] * wires)] = 1.0
         # TODO: since this state is separable, can be more intelligent about not making a dense matrix
-        self._state = self._add_node(
+        self._state_node = self._add_node(
             self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState"
         )
-        self._free_edges = self._state.edges[
-            :
-        ]  # we need this list to be distinct from self._state.edges
+        self._free_edges = self._state_node.edges[:]  # we need this list to be distinct from self._state_node.edges
 
     def _add_node(self, A, wires, name="UnnamedNode"):
         """Adds a node to the underlying tensor network.
@@ -167,10 +165,12 @@ class TensorNetwork(Device):
         A = np.reshape(A, [2] * num_mult_idxs * 2)
         op_node = self._add_node(A, wires=wires, name=operation)
         for idx, w in enumerate(wires):
-            self._add_edge(op_node, num_mult_idxs + idx, self._state, w)
+            self._add_edge(op_node, num_mult_idxs + idx, self._state_node, w)
             self._free_edges[w] = op_node[idx]
         # TODO: can be smarter here about collecting contractions?
-        self._state = tn.contract_between(op_node, self._state, output_edge_order=self._free_edges)
+        self._state_node = tn.contract_between(
+            op_node, self._state_node, output_edge_order=self._free_edges
+        )
 
     def expval(self, observable, wires, par):
         if not isinstance(observable, list):
@@ -210,7 +210,7 @@ class TensorNetwork(Device):
         """
 
         all_wires = tuple(w for w in range(self.num_wires))
-        ket = self._add_node(self._state, wires=all_wires, name="Ket")
+        ket = self._add_node(self._state_node, wires=all_wires, name="Ket")
         bra = self._add_node(tn.conj(ket), wires=all_wires, name="Bra")
         meas_wires = []
         # We need to build up <psi|A|psi> step-by-step.
@@ -242,6 +242,18 @@ class TensorNetwork(Device):
                 RuntimeWarning,
             )
         return expval.real
+
+    @property
+    def _state(self):
+        """The numerical value of the current state vector.
+
+        This attribute cannot be manually overwritten.
+
+        Returns:
+            (array, tf.Tensor, torch.Tensor): the numerical tensor
+        """
+
+        return self._state_node.tensor
 
     def reset(self):
         """Reset the device"""
