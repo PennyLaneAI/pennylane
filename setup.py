@@ -21,7 +21,6 @@ requirements = [
     "numpy",
     "scipy",
     "networkx",
-    "tensornetwork<=0.1.1,>=0.0.7",
     "autograd",
     "toml",
     "appdirs",
@@ -47,7 +46,7 @@ info = {
         'pennylane.plugins': [
             'default.qubit = pennylane.plugins:DefaultQubit',
             'default.gaussian = pennylane.plugins:DefaultGaussian',
-            'expt.tensornet = pennylane.plugins:TensorNetwork'
+            'expt.tensornet = pennylane.plugins.expt_tensornet:TensorNetwork'
             ],
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',
