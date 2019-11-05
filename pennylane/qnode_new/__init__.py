@@ -20,4 +20,5 @@ This package contains the new-style QNodes.
     :toctree: api
 
     qnode
+    jacobian
 """
