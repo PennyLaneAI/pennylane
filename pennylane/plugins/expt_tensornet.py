@@ -160,6 +160,38 @@ class TensorNetwork(Device):
         self.reset()
 
     def apply(self, operation, wires, par):
+        if operation == "QubitStateVector":
+            state = np.asarray(par[0], dtype=np.complex128)
+            if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
+                self._state_node.tensor = np.reshape(state, [2] * self.num_wires)
+            else:
+                raise ValueError("State vector must be of length 2**wires.")
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError(
+                    "The expt.tensornet plugin can apply QubitStateVector only to all of the {} wires.".format(
+                        self.num_wires
+                    )
+                )
+            return
+        if operation == "BasisState":
+            n = len(par[0])
+            if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
+                raise ValueError(
+                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
+                        self.num_wires
+                    )
+                )
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError(
+                    "The expt.tensornet plugin can apply BasisState only to all of the {} wires.".format(
+                        self.num_wires
+                    )
+                )
+
+            self._state_node.tensor[tuple([0] * len(wires))] = 0
+            self._state_node.tensor[tuple(par[0])] = 1
+            return
+
         A = self._get_operator_matrix(operation, par)
         num_mult_idxs = len(wires)
         A = np.reshape(A, [2] * num_mult_idxs * 2)
