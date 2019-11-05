@@ -699,7 +699,7 @@ class BasisState(Operation):
         decomp_ops = []
         for w, p in enumerate(n.flatten()):
             if p == 1:
-                ops.append(PauliX(wires=wires[w]))
+                decomp_ops.append(PauliX(wires=wires[w]))
 
         return decomp_ops
 
