@@ -97,12 +97,8 @@ def prep_par(par, op):
     return par
 
 
-def inv_name(name):
-    return name + Operation.string_for_inverse
-
-
 def include_inverses_with_test_data(test_data):
-    return test_data + [(inv_name(item[0]), item[1], item[2]) for item in test_data]
+    return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
 
 class TestAuxillaryFunctions:
@@ -368,11 +364,11 @@ class TestOperatorMatrices:
 
         assert res is None
 
+
 class TestApply:
     """Tests that operations and inverses of certain operations are applied correctly or that the proper
     errors are raised.
     """
-
 
     test_data_no_parameters = [
         ("PauliX", [1, 0], np.array([0, 1])),
@@ -390,18 +386,18 @@ class TestApply:
     ]
 
     test_data_no_parameters_inverses  = [
-        (inv_name("PauliX"), [1, 0], np.array([0, 1])),
-        (inv_name("PauliX"), [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/math.sqrt(2)]),
-        (inv_name("PauliY"), [1, 0], [0, 1j]),
-        (inv_name("PauliY"), [1/math.sqrt(2), 1/math.sqrt(2)], [-1j/math.sqrt(2), 1j/math.sqrt(2)]),
-        (inv_name("PauliZ"), [1, 0], [1, 0]),
-        (inv_name("PauliZ"), [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1/math.sqrt(2)]),
-        (inv_name("S"), [1, 0], [1, 0]),
-        (inv_name("S"), [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1j/math.sqrt(2)]),
-        (inv_name("T"), [1, 0], [1, 0]),
-        (inv_name("T"), [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), np.exp(-1j * np.pi / 4) / math.sqrt(2)]),
-        (inv_name("Hadamard"), [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)]),
-        (inv_name("Hadamard"), [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1]),
+        ("PauliX.inv", [1, 0], np.array([0, 1])),
+        ("PauliX.inv", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/math.sqrt(2)]),
+        ("PauliY.inv", [1, 0], [0, 1j]),
+        ("PauliY.inv", [1/math.sqrt(2), 1/math.sqrt(2)], [-1j/math.sqrt(2), 1j/math.sqrt(2)]),
+        ("PauliZ.inv", [1, 0], [1, 0]),
+        ("PauliZ.inv", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1/math.sqrt(2)]),
+        ("S.inv", [1, 0], [1, 0]),
+        ("S.inv", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1j/math.sqrt(2)]),
+        ("T.inv", [1, 0], [1, 0]),
+        ("T.inv", [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), np.exp(-1j * np.pi / 4) / math.sqrt(2)]),
+        ("Hadamard.inv", [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)]),
+        ("Hadamard.inv", [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1]),
     ]
 
     @pytest.mark.parametrize("name,input,expected_output", test_data_no_parameters +
@@ -966,7 +962,7 @@ class TestDefaultQubitIntegration:
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
-                                                           multiplier * 0.5432) for multiplier in range(25)
+                                                           multiplier * 0.5432) for multiplier in range(8)
                                                           ])
     def test_inverse_circuit_with_parameters(self, qubit_device_1_wire, tol, name, expected_output, phi):
         """Tests the inverse of supported gates that act on a single wire and are parameterized"""

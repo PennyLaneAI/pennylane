@@ -211,10 +211,11 @@ class TestOperation:
     def test_operation_inverse_defined(self, qnode_for_inverse):
         """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
         of the original class"""
-        assert qnode_for_inverse.ops[0].name == "RZ" + qml.operation.Operation.string_for_inverse
+        assert qnode_for_inverse.ops[0].name == "RZ.inv"
         assert qnode_for_inverse.ops[0].inverse
         assert issubclass(qnode_for_inverse.ops[0].__class__, qml.operation.Operation)
         assert qnode_for_inverse.ops[1].name == "RZ"
+        assert not qnode_for_inverse.ops[1].inverse
         assert issubclass(qnode_for_inverse.ops[1].__class__, qml.operation.Operation)
 
     def test_operation_inverse_using_dummy_operation(self):
@@ -235,7 +236,7 @@ class TestOperation:
         dummy_op_class_name = dummy_op.name
 
         # Check that the name of the Operation was modified when applying the inverse
-        assert dummy_op.inv().name == dummy_op_class_name + qml.operation.Operation.string_for_inverse
+        assert dummy_op.inv().name == dummy_op_class_name + ".inv"
         assert dummy_op.inverse
 
         # Check that the name of the Operation is the original again, once applying the inverse a second time
@@ -516,7 +517,7 @@ class TestOperatorIntegration:
 
         @qml.qnode(dev1)
         def circuit():
-            DummyOp(wires=[0], do_queue=True)
+            DummyOp(wires=[0])
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
@@ -527,14 +528,14 @@ class TestOperationIntegration:
     """ Integration tests for the Operation class"""
 
     def test_inverse_of_operation(self):
-        """Test that the inverse of an operation is """
+        """Test the inverse of an operation"""
 
         dev1 = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev1)
         def circuit():
-            qml.PauliZ(wires=[0], do_queue=True)
-            qml.PauliZ(wires=[0], do_queue=True).inv()
+            qml.PauliZ(wires=[0])
+            qml.PauliZ(wires=[0]).inv()
             return qml.expval(qml.PauliZ(0))
 
         assert circuit() == 1
