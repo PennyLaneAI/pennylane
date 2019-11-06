@@ -58,7 +58,7 @@ def _unflatten(flat, model):
         model (array, Iterable, Number): model nested structure
 
     Raises:
-        TypeError: if `model` contains an object of unsupported type
+        TypeError: if ``model`` contains an object of unsupported type
 
     Returns:
         (other, array): first elements of flat arranged into the nested
