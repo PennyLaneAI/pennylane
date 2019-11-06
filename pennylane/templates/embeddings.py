@@ -48,6 +48,9 @@ def AngleEmbedding(features, wires, rotation='X'):
 
     Keyword Args:
         rotation (str): Type of rotations used
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if not isinstance(wires, Iterable):
@@ -92,6 +95,9 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
         pad (Boolean): controls the activation of the padding option
         normalize (Boolean): controls the activation of automatic normalization
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if isinstance(wires, int):
@@ -146,6 +152,9 @@ def BasisEmbedding(features, wires):
     Args:
         features (array): Binary input array of shape ``(n, )``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
@@ -181,6 +190,9 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'``
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if not isinstance(wires, Iterable):
@@ -222,6 +234,9 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
             the amplitude of all displacement gates if ``execution='phase'``
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid or if ``method`` is unknown
    """
 
     if not isinstance(wires, Iterable):

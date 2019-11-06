@@ -200,6 +200,9 @@ def unitary(*args):
     Args:
         args (array): square unitary matrix
 
+    Raises:
+        ValueError: if the matrix is not unitary or square
+
     Returns:
         array: square unitary matrix
     """
@@ -219,6 +222,9 @@ def hermitian(*args):
 
     Args:
         args (array): square hermitian matrix
+
+    Raises:
+        ValueError: if the matrix is not Hermitian or square
 
     Returns:
         array: square hermitian matrix

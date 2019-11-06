@@ -32,6 +32,9 @@ def expval(op):
 
     Args:
         op (Observable): a quantum observable object
+
+    Raises:
+        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(
@@ -61,6 +64,9 @@ def var(op):
 
     Args:
         op (Observable): a quantum observable object
+
+    Raises:
+        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(
@@ -91,6 +97,9 @@ def sample(op):
 
     Args:
         op (Observable): a quantum observable object
+
+    Raises:
+        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
         raise QuantumFunctionError(

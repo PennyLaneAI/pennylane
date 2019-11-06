@@ -116,6 +116,9 @@ class Device(abc.ABC):
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
                 expectation values of observables
+
+        Raises:
+            DeviceError: if number of shots is less than 1
         """
         if shots < 1:
             raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
@@ -145,6 +148,9 @@ class Device(abc.ABC):
             observables (Iterable[~.operation.Observable]): observables to measure and return
             parameters (dict[int->list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -202,6 +208,9 @@ class Device(abc.ABC):
         Note that this property can only be accessed within the execution context
         of :meth:`~.execute`.
 
+        Raises:
+            ValueError: if outside of the execution context
+
         Returns:
             list[~.operation.Operation]
         """
@@ -216,6 +225,9 @@ class Device(abc.ABC):
 
         Note that this property can only be accessed within the execution context
         of :meth:`~.execute`.
+
+        Raises:
+            ValueError: if outside of the execution context
 
         Returns:
             list[~.operation.Observable]
@@ -232,6 +244,9 @@ class Device(abc.ABC):
 
         Note that this property can only be accessed within the execution context
         of :meth:`~.execute`.
+
+        Raises:
+            ValueError: if outside of the execution context
 
         Returns:
             dict[int->list[ParameterDependency]]: the mapping
@@ -369,6 +384,9 @@ class Device(abc.ABC):
             wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
+        Raises:
+            NotImplementedError: if the device does not support variance computation
+
         Returns:
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
         """
@@ -388,6 +406,9 @@ class Device(abc.ABC):
             wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
+        Raises:
+            NotImplementedError: if the device does not support sampling
+
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
@@ -395,6 +416,9 @@ class Device(abc.ABC):
 
     def probability(self):
         """Return the full state probability of each computational basis state from the last run of the device.
+
+        Raises:
+            NotImplementedError: if the device does not support returning probabilities
 
         Returns:
             OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
@@ -407,6 +431,6 @@ class Device(abc.ABC):
     def reset(self):
         """Reset the backend state.
 
-        After the reset the backend should be as if it was just constructed.
+        After the reset, the backend should be as if it was just constructed.
         Most importantly the quantum state is reset to its initial value.
         """
