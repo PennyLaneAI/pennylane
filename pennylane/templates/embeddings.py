@@ -236,7 +236,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             the amplitude of all displacement gates if ``execution='phase'``
 
     Raises:
-        ValueError: if `features` or `wires` is invalid or if `method` is unknown
+        ValueError: if ``features`` or ``wires`` is invalid or if ``method`` is unknown
    """
 
     if not isinstance(wires, Iterable):
