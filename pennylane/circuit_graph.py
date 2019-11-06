@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
-based on operation and observable queues.
+representation of a quantum circuit from an Operator queue.
 """
 from collections import namedtuple
 import networkx as nx
@@ -22,8 +22,29 @@ from .utils import _flatten
 
 
 def _by_idx(x):
-    """Sorting key for Operations: queue index aka temporal order."""
+    """Sorting key for Operators: queue index aka temporal order.
+
+    Args:
+        x (Operator): node in the circuit graph
+    Returns:
+        int: sorting key for the node
+    """
     return x.queue_idx
+
+
+def _is_observable(x):
+    """Predicate for deciding if an Operator instance is an observable.
+
+    .. note::
+       Currently some :class:`Observable` instances are not observables in this sense,
+       since they can be used as gates as well.
+
+    Args:
+        x (Operator): node in the circuit graph
+    Returns:
+        bool: True iff x is an observable
+    """
+    return getattr(x, 'return_type', None) is not None
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
@@ -31,8 +52,8 @@ Layer = namedtuple("Layer", ["ops", "param_inds"])
 
 Args:
 
-    ops (list[Operation]): parametrized operations in the layer
-    param_inds (tuple[int]): corresponding free parameter indices
+    ops (list[Operator]): parametrized operators in the layer
+    param_inds (list[int]): corresponding free parameter indices
 """
 #TODO define what a layer is
 
@@ -40,80 +61,93 @@ LayerData = namedtuple("LayerData", ["pre_ops", "ops", "param_inds", "post_ops"]
 """Parametrized layer of the circuit.
 
 Args:
-    pre_ops (list[Operation]): operations that precede the layer
-    ops (list[Operation]): parametrized operations in the layer
+    pre_ops (list[Operator]): operators that precede the layer
+    ops (list[Operator]): parametrized operators in the layer
     param_inds (tuple[int]): corresponding free parameter indices
-    post_ops (list[Operation]): operations that succeed the layer
+    post_ops (list[Operator]): operators that succeed the layer
 """
 
 class CircuitGraph:
     """Represents a quantum circuit as a directed acyclic graph.
 
+    In this representation the :class:`~.Operator` instances are the nodes of the graph,
+    and each directed edge represent a subsystem (or a group of subsystems) on which the two
+    Operators act subsequently. This representation can describe the causal relationships
+    between arbitrary quantum channels and measurements, not just unitary gates.
+
     Args:
-        ops (Iterable[Operation]): quantum operations constituting the circuit, in temporal order
-        variable_deps (dict[int, list[ParDep]]): Free parameters of the quantum circuit.
+        ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
+        variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
-            The first element of the ParDep namedtuple is the operation index,
-            the second the index of the parameter within the operation.
     """
     def __init__(self, ops, variable_deps):
         self.variable_deps = variable_deps
 
         self._grid = {}
-        """dict[int, list[Operation]]: dictionary representing the quantum circuit as a grid.
-        Here, the key is the wire number, and the value is a list containing the operations on that wire.
+        """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
+        Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
         for k, op in enumerate(ops):
-            op.queue_idx = k  # store the queue index in the Operation
+            op.queue_idx = k  # store the queue index in the Operator
             for w in set(_flatten(op.wires)):  # flatten the nested wires lists of Tensor observables
                 # Add op to the grid, to the end of wire w
                 self._grid.setdefault(w, []).append(op)
 
+        #TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
+
         self._graph = nx.DiGraph()  #: nx.DiGraph: DAG representation of the quantum circuit
         # Iterate over each (populated) wire in the grid
         for wire in self._grid.values():
-            # Add the first operation on the wire to the graph
-            # This operation does not depend on any others
+            # Add the first operator on the wire to the graph
+            # This operator does not depend on any others
             self._graph.add_node(wire[0])
 
             for i in range(1, len(wire)):
-                # For subsequent operations on the wire:
+                # For subsequent operators on the wire:
                 if wire[i] not in self._graph:
                     # Add them to the graph if they are not already
-                    # in the graph (multi-qubit operations might already have been placed)
+                    # in the graph (multi-qubit operators might already have been placed)
                     self._graph.add_node(wire[i])
 
-                # Create an edge between this operation and the previous operation
+                # Create an edge between this and the previous operator
                 self._graph.add_edge(wire[i - 1], wire[i])
 
     @property
-    def observables(self):
-        """Observables in the circuit, sorted by queue index.
+    def observables_in_order(self):
+        """Observables in the circuit, in a fixed topological order.
+
+        Currently the topological order is determined by the queue index.
 
         Returns:
             list[Observable]: observables
         """
-        nodes = [node for node in self._graph.nodes if getattr(node, 'return_type', None) is not None]
+        nodes = [node for node in self._graph.nodes if _is_observable(node)]
         return sorted(nodes, key=_by_idx)
 
-    @property
-    def operations(self):
-        """Non-observable Operations in the circuit, sorted by queue index.
+    observables = observables_in_order
 
-        The complement of :meth:`QNode.observables`. Together they return every :class:`Operation`
+    @property
+    def operations_in_order(self):
+        """Operations in the circuit, in a fixed topological order.
+
+        Currently the topological order is determined by the queue index.
+
+        The complement of :meth:`QNode.observables`. Together they return every :class:`Operator`
         instance in the circuit.
 
         Returns:
             list[Operation]: operations
         """
-        nodes = [node for node in self._graph.nodes if getattr(node, 'return_type', None) is None]
+        nodes = [node for node in self._graph.nodes if not _is_observable(node)]
         return sorted(nodes, key=_by_idx)
+
+    operations = operations_in_order
 
     @property
     def graph(self):
         """The graph representation of the quantum circuit.
 
-        The graph has nodes representing :class:`.Operation` instances,
+        The graph has nodes representing :class:`.Operator` instances,
         and directed edges pointing from nodes to their immediate dependents/successors.
 
         Returns:
@@ -122,74 +156,74 @@ class CircuitGraph:
         return self._graph
 
     def wire_indices(self, wire):
-        """Operation indices on the given wire.
+        """Operator indices on the given wire.
 
         Args:
             wire (int): wire to examine
 
         Returns:
-            list[int]: indices of operations on the wire, in temporal order
+            list[int]: indices of operators on the wire, in temporal order
         """
         return [op.queue_idx for op in self._grid[wire]]
 
     def ancestors(self, ops):
-        """Ancestor operations of a given set of operations.
+        """Ancestors of a given set of operators.
 
         Args:
-            ops (Iterable[Operation]): set of operations in the circuit
+            ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            set[Operation]: ancestors of the given operations
+            set[Operator]: ancestors of the given operators
         """
         return set().union(*(nx.dag.ancestors(self._graph, o) for o in ops)) - set(ops)
 
     def descendants(self, ops):
-        """Descendant operations of a given set of operations.
+        """Descendants of a given set of operators.
 
         Args:
-            ops (Iterable[Operation]): set of operations in the circuit
+            ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            set[Operation]: descendants of the given operations
+            set[Operator]: descendants of the given operators
         """
         return set().union(*(nx.dag.descendants(self._graph, o) for o in ops)) - set(ops)
 
     def _in_topological_order(self, ops):
-        """Sorts a set of operations in the circuit in a topological order.
+        """Sorts a set of operators in the circuit in a topological order.
 
         Args:
-            ops (Iterable[Operation]): set of operations in the circuit
+            ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            Iterable[Operation]: same set of operations, topologically ordered
+            Iterable[Operator]: same set of operators, topologically ordered
         """
         G = nx.DiGraph(self._graph.subgraph(ops))
         return nx.dag.topological_sort(G)
 
     def ancestors_in_order(self, ops):
-        """Operation ancestors in a topological order.
+        """Operator ancestors in a topological order.
 
         Currently the topological order is determined by the queue index.
 
         Args:
-            ops (Iterable[Operation]): set of operations in the circuit
+            ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            list[Operation]: ancestors of the given operations, topologically ordered
+            list[Operator]: ancestors of the given operators, topologically ordered
         """
         #return self._in_topological_order(self.ancestors(ops))  # an abitrary topological order
         return sorted(self.ancestors(ops), key=_by_idx)
 
     def descendants_in_order(self, ops):
-        """Operation descendants in a topological order.
+        """Operator descendants in a topological order.
 
         Currently the topological order is determined by the queue index.
 
         Args:
-            ops (Iterable[Operation]): set of operations in the circuit
+            ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            list[Operation]: descendants of the given operations, topologically ordered
+            list[Operator]: descendants of the given operators, topologically ordered
         """
         return sorted(self.descendants(ops), key=_by_idx)
 
@@ -218,7 +252,7 @@ class CircuitGraph:
                 # check if any of the dependents are in the
                 # currently assembled layer
                 if set(current.ops) & sub:
-                    # operation depends on current layer, start a new layer
+                    # operator depends on current layer, start a new layer
                     current = Layer([], [])
                     layers.append(current)
 
@@ -244,11 +278,11 @@ class CircuitGraph:
         """Replaces the given circuit graph node with a new one.
 
         Args:
-            old (Operation): node to replace
-            new (Operation): replacement
+            old (Operator): node to replace
+            new (Operator): replacement
         """
-        # TODO Does alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous, do we need this?
+        # NOTE Does not alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous!
         if new.wires != old.wires:
-            raise ValueError('The new Operation must act on the same wires as the old one.')
-        nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
+            raise ValueError('The new Operator must act on the same wires as the old one.')
         new.queue_idx = old.queue_idx
+        nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place

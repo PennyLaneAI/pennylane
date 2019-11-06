@@ -13,6 +13,9 @@
 
 ### Improvements
 
+* The `QNode` class is split into a hierarchy of simpler classes.
+  [#354](https://github.com/XanaduAI/pennylane/pull/354)
+
 ### Documentation
 
 ### Bug fixes
@@ -21,7 +24,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Johannes Jakob Meyer
+Ville Bergholm, Josh Izaac, Johannes Jakob Meyer
 
 ---
 
@@ -43,8 +46,11 @@ Josh Izaac, Johannes Jakob Meyer
   in `_device.py`.
   [#374](https://github.com/XanaduAI/pennylane/pull/374)
 
+* The `CircuitGraph` class is updated to deal with `Operation` instances directly.
+  [#344](https://github.com/XanaduAI/pennylane/pull/344)
+
 * Comprehensive gradient tests have been added for the interfaces.
-  [#381](https://github.com/XanaduAI/pennylane/pull/381)
+  [#381](https://github.com/XanaduAI/pennylane/pull/381
 
 ### Documentation
 
@@ -76,7 +82,7 @@ Josh Izaac, Johannes Jakob Meyer
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva
+Ville Bergholm, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva
 
 ---
 

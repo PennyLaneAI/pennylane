@@ -143,10 +143,8 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
             observables (Iterable[~.operation.Observable]): observables to measure and return
-            parameters (dict[int->list[(int, int)]]): Mapping from free parameter index to the list of
+            parameters (dict[int->list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
-                The first element of the tuple is the index of the Operation in the program queue,
-                the second the index of the parameter within the Operation.
 
         Returns:
             array[float]: measured value(s)
@@ -236,9 +234,7 @@ class Device(abc.ABC):
         of :meth:`~.execute`.
 
         Returns:
-            dict[int->list[(int, int)]]: the first element of the tuple is the index
-            of the Operation in the program queue, the second the index of the parameter
-            within the Operation.
+            dict[int->list[ParameterDependency]]: the mapping
         """
         if self._parameters is None:
             raise ValueError("Cannot access the free parameter mapping outside of the execution context!")

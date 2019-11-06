@@ -1530,6 +1530,29 @@ class TestQNodeVariance:
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(reason="Bug in the old QNode class: Jacobian of multiple CV variances", raises=AssertionError, strict=True)
+    def test_expval_and_variance_cv(self, tol):
+        """Test that the qnode works for a combination of CV expectation
+        values and variances"""
+        dev = qml.device("default.gaussian", wires=3)
+
+        def circuit(a, b):
+            qml.Displacement(0.5, 0, wires=0)
+            qml.Squeezing(a, 0, wires=0)
+            qml.Squeezing(b, 0, wires=1)
+            qml.Beamsplitter(0.6, -0.3, wires=[0, 1])
+            qml.Squeezing(-0.3, 0, wires=2)
+            qml.Beamsplitter(1.4, 0.5, wires=[1, 2])
+            return qml.var(qml.X(0)), qml.expval(qml.X(1)), qml.var(qml.X(2))
+
+        node = QNode(circuit, dev)
+        par = [0.54, -0.423]
+
+        # jacobians must match
+        gradA = node.jacobian(par, method="A")
+        gradF = node.jacobian(par, method="F")
+        assert gradA == pytest.approx(gradF, abs=tol)
+
     def test_first_order_cv(self, tol):
         """Test variance of a first order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
