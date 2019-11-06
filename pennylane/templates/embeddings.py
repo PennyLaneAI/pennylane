@@ -154,7 +154,7 @@ def BasisEmbedding(features, wires):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Raises:
-        ValueError: if `features` or `wires` is invalid
+        ValueError: if ``features`` or ``wires`` is invalid
     """
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
