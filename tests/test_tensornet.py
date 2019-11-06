@@ -22,7 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-
 tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
 
 
@@ -220,7 +219,7 @@ class TestTensornetIntegration:
         ("SWAP", [-1/2, -1/2]),
         ("CZ", [-1/2, -1/2]),
     ])
-    def _test_supported_gate_two_wires_no_parameters(self, tensornet_device_2_wires, tol, name, expected_output):  # TODO: change name when QubitStateVector is supported
+    def test_supported_gate_two_wires_no_parameters(self, tensornet_device_2_wires, tol, name, expected_output):
         """Tests supported gates that act on two wires that are not parameterized"""
 
         op = getattr(qml.ops, name)
@@ -238,7 +237,7 @@ class TestTensornetIntegration:
     @pytest.mark.parametrize("name,expected_output", [
         ("CSWAP", [-1, -1, 1]),
     ])
-    def _test_supported_gate_three_wires_no_parameters(self, tensornet_device_3_wires, tol, name, expected_output):  # TODO: change name when BasisState is supported
+    def test_supported_gate_three_wires_no_parameters(self, tensornet_device_3_wires, tol, name, expected_output):
         """Tests supported gates that act on three wires that are not parameterized"""
 
         op = getattr(qml.ops, name)
@@ -262,7 +261,7 @@ class TestTensornetIntegration:
         ("QubitStateVector", [0, 0, 1, 0], [-1, 1]),
         ("QubitStateVector", [0, 1, 0, 0], [1, -1]),
     ])
-    def _test_supported_state_preparation(self, tensornet_device_2_wires, tol, name, par, expected_output):   # TODO: change name when QubitStateVector and BasisState are supported
+    def test_supported_state_preparation(self, tensornet_device_2_wires, tol, name, par, expected_output):
         """Tests supported state preparations"""
 
         op = getattr(qml.ops, name)
@@ -329,7 +328,7 @@ class TestTensornetIntegration:
         ("QubitUnitary", [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])], [-1/2, -1/2]),
         ("QubitUnitary", [np.array([[-1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, -1]])], [-1/2, -1/2]),
     ])
-    def _test_supported_gate_two_wires_with_parameters(self, tensornet_device_2_wires, tol, name, par, expected_output):  # TODO: change name when QubitStateVector is supported
+    def test_supported_gate_two_wires_with_parameters(self, tensornet_device_2_wires, tol, name, par, expected_output):
         """Tests supported gates that act on two wires wires that are parameterized"""
 
         op = getattr(qml.ops, name)
@@ -358,7 +357,7 @@ class TestTensornetIntegration:
         ("Hadamard", [0, 1], -1/math.sqrt(2)),
         ("Hadamard", [1/math.sqrt(2), 1/math.sqrt(2)], 1/math.sqrt(2)),
     ])
-    def _test_supported_observable_single_wire_no_parameters(self, tensornet_device_1_wire, tol, name, state, expected_output):  # TODO: change name when QubitStateVector is supported
+    def test_supported_observable_single_wire_no_parameters(self, tensornet_device_1_wire, tol, name, state, expected_output):
         """Tests supported observables on single wires without parameters."""
 
         obs = getattr(qml.ops, name)
@@ -380,7 +379,7 @@ class TestTensornetIntegration:
         ("Hermitian", [0, 1], 1, [np.array([[1, 1j], [-1j, 1]])]),
         ("Hermitian", [1/math.sqrt(2), -1/math.sqrt(2)], 1, [np.array([[1, 1j], [-1j, 1]])]),
     ])
-    def _test_supported_observable_single_wire_with_parameters(self, tensornet_device_1_wire, tol, name, state, expected_output, par):  # TODO: change name when QubitStateVector is supported
+    def test_supported_observable_single_wire_with_parameters(self, tensornet_device_1_wire, tol, name, state, expected_output, par):
         """Tests supported observables on single wires with parameters."""
 
         obs = getattr(qml.ops, name)
@@ -402,7 +401,7 @@ class TestTensornetIntegration:
         ("Hermitian", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], 1, [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])]),
         ("Hermitian", [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], -1, [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])]),
     ])
-    def _test_supported_observable_two_wires_with_parameters(self, tensornet_device_2_wires, tol, name, state, expected_output, par):  # TODO: change name when QubitStateVector is supported
+    def test_supported_observable_two_wires_with_parameters(self, tensornet_device_2_wires, tol, name, state, expected_output, par):
         """Tests supported observables on two wires with parameters."""
 
         obs = getattr(qml.ops, name)
@@ -416,7 +415,6 @@ class TestTensornetIntegration:
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
-
     def test_expval_warnings(self):
         """Tests that expval raises a warning if the given observable is complex."""
 
@@ -428,6 +426,36 @@ class TestTensornetIntegration:
         # text warning raised if matrix is complex
         with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
             dev.ev([obs_node], wires=[[0]])
+
+    def test_cannot_overwrite_state(self, tensornet_device_2_wires):
+        """Tests that _state is a property and cannot be overwritten."""
+
+        dev = tensornet_device_2_wires
+
+        with pytest.raises(AttributeError, match="can't set attribute"):
+            dev._state = np.array([[1, 0],
+                                   [0, 0]])
+
+    def test_correct_state(self, tensornet_device_2_wires):
+
+        dev = tensornet_device_2_wires
+        state = dev._state
+
+        expected = np.array([[1, 0],
+                             [0, 0]])
+        assert np.allclose(state, expected)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit()
+        state = dev._state
+
+        expected = np.array([[1, 0],
+                             [1, 0]]) / np.sqrt(2)
+        assert np.allclose(state, expected)
 
 
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
@@ -568,4 +596,3 @@ class TestTensorExpval:
         expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
