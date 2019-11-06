@@ -784,7 +784,7 @@ class QNode:
 
         Raises:
             QuantumFunctionError: if sampling is specified
-            ValueError: if `params` is incorrect, the differentiation is not possible, or if `method`
+            ValueError: if `params` is incorrect, differentiation is not possible, or if `method`
                 is unknown
 
         Returns:
@@ -1143,7 +1143,7 @@ class QNode:
         """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
 
         Raises:
-            QuantumFunctionError: if ``PyTorch`` is not installed
+            QuantumFunctionError: if PyTorch is not installed
         """
         # Placing slow imports here, in case the user does not use the Torch interface
         try: # pragma: no cover
@@ -1158,7 +1158,7 @@ class QNode:
         """Convert the standard PennyLane QNode into a :func:`~.TFQNode`.
 
         Raises:
-            QuantumFunctionError: if ``TensorFlow`` is not installed
+            QuantumFunctionError: if TensorFlow >= 1.12 is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
         try: # pragma: no cover
