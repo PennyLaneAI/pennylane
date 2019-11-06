@@ -314,6 +314,7 @@ class Operator(abc.ABC):
                 sequence (affects the handling of 'A' parameters)
         Raises:
             TypeError: parameter is not an element of the expected domain
+            ValueError: parameter is an element of an unknown domain
         Returns:
             Number, array, Variable: p
         """
@@ -669,6 +670,10 @@ class CV:
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
             num_wires (int): total number of wires in the quantum circuit. If zero, return ``U`` as is.
+
+        Raises:
+            ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
+
         Returns:
             array[float]: expanded array, dimension ``1+2*num_wires``
         """
@@ -820,6 +825,9 @@ class CVOperation(CV, Operation):
         Args:
             num_wires (int): total number of wires in the quantum circuit
             inverse  (bool): if True, return the inverse transformation instead
+
+        Raises:
+            RuntimeError: if the specified operation is not Gaussian or is missing the `_heisenberg_rep` method
 
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation

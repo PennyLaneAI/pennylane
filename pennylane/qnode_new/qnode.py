@@ -270,7 +270,11 @@ class QNode:
         """Append a quantum operation into the circuit queue.
 
         Args:
-            op (~.operation.Operator): quantum operation to be added to the circuit
+            op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
+
+        Raises:
+            ValueError: if `op` does not act on all wires
+            QuantumFunctionError: if state preparations and gates do not precede measured observables
         """
         if op.num_wires == Wires.All:
             if set(op.wires) != set(range(self.num_wires)):
@@ -316,6 +320,11 @@ class QNode:
                 the nesting structure.
                 Each positional argument is replaced with a :class:`~.variable.Variable` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
+
+        Raises:
+            QuantumFunctionError: if the :class:`pennylane.QNode`'s _current_context is attempted to be modified
+                inside of this method, the quantum function returns incorrect values or if
+                both continuous and discrete operations are specified in the same quantum circuit
         """
         # pylint: disable=protected-access  # remove when QNode_old is gone
         # pylint: disable=attribute-defined-outside-init, too-many-branches
@@ -465,6 +474,9 @@ class QNode:
         Args:
             kwargs (dict[str, Any]): auxiliary arguments (given using the keyword syntax)
 
+        Raises:
+            QuantumFunctionError: if the parameter to the quantum function was invalid
+
         Returns:
             dict[str, Any]: all auxiliary arguments (with defaults)
         """
@@ -559,6 +571,11 @@ class QNode:
 
         Args:
             diag_approx (bool): iff True, use the diagonal approximation
+
+        Raises:
+            QuantumFunctionError: if a metric tensor cannot be generated because no generator
+                was defined
+
         """
         # pylint: disable=too-many-statements, too-many-branches
 
