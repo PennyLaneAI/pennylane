@@ -288,7 +288,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Print the operator name and some information."""
-        return self.name + ': {} params, wires {}'.format(len(self.params), self.wires)
+        return  "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
 
     def _check_wires(self, wires):
         """Check the validity of the operation wires.
