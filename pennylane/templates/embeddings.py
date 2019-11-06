@@ -50,7 +50,7 @@ def AngleEmbedding(features, wires, rotation='X'):
         rotation (str): Type of rotations used
 
     Raises:
-        ValueError: if `features` or `wires` is invalid
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if not isinstance(wires, Iterable):
