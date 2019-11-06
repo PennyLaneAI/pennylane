@@ -118,7 +118,7 @@ class Device(abc.ABC):
                 expectation values of observables
 
         Raises:
-            DeviceError: if number of `shots` is less than 1
+            DeviceError: if number of shots is less than 1
         """
         if shots < 1:
             raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
