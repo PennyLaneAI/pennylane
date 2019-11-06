@@ -119,12 +119,12 @@ class QNode:
     def _append_op(self, op):
         """Appends a quantum operation into the circuit queue.
 
+        Args:
+            op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
+
         Raises:
             ValueError: if the operation does not act on all wires
             QuantumFunctionError: if state preparations and gates do not precede measured observables
-
-        Args:
-            op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
         """
         if op.num_wires == qml.operation.Wires.All:
             if set(op.wires) != set(range(self.num_wires)):
@@ -182,11 +182,6 @@ class QNode:
         stores the resulting sequence of :class:`~.operation.Operation` instances,
         and creates the variable mapping.
 
-        Raises:
-            QuantumFunctionError: if the QNode's _current_context is attempted to be modified
-                inside of this method, the quantum function returns incorrect values or if
-                both continuous and discrete operations are specified in the same quantum circuit
-
         Args:
             args (tuple): Represent the free parameters passed to the circuit.
                 Here we are not concerned with their values, but with their structure.
@@ -195,6 +190,11 @@ class QNode:
                 however PennyLane does not support differentiating with respect to keyword arguments.
                 Instead, keyword arguments are useful for providing data or 'placeholders'
                 to the quantum circuit function.
+
+        Raises:
+            QuantumFunctionError: if the QNode's _current_context is attempted to be modified
+                inside of this method, the quantum function returns incorrect values or if
+                both continuous and discrete operations are specified in the same quantum circuit
         """
         # pylint: disable=too-many-branches,too-many-statements
         self.queue = []
