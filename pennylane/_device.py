@@ -150,7 +150,7 @@ class Device(abc.ABC):
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
 
         Raises:
-            QuantumFunctionError: if the return type of one of the `observables` is not supported
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
             array[float]: measured value(s)
