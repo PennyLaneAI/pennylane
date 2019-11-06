@@ -113,12 +113,12 @@ class Device(abc.ABC):
     def shots(self, shots):
         """Changes the number of shots.
 
-        Raises:
-            DeviceError: if number of shots is less than 1
-
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
                 expectation values of observables
+
+        Raises:
+            DeviceError: if number of shots is less than 1
         """
         if shots < 1:
             raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))

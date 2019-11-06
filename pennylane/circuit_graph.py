@@ -277,12 +277,12 @@ class CircuitGraph:
     def update_node(self, old, new):
         """Replaces the given circuit graph node with a new one.
 
-        Raises:
-            ValueError: if the new Operator does not act on the same wires as the old one
-
         Args:
             old (Operator): node to replace
             new (Operator): replacement
+
+        Raises:
+            ValueError: if the new Operator does not act on the same wires as the old one
         """
         # NOTE Does not alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous!
         if new.wires != old.wires:
