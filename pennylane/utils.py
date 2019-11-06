@@ -88,7 +88,7 @@ def unflatten(flat, model):
         model (array, Iterable, Number): model nested structure
 
     Raises:
-        ValueError: if 'flat' has more elements than `model`
+        ValueError: if ``flat`` has more elements than ``model``
     """
     # pylint:disable=len-as-condition
     res, tail = _unflatten(np.asarray(flat), model)
