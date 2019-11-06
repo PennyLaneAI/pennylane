@@ -277,6 +277,9 @@ class CircuitGraph:
     def update_node(self, old, new):
         """Replaces the given circuit graph node with a new one.
 
+        Raises:
+            ValueError: if the new Operator does not act on the same wires as the old one
+
         Args:
             old (Operator): node to replace
             new (Operator): replacement
