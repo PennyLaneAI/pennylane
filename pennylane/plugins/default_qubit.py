@@ -415,7 +415,7 @@ class DefaultQubit(Device):
         """Get the operator matrix for a given operation or observable.
 
         If the inverse was defined for an operation or observable that requires parameters, returns the
-        operator matrix obtained using negated paramaters.
+        conjugate transpose of the operator matrix.
 
         Args:
           operation    (str): name of the operation/observable
