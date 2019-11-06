@@ -354,7 +354,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
           beamsplitter is implemented via PennyLane's ``Beamsplitter`` operation.
 
     Raises:
-        QuantumFunctionError: if the beamsplitter or the mesh is defined as a
+        QuantumFunctionError: if `beamsplitter` or `mesh` is an instance of
             :class:`~pennylane.variable.Variable`
     """
     if isinstance(beamsplitter, Variable):

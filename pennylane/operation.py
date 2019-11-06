@@ -672,8 +672,7 @@ class CV:
             num_wires (int): total number of wires in the quantum circuit. If zero, return ``U`` as is.
 
         Raises:
-            ValueError: if the size of the input matrix is invalid or an incorrect number of wires were
-                specified
+            ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
 
         Returns:
             array[float]: expanded array, dimension ``1+2*num_wires``
@@ -828,7 +827,7 @@ class CVOperation(CV, Operation):
             inverse  (bool): if True, return the inverse transformation instead
 
         Raises:
-            RuntimeError: if the specified operation is not Gaussian or is missing the _heisenberg_rep method
+            RuntimeError: if the specified operation is not Gaussian or is missing the `_heisenberg_rep` method
 
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation

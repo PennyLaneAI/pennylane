@@ -58,7 +58,7 @@ def _unflatten(flat, model):
         model (array, Iterable, Number): model nested structure
 
     Raises:
-        TypeError: if the model contains unsupported type
+        TypeError: if `model` contains an object of unsupported type
 
     Returns:
         (other, array): first elements of flat arranged into the nested
@@ -88,7 +88,7 @@ def unflatten(flat, model):
         model (array, Iterable, Number): model nested structure
 
     Raises:
-        ValueError: if the flattened iterable has more elements than the model
+        ValueError: if 'flat' has more elements than `model`
     """
     # pylint:disable=len-as-condition
     res, tail = _unflatten(np.asarray(flat), model)

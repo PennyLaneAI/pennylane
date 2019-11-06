@@ -123,7 +123,7 @@ class QNode:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
 
         Raises:
-            ValueError: if the operation does not act on all wires
+            ValueError: if `op` does not act on all wires
             QuantumFunctionError: if state preparations and gates do not precede measured observables
         """
         if op.num_wires == qml.operation.Wires.All:
@@ -192,7 +192,7 @@ class QNode:
                 to the quantum circuit function.
 
         Raises:
-            QuantumFunctionError: if the QNode's _current_context is attempted to be modified
+            QuantumFunctionError: if the :class:`pennylane.QNode`'s _current_context is attempted to be modified
                 inside of this method, the quantum function returns incorrect values or if
                 both continuous and discrete operations are specified in the same quantum circuit
         """
@@ -338,7 +338,7 @@ class QNode:
                 approximation. Default is ``False``.
 
         Raises:
-            QuantumFunctionError: if a metric tensor cannot be generated
+            QuantumFunctionError: if a metric tensor cannot be generated because no generator was defined
 
         .. note::
 
@@ -784,8 +784,8 @@ class QNode:
 
         Raises:
             QuantumFunctionError: if sampling is specified
-            ValueError: if incorrect parameters were defined, the differentiation is not possible or if
-                the gradient method is unknown
+            ValueError: if `params` is incorrect, the differentiation is not possible or if `method`
+                is unknown
 
         Returns:
             array[float]: Jacobian matrix, with shape ``(n_out, len(which))``, where ``len(which)`` is the
@@ -1143,7 +1143,7 @@ class QNode:
         """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
 
         Raises:
-            QuantumFunctionError: if PyTorch is not installed
+            QuantumFunctionError: if ``PyTorch`` is not installed
         """
         # Placing slow imports here, in case the user does not use the Torch interface
         try: # pragma: no cover
@@ -1158,7 +1158,7 @@ class QNode:
         """Convert the standard PennyLane QNode into a :func:`~.TFQNode`.
 
         Raises:
-            QuantumFunctionError: if TensorFlow is not installed
+            QuantumFunctionError: if ``TensorFlow`` is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
         try: # pragma: no cover

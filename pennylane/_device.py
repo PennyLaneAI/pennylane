@@ -118,7 +118,7 @@ class Device(abc.ABC):
                 expectation values of observables
 
         Raises:
-            DeviceError: if number of shots is less than 1
+            DeviceError: if number of `shots` is less than 1
         """
         if shots < 1:
             raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
@@ -150,7 +150,7 @@ class Device(abc.ABC):
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
 
         Raises:
-            QuantumFunctionError: if the return type of the observable is not supported
+            QuantumFunctionError: if the return type of one of the `observables` is not supported
 
         Returns:
             array[float]: measured value(s)

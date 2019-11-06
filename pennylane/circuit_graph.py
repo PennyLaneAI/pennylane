@@ -282,7 +282,7 @@ class CircuitGraph:
             new (Operator): replacement
 
         Raises:
-            ValueError: if the new Operator does not act on the same wires as the old one
+            ValueError: if the new :class:`~.Operator` does not act on the same wires as the old one
         """
         # NOTE Does not alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous!
         if new.wires != old.wires:

@@ -50,7 +50,7 @@ def AngleEmbedding(features, wires, rotation='X'):
         rotation (str): Type of rotations used
 
     Raises:
-        ValueError: if the wrong wires or features were defined
+        ValueError: if `features` or `wires` is invalid
     """
 
     if not isinstance(wires, Iterable):
@@ -97,7 +97,7 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         normalize (Boolean): controls the activation of automatic normalization
 
     Raises:
-        ValueError: if the feature vector specified is invalid
+        ValueError: if `features` or `wires` is invalid
     """
 
     if isinstance(wires, int):
@@ -154,7 +154,7 @@ def BasisEmbedding(features, wires):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Raises:
-        ValueError: if the wrong wires or features were defined
+        ValueError: if `features` or `wires` is invalid
     """
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
@@ -192,7 +192,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             amplitude of all squeezing gates if ``execution='phase'``
 
     Raises:
-        ValueError: if the wrong wires or features were defined
+        ValueError: if `features` or `wires` is invalid
     """
 
     if not isinstance(wires, Iterable):
@@ -236,8 +236,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             the amplitude of all displacement gates if ``execution='phase'``
 
     Raises:
-        ValueError: if the wrong wires or features were defined or if an unknown execution method was
-            specified
+        ValueError: if `features` or `wires` is invalid or if `method` is unknown
    """
 
     if not isinstance(wires, Iterable):
