@@ -784,7 +784,7 @@ class QNode:
 
         Raises:
             QuantumFunctionError: if sampling is specified
-            ValueError: if `params` is incorrect, the differentiation is not possible or if `method`
+            ValueError: if `params` is incorrect, the differentiation is not possible, or if `method`
                 is unknown
 
         Returns:
