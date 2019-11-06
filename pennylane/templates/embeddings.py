@@ -192,7 +192,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             amplitude of all squeezing gates if ``execution='phase'``
 
     Raises:
-        ValueError: if `features` or `wires` is invalid
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if not isinstance(wires, Iterable):
