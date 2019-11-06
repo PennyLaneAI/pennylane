@@ -97,7 +97,7 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         normalize (Boolean): controls the activation of automatic normalization
 
     Raises:
-        ValueError: if `features` or `wires` is invalid
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if isinstance(wires, int):
