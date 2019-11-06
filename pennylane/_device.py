@@ -273,11 +273,13 @@ class Device(abc.ABC):
         return MockContext()
 
     def supports_operation(self, operation):
-        """Checks if an operation is supported by this device. Raises a ValueError,
-         if not a subclass or string of an Operation was passed.
+        """Checks if an operation is supported by this device.
 
         Args:
             operation (type or str): operation to be checked
+
+        Raises:
+            ValueError: if `operation` is not a :class:`~.Operation` class or string
 
         Returns:
             bool: ``True`` iff supplied operation is supported
@@ -296,6 +298,9 @@ class Device(abc.ABC):
         Args:
             observable (type or str): observable to be checked
 
+        Raises:
+            ValueError: if `observable` is not a :class:`~.Observable` class or string
+
         Returns:
             bool: ``True`` iff supplied observable is supported
         """
@@ -312,6 +317,10 @@ class Device(abc.ABC):
 
         Args:
             operation_name (str): name of the inverse operation
+
+        Raises:
+            DeviceError: if the device does not support the computation of inverses
+
         Returns:
             original_name (str): name of the original operation
         """
@@ -320,14 +329,18 @@ class Device(abc.ABC):
         return operation_name[:-len(Operation.string_for_inverse)]
 
     def check_validity(self, queue, observables):
-        """Checks whether the operations and observables in queue are all supported by the device. Includes checks for
-        inverse operations.
+        """Checks whether the operations and observables in queue are all supported by the device.
+        Includes checks for inverse operations.
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
                 to be applied on the device
             observables (Iterable[~.operation.Observable]): observables which are intended
                 to be evaluated on the device
+
+        Raises:
+            DeviceError: if there are operations in the queue or observables that the device does
+                not support
         """
 
         for o in queue:
