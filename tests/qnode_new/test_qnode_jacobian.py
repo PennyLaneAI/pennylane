@@ -80,9 +80,9 @@ class TestJNodeExceptions:
         with pytest.raises(ValueError, match="Cannot differentiate wrt. parameter"):
             node.jacobian(0.5)
 
-    def test_operator_not_supporting_analytic_pd(self, operable_mock_device_2_wires):
+    def test_operator_not_supporting_pd_parameter_shift(self, operable_mock_device_2_wires):
         """Differentiating wrt. a parameter that appears
-        as an argument to an operation that does not support analytic derivatives."""
+        as an argument to an operation that does not support parameter-shift derivatives."""
 
         def circuit(x):
             qml.RX(x, wires=[0])
@@ -90,7 +90,7 @@ class TestJNodeExceptions:
 
         node = JNode(circuit, operable_mock_device_2_wires)
 
-        with pytest.raises(ValueError, match="analytic gradient method cannot be used with"):
+        with pytest.raises(ValueError, match="parameter-shift gradient method cannot be used with"):
             node.jacobian(0.5, method="A")
 
     def test_bogus_gradient_method_set(self, operable_mock_device_2_wires):
@@ -132,10 +132,10 @@ class TestJNodeExceptions:
 
         node = JNode(circuit, operable_mock_device_2_wires)
 
-        with pytest.raises(ValueError, match="Tried to compute the gradient wrt"):
+        with pytest.raises(ValueError, match="Tried to compute the gradient with respect to"):
             node.jacobian(0.5, wrt=[0, 6])
 
-        with pytest.raises(ValueError, match="Tried to compute the gradient wrt"):
+        with pytest.raises(ValueError, match="Tried to compute the gradient with respect to"):
             node.jacobian(0.5, wrt=[1, -1])
 
     def test_unknown_gradient_method(self, operable_mock_device_2_wires):
@@ -210,8 +210,8 @@ class TestJNodeBestMethod:
         assert res == pytest.approx(expected, abs=tol)
 
     def test_best_method_with_gaussian_successors_fails(self, gaussian_device_2_wires):
-        """Tests that the analytic differentiation method is not allowed
-        if a non-Gaussian gate is succeeded by an observable."""
+        """Tests that the parameter-shift differentiation method is not allowed
+        if a non-gaussian gate is between a differentiable gaussian gate and an observable."""
 
         def circuit(x):
             qml.Squeezing(x, 0, wires=[0])
@@ -221,7 +221,7 @@ class TestJNodeBestMethod:
 
         node = JNode(circuit, gaussian_device_2_wires)
 
-        with pytest.raises(ValueError, match="analytic gradient method cannot be used with"):
+        with pytest.raises(ValueError, match="parameter-shift gradient method cannot be used with"):
             node.jacobian([0.321], method='A')
 
     def test_cv_gradient_methods(self, gaussian_device_2_wires):

@@ -32,7 +32,10 @@ from pennylane.qnode_new.qnode import QNode, QuantumFunctionError
 class JacobianQNode(QNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
-    interface = None  #: str, None: automatic differentiation interface used by the node, if any
+    @property
+    def interface(self):
+        """str, None: automatic differentiation interface used by the node, if any"""
+        return None
 
     def __init__(self, func, device, mutable=True, properties=None):
         super().__init__(func, device, mutable=mutable, properties=properties)
@@ -42,7 +45,7 @@ class JacobianQNode(QNode):
 
     def __repr__(self):
         """String representation."""
-        detail = "<JNode: device='{}', func={}, wires={}, interface={}>"
+        detail = "<QNode (differentiable): device='{}', func={}, wires={}, interface={}>"
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires, self.interface)
 
     def _construct(self, args, kwargs):
@@ -62,7 +65,7 @@ class JacobianQNode(QNode):
     def _best_method(self, idx):
         """Determine the correct partial derivative computation method for a free parameter.
 
-        Use the analytic method iff every gate that depends on the parameter supports it.
+        Use the parameter-shift analytic method iff every gate that depends on the parameter supports it.
         If not, use the finite difference method only (one would have to use it anyway).
 
         Note that if even one dependent Operation does not support differentiation,
@@ -141,13 +144,13 @@ class JacobianQNode(QNode):
           :math:`n+1` points of the parameter space, the second-order method at :math:`2n` points,
           where ``n = len(wrt)``.
 
-        * Analytic method (``'A'``). Works for all one-parameter gates where the generator
+        * Parameter-shift method (``'A'``). Analytic, works for all one-parameter gates where the generator
           only has two unique eigenvalues; this includes one-parameter single-qubit gates.
           Additionally, can be used in CV systems for Gaussian circuits containing only first-
           and second-order observables.
           The circuit is evaluated twice for each incidence of each parameter in the circuit.
 
-        * Best known method for each parameter (``'B'``): uses the analytic method if
+        * Best known method for each parameter (``'B'``): uses the parameter-shift method if
           possible, otherwise finite difference.
 
         * Device method (``'D'``): Delegates the computation of the Jacobian to the
@@ -169,12 +172,12 @@ class JacobianQNode(QNode):
 
                 * h (float): finite difference method step size
                 * order (int): finite difference method order, 1 or 2
-                * force_order2 (bool): force the analytic method to use the second-order method
-                * shots (int): number of times the circuit is evaluated (or sampled) to estimate expectation values FIXME is this used?
+                * force_order2 (bool): force the parameter-shift method to use the second-order method
 
         Returns:
             array[float]: Jacobian, shape ``(n, len(wrt))``, where ``n`` is the number of outputs returned by the QNode
         """
+        # FIXME add 'D' method
         options = options or {}
 
         # arrays are not Sequences... but they ARE Iterables? FIXME decide which types we accept! cf. _flatten
@@ -221,7 +224,7 @@ class JacobianQNode(QNode):
             if method == 'A':
                 bad = inds_using('F')
                 if bad:
-                    raise ValueError("The analytic gradient method cannot be "
+                    raise ValueError("The parameter-shift gradient method cannot be "
                                      "used with the parameters {}.".format(bad))
             method = {k: method for k in wrt}
         elif method == 'B':
@@ -351,20 +354,20 @@ class JacobianQNode(QNode):
             temp_var.idx = n
             op.params[p_idx] = temp_var
 
-            multiplier, shift = op.use_grad_recipe(p_idx)
+            multiplier, shift = op.get_parameter_shift(p_idx)
 
             # shifted parameter values
             shift_p1 = np.r_[args, args[idx] +shift]
             shift_p2 = np.r_[args, args[idx] -shift]
 
             if not force_order2 and op.grad_method != 'A2':
-                # basic analytic method, for discrete gates and gaussian CV gates succeeded by order-1 observables
+                # basic parameter-shift method, for discrete gates and gaussian CV gates succeeded by order-1 observables
                 # evaluate the circuit at two points with shifted parameter values
                 y2 = np.asarray(self.evaluate(shift_p1, kwargs))
                 y1 = np.asarray(self.evaluate(shift_p2, kwargs))
                 pd += (y2-y1) * multiplier
             else:
-                # order-2 analytic method, for gaussian CV gates succeeded by order-2 observables
+                # order-2 parameter-shift method, for gaussian CV gates succeeded by order-2 observables
                 # evaluate transformed observables at the original parameter point
                 # first build the Z transformation matrix
                 self._set_variables(shift_p1, kwargs)
@@ -383,7 +386,7 @@ class JacobianQNode(QNode):
                 B_inv = B.copy()
                 for BB in self._op_descendants(op, 'G'):
                     if not BB.supports_heisenberg:
-                        # if the descendant gate is non-Gaussian in analytic differentiation
+                        # if the descendant gate is non-Gaussian in parameter-shift differentiation
                         # mode, then there must be no observable following it.
                         continue
                     B = BB.heisenberg_tr(w) @ B
@@ -404,7 +407,7 @@ class JacobianQNode(QNode):
         return pd
 
     def _pd_parameter_shift_var(self, idx, args, kwargs):
-        """Partial derivative of the variance of an observable using the analytic method.
+        """Partial derivative of the variance of an observable using the parameter-shift method.
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
@@ -481,7 +484,9 @@ class JacobianQNode(QNode):
 class AutogradQNode(JacobianQNode):
     """JacobianQNode that works with Autograd."""
 
-    interface = 'Autograd'
+    @property
+    def interface(self):
+        return "numpy"  # NOTE not "Autograd", for backwards compatibility
 
     # mark the evaluate method as an Autograd primitive
     evaluate = autograd.extend.primitive(JacobianQNode.evaluate)

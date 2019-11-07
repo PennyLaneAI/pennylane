@@ -433,8 +433,8 @@ class Operation(Operator):
         :math:`(c_k, s_k)=(1/2, \pi/2)` is assumed for every parameter.
     """
 
-    def use_grad_recipe(self, idx):
-        """Gradient recipe multiplier and shift for the given parameter.
+    def get_parameter_shift(self, idx):
+        """Multiplier and shift for the given parameter, based on its gradient recipe.
 
         Args:
             idx (int): parameter index

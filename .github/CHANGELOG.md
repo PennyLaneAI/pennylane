@@ -13,6 +13,7 @@
 
 * The `QNode` class is split into a hierarchy of simpler classes.
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
+  [#398](https://github.com/XanaduAI/pennylane/pull/398)
 
 ### Documentation
 

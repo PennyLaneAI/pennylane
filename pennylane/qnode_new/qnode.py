@@ -185,16 +185,11 @@ class QNode:
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"] #: str: circuit type, in {'cv', 'qubit'}
 
-    @property
-    def interface(self):
-        """String representing the QNode interface"""
-        return "numpy"
-
     def __str__(self):
         """String representation"""
-        detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
+        detail = "<QNode: device='{}', func={}, wires={}>"
         return detail.format(
-            self.device.short_name, self.func.__name__, self.num_wires, self.interface
+            self.device.short_name, self.func.__name__, self.num_wires
         )
 
     def __repr__(self):
