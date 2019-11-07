@@ -204,78 +204,47 @@ class TensorNetwork(Device):
             op_node, self._state_node, output_edge_order=self._free_edges
         )
 
-    @staticmethod
-    def check_inputs(observable, wires, par):
-        """Helper function for checking if the observables and their parameters
-        are in a list.
-
-        Args:
-          observable (str or list[str]): name of the observable(s)
-          wires (int or list[int]): measured subsystems for each observable
-          par (Sequence[np.complex128]): parameter for each observable
-
-        Returns:
-          list[np.complex128]: the observables as tensornetwork Nodes
-        """
-        return [observable], [wires], [par] if not isinstance(observable, list)\
-            else observable, wires, par
-
-    def get_compatible_matrices(self, observable, wires, par):
-        """Helper function for getting and reshaping the matrices for observables.
-
-        Args:
-          observable (str or list[str]): name of the observable(s)
-          wires (list[int] or list[list[int]]): measured subsystems for each observable
-          par (Sequence[np.complex128]): parameter for each observable
-
-        Returns:
-          list[np.array[np.complex128]]: the observables as tensornetwork Nodes
-          list[list[int]]: measured subsystems for each observable
-        """
-
-        if not isinstance(observable, list):
-            observable, wires, par = [observable], [wires], [par]
-
-        matrices = []
-
-        for o, p, w in zip(observable, par, wires):
-            A = self._get_operator_matrix(o, p)
-            num_mult_idxs = len(w)
-            matrices.append(np.reshape(A, [2] * num_mult_idxs * 2))
-        return matrices, wires
-
-    def create_nodes_from_matrices(self, matrices: list, wires: list, observable_names: list):
+    def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list):
         """Helper function for creating tensornetwork nodes based on matrices.
 
         Args:
-          matrices (list[np.array[np.complex128]]): matrices of the observable
+          tensors (Sequence[Sequence[np.complex128]]): tensors of the observables
           wires (Sequence[Sequence[int]]): measured subsystems for each observable
           observable_names (Sequence[str]): name of the operation/observable
 
         Returns:
           list[tn.Node]: the observables as tensornetwork Nodes
         """
-        return [self._add_node(A, w, name=o) for A, w, o in zip(matrices, wires, observable_names)]
+        return [self._add_node(A, w, name=o) for A, w, o in zip(tensors, wires, observable_names)]
 
     def expval(self, observable, wires, par):
 
-        matrices, wires = self.get_compatible_matrices(observable, wires, par)
-        nodes = self.create_nodes_from_matrices(matrices, wires, observable)
+        if not isinstance(observable, list):
+            observable, wires, par = [observable], [wires], [par]
 
+        tensors = []
+        for o, p, w in zip(observable, par, wires):
+            A = self._get_operator_matrix(o, p)
+            num_mult_idxs = len(w)
+            tensors.append(np.reshape(A, [2] * num_mult_idxs * 2))
+
+        nodes = self.create_nodes_from_tensors(tensors, wires, observable)
         return self.ev(nodes, wires)
 
     def var(self, observable, wires, par):
 
-        matrices, wires = self.get_compatible_matrices(observable, wires, par)
-        square_of_matrices = [A*A for A in matrices]
+        if not isinstance(observable, list):
+            observable, wires, par = [observable], [wires], [par]
 
-        obs_nodes = self.create_nodes_from_matrices(matrices, wires, observable)
-        obs_nodes_for_squares = self.create_nodes_from_matrices(square_of_matrices, wires, observable)
+        matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
-        first = self.ev(obs_nodes_for_squares, wires)
-        second = self.ev(obs_nodes, wires)**2
+        tensors = [np.reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
+        tensors_of_squared_matrices = [np.reshape(A@A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
 
-        return first - second
+        obs_nodes = self.create_nodes_from_tensors(tensors, wires, observable)
+        obs_nodes_for_squares = self.create_nodes_from_tensors(tensors_of_squared_matrices, wires, observable)
+
+        return self.ev(obs_nodes_for_squares, wires) - self.ev(obs_nodes, wires)**2
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
