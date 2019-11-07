@@ -14,6 +14,10 @@
 * The `QNode` class is split into a hierarchy of simpler classes.
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
 
+* Changes have been made to accomodate the movement of the main function
+  in `pytest._internal` in pip<19.3 to `pytest._internal.main`.
+  [#404](https://github.com/XanaduAI/pennylane/pull/404)
+
 ### Documentation
 
 ### Bug fixes
@@ -22,7 +26,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Johannes Jakob Meyer
+Ville Bergholm, Oluwatobi Ogunbayo, Josh Izaac, Johannes Jakob Meyer
 
 ---
 
