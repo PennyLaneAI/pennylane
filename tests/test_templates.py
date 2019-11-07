@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the integration of the methods from :mod:`pennylane.init` with the :mod:`pennylane.templates` module.
+Integration tests for templates, including integration of passing outputs of initialization functions
+in :mod:`pennylane.init`, and running templates in larger circuits.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
@@ -29,8 +30,7 @@ from pennylane.init import (strong_ent_layers_uniform, strong_ent_layer_uniform,
 
 
 class TestParameterIntegration:
-    """ Integration tests for the parameter generation methods from pennylane.init
-    and pennylane.templates.layers."""
+    """Tests integration with the parameter initialization functions from pennylane.init"""
 
     @pytest.mark.parametrize('parfun', [cvqnn_layers_uniform, cvqnn_layers_normal])
     def test_integration_cvqnn_layers(self, parfun, gaussian_device, n_subsystems, n_layers):
@@ -115,3 +115,8 @@ class TestParameterIntegration:
             return qml.expval(qml.Identity(0))
 
         circuit(weights=p)
+
+
+class TestCircuitIntegration:
+    """Tests the integration of templates into larger circuits."""
+    #TODO
