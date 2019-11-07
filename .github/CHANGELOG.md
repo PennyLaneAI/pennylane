@@ -11,8 +11,9 @@
 
 ### Improvements
 
-* Default qubit state vector preparation operations can now be applied to subsets of wires, and
-  are restricted to being the first operation in a circuit.
+* State vector preparation operations in the `default.qubit` plugin can now be
+  applied to subsets of wires, and are restricted to being the first operation
+  in a circuit.
   [#346](https://github.com/XanaduAI/pennylane/pull/346)
 
 ### Documentation
