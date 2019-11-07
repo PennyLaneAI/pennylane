@@ -17,10 +17,11 @@ e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 """
 import sys
 import platform
-# The following try/except clause enables support for pip versions 19.3.x
-try:
+# The following if/else block enables support for pip versions 19.3.x
+import importlib
+if importlib.util.find_spec("pip._internal.main"):
     from pip._internal.main import main as _internal_main
-except Exception:
+else:
     from pip._internal import main as _internal_main
 from pkg_resources import iter_entry_points
 import numpy
