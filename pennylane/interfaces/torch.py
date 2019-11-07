@@ -65,7 +65,7 @@ def args_to_numpy(args):
 
     # if NumPy array is scalar, convert to a Python float
     res = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in res]
-
+    res = list(args)
     return res
 
 
@@ -119,8 +119,12 @@ def TorchQNode(qnode):
             res = qnode(*ctx.args, **ctx.kwargs)
 
             if not isinstance(res, np.ndarray):
-                # scalar result, cast to NumPy scalar
-                res = np.array(res)
+                if isinstance(res, list):
+                    if isinstance(res[0], torch.Tensor):
+                        res = res[0]
+                    else:
+                        # scalar result, cast to NumPy scalar
+                        res = np.array(res)
 
             # if any input tensor uses the GPU, the output should as well
             for i in input_:
@@ -129,7 +133,7 @@ def TorchQNode(qnode):
                         cuda_device = i.get_device()
                         return torch.as_tensor(torch.from_numpy(res), device=cuda_device)
 
-            return torch.from_numpy(res)
+            return res #torch.from_numpy(res)
 
         @staticmethod
         def backward(ctx, grad_output): #pragma: no cover

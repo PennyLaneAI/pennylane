@@ -19,9 +19,11 @@ import warnings
 
 import numpy as np
 import tensornetwork as tn
+import torch
 
 from pennylane import Device
 from pennylane.plugins.default_qubit import (
+    I,
     X,
     Y,
     Z,
@@ -33,7 +35,6 @@ from pennylane.plugins.default_qubit import (
     T,
     CSWAP,
     Rphi,
-    Rotx,
     Roty,
     Rotz,
     Rot3,
@@ -45,6 +46,16 @@ from pennylane.plugins.default_qubit import (
     identity,
     unitary,
 )
+
+def Rotx(theta):
+    r"""One-qubit rotation about the x axis.
+
+    Args:
+        theta (float): rotation angle
+    Returns:
+        array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
+    """
+    return torch.cos(theta/2) * torch.tensor(I) #+ 1j * torch.sin(-theta/2) * torch.tensor(X)
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -134,7 +145,7 @@ class TensorNetwork(Device):
             A.set_name(name)
             node = A
         else:
-            node = tn.Node(A, name=name)
+            node = tn.Node(A, name=name, backend='pytorch')
         self._nodes.append(node)
         return node
 
@@ -224,7 +235,7 @@ class TensorNetwork(Device):
 
         tensors = []
         for o, p, w in zip(observable, par, wires):
-            A = self._get_operator_matrix(o, p)
+            A = torch.tensor(self._get_operator_matrix(o, p), dtype=torch.float64)
             num_mult_idxs = len(w)
             tensors.append(np.reshape(A, [2] * num_mult_idxs * 2))
 
@@ -297,12 +308,13 @@ class TensorNetwork(Device):
         for obs_node in obs_nodes:
             contracted_ket = tn.contract_between(obs_node, contracted_ket)
         expval = tn.contract_between(bra, contracted_ket).tensor
-        if np.abs(expval.imag) > tolerance:
-            warnings.warn(
-                "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
-                RuntimeWarning,
-            )
-        return expval.real
+        #if np.abs(expval.imag) > tolerance:
+        #    warnings.warn(
+        #        "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
+        #        RuntimeWarning,
+        #    )
+        #return expval.real
+        return expval
 
     @property
     def _state(self):

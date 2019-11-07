@@ -199,7 +199,7 @@ class Device(abc.ABC):
             if any(obs.return_type is Sample for obs in observables):
                 return np.asarray(results, dtype="object")
 
-            return np.asarray(results)
+            return results #np.asarray(results)
 
     @property
     def op_queue(self):

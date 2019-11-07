@@ -23,6 +23,7 @@ import inspect
 import itertools
 
 import numpy as np
+import torch
 
 import pennylane as qml
 from pennylane.variable import Variable
@@ -41,6 +42,8 @@ def _flatten(x):
     """
     if isinstance(x, np.ndarray):
         yield from _flatten(x.flat)  # should we allow object arrays? or just "yield from x.flat"?
+    elif isinstance(x, torch.Tensor):
+        yield from x
     elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
         for item in x:
             yield from _flatten(item)
@@ -68,6 +71,10 @@ def _unflatten(flat, model):
         return flat[0], flat[1:]
     elif isinstance(model, np.ndarray):
         idx = model.size
+        res = np.array(flat)[:idx].reshape(model.shape)
+        return res, flat[idx:]
+    elif isinstance(model, torch.Tensor):
+        idx = model.size().numel()
         res = np.array(flat)[:idx].reshape(model.shape)
         return res, flat[idx:]
     elif isinstance(model, Iterable):

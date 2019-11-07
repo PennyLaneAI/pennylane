@@ -105,6 +105,7 @@ import numbers
 from collections.abc import Sequence
 
 import numpy as np
+import torch
 
 from .qnode import QNode
 from .utils import _flatten, _unflatten
@@ -332,6 +333,8 @@ class Operator(abc.ABC):
                 if not isinstance(p, np.ndarray):
                     raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
         elif self.par_domain in ('R', 'N'):
+            if isinstance(p, torch.Tensor):
+                return p
             if not isinstance(p, numbers.Real):
                 raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
 

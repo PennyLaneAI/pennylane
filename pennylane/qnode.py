@@ -230,7 +230,7 @@ class QNode:
                 temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
                 kwarg_variables[key] = unflatten(temp, val)
 
-        Variable.free_param_values = np.array(list(_flatten(args)))
+        Variable.free_param_values = list(_flatten(args)) #np.array(list(_flatten(args)))
         Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in keyword_values.items()}
 
         # set up the context for Operation entry
@@ -610,7 +610,7 @@ class QNode:
         # keyword_values.update(kwargs_as_position)
 
         # temporarily store the free parameter values in the Variable class
-        Variable.free_param_values = np.array(list(_flatten(args)))
+        Variable.free_param_values = list(_flatten(args)) #np.array(list(_flatten(args)))
         Variable.kwarg_values = keyword_values
 
         self.device.reset()
@@ -632,7 +632,7 @@ class QNode:
             check_op(op)
 
         ret = self.device.execute(self.circuit.operations, self.circuit.observables, self.variable_deps)
-        return self.output_conversion(ret)
+        return ret #self.output_conversion(ret)
 
     def metric_tensor(self, *args, **kwargs):
         """Evaluate the value of the metric tensor.
