@@ -205,10 +205,10 @@ class TensorNetwork(Device):
         )
 
     def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list):
-        """Helper function for creating tensornetwork nodes based on matrices.
+        """Helper function for creating tensornetwork nodes based on tensors.
 
         Args:
-          tensors (Sequence[Sequence[np.complex128]]): tensors of the observables
+          tensors (np.ndarray, tf.Tensor, torch.Tensor): tensors of the observables
           wires (Sequence[Sequence[int]]): measured subsystems for each observable
           observable_names (Sequence[str]): name of the operation/observable
 

@@ -712,3 +712,4 @@ class TestTensorVar:
         ) / 16
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        
