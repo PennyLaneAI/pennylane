@@ -122,6 +122,9 @@ class Variable:
     def val(self):
         """Current numerical value of the Variable.
 
+        Raises:
+            TypeError: if the keyword arguments were not mapped to arrays
+
         Returns:
             float: current value of the Variable
         """
