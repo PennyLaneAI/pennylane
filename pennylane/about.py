@@ -20,7 +20,7 @@ import platform
 # The following try/except clause enables support for pip versions 19.3.x
 try:
     from pip._internal.main import main as _internal_main
-except ModuleNotFoundError:
+except Exception:
     from pip._internal import main as _internal_main
 from pkg_resources import iter_entry_points
 import numpy
