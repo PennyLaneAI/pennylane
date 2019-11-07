@@ -46,12 +46,13 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
     """
 
-    if ranges is None:
-        ranges = [1]*len(weights)
-
     n_layers = len(weights)
-    for l, block_range in zip(range(n_layers), ranges):
-        StronglyEntanglingLayer(weights, r=block_range, imprimitive=imprimitive, wires=wires)
+
+    if ranges is None:
+        ranges = [1] * n_layers
+
+    for l in range(n_layers):
+        StronglyEntanglingLayer(weights[l], r=ranges[l], imprimitive=imprimitive, wires=wires)
 
 
 def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
@@ -119,7 +120,11 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     n_layers = len(weights)
     for l in range(n_layers):
-        RandomLayer(weights, wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations,
+        RandomLayer(weights[l],
+                    wires=wires,
+                    ratio_imprim=ratio_imprim,
+                    imprimitive=imprimitive,
+                    rotations=rotations,
                     seed=seed)
 
 

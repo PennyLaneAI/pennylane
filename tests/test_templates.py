@@ -337,7 +337,7 @@ class TestInterfaceIntegration:
         @qml.qnode(dev, interface='torch')
         def circuit(weights):
             StronglyEntanglingLayers(weights, wires=range(2))
-            return qml.sample(qml.Identity(0))
+            return qml.expval(qml.Identity(0))
 
         circuit(weights=p)
 
@@ -349,10 +349,10 @@ class TestInterfaceIntegration:
                          [[5.25049813, 1.11059904, 0.52967773], [4.9789569, 1.42562158, 2.49977512]]])
         dev = qml.device('default.qubit', wires=2)
 
-        @qml.qnode(dev, interface='torch')
+        @qml.qnode(dev, interface='tf')
         def circuit(weights):
             StronglyEntanglingLayers(weights, wires=range(2))
-            return qml.sample(qml.Identity(0))
+            return qml.expval(qml.Identity(0))
 
         circuit(weights=p)
     #
