@@ -19,7 +19,6 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 import contextlib
 import io
 import re
-import sys
 
 import pennylane as qml
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
+Unit tests for the :mod:`pennylane.plugin.Tensornet` device.
 """
 import cmath
 # pylint: disable=protected-access,cell-var-from-loop
@@ -609,3 +609,107 @@ class TestTensorExpval:
         expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+class TestTensorVar:
+    """Test tensor variances"""
+
+    def test_paulix_pauliy(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving PauliX and PauliY works correctly"""
+        dev = qml.device("expt.tensornet", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        res = dev.var(["PauliX", "PauliY"], [[0], [2]], [[], [], []])
+
+        expected = (
+            8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
+            - np.cos(2 * (theta - phi))
+            - np.cos(2 * (theta + phi))
+            + 2 * np.cos(2 * theta)
+            + 2 * np.cos(2 * phi)
+            + 14
+        ) / 16
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_pauliz_hadamard(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
+        dev = qml.device("expt.tensornet", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        res = dev.var(["PauliZ", "Hadamard", "PauliY"], [[0], [1], [2]], [[], [], []])
+
+        expected = (
+            3
+            + np.cos(2 * phi) * np.cos(varphi) ** 2
+            - np.cos(2 * theta) * np.sin(varphi) ** 2
+            - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
+        ) / 4
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hermitian(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving qml.Hermitian works correctly"""
+        dev = qml.device("expt.tensornet", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        A = np.array(
+            [
+                [-6, 2 + 1j, -3, -5 + 2j],
+                [2 - 1j, 0, 2 - 1j, -5 + 4j],
+                [-3, 2 + 1j, 0, -4 + 3j],
+                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+            ]
+        )
+
+        res = dev.var(["PauliZ", "Hermitian"], [[0], [1, 2]], [[], [A]])
+
+        expected = (
+            1057
+            - np.cos(2 * phi)
+            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+            + 16 * np.sin(2 * phi)
+            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+            - 8
+            * np.cos(theta)
+            * (
+                4
+                * np.cos(phi)
+                * (
+                    4
+                    + 8 * np.cos(varphi)
+                    + np.cos(2 * varphi)
+                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                )
+                + np.sin(phi)
+                * (
+                    15
+                    + 8 * np.cos(varphi)
+                    - 11 * np.cos(2 * varphi)
+                    + 42 * np.sin(varphi)
+                    + 3 * np.sin(2 * varphi)
+                )
+            )
+        ) / 16
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+        
