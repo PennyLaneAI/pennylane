@@ -231,8 +231,8 @@ class TestIntegrationCircuitTorch:
     #     @qml.qnode(gaussian_device_2_wires, interface='torch')
     #     def circuit(**inp_):
     #         qml.Displacement(1., 1., wires=0)
-    #         template(*inp_.values, wires=range(2))
-    #         template(*inp_.values, wires=range(2))
+    #         template(*inp_.values(), wires=range(2))
+    #         template(*inp_.values(), wires=range(2))
     #         qml.Displacement(1., 1., wires=1)
     #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
     #
@@ -292,18 +292,18 @@ class TestIntegrationCircuitTf:
 
         circuit(*inpts)
 
-    # @pytest.mark.parametrize(fixture, cv_const)
-    # def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
-    #     """Checks integration of continuous-variable templates using keyword arguments to qnode."""
-    #
-    #     inpts = {"w"+str(1): tf.Variable(inpts[i]) for i in range(len(inpts))}
-    #
-    #     @qml.qnode(gaussian_device_2_wires, interface='tf')
-    #     def circuit(**inp_):
-    #         qml.Displacement(1., 1., wires=0)
-    #         template(*inp_.values, wires=range(2))
-    #         template(*inp_.values, wires=range(2))
-    #         qml.Displacement(1., 1., wires=1)
-    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-    #
-    #     circuit(**inpts)
+    @pytest.mark.parametrize(fixture, cv_const)
+    def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
+        """Checks integration of continuous-variable templates using keyword arguments to qnode."""
+
+        inpts = {"w"+str(1): tf.Variable(inpts[i]) for i in range(len(inpts))}
+
+        @qml.qnode(gaussian_device_2_wires, interface='tf')
+        def circuit(**inp_):
+            qml.Displacement(1., 1., wires=0)
+            template(*inp_.values(), wires=range(2))
+            template(*inp_.values(), wires=range(2))
+            qml.Displacement(1., 1., wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+
+        circuit(**inpts)
