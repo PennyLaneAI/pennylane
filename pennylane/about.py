@@ -17,7 +17,11 @@ e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 """
 import sys
 import platform
-from pip import _internal
+# The following try/except clause enables support for pip versions 19.3.x
+try:
+    from pip._internal.main import main as _internal_main
+except:
+    from pip._internal import main as _internal_main
 from pkg_resources import iter_entry_points
 import numpy
 import scipy
@@ -28,12 +32,7 @@ def about():
     Prints the information for pennylane installation.
     """
     plugin_devices = iter_entry_points("pennylane.plugins")
-    # The following try/except clause enables support for pip versions 19.3.x
-    try:
-        _internal.main(["show", "pennylane"])  # pylint: disable=not-callable
-    except AttributeError:
-        from pip._internal.main import main as _internal_main
-        _internal_main(["show", "pennylane"])
+    _internal_main(["show", "pennylane"])
     print("Platform info:           {}".format(platform.platform(aliased=True)))
     print("Python version:          {0}.{1}.{2}".format(*sys.version_info[0:3]))
     print("Numpy version:           {}".format(numpy.__version__))
