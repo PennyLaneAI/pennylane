@@ -40,6 +40,9 @@
 `PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for quantum machine learning,
 automatic differentiation, and optimization of hybrid quantum-classical computations.
 
+Learn more about quantum machine learning with PennyLane: view and download QML examples
+and demos over at https://pennylane.ai/qml.
+
 Features
 ========
 
