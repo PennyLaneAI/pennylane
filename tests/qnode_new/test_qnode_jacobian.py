@@ -474,7 +474,7 @@ class TestJNodeJacobianCV:
 
 
     def test_cv_gradient_fanout(self, gaussian_dev, tol):
-        "Tests that qnodes can compute the correct gradient when the same parameter is used in multiple gates."
+        "Tests that CV qnodes can compute the correct gradient when the same parameter is used in multiple gates."
         par = [0.5, 1.3]
 
         def circuit(x, y):

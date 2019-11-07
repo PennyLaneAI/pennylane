@@ -78,7 +78,7 @@ class JacobianQNode(QNode):
         # pylint: disable=too-many-return-statements
         def best_for_op(op):
             "Returns the best gradient method for the Operation op."
-            # for discrete operations, other ops do not affect the choice
+            # for qubit operations, other ops do not affect the choice
 
             if not isinstance(op, CV):
                 return op.grad_method
@@ -137,8 +137,8 @@ class JacobianQNode(QNode):
 
         The Jacobian can be computed using several methods:
 
-        * Finite differences (``'F'``). The first order method evaluates the circuit at
-          :math:`n+1` points of the parameter space, the second order method at :math:`2n` points,
+        * Finite differences (``'F'``). The first-order method evaluates the circuit at
+          :math:`n+1` points of the parameter space, the second-order method at :math:`2n` points,
           where ``n = len(wrt)``.
 
         * Analytic method (``'A'``). Works for all one-parameter gates where the generator
@@ -201,7 +201,7 @@ class JacobianQNode(QNode):
             wrt = range(self.num_variables)
         else:
             if min(wrt) < 0 or max(wrt) >= self.num_variables:
-                raise ValueError("Tried to compute the gradient wrt. free parameters {} "
+                raise ValueError("Tried to compute the gradient with respect to free parameters {} "
                                  "(this node has {} free parameters).".format(wrt, self.num_variables))
             if len(wrt) != len(set(wrt)):  # set removes duplicates
                 raise ValueError("Parameter indices must be unique.")
@@ -505,11 +505,11 @@ class AutogradQNode(JacobianQNode):
 
             Args:
                 g (array[float]): scalar or vector multiplying the Jacobian
-                    from the left (output side).
+                    from the left (output side)
 
             Returns:
                 nested Sequence[float]: vector-Jacobian product, arranged
-                into the nested structure of the input arguments in ``args``.
+                into the nested structure of the input arguments in ``args``
             """
             # Jacobian matrix of the circuit
             jac = self.jacobian(args, kwargs)
