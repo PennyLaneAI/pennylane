@@ -204,105 +204,185 @@ class TestCircuitIntegration:
 class TestQNodeIntegration:
     """Tests the integration of templates with different ways to pass parameters to a QNode."""
 
-    # @pytest.mark.parametrize(layer_inputs, layers)
-    # def test_qnode_integration_standard_qubit_layers(self, template, weights):
-    #     """Checks that a range of standard layer can be used with other operations
-    #     in a circuit."""
-    #
-    #     p = np.array(weights)
-    #     dev = qml.device('default.qubit', wires=2)
-    #
-    #     @qml.qnode(dev)
-    #     def circuit(weights):
-    #         qml.PauliX(wires=0)
-    #         template(weights, wires=range(2))
-    #         template(weights, wires=range(2))
-    #         qml.PauliX(wires=1)
-    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
-    #
-    #     circuit(weights=p)
-    #
-    # @pytest.mark.parametrize(standard_qubit_emb_names, standard_qubit_embeddings)
-    # def test_qnode_integration_standard_qubit_embedding(self, template, features, weights):
-    #     """Checks that standard embeddings can be used with other operations
-    #     in a circuit."""
-    #
-    #     features = np.array(features)
-    #
-    #     dev = qml.device('default.qubit', wires=2)
-    #
-    #     @qml.qnode(dev)
-    #     def circuit(feats=None):
-    #         qml.PauliX(wires=0)
-    #         template(features=feats, wires=range(2))
-    #         template(features=feats, wires=range(2))
-    #         qml.PauliX(wires=1)
-    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
-    #
-    #     circuit(feats=features)
-    #
-    # @pytest.mark.parametrize(standard_cv_emb_names, standard_cv_embeddings)
-    # def test_qnode_integration_standard_cv_embedding(self, gaussian_device_2_wires, template, features, weights):
-    #     """Checks that standard continuous-variable embeddings can be used with other operations
-    #     in a circuit."""
-    #
-    #     f = np.array(features)
-    #
-    #     @qml.qnode(gaussian_device_2_wires)
-    #     def circuit(feats=None):
-    #         qml.Displacement(1., 1., wires=0)
-    #         template(features=feats, wires=range(2))
-    #         template(features=feats, wires=range(2))
-    #         qml.Displacement(1., 1., wires=1)
-    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-    #
-    #     circuit(feats=f)
-    #
-    # def test_qnode_integration_cvqnn_layers(self, gaussian_device_2_wires):
-    #     """Checks that StronglyEntanglingLayers() can be used with other operations
-    #     in a circuit."""
-    #
-    #     p = [np.array([[2.33312851], [1.20670562]]),
-    #          np.array([[3.49488327], [2.01683706]]),
-    #          np.array([[0.9868003, 1.58798724], [5.06301407, 4.83852562]]),
-    #          np.array([[0.21358641, 0.120304], [-0.00724019, 0.01996744]]),
-    #          np.array([[4.62040076, 6.08773452], [6.09056998, 6.22395862]]),
-    #          np.array([[4.10336783], [1.70001985]]),
-    #          np.array([[4.74112903], [5.31462729]]),
-    #          np.array([[0.89758198, 0.41604762], [1.09680782, 3.08223802]]),
-    #          np.array([[-0.0807571, -0.00908855], [0.06051908, -0.1667079]]),
-    #          np.array([[1.87210909, 3.59695024], [1.42759279, 3.84330071]]),
-    #          np.array([[0.00389139, 0.05125553], [-0.12120044, 0.03111934]])
-    #          ]
-    #
-    #     @qml.qnode(gaussian_device_2_wires)
-    #     def circuit(weights):
-    #         qml.Displacement(1., 1., wires=0)
-    #         CVNeuralNetLayers(*weights, wires=range(2))
-    #         CVNeuralNetLayers(*weights, wires=range(2))
-    #         qml.Displacement(1., 1., wires=1)
-    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-    #
-    #     circuit(weights=p)
-    #
-    # def test_qnode_integration_interferometer(self, gaussian_device_2_wires):
-    #     """Checks that pennnylane.templates.Interferometer() can be used with other operations
-    #     in a circuit."""
-    #
-    #     p = [np.array([2.33312851]),
-    #          np.array([3.49488327]),
-    #          np.array([0.9868003, 1.58798724])
-    #          ]
-    #
-    #     @qml.qnode(gaussian_device_2_wires)
-    #     def circuit(weights):
-    #         qml.Displacement(1., 1., wires=0)
-    #         Interferometer(*weights, wires=range(2))
-    #         Interferometer(*weights, wires=range(2))
-    #         qml.Displacement(1., 1., wires=1)
-    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-    #
-    #     circuit(weights=p)
+    @pytest.mark.parametrize(layer_weights_vars, layer_weights)
+    def test_qnode_integration_standard_layers_pass_positional_arg(self, template, weights):
+        """Checks that a standard layer can use weights passed as positional argument."""
+
+        p = np.array(weights)
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            template(weights, wires=range(2))
+            return qml.expval(qml.PauliX(0))
+
+        circuit(weights=p)
+
+    @pytest.mark.parametrize(layer_weights_vars, layer_weights)
+    def test_qnode_integration_standard_layers_take_keyword_arg(self, template, weights):
+        """Checks that a standard layer can use weights passed as keyword argument."""
+
+        p = np.array(weights)
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights=weights):
+            template(weights, wires=range(2))
+            return qml.expval(qml.PauliX(0))
+
+        circuit(weights=p)
+
+    @pytest.mark.parametrize(emb_inputs_vars, embeddings_inputs)
+    def test_qnode_integration_standard_embedding_take_positional_arg(self, template, features):
+        """Checks that a standard embedding can use weights passed as positional argument."""
+
+        features = np.array(features)
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(feats):
+            qml.PauliX(wires=0)
+            template(features=feats, wires=range(2))
+            template(features=feats, wires=range(2))
+            qml.PauliX(wires=1)
+            return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+
+        circuit(features)
+
+    @pytest.mark.parametrize(emb_inputs_vars, embeddings_inputs)
+    def test_qnode_integration_standard_embedding_take_keyword_arg(self, template, features):
+        """Checks that a standard embedding can use weights passed as keyword argument."""
+
+        features = np.array(features)
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(feats=None):
+            qml.PauliX(wires=0)
+            template(features=feats, wires=range(2))
+            template(features=feats, wires=range(2))
+            qml.PauliX(wires=1)
+            return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+
+        circuit(feats=features)
+
+    @pytest.mark.parametrize(emb_inputs_vars, embeddings_inputs_cv)
+    def test_qnode_integration_standard_cv_embedding_take_positional_arg(self, gaussian_device_2_wires,
+                                                                         template, features):
+        """Checks that a standard embedding can use weights passed as a positional argument."""
+
+        f = np.array(features)
+
+        @qml.qnode(gaussian_device_2_wires)
+        def circuit(feats):
+            qml.Displacement(1., 1., wires=0)
+            template(features=feats, wires=range(2))
+            template(features=feats, wires=range(2))
+            qml.Displacement(1., 1., wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+
+        circuit(f)
+
+    @pytest.mark.parametrize(emb_inputs_vars, embeddings_inputs_cv)
+    def test_qnode_integration_standard_cv_embedding_take_keyword_arg(self, gaussian_device_2_wires,
+                                                                         template, features):
+        """Checks that a standard embedding can use weights passed as a keyword argument."""
+
+        f = np.array(features)
+
+        @qml.qnode(gaussian_device_2_wires)
+        def circuit(feats=None):
+            qml.Displacement(1., 1., wires=0)
+            template(features=feats, wires=range(2))
+            template(features=feats, wires=range(2))
+            qml.Displacement(1., 1., wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+
+        circuit(feats=f)
+
+    def test_qnode_integration_cvqnn_layers_takes_positional_arg(self, gaussian_device_2_wires):
+        """Checks that CVNeuralNetLayers() can use weights passed as a positional argument."""
+
+        p = [np.array([[2.33312851], [1.20670562]]),
+             np.array([[3.49488327], [2.01683706]]),
+             np.array([[0.9868003, 1.58798724], [5.06301407, 4.83852562]]),
+             np.array([[0.21358641, 0.120304], [-0.00724019, 0.01996744]]),
+             np.array([[4.62040076, 6.08773452], [6.09056998, 6.22395862]]),
+             np.array([[4.10336783], [1.70001985]]),
+             np.array([[4.74112903], [5.31462729]]),
+             np.array([[0.89758198, 0.41604762], [1.09680782, 3.08223802]]),
+             np.array([[-0.0807571, -0.00908855], [0.06051908, -0.1667079]]),
+             np.array([[1.87210909, 3.59695024], [1.42759279, 3.84330071]]),
+             np.array([[0.00389139, 0.05125553], [-0.12120044, 0.03111934]])
+             ]
+
+        @qml.qnode(gaussian_device_2_wires)
+        def circuit(weights):
+            qml.Displacement(1., 1., wires=0)
+            CVNeuralNetLayers(*weights, wires=range(2))
+            CVNeuralNetLayers(*weights, wires=range(2))
+            qml.Displacement(1., 1., wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+
+        circuit(p)
+
+    def test_qnode_integration_cvqnn_layers_takes_keyword_arg(self, gaussian_device_2_wires):
+        """Checks that CVNeuralNetLayers() can use weights passed as a keyword argument."""
+
+        p = [np.array([[2.33312851], [1.20670562]]),
+             np.array([[3.49488327], [2.01683706]]),
+             np.array([[0.9868003, 1.58798724], [5.06301407, 4.83852562]]),
+             np.array([[0.21358641, 0.120304], [-0.00724019, 0.01996744]]),
+             np.array([[4.62040076, 6.08773452], [6.09056998, 6.22395862]]),
+             np.array([[4.10336783], [1.70001985]]),
+             np.array([[4.74112903], [5.31462729]]),
+             np.array([[0.89758198, 0.41604762], [1.09680782, 3.08223802]]),
+             np.array([[-0.0807571, -0.00908855], [0.06051908, -0.1667079]]),
+             np.array([[1.87210909, 3.59695024], [1.42759279, 3.84330071]]),
+             np.array([[0.00389139, 0.05125553], [-0.12120044, 0.03111934]])
+             ]
+
+        @qml.qnode(gaussian_device_2_wires)
+        def circuit(weights=None):
+            qml.Displacement(1., 1., wires=0)
+            CVNeuralNetLayers(*weights, wires=range(2))
+            CVNeuralNetLayers(*weights, wires=range(2))
+            qml.Displacement(1., 1., wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+
+        circuit(weights=p)
+
+    def test_qnode_integration_interferometer_takes_positional_arg(self, gaussian_device_2_wires):
+        """Checks that Interferometer() can use weights passed as a positional argument."""
+
+        p = [np.array([2.33312851]),
+             np.array([3.49488327]),
+             np.array([0.9868003, 1.58798724])
+             ]
+
+        @qml.qnode(gaussian_device_2_wires)
+        def circuit(weights):
+            Interferometer(*weights, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(p)
+
+    def test_qnode_integration_interferometer_takes_keyword_arg(self, gaussian_device_2_wires):
+        """Checks that Interferometer() can use weights passed as a keyword argument."""
+
+        p = [np.array([2.33312851]),
+             np.array([3.49488327]),
+             np.array([0.9868003, 1.58798724])
+             ]
+
+        @qml.qnode(gaussian_device_2_wires)
+        def circuit(weights=None):
+            Interferometer(*weights, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(weights=p)
 
 
 class TestInterfaceIntegration:
