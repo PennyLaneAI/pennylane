@@ -25,15 +25,12 @@ import numbers
 import numpy as np
 import autograd.extend as ae
 import autograd.builtins
-
 from scipy import linalg
 
 import pennylane as qml
-
 from pennylane.utils import _flatten, unflatten, _inv_dict, _get_default_args, expand
 from pennylane.circuit_graph import CircuitGraph
-
-from .variable import Variable
+from pennylane.variable import Variable
 
 
 def pop_jacobian_kwargs(kwargs):
@@ -65,7 +62,7 @@ class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
 
 
-ParDep = namedtuple("ParDep", ["op", "par_idx"])
+ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
 """Represents the dependence of an Operation on a free parameter.
 
 Args:
@@ -99,7 +96,7 @@ class QNode:
         self.cache = cache
 
         self.variable_deps = {}
-        """dict[int, list[ParDep]]: Mapping from free parameter index to the list of
+        """dict[int, list[ParameterDependency]]: Mapping from free parameter index to the list of
         :class:`~pennylane.operation.Operation` instances (in this circuit) that depend on it.
         """
 
@@ -124,7 +121,15 @@ class QNode:
 
         Args:
             op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
+
+        Raises:
+            ValueError: if `op` does not act on all wires
+            QuantumFunctionError: if state preparations and gates do not precede measured observables
         """
+        if op.num_wires == qml.operation.Wires.All:
+            if set(op.wires) != set(range(self.num_wires)):
+                raise ValueError("Operator {} must act on all wires".format(op.name))
+
         # EVs go to their own, temporary queue
         if isinstance(op, qml.operation.Observable):
             if op.return_type is None:
@@ -185,6 +190,11 @@ class QNode:
                 however PennyLane does not support differentiating with respect to keyword arguments.
                 Instead, keyword arguments are useful for providing data or 'placeholders'
                 to the quantum circuit function.
+
+        Raises:
+            QuantumFunctionError: if the :class:`pennylane.QNode`'s _current_context is attempted to be modified
+                inside of this method, the quantum function returns incorrect values or if
+                both continuous and discrete operations are specified in the same quantum circuit
         """
         # pylint: disable=too-many-branches,too-many-statements
         self.queue = []
@@ -303,7 +313,7 @@ class QNode:
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     if p.name is None: # ignore keyword arguments
-                        self.variable_deps.setdefault(p.idx, []).append(ParDep(op, j))
+                        self.variable_deps.setdefault(p.idx, []).append(ParameterDependency(op, j))
 
         # generate directed acyclic graph
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
@@ -326,6 +336,9 @@ class QNode:
         Keyword Args:
             diag_approx (bool): If ``True``, forces the diagonal
                 approximation. Default is ``False``.
+
+        Raises:
+            QuantumFunctionError: if a metric tensor cannot be generated because no generator was defined
 
         .. note::
 
@@ -551,6 +564,9 @@ class QNode:
         Args:
             args (tuple): input parameters to the quantum function
 
+        Raises:
+            QuantumFunctionError: if there is an error while measuring
+
         Returns:
             float, array[float]: output measured value(s)
         """
@@ -766,6 +782,11 @@ class QNode:
             shots (int): How many times the circuit should be evaluated (or sampled) to estimate
                 the expectation values.
 
+        Raises:
+            QuantumFunctionError: if sampling is specified
+            ValueError: if `params` is incorrect, differentiation is not possible, or if `method`
+                is unknown
+
         Returns:
             array[float]: Jacobian matrix, with shape ``(n_out, len(which))``, where ``len(which)`` is the
             number of free parameters, and ``n_out`` is the number of expectation values returned
@@ -865,6 +886,9 @@ class QNode:
             order (int): finite difference method order, 1 or 2
             y0 (float): Value of the circuit at params. Should only be computed once.
 
+        Raises:
+            ValueError: if the order specified is not equal to 1 or 2
+
         Returns:
             float: partial derivative of the node.
         """
@@ -896,6 +920,10 @@ class QNode:
             ob_successors (list[Observable]): list of observable successors to current operation
             w (int): number of wires
             Z (array[float]): the Heisenberg picture representation of the linear transformation
+
+        Raises:
+            QuantumFunctionError: if there is a mismatch between polynomial order of observable
+                and heisenberg representation
 
         Returns:
             float: expectation value
@@ -1113,6 +1141,9 @@ class QNode:
 
     def to_torch(self):
         """Convert the standard PennyLane QNode into a :func:`~.TorchQNode`.
+
+        Raises:
+            QuantumFunctionError: if PyTorch is not installed
         """
         # Placing slow imports here, in case the user does not use the Torch interface
         try: # pragma: no cover
@@ -1125,6 +1156,9 @@ class QNode:
 
     def to_tf(self):
         """Convert the standard PennyLane QNode into a :func:`~.TFQNode`.
+
+        Raises:
+            QuantumFunctionError: if TensorFlow >= 1.12 is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
         try: # pragma: no cover

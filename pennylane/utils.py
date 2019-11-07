@@ -57,6 +57,9 @@ def _unflatten(flat, model):
         flat (array): 1D array of items
         model (array, Iterable, Number): model nested structure
 
+    Raises:
+        TypeError: if ``model`` contains an object of unsupported type
+
     Returns:
         (other, array): first elements of flat arranged into the nested
         structure of model, unused elements of flat
@@ -79,6 +82,13 @@ def _unflatten(flat, model):
 
 def unflatten(flat, model):
     """Wrapper for :func:`_unflatten`.
+
+    Args:
+        flat (array): 1D array of items
+        model (array, Iterable, Number): model nested structure
+
+    Raises:
+        ValueError: if ``flat`` has more elements than ``model``
     """
     # pylint:disable=len-as-condition
     res, tail = _unflatten(np.asarray(flat), model)
@@ -130,6 +140,10 @@ def expand(U, wires, num_wires):
         wires (Sequence[int]): Target subsystems (order matters! the
             left-most Hilbert space is at index 0).
 
+    Raises:
+        ValueError: if wrong wires of the system were targeted or
+            the size of the unitary is incorrect
+
     Returns:
         array: :math:`2^N\times 2^N` matrix. The full system operator.
     """
@@ -178,6 +192,7 @@ class Recorder:
     def __init__(self, old_context):
         self._old_context = old_context
         self._ops = []
+        self.num_wires = 1
 
     def _append_op(self, op):
         """:class:`~.Operator` objects call this method
