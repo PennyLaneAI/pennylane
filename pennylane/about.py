@@ -28,7 +28,7 @@ def about():
     Prints the information for pennylane installation.
     """
     plugin_devices = iter_entry_points("pennylane.plugins")
-    # The following try/except clause ensures support for pip versions 19.3.x
+    # The following try/except clause enables support for pip versions 19.3.x
     try:
         _internal.main(["show", "pennylane"])  # pylint: disable=not-callable
     except AttributeError:
