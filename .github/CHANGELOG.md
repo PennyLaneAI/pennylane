@@ -26,7 +26,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Johannes Jakob Meyer
+Ville Bergholm, Josh Izaac, Johannes Jakob Meyer, Oluwatobi Ogunbayo
 
 ---
 
