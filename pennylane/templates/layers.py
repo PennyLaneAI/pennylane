@@ -75,6 +75,9 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
     Keyword Args:
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
+
+    Raises:
+        ValueError: if less than 2 wires were specified
     """
     if len(wires) < 2:
         raise ValueError("StronglyEntanglingLayer requires at least two wires or subsystems to apply "
@@ -152,6 +155,9 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
         seed (int): seed to generate random architecture
+
+    Raises:
+        ValueError: if less than 2 wires were specified
     """
 
     if len(wires) < 2:
@@ -346,6 +352,10 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
         beamsplitter (str): if ``clements``, the beamsplitter convention from
           Clements et al. 2016 (https://dx.doi.org/10.1364/OPTICA.3.001460) is used; if ``pennylane``, the
           beamsplitter is implemented via PennyLane's ``Beamsplitter`` operation.
+
+    Raises:
+        QuantumFunctionError: if ``beamsplitter`` or ``mesh`` is an instance of
+            :class:`~pennylane.variable.Variable`
     """
     if isinstance(beamsplitter, Variable):
         raise QuantumFunctionError("The beamsplitter parameter influences the "
