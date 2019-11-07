@@ -355,104 +355,169 @@ class TestInterfaceIntegration:
             return qml.expval(qml.Identity(0))
 
         circuit(weights=p)
+
+    def test_interface_integration_random_layers_torch(self):
+        """Checks that pennnylane.templates.layers.RandomLayer() can be used with the
+        PyTorch interface."""
+
+        p = torch.tensor([[0.53479316, 5.88709314],
+                          [2.21352321, 4.28468607]])
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='torch')
+        def circuit(weights):
+            RandomLayers(weights, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(weights=p)
+
+    def test_interface_integration_random_layers_tf(self):
+        """Checks that pennnylane.templates.layers.RandomLayer() can be used with the
+        PyTorch interface."""
+
+        p = tf.Variable([[0.53479316, 5.88709314],
+                         [2.21352321, 4.28468607]])
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='tf')
+        def circuit(weights):
+            RandomLayers(weights, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(weights=p)
+
+    def test_interface_integration_amplitude_embedding_torch(self):
+        """Checks that pennnylane.templates.embeddings.AmplitudeEmbedding() can be used with the
+            PyTorch interface."""
+
+        f = torch.tensor([0.1, 0.2, 0.3, 0.4])
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='torch')
+        def circuit(feats=None):
+            AmplitudeEmbedding(features=feats, wires=range(2), normalize=True)
+            return qml.expval(qml.Identity(0))
+
+        circuit(feats=f)
+
+    # def test_interface_integration_amplitude_embedding_tf(self):
+    #     """Checks that pennnylane.templates.embeddings.AmplitudeEmbedding() can be used with the
+    #         Tensorflow interface."""
     #
-    # def test_interface_integration_random_layers(self):
-    #     """Checks that pennnylane.templates.layers.RandomLayer() can be used with other operations
-    #     in a circuit."""
-    #
-    #     p = np.array([[0.53479316, 5.88709314],
-    #                   [2.21352321, 4.28468607]])
+    #     f = tf.Variable([0.1, 0.2, 0.3, 0.4])
     #     dev = qml.device('default.qubit', wires=2)
     #
-    #     @qml.qnode(dev)
-    #     def circuit(weights):
-    #         qml.PauliX(wires=0)
-    #         RandomLayers(weights, wires=range(2))
-    #         RandomLayers(weights, wires=range(2))
-    #         qml.PauliX(wires=1)
-    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
-    #
-    #     circuit(weights=p)
-    #
-    # def test_interface_integration_amplitude_embedding(self):
-    #     """Checks that pennnylane.templates.embeddings.AmplitudeEmbedding() can be used with other operations
-    #     in a circuit."""
-    #
-    #     f = np.array([0.1, 0.2, 0.3, 0.4])
-    #     dev = qml.device('default.qubit', wires=2)
-    #
-    #     @qml.qnode(dev)
+    #     @qml.qnode(dev, interface='tf')
     #     def circuit(f=None):
-    #         qml.PauliX(wires=0)
     #         AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
-    #         AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
-    #         qml.PauliX(wires=1)
-    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+    #         return qml.expval(qml.Identity(0))
     #
     #     circuit(f=f)
+
+    def test_interface_integration_basis_embedding_torch(self):
+        """Checks that pennnylane.templates.embeddings.BasisEmbedding() can be used with the
+            PyTorch interface."""
+
+        f = torch.tensor([1, 0])
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='torch')
+        def circuit(feats=None):
+            BasisEmbedding(features=feats, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(feats=f)
+
+    # def test_interface_integration_basis_embedding_tf(self):
+    #     """Checks that pennnylane.templates.embeddings.BasisEmbedding() can be used with the
+    #        TensorFlow interface."""
     #
-    # def test_interface_integration_basis_embedding(self):
-    #     """Checks that pennnylane.templates.embeddings.BasisEmbedding() can be used with other operations
-    #     in a circuit."""
-    #
-    #     f = np.array([1, 0])
+    #     f = tf.Variable([1, 0])
     #     dev = qml.device('default.qubit', wires=2)
     #
-    #     @qml.qnode(dev)
-    #     def circuit(f=None):
-    #         qml.PauliX(wires=0)
-    #         BasisEmbedding(features=f, wires=range(2))
-    #         BasisEmbedding(features=f, wires=range(2))
-    #         qml.PauliX(wires=1)
-    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+    #     @qml.qnode(dev, interface='tf')
+    #     def circuit(feats=None):
+    #         BasisEmbedding(features=feats, wires=range(2))
+    #         return qml.expval(qml.Identity(0))
     #
-    #     circuit(f=f)
+    #     circuit(feats=f)
+
+    def test_interface_integration_angle_embedding_torch(self):
+        """Checks that pennnylane.templates.embeddings.AngleEmbedding() can be used with the
+            PyTorch interface."""
+
+        f = torch.tensor([1., 2.])
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='torch')
+        def circuit(feats=None):
+            AngleEmbedding(features=feats, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(feats=f)
+
+    # def test_interface_integration_angle_embedding_tf(self):
+    #     """Checks that pennnylane.templates.embeddings.AngleEmbedding() can be used with the
+    #        TensorFlow interface."""
     #
-    # def test_interface_integration_angle_embedding(self):
-    #     """Checks that pennnylane.templates.embeddings.AngleEmbedding() can be used with other operations
-    #     in a circuit."""
-    #
-    #     f = np.array([1., 2.])
+    #     f = tf.Variable([1., 2.])
     #     dev = qml.device('default.qubit', wires=2)
     #
-    #     @qml.qnode(dev)
-    #     def circuit(f=None):
-    #         qml.PauliX(wires=0)
-    #         AngleEmbedding(features=f, wires=range(2))
-    #         AngleEmbedding(features=f, wires=range(2))
-    #         qml.PauliX(wires=1)
-    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+    #     @qml.qnode(dev, interface='tf')
+    #     def circuit(feats=None):
+    #         AngleEmbedding(features=feats, wires=range(2))
+    #         return qml.expval(qml.Identity(0))
     #
-    #     circuit(f=f)
+    #     circuit(feats=f)
+
+    def test_interface_integration_squeezing_embedding_torch(self, gaussian_device_2_wires):
+        """Checks that pennnylane.templates.embeddings.SqueezingEmbedding() can be used with the
+           PyTorch interface."""
+
+        f = torch.tensor([1., 2.])
+
+        @qml.qnode(gaussian_device_2_wires, interface='torch')
+        def circuit(feats=None):
+            SqueezingEmbedding(features=feats, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(feats=f)
+
+    # def test_interface_integration_squeezing_embedding_tf(self, gaussian_device_2_wires):
+    #     """Checks that pennnylane.templates.embeddings.SqueezingEmbedding() can be used with the
+    #        TensorFlow interface."""
     #
-    # def test_interface_integration_squeezing_embedding(self, gaussian_device_2_wires):
-    #     """Checks that pennnylane.templates.embeddings.SqueezingEmbedding() can be used with other operations
-    #     in a circuit."""
+    #     f = tf.Variable([1., 2.])
     #
-    #     f = np.array([1., 2.])
+    #     @qml.qnode(gaussian_device_2_wires, interface='tf')
+    #     def circuit(feats=None):
+    #         SqueezingEmbedding(features=feats, wires=range(2))
+    #         return qml.expval(qml.Identity(0))
     #
-    #     @qml.qnode(gaussian_device_2_wires)
-    #     def circuit(f=None):
-    #         qml.Displacement(1., 1., wires=0)
-    #         SqueezingEmbedding(features=f, wires=range(2))
-    #         SqueezingEmbedding(features=f, wires=range(2))
-    #         qml.Displacement(1., 1., wires=1)
-    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+    #     circuit(feats=f)
+
+    def test_interface_integration_displacement_embedding_torch(self, gaussian_device_2_wires):
+        """Checks that pennnylane.templates.embeddings.DisplacementEmbedding() can be used with the
+           PyTorch interface."""
+
+        f = torch.tensor([1., 2.])
+
+        @qml.qnode(gaussian_device_2_wires, interface='torch')
+        def circuit(feats=None):
+            DisplacementEmbedding(features=feats, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(feats=f)
+
+    # def test_interface_integration_displacement_embedding_tf(self, gaussian_device_2_wires):
+    #     """Checks that pennnylane.templates.embeddings.DisplacementEmbedding() can be used with the
+    #        TensorFlow interface."""
     #
-    #     circuit(f=f)
+    #     f = tf.Variable([1., 2.])
     #
-    # def test_interface_integration_displacement_embedding(self, gaussian_device_2_wires):
-    #     """Checks that pennnylane.templates.embeddings.DisplacementEmbedding() can be used with other operations
-    #     in a circuit."""
+    #     @qml.qnode(gaussian_device_2_wires, interface='tf')
+    #     def circuit(feats=None):
+    #         DisplacementEmbedding(features=feats, wires=range(2))
+    #         return qml.expval(qml.Identity(0))
     #
-    #     f = np.array([1., 2.])
-    #
-    #     @qml.qnode(gaussian_device_2_wires)
-    #     def circuit(f=None):
-    #         qml.Displacement(1., 1., wires=0)
-    #         DisplacementEmbedding(features=f, wires=range(2))
-    #         DisplacementEmbedding(features=f, wires=range(2))
-    #         qml.Displacement(1., 1., wires=1)
-    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-    #
-    #     circuit(f=f)
+    #     circuit(feats=f)
