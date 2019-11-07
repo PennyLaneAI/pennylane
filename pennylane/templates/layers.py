@@ -12,15 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module contains templates for trainable 'layers' of quantum gates.
-
-In contrast to other templates such as embeddings, layers
-do typically only take trainable parameters, and get repeated in the circuit -- just like the layers of a
-neural network. This makes the layer 'learnable' within the limits of the architecture.
-
-Most templates in this module have a 'Layer' version that implements a single layer, as well as a 'Layers'
-version which calls the single layer multiple times, possibly using different hyperparameters for the
-sequence in each call.
+This module contains templates for trainable 'layers' of quantum gates, which can be repeatedly
+applied in a quantum circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Sequence
@@ -183,7 +176,8 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
 
 
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
+    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`,
+    as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
 
     The number of layers :math:`L` is inferred from the first dimension of the eleven weight parameters. The layers
     act on the :math:`M` modes given in ``wires``, and include interferometers of :math:`K=M(M-1)/2` beamsplitters.
@@ -328,17 +322,19 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
 
     .. note::
 
-        The decomposition as formulated in `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__ uses a different
-        convention for a beamsplitter :math:`T(\theta, \phi)` than PennyLane, namely:
+        The decomposition as formulated in `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__
+        uses a different convention for a beamsplitter :math:`T(\theta, \phi)` than PennyLane, namely:
 
         .. math:: T(\theta, \phi) = BS(\theta, 0) R(\phi)
 
         For the universality of the decomposition, the used convention is irrelevant, but
         for a given set of angles the resulting interferometers will be different.
 
-        If an interferometer consistent with the convention from `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__
+        If an interferometer consistent with the convention from
+        `Clements et al. <https://dx.doi.org/10.1364/OPTICA.3.001460>`__
         is needed, the optional keyword argument ``beamsplitter='clements'`` can be specified. This
-        will result in each :class:`~pennylane.ops.Beamsplitter` being preceded by a :class:`~pennylane.ops.Rotation` and
+        will result in each :class:`~pennylane.ops.Beamsplitter` being preceded by
+        a :class:`~pennylane.ops.Rotation` and
         thus increase the number of elementary operations in the circuit.
 
     Args:
@@ -411,6 +407,5 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
 
 
 layers = {"StronglyEntanglingLayers", "RandomLayers", "CVNeuralNetLayers", "Interferometer"}
-
 
 __all__ = list(layers)

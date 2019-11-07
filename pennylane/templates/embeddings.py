@@ -257,5 +257,4 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
 
 embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "SqueezingEmbedding", "DisplacementEmbedding"}
 
-
 __all__ = list(embeddings)

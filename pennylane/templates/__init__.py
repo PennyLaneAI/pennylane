@@ -20,10 +20,15 @@ evaluate, and train quantum nodes.
 .. autosummary::
     :toctree: api
 
-    embeddings
     layers
+    embeddings
+
 """
+
+from .layers import *
+from .embeddings import *
+
 from .layers import __all__ as _layers__all__
 from .embeddings import __all__ as _embeddings__all__
 
-__all__ = list(_embeddings__all__ | _layers__all__)
+__all__ = _embeddings__all__ + _layers__all__
