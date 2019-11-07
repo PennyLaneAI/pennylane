@@ -17,6 +17,8 @@ in :mod:`pennylane.init`, and running templates in larger circuits.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
+import torch
+import tensorflow as tf
 import numpy as np
 import pennylane as qml
 from pennylane.templates.layers import (CVNeuralNetLayers, CVNeuralNetLayer,
@@ -271,3 +273,186 @@ class TestCircuitIntegration:
             return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
 
         circuit(f=f)
+
+
+class TestInterfaceIntegration:
+    """Tests the integration of templates with interfaces."""
+
+    def test_interface_integration_cvqnn_layers_torch(self, gaussian_device_2_wires):
+        """Checks that pennylane.templates.layers.StronglyEntanglingLayers() can be used with the
+        PyTorch interface."""
+
+        p = [torch.tensor([[2.33312851], [1.20670562]]),
+             torch.tensor([[3.49488327], [2.01683706]]),
+             torch.tensor([[0.9868003, 1.58798724], [5.06301407, 4.83852562]]),
+             torch.tensor([[0.21358641,  0.120304], [-0.00724019, 0.01996744]]),
+             torch.tensor([[4.62040076, 6.08773452], [6.09056998, 6.22395862]]),
+             torch.tensor([[4.10336783], [1.70001985]]),
+             torch.tensor([[4.74112903], [5.31462729]]),
+             torch.tensor([[0.89758198, 0.41604762], [1.09680782, 3.08223802]]),
+             torch.tensor([[-0.0807571, -0.00908855], [0.06051908, -0.1667079]]),
+             torch.tensor([[1.87210909, 3.59695024], [1.42759279, 3.84330071]]),
+             torch.tensor([[0.00389139,  0.05125553], [-0.12120044,  0.03111934]])
+             ]
+
+        @qml.qnode(gaussian_device_2_wires, interface='torch')
+        def circuit(w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11):
+            CVNeuralNetLayers(w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(*p)
+
+    def test_interface_integration_cvqnn_layers_tf(self, gaussian_device_2_wires):
+        """Checks that pennylane.templates.layers.StronglyEntanglingLayers() can be used with the
+        TensorFlow interface."""
+
+        p = [tf.Variable([[2.33312851], [1.20670562]]),
+             tf.Variable([[3.49488327], [2.01683706]]),
+             tf.Variable([[0.9868003, 1.58798724], [5.06301407, 4.83852562]]),
+             tf.Variable([[0.21358641,  0.120304], [-0.00724019, 0.01996744]]),
+             tf.Variable([[4.62040076, 6.08773452], [6.09056998, 6.22395862]]),
+             tf.Variable([[4.10336783], [1.70001985]]),
+             tf.Variable([[4.74112903], [5.31462729]]),
+             tf.Variable([[0.89758198, 0.41604762], [1.09680782, 3.08223802]]),
+             tf.Variable([[-0.0807571, -0.00908855], [0.06051908, -0.1667079]]),
+             tf.Variable([[1.87210909, 3.59695024], [1.42759279, 3.84330071]]),
+             tf.Variable([[0.00389139,  0.05125553], [-0.12120044,  0.03111934]])
+             ]
+
+        @qml.qnode(gaussian_device_2_wires, interface='tf')
+        def circuit(w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11):
+            CVNeuralNetLayers(w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        circuit(*p)
+
+    def test_interface_integration_stronglyentangling_layers_torch(self):
+        """Checks that pennylane.templates.layers.StronglyEntanglingLayers() can be used with the
+        PyTorch interface."""
+
+        p = torch.tensor([[[1.50820225, 4.24049172, 5.58068076], [3.72927363, 5.4538957, 1.21793098]],
+                          [[5.25049813, 1.11059904, 0.52967773], [4.9789569, 1.42562158, 2.49977512]]])
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='torch')
+        def circuit(weights):
+            StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.sample(qml.Identity(0))
+
+        circuit(weights=p)
+
+    def test_interface_integration_stronglyentangling_layers_tf(self):
+        """Checks that pennylane.templates.layers.StronglyEntanglingLayers() can be used with the
+        TensorFlow interface."""
+
+        p = tf.Variable([[[1.50820225, 4.24049172, 5.58068076], [3.72927363, 5.4538957, 1.21793098]],
+                         [[5.25049813, 1.11059904, 0.52967773], [4.9789569, 1.42562158, 2.49977512]]])
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev, interface='torch')
+        def circuit(weights):
+            StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.sample(qml.Identity(0))
+
+        circuit(weights=p)
+    #
+    # def test_interface_integration_random_layers(self):
+    #     """Checks that pennnylane.templates.layers.RandomLayer() can be used with other operations
+    #     in a circuit."""
+    #
+    #     p = np.array([[0.53479316, 5.88709314],
+    #                   [2.21352321, 4.28468607]])
+    #     dev = qml.device('default.qubit', wires=2)
+    #
+    #     @qml.qnode(dev)
+    #     def circuit(weights):
+    #         qml.PauliX(wires=0)
+    #         RandomLayers(weights, wires=range(2))
+    #         RandomLayers(weights, wires=range(2))
+    #         qml.PauliX(wires=1)
+    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+    #
+    #     circuit(weights=p)
+    #
+    # def test_interface_integration_amplitude_embedding(self):
+    #     """Checks that pennnylane.templates.embeddings.AmplitudeEmbedding() can be used with other operations
+    #     in a circuit."""
+    #
+    #     f = np.array([0.1, 0.2, 0.3, 0.4])
+    #     dev = qml.device('default.qubit', wires=2)
+    #
+    #     @qml.qnode(dev)
+    #     def circuit(f=None):
+    #         qml.PauliX(wires=0)
+    #         AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
+    #         AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
+    #         qml.PauliX(wires=1)
+    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+    #
+    #     circuit(f=f)
+    #
+    # def test_interface_integration_basis_embedding(self):
+    #     """Checks that pennnylane.templates.embeddings.BasisEmbedding() can be used with other operations
+    #     in a circuit."""
+    #
+    #     f = np.array([1, 0])
+    #     dev = qml.device('default.qubit', wires=2)
+    #
+    #     @qml.qnode(dev)
+    #     def circuit(f=None):
+    #         qml.PauliX(wires=0)
+    #         BasisEmbedding(features=f, wires=range(2))
+    #         BasisEmbedding(features=f, wires=range(2))
+    #         qml.PauliX(wires=1)
+    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+    #
+    #     circuit(f=f)
+    #
+    # def test_interface_integration_angle_embedding(self):
+    #     """Checks that pennnylane.templates.embeddings.AngleEmbedding() can be used with other operations
+    #     in a circuit."""
+    #
+    #     f = np.array([1., 2.])
+    #     dev = qml.device('default.qubit', wires=2)
+    #
+    #     @qml.qnode(dev)
+    #     def circuit(f=None):
+    #         qml.PauliX(wires=0)
+    #         AngleEmbedding(features=f, wires=range(2))
+    #         AngleEmbedding(features=f, wires=range(2))
+    #         qml.PauliX(wires=1)
+    #         return [qml.sample(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+    #
+    #     circuit(f=f)
+    #
+    # def test_interface_integration_squeezing_embedding(self, gaussian_device_2_wires):
+    #     """Checks that pennnylane.templates.embeddings.SqueezingEmbedding() can be used with other operations
+    #     in a circuit."""
+    #
+    #     f = np.array([1., 2.])
+    #
+    #     @qml.qnode(gaussian_device_2_wires)
+    #     def circuit(f=None):
+    #         qml.Displacement(1., 1., wires=0)
+    #         SqueezingEmbedding(features=f, wires=range(2))
+    #         SqueezingEmbedding(features=f, wires=range(2))
+    #         qml.Displacement(1., 1., wires=1)
+    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+    #
+    #     circuit(f=f)
+    #
+    # def test_interface_integration_displacement_embedding(self, gaussian_device_2_wires):
+    #     """Checks that pennnylane.templates.embeddings.DisplacementEmbedding() can be used with other operations
+    #     in a circuit."""
+    #
+    #     f = np.array([1., 2.])
+    #
+    #     @qml.qnode(gaussian_device_2_wires)
+    #     def circuit(f=None):
+    #         qml.Displacement(1., 1., wires=0)
+    #         DisplacementEmbedding(features=f, wires=range(2))
+    #         DisplacementEmbedding(features=f, wires=range(2))
+    #         qml.Displacement(1., 1., wires=1)
+    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+    #
+    #     circuit(f=f)
