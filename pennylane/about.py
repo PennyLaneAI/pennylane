@@ -28,7 +28,11 @@ def about():
     Prints the information for pennylane installation.
     """
     plugin_devices = iter_entry_points("pennylane.plugins")
-    _internal.main(["show", "pennylane"])
+    try:
+        _internal.main(["show", "pennylane"])
+    except AttributeError:
+        from pip._internal.main import main as _internal_main
+        _internal_main(["show", "pennylane"])
     print("Platform info:           {}".format(platform.platform(aliased=True)))
     print("Python version:          {0}.{1}.{2}".format(*sys.version_info[0:3]))
     print("Numpy version:           {}".format(numpy.__version__))
