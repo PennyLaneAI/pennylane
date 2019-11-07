@@ -420,7 +420,7 @@ class DefaultQubit(Device):
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
 
-        If the inverse was defined for an operation or observable that requires parameters, returns the
+        If the inverse was defined for an operation, returns the
         conjugate transpose of the operator matrix.
 
         Args:
