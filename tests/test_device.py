@@ -306,16 +306,13 @@ class TestInternalFunctions:
 
     def test_supports_inverse(self, mock_device_supporting_paulis_and_inverse):
         """Tests the function Device.supports_inverse on device which supports inverses"""
-        assert mock_device_supporting_paulis_and_inverse.get_original_operation_name(str(qml.PauliZ.name) +
-                                                                                     qml.operation.Operation.
-                                                                                     string_for_inverse)
+        assert mock_device_supporting_paulis_and_inverse.check_validity([qml.PauliZ(0).inv()], []) is None
 
     def test_supports_inverse_device_does_not_support_inverses(self, mock_device_supporting_paulis):
         """Tests the function Device.supports_inverse on device which does not support inverses"""
         with pytest.raises(DeviceError, match="The inverse of gates are not supported on device {}".
                 format(mock_device_supporting_paulis.short_name)):
-            mock_device_supporting_paulis.get_original_operation_name(str(qml.PauliZ.name) +
-                                                                      qml.operation.Operation.string_for_inverse)
+            mock_device_supporting_paulis.check_validity([qml.PauliZ(0).inv()], [])
 
 
 class TestClassmethods:
