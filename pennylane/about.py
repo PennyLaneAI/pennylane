@@ -22,10 +22,10 @@ from pkg_resources import iter_entry_points
 import numpy
 import scipy
 # The following if/else block enables support for pip versions 19.3.x
-if importlib.util.find_spec("pip._internal.main"):
-    from pip._internal.main import main as _internal_main
-else:
+if not importlib.util.find_spec("pip._internal.main"):
     from pip._internal import main as _internal_main
+else:
+    from pip._internal.main import main as _internal_main
 
 
 def about():
