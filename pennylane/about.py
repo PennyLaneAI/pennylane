@@ -15,17 +15,17 @@ r"""
 This module contains the :func:`about` function to display all the details of the PennyLane installation,
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 """
+import numpy
+import scipy
 import sys
 import platform
+from pkg_resources import iter_entry_points
 # The following if/else block enables support for pip versions 19.3.x
 import importlib
 if importlib.util.find_spec("pip._internal.main"):
     from pip._internal.main import main as _internal_main
 else:
     from pip._internal import main as _internal_main
-from pkg_resources import iter_entry_points
-import numpy
-import scipy
 
 
 def about():
