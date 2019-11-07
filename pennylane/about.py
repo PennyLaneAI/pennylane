@@ -23,7 +23,7 @@ import numpy
 import scipy
 # The following if/else block enables support for pip versions 19.3.x
 if importlib.util.find_spec("pip._internal.main"):
-    from pip._internal.main import main as _internal_main  # pylint: disable=import-error
+    from pip._internal.main import main as _internal_main
 else:
     from pip._internal import main as _internal_main
 
