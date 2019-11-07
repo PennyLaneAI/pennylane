@@ -40,7 +40,8 @@ info = {
                     'pennylane.templates',
                     'pennylane.plugins',
                     'pennylane.optimize',
-                    'pennylane.interfaces'
+                    'pennylane.interfaces',
+                    'pennylane.vqe'
                 ],
     'entry_points': {
         'pennylane.plugins': [
