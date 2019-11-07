@@ -253,3 +253,9 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             Displacement(c, f, wires=wires[idx])
         else:
             raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))
+
+
+embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "SqueezingEmbedding", "DisplacementEmbedding"}
+
+
+__all__ = list(embeddings)

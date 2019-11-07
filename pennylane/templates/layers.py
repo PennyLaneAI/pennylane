@@ -408,3 +408,9 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     # apply the final local phase shifts to all modes
     for i, p in enumerate(varphi):
         Rotation(p, wires=[w[i]])
+
+
+layers = {"StronglyEntanglingLayers", "RandomLayers", "CVNeuralNetLayers", "Interferometer"}
+
+
+__all__ = list(layers)

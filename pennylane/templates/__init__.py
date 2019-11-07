@@ -23,3 +23,7 @@ evaluate, and train quantum nodes.
     embeddings
     layers
 """
+from .layers import __all__ as _layers__all__
+from .embeddings import __all__ as _embeddings__all__
+
+__all__ = list(_embeddings__all__ | _layers__all__)
