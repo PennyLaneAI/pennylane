@@ -20,7 +20,6 @@ from collections.abc import Sequence
 from pennylane.ops import Beamsplitter, Rotation
 from pennylane.qnode import QuantumFunctionError
 from pennylane.variable import Variable
-import numpy as np
 
 
 def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='pennylane'):
