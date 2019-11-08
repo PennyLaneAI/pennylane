@@ -176,7 +176,7 @@ class TestIntegrationCircuit:
         circuit(**inpts)
 
 
-class TestIntegrationCircuitTorch:
+class TestCircuitTorchIntegration:
     """Tests the integration of templates into circuits using the Torch interface."""
 
     @pytest.mark.parametrize("template, inpts", qubit_const)
