@@ -106,7 +106,7 @@ class TestInitializationIntegration:
         circuit(inp)
 
 
-class TestIntegrationCircuit:
+class TestCircuitIntegration:
     """Tests the integration of templates into circuits using the NumPy interface. """
 
     @pytest.mark.parametrize("template, inpts", qubit_const)
