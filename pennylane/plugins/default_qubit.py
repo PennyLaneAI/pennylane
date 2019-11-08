@@ -386,8 +386,8 @@ class DefaultQubit(Device):
         """
         if isinstance(observable, list):
             return self._get_tensor_operator_matrix(observable, par)
-        else:
-            return self._get_operator_matrix(observable, par)
+
+        return self._get_operator_matrix(observable, par)
 
     def expval(self, observable, wires, par):
         if self.analytic:
