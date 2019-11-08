@@ -21,4 +21,5 @@ This package contains the new-style QNodes.
 
     qnode
     jacobian
+    autograd
 """

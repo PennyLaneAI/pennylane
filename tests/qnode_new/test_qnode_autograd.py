@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.qnode_new.qnode import QuantumFunctionError
-from pennylane.qnode_new.jacobian import AutogradQNode as ANode
+from pennylane.qnode_new.autograd import AutogradQNode as ANode
 
 
 alpha = 0.5  # displacement in tests

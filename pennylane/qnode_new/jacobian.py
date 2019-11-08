@@ -1,4 +1,4 @@
-# Copyright 2018 Xanadu Quantum Technologies Inc.
+# Copyright 2019 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,13 +18,11 @@ Differentiable quantum nodes.
 from collections.abc import Sequence
 import copy
 
-import autograd.extend
-import autograd.builtins
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import ObservableReturnTypes, CV
-from pennylane.utils import _flatten, unflatten, _inv_dict
+from pennylane.utils import _flatten, _inv_dict
 from pennylane.qnode_new.qnode import QNode, QuantumFunctionError
 
 
@@ -168,7 +166,7 @@ class JacobianQNode(QNode):
                 to which to compute the Jacobian. None means all the parameters.
                 Note that you cannot compute the Jacobian with respect to the kwargs.
             method (str): Jacobian computation method, in ``{'F', 'A', 'B', 'D'}``, see above
-            options (dict[str, Any]): additional options
+            options (dict[str, Any]): additional options for the computation methods
 
                 * h (float): finite difference method step size
                 * order (int): finite difference method order, 1 or 2
@@ -177,9 +175,6 @@ class JacobianQNode(QNode):
         Returns:
             array[float]: Jacobian, shape ``(n, len(wrt))``, where ``n`` is the number of outputs returned by the QNode
         """
-        # FIXME add 'D' method
-        options = options or {}
-
         # arrays are not Sequences... but they ARE Iterables? FIXME decide which types we accept! cf. _flatten
         if not isinstance(args, (Sequence, np.ndarray)):
             args = (args,)
@@ -188,17 +183,11 @@ class JacobianQNode(QNode):
         # apply defaults
         kwargs = self._default_args(kwargs)
 
+        options = options or {}
+
         # (re-)construct the circuit if necessary
         if self.circuit is None or self.mutable:
             self._construct(args, kwargs)
-
-        # In the following, to evaluate the Jacobian we call self.evaluate several times using
-        # modified args (and possibly modified circuit Operators).
-        # We do not want evaluate to call _construct again. This would only be necessary if the
-        # auxiliary args changed, since only they can change the structure of the circuit,
-        # and we do not modify them. To achieve this, we temporarily make the circuit immutable.
-        mutable = self.mutable
-        self.mutable = False
 
         if wrt is None:
             wrt = range(self.num_variables)
@@ -208,6 +197,17 @@ class JacobianQNode(QNode):
                                  "(this node has {} free parameters).".format(wrt, self.num_variables))
             if len(wrt) != len(set(wrt)):  # set removes duplicates
                 raise ValueError("Parameter indices must be unique.")
+
+        if method == 'D':
+            return self.device.jacobian(args, kwargs, wrt, self.circuit)  # FIXME placeholder
+
+        # In the following, to evaluate the Jacobian we call self.evaluate several times using
+        # modified args (and possibly modified circuit Operators).
+        # We do not want evaluate to call _construct again. This would only be necessary if the
+        # auxiliary args changed, since only they can change the structure of the circuit,
+        # and we do not modify them. To achieve this, we temporarily make the circuit immutable.
+        mutable = self.mutable
+        self.mutable = False
 
         # check if the method can be used on the requested parameters
         method_map = _inv_dict(self.par_to_grad_method)
@@ -478,56 +478,3 @@ class JacobianQNode(QNode):
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
         # d<A>/dp for plain expectations
         return np.where(where_var, pdA2 -2 * evA * pdA, pdA)
-
-
-
-class AutogradQNode(JacobianQNode):
-    """JacobianQNode that works with Autograd."""
-
-    @property
-    def interface(self):
-        return "numpy"  # NOTE not "Autograd", for backwards compatibility
-
-    # mark the evaluate method as an Autograd primitive
-    evaluate = autograd.extend.primitive(JacobianQNode.evaluate)
-
-    def __call__(self, *args, **kwargs):
-        args = autograd.builtins.tuple(args)  # prevents autograd boxed arguments from going through to evaluate
-        return self.evaluate(args, kwargs)
-
-    @staticmethod
-    def QNode_vjp(ans, self, args, kwargs):
-        """Returns the vector-Jacobian product operator for the QNode.
-
-        Takes the same arguments as :meth:`evaluate`, plus ``ans``.
-
-        Returns:
-            function[array[float], array[float]]: vector-Jacobian product operator
-        """
-        # pylint: disable=unused-argument
-        def gradient_product(g):
-            """Vector-Jacobian product operator.
-
-            Args:
-                g (array[float]): scalar or vector multiplying the Jacobian
-                    from the left (output side)
-
-            Returns:
-                nested Sequence[float]: vector-Jacobian product, arranged
-                into the nested structure of the input arguments in ``args``
-            """
-            # Jacobian matrix of the circuit
-            jac = self.jacobian(args, kwargs)
-            if not g.shape:
-                temp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
-            else:
-                temp = g @ jac
-
-            # restore the nested structure of the input args
-            temp = unflatten(temp.flat, args)
-            return temp
-
-        return gradient_product
-
-# define the vector-Jacobian product function for AutogradQNode.evaluate
-autograd.extend.defvjp(AutogradQNode.evaluate, AutogradQNode.QNode_vjp, argnums=[1])
