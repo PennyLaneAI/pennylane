@@ -94,19 +94,6 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
-class TestMaps:
-    """Tests the maps for operations and observables."""
-
-    def test_operation_map(self, tensornet_device_3_wires):
-        """Test that default qubit device supports all PennyLane discrete gates."""
-
-        assert set(qml.ops._qubit__ops__) ==  set(tensornet_device_3_wires._operation_map)
-
-    def test_observable_map(self, tensornet_device_3_wires):
-        """Test that default qubit device supports all PennyLane discrete observables."""
-
-        assert set(qml.ops._qubit__obs__) | {"Identity"} == set(tensornet_device_3_wires._observable_map)
-
 
 class TestTensornetIntegration:
     """Integration tests for expt.tensornet. This test ensures it integrates

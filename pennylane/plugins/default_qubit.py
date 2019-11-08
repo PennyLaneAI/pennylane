@@ -84,6 +84,9 @@ CSWAP = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 1, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 1]]) #: CSWAP gate
 
+Toffoli = np.diag([1 for i in range(8)])
+Toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+
 #========================================================
 #  parametrized gates
 #========================================================
@@ -285,7 +288,8 @@ class DefaultQubit(Device):
         'T': T,
         'CNOT': CNOT,
         'SWAP': SWAP,
-        'CSWAP':CSWAP,
+        'CSWAP': CSWAP,
+        'Toffoli': Toffoli,
         'CZ': CZ,
         'PhaseShift': Rphi,
         'RX': Rotx,
