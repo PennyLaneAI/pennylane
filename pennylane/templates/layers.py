@@ -49,8 +49,9 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     if ranges is None:
         ranges = [1]*len(weights)
 
-    for block_weights, block_range in zip(weights, ranges):
-        StronglyEntanglingLayer(block_weights, r=block_range, imprimitive=imprimitive, wires=wires)
+    n_layers = len(weights)
+    for l in range(n_layers):
+        StronglyEntanglingLayer(weights[l], r=ranges[l], imprimitive=imprimitive, wires=wires)
 
 
 def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
@@ -116,8 +117,9 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     if rotations is None:
         rotations = [RX, RY, RZ]
 
-    for layer_weights in weights:
-        RandomLayer(layer_weights, wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations,
+    n_layers = len(weights)
+    for l in range(n_layers):
+        RandomLayer(weights[l], wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations,
                     seed=seed)
 
 
