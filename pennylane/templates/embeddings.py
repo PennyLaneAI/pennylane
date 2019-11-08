@@ -13,7 +13,8 @@
 # limitations under the License.
 r"""
 Embeddings are templates that take features and encode them into a quantum state.
-They can optionally be repeated, and may contain trainable parameters.
+They can optionally be repeated, and may contain trainable parameters. Embeddings are typically
+used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Layers are trainable templates that are typically repeated,
-using different adjustable parameters in each repetition.
+Layers are trainable templates that are typically repeated, using different adjustable parameters in each repetition.
+They implement a transformation from a quantum state to another quantum state.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import CNOT, RX, RY, RZ, Rot, Squeezing, Displacement, Kerr
