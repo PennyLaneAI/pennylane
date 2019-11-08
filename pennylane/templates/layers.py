@@ -117,8 +117,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     if rotations is None:
         rotations = [RX, RY, RZ]
 
-    n_layers = len(weights)
-    for l in range(n_layers):
+    for l in range(len(weights)):
         RandomLayer(weights[l], wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations,
                     seed=seed)
 

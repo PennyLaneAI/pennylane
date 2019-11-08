@@ -466,6 +466,12 @@ class Operation(Operator):
         """
         return [None, 1]
 
+    @staticmethod
+    def decomposition(*params, wires=None):
+        """Returns a template decomposing the operation into other
+        quantum operations."""
+        raise NotImplementedError
+
     @grad_recipe.setter
     def grad_recipe(self, value):
         """Setter for the grad_recipe property"""
