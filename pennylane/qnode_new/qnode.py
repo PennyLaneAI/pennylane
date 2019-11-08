@@ -462,11 +462,12 @@ class QNode:
                 "Device {} is a CV device; qubit operations are not allowed.".format(self.device.short_name)
             )
 
+        queue = self.queue
         if self.device.operations:
             # replace operations in the queue with any decompositions if required
-            self.queue = decompose_queue(self.queue, self.device)
+            queue = decompose_queue(self.queue, self.device)
 
-        self.ops = self.queue + list(res)
+        self.ops = queue + list(res)
         del self.queue
         del self.obs_queue
 
