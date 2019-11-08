@@ -624,3 +624,94 @@ class TestTensor:
         with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
             T = X @ Z
             Y @ T
+
+
+class TestDecomposition:
+    """Test for operation decomposition"""
+
+    def test_U1_decomposition(self):
+        """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
+        phi = 0.432
+        res = qml.U1.decomposition(phi, wires=0)
+
+        assert len(res) == 1
+        assert res[0].name == "PhaseShift"
+        assert res[0].parameters == [phi]
+
+    def test_rotation_decomposition(self):
+        """Test the decomposition of the abritrary single
+        qubit rotation"""
+        phi = 0.432
+        theta = 0.654
+        omega = -5.43
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.Rot.decomposition(phi, theta, omega, wires=0)
+
+        assert len(rec.queue) == 3
+
+        assert rec.queue[0].name == "RZ"
+        assert rec.queue[0].parameters == [phi]
+
+        assert rec.queue[1].name == "RY"
+        assert rec.queue[1].parameters == [theta]
+
+        assert rec.queue[2].name == "RZ"
+        assert rec.queue[2].parameters == [omega]
+
+    def test_U2_decomposition(self):
+        """Test the U2 decomposition is correct"""
+        phi = 0.432
+        lam = 0.654
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.U2.decomposition(phi, lam, wires=0)
+
+        assert len(rec.queue) == 3
+
+        assert rec.queue[0].name == "Rot"
+        assert rec.queue[0].parameters == [lam, np.pi/2, -lam]
+
+        assert rec.queue[1].name == "PhaseShift"
+        assert rec.queue[1].parameters == [lam]
+
+        assert rec.queue[2].name == "PhaseShift"
+        assert rec.queue[2].parameters == [phi]
+
+    def test_U3_decomposition(self):
+        """Test the U3 decomposition is correct"""
+        theta = 0.654
+        phi = 0.432
+        lam = 0.654
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.U3.decomposition(theta, phi, lam, wires=0)
+
+        assert len(rec.queue) == 3
+
+        assert rec.queue[0].name == "Rot"
+        assert rec.queue[0].parameters == [lam, theta, -lam]
+
+        assert rec.queue[1].name == "PhaseShift"
+        assert rec.queue[1].parameters == [lam]
+
+        assert rec.queue[2].name == "PhaseShift"
+        assert rec.queue[2].parameters == [phi]
+
+    def test_basis_state_decomposition(self):
+        """Test the basis state decomposition is correct"""
+        n = np.array([1, 0, 1, 1])
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.BasisState.decomposition(n, wires=[0, 1, 2, 3])
+
+        assert len(rec.queue) == 3
+
+        assert rec.queue[0].name == "PauliX"
+        assert rec.queue[0].wires == [0]
+
+        assert rec.queue[1].name == "PauliX"
+        assert rec.queue[1].wires == [2]
+
+        assert rec.queue[2].name == "PauliX"
+        assert rec.queue[2].wires == [3]
