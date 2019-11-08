@@ -20,9 +20,8 @@ evaluate, and train quantum nodes.
 .. autosummary::
     :toctree: api
 
-    layers
     embeddings
-
+    layers
 """
 
 from .layers import *
