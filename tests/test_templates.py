@@ -41,8 +41,6 @@ from pennylane.init import (strong_ent_layers_uniform,
 # extend the appropriate lists with the template function
 # and the desired inputs (i.e., features and/or weights) that need to be tested
 
-fixture = "template, inpts"
-
 # Constant input fixtures for qubit templates
 qubit_func = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
               (StronglyEntanglingLayers, strong_ent_layers_normal),
@@ -81,7 +79,7 @@ cv_const = [(DisplacementEmbedding, [[1., 2.]]),
 class TestIntegrationInitialization:
     """Tests integration with the parameter initialization functions from pennylane.init"""
 
-    @pytest.mark.parametrize(fixture, qubit_func)
+    @pytest.mark.parametrize("template, inpts", qubit_func)
     def test_integration_qubit_init(self, template, inpts, qubit_device, n_subsystems, n_layers):
         """Checks parameter initialization compatible with continuous-variable templates."""
 
@@ -94,7 +92,7 @@ class TestIntegrationInitialization:
 
         circuit(inp)
 
-    @pytest.mark.parametrize(fixture, cv_func)
+    @pytest.mark.parametrize("template, inpts", cv_func)
     def test_integration_cv_init(self, template, inpts, gaussian_device, n_subsystems, n_layers):
         """Checks parameter initialization compatible with continuous-variable templates."""
 
@@ -111,7 +109,7 @@ class TestIntegrationInitialization:
 class TestIntegrationCircuit:
     """Tests the integration of templates into circuits using the NumPy interface. """
 
-    @pytest.mark.parametrize(fixture, qubit_const)
+    @pytest.mark.parametrize("template, inpts", qubit_const)
     def test_integration_qubit_positional_arg(self, template, inpts):
         """Checks integration of qubit templates using positional arguments to qnode."""
 
@@ -128,7 +126,7 @@ class TestIntegrationCircuit:
 
         circuit(inpts)
 
-    @pytest.mark.parametrize(fixture, qubit_const)
+    @pytest.mark.parametrize("template, inpts", qubit_const)
     def test_integration_qubit_keyword_arg(self, template, inpts):
         """Checks integration of qubit templates using keyword arguments to qnode."""
 
@@ -145,7 +143,7 @@ class TestIntegrationCircuit:
 
         circuit(inp_=inpts)
 
-    @pytest.mark.parametrize(fixture, cv_const)
+    @pytest.mark.parametrize("template, inpts", cv_const)
     def test_integration_cv_positional_args(self, gaussian_device_2_wires, template, inpts):
         """Checks integration of continuous-variable templates using positional arguments to qnode."""
 
@@ -161,7 +159,7 @@ class TestIntegrationCircuit:
 
         circuit(inpts)
 
-    @pytest.mark.parametrize(fixture, cv_const)
+    @pytest.mark.parametrize("template, inpts", cv_const)
     def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
         """Checks integration of continuous-variable templates using keyword arguments to qnode."""
 
@@ -181,7 +179,7 @@ class TestIntegrationCircuit:
 class TestIntegrationCircuitTorch:
     """Tests the integration of templates into circuits using the Torch interface."""
 
-    @pytest.mark.parametrize(fixture, qubit_const)
+    @pytest.mark.parametrize("template, inpts", qubit_const)
     def test_integration_qubit_positional_arg(self, template, inpts):
         """Checks integration of qubit templates using positional arguments to qnode."""
 
@@ -198,7 +196,7 @@ class TestIntegrationCircuitTorch:
 
         circuit(*inpts)
 
-    @pytest.mark.parametrize(fixture, qubit_const)
+    @pytest.mark.parametrize("template, inpts", qubit_const)
     def test_integration_qubit_keyword_arg(self, template, inpts):
         """Checks integration of qubit templates using keyword arguments to qnode."""
 
@@ -215,7 +213,7 @@ class TestIntegrationCircuitTorch:
 
         circuit(**inpts)
 
-    @pytest.mark.parametrize(fixture, cv_const)
+    @pytest.mark.parametrize("template, inpts", cv_const)
     def test_integration_cv_positional_args(self, gaussian_device_2_wires, template, inpts):
         """Checks integration of continuous-variable templates using positional arguments to qnode."""
 
@@ -231,7 +229,7 @@ class TestIntegrationCircuitTorch:
 
         circuit(*inpts)
 
-    @pytest.mark.parametrize(fixture, cv_const)
+    @pytest.mark.parametrize("template, inpts", cv_const)
     def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
         """Checks integration of continuous-variable templates using keyword arguments to qnode."""
 
@@ -251,7 +249,7 @@ class TestIntegrationCircuitTorch:
 class TestIntegrationCircuitTf:
     """Tests the integration of templates into circuits using the TensorFlow interface."""
 
-    @pytest.mark.parametrize(fixture, qubit_const)
+    @pytest.mark.parametrize("template, inpts", qubit_const)
     def test_integration_qubit_positional_arg(self, template, inpts):
         """Checks integration of qubit templates using positional arguments to qnode."""
 
@@ -268,7 +266,7 @@ class TestIntegrationCircuitTf:
 
         circuit(*inpts)
 
-    @pytest.mark.parametrize(fixture, qubit_const)
+    @pytest.mark.parametrize("template, inpts", qubit_const)
     def test_integration_qubit_keyword_arg(self, template, inpts):
         """Checks integration of qubit templates using keyword arguments to qnode."""
 
@@ -285,7 +283,7 @@ class TestIntegrationCircuitTf:
 
         circuit(**inpts)
 
-    @pytest.mark.parametrize(fixture, cv_const)
+    @pytest.mark.parametrize("template, inpts", cv_const)
     def test_integration_cv_positional_args(self, gaussian_device_2_wires, template, inpts):
         """Checks integration of continuous-variable templates using positional arguments to qnode."""
 
@@ -301,7 +299,7 @@ class TestIntegrationCircuitTf:
 
         circuit(*inpts)
 
-    @pytest.mark.parametrize(fixture, cv_const)
+    @pytest.mark.parametrize("template, inpts", cv_const)
     def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
         """Checks integration of continuous-variable templates using keyword arguments to qnode."""
 
