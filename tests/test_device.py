@@ -69,6 +69,17 @@ def mock_device_supporting_paulis_and_inverse(monkeypatch):
         m.setattr(Device, '_capabilities', {"inverse_operations": True})
         yield Device()
 
+@pytest.fixture(scope="function")
+def mock_device_supporting_observables_and_inverse(monkeypatch):
+    """A mock instance of the abstract Device class with non-empty operations
+    and supporting inverses"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, '__abstractmethods__', frozenset())
+        m.setattr(Device, 'operations', mock_device_paulis)
+        m.setattr(Device, 'observables', mock_device_paulis + ['Hermitian'])
+        m.setattr(Device, 'short_name', 'MockDevice')
+        m.setattr(Device, '_capabilities', {"inverse_operations": True})
+        yield Device()
 
 mock_device_capabilities = {
     "measurements": "everything",
@@ -145,6 +156,14 @@ class TestDeviceSupportedLogic:
 
         assert mock_device_supporting_paulis_and_inverse.supports_observable("PauliX.inv")
         assert not mock_device_supporting_paulis_and_inverse.supports_observable("Identity.inv")
+
+    def test_supports_obeservable_raise_error_hermitian_inverse(self, mock_device_supporting_observables_and_inverse):
+
+        assert mock_device_supporting_observables_and_inverse.supports_observable("PauliX")
+        assert mock_device_supporting_observables_and_inverse.supports_observable("PauliX.inv")
+        assert mock_device_supporting_observables_and_inverse.supports_observable("Hermitian")
+
+        assert not mock_device_supporting_observables_and_inverse.supports_observable("Hermitian.inv")
 
     def test_supports_operation_exception(self, mock_device):
         """check that device.supports_operation raises proper errors
