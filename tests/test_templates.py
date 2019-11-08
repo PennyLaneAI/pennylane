@@ -78,7 +78,7 @@ cv_const = [(DisplacementEmbedding, [[1., 2.]]),
             ]
 
 
-class TestIntegrationInitialization:
+class TestInitializationIntegration:
     """Tests integration with the parameter initialization functions from pennylane.init"""
 
     @pytest.mark.parametrize(fixture, qubit_func)
