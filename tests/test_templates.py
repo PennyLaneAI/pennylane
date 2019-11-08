@@ -83,7 +83,7 @@ class TestInitializationIntegration:
 
     @pytest.mark.parametrize(fixture, qubit_func)
     def test_integration_qubit_init(self, template, inpts, qubit_device, n_subsystems, n_layers):
-        """Checks parameter initialization compatible with continuous-variable templates."""
+        """Checks parameter initialization compatible with qubit templates."""
 
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
 
