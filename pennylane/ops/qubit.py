@@ -554,6 +554,40 @@ class CRot(Operation):
     grad_method = "A"
 
 
+class U1(Operation):
+    r"""U1(phi)
+    U1 gate.
+
+    .. math:: U_1(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                1 & 0 \\
+                0 & e^{i\phi}
+            \end{bmatrix}.
+
+    .. note::
+
+        The ``U1`` gate is an alias for the phase shift operation :class:`~.PhaseShift`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_1(\phi)) = \frac{1}{2}\left[f(U_1(\phi+\pi/2)) - f(U_1(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_1(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = 1
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def decomposition(phi, wires=None):
+        return [PhaseShift(phi, wires=wires)]
+
+
 class U2(Operation):
     r"""U2(phi, lambda, wires)
     U2 gate.
@@ -563,8 +597,8 @@ class U2(Operation):
         U_2(\phi, \lambda) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \lambda)
         \\ \exp(i \phi) & \exp(i (\phi + \lambda)) \end{bmatrix}
 
-    The :math:`U_2` gate is related to the single-qubit rotation :class:`Rot` and the
-    :class:`PhaseShift` gates via the following relation:
+    The :math:`U_2` gate is related to the single-qubit rotation :math:`R` (:class:`Rot`) and the
+    :math:`R_\phi` (:class:`PhaseShift`) gates via the following relation:
 
     .. math::
 
@@ -572,8 +606,16 @@ class U2(Operation):
 
     .. note::
 
-        If the :math:`U_2` gate is not supported on the targeted device, PennyLane
+        If the ``U2`` gate is not supported on the targeted device, PennyLane
         will attempt to decompose the gate into :class:`~.Rot` and :class:`~.PhaseShift` gates.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 2
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_2(\phi, \lambda)) = \frac{1}{2}\left[f(U_2(\phi+\pi/2, \lambda)) - f(U_2(\phi-\pi/2, \lambda))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_2(\phi, \lambda)`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \lambda\}`.
 
     Args:
         phi (float): azimuthal angle :math:`\phi`
@@ -604,8 +646,8 @@ class U3(Operation):
         U_3(\theta, \phi, \lambda) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \lambda)\sin(\theta/2) \\
         \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \lambda))\cos(\theta/2) \end{bmatrix}
 
-    The :math:`U_3` gate is related to the single-qubit rotation :class:`Rot` and the
-    :class:`PhaseShift` gates via the following relation:
+    The :math:`U_3` gate is related to the single-qubit rotation :math:`R` (:class:`Rot`) and the
+    :math:`R_\phi` (:class:`PhaseShift`) gates via the following relation:
 
     .. math::
 
@@ -615,6 +657,14 @@ class U3(Operation):
 
         If the ``U3`` gate is not supported on the targeted device, PennyLane
         will attempt to decompose the gate into :class:`~.PhaseShift` and :class:`~.Rot` gates.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 3
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_3(\theta, \phi, \lambda)) = \frac{1}{2}\left[f(U_3(\theta+\pi/2, \phi, \lambda)) - f(U_3(\theta-\pi/2, \phi, \lambda))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_3(\theta, \phi, \lambda)`.
+      This gradient recipe applies for each angle argument :math:`\{\theta, \phi, \lambda\}`.
 
     Args:
         theta (float): polar angle :math:`\theta`
@@ -780,6 +830,7 @@ ops = {
     "CRY",
     "CRZ",
     "CRot",
+    "U1",
     "U2",
     "U3",
     "BasisState",

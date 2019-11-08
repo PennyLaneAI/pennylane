@@ -334,10 +334,9 @@ class QNode:
                                        "order they are measured.")
 
         self.ev = list(res)  #: list[Observable]: returned observables
-        self.ops = self.queue + self.ev  #: list[Operation]: combined list of circuit operations
 
         # list all operations except for the identity
-        non_identity_ops = [op for op in self.ops if not isinstance(op, qml.ops.Identity)]
+        non_identity_ops = [op for op in self.queue + self.ev if not isinstance(op, qml.ops.Identity)]
 
         # contains True if op is a CV, False if it is a discrete variable
         are_cvs = [isinstance(op, qml.operation.CV) for op in non_identity_ops]
@@ -353,7 +352,8 @@ class QNode:
         if self.device.operations:
             # replace operations in the queue with any decompositions if required
             self.queue = decompose_queue(self.queue, self.device)
-            self.ops = self.queue + self.ev
+
+        self.ops = self.queue + self.ev  #: list[Operation]: combined list of circuit operations
 
         # map each free variable to the operations which depend on it
         self.variable_deps = {}

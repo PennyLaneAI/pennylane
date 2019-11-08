@@ -629,6 +629,15 @@ class TestTensor:
 class TestDecomposition:
     """Test for operation decomposition"""
 
+    def test_U1_decomposition(self):
+        """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
+        phi = 0.432
+        res = qml.U1.decomposition(phi, wires=0)
+
+        assert len(res) == 1
+        assert res[0].name == "PhaseShift"
+        assert res[0].parameters == [phi]
+
     def test_rotation_decomposition(self):
         """Test the decomposition of the abritrary single
         qubit rotation"""

@@ -623,6 +623,8 @@ class TestDefaultGaussianIntegration:
     @pytest.mark.parametrize("g", set(qml.ops.__all_ops__) - set(DefaultGaussian._operation_map.keys()))
     def test_unsupported_gates(self, g, gaussian_device_3_wires):
         """Test error is raised with unsupported gates"""
+        # TODO: Refactor this test to remove dynamic attribute loading, and instead
+        # have separate tests for gates with specific number of parameters/wires.
         if g == "BasisState":
             pytest.skip("Test not set up properly for gates with array parameters, needs refactoring.")
 
