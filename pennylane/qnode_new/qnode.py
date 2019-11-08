@@ -400,6 +400,8 @@ class QNode:
         Raises:
             QuantumFunctionError: an error was discovered in the circuit
         """
+        # pylint: disable=too-many-branches
+
         # check the return value
         if isinstance(res, Observable):
             if res.return_type is ObservableReturnTypes.Sample:
