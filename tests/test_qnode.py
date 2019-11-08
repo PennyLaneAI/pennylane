@@ -27,7 +27,7 @@ from pennylane.plugins.default_qubit import Y, Z
 
 import pennylane as qml
 from pennylane._device import Device
-from pennylane.qnode import QNode, QuantumFunctionError
+from pennylane.qnode import QNode, QuantumFunctionError, decompose_queue
 
 
 class TestQNodeOperationQueue:
@@ -169,8 +169,23 @@ def operable_mock_device_2_wires(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, 'operations', ["RX", "RY", "CNOT"])
+        m.setattr(dev, 'operations', ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
         m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, 'reset', lambda self: None)
+        m.setattr(dev, 'apply', lambda self, x, y, z: None)
+        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
+        yield Device(wires=2)
+
+
+@pytest.fixture(scope="function")
+def operable_mock_CV_device_2_wires(monkeypatch):
+    """A mock instance of the abstract Device class that can support qfuncs."""
+
+    dev = Device
+    with monkeypatch.context() as m:
+        m.setattr(dev, '__abstractmethods__', frozenset())
+        m.setattr(dev, 'operations', ["Displacement", "CubicPhase", "Squeezing", "Rotation", "Kerr", "Beamsplitter"])
+        m.setattr(dev, 'observables', ["X", "NumberOperator"])
         m.setattr(dev, 'reset', lambda self: None)
         m.setattr(dev, 'apply', lambda self, x, y, z: None)
         m.setattr(dev, 'expval', lambda self, x, y, z: 1)
@@ -807,16 +822,15 @@ class TestQNodeGradients:
         expected_jacobian = -np.diag(np.sin(base_array))
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
-    def test_qnode_cv_gradient_methods(self):
+    def test_qnode_cv_gradient_methods(self, operable_mock_CV_device_2_wires):
         """Tests the gradient computation methods on CV circuits."""
         # we can only use the 'A' method on parameters which only affect gaussian operations
         # that are not succeeded by nongaussian operations
 
         par = [0.4, -2.3]
-        dev = qml.device("default.qubit", wires=2)
 
         def check_methods(qf, d):
-            q = qml.QNode(qf, dev)
+            q = qml.QNode(qf, operable_mock_CV_device_2_wires)
             # NOTE: the default plugin is a discrete (qubit) simulator, it cannot
             # execute CV gates, but the QNode can be constructed
             q.construct(par)
@@ -2151,3 +2165,75 @@ class TestQNodeCacheing:
         circuit(0, c=1)
         # check structure
         assert len(circuit.queue) == 1
+
+
+class TestDecomposition:
+    """Test for queue decomposition"""
+
+    def test_no_decomposition(self, operable_mock_device_2_wires):
+        """Test that decompose queue makes no changes
+        if there are no operations to be decomposed"""
+
+        queue = [
+            qml.Rot(0, 1, 2, wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.RX(6, wires=0)
+        ]
+
+        res = decompose_queue(queue, operable_mock_device_2_wires)
+        assert res == queue
+
+    def test_decompose_queue(self, operable_mock_device_2_wires):
+        """Test that decompose queue works correctly
+        when an operation exists that can be decomposed"""
+
+        queue = [
+            qml.Rot(0, 1, 2, wires=0),
+            qml.U3(3, 4, 5, wires=0),
+            qml.RX(6, wires=0)
+        ]
+
+        res = decompose_queue(queue, operable_mock_device_2_wires)
+
+        assert len(res) == 5
+
+        assert res[0].name == "Rot"
+        assert res[0].parameters == [0, 1, 2]
+
+        assert res[1].name == "Rot"
+        assert res[1].parameters == [5, 3, -5]
+
+        assert res[2].name == "PhaseShift"
+        assert res[2].parameters == [5]
+
+        assert res[3].name == "PhaseShift"
+        assert res[3].parameters == [4]
+
+        assert res[4].name == "RX"
+        assert res[4].parameters == [6]
+
+    def test_invalid_decompose(self, operable_mock_device_2_wires):
+        """Test that an error is raised if the device
+        does not support an operation arising from a
+        decomposition."""
+
+        class DummyOp(qml.operation.Operation):
+            """Dummy operation"""
+            num_params = 0
+            num_wires = 1
+            par_domain = "R"
+            grad_method = "A"
+
+            @staticmethod
+            def decomposition(wires=None):
+                ops = [qml.Hadamard(wires=wires)]
+                return ops
+
+        queue = [
+            qml.Rot(0, 1, 2, wires=0),
+            DummyOp(wires=0),
+            qml.RX(6, wires=0)
+        ]
+
+        with pytest.raises(qml.DeviceError, match="DummyOp not supported on device"):
+            decompose_queue(queue, operable_mock_device_2_wires)
