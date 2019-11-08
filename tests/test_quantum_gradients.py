@@ -389,6 +389,58 @@ class TestQubitGradient:
                 manualgrad_val = (circuit(*param1) - circuit(*param2)) / 2
                 assert autograd_val[idx] == pytest.approx(manualgrad_val, abs=tol)
 
+    def test_U2(self, tol):
+        """Tests that the gradient of an arbitrary U2 gate is correct"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.QubitStateVector(1j*np.array([1, -1])/np.sqrt(2), wires=[0])
+            qml.U2(x, y, wires=[0])
+            return qml.expval(qml.PauliX(0))
+
+        phi = -0.234
+        lam = 0.654
+
+        res = circuit(phi, lam)
+        expected = np.sin(lam)*np.sin(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad_fn = autograd.grad(circuit, argnum=[0, 1])
+        res = grad_fn(phi, lam)
+        expected = np.array([
+            np.sin(lam)*np.cos(phi),
+            np.cos(lam)*np.sin(phi)
+        ])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_U3(self, tol):
+        """Tests that the gradient of an arbitrary U3 gate is correct"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x, y ,z):
+            qml.QubitStateVector(1j*np.array([1, -1])/np.sqrt(2), wires=[0])
+            qml.U3(x, y, z, wires=[0])
+            return qml.expval(qml.PauliX(0))
+
+        theta = 0.543
+        phi = -0.234
+        lam = 0.654
+
+        res = circuit(theta, phi, lam)
+        expected = np.sin(lam)*np.sin(phi) - np.cos(theta)*np.cos(lam)*np.cos(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad_fn = autograd.grad(circuit, argnum=[0, 1, 2])
+        res = grad_fn(theta, phi, lam)
+        expected = np.array([
+            np.sin(theta)*np.cos(lam)*np.cos(phi),
+            np.cos(theta)*np.cos(lam)*np.sin(phi) + np.sin(lam)*np.cos(phi),
+            np.cos(theta)*np.sin(lam)*np.cos(phi) + np.cos(lam)*np.sin(phi)
+        ])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_qfunc_gradients(self, qubit_device_2_wires, tol):
         "Tests that the various ways of computing the gradient of a qfunc all agree."
 

@@ -722,20 +722,6 @@ class TestSample:
         assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
 
-class TestMaps:
-    """Tests the maps for operations and observables."""
-
-    def test_operation_map(self, qubit_device_3_wires):
-        """Test that default qubit device supports all PennyLane discrete gates."""
-
-        assert set(qml.ops._qubit__ops__) ==  set(qubit_device_3_wires._operation_map)
-
-    def test_observable_map(self, qubit_device_3_wires):
-        """Test that default qubit device supports all PennyLane discrete observables."""
-
-        assert set(qml.ops._qubit__obs__) | {"Identity"} == set(qubit_device_3_wires._observable_map)
-
-
 class TestDefaultQubitIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
