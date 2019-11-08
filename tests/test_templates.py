@@ -246,7 +246,7 @@ class TestIntegrationCircuitTorch:
         circuit(**inpts)
 
 
-class TestIntegrationCircuitTf:
+class TestCircuitTfIntegration:
     """Tests the integration of templates into circuits using the TensorFlow interface."""
 
     @pytest.mark.parametrize("template, inpts", qubit_const)
