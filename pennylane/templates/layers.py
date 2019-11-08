@@ -16,8 +16,6 @@ Layers are trainable templates that are typically repeated,
 using different adjustable parameters in each repetition.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections.abc import Sequence
-
 from pennylane.ops import CNOT, RX, RY, RZ, Rot, Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 import numpy as np
