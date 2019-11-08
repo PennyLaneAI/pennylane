@@ -48,22 +48,6 @@ and the uniform parameter initialization strategy
 :func:`~.strong_ent_layers_uniform`.
 
 
-General templates
------------------
-
-Most generally, templates are just a collection of gates.
-
-The following general templates are available:
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.templates.Interferometer
-
-:html:`</div>`
-
 .. _intro_ref_temp_lay:
 
 Layer templates
@@ -116,6 +100,23 @@ The following embedding templates are available:
 :html:`</div>`
 
 .. _intro_ref_temp_params:
+
+Subroutines
+-----------
+
+Subroutines are simply a collection of (trainable) gates.
+
+The following subroutines are available:
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.templates.Interferometer
+
+:html:`</div>`
+
 
 Parameter initializations
 -------------------------
