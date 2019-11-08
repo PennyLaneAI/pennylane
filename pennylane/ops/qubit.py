@@ -35,8 +35,11 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 0
+    """int: number of parameters"""
     num_wires = 1
+    """int: number of wires the operation acts on"""
     par_domain = None
+    """str or None: domain of the operation parameters"""
 
 
 class PauliX(Observable, Operation):
