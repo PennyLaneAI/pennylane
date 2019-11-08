@@ -552,8 +552,8 @@ class TestOperationIntegration:
             qml.Rotation(phi, wires=0).inv()
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(qml.DeviceError, match="The inverse of gates are not "
-                                             "supported on device {}".format(dev1.short_name)):
+        with pytest.raises(qml.DeviceError, match="Gate Rotation.inv not supported on device {}"
+                .format(dev1.short_name)):
             mean_photon_gaussian(0.015, 0.02, 0.005)
 
 class TestTensor:

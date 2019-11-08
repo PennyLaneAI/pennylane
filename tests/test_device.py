@@ -141,6 +141,11 @@ class TestDeviceSupportedLogic:
         assert not mock_device_with_observables.supports_observable("Identity")
         assert not mock_device_with_observables.supports_observable(qml.Identity)
 
+    def test_supports_obeservable_inverse(self, mock_device_supporting_paulis_and_inverse):
+
+        assert mock_device_supporting_paulis_and_inverse.supports_observable("PauliX.inv")
+        assert not mock_device_supporting_paulis_and_inverse.supports_observable("Identity.inv")
+
     def test_supports_operation_exception(self, mock_device):
         """check that device.supports_operation raises proper errors
            if the argument is of the wrong type"""

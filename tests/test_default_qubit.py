@@ -964,7 +964,7 @@ class TestDefaultQubitIntegration:
 
 
     @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
-                                                           multiplier * 0.5432) for multiplier in range(25)
+                                                           multiplier * 0.5432) for multiplier in range(8)
                                                           ])
     def test_inverse_circuit_with_parameters_expectation(self, qubit_device_1_wire, tol, name, expected_output, phi):
         @qml.qnode(qubit_device_1_wire)

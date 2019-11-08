@@ -516,6 +516,12 @@ class Operation(Operator):
         return self
 
     @property
+    def base_name(self):
+        """Get base name of the operator.
+        """
+        return self.__class__.__name__
+
+    @property
     def name(self):
         """Get and set the name of the operator.
         """

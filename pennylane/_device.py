@@ -302,6 +302,11 @@ class Device(abc.ABC):
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
+
+            if operation.endswith(Operation.string_for_inverse):
+                return operation[:-len(Operation.string_for_inverse)] in self.operations\
+                       and self.capabilities().get("inverse_operations", False)
+
             return operation in self.operations
 
         raise ValueError("The given operation must either be a pennylane.Operation class or a string.")
@@ -322,6 +327,11 @@ class Device(abc.ABC):
         if isinstance(observable, type) and issubclass(observable, Observable):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
+
+            # This check regards observables that are also operations
+            if observable.endswith(Operation.string_for_inverse):
+                return self.supports_operation(observable[:-len(Operation.string_for_inverse)])
+
             return observable in self.observables
 
         raise ValueError("The given observable must either be a pennylane.Observable class or a string.")
@@ -348,7 +358,7 @@ class Device(abc.ABC):
             if o.inverse:
                 if not self.capabilities().get("inverse_operations", False):
                     raise DeviceError("The inverse of gates are not supported on device {}".format(self.short_name))
-                operation_name = o.__class__.__name__
+                operation_name = o.base_name
 
             if not self.supports_operation(operation_name):
                 raise DeviceError("Gate {} not supported on device {}".format(operation_name, self.short_name))
@@ -369,7 +379,7 @@ class Device(abc.ABC):
                 if issubclass(o.__class__, Operation) and o.inverse:
                     if not self.capabilities().get("inverse_operations", False):
                         raise DeviceError("The inverse of gates are not supported on device {}".format(self.short_name))
-                    observable_name = o.__class__.__name__
+                    observable_name = o.base_name
 
                 if not self.supports_observable(observable_name):
                     raise DeviceError("Observable {} not supported on device {}".format(observable_name,
