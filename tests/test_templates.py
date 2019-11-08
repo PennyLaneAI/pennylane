@@ -22,34 +22,44 @@ import tensorflow as tf
 import numpy as np
 import pennylane as qml
 from pennylane.templates.layers import Interferometer
-from pennylane.templates.layers import (CVNeuralNetLayers, CVNeuralNetLayer,
-                                        StronglyEntanglingLayers, StronglyEntanglingLayer,
-                                        RandomLayers, RandomLayer)
-from pennylane.templates.embeddings import (AmplitudeEmbedding, BasisEmbedding,
-                                            AngleEmbedding, SqueezingEmbedding,
+from pennylane.templates.layers import (CVNeuralNetLayers,
+                                        StronglyEntanglingLayers,
+                                        RandomLayers)
+from pennylane.templates.embeddings import (AmplitudeEmbedding,
+                                            BasisEmbedding,
+                                            AngleEmbedding,
+                                            SqueezingEmbedding,
                                             DisplacementEmbedding)
-from pennylane.init import (strong_ent_layers_uniform, strong_ent_layer_uniform,
-                            strong_ent_layers_normal, strong_ent_layer_normal,
-                            random_layers_uniform, random_layer_uniform,
-                            random_layers_normal, random_layer_normal,
-                            cvqnn_layers_uniform, cvqnn_layer_uniform,
-                            cvqnn_layers_normal, cvqnn_layer_normal)
+from pennylane.init import (strong_ent_layers_uniform,
+                            strong_ent_layers_normal,
+                            random_layers_uniform,
+                            random_layers_normal,
+                            cvqnn_layers_uniform,
+                            cvqnn_layers_normal)
 
-#################################################################################
-# Prepate automatic tests for templates with standard signature (one weight input)
+# When adding a new template,
+# extend the appropriate lists with the template function
+# and the desired inputs (i.e., features and/or weights) that need to be tested
+
 fixture = "template, inpts"
+
+# Constant input fixtures for qubit templates
 qubit_func = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
               (StronglyEntanglingLayers, strong_ent_layers_normal),
               (RandomLayers, random_layers_uniform),
               (RandomLayers, random_layers_normal)]
+
+# Constant input fixtures for continuous-variable templates
 cv_func = [(CVNeuralNetLayers, cvqnn_layers_uniform),
            (CVNeuralNetLayers, cvqnn_layers_normal)]
 
-
+# Constant input fixtures for qubit templates
 qubit_const = [(RandomLayers, [[[0.53479316, 5.88709314], [2.21352321, 4.28468607]]]),
                (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]]),
                (BasisEmbedding, [[1, 0]]),
                (AngleEmbedding, [[1., 2.]])]
+
+# Constant input fixtures for continuous-variable templates
 cv_const = [(DisplacementEmbedding, [[1., 2.]]),
             (SqueezingEmbedding, [[1., 2.]]),
             (CVNeuralNetLayers, [[[2.33312851], [1.20670562]],
@@ -66,7 +76,6 @@ cv_const = [(DisplacementEmbedding, [[1., 2.]]),
                                  ]),
             (Interferometer, [[2.33312851], [3.49488327], [0.9868003, 1.58798724]])
             ]
-###############################
 
 
 class TestIntegrationInitialization:
@@ -156,17 +165,17 @@ class TestIntegrationCircuit:
     def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
         """Checks integration of continuous-variable templates using keyword arguments to qnode."""
 
-        inpts = [np.array(i) for i in inpts]
+        inpts = {"w"+str(i): np.array(inpts[i]) for i in range(len(inpts))}
 
         @qml.qnode(gaussian_device_2_wires)
-        def circuit(inp_=None):
+        def circuit(**inp_):
             qml.Displacement(1., 1., wires=0)
-            template(*inp_, wires=range(2))
-            template(*inp_, wires=range(2))
+            template(*inp_.values(), wires=range(2))
+            template(*inp_.values(), wires=range(2))
             qml.Displacement(1., 1., wires=1)
             return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
 
-        circuit(inp_=inpts)
+        circuit(**inpts)
 
 
 class TestIntegrationCircuitTorch:
@@ -222,21 +231,21 @@ class TestIntegrationCircuitTorch:
 
         circuit(*inpts)
 
-    # @pytest.mark.parametrize(fixture, cv_const)
-    # def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
-    #     """Checks integration of continuous-variable templates using keyword arguments to qnode."""
-    #
-    #     inpts = {"w"+str(1): torch.tensor(inpts[i]) for i in range(len(inpts))}
-    #
-    #     @qml.qnode(gaussian_device_2_wires, interface='torch')
-    #     def circuit(**inp_):
-    #         qml.Displacement(1., 1., wires=0)
-    #         template(*inp_.values(), wires=range(2))
-    #         template(*inp_.values(), wires=range(2))
-    #         qml.Displacement(1., 1., wires=1)
-    #         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-    #
-    #     circuit(**inpts)
+    @pytest.mark.parametrize(fixture, cv_const)
+    def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
+        """Checks integration of continuous-variable templates using keyword arguments to qnode."""
+
+        inpts = {"w"+str(i): torch.tensor(inpts[i]) for i in range(len(inpts))}
+
+        @qml.qnode(gaussian_device_2_wires, interface='torch')
+        def circuit(**inp_):
+            qml.Displacement(1., 1., wires=0)
+            template(*inp_.values(), wires=range(2))
+            template(*inp_.values(), wires=range(2))
+            qml.Displacement(1., 1., wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+
+        circuit(**inpts)
 
 
 class TestIntegrationCircuitTf:
@@ -296,7 +305,7 @@ class TestIntegrationCircuitTf:
     def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
         """Checks integration of continuous-variable templates using keyword arguments to qnode."""
 
-        inpts = {"w"+str(1): tf.Variable(inpts[i]) for i in range(len(inpts))}
+        inpts = {"w"+str(i): tf.Variable(inpts[i]) for i in range(len(inpts))}
 
         @qml.qnode(gaussian_device_2_wires, interface='tf')
         def circuit(**inp_):
