@@ -582,6 +582,7 @@ class U1(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+    generator = [np.array([[0, 0], [0, 1]]), 1]
 
     @staticmethod
     def decomposition(phi, wires=None):
