@@ -50,8 +50,8 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         ranges = [1]*len(weights)
 
     n_layers = len(weights)
-    for l, block_range in zip(range(n_layers), ranges):
-        StronglyEntanglingLayer(weights[l], r=block_range, imprimitive=imprimitive, wires=wires)
+    for l in range(n_layers):
+        StronglyEntanglingLayer(weights[l], r=ranges[l], imprimitive=imprimitive, wires=wires)
 
 
 def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
