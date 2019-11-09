@@ -28,6 +28,7 @@ import numpy as np
 from scipy.linalg import eigh
 
 from pennylane import Device
+from pennylane.operation import Operation
 
 
 # tolerance for numerical errors
@@ -82,6 +83,9 @@ CSWAP = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
                   [0, 0, 0, 0, 0, 0, 1, 0],
                   [0, 0, 0, 0, 0, 1, 0, 0],
                   [0, 0, 0, 0, 0, 0, 0, 1]]) #: CSWAP gate
+
+Toffoli = np.diag([1 for i in range(8)])
+Toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 #========================================================
 #  parametrized gates
@@ -267,7 +271,7 @@ class DefaultQubit(Device):
     pennylane_requires = '0.7'
     version = '0.7.1'
     author = 'Xanadu Inc.'
-    _capabilities = {"model": "qubit", "tensor_observables": True}
+    _capabilities = {"model": "qubit", "tensor_observables": True, "inverse_operations": True}
 
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
@@ -284,7 +288,8 @@ class DefaultQubit(Device):
         'T': T,
         'CNOT': CNOT,
         'SWAP': SWAP,
-        'CSWAP':CSWAP,
+        'CSWAP': CSWAP,
+        'Toffoli': Toffoli,
         'CZ': CZ,
         'PhaseShift': Rphi,
         'RX': Rotx,
@@ -341,6 +346,7 @@ class DefaultQubit(Device):
             return
 
         A = self._get_operator_matrix(operation, par)
+
         self._state = self.mat_vec_product(A, self._state, wires)
 
     def mat_vec_product(self, mat, vec, wires):
@@ -371,13 +377,24 @@ class DefaultQubit(Device):
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
+    def get_operator_matrix_for_measurement(self, observable, par):
+        """Get the operator matrix for a given observable before measurement.
+
+        Args:
+          observable (str or list[str]): name of the operation/observable
+          par (tuple[float] or list[list[Any]]): parameter values
+        Returns:
+          array: matrix representation.
+        """
+        if isinstance(observable, list):
+            return self._get_tensor_operator_matrix(observable, par)
+
+        return self._get_operator_matrix(observable, par)
+
     def expval(self, observable, wires, par):
         if self.analytic:
             # exact expectation value
-            if isinstance(observable, list):
-                A = self._get_tensor_operator_matrix(observable, par)
-            else:
-                A = self._get_operator_matrix(observable, par)
+            A = self.get_operator_matrix_for_measurement(observable, par)
 
             ev = self.ev(A, wires)
         else:
@@ -389,10 +406,7 @@ class DefaultQubit(Device):
     def var(self, observable, wires, par):
         if self.analytic:
             # exact variance value
-            if isinstance(observable, list):
-                A = self._get_tensor_operator_matrix(observable, par)
-            else:
-                A = self._get_operator_matrix(observable, par)
+            A = self.get_operator_matrix_for_measurement(observable, par)
 
             var = self.ev(A@A, wires) - self.ev(A, wires)**2
         else:
@@ -402,10 +416,7 @@ class DefaultQubit(Device):
         return var
 
     def sample(self, observable, wires, par):
-        if isinstance(observable, list):
-            A = self._get_tensor_operator_matrix(observable, par)
-        else:
-            A = self._get_operator_matrix(observable, par)
+        A = self.get_operator_matrix_for_measurement(observable, par)
 
         a, P = spectral_decomposition(A)
 
@@ -418,16 +429,24 @@ class DefaultQubit(Device):
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
 
+        If the inverse was defined for an operation, returns the
+        conjugate transpose of the operator matrix.
+
         Args:
           operation    (str): name of the operation/observable
           par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        A = {**self._operation_map, **self._observable_map}[operation]
-        if not callable(A):
-            return A
-        return A(*par)
+
+        operation_map = {**self._operation_map, **self._observable_map}
+
+        if operation.endswith(Operation.string_for_inverse):
+            A = operation_map[operation[:-len(Operation.string_for_inverse)]]
+            return A.conj().T if not callable(A) else A(*par).conj().T
+
+        A = operation_map[operation]
+        return A if not callable(A) else A(*par)
 
     def _get_tensor_operator_matrix(self, obs, par):
         """Get the operator matrix for a given tensor product of operations.

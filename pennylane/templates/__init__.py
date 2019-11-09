@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides a growing library of templates of common variational
-circuit architectures that can be used to easily build,
-evaluate, and train quantum nodes.
-
-.. currentmodule:: pennylane.templates
-.. autosummary::
-    :toctree: api
-
-    embeddings
-    layers
+This module contains templates, which are pre-coded routines that can be used in a quantum node.
 """
+
+from .layers import *
+from .embeddings import *
+from .subroutines import *
+
+from .layers import __all__ as _layers__all__
+from .embeddings import __all__ as _embeddings__all__
+from .subroutines import __all__ as _subroutines__all__
+
+__all__ = _embeddings__all__ + _layers__all__ + _subroutines__all__
