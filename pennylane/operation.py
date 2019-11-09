@@ -245,10 +245,20 @@ class Operator(abc.ABC):
         * ``None``: if there are no parameters.
         """
 
+    @property
+    def name(self):
+        """String for the name of the operator.
+        """
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
     def __init__(self, *args, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
-        self.name = self.__class__.__name__   #: str: name of the operation
-        self.queue_idx = None  #: int, None: index of the Operation in the circuit queue, or None if not in a queue
+        self._name = self.__class__.__name__   #: str: name of the operator
+        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
         if QNode._current_context is None:
             do_queue = False
 
@@ -278,7 +288,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Print the operator name and some information."""
-        return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
+        return  "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
 
     def _check_wires(self, wires):
         """Check the validity of the operation wires.
@@ -320,7 +330,8 @@ class Operator(abc.ABC):
         """
         if isinstance(p, Variable):
             if self.par_domain == 'A':
-                raise TypeError('{}: Array parameter expected, got a Variable, which can only represent real scalars.'.format(self.name))
+                raise TypeError('{}: Array parameter expected, got a Variable,'
+                                'which can only represent real scalars.'.format(self.name))
             return p
 
         # p is not a Variable
@@ -413,6 +424,7 @@ class Operation(Operator):
     """
     # pylint: disable=abstract-method
     _grad_recipe = None
+    string_for_inverse = ".inv"
 
     @property
     def grad_method(self):
@@ -466,6 +478,16 @@ class Operation(Operator):
         """
         return [None, 1]
 
+    @property
+    def inverse(self):
+        """Boolean determining if the inverse of the operation was requested.
+        """
+        return self._inverse
+
+    @inverse.setter
+    def inverse(self, boolean):
+        self._inverse = boolean
+
     @staticmethod
     def decomposition(*params, wires=None):
         """Returns a template decomposing the operation into other
@@ -477,7 +499,37 @@ class Operation(Operator):
         """Setter for the grad_recipe property"""
         self._grad_recipe = value
 
+    def inv(self):
+        """Inverts the operation, such that the inverse will
+        be used for the computations by the specific device.
+
+        This method concatenates a string to the name of the operation,
+        to indicate that the inverse will be used for computations.
+
+        Any subsequent call of this method will toggle between the original
+        operation and the inverse of the operation.
+
+        Returns:
+            :class:`Operator`: operation to be inverted
+        """
+        self.inverse = not self._inverse
+        return self
+
+    @property
+    def base_name(self):
+        """Get base name of the operator.
+        """
+        return self.__class__.__name__
+
+    @property
+    def name(self):
+        """Get and set the name of the operator.
+        """
+        return self._name + Operation.string_for_inverse if self.inverse else self._name
+
     def __init__(self, *args, wires=None, do_queue=True):
+
+        self._inverse = False
 
         # check the grad_method validity
         if self.par_domain == 'N':
@@ -659,7 +711,6 @@ class Tensor(Observable):
         raise ValueError("Can only perform tensor products between observables.")
 
     __imatmul__ = __matmul__
-
 
 #=============================================================================
 # CV Operations and observables
