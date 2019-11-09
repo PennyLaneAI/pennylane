@@ -375,13 +375,24 @@ class DefaultQubit(Device):
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
+    def get_operator_matrix_for_measurement(self, observable, par):
+        """Get the operator matrix for a given observable before measurement.
+
+        Args:
+          observable (str or list[str]): name of the operation/observable
+          par (tuple[float] or list[list[Any]]): parameter values
+        Returns:
+          array: matrix representation.
+        """
+        if isinstance(observable, list):
+            return self._get_tensor_operator_matrix(observable, par)
+
+        return self._get_operator_matrix(observable, par)
+
     def expval(self, observable, wires, par):
         if self.analytic:
             # exact expectation value
-            if isinstance(observable, list):
-                A = self._get_tensor_operator_matrix(observable, par)
-            else:
-                A = self._get_operator_matrix(observable, par)
+            A = self.get_operator_matrix_for_measurement(observable, par)
 
             ev = self.ev(A, wires)
         else:
@@ -393,10 +404,7 @@ class DefaultQubit(Device):
     def var(self, observable, wires, par):
         if self.analytic:
             # exact variance value
-            if isinstance(observable, list):
-                A = self._get_tensor_operator_matrix(observable, par)
-            else:
-                A = self._get_operator_matrix(observable, par)
+            A = self.get_operator_matrix_for_measurement(observable, par)
 
             var = self.ev(A@A, wires) - self.ev(A, wires)**2
         else:
@@ -406,10 +414,7 @@ class DefaultQubit(Device):
         return var
 
     def sample(self, observable, wires, par):
-        if isinstance(observable, list):
-            A = self._get_tensor_operator_matrix(observable, par)
-        else:
-            A = self._get_operator_matrix(observable, par)
+        A = self.get_operator_matrix_for_measurement(observable, par)
 
         a, P = spectral_decomposition(A)
 
