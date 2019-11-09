@@ -77,7 +77,7 @@ class TestJNodeExceptions:
 
         node = JNode(circuit, operable_mock_device_2_wires)
 
-        with pytest.raises(ValueError, match="Cannot differentiate wrt. parameter"):
+        with pytest.raises(ValueError, match="Cannot differentiate with respect to the parameters"):
             node.jacobian(0.5)
 
     def test_operator_not_supporting_pd_parameter_shift(self, operable_mock_device_2_wires):
@@ -283,7 +283,7 @@ class PolyN(qml.ops.PolyXP):
         self.name = 'PolyXP'
 
 cv_ops = [getattr(qml.ops, name) for name in qml.ops._cv__ops__]
-analytic_cv_ops = [cls for cls in cv_ops if cls.supports_analytic]
+analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
 
 
 class TestJNodeJacobianCV:
@@ -496,17 +496,16 @@ class TestJNodeJacobianCV:
 
 
     @pytest.mark.parametrize('name', qml.ops._cv__ops__)
-    def test_CVOperation_with_heisenberg_and_no_params(self, name, gaussian_dev, tol):
-        """An integration test for CV gates that support analytic differentiation
-        if succeeding the gate to be differentiated, but cannot be differentiated
-        themselves (for example, they may be Gaussian but accept no parameters).
+    def test_CVOperation_with_heisenberg_non(self, name, gaussian_dev, tol):
+        """An integration test for Gaussian CV gates that have a Heisenberg representation
+        but cannot be differentiated using the parameter-shift method themselves
+        (for example, they may accept no parameters, or have no gradient recipe).
 
-        This ensures that, assuming their _heisenberg_rep is defined, the quantum
-        gradient analytic method can still be used, and returns the correct result.
+        Tests that the parameter-shift method can still be used with other gates in the circuit.
         """
 
         cls = getattr(qml.ops, name)
-        if cls.supports_heisenberg and (not cls.supports_analytic):
+        if cls.supports_heisenberg and (not cls.supports_parameter_shift):
             U = np.array([[0.51310276+0.81702166j, 0.13649626+0.22487759j],
                           [0.26300233+0.00556194j, -0.96414101-0.03508489j]])
 
@@ -536,6 +535,26 @@ class TestJNodeJacobianCV:
             assert grad_A == pytest.approx(grad_F, abs=tol)
             assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
+
+    @pytest.mark.xfail(reason="FIXME: 'A' method fails on QuadOperator (it has no gradient recipe)", raises=AttributeError, strict=True)
+    def test_quadoperator(self, gaussian_dev, tol):
+        """Test the differentiation of CV observables that depend on positional qfunc parameters."""
+
+        def circuit(a):
+            qml.Displacement(1.0, 0, wires=0)
+            return qml.expval(qml.QuadOperator(a, 0))
+
+        qnode = JNode(circuit, gaussian_dev)
+        par = [0.6]
+        grad_F = qnode.jacobian(par, method='F')
+        grad_A = qnode.jacobian(par, method='A')
+        grad_A2 = qnode.jacobian(par, method='A', options={'force_order2': True})
+
+        # par 0 can use the 'A' method
+        assert qnode.par_to_grad_method == {0: 'A'}
+        # the different methods agree
+        assert grad_A == pytest.approx(grad_F, abs=tol)
+        assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
 
 class TestJNodeJacobianQubit:

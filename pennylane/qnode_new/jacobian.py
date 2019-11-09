@@ -38,8 +38,9 @@ class JacobianQNode(QNode):
     def __init__(self, func, device, mutable=True, properties=None):
         super().__init__(func, device, mutable=mutable, properties=properties)
 
-        #: dict[int, str]: map from free parameter index to the gradient method to be used with that parameter
         self.par_to_grad_method = None
+        """dict[int, str]: map from flattened quantum function positional parameter index
+        to the gradient method to be used with that parameter"""
 
     def __repr__(self):
         """String representation."""
@@ -50,7 +51,7 @@ class JacobianQNode(QNode):
         """Constructs the quantum circuit graph by calling the quantum function.
 
         Like :meth:`.QNode._construct`, additionally determines the best gradient computation method
-        for each free parameter.
+        for each positional parameter.
         """
         super()._construct(args, kwargs)
         self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
@@ -61,7 +62,7 @@ class JacobianQNode(QNode):
                                        "The following observables include sampling: {}".format('; '.join(temp)))
 
     def _best_method(self, idx):
-        """Determine the correct partial derivative computation method for a free parameter.
+        """Determine the correct partial derivative computation method for a positional parameter.
 
         Use the parameter-shift analytic method iff every gate that depends on the parameter supports it.
         If not, use the finite difference method only (one would have to use it anyway).
@@ -84,26 +85,26 @@ class JacobianQNode(QNode):
             if not isinstance(op, CV):
                 return op.grad_method
 
-            # for CV ops it is more complicated
+            # for CV ops we may not always use the A method even if the op supports it
             if op.grad_method == "A":
                 # op is Gaussian and has the heisenberg_* methods
 
-                obs_successors = self._op_descendants(op, 'E')
-                if not obs_successors:
-                    # op is not succeeded by any observables, thus analytic method is OK    FIXME actually we can ignore it....
+                obs_descendants = self._op_descendants(op, 'E')
+                if not obs_descendants:
+                    # op is not followed by any observables, thus analytic method is OK    FIXME actually we can ignore it....
                     return 'A'
 
-                # check that all successor ops are also Gaussian
-                successor_ops = self._op_descendants(op, 'G')
-                if not all(x.supports_heisenberg for x in successor_ops):
-                    non_gaussian_ops = [x for x in successor_ops if not x.supports_heisenberg]
-                    # a non-Gaussian successor is OK if it isn't succeeded by any observables
+                # check that all descendant ops are also Gaussian
+                descendant_ops = self._op_descendants(op, 'G')
+                if not all(x.supports_heisenberg for x in descendant_ops):
+                    non_gaussian_ops = [x for x in descendant_ops if not x.supports_heisenberg]
+                    # a non-Gaussian descendant is OK if it isn't followed by any observables
                     for x in non_gaussian_ops:
                         if self._op_descendants(x, 'E'):
                             return 'F'
 
-                # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-                for observable in obs_successors:
+                # check descendant EVs, if any order-2 observables are found return 'A2', else return 'A'
+                for observable in obs_descendants:
                     if observable.ev_order is None:
                         # ev_order of None corresponds to a non-Gaussian observable
                         return 'F'
@@ -116,7 +117,7 @@ class JacobianQNode(QNode):
                 return 'A'
             return op.grad_method
 
-        # operations that depend on this free parameter
+        # operations that depend on this parameter
         ops = [d.op for d in self.variable_deps[idx]]
         methods = list(map(best_for_op, ops))
 
@@ -193,8 +194,8 @@ class JacobianQNode(QNode):
             wrt = range(self.num_variables)
         else:
             if min(wrt) < 0 or max(wrt) >= self.num_variables:
-                raise ValueError("Tried to compute the gradient with respect to free parameters {} "
-                                 "(this node has {} free parameters).".format(wrt, self.num_variables))
+                raise ValueError("Tried to compute the gradient with respect to parameters {} "
+                                 "(this node has {} parameters).".format(wrt, self.num_variables))
             if len(wrt) != len(set(wrt)):  # set removes duplicates
                 raise ValueError("Parameter indices must be unique.")
 
@@ -209,18 +210,19 @@ class JacobianQNode(QNode):
         mutable = self.mutable
         self.mutable = False
 
-        # check if the method can be used on the requested parameters
-        method_map = _inv_dict(self.par_to_grad_method)
+        # check if the requested method can be used on the requested parameters
+        method_to_pars = _inv_dict(self.par_to_grad_method)
         def inds_using(m):
-            """Intersection of ``wrt`` with free params indices whose best grad method is m."""
-            return method_map.get(m, set()).intersection(wrt)
+            """Intersection of ``wrt`` with flattened positional params indices whose best grad method is m."""
+            return method_to_pars.get(m, set()).intersection(wrt)
 
         # are we trying to differentiate wrt. params that don't support any method?
         bad = inds_using(None)
         if bad:
-            raise ValueError('Cannot differentiate wrt. parameters {}.'.format(bad))
+            raise ValueError('Cannot differentiate with respect to the parameters {}.'.format(bad))
 
         if method in ('A', 'F'):
+            # use the requested method for every parameter
             if method == 'A':
                 bad = inds_using('F')
                 if bad:
@@ -322,7 +324,7 @@ class JacobianQNode(QNode):
 
 
     def _pd_parameter_shift(self, idx, args, kwargs, *, force_order2=False, **options):
-        """Partial derivative of the node using the analytic parameter shift method.
+        """Partial derivative of the node using the analytic parameter-shift method.
 
         The 2nd order method can handle also first order observables, but
         1st order method may be more efficient unless it's really easy to
@@ -340,7 +342,7 @@ class JacobianQNode(QNode):
         n = self.num_variables
         w = self.num_wires
         pd = 0.0
-        # find the Operators in which the free parameter appears, use the product rule
+        # find the Operators in which the parameter appears, use the product rule
         for op, p_idx in self.variable_deps[idx]:
 
             # We temporarily edit the Operator such that parameter p_idx is replaced by a new one,
@@ -407,7 +409,7 @@ class JacobianQNode(QNode):
         return pd
 
     def _pd_parameter_shift_var(self, idx, args, kwargs):
-        """Partial derivative of the variance of an observable using the parameter-shift method.
+        """Partial derivative of a node involving variances of observables using the parameter-shift method.
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
@@ -458,7 +460,7 @@ class JacobianQNode(QNode):
             new_observables.append(new)
 
         # calculate the analytic derivatives of the <A^2> observables
-        pdA2 = self._pd_parameter_shift(idx, args, kwargs, force_order2=(self.model == 'cv'))  # FIXME the force_order2 use here is convoluted and could be better
+        pdA2 = self._pd_parameter_shift(idx, args, kwargs, force_order2=(self.model == 'cv'))  # FIXME the force_order2 use here is convoluted and could be better, can we change the method map instead?
 
         # restore the original observables, but convert their return types to expectation
         for e, new in zip(var_observables, new_observables):

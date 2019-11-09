@@ -31,7 +31,7 @@ thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 sqz_vals = np.linspace(0., 1., 5)
 
 cv_ops = [getattr(qml.ops, name) for name in qml.ops._cv__ops__]
-analytic_cv_ops = [cls for cls in cv_ops if cls.supports_analytic]
+analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
 
 
 class PolyN(qml.ops.PolyXP):
@@ -289,7 +289,7 @@ class TestCVGradient:
         """
 
         cls = getattr(qml.ops, name)
-        if cls.supports_heisenberg and (not cls.supports_analytic):
+        if cls.supports_heisenberg and (not cls.supports_parameter_shift):
             U = np.array([[0.51310276+0.81702166j, 0.13649626+0.22487759j],
                           [0.26300233+0.00556194j, -0.96414101-0.03508489j]])
 

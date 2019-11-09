@@ -400,6 +400,17 @@ class TestQNodeExceptions:
         with pytest.raises(TypeError, match="Wires must be integers"):
             node(x=1)
 
+    def test_unused_positional_parameter(self, operable_mock_device_2_wires):
+        """Error: a positional parameter is not used in the circuit."""
+
+        def circuit(a, x):
+            qml.RX(a, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = QNode(circuit, operable_mock_device_2_wires, properties={"par_check": True})
+        with pytest.raises(QuantumFunctionError, match="The positional parameters"):
+            node(1.0, 2.0)
+
     @pytest.mark.xfail(
         reason="Tests the auxiliary-equals-keyword-only syntax", raises=TypeError, strict=True
     )

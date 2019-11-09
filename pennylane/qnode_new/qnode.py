@@ -71,11 +71,11 @@ _MARKER = inspect.Parameter.empty  # singleton marker, could be any singleton cl
 
 
 ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
-"""Represents the dependence of an Operator on a free parameter.
+"""Represents the dependence of an Operator on a positional parameter of the quantum function.
 
 Args:
-    op (Operator): operator depending on the free parameter in question
-    par_idx (int): operator parameter index of the corresponding
+    op (Operator): operator depending on the positional parameter in question
+    par_idx (int): flattened operator parameter index of the corresponding
         :class:`~pennylane.variable.Variable` instance
 """
 
@@ -159,7 +159,7 @@ class QNode:
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
-        self.num_variables = None  #: int: number of differentiable parameters in the circuit
+        self.num_variables = None  #: int: number of flattened differentiable parameters in the circuit
         self.ops = (
             []
         )  #: List[Operator]: quantum circuit, in the order the quantum function defines it
@@ -171,8 +171,9 @@ class QNode:
         )  #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
 
         self.variable_deps = {}
-        """dict[int, list[ParameterDependency]]: Mapping from free parameter index to the list of
-        :class:`~pennylane.operation.Operator` instances (in this circuit) that depend on it.
+        """dict[int, list[ParameterDependency]]: Mapping from flattened qfunc positional parameter
+        index to the list of :class:`~pennylane.operation.Operator` instances (in this circuit)
+        that depend on it.
         """
 
         self._metric_tensor_subcircuits = None
@@ -228,7 +229,7 @@ class QNode:
                 print("{}({}(wires={}))".format(return_type, op.name, op.wires))
 
     def _set_variables(self, args, kwargs):
-        """Store the current values of the free parameters in the Variable class
+        """Store the current values of the quantum function parameters in the Variable class
         so the Operators may access them.
 
         Args:
@@ -362,15 +363,23 @@ class QNode:
         self._check_circuit(res)
 
         # map each free variable to the operators which depend on it
-        self.variable_deps = {}
+        self.variable_deps = {k: [] for k in range(self.num_variables)}
         for k, op in enumerate(self.ops):
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     if p.name is None:  # ignore auxiliary arguments
-                        self.variable_deps.setdefault(p.idx, []).append(ParameterDependency(op, j))
+                        self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
+
+        # check for unused positional params
+        if self.properties.get("par_check", False):
+            unused = [k for k, v in self.variable_deps.items() if not v]
+            if unused:
+                raise QuantumFunctionError(
+                    "The positional parameters {} are unused.".format(unused)
+                )
 
         # check for operations that cannot affect the output
         if self.properties.get("vis_check", False):

@@ -1,4 +1,4 @@
-# Copyright 2018 Xanadu Quantum Technologies Inc.
+# Copyright 2019 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -412,7 +412,7 @@ class Operation(Operator):
     def grad_method(self):
         """Gradient computation method.
 
-        * ``'A'``: analytic differentiation.
+        * ``'A'``: analytic differentiation using the parameter-shift method.
         * ``'F'``: finite difference numerical differentiation.
         * ``None``: the operation may not be differentiated.
 
@@ -421,7 +421,7 @@ class Operation(Operator):
         return None if self.num_params == 0 else 'F'
 
     grad_recipe = None
-    r"""list[tuple[float]] or None: Gradient recipe for the analytic differentiation method.
+    r"""list[tuple[float]] or None: Gradient recipe for the parameter-shift method.
 
         This is a list with one tuple per operation parameter. For parameter
         :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in
@@ -765,11 +765,10 @@ class CV:
 
     @classproperty
     def supports_heisenberg(self):
-        """Returns True if the CV Operation has
-        overwritten the :meth:`~.CV._heisenberg_rep` static method
-        defined in :class:`CV`, thereby indicating
-        that analytic differentiation is supported if this operation
-        succeeds the gate to be differentiated analytically.
+        """Returns True iff the CV Operation has overridden the :meth:`~.CV._heisenberg_rep`
+        static method, thereby indicating that it is Gaussian and does not block the use
+        of the parameter-shift differentiation method if found between the differentiated gate
+        and an observable.
         """
         return CV._heisenberg_rep != self._heisenberg_rep
 
@@ -779,10 +778,10 @@ class CVOperation(CV, Operation):
     # pylint: disable=abstract-method
 
     @classproperty
-    def supports_analytic(self):
-        """Returns True if the CV Operation has ``grad_method='A'`` and
-        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
-        that analytic differentiation is supported.
+    def supports_parameter_shift(self):
+        """Returns True iff the CV Operation supports the parameter-shift differentiation method.
+        This means that it has ``grad_method='A'`` and
+        has overridden the :meth:`~.CV._heisenberg_rep` static method.
         """
         return self.grad_method == 'A' and self.supports_heisenberg
 
