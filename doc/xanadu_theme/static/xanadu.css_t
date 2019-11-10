@@ -2153,6 +2153,8 @@ div.body > div > span,
 }
 
 dl.attribute > dt:before,
+dl.staticmethod > dt:before,
+dl.classmethod > dt:before,
 dl.method > dt:before {
     content: '';
     display: block;
@@ -2176,6 +2178,11 @@ dl.class dd > .rubric:last-of-type {
 dl.class > dd > table.docutils {
     margin-bottom: -40px;
     border-bottom: 1px solid lightgray;
+}
+
+dd > h3 {
+  margin-top: 60px;
+  margin-bottom: -40px;
 }
 /* Syntax highlighting
 -------------------------------------------------- */

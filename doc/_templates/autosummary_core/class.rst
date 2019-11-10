@@ -5,18 +5,12 @@
 {% if module.split(".")[1:] | length >= 1 %}
 	{% set mod = module.split(".")[1:] | join(".") %}
 	{% set mod = "qml." + mod %}
-	{% set mod_underline = ["="] %}
-	{% for i in range(mod|length) %}
-		{% mod_underline.append("=") %}
-	{% endfor %}
-	{% set mod_underline = mod_underline|join("") %}
 {% else %}
 	{% set mod = "qml" %}
-	{% set mod_underline = "====" %}
 {% endif %}
 
 {{ mod }}.{{ objname }}
-{{ mod_underline }}{{ underline }}
+={% for i in range(mod|length) %}={% endfor %}{{ underline }}
 
 .. currentmodule:: {{ module }}
 
@@ -26,6 +20,10 @@
    {% if '__init__' in methods %}
      {% set caught_result = methods.remove('__init__') %}
    {% endif %}
+
+   .. raw:: html
+
+      <h2>Class details</h2>
 
    {% block methods_summary %}
    {% if methods %}
