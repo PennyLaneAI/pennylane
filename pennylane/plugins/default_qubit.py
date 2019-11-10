@@ -28,6 +28,7 @@ import numpy as np
 from scipy.linalg import eigh
 
 from pennylane import Device
+from pennylane.operation import Operation
 
 
 # tolerance for numerical errors
@@ -270,7 +271,7 @@ class DefaultQubit(Device):
     pennylane_requires = '0.7'
     version = '0.7.1'
     author = 'Xanadu Inc.'
-    _capabilities = {"model": "qubit", "tensor_observables": True}
+    _capabilities = {"model": "qubit", "tensor_observables": True, "inverse_operations": True}
 
     # Note: BasisState and QubitStateVector don't
     # map to any particular function, as they modify
@@ -345,6 +346,7 @@ class DefaultQubit(Device):
             return
 
         A = self._get_operator_matrix(operation, par)
+
         self._state = self.mat_vec_product(A, self._state, wires)
 
     def mat_vec_product(self, mat, vec, wires):
@@ -427,16 +429,24 @@ class DefaultQubit(Device):
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
 
+        If the inverse was defined for an operation, returns the
+        conjugate transpose of the operator matrix.
+
         Args:
           operation    (str): name of the operation/observable
           par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
         """
-        A = {**self._operation_map, **self._observable_map}[operation]
-        if not callable(A):
-            return A
-        return A(*par)
+
+        operation_map = {**self._operation_map, **self._observable_map}
+
+        if operation.endswith(Operation.string_for_inverse):
+            A = operation_map[operation[:-len(Operation.string_for_inverse)]]
+            return A.conj().T if not callable(A) else A(*par).conj().T
+
+        A = operation_map[operation]
+        return A if not callable(A) else A(*par)
 
     def _get_tensor_operator_matrix(self, obs, par):
         """Get the operator matrix for a given tensor product of operations.
