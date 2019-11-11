@@ -27,10 +27,9 @@ template. Note: Even if the template takes only one argument, it has to be wrapp
 ``cv_func_layers``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
+import pytest
 import pennylane as qml
-from pennylane.templates.layers import *
-from pennylane.templates.embeddings import *
-from pennylane.templates.subroutines import *
+from pennylane.templates import *
 from pennylane.init import *
 
 #######################################
@@ -65,7 +64,9 @@ qubit_func_layers = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
                      (StronglyEntanglingLayers, strong_ent_layers_normal),
                      (RandomLayers, random_layers_uniform),
                      (RandomLayers, random_layers_normal)]
+
 cv_func_layers = [(CVNeuralNetLayers, cvqnn_layers_all)]
+
 cv_func_subrtn = [(Interferometer, interferometer_all)]
 
 qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
@@ -75,7 +76,6 @@ qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.
                (BasisEmbedding, [[1, 0]]),
                (AngleEmbedding, [[1., 2.]])
               ]
-
 cv_const = [(DisplacementEmbedding, [[1., 2.]]),
             (SqueezingEmbedding, [[1., 2.]]),
             (CVNeuralNetLayers, [[[2.31], [1.22]],
