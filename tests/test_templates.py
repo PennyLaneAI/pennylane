@@ -23,29 +23,17 @@ New tests are added as follows:
 * When adding a new template, extend the fixtures ``qubit_const`` or ``cv_const`` by a *list* of arguments to the
 template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
 
-* When adding a new parameter initialization function, extend the fixtures ``qubit_func`` or ``cv_func`` by the
+* When adding a new parameter initialization function, extend the fixtures ``qubit_func_layers`` or ``cv_func_layers`` by the
 function.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
-import numpy as np
-from collections import OrderedDict
 import pennylane as qml
-from pennylane.templates.layers import Interferometer
-from pennylane.templates.layers import (CVNeuralNetLayers,
-                                        StronglyEntanglingLayers,
-                                        RandomLayers)
-from pennylane.templates.embeddings import (AmplitudeEmbedding,
-                                            BasisEmbedding,
-                                            AngleEmbedding,
-                                            SqueezingEmbedding,
-                                            DisplacementEmbedding)
-from pennylane.init import (strong_ent_layers_uniform,
-                            strong_ent_layers_normal,
-                            random_layers_uniform,
-                            random_layers_normal,
-                            cvqnn_layers_uniform,
-                            cvqnn_layers_normal)
+from pennylane.templates import *
+from pennylane.init import *
+
+#######################################
+# Interfaces
 
 interfaces = [('numpy', np.array)]
 
@@ -72,13 +60,12 @@ except ImportError as e:
 #########################################
 # Templates
 
-qubit_func = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
-              (StronglyEntanglingLayers, strong_ent_layers_normal),
-              (RandomLayers, random_layers_uniform),
-              (RandomLayers, random_layers_normal)]
-
-cv_func = [(CVNeuralNetLayers, cvqnn_layers_uniform),
-           (CVNeuralNetLayers, cvqnn_layers_normal)]
+qubit_func_layers = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
+                     (StronglyEntanglingLayers, strong_ent_layers_normal),
+                     (RandomLayers, random_layers_uniform),
+                     (RandomLayers, random_layers_normal)]
+cv_func_layers = [(CVNeuralNetLayers, cvqnn_layers_all)]
+cv_func_subrtn = [(Interferometer, interferometer_all)]
 
 qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                            [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]]),
@@ -236,7 +223,7 @@ class TestIntegrationCircuit:
 class TestInitializationIntegration:
     """Tests integration with the parameter initialization functions from pennylane.init"""
 
-    @pytest.mark.parametrize("template, inpts", qubit_func)
+    @pytest.mark.parametrize("template, inpts", qubit_func_layers)
     def test_integration_qubit_init(self, template, inpts, qubit_device, n_subsystems, n_layers):
         """Checks parameter initialization compatible with qubit templates."""
 
@@ -247,7 +234,7 @@ class TestInitializationIntegration:
             return qml.expval(qml.Identity(0))
         circuit(inp)
 
-    @pytest.mark.parametrize("template, inpts", cv_func)
+    @pytest.mark.parametrize("template, inpts", cv_func_layers)
     def test_integration_cv_init(self, template, inpts, gaussian_device, n_subsystems, n_layers):
         """Checks parameter initialization compatible with continuous-variable templates."""
 
