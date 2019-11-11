@@ -135,25 +135,20 @@ def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=N
 
 
 def cvqnn_layers_all(n_layers, n_wires, seed=None):
-    r"""Creates a list of eleven parameter arrays for :func:`~.CVNeuralNetLayers`.
+    r"""Creates a list of all eleven parameter arrays for :func:`~.CVNeuralNetLayers`.
 
     The template contains active gates (``Squeezing``, ``Displacement`` and ``Kerr`` gates), while
     all other gates are passive.
-    Active gates change the photon number (and hence the energy) of the system, and are typically
-    initialized with values close to zero, and regularized to stay low during optimization.
-
-    Non-active gate parameters are drawn from a uniform distribution :math:`[0, 2\pi]` and active gate parameters
-    from a normal distribution with mean :math:`0` and standard deviation :math:`0.1`.
+    Active gates change the photon number (and hence the energy) of the system, and are
+    therefore drawn from a normal distribution with mean :math:`0` and a small
+    standard deviation of :math:`0.1`.
+    Non-active gate parameters are angles and drawn from a uniform distribution with interval :math:`[0, 2\pi]`.
 
     Args:
         n_layers (int): number of layers of the CV Neural Net
         n_wires (int): number of modes of the CV Neural Net
 
     Keyword Args:
-        low (float): minimum value of uniformly drawn rotation angles
-        high (float): maximum value of uniformly drawn rotation angles
-        mean_active (float): mean of active gate parameters
-        std_active (float): standard deviation of active gate parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
@@ -180,7 +175,7 @@ def cvqnn_layers_all(n_layers, n_wires, seed=None):
 
 
 def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2*pi, seed=None):
-    r"""Creates a parameter array for the ``theta`` input in the interferometers of :func:`~.CVNeuralNetLayers`.
+    r"""Creates a parameter array for the ``theta`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a uniform distribution.
 
@@ -207,7 +202,7 @@ def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2*pi, seed=None):
 
 
 def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for the ``theta`` input in the interferometers of :func:`~.CVNeuralNetLayers`.
+    r"""Creates a parameter array for the ``theta`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a normal distribution.
 
@@ -234,7 +229,7 @@ def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 
 
 def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2*pi, seed=None):
-    r"""Creates a parameter array for the ``phi`` input in the interferometers of :func:`~.CVNeuralNetLayers`.
+    r"""Creates a parameter array for the ``phi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a uniform distribution.
 
@@ -261,7 +256,7 @@ def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2*pi, seed=None):
 
 
 def cvqnn_layers_phi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for the ``phi`` input in the interferometers of :func:`~.CVNeuralNetLayers`.
+    r"""Creates a parameter array for the ``phi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a normal distribution.
 
@@ -288,7 +283,7 @@ def cvqnn_layers_phi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 
 
 def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
-    r"""Creates a parameter array for the ``varphi`` input in the interferometers of :func:`~.CVNeuralNetLayers`.
+    r"""Creates a parameter array for the ``varphi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a uniform distribution.
 
@@ -314,7 +309,7 @@ def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None
 
 
 def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for the ``varphi`` input in the interferometers of :func:`~.CVNeuralNetLayers`.
+    r"""Creates a parameter array for the ``varphi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a uniform distribution.
 
@@ -470,7 +465,7 @@ def cvqnn_layers_a_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
 
 
 def cvqnn_layers_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for the displacement amplitude ``a`` input of :func:`~.CVNeuralNetLayers`.
+    r"""Creates a parameter array for the displacement amplitude ``a`` of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a normal distribution.
 
@@ -601,7 +596,7 @@ def cvqnn_layers_kappa_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 
 def interferometer_all(n_wires, seed=None):
     r"""Creates a list of arrays for the three initial parameters of :func:`Interferometer`, all drawn from a uniform
-    distribution :math:`[0, 2\pi]`.
+    distribution with interval :math:`[0, 2\pi]`.
 
     * ``theta`` is the array of beamsplitter transmittivity angles, of size ``(n_wires*(n_wires-1)/2, )``
 
@@ -613,8 +608,6 @@ def interferometer_all(n_wires, seed=None):
         n_wires (int): number of modes that the interferometer acts on
 
     Keyword Args:
-        low (float): minimum value of uniformly drawn rotation angles
-        high (float): maximum value of uniformly drawn rotation angles
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
