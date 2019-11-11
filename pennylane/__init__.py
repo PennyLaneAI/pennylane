@@ -28,6 +28,7 @@ import pennylane.operation
 import pennylane.init
 import pennylane.templates.layers
 import pennylane.templates.embeddings
+import pennylane.templates.subroutines
 import pennylane.vqe
 from pennylane.about import about
 

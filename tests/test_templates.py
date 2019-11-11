@@ -28,9 +28,23 @@ template. Note: Even if the template takes only one argument, it has to be wrapp
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
+import numpy as np
 import pennylane as qml
-from pennylane.templates import *
-from pennylane.init import *
+from pennylane.templates.layers import Interferometer
+from pennylane.templates.layers import (CVNeuralNetLayers,
+                                        StronglyEntanglingLayers,
+                                        RandomLayers)
+from pennylane.templates.embeddings import (AmplitudeEmbedding,
+                                            BasisEmbedding,
+                                            AngleEmbedding,
+                                            SqueezingEmbedding,
+                                            DisplacementEmbedding)
+from pennylane.init import (strong_ent_layers_uniform,
+                            strong_ent_layers_normal,
+                            random_layers_uniform,
+                            random_layers_normal,
+                            cvqnn_layers_all)
+
 
 #######################################
 # Interfaces
