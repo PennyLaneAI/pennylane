@@ -95,7 +95,7 @@ class TestJNodeExceptions:
         with pytest.raises(ValueError, match="Cannot differentiate wrt. parameter"):
             node.jacobian(0.5)
 
-    def test_operator_not_supporting_pd_parameter_shift(self, operable_mock_device_2_wires):
+    def test_operator_not_supporting_pd_analytic(self, operable_mock_device_2_wires):
         """Differentiating wrt. a parameter that appears
         as an argument to an operation that does not support parameter-shift derivatives."""
 
@@ -220,8 +220,8 @@ class TestJNodeBestMethod:
 
         node = JNode(circuit, gaussian_device_2_wires, properties={'vis_check': False})
 
-        res = node.jacobian([0.321], wrt=[0], method='A')
-        expected = node.jacobian([0.321], method='F')
+        res = node.jacobian([0.321], wrt=[0], method="A")
+        expected = node.jacobian([0.321], method="F")
         assert res == pytest.approx(expected, abs=tol)
 
     def test_best_method_with_gaussian_successors_fails(self, operable_mock_CV_device_2_wires):
@@ -237,11 +237,11 @@ class TestJNodeBestMethod:
         node = JNode(circuit, operable_mock_CV_device_2_wires)
 
         with pytest.raises(ValueError, match="parameter-shift gradient method cannot be used with"):
-            node.jacobian([0.321], method='A')
+            node.jacobian([0.321], method="A")
 
     def test_cv_gradient_methods(self, operable_mock_CV_device_2_wires):
         """Tests the gradient computation methods on CV circuits."""
-        # we can only use the 'A' method on parameters which only affect gaussian operations
+        # we can only use the "A" method on parameters which only affect gaussian operations
         # that are not succeeded by nongaussian operations
 
         par = [0.4, -2.3]
@@ -362,15 +362,15 @@ class TestJNodeJacobianCV:
         q = JNode(circuit, gaussian_dev)
         val = q.evaluate(par, {})
 
-        grad_F  = q.jacobian(par, method='F')
-        grad_A2 = q.jacobian(par, method='A', options={'force_order2': True})
+        grad_F  = q.jacobian(par, method="F")
+        grad_A2 = q.jacobian(par, method="A", options={'force_order2': True})
         if O.ev_order == 1:
-            grad_A = q.jacobian(par, method='A')
+            grad_A = q.jacobian(par, method="A")
             # the different methods agree
             assert grad_A == pytest.approx(grad_F, abs=tol)
 
         # analytic method works for every parameter
-        assert q.par_to_grad_method == {0:'A'}
+        assert q.par_to_grad_method == {0:"A"}
         # the different methods agree
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
@@ -385,12 +385,12 @@ class TestJNodeJacobianCV:
             return qml.expval(qml.NumberOperator(0))
 
         q = JNode(qf, gaussian_dev)
-        grad_F = q.jacobian(par, method='F')
-        grad_A = q.jacobian(par, method='A')
-        grad_A2 = q.jacobian(par, method='A', options={'force_order2': True})
+        grad_F = q.jacobian(par, method="F")
+        grad_A = q.jacobian(par, method="A")
+        grad_A2 = q.jacobian(par, method="A", options={'force_order2': True})
 
         # analytic method works for every parameter
-        assert q.par_to_grad_method == {i:'A' for i in range(4)}
+        assert q.par_to_grad_method == {i:"A" for i in range(4)}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -415,12 +415,12 @@ class TestJNodeJacobianCV:
             return qml.expval(qml.X(0))
 
         q = JNode(qf, gaussian_dev)
-        grad_F = q.jacobian(par, method='F')
-        grad_A = q.jacobian(par, method='A')
-        grad_A2 = q.jacobian(par, method='A', options={'force_order2': True})
+        grad_F = q.jacobian(par, method="F")
+        grad_A = q.jacobian(par, method="A")
+        grad_A2 = q.jacobian(par, method="A", options={'force_order2': True})
 
         # analytic method works for every parameter
-        assert q.par_to_grad_method == {0:'A', 1:'A'}
+        assert q.par_to_grad_method == {0:"A", 1:"A"}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -441,12 +441,12 @@ class TestJNodeJacobianCV:
 
         q = JNode(qf, gaussian_dev)
         grad = q.jacobian(par)
-        grad_F = q.jacobian(par, method='F')
+        grad_F = q.jacobian(par, method="F")
         grad_A = q.jacobian(par, method='B')
         grad_A2 = q.jacobian(par, method='B', options={'force_order2': True})
 
-        # par[0] can use the 'A' method, par[1] cannot
-        assert q.par_to_grad_method == {0:'A', 1:'F'}
+        # par[0] can use the "A" method, par[1] cannot
+        assert q.par_to_grad_method == {0:"A", 1:"F"}
         # the different methods agree
         assert grad == pytest.approx(grad_F, abs=tol)
 
@@ -499,12 +499,12 @@ class TestJNodeJacobianCV:
             return qml.expval(qml.X(0))
 
         q = JNode(circuit, gaussian_dev)
-        grad_F = q.jacobian(par, method='F')
-        grad_A = q.jacobian(par, method='A')
-        grad_A2 = q.jacobian(par, method='A', options={'force_order2': True})
+        grad_F = q.jacobian(par, method="F")
+        grad_A = q.jacobian(par, method="A")
+        grad_A2 = q.jacobian(par, method="A", options={'force_order2': True})
 
         # analytic method works for every parameter
-        assert q.par_to_grad_method == {0:'A', 1:'A'}
+        assert q.par_to_grad_method == {0:"A", 1:"A"}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -533,19 +533,19 @@ class TestJNodeJacobianCV:
             def circuit(x):
                 qml.Displacement(x, 0, wires=0)
 
-                if cls.par_domain == 'A':
+                if cls.par_domain == "A":
                     cls(U, wires=w)
                 else:
                     cls(wires=w)
                 return qml.expval(qml.X(0))
 
             qnode = JNode(circuit, gaussian_dev)
-            grad_F = qnode.jacobian(0.5, method='F')
-            grad_A = qnode.jacobian(0.5, method='A')
-            grad_A2 = qnode.jacobian(0.5, method='A', options={'force_order2': True})
+            grad_F = qnode.jacobian(0.5, method="F")
+            grad_A = qnode.jacobian(0.5, method="A")
+            grad_A2 = qnode.jacobian(0.5, method="A", options={'force_order2': True})
 
-            # par[0] can use the 'A' method
-            assert qnode.par_to_grad_method == {0: 'A'}
+            # par[0] can use the "A" method
+            assert qnode.par_to_grad_method == {0: "A"}
 
             # the different methods agree
             assert grad_A == pytest.approx(grad_F, abs=tol)
@@ -618,8 +618,8 @@ class TestJNodeJacobianQubit:
 
         par = [0.543, 0.123, 0.654, -0.629]
 
-        grad_A = q.jacobian(par, method='A')
-        grad_F = q.jacobian(par, method='F')
+        grad_A = q.jacobian(par, method="A")
+        grad_F = q.jacobian(par, method="F")
 
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
@@ -655,7 +655,7 @@ class TestJNodeJacobianQubit:
         grad = q.jacobian(par)
         grad_F = q.jacobian(par, method="F")
 
-        # par[0] can use the 'A' method, par[1] cannot
+        # par[0] can use the "A" method, par[1] cannot
         assert q.par_to_grad_method == {0: "A", 1: "F"}
         # the different methods agree
         assert grad == pytest.approx(grad_F, abs=tol)

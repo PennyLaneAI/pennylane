@@ -185,6 +185,7 @@ class JacobianQNode(QNode):
         """
         # pylint: disable=too-many-branches,too-many-statements
         # arrays are not Sequences... but they ARE Iterables? FIXME decide which types we accept! cf. _flatten
+        # TODO: rename "A"->"parameter_shift", "B"->"best", "F"->"finite_diff", "D"->"device"
         if not isinstance(args, (Sequence, np.ndarray)):
             args = (args,)
         kwargs = kwargs or {}
