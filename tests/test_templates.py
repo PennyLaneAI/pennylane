@@ -258,7 +258,7 @@ class TestInitializationIntegration:
 
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
         if not isinstance(inp, list):
-            inp = [inp]  # wrap argument for consistent unpacking 
+            inp = [inp]  # wrap argument for consistent unpacking
         @qml.qnode(gaussian_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))

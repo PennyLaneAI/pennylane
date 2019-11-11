@@ -650,12 +650,6 @@ def interferometer_theta_uniform(n_wires, low=0, high=2*pi, seed=None):
     return theta
 
 
-
-    theta = np.random.uniform(low=low, high=high, size=(n_if,))
-    phi = np.random.uniform(low=low, high=high, size=(n_if,))
-    varphi = np.random.uniform(low=low, high=high, size=(n_wires,))
-
-
 def interferometer_phi_uniform(n_wires, low=0, high=2*pi, seed=None):
     r"""Creates a parameter array for the ``phi`` input of :func:`Interferometer`, drawn from a uniform
     distribution.
