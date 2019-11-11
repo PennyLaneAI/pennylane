@@ -29,6 +29,7 @@ function.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
+from collections import OrderedDict
 import pennylane as qml
 from pennylane.templates.layers import Interferometer
 from pennylane.templates.layers import (CVNeuralNetLayers,
@@ -164,6 +165,8 @@ def qnode_cv_kwargs(dev, intrfc, templ1, templ2, n):
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
     return circuit
 
+######################
+
 
 class TestIntegrationCircuit:
     """Tests the integration of templates into circuits using the NumPy interface. """
@@ -187,7 +190,8 @@ class TestIntegrationCircuit:
                                       intrfc, to_var):
         """Checks integration of qubit templates using keyword arguments."""
         inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
+        inpts = [(str(i), to_var(inp)) for i, inp in enumerate(inpts)]
+        inpts = OrderedDict(inpts)
         dev = qml.device('default.qubit', wires=2)
         circuit = qnode_qubit_kwargs(dev, intrfc, template1, template2, len(inpts1))
         circuit(**inpts)
@@ -211,7 +215,8 @@ class TestIntegrationCircuit:
                                    intrfc, to_var):
         """Checks integration of continuous-variable templates using keyword arguments."""
         inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
+        inpts = [(str(i), to_var(inp)) for i, inp in enumerate(inpts)]
+        inpts = OrderedDict(inpts)
         dev = gaussian_device_2_wires
         circuit = qnode_cv_kwargs(dev, intrfc, template1, template2, len(inpts1))
         circuit(**inpts)
@@ -225,12 +230,10 @@ class TestInitializationIntegration:
         """Checks parameter initialization compatible with qubit templates."""
 
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
-
         @qml.qnode(qubit_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))
             return qml.expval(qml.Identity(0))
-
         circuit(inp)
 
     @pytest.mark.parametrize("template, inpts", cv_func)
@@ -238,10 +241,8 @@ class TestInitializationIntegration:
         """Checks parameter initialization compatible with continuous-variable templates."""
 
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
-
         @qml.qnode(gaussian_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))
             return qml.expval(qml.Identity(0))
-
         circuit(inp)
