@@ -374,6 +374,11 @@ Rohit Midha, Nicolás Quesada, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 ### Breaking changes
 
+* The single layer templates `RandomLayer()`, `CVNeuralNetLayer()` and `StronglyEntanglingLayer()`
+  have been turned into private functions `_random_layer()`, `_cv_neural_net_layer()` and
+  `_strongly_entangling_layer()`. Recommended use is now via the corresponding `Layers()` templates.
+  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
+
 * The `Device` methods `expectations`, `pre_expval`, and `post_expval` have been
   renamed to `observables`, `pre_measure`, and `post_measure` respectively.
   [#232](https://github.com/XanaduAI/pennylane/pull/232)
