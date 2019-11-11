@@ -23,13 +23,14 @@ New tests are added as follows:
 * When adding a new template, extend the fixtures ``qubit_const`` or ``cv_const`` by a *list* of arguments to the
 template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
 
-* When adding a new parameter initialization function, extend the fixtures ``qubit_func_layers`` or ``cv_func_layers`` by the
-function.
+* When adding a new parameter initialization function, extend the fixtures ``qubit_func_layers`` or
+``cv_func_layers``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
-import pytest
 import pennylane as qml
-from pennylane.templates import *
+from pennylane.templates.layers import *
+from pennylane.templates.embeddings import *
+from pennylane.templates.subroutines import *
 from pennylane.init import *
 
 #######################################
