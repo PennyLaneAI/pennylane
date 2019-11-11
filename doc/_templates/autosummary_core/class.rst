@@ -35,7 +35,7 @@
 
    .. raw:: html
 
-      <h3>Attributes documentation</h3>
+      <h3 style="margin-bottom: -30px;">Attributes documentation</h3>
 
    {% for item in attributes %}
    .. autoattribute:: {{ item }}
@@ -49,7 +49,7 @@
 
    .. raw:: html
 
-      <h3>Methods documentation</h3>
+      <h3 style="margin-top: 60px;">Methods documentation</h3>
 
    {% block methods_summary %}
    {% if methods %}
