@@ -23,25 +23,19 @@
 
    .. raw:: html
 
-      <h2>Class details</h2>
-
-   {% block methods_summary %}
-   {% if methods %}
-
-   .. rubric:: Methods Summary
-
-   .. autosummary::
-   {% for item in methods %}
-      ~{{ name }}.{{ item }}
-   {%- endfor %}
-
-   {% endif %}
-   {% endblock %}
+      <a class="class-details-header" data-toggle="collapse" href="#classDetails" aria-expanded="false" aria-controls="classDetails">
+         <h2>
+            <i class="fas fa-angle-down rotate" style="float: right;"></i> Class details
+         </h2>
+      </a>
+      <div class="collapse" id="classDetails">
 
    {% block attributes_documentation %}
    {% if attributes %}
 
-   .. rubric:: Attributes Documentation
+   .. raw:: html
+
+      <h3>Attributes documentation</h3>
 
    {% for item in attributes %}
    .. autoattribute:: {{ item }}
@@ -53,7 +47,20 @@
    {% block methods_documentation %}
    {% if methods %}
 
-   .. rubric:: Methods Documentation
+   .. raw:: html
+
+      <h3>Methods documentation</h3>
+
+   {% block methods_summary %}
+   {% if methods %}
+
+   .. autosummary::
+   {% for item in methods %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
+
+   {% endif %}
+   {% endblock %}
 
    {% for item in methods %}
    .. automethod:: {{ item }}
@@ -61,3 +68,12 @@
 
    {% endif %}
    {% endblock %}
+
+   .. raw:: html
+
+      </div>
+      <script type="text/javascript">
+         $(".class-details-header").click(function () {
+             $(this).children('h2').eq(0).children('i').eq(0).toggleClass("up");
+         })
+      </script>

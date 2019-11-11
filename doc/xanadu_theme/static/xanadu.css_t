@@ -2177,13 +2177,24 @@ dl.class dd > .rubric:last-of-type {
 
 dl.class > dd > table.docutils {
     margin-bottom: -40px;
-    border-bottom: 1px solid lightgray;
+    /*border-bottom: 1px solid lightgray;*/
 }
 
-dd > h3 {
+dd > a > h2 {
   margin-top: 60px;
-  margin-bottom: -40px;
 }
+
+.rotate {
+    -moz-transition: all .1s linear;
+    -webkit-transition: all .1s linear;
+    transition: all .1s linear;
+}
+.rotate.up {
+    -moz-transform:rotate(180deg);
+    -webkit-transform:rotate(180deg);
+    transform:rotate(180deg);
+}
+
 /* Syntax highlighting
 -------------------------------------------------- */
 
