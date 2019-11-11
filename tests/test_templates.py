@@ -85,7 +85,8 @@ qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.
                (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]]),
                (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]]),
                (BasisEmbedding, [[1, 0]]),
-               (AngleEmbedding, [[1., 2.]])]
+               (AngleEmbedding, [[1., 2.]])
+              ]
 
 cv_const = [(DisplacementEmbedding, [[1., 2.]]),
             (SqueezingEmbedding, [[1., 2.]]),
@@ -112,8 +113,10 @@ def qnode_qubit_args(dev, intrfc, templ1, templ2, n):
     """QNode for qubit integration circuit using positional arguments"""
     @qml.qnode(dev, interface=intrfc)
     def circuit(*inp_):
+        # Split inputs again
         inp1_ = inp_[:n]
         inp2_ = inp_[n:]
+
         qml.PauliX(wires=0)
         templ1(*inp1_, wires=range(2))
         templ2(*inp2_, wires=range(2))
@@ -126,9 +129,13 @@ def qnode_qubit_kwargs(dev, intrfc, templ1, templ2, n):
     """QNode for qubit integration circuit using keyword arguments"""
     @qml.qnode(dev, interface=intrfc)
     def circuit(**inp_):
-        vals = list(inp_.values())
-        inp1_ = vals[:n]
-        inp2_ = vals[n:]
+        # Split inputs again
+        ks = [int(k) for k in inp_.keys()]
+        vs = inp_.values()
+        inp_ = [x for _, x in sorted(zip(ks, vs))]
+        inp1_ = inp_[:n]
+        inp2_ = inp_[n:]
+
         qml.PauliX(wires=0)
         templ1(*inp1_, wires=range(2))
         templ2(*inp2_, wires=range(2))
@@ -141,8 +148,10 @@ def qnode_cv_args(dev, intrfc, templ1, templ2, n):
     """QNode for CV integration circuit using positional arguments"""
     @qml.qnode(dev, interface=intrfc)
     def circuit(*inp_):
+        # Split inputs again
         inp1_ = inp_[:n]
         inp2_ = inp_[n:]
+
         qml.Displacement(1., 1., wires=0)
         templ1(*inp1_, wires=range(2))
         templ2(*inp2_, wires=range(2))
@@ -155,12 +164,16 @@ def qnode_cv_kwargs(dev, intrfc, templ1, templ2, n):
     """QNode for CV integration circuit using keyword arguments"""
     @qml.qnode(dev, interface=intrfc)
     def circuit(**inp_):
-        vals = list(inp_.values())
-        inp1 = vals[:n]
-        inp2 = vals[n:]
+        # Split inputs again
+        ks = [int(k) for k in inp_.keys()]
+        vs = inp_.values()
+        inp_ = [x for _, x in sorted(zip(ks, vs))]
+        inp1_ = inp_[:n]
+        inp2_ = inp_[n:]
+
         qml.Displacement(1., 1., wires=0)
-        templ1(*inp1, wires=range(2))
-        templ2(*inp2, wires=range(2))
+        templ1(*inp1_, wires=range(2))
+        templ2(*inp2_, wires=range(2))
         qml.Displacement(1., 1., wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
     return circuit
@@ -190,8 +203,7 @@ class TestIntegrationCircuit:
                                       intrfc, to_var):
         """Checks integration of qubit templates using keyword arguments."""
         inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-        inpts = [(str(i), to_var(inp)) for i, inp in enumerate(inpts)]
-        inpts = OrderedDict(inpts)
+        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
         dev = qml.device('default.qubit', wires=2)
         circuit = qnode_qubit_kwargs(dev, intrfc, template1, template2, len(inpts1))
         circuit(**inpts)
@@ -215,8 +227,7 @@ class TestIntegrationCircuit:
                                    intrfc, to_var):
         """Checks integration of continuous-variable templates using keyword arguments."""
         inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-        inpts = [(str(i), to_var(inp)) for i, inp in enumerate(inpts)]
-        inpts = OrderedDict(inpts)
+        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
         dev = gaussian_device_2_wires
         circuit = qnode_cv_kwargs(dev, intrfc, template1, template2, len(inpts1))
         circuit(**inpts)
