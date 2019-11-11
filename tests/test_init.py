@@ -17,19 +17,13 @@ Unit tests for the :mod:`pennylane.templates.parameters` module.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.init import (cvqnn_layer_uniform,
-                            cvqnn_layers_uniform,
-                            cvqnn_layer_normal,
+from pennylane.init import (cvqnn_layers_uniform,
                             cvqnn_layers_normal,
                             interferometer_uniform,
                             interferometer_normal,
-                            random_layer_uniform,
                             random_layers_uniform,
-                            random_layer_normal,
                             random_layers_normal,
-                            strong_ent_layer_uniform,
                             strong_ent_layers_uniform,
-                            strong_ent_layer_normal,
                             strong_ent_layers_normal)
 
 
@@ -100,54 +94,6 @@ class TestParsCVQNN:
         p_target = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
         assert np.allclose(p, p_target, atol=tol, rtol=0.)
 
-    def test_cvqnnlayer_uniform_dimensions(self, n_subsystems):
-        """Confirm that pennylane.init.cvqnn_layer_uniform()
-         returns an array with the right dimensions."""
-        a = (n_subsystems, )
-        b = (n_subsystems * (n_subsystems - 1) // 2, )
-        p = cvqnn_layer_uniform(n_wires=n_subsystems, seed=0)
-        dims = [p_.shape for p_ in p]
-        assert dims == [b, b, a, a, a, b, b, a, a, a, a]
-
-    def test_cvqnnlayer_uniform_interval(self, seed):
-        """Confirm that no uniform sample in pennylane.init.cvqnn_layer_uniform() lies outside of interval."""
-        low = -2
-        high = 1
-        p = cvqnn_layer_uniform(n_wires=10, low=low, high=high, seed=seed)
-        p_uni = [p[i] for i in [0, 1, 2, 4, 5, 6, 7, 9]]
-        assert all([(p_ <= high).all() and (p_ >= low).all() for p_ in p_uni])
-
-    def test_cvqnnlayer_uniform_edgecase(self, seed, tol):
-        """Test sampling edge case of pennylane.init.cvqnn_layer_uniform()."""
-        p = cvqnn_layer_uniform(n_wires=10, low=1, high=1, mean_active=1, std_active=0, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_cvqnnlayer_uniform_seed(self, seed, tol):
-        """Confirm that pennylane.init.cvqnn_layer_uniform() invokes the correct np.random sampling function
-        for a given seed."""
-        low = -2
-        high = 1
-        mean_a = 0.5
-        std_a = 2
-        n_wires = 3
-        n_if = n_wires * (n_wires - 1) // 2
-        p = cvqnn_layer_uniform(n_wires=n_wires, low=low, high=high, mean_active=mean_a, std_active=std_a, seed=seed)
-        np.random.seed(seed)
-        theta_1 = np.random.uniform(low=low, high=high, size=(n_if,))
-        phi_1 = np.random.uniform(low=low, high=high, size=(n_if,))
-        varphi_1 = np.random.uniform(low=low, high=high, size=(n_wires,))
-        r = np.random.normal(loc=mean_a, scale=std_a, size=(n_wires,))
-        phi_r = np.random.uniform(low=low, high=high, size=(n_wires,))
-        theta_2 = np.random.uniform(low=low, high=high, size=(n_if,))
-        phi_2 = np.random.uniform(low=low, high=high, size=(n_if,))
-        varphi_2 = np.random.uniform(low=low, high=high, size=(n_wires,))
-        a = np.random.normal(loc=mean_a, scale=std_a, size=(n_wires,))
-        phi_a = np.random.uniform(low=low, high=high, size=(n_wires,))
-        k = np.random.normal(loc=mean_a, scale=std_a, size=(n_wires,))
-        p_target = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-        assert np.allclose(p, p_target, atol=tol)
-
     def test_cvqnnlayers_normal_dimensions(self, n_subsystems, n_layers):
         """Confirm that pennylane.init.cvqnn_layers_normal()
          returns an array with the right dimensions."""
@@ -188,45 +134,6 @@ class TestParsCVQNN:
         k = np.random.normal(loc=mean_a, scale=std_a, size=(n_layers, n_wires))
         p_target = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
         assert np.allclose(p, p_target, atol=tol, rtol=0.)
-
-    def test_cvqnnlayer_normal_dimensions(self, n_subsystems):
-        """Confirm that pennylane.init.cvqnn_layer_normal()
-         returns an array with the right dimensions."""
-        a = (n_subsystems, )
-        b = (n_subsystems * (n_subsystems - 1) // 2, )
-        p = cvqnn_layer_normal(n_wires=n_subsystems, seed=0)
-        dims = [p_.shape for p_ in p]
-        assert dims == [b, b, a, a, a, b, b, a, a, a, a]
-
-    def test_cvqnnlayer_normal_edgecase(self, seed, tol):
-        """Test sampling edge case of pennylane.init.cvqnn_layer_normal()."""
-        p = cvqnn_layer_normal(n_wires=10, mean=1, std=0, mean_active=1, std_active=0, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_cvqnnlayer_normal_range(self, seed, tol):
-        """Confirm that pennylane.init.cvqnn_layer_normal() invokes the correct np.random sampling function."""
-        mean = -0.5
-        std = 1
-        mean_a = 0.5
-        std_a = 2
-        n_wires = 3
-        n_if = n_wires * (n_wires - 1) // 2
-        p = cvqnn_layer_normal(n_wires=n_wires, mean=mean, std=std, mean_active=mean_a, std_active=std_a, seed=seed)
-        np.random.seed(seed)
-        theta_1 = np.random.normal(loc=mean, scale=std, size=(n_if,))
-        phi_1 = np.random.normal(loc=mean, scale=std, size=(n_if,))
-        varphi_1 = np.random.normal(loc=mean, scale=std, size=(n_wires,))
-        r = np.random.normal(loc=mean_a, scale=std_a, size=(n_wires,))
-        phi_r = np.random.normal(loc=mean, scale=std, size=(n_wires,))
-        theta_2 = np.random.normal(loc=mean, scale=std, size=(n_if,))
-        phi_2 = np.random.normal(loc=mean, scale=std, size=(n_if,))
-        varphi_2 = np.random.normal(loc=mean, scale=std, size=(n_wires,))
-        a = np.random.normal(loc=mean_a, scale=std_a, size=(n_wires,))
-        phi_a = np.random.normal(loc=mean, scale=std, size=(n_wires,))
-        k = np.random.normal(loc=mean_a, scale=std_a, size=(n_wires,))
-        p_target = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-        assert np.allclose(p, p_target, atol=tol)
 
 
 class TestParsInterferometer:
@@ -338,38 +245,6 @@ class TestParsStronglyEntangling:
         p_target = np.random.uniform(low=low, high=high, size=(n_layers, n_wires, 3))
         assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
-    def test_stronglyentanglinglayer_uniform_dimensions(self, n_subsystems):
-        """Confirm that the pennylane.init.strong_ent_layer_uniform()
-         returns an array with the right dimensions."""
-        a = (n_subsystems, 3)
-        p = strong_ent_layer_uniform(n_wires=n_subsystems, seed=0)
-        dims = [p_.shape for p_ in p]
-        assert dims == [a]
-
-    def test_stronglyentanglinglayer_uniform_interval(self, seed):
-        """Confirm that no uniform sample in pennylane.init.strong_ent_layer_uniform() lies outside of interval."""
-        low = -2
-        high = 1
-        p = strong_ent_layer_uniform(n_wires=10, low=low, high=high, seed=seed)
-        assert all([(p_ <= high).all() and (p_ >= low).all() for p_ in p])
-
-    def test_stronglyentanglinglayer_uniform_edgecase(self, seed, tol):
-        """Test sampling edge case of pennylane.init.strong_ent_layer_uniform()."""
-        p = strong_ent_layer_uniform(n_wires=10, low=1, high=1, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_stronglyentanglinglayer_uniform_seed(self, seed, tol):
-        """Confirm that pennylane.init.strong_ent_layer_uniform() invokes the correct np.random sampling function
-        for a given seed."""
-        low = -2
-        high = 1
-        n_wires = 3
-        p = strong_ent_layer_uniform(n_wires=n_wires, low=low, high=high, seed=seed)
-        np.random.seed(seed)
-        p_target = np.random.uniform(low=low, high=high, size=(n_wires, 3))
-        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
-
     def test_stronglyentanglinglayers_normal_dimensions(self, n_subsystems, n_layers):
         """Confirm that the pennylane.init.strong_ent_layers_normal()
          returns an array with the right dimensions."""
@@ -395,31 +270,6 @@ class TestParsStronglyEntangling:
         p = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires, mean=mean, std=std, seed=seed)
         np.random.seed(seed)
         p_target = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires, 3))
-        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
-
-    def test_stronglyentanglinglayer_normal_dimensions(self, n_subsystems):
-        """Confirm that the pennylane.init.parameters_stronglyentanglinglayer_normalm()
-         returns an array with the right dimensions."""
-        a = (n_subsystems, 3)
-        p = strong_ent_layer_normal(n_wires=n_subsystems, seed=0)
-        dims = [p_.shape for p_ in p]
-        assert dims == [a]
-
-    def test_stronglyentanglinglayer_normal_edgecase(self, seed, tol):
-        """Test sampling edge case of pennylane.init.strong_ent_layer_normal()."""
-        p = strong_ent_layer_normal(n_wires=10, mean=1, std=0, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_stronglyentanglinglayer_normal_seed(self, seed, tol):
-        """Confirm that pennylane.init.strong_ent_layer_normal() invokes the correct np.random sampling function
-        for a given seed."""
-        mean = -2
-        std = 1
-        n_wires = 3
-        p = strong_ent_layer_normal(n_wires=n_wires, mean=mean, std=std, seed=seed)
-        np.random.seed(seed)
-        p_target = np.random.normal(loc=mean, scale=std, size=(n_wires, 3))
         assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
 
@@ -464,41 +314,6 @@ class TestParsRandom:
         p_target = np.random.uniform(low=low, high=high, size=(n_layers, n_rots))
         assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
-    def test_randomlayer_uniform_dimensions(self, n_subsystems, n_rots):
-        """Confirm that the pennylane.init.random_layer_uniform()
-         returns an array with the right dimensions."""
-        if n_rots is None:
-            n_rots = n_subsystems
-        a = (n_rots, )
-        p = random_layer_uniform(n_wires=n_subsystems, n_rots=n_rots, seed=0)
-        dims = [p_.shape for p_ in p]
-        assert dims == [a]
-
-    def test_randomlayer_uniform_interval(self, seed):
-        """Confirm that no uniform sample in pennylane.init.random_layer_uniform() lies outside of interval."""
-        low = -2
-        high = 1
-        p = random_layer_uniform(n_wires=10, low=low, high=high, seed=seed)
-        assert all([(p_ <= high).all() and (p_ >= low).all() for p_ in p])
-
-    def test_randomlayer_uniform_edgecase(self, seed, tol):
-        """Test sampling edge case of pennylane.init.random_layer_uniform()."""
-        p = random_layer_uniform(n_wires=10, low=1, high=1, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_randomlayer_uniform_seed(self, seed, tol):
-        """Confirm that pennylane.init.random_layer_uniform() invokes the correct np.random sampling function
-        for a given seed."""
-        low = -2
-        high = 1
-        n_wires = 3
-        n_rots = 5
-        p = random_layer_uniform(n_wires=n_wires, n_rots=n_rots, low=low, high=high, seed=seed)
-        np.random.seed(seed)
-        p_target = np.random.uniform(low=low, high=high, size=(n_rots,))
-        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
-
     def test_randomlayers_normal_dimensions(self, n_subsystems, n_layers, n_rots):
         """Confirm that the pennylane.init.random_layers_normal()
          returns an array with the right dimensions."""
@@ -529,30 +344,3 @@ class TestParsRandom:
         p_target = np.random.normal(loc=mean, scale=std, size=(n_layers, n_rots))
         assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
 
-    def test_randomlayer_normal_dimensions(self, n_subsystems, n_rots):
-        """Confirm that the pennylane.init.random_layer_normal()
-         returns an array with the right dimensions."""
-        if n_rots is None:
-            n_rots = n_subsystems
-        a = (n_rots, )
-        p = random_layer_normal(n_wires=n_subsystems, n_rots=n_rots, seed=0)
-        dims = [p_.shape for p_ in p]
-        assert dims == [a]
-
-    def test_randomlayer_normal_edgecase(self, seed, tol):
-        """Test sampling edge case of pennylane.init.random_layer_normal()."""
-        p = random_layer_normal(n_wires=10, mean=1, std=0, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_randomlayer_normal_seed(self, seed, tol):
-        """Confirm that pennylane.init.random_layer_normal() invokes the correct np.random sampling function
-        for a given seed."""
-        mean = -2
-        std = 1
-        n_wires = 3
-        n_rots = 5
-        p = random_layer_normal(n_wires=n_wires, n_rots=n_rots, mean=mean, std=std, seed=seed)
-        np.random.seed(seed)
-        p_target = np.random.normal(loc=mean, scale=std, size=(n_rots,))
-        assert np.allclose(p[0], p_target, atol=tol, rtol=0.)
