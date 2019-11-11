@@ -2180,7 +2180,12 @@ dl.class > dd > table.docutils {
     /*border-bottom: 1px solid lightgray;*/
 }
 
-dd > a > h2 {
+dd > .collapse-header:first-of-type > h2 {
+  margin-top: 70px;
+}
+
+
+dd > .collapse-header {
   margin-top: 60px;
 }
 

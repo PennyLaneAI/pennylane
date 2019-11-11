@@ -21,25 +21,37 @@
      {% set caught_result = methods.remove('__init__') %}
    {% endif %}
 
-   .. raw:: html
-
-      <a class="class-details-header" data-toggle="collapse" href="#classDetails" aria-expanded="false" aria-controls="classDetails">
-         <h2>
-            <i class="fas fa-angle-down rotate" style="float: right;"></i> Class details
-         </h2>
-      </a>
-      <div class="collapse" id="classDetails">
-
    {% block attributes_documentation %}
    {% if attributes %}
 
    .. raw:: html
 
-      <h3 style="margin-bottom: -30px;">Attributes documentation</h3>
+      <a class="attr-details-header collapse-header" data-toggle="collapse" href="#attrDetails" aria-expanded="false" aria-controls="attrDetails">
+         <h2 style="font-size: 24px;">
+            <i class="fas fa-angle-down rotate" style="float: right;"></i> Attributes
+         </h2>
+      </a>
+      <div class="collapse" id="attrDetails">
+
+   {% block attributes_summary %}
+   {% if attributes %}
+
+   .. autosummary::
+      :nosignatures:
+   {% for item in attributes %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
+
+   {% endif %}
+   {% endblock %}
 
    {% for item in attributes %}
    .. autoattribute:: {{ item }}
    {%- endfor %}
+
+   .. raw:: html
+
+      </div>
 
    {% endif %}
    {% endblock %}
@@ -49,7 +61,12 @@
 
    .. raw:: html
 
-      <h3 style="margin-top: 60px;">Methods documentation</h3>
+      <a class="meth-details-header collapse-header" data-toggle="collapse" href="#methDetails" aria-expanded="false" aria-controls="methDetails">
+         <h2 style="font-size: 24px;">
+            <i class="fas fa-angle-down rotate" style="float: right;"></i> Methods
+         </h2>
+      </a>
+      <div class="collapse" id="methDetails">
 
    {% block methods_summary %}
    {% if methods %}
@@ -66,14 +83,17 @@
    .. automethod:: {{ item }}
    {%- endfor %}
 
+   .. raw:: html
+
+      </div>
+
    {% endif %}
    {% endblock %}
 
    .. raw:: html
 
-      </div>
       <script type="text/javascript">
-         $(".class-details-header").click(function () {
+         $(".collapse-header").click(function () {
              $(this).children('h2').eq(0).children('i').eq(0).toggleClass("up");
          })
       </script>
