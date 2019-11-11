@@ -16,12 +16,29 @@ Layers are trainable templates that are typically repeated, using different adju
 They implement a transformation from a quantum state to another quantum state.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import numpy as np
 from pennylane.ops import CNOT, RX, RY, RZ, Rot, Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
-import numpy as np
+from collections.abc import Iterable
 
 
-def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
+def _check_wires(wires):
+    """Standard checks for the wires argument."""
+    if isinstance(wires, int):
+        wires = [wires]
+    if not isinstance(wires, Iterable):
+        raise ValueError("Wires needs to be a list of wires; got {}.".format(wires))
+
+
+def _check_weights(weights, repeat):
+    #TODO
+    n_layers = 1
+    if n_layers != repeat:
+        raise ValueError("Expected first dimension of the weights to be same as repeat {}; got {}."
+                         .format(repeat, n_layers))
+
+
+def StronglyEntanglingLayers(weights, wires, repeat=1, ranges=None, imprimitive=CNOT):
     r"""A sequence of layers of type :func:`StronglyEntanglingLayer()`, as specified in `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_.
 
     The number of layers :math:`L` is determined by the first dimension of ``weights``. The template is applied to
@@ -30,23 +47,27 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     Args:
         weights (array[float]): array of weights of shape ``(L, len(wires), 3)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
+        repeat (int): number of layers applied
 
     Keyword Args:
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
+
+    Raises:
+        ValueError if one of the inputs does not have the correct format.
     """
 
-    n_layers = len(weights)
+    _check_wires(wires)
+    _check_weights(weights, repeat)
 
     if ranges is None:
-        ranges = [1] * n_layers
+        ranges = [1] * repeat
 
-    n_layers = len(weights)
-    for l in range(n_layers):
+    for l in range(repeat):
         StronglyEntanglingLayer(weights[l], r=ranges[l], imprimitive=imprimitive, wires=wires)
 
 
-def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
+def StronglyEntanglingLayer(weights, wires, r=None, imprimitive=None):
     r"""A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
 
     The 2-qubit or imprimitive gates act on each qubit :math:`i` chronologically. The second qubit for
@@ -72,19 +93,17 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
     Raises:
         ValueError: if less than 2 wires were specified
     """
-    if len(wires) < 2:
-        raise ValueError("StronglyEntanglingLayer requires at least two wires or subsystems to apply "
-                         "the imprimitive gates.")
 
     for i, wire in enumerate(wires):
         Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
     num_wires = len(wires)
-    for i in range(num_wires):
-        imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
+    if num_wires > 1:
+        for i in range(num_wires):
+            imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
 
 
-def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
+def RandomLayers(weights, wires, repeat=1, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
     r"""A sequence of layers of type :func:`RandomLayer()`.
 
     The number of layers :math:`L` and the number :math:`k` of rotations per layer is inferred from the first
@@ -96,6 +115,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     Args:
         weights (array[float]): array of weights of shape ``(L, k)``,
         wires (Sequence[int]): sequence of qubit indices that the template acts on
+        repeat (int): number of layers applied
 
     Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation
@@ -106,6 +126,10 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
             rotations with equal frequency.
         seed (int): seed to generate random architecture
     """
+
+    _check_wires(wires)
+    _check_weights(weights, repeat)
+
     if rotations is None:
         rotations = [RX, RY, RZ]
 
@@ -119,7 +143,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
                     seed=seed)
 
 
-def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
+def RandomLayer(weights, wires, ratio_imprim=None, imprimitive=None, rotations=None, seed=None):
     r"""A layer of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
@@ -133,39 +157,16 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
         :width: 60%
         :target: javascript:void(0);
 
-    .. note::
-        Using the default seed (or any other fixed integer seed) generates one and the same circuit in every
-        quantum node. To generate different circuit architectures, either use a different random seed, or use ``seed=None``
-        together with the ``cache=False`` option when creating a quantum node.
-
-    .. warning::
-        If you use a random number generator anywhere inside the quantum function without the ``cache=False`` option,
-        a new random circuit architecture will be created every time the quantum node is evaluated.
-
     Args:
         weights (array[float]): array of weights of shape ``(k,)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
-            determines how often a particular rotation type is used. Defaults to the use of all three
-            rotations with equal frequency.
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use
+        rotations (list[pennylane.ops.Operation]): list of Pauli-X, Pauli-Y and/or Pauli-Z gates
         seed (int): seed to generate random architecture
-
-    Raises:
-        ValueError: if less than 2 wires were specified
     """
-
-    if len(wires) < 2:
-        raise ValueError("RandomLayer requires at least two wires or subsystems to apply "
-                         "the imprimitive gates.")
-    if seed is not None:
-        np.random.seed(seed)
-
-    if rotations is None:
-        rotations = [RX, RY, RZ]
 
     i = 0
     while i < len(weights):
@@ -180,8 +181,9 @@ def RandomLayer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=No
             imprimitive(wires=on_wires)
 
 
-def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`, as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
+def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires, repeat=1):
+    r"""A sequence of layers of type :func:`CVNeuralNetLayer()`,
+    as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
 
     The number of layers :math:`L` is inferred from the first dimension of the eleven weight parameters. The layers
     act on the :math:`M` modes given in ``wires``, and include interferometers of :math:`K=M(M-1)/2` beamsplitters.
@@ -207,11 +209,10 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
         wires (Sequence[int]): sequence of mode indices that the template acts on
     """
 
-    inferred_layers = [len(theta_1), len(phi_1), len(varphi_1), len(r), len(phi_r), len(theta_2), len(phi_2),
-                       len(varphi_2), len(a), len(phi_a), len(k)]
-    if inferred_layers.count(inferred_layers[0]) != len(inferred_layers):
-        raise ValueError("All parameter arrays need to have the same first dimension, from which the number "
-                         "of layers is inferred; got first dimensions {}.".format(inferred_layers))
+    weights = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
+    _check_wires(wires)
+    for w in weights:
+        _check_weights(w, repeat)
 
     n_layers = len(theta_1)
     for l in range(n_layers):
@@ -258,12 +259,9 @@ def CVNeuralNetLayer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_
     Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
     for i, wire in enumerate(wires):
         Squeezing(r[i], phi_r[i], wires=wire)
-
     Interferometer(theta=theta_2, phi=phi_2, varphi=varphi_2, wires=wires)
-
     for i, wire in enumerate(wires):
         Displacement(a[i], phi_a[i], wires=wire)
-
     for i, wire in enumerate(wires):
         Kerr(k[i], wires=wire)
 

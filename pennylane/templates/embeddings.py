@@ -23,6 +23,29 @@ from pennylane.variable import Variable
 import numpy as np
 
 
+def _check_wires(wires):
+    """Standard checks for the wires argument."""
+    if isinstance(wires, int):
+        wires = [wires]
+    if not isinstance(wires, Iterable):
+        raise ValueError("Wires needs to be a list of wires; got {}.".format(wires))
+
+
+def _check_features(features, min_size=None, max_size=None):
+    """Standard checks for features argument"""
+
+    n_features = len(features) #TODO: BETTER
+
+    if min_size is not None:
+        if n_features < min_size:
+            raise ValueError("Number of features cannot be smaller than {}; got {}."
+                             .format(min_size, n_features))
+    if max_size is not None:
+        if n_features > min_size:
+            raise ValueError("Number of features cannot be larger than {}; got {}."
+                             .format(min_size, n_features))
+
+
 def AngleEmbedding(features, wires, rotation='X'):
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
@@ -39,14 +62,16 @@ def AngleEmbedding(features, wires, rotation='X'):
     The length of ``features`` has to be smaller or equal to the number of qubits. If there are fewer entries in
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
-    This embedding method can also be used to encode a binary sequence into a basis state. For example, to prepare
-    basis state :math:`|0,1,1,0\rangle`, choose ``rotation='X'`` and use the
-    feature vector :math:`[0, \pi/2, \pi/2, 0]`. Alternatively, one can use the :mod:`BasisEmbedding()` template.
+    .. note:
+
+        This embedding method can also be used to encode a binary sequence into a basis state. For example, to prepare
+        basis state :math:`|0,1,1,0\rangle`, choose ``rotation='X'`` and use the
+        feature vector :math:`[0, \pi/2, \pi/2, 0]`. Alternatively, one can use the :mod:`BasisEmbedding()` template.
 
     Args:
         features (array): Input array of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
+        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Keyword Args:
         rotation (str): Type of rotations used
@@ -55,24 +80,18 @@ def AngleEmbedding(features, wires, rotation='X'):
         ValueError: if ``features`` or ``wires`` is invalid
     """
 
-    if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+    _check_wires(wires)
+    _check_features(features, len(wires))
 
-    if len(features) > len(wires):
-        raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
-                         "got {}.".format(len(wires), len(features)))
     if rotation == 'X':
         for f, w in zip(features, wires):
             RX(f, wires=w)
-
     elif rotation == 'Y':
         for f, w in zip(features, wires):
             RY(f, wires=w)
-
     elif rotation == 'Z':
         for f, w in zip(features, wires):
             RZ(f, wires=w)
-
     else:
         raise ValueError("Rotation has to be `X`, `Y` or `Z`; got {}.".format(rotation))
 
@@ -90,38 +109,29 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
     .. note::
 
         AmplitudeEmbedding uses PennyLane's :class:`~pennylane.ops.QubitStateVector` and only works in conjunction with
-        devices that implement this function.
+        devices that support this operation.
 
     Args:
         features (array): input array of shape ``(2**n,)``
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
+        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
         pad (Boolean): controls the activation of the padding option
         normalize (Boolean): controls the activation of automatic normalization
 
     Raises:
-        ValueError: if ``features`` or ``wires`` is invalid
+        ValueError: if ``features`` or ``wires`` is not of the correct format
     """
 
-    if isinstance(wires, int):
-        wires = [wires]
+    _check_wires(wires)
+    n_ampl = 2**len(wires)
+    n_feats = _check_features(features, min_size=1, max_size=2**len(wires))
 
-    features = np.array(features)
+    if pad and n_ampl >= n_feats:
+        features = np.pad(features, (0, n_ampl-n_feats), 'constant')
 
-    n_features = len(features)
-    n_amplitudes = 2**len(wires)
-
-    if n_amplitudes < n_features:
-        raise ValueError("AmplitudeEmbedding requires the size of feature vector to be "
-                         "smaller than or equal to 2**len(wires), which is {}; "
-                         "got {}.".format(n_amplitudes, n_features))
-
-    if pad and n_amplitudes >= n_features:
-        features = np.pad(features, (0, n_amplitudes-n_features), 'constant')
-
-    if not pad and n_amplitudes != n_features:
+    if not pad and n_ampl != n_feats:
         raise ValueError("AmplitudeEmbedding must get a feature vector of size 2**len(wires), "
                          "which is {}; got {}. Use ``pad=True`` to automatically pad the "
-                         "features with zeros.".format(n_amplitudes, n_features))
+                         "features with zeros.".format(n_ampl, n_feats))
 
     # Get normalization
     norm = 0
@@ -153,17 +163,14 @@ def BasisEmbedding(features, wires):
 
     Args:
         features (array): Binary input array of shape ``(n, )``
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
+        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Raises:
         ValueError: if ``features`` or ``wires`` is invalid
     """
-    if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
 
-    if len(features) > len(wires):
-        raise ValueError("Number of bits to embed cannot be larger than number of wires, which is {}; "
-                         "got {}.".format(len(wires), len(features)))
+    _check_wires(wires)
+    _check_features(features, min_size=1, max_size=len(wires))
 
     BasisState(features, wires=wires)
 
@@ -197,12 +204,8 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
         ValueError: if ``features`` or ``wires`` is invalid
     """
 
-    if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
-
-    if len(wires) < len(features):
-        raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
-                         "got {}.".format(len(wires), len(features)))
+    _check_wires(wires)
+    _check_features(features, min_size=1, max_size=len(wires))
 
     for idx, f in enumerate(features):
         if method == 'amplitude':
@@ -241,12 +244,8 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
         ValueError: if ``features`` or ``wires`` is invalid or if ``method`` is unknown
    """
 
-    if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
-
-    if len(wires) < len(features):
-        raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
-                         "got {}.".format(len(wires), len(features)))
+    _check_wires(wires)
+    _check_features(features, min_size=1, max_size=len(wires))
 
     for idx, f in enumerate(features):
         if method == 'amplitude':
