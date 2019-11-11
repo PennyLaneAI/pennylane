@@ -246,3 +246,4 @@ class TestInitializationIntegration:
             template(*inp_, wires=range(n_subsystems))
             return qml.expval(qml.Identity(0))
         circuit(inp)
+
