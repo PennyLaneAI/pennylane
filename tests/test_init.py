@@ -17,216 +17,194 @@ Unit tests for the :mod:`pennylane.templates.parameters` module.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.init import (cvqnn_layers_all,
-                            interferometer_all,
-                            random_layers_uniform,
-                            random_layers_normal,
-                            strong_ent_layers_uniform,
-                            strong_ent_layers_normal)
-
+import pennylane as qml
 
 @pytest.fixture(scope="module",
                 params=[2, 3])
-def n_subsystems(request):
+def n_wires(request):
     """Number of qubits or modes."""
     return request.param
 
+@pytest.fixture(scope="module",
+                params=[2, 3])
+def repeat(request):
+    """Number of layers."""
+    return request.param
 
 @pytest.fixture(scope="module",
-                params=[None, 2, 10])
+                params=[2, 10])
 def n_rots(request):
     """Number of rotations in random layer."""
     return request.param
 
 
-class TestInitCVQNN:
-    """Tests the init module for a cv quantum neural network."""
+@pytest.fixture(scope="module")
+def n_if(n_wires):
+    """Number of beamsplitters in an interferometer."""
+    return n_wires * (n_wires - 1) // 2
 
-    def test_cvqnnlayers_all_shape(self, n_subsystems, n_layers):
-        """Confirm that cvqnn_layers_all()
-         returns an array with the correct shape."""
-        a = (n_layers, n_subsystems)
-        b = (n_layers, n_subsystems * (n_subsystems - 1) // 2)
-        p = cvqnn_layers_all(n_wires=n_subsystems, n_layers=n_layers, seed=0)
-        dims = [p_.shape for p_ in p]
-        assert dims == [b, b, a, a, a, b, b, a, a, a, a]
 
-    def test_cvqnnlayers_all_same_output_for_same_seed(self, seed, tol):
-        """Confirm that cvqnn_layers_all() returns a deterministic output for a fixed seed."""
-        n_wires = 3
-        n_layers = 2
-        p1 = cvqnn_layers_all(n_layers=n_layers, n_wires=n_wires, seed=seed)
-        p2 = cvqnn_layers_all(n_layers=n_layers, n_wires=n_wires, seed=seed)
-        assert np.allclose(p1, p2, atol=tol, rtol=0.)
+a = (repeat, n_wires)
+b = (repeat, n_if)
 
-    def test_cvqnnlayers_all_diff_output_for_diff_seed(self, seed, tol):
-        """Confirm that cvqnn_layers_all() returns a different output for
+############
+# Functions
+# RPT - have a 'repeat' keyword argument
+
+RPT_NRML = [qml.init.random_layers_normal,
+            qml.init.strong_ent_layers_normal,
+            qml.init.cvqnn_layers_theta_normal,
+            qml.init.cvqnn_layers_phi_normal,
+            qml.init.cvqnn_layers_varphi_normal,
+            qml.init.cvqnn_layers_r_normal,
+            qml.init.cvqnn_layers_phi_r_normal,
+            qml.init.cvqnn_layers_a_normal,
+            qml.init.cvqnn_layers_phi_a_normal,
+            qml.init.cvqnn_layers_kappa_normal,
+            ]
+RPT_UNIF = [qml.init.random_layers_uniform,
+            qml.init.strong_ent_layers_uniform,
+            qml.init.cvqnn_layers_theta_uniform,
+            qml.init.cvqnn_layers_phi_uniform,
+            qml.init.cvqnn_layers_varphi_uniform,
+            qml.init.cvqnn_layers_r_uniform,
+            qml.init.cvqnn_layers_phi_r_uniform,
+            qml.init.cvqnn_layers_a_uniform,
+            qml.init.cvqnn_layers_phi_a_uniform,
+            qml.init.cvqnn_layers_kappa_uniform,
+            ]
+RPT_ALL = [qml.init.cvqnn_layers_all]
+NRML = [qml.init.interferometer_theta_normal,
+        qml.init.interferometer_phi_normal,
+        qml.init.interferometer_varphi_normal]
+UNIF = [qml.init.interferometer_theta_uniform,
+        qml.init.interferometer_phi_uniform,
+        qml.init.interferometer_varphi_uniform]
+ALL = [qml.init.interferometer_all]
+
+###########
+# Shapes
+
+RPT_SHAPES = [(repeat, n_rots), (repeat, n_wires, 3), b, b, a, a, a, a, a, a]
+SHAPES = [b, b, a]
+RPT_ALL_SHAPES = [[b, b, a, a, a, b, b, a, a, a, a]]
+ALL_SHAPES = [[b, b, a]]
+
+###############
+# Combinations
+
+RPT_UNIF_SHP = list(zip(RPT_UNIF, RPT_SHAPES))
+RPT_NRML_SHP = list(zip(RPT_NRML, RPT_SHAPES))
+UNIF_SHP = list(zip(RPT_UNIF, SHAPES))
+NRML_SHP = list(zip(NRML, SHAPES))
+RPT_ALL_SHP = list(zip(RPT_ALL, RPT_ALL_SHAPES))
+ALL_SHP = list(zip(ALL, ALL_SHAPES))
+RPT_SHP = RPT_UNIF_SHP + RPT_NRML_SHP
+SHP = UNIF_SHP + NRML_SHP
+RPT_COMBINED = RPT_UNIF + RPT_NRML + RPT_ALL
+COMBINED = UNIF + NRML + ALL
+
+
+class TestInitRepeated:
+    """Tests the initialization functions from the ``init`` module for
+    functions that have a ``repeat`` keyword argument."""
+
+    @pytest.mark.parametrize("init, shp", RPT_SHP)
+    def test_rpt_shape(self, init, shp, n_wires, repeat):
+        """Confirm that initialization functions with keyword ``repeat``
+         return an array with the correct shape."""
+        p = init(n_wires=n_wires, n_layers=repeat, seed=0)
+        assert p.shape == shp
+
+    @pytest.mark.parametrize("init, shp", RPT_ALL_SHP)
+    def test_all_rpt_shape(self, init, shp, n_wires, repeat):
+        """Confirm that ``all`` initialization functions
+        which have a ``repeat`` argument
+         return an array with the correct shape."""
+        p = init(n_wires=n_wires, n_layers=repeat, seed=0)
+        shapes = [p_.shape for p_ in p]
+        assert shapes == shp
+
+    @pytest.mark.parametrize("init", RPT_COMBINED)
+    def test_rpt_same_output_for_same_seed(self, init, n_wires, repeat, seed, tol):
+        """Confirm that initialization function returns a deterministic output
+        for a fixed seed."""
+        p1 = init(n_layers=repeat, n_wires=n_wires, seed=seed)
+        p2 = init(n_layers=repeat, n_wires=n_wires, seed=seed)
+        assert np.allclose(p1, p2, atol=tol)
+
+    @pytest.mark.parametrize("init", RPT_COMBINED)
+    def test_rpt_diff_output_for_diff_seed(self, init, n_wires, repeat, seed, tol):
+        """Confirm that initialization function returns a different output for
         different seeds."""
-        n_wires = 3
-        n_layers = 2
-        p1 = cvqnn_layers_all(n_layers=n_layers, n_wires=n_wires, seed=seed)
-        p2 = cvqnn_layers_all(n_layers=n_layers, n_wires=n_wires, seed=seed+1)
-        assert not np.allclose(p1, p2, atol=tol, rtol=0.)
+        p1 = init(n_layers=repeat, n_wires=n_wires, seed=seed)
+        p2 = init(n_layers=repeat, n_wires=n_wires, seed=seed+1)
+        assert not np.allclose(p1, p2, atol=tol)
+
+    @pytest.mark.parametrize("init", RPT_UNIF)
+    def test_rpt_interval_uniform(self, init, seed, n_wires, tol):
+        """Test that uniformly sampled initialization functions lie
+        in correct interval."""
+        p = init(n_layers=repeat, n_wires=n_wires, low=1, high=1, seed=seed)
+        p_mean = np.mean(p)
+        assert np.isclose(p_mean, 1, atol=tol)
+
+    @pytest.mark.parametrize("init", RPT_NRML)
+    def test_rpt_interval_normal(self, init, seed, n_wires, tol):
+        """Test that normal samples of initialization functions lie
+        in correct interval."""
+        p = init(n_layers=repeat, n_wires=n_wires, mean=1, std=0, seed=seed)
+        p_mean = np.mean(p)
+        assert np.isclose(p_mean, 1, atol=tol)
 
 
-class TestInitInterferometer:
-    """Tests the init module for an interferometer."""
+class TestInitNotRepeated:
+    """Tests the initialization functions from the ``init`` module for
+    functions that have no ``repeat`` keyword argument."""
 
-    def test_interferometer_all_shape(self, n_subsystems):
-        """Confirm that interferometer_all()
+    @pytest.mark.parametrize("init, shp", SHP)
+    def test_shape(self, init, shp, n_wires):
+        """Confirm that initialization functions without ``repeat``
          returns an array with the correct shape."""
-        a = (n_subsystems, )
-        b = (n_subsystems * (n_subsystems - 1) // 2, )
-        p = interferometer_all(n_wires=n_subsystems, seed=0)
-        dims = [p_.shape for p_ in p]
-        assert dims == [b, b, a]
+        p = init(n_wires=n_wires, seed=0)
+        assert p.shape == shp
 
-    def test_interferometer_all_same_output_for_same_seed(self, seed, tol):
-        """Confirm that interferometer_all() returns deterministic output for
-         a fixed seed."""
-        n_wires = 3
-        p1 = interferometer_all(n_wires=n_wires, seed=seed)
-        p2 = interferometer_all(n_wires=n_wires, seed=seed)
-        assert np.allclose(p1, p2, atol=tol, rtol=0.)
+    @pytest.mark.parametrize("init, shp", ALL_SHP)
+    def test_all_shape(self, init, shp, n_wires):
+        """Confirm that ``all`` initialization functions
+         return an array with the correct shape."""
+        p = init(n_wires=n_wires, seed=0)
+        shapes = [p_.shape for p_ in p]
+        assert shapes == shp
 
-    def test_interferometer_all_diff_output_for_diff_seed(self, seed, tol):
-        """Confirm that interferometer_all() returns different output for
-         different seeds."""
-        n_wires = 3
-        p1 = interferometer_all(n_wires=n_wires, seed=seed)
-        p2 = interferometer_all(n_wires=n_wires, seed=seed+1)
-        assert not np.allclose(p1, p2, atol=tol, rtol=0.)
+    @pytest.mark.parametrize("init", COMBINED)
+    def test_same_output_for_same_seed(self, init, n_wires, seed, tol):
+        """Confirm that initialization function returns a deterministic output
+        for a fixed seed."""
+        p1 = init(n_wires=n_wires, seed=seed)
+        p2 = init(n_wires=n_wires, seed=seed)
+        assert np.allclose(p1, p2, atol=tol)
 
-
-class TestParsStronglyEntangling:
-    """Tests the init module for a strongly entangling circuit."""
-
-    def test_stronglyentangling_uniform_shape(self, n_subsystems, n_layers):
-        """Confirm that the strong_ent_layers_uniform()
-         returns an array with the correct shape."""
-        a = (n_layers, n_subsystems, 3)
-        p = strong_ent_layers_uniform(n_layers=n_layers, n_wires=n_subsystems, seed=0)
-        assert p.shape == a
-
-    def test_stronglyentangling_uniform_interval(self, seed, tol):
-        """Test samples of strong_ent_layers_uniform() lie in correct interval."""
-        n_layers = 3
-        p = strong_ent_layers_uniform(n_layers=n_layers, n_wires=10, low=1, high=1, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_stronglyentangling_uniform_same_output_for_same_seed(self, seed, tol):
-        """Confirm that strong_ent_layers_uniform() returns deterministic output for
-        a fixed seed."""
-        n_wires = 3
-        n_layers = 3
-        p1 = strong_ent_layers_uniform(n_layers=n_layers, n_wires=n_wires, seed=seed)
-        p2 = strong_ent_layers_uniform(n_layers=n_layers, n_wires=n_wires, seed=seed)
-        assert np.allclose(p1, p2, atol=tol, rtol=0.)
-
-    def test_stronglyentangling_uniform_diff_output_for_diff_seed(self, seed, tol):
-        """Confirm that strong_ent_layers_uniform() returns different output for
-        two different seeds."""
-        n_wires = 3
-        n_layers = 3
-        p1 = strong_ent_layers_uniform(n_layers=n_layers, n_wires=n_wires, seed=seed)
-        p2 = strong_ent_layers_uniform(n_layers=n_layers, n_wires=n_wires, seed=seed+1)
-        assert not np.allclose(p1, p2, atol=tol, rtol=0.)
-
-    def test_stronglyentangling_normal_shape(self, n_subsystems, n_layers):
-        """Confirm that strong_ent_layers_normal()
-         returns an array with the correct shape."""
-        a = (n_layers, n_subsystems, 3)
-        p = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_subsystems, seed=0)
-        assert p.shape == a
-
-    def test_stronglyentangling_normal_interval(self, seed, tol):
-        """Test samples of strong_ent_layers_normal() lie in correct interval."""
-        n_layers = 3
-        p = strong_ent_layers_normal(n_layers=n_layers, n_wires=10, mean=1, std=0, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_stronglyentangling_normal_same_output_for_same_seed(self, seed, tol):
-        """Confirm that strong_ent_layers_normal() returns deterministic output for
-        a fixed seed."""
-        n_wires = 3
-        n_layers = 3
-        p1 = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires,  seed=seed)
-        p2 = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires, seed=seed)
-        assert np.allclose(p1, p2, atol=tol, rtol=0.)
-
-    def test_stronglyentangling_normal_diff_output_for_diff_seed(self, seed, tol):
-        """Confirm that strong_ent_layers_normal() returns different output for
+    @pytest.mark.parametrize("init", COMBINED)
+    def test_diff_output_for_diff_seed(self, init, n_wires, seed, tol):
+        """Confirm that initialization function returns a different output for
         different seeds."""
-        n_wires = 3
-        n_layers = 3
-        p1 = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires,  seed=seed)
-        p2 = strong_ent_layers_normal(n_layers=n_layers, n_wires=n_wires, seed=seed+1)
-        assert not np.allclose(p1, p2, atol=tol, rtol=0.)
+        p1 = init(n_wires=n_wires, seed=seed)
+        p2 = init(n_wires=n_wires, seed=seed + 1)
+        assert not np.allclose(p1, p2, atol=tol)
 
+    @pytest.mark.parametrize("init", UNIF)
+    def test_interval_uniform(self, init, seed, n_wires, tol):
+        """Test that uniformly sampled initialization functions lie
+        in correct interval."""
+        p = init(n_wires=n_wires, low=1, high=1, seed=seed)
+        p_mean = np.mean(p)
+        assert np.isclose(p_mean, 1, atol=tol)
 
-class TestParsRandom:
-    """Tests the init module for a random circuit."""
-
-    def test_randomlayers_uniform_shape(self, n_subsystems, n_layers, n_rots):
-        """Confirm that the random_layers_uniform()
-         returns an array with the correct shape."""
-        if n_rots is None:
-            n_rots = n_subsystems
-        a = (n_layers, n_rots)
-        p = random_layers_uniform(n_layers=n_layers, n_wires=n_subsystems, n_rots=n_rots, seed=0)
-        assert p.shape == a
-
-    def test_randomlayers_uniform_interval(self, seed, tol):
-        """Test samples of random_layers_uniform() lie in correct interval."""
-        n_layers = 3
-        p = random_layers_uniform(n_layers=n_layers, n_wires=10, low=1, high=1, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_randomlayers_uniform_same_output_for_same_seed(self, seed, tol):
-        """Confirm that random_layers_uniform() returns deterministic output for
-        fixed seed."""
-        n_wires = 3
-        n_rots = 5
-        n_layers = 3
-        p1 = random_layers_uniform(n_layers=n_layers, n_wires=n_wires, n_rots=n_rots, seed=seed)
-        p2 = random_layers_uniform(n_layers=n_layers, n_wires=n_wires, n_rots=n_rots, seed=seed)
-        assert np.allclose(p1, p2, atol=tol, rtol=0.)
-
-    def test_randomlayers_normal_shape(self, n_subsystems, n_layers, n_rots):
-        """Confirm that the random_layers_normal()
-         returns an array with the correct shape."""
-        if n_rots is None:
-            n_rots = n_subsystems
-        a = (n_layers, n_rots)
-        p = random_layers_normal(n_layers=n_layers, n_wires=n_subsystems, n_rots=n_rots, seed=0)
-        assert p.shape == a
-
-    def test_randomlayers_normal_interval(self, seed, tol):
-        """Test samples of random_layers_normal() lie in correct interval."""
-        n_layers = 3
-        p = random_layers_normal(n_layers=n_layers, n_wires=10, mean=1, std=0, seed=seed)
-        p_mean = np.mean(np.array([np.mean(pp) for p_ in p for pp in p_]))
-        assert np.allclose(p_mean, 1, atol=tol, rtol=0.)
-
-    def test_randomlayers_normal_same_output_for_same_seed(self, seed, tol):
-        """Confirm that random_layers_normal() returns a deterministic output for a
-         fixed seed."""
-        n_wires = 3
-        n_rots = 5
-        n_layers = 3
-        p1 = random_layers_normal(n_layers=n_layers, n_wires=n_wires, n_rots=n_rots, seed=seed)
-        p2 = random_layers_normal(n_layers=n_layers, n_wires=n_wires, n_rots=n_rots, seed=seed)
-        assert np.allclose(p1, p2, atol=tol, rtol=0.)
-
-    def test_randomlayers_normal_diff_output_for_diff_seed(self, seed, tol):
-        """Confirm that random_layers_normal() returns different outputs for different
-        seeds."""
-        n_wires = 3
-        n_rots = 5
-        n_layers = 3
-        p1 = random_layers_normal(n_layers=n_layers, n_wires=n_wires, n_rots=n_rots, seed=seed)
-        p2 = random_layers_normal(n_layers=n_layers, n_wires=n_wires, n_rots=n_rots, seed=seed+1)
-        assert not np.allclose(p1, p2, atol=tol, rtol=0.)
+    @pytest.mark.parametrize("init", NRML)
+    def test_interval_normal(self, init, seed, n_wires, tol):
+        """Test that normal samples of initialization functions lie
+        in correct interval."""
+        p = init(n_wires=n_wires, mean=1, std=0, seed=seed)
+        p_mean = np.mean(p)
+        assert np.isclose(p_mean, 1, atol=tol)
