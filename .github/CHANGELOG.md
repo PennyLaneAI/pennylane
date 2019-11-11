@@ -2,8 +2,9 @@
 
 ### New features since last release
 
-* Refactored templates integration tests
-  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
+* Refactored templates integration tests to cover keyword/positional argument passing,
+  interfaces and combinations of templates.
+  [#409](https://github.com/XanaduAI/pennylane/pull/409)
 
 * Added support for applying the inverse of an `Operation` within a circuit.
   [#377](https://github.com/XanaduAI/pennylane/pull/377)
