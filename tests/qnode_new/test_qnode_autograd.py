@@ -85,6 +85,19 @@ def grad_fn_S_Fock(gaussian_dev):
     return autograd.grad(circuit)
 
 
+class TestAutogradDetails:
+    """Test configuration details of the autograd interface"""
+
+    def test_interface_str(self, qubit_device_2_wires):
+        """Test that the interface string is correctly identified
+        as numpy"""
+        def circuit(x, y, z):
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+        circuit = ANode(circuit, qubit_device_2_wires)
+        assert circuit.interface == "numpy"
+
 
 class TestAutogradJacobianCV:
     """Tests involving Autograd functions grad and jacobian for CV circuits."""

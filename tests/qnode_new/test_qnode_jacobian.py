@@ -65,6 +65,20 @@ def gaussian_dev():
     return qml.device('default.gaussian', wires=2)
 
 
+class TestAJacobianQNodeDetails:
+    """Test configuration details of the autograd interface"""
+
+    def test_interface_str(self, qubit_device_2_wires):
+        """Test that the interface string is correctly identified
+        as None"""
+        def circuit(x, y, z):
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+        circuit = JNode(circuit, qubit_device_2_wires)
+        assert circuit.interface == None
+
+
 class TestJNodeExceptions:
     """Tests that JNode.jacobian raises proper errors."""
 
