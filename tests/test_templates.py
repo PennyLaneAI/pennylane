@@ -12,13 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Integration tests for templates, including integration of passing outputs of initialization functions
-in :mod:`pennylane.init`, and running templates in larger circuits.
+Integration tests for templates, including integration with initialization functions
+in :mod:`pennylane.init`, running templates in larger circuits,
+combining templates, using positional and keyword arguments, and using different interfaces.
+
+New tests are added as follows:
+
+* When adding a new interface, try to import it and extend the fixture ``interfaces``.
+
+* When adding a new template, extend the fixtures ``qubit_const`` or ``cv_const`` by a *list* of arguments to the
+template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
+
+* When adding a new parameter initialization function, extend the fixtures ``qubit_func`` or ``cv_func`` by the
+function.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
-import torch
-import tensorflow as tf
 import numpy as np
 import pennylane as qml
 from pennylane.templates.layers import Interferometer
@@ -37,29 +46,46 @@ from pennylane.init import (strong_ent_layers_uniform,
                             cvqnn_layers_uniform,
                             cvqnn_layers_normal)
 
-# When adding a new template,
-# extend the appropriate lists with the template function
-# and the desired inputs (i.e., features and/or weights) that need to be tested
+interfaces = [('numpy', np.array)]
 
-# Constant input fixtures for qubit templates
+try:
+    import torch
+    interfaces.append(('torch', torch.tensor))
+except ImportError as e:
+    pass
+
+try:
+    import tensorflow as tf
+
+    if tf.__version__[0] == "1":
+        print(tf.__version__)
+        import tensorflow.contrib.eager as tfe
+        tf.enable_eager_execution()
+        Variable = tfe.Variable
+    else:
+        from tensorflow import Variable
+    interfaces.append(('tf', Variable))
+except ImportError as e:
+    pass
+
+#########################################
+# Templates
+
 qubit_func = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
               (StronglyEntanglingLayers, strong_ent_layers_normal),
               (RandomLayers, random_layers_uniform),
               (RandomLayers, random_layers_normal)]
 
-# Constant input fixtures for continuous-variable templates
 cv_func = [(CVNeuralNetLayers, cvqnn_layers_uniform),
            (CVNeuralNetLayers, cvqnn_layers_normal)]
 
-# Constant input fixtures for qubit templates
-qubit_const = [#(StronglyEntanglingLayers, [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
-               #                            [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]),
+qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
+                                           [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]]),
                (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]]),
                (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]]),
                (BasisEmbedding, [[1, 0]]),
                (AngleEmbedding, [[1., 2.]])]
 
-# Constant input fixtures for continuous-variable templates
 cv_const = [(DisplacementEmbedding, [[1., 2.]]),
             (SqueezingEmbedding, [[1., 2.]]),
             (CVNeuralNetLayers, [[[2.31], [1.22]],
@@ -77,59 +103,118 @@ cv_const = [(DisplacementEmbedding, [[1., 2.]]),
             (Interferometer, [[2.31], [3.49], [0.98, 1.54]])
             ]
 
+#########################################
+# Circuits
 
-def qfunc_qubit_args(template1, template2, n):
-    """Qubit integration circuit using positional arguments"""
+
+def qnode_qubit_args(dev, intrfc, templ1, templ2, n):
+    """QNode for qubit integration circuit using positional arguments"""
+    @qml.qnode(dev, interface=intrfc)
     def circuit(*inp_):
         inp1_ = inp_[:n]
         inp2_ = inp_[n:]
         qml.PauliX(wires=0)
-        template1(*inp1_, wires=range(2))
-        template2(*inp2_, wires=range(2))
+        templ1(*inp1_, wires=range(2))
+        templ2(*inp2_, wires=range(2))
         qml.PauliX(wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
     return circuit
 
 
-def qfunc_qubit_kwargs(template1, template2, n):
-    """Qubit integration circuit using keyword arguments"""
+def qnode_qubit_kwargs(dev, intrfc, templ1, templ2, n):
+    """QNode for qubit integration circuit using keyword arguments"""
+    @qml.qnode(dev, interface=intrfc)
     def circuit(**inp_):
         vals = list(inp_.values())
         inp1_ = vals[:n]
         inp2_ = vals[n:]
         qml.PauliX(wires=0)
-        template1(*inp1_, wires=range(2))
-        template2(*inp2_, wires=range(2))
+        templ1(*inp1_, wires=range(2))
+        templ2(*inp2_, wires=range(2))
         qml.PauliX(wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
     return circuit
 
 
-def qfunc_cv_args(template1, template2, n):
-    """CV integration circuit using positional arguments"""
+def qnode_cv_args(dev, intrfc, templ1, templ2, n):
+    """QNode for CV integration circuit using positional arguments"""
+    @qml.qnode(dev, interface=intrfc)
     def circuit(*inp_):
         inp1_ = inp_[:n]
         inp2_ = inp_[n:]
         qml.Displacement(1., 1., wires=0)
-        template1(*inp1_, wires=range(2))
-        template2(*inp2_, wires=range(2))
+        templ1(*inp1_, wires=range(2))
+        templ2(*inp2_, wires=range(2))
         qml.Displacement(1., 1., wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
     return circuit
 
 
-def qfunc_cv_kwargs(template1, template2, n):
-    """CV integration circuit using keyword arguments"""
+def qnode_cv_kwargs(dev, intrfc, templ1, templ2, n):
+    """QNode for CV integration circuit using keyword arguments"""
+    @qml.qnode(dev, interface=intrfc)
     def circuit(**inp_):
         vals = list(inp_.values())
         inp1 = vals[:n]
         inp2 = vals[n:]
         qml.Displacement(1., 1., wires=0)
-        template1(*inp1, wires=range(2))
-        template2(*inp2, wires=range(2))
+        templ1(*inp1, wires=range(2))
+        templ2(*inp2, wires=range(2))
         qml.Displacement(1., 1., wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
     return circuit
+
+
+class TestIntegrationCircuit:
+    """Tests the integration of templates into circuits using the NumPy interface. """
+
+    @pytest.mark.parametrize("template1, inpts1", qubit_const)
+    @pytest.mark.parametrize("template2, inpts2", qubit_const)
+    @pytest.mark.parametrize("intrfc, to_var", interfaces)
+    def test_integration_qubit_args(self, template1, inpts1, template2, inpts2,
+                                    intrfc, to_var):
+        """Checks integration of qubit templates using positional arguments."""
+        inpts = inpts1 + inpts2  # Combine inputs to allow passing with *
+        inpts = [to_var(i) for i in inpts]
+        dev = qml.device('default.qubit', wires=2)
+        circuit = qnode_qubit_args(dev, intrfc, template1, template2, len(inpts1))
+        circuit(*inpts)
+
+    @pytest.mark.parametrize("template1, inpts1", qubit_const)
+    @pytest.mark.parametrize("template2, inpts2", qubit_const)
+    @pytest.mark.parametrize("intrfc, to_var", interfaces)
+    def test_integration_qubit_kwargs(self, template1, inpts1, template2, inpts2,
+                                      intrfc, to_var):
+        """Checks integration of qubit templates using keyword arguments."""
+        inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
+        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
+        dev = qml.device('default.qubit', wires=2)
+        circuit = qnode_qubit_kwargs(dev, intrfc, template1, template2, len(inpts1))
+        circuit(**inpts)
+
+    @pytest.mark.parametrize("template1, inpts1", cv_const)
+    @pytest.mark.parametrize("template2, inpts2", cv_const)
+    @pytest.mark.parametrize("intrfc, to_var", interfaces)
+    def test_integration_cv_args(self, gaussian_device_2_wires, template1, inpts1, template2, inpts2,
+                                 intrfc, to_var):
+        """Checks integration of continuous-variable templates using positional arguments."""
+        inpts = inpts1 + inpts2  # Combine inputs to allow passing with *
+        inpts = [to_var(i) for i in inpts]
+        dev = gaussian_device_2_wires
+        circuit = qnode_cv_args(dev, intrfc, template1, template2, len(inpts1))
+        circuit(*inpts)
+
+    @pytest.mark.parametrize("template1, inpts1", cv_const)
+    @pytest.mark.parametrize("template2, inpts2", cv_const)
+    @pytest.mark.parametrize("intrfc, to_var", interfaces)
+    def test_integration_cv_kwargs(self, gaussian_device_2_wires, template1, inpts1, template2, inpts2,
+                                   intrfc, to_var):
+        """Checks integration of continuous-variable templates using keyword arguments."""
+        inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
+        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
+        dev = gaussian_device_2_wires
+        circuit = qnode_cv_kwargs(dev, intrfc, template1, template2, len(inpts1))
+        circuit(**inpts)
 
 
 class TestInitializationIntegration:
@@ -160,170 +245,3 @@ class TestInitializationIntegration:
             return qml.expval(qml.Identity(0))
 
         circuit(inp)
-
-
-class TestIntegrationCircuit:
-    """Tests the integration of templates into circuits using the NumPy interface. """
-
-    @pytest.mark.parametrize("template1, inpts1", qubit_const)
-    @pytest.mark.parametrize("template2, inpts2", qubit_const)
-    def test_integration_qubit_args(self, template1, inpts1, template2, inpts2):
-        """Checks integration of qubit templates using positional arguments."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with *
-        inpts = [np.array(i) for i in inpts]
-        dev = qml.device('default.qubit', wires=2)
-        qfunc = qfunc_qubit_args(template1, template2, len(inpts1))
-        circuit = qml.QNode(qfunc, dev)
-        circuit(*inpts)
-
-    @pytest.mark.parametrize("template1, inpts1", qubit_const)
-    @pytest.mark.parametrize("template2, inpts2", qubit_const)
-    def test_integration_qubit_kwargs(self, template1, inpts1, template2, inpts2):
-        """Checks integration of qubit templates using keyword arguments."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-        inpts = {str(i): np.array(inp) for i, inp in enumerate(inpts)}
-        dev = qml.device('default.qubit', wires=2)
-        qfunc = qfunc_qubit_kwargs(template1, template2, len(inpts1))
-        circuit = qml.QNode(qfunc, dev)
-        circuit(**inpts)
-
-    @pytest.mark.parametrize("template1, inpts1", cv_const)
-    @pytest.mark.parametrize("template2, inpts2", cv_const)
-    def test_integration_cv_args(self, gaussian_device_2_wires, template1, inpts1, template2, inpts2):
-        """Checks integration of continuous-variable templates using positional arguments."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with *
-        inpts = [np.array(i) for i in inpts]
-        qfunc = qfunc_cv_args(template1, template2, len(inpts1))
-        circuit = qml.QNode(qfunc, gaussian_device_2_wires)
-        circuit(*inpts)
-
-    @pytest.mark.parametrize("template1, inpts1", cv_const)
-    @pytest.mark.parametrize("template2, inpts2", cv_const)
-    def test_integration_cv_kwargs(self, gaussian_device_2_wires, template1, inpts1, template2, inpts2):
-        """Checks integration of continuous-variable templates using keyword arguments."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-        inpts = {str(i): np.array(inp) for i, inp in enumerate(inpts)}
-        qfunc = qfunc_cv_args(template1, template2, len(inpts1))
-        circuit = qml.QNode(qfunc, gaussian_device_2_wires)
-        circuit(**inpts)
-
-
-class TestIntegrationCircuitTorch:
-    """Tests the integration of templates into circuits using the Torch interface."""
-
-    @pytest.mark.parametrize("template1, inpts1", qubit_const)
-    @pytest.mark.parametrize("template2, inpts2", qubit_const)
-    def test_integration_qubit_args(self, template1, inpts1, template2, inpts2):
-        """Checks integration of qubit templates using positional arguments and the Torch interface."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with *
-        inpts = [torch.tensor(i) for i in inpts]
-        dev = qml.device('default.qubit', wires=2)
-        qfunc = qfunc_qubit_args(template1, template2, len(inpts1))
-        circuit = qml.QNode(qfunc, dev)
-        circuit.to_torch()
-        circuit(*inpts)
-
-    # @pytest.mark.parametrize("template1, inpts1", qubit_const)
-    # @pytest.mark.parametrize("template2, inpts2", qubit_const)
-    # def test_integration_qubit_kwargs(self, template1, inpts1, template2, inpts2):
-    #     """Checks integration of qubit templates using keyword arguments and the Torch interface."""
-    #     inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-    #     inpts = {str(i): torch.tensor(inp) for i, inp in enumerate(inpts)}
-    #     dev = qml.device('default.qubit', wires=2)
-    #     qfunc = qfunc_qubit_kwargs(template1, template2, len(inpts1))
-    #     circuit = qml.QNode(qfunc, dev)
-    #     circuit.to_torch()
-    #     circuit(**inpts)
-    #
-    # @pytest.mark.parametrize("template1, inpts1", cv_const)
-    # @pytest.mark.parametrize("template2, inpts2", cv_const)
-    # def test_integration_cv_args(self, gaussian_device_2_wires, template1, inpts1, template2, inpts2):
-    #     """Checks integration of continuous-variable templates using positional arguments and the Torch interface."""
-    #     inpts = inpts1 + inpts2  # Combine inputs to allow passing with *
-    #     inpts = [torch.tensor(i) for i in inpts]
-    #     qfunc = qfunc_cv_args(template1, template2, len(inpts1))
-    #     circuit = qml.QNode(qfunc, gaussian_device_2_wires)
-    #     circuit.to_torch()
-    #     circuit(*inpts)
-    #
-    # @pytest.mark.parametrize("template1, inpts1", cv_const)
-    # @pytest.mark.parametrize("template2, inpts2", cv_const)
-    # def test_integration_cv_kwargs(self, gaussian_device_2_wires, template1, inpts1, template2, inpts2):
-    #     """Checks integration of continuous-variable templates using keyword arguments and the Torch interface."""
-    #     inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-    #     inpts = {str(i): torch.tensor(inp) for i, inp in enumerate(inpts)}
-    #     qfunc = qfunc_cv_args(template1, template2, len(inpts1))
-    #     circuit = qml.QNode(qfunc, gaussian_device_2_wires)
-    #     circuit.to_torch()
-    #     circuit(**inpts)
-
-
-class TestIntegrationCircuitTf:
-    """Tests the integration of templates into circuits using the TensorFlow interface."""
-
-    @pytest.mark.parametrize("template, inpts", qubit_const)
-    def test_integration_qubit_positional_arg(self, template, inpts):
-        """Checks integration of qubit templates using positional arguments to qnode."""
-
-        inpts = [tf.Variable(i) for i in inpts]
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev, interface='tf')
-        def circuit(*inp_):
-            qml.PauliX(wires=0)
-            template(*inp_, wires=range(2))
-            template(*inp_, wires=range(2))
-
-            qml.PauliX(wires=1)
-            return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
-
-        circuit(*inpts)
-
-    @pytest.mark.parametrize("template, inpts", qubit_const)
-    def test_integration_qubit_keyword_arg(self, template, inpts):
-        """Checks integration of qubit templates using keyword arguments to qnode."""
-
-        inpts = {"w"+str(1): tf.Variable(inpts[i]) for i in range(len(inpts))}
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev, interface='tf')
-        def circuit(**inp_):
-            qml.PauliX(wires=0)
-            template(*inp_.values(), wires=range(2))
-            template(*inp_.values(), wires=range(2))
-            qml.PauliX(wires=1)
-            return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
-
-        circuit(**inpts)
-
-    @pytest.mark.parametrize("template, inpts", cv_const)
-    def test_integration_cv_positional_args(self, gaussian_device_2_wires, template, inpts):
-        """Checks integration of continuous-variable templates using positional arguments to qnode."""
-
-        inpts = [tf.Variable(i) for i in inpts]
-
-        @qml.qnode(gaussian_device_2_wires, interface='tf')
-        def circuit(*inp_):
-            qml.Displacement(1., 1., wires=0)
-            template(*inp_, wires=range(2))
-            template(*inp_, wires=range(2))
-            qml.Displacement(1., 1., wires=1)
-            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-
-        circuit(*inpts)
-
-    @pytest.mark.parametrize("template, inpts", cv_const)
-    def test_integration_cv_keyword_args(self, gaussian_device_2_wires, template, inpts):
-        """Checks integration of continuous-variable templates using keyword arguments to qnode."""
-
-        inpts = {"w"+str(i): tf.Variable(inpts[i]) for i in range(len(inpts))}
-
-        @qml.qnode(gaussian_device_2_wires, interface='tf')
-        def circuit(**inp_):
-            qml.Displacement(1., 1., wires=0)
-            template(*inp_.values(), wires=range(2))
-            template(*inp_.values(), wires=range(2))
-            qml.Displacement(1., 1., wires=1)
-            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-
-        circuit(**inpts)
