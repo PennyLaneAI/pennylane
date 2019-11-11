@@ -43,7 +43,8 @@ from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
                             random_layers_normal,
-                            cvqnn_layers_all)
+                            cvqnn_layers_all,
+                            interferometer_all)
 
 
 #######################################
@@ -243,6 +244,8 @@ class TestInitializationIntegration:
         """Checks parameter initialization compatible with qubit templates."""
 
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
+        if not isinstance(inp, list):
+            inp = [inp]  # wrap argument for consistent unpacking
         @qml.qnode(qubit_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))
@@ -254,6 +257,8 @@ class TestInitializationIntegration:
         """Checks parameter initialization compatible with continuous-variable templates."""
 
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
+        if not isinstance(inp, list):
+            inp = [inp]  # wrap argument for consistent unpacking 
         @qml.qnode(gaussian_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))
