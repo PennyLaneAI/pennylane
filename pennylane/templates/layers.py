@@ -41,10 +41,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     if ranges is None:
         ranges = [1] * n_layers
 
-<<<<<<< HEAD
-=======
     n_layers = len(weights)
->>>>>>> master
     for l in range(n_layers):
         StronglyEntanglingLayer(weights[l], r=ranges[l], imprimitive=imprimitive, wires=wires)
 
@@ -114,15 +111,11 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     n_layers = len(weights)
     for l in range(n_layers):
-<<<<<<< HEAD
         RandomLayer(weights[l],
                     wires=wires,
                     ratio_imprim=ratio_imprim,
                     imprimitive=imprimitive,
                     rotations=rotations,
-=======
-        RandomLayer(weights[l], wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations,
->>>>>>> master
                     seed=seed)
 
 
