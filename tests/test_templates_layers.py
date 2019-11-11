@@ -225,7 +225,7 @@ class TestStronglyEntangling:
 
 
 class TestRandomLayers:
-    """Tests for the RandomLayers method from the pennylane.templates.layers module."""
+    """Tests for the RandomLayers method from the pennylane.templates module."""
 
     @pytest.fixture(scope="class",
                     params=[0.2, 0.6])
@@ -242,8 +242,8 @@ class TestRandomLayers:
     def rots(self, request):
         return request.param
 
-    def test_random_layers_seed_deterministic(self, n_layers, tol, seed):
-        """Test that pennylane.templates.layers.RandomLayers() acts deterministically when using fixed seed."""
+    def test_random_layers_deterministic_seed(self, n_layers, tol, seed):
+        """Test that RandomLayers() acts deterministically when using fixed seed."""
         n_rots = 1
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
@@ -259,11 +259,10 @@ class TestRandomLayers:
 
         qnode1 = qml.QNode(circuit1, dev)
         qnode2 = qml.QNode(circuit2, dev)
-
         assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
-    def test_random_layers_no_seed_deterministic(self, n_layers, tol):
-        """Test that pennylane.templates.layers.RandomLayers() acts deterministically when using no seed."""
+    def test_random_layers_deterministic_default_seed(self, n_layers, tol):
+        """Test that RandomLayers() acts deterministically when using default seed."""
         n_rots = 1
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
@@ -283,7 +282,7 @@ class TestRandomLayers:
         assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
     def test_random_layers_two_seeds_different(self, n_layers, tol):
-        """Test that pennylane.templates.layers.RandomLayers() does not have the same output for two different seeds."""
+        """Test that RandomLayers() does not have the same output for two different seeds."""
         n_rots = 10
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
