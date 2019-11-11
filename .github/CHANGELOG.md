@@ -1,6 +1,10 @@
 # Release 0.7.0-dev
 
 ### New features since last release
+
+* Refactored templates integration tests
+  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
+
 * Added support for applying the inverse of an `Operation` within a circuit.
   [#377](https://github.com/XanaduAI/pennylane/pull/377)
 
