@@ -144,7 +144,7 @@ ANSAETZE = [
 EMPTY_PARAMS = []
 VAR_PARAMS = [0.5]
 EMBED_PARAMS = [np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)]
-LAYER_PARAMS = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=3)
+LAYER_PARAMS = [qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=3)]
 
 CIRCUITS = [
     (lambda *params, wires=None: None, EMPTY_PARAMS),
@@ -440,7 +440,7 @@ class TestMultipleInterfaceIntegration:
         H = qml.vqe.Hamiltonian(coeffs, observables)
 
         # TensorFlow interface
-        params = [Variable(i) for i in qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]
+        params = [Variable(i) for i in [qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]]
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
         cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
@@ -450,7 +450,7 @@ class TestMultipleInterfaceIntegration:
             res_tf = np.array(tape.gradient(cost, params))
 
         # Torch interface
-        params = torch.tensor(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
+        params = torch.tensor([qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)])
         params = torch.autograd.Variable(params, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
@@ -459,7 +459,7 @@ class TestMultipleInterfaceIntegration:
         res_torch = params.grad.numpy()
 
         # NumPy interface
-        params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
+        params = [qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]
         ansatz = qml.templates.layers.StronglyEntanglingLayers
         cost = qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
         cost2 = lambda params: qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
