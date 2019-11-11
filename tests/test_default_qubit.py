@@ -21,11 +21,11 @@ import math
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.operation import Operation
 from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
                                              Rot3, Rotx, Roty, Rotz,
                                              Rphi, Z, hermitian,
                                              spectral_decomposition, unitary)
-
 
 U = np.array(
     [
@@ -95,6 +95,10 @@ def prep_par(par, op):
     if op.par_domain == "A":
         return [np.diag([x, 1]) for x in par]
     return par
+
+
+def include_inverses_with_test_data(test_data):
+    return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
 
 class TestAuxillaryFunctions:
@@ -360,10 +364,13 @@ class TestOperatorMatrices:
 
         assert res is None
 
-class TestApply:
-    """Tests that operations are applied correctly or that the proper errors are raised."""
 
-    @pytest.mark.parametrize("name,input,expected_output", [
+class TestApply:
+    """Tests that operations and inverses of certain operations are applied correctly or that the proper
+    errors are raised.
+    """
+
+    test_data_no_parameters = [
         ("PauliX", [1, 0], np.array([0, 1])),
         ("PauliX", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/math.sqrt(2)]),
         ("PauliY", [1, 0], [0, 1j]),
@@ -376,7 +383,25 @@ class TestApply:
         ("T", [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), np.exp(1j * np.pi / 4) / math.sqrt(2)]),
         ("Hadamard", [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)]),
         ("Hadamard", [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1]),
-    ])
+    ]
+
+    test_data_no_parameters_inverses  = [
+        ("PauliX.inv", [1, 0], np.array([0, 1])),
+        ("PauliX.inv", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/math.sqrt(2)]),
+        ("PauliY.inv", [1, 0], [0, 1j]),
+        ("PauliY.inv", [1/math.sqrt(2), 1/math.sqrt(2)], [-1j/math.sqrt(2), 1j/math.sqrt(2)]),
+        ("PauliZ.inv", [1, 0], [1, 0]),
+        ("PauliZ.inv", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1/math.sqrt(2)]),
+        ("S.inv", [1, 0], [1, 0]),
+        ("S.inv", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), -1j/math.sqrt(2)]),
+        ("T.inv", [1, 0], [1, 0]),
+        ("T.inv", [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), np.exp(-1j * np.pi / 4) / math.sqrt(2)]),
+        ("Hadamard.inv", [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)]),
+        ("Hadamard.inv", [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1]),
+    ]
+
+    @pytest.mark.parametrize("name,input,expected_output", test_data_no_parameters +
+                             test_data_no_parameters_inverses)
     def test_apply_operation_single_wire_no_parameters(self, qubit_device_1_wire, tol, name, input, expected_output):
         """Tests that applying an operation yields the expected output state for single wire
            operations that have no parameters."""
@@ -386,17 +411,20 @@ class TestApply:
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("name,input,expected_output", [
+    test_data_two_wires_no_parameters = [
         ("CNOT", [1, 0, 0, 0], [1, 0, 0, 0]),
         ("CNOT", [0, 0, 1, 0], [0, 0, 0, 1]),
-        ("CNOT", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], [1/math.sqrt(2), 0, 1/math.sqrt(2), 0]),
+        ("CNOT", [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)], [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0]),
         ("SWAP", [1, 0, 0, 0], [1, 0, 0, 0]),
         ("SWAP", [0, 0, 1, 0], [0, 1, 0, 0]),
-        ("SWAP", [1/math.sqrt(2), 0, -1/math.sqrt(2), 0], [1/math.sqrt(2), -1/math.sqrt(2), 0, 0]),
+        ("SWAP", [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0], [1 / math.sqrt(2), -1 / math.sqrt(2), 0, 0]),
         ("CZ", [1, 0, 0, 0], [1, 0, 0, 0]),
         ("CZ", [0, 0, 0, 1], [0, 0, 0, -1]),
-        ("CZ", [1/math.sqrt(2), 0, 0, -1/math.sqrt(2)], [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)]),
-    ])
+        ("CZ", [1 / math.sqrt(2), 0, 0, -1 / math.sqrt(2)], [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)]),
+    ]
+
+    @pytest.mark.parametrize("name,input,expected_output",
+                             include_inverses_with_test_data(test_data_two_wires_no_parameters))
     def test_apply_operation_two_wires_no_parameters(self, qubit_device_2_wires, tol, name, input, expected_output):
         """Tests that applying an operation yields the expected output state for two wire
            operations that have no parameters."""
@@ -406,12 +434,14 @@ class TestApply:
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
-
-    @pytest.mark.parametrize("name,input,expected_output", [
+    test_data_three_wires_no_parameters = [
         ("CSWAP", [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]),
         ("CSWAP", [0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0]),
         ("CSWAP", [0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1, 0, 0]),
-    ])
+    ]
+
+    @pytest.mark.parametrize("name,input,expected_output",
+                             include_inverses_with_test_data(test_data_three_wires_no_parameters))
     def test_apply_operation_three_wires_no_parameters(self, qubit_device_3_wires, tol, name, input, expected_output):
         """Tests that applying an operation yields the expected output state for three wire
            operations that have no parameters."""
@@ -433,67 +463,108 @@ class TestApply:
         ("QubitStateVector", [1, 0, 0, 0], [1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)]]),
     ])
     def test_apply_operation_state_preparation(self, qubit_device_2_wires, tol, name, input, expected_output, par):
-        """Tests that applying an operation yields the expected output state for single wire
-           operations that have no parameters."""
+        """Tests that applying state preparation operations yield the expected output."""
 
         qubit_device_2_wires._state = np.array(input)
         qubit_device_2_wires.apply(name, wires=[0, 1], par=par)
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("PhaseShift", [1, 0], [1, 0], [math.pi/2]),
-        ("PhaseShift", [0, 1], [0, 1j], [math.pi/2]),
-        ("PhaseShift", [1/math.sqrt(2), 1/math.sqrt(2)], [1/math.sqrt(2), 1/2 + 1j/2], [math.pi/4]),
-        ("RX", [1, 0], [1/math.sqrt(2), -1j*1/math.sqrt(2)], [math.pi/2]),
+    test_data_single_wire_with_parameters = [
+        ("PhaseShift", [1, 0], [1, 0], [math.pi / 2]),
+        ("PhaseShift", [0, 1], [0, 1j], [math.pi / 2]),
+        ("PhaseShift", [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / 2 + 1j / 2], [math.pi / 4]),
+        ("RX", [1, 0], [1 / math.sqrt(2), -1j * 1 / math.sqrt(2)], [math.pi / 2]),
         ("RX", [1, 0], [0, -1j], [math.pi]),
-        ("RX", [1/math.sqrt(2), 1/math.sqrt(2)], [1/2 - 1j/2, 1/2 -1j/2], [math.pi/2]),
-        ("RY", [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)], [math.pi/2]),
+        ("RX", [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 - 1j / 2], [math.pi / 2]),
+        ("RY", [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)], [math.pi / 2]),
         ("RY", [1, 0], [0, 1], [math.pi]),
-        ("RY", [1/math.sqrt(2), 1/math.sqrt(2)], [0, 1], [math.pi/2]),
-        ("RZ", [1, 0], [1/math.sqrt(2) - 1j/math.sqrt(2), 0], [math.pi/2]),
+        ("RY", [1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 1], [math.pi / 2]),
+        ("RZ", [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2]),
         ("RZ", [0, 1], [0, 1j], [math.pi]),
-        ("RZ", [1/math.sqrt(2), 1/math.sqrt(2)], [1/2 - 1j/2, 1/2 + 1j/2], [math.pi/2]),
-        ("Rot", [1, 0], [1/math.sqrt(2) - 1j/math.sqrt(2), 0], [math.pi/2, 0, 0]),
-        ("Rot", [1, 0], [1/math.sqrt(2), 1/math.sqrt(2)], [0, math.pi/2, 0]),
-        ("Rot", [1/math.sqrt(2), 1/math.sqrt(2)], [1/2 - 1j/2, 1/2 + 1j/2], [0, 0, math.pi/2]),
-        ("Rot", [1, 0], [-1j/math.sqrt(2), -1/math.sqrt(2)], [math.pi/2, -math.pi/2, math.pi/2]),
-        ("Rot", [1/math.sqrt(2), 1/math.sqrt(2)], [1/2 + 1j/2, -1/2 + 1j/2], [-math.pi/2, math.pi, math.pi]),
-        ("QubitUnitary", [1, 0], [1j/math.sqrt(2), 1j/math.sqrt(2)], [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
-        ("QubitUnitary", [0, 1], [1j/math.sqrt(2), -1j/math.sqrt(2)], [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
-        ("QubitUnitary", [1/math.sqrt(2), -1/math.sqrt(2)], [0, 1j], [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])]),
-    ])
+        ("RZ", [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2], [math.pi / 2]),
+        ("Rot", [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2, 0, 0]),
+        ("Rot", [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
+        ("Rot", [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2], [0, 0, math.pi / 2]),
+        ("Rot", [1, 0], [-1j / math.sqrt(2), -1 / math.sqrt(2)], [math.pi / 2, -math.pi / 2, math.pi / 2]),
+        ("Rot", [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 + 1j / 2, -1 / 2 + 1j / 2],
+         [-math.pi / 2, math.pi, math.pi]),
+        ("QubitUnitary", [1, 0], [1j / math.sqrt(2), 1j / math.sqrt(2)],
+         [np.array([[1j / math.sqrt(2), 1j / math.sqrt(2)], [1j / math.sqrt(2), -1j / math.sqrt(2)]])]),
+        ("QubitUnitary", [0, 1], [1j / math.sqrt(2), -1j / math.sqrt(2)],
+         [np.array([[1j / math.sqrt(2), 1j / math.sqrt(2)], [1j / math.sqrt(2), -1j / math.sqrt(2)]])]),
+        ("QubitUnitary", [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1j],
+         [np.array([[1j / math.sqrt(2), 1j / math.sqrt(2)], [1j / math.sqrt(2), -1j / math.sqrt(2)]])]),
+    ]
+
+    test_data_single_wire_with_parameters_inverses = [
+        ("PhaseShift" + Operation.string_for_inverse, [1, 0], [1, 0], [math.pi / 2]),
+        ("PhaseShift" + Operation.string_for_inverse, [0, 1], [0, -1j], [math.pi / 2]),
+        ("PhaseShift" + Operation.string_for_inverse, [1 / math.sqrt(2), 1 / math.sqrt(2)],
+         [1 / math.sqrt(2), 1 / 2 - 1j / 2], [math.pi / 4]),
+        ("RX" + Operation.string_for_inverse, [1, 0], [1 / math.sqrt(2), 1j * 1 / math.sqrt(2)], [math.pi / 2]),
+        ("RX" + Operation.string_for_inverse, [1, 0], [0, 1j], [math.pi]),
+        ("RX" + Operation.string_for_inverse, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 + 1j / 2, 1 / 2 + 1j / 2], [math.pi / 2]),
+        ("RY" + Operation.string_for_inverse, [1, 0], [1 / math.sqrt(2), -1 / math.sqrt(2)], [math.pi / 2]),
+        ("RY" + Operation.string_for_inverse, [1, 0], [0, -1], [math.pi]),
+        ("RY" + Operation.string_for_inverse, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1, 0], [math.pi / 2]),
+        ("RZ" + Operation.string_for_inverse, [1, 0], [1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
+        ("RZ" + Operation.string_for_inverse, [0, 1], [0, -1j], [math.pi]),
+        ("RZ" + Operation.string_for_inverse, [1 / math.sqrt(2), 1 / math.sqrt(2)],
+         [1 / 2 + 1/2*1j, 1 / 2 - 1/2*1j], [math.pi / 2]),
+    ]
+
+    @pytest.mark.parametrize("name,input,expected_output,par", test_data_single_wire_with_parameters +
+                             test_data_single_wire_with_parameters_inverses)
     def test_apply_operation_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, input, expected_output, par):
         """Tests that applying an operation yields the expected output state for single wire
-           operations that have no parameters."""
+           operations that have parameters."""
 
         qubit_device_1_wire._state = np.array(input)
         qubit_device_1_wire.apply(name, wires=[0], par=par)
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("CRX", [0, 1, 0, 0], [0, 1, 0, 0], [math.pi/2]),
+    test_data_two_wires_with_parameters = [
+        ("CRX", [0, 1, 0, 0], [0, 1, 0, 0], [math.pi / 2]),
         ("CRX", [0, 0, 0, 1], [0, 0, -1j, 0], [math.pi]),
-        ("CRX", [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), 1/2, -1j/2], [math.pi/2]),
-        ("CRY", [0, 0, 0, 1], [0, 0, -1/math.sqrt(2), 1/math.sqrt(2)], [math.pi/2]),
+        ("CRX", [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), 1 / 2, -1j / 2], [math.pi / 2]),
+        ("CRY", [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [math.pi / 2]),
         ("CRY", [0, 0, 0, 1], [0, 0, -1, 0], [math.pi]),
-        ("CRY", [1/math.sqrt(2), 1/math.sqrt(2), 0, 0], [1/math.sqrt(2), 1/math.sqrt(2), 0, 0], [math.pi/2]),
-        ("CRZ", [0, 0, 0, 1], [0, 0, 0, 1/math.sqrt(2) + 1j/math.sqrt(2)], [math.pi/2]),
+        ("CRY", [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [math.pi / 2]),
+        ("CRZ", [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
         ("CRZ", [0, 0, 0, 1], [0, 0, 0, 1j], [math.pi]),
-        ("CRZ", [1/math.sqrt(2), 1/math.sqrt(2), 0, 0], [1/math.sqrt(2), 1/math.sqrt(2), 0, 0], [math.pi/2]),
-        ("CRot", [0, 0, 0, 1], [0, 0, 0, 1/math.sqrt(2) + 1j/math.sqrt(2)], [math.pi/2, 0, 0]),
-        ("CRot", [0, 0, 0, 1], [0, 0, -1/math.sqrt(2), 1/math.sqrt(2)], [0, math.pi/2, 0]),
-        ("CRot", [0, 0, 1/math.sqrt(2), 1/math.sqrt(2)], [0, 0, 1/2 - 1j/2, 1/2 + 1j/2], [0, 0, math.pi/2]),
-        ("CRot", [0, 0, 0, 1], [0, 0, 1/math.sqrt(2), 1j/math.sqrt(2)], [math.pi/2, -math.pi/2, math.pi/2]),
-        ("CRot", [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), 0, -1/2 + 1j/2], [-math.pi/2, math.pi, math.pi]),
-        ("QubitUnitary", [1, 0, 0, 0], [1, 0, 0, 0], [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
-        ("QubitUnitary", [0, 1, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
-        ("QubitUnitary", [1/2, 1/2, -1/2, 1/2], [1/2, 0, 1/math.sqrt(2), 1/2], [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])]),
-    ])
+        ("CRZ", [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [math.pi / 2]),
+        ("CRot", [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2, 0, 0]),
+        ("CRot", [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
+        ("CRot", [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 0, 1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
+         [0, 0, math.pi / 2]),
+        ("CRot", [0, 0, 0, 1], [0, 0, 1 / math.sqrt(2), 1j / math.sqrt(2)], [math.pi / 2, -math.pi / 2, math.pi / 2]),
+        ("CRot", [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), 0, -1 / 2 + 1j / 2],
+         [-math.pi / 2, math.pi, math.pi]),
+        ("QubitUnitary", [1, 0, 0, 0], [1, 0, 0, 0], [np.array(
+            [[1, 0, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
+             [0, 0, 0, 1]])]),
+        ("QubitUnitary", [0, 1, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [np.array(
+            [[1, 0, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
+             [0, 0, 0, 1]])]),
+        ("QubitUnitary", [1 / 2, 1 / 2, -1 / 2, 1 / 2], [1 / 2, 0, 1 / math.sqrt(2), 1 / 2], [np.array(
+            [[1, 0, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
+             [0, 0, 0, 1]])]),
+    ]
+
+    test_data_two_wires_with_parameters_inverses = [
+        ("CRX" + Operation.string_for_inverse, [0, 1, 0, 0], [0, 1, 0, 0], [math.pi / 2]),
+        ("CRX" + Operation.string_for_inverse, [0, 0, 0, 1], [0, 0, 1j, 0], [math.pi]),
+        ("CRX" + Operation.string_for_inverse, [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
+         [0, 1 / math.sqrt(2), 1 / 2, 1j / 2], [math.pi / 2]),
+    ]
+
+    @pytest.mark.parametrize("name,input,expected_output,par", test_data_two_wires_with_parameters +
+                             test_data_two_wires_with_parameters_inverses)
     def test_apply_operation_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, input, expected_output, par):
-        """Tests that applying an operation yields the expected output state for single wire
-           operations that have no parameters."""
+        """Tests that applying an operation yields the expected output state for two wire
+           operations that have parameters."""
 
         qubit_device_2_wires._state = np.array(input)
         qubit_device_2_wires.apply(name, wires=[0, 1], par=par)
@@ -840,6 +911,70 @@ class TestDefaultQubitIntegration:
 
         assert np.isclose(np.mean(runs), -np.sin(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("name,expected_output", [
+        ("PauliX", 1),
+        ("PauliY", 1),
+        ("S", -1),
+    ])
+    def test_inverse_circuit(self, qubit_device_1_wire, tol, name, expected_output):
+        """Tests the inverse of supported gates that act on a single wire and are not parameterized"""
+
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.BasisState(np.array([1]), wires=[0])
+            op(wires=0).inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("name,expected_output", [
+        ("PauliX", 1),
+        ("PauliY", 1),
+        ("S", -1),
+    ])
+    def test_inverse_circuit_calling_inv_multiple_times(self, qubit_device_1_wire, tol, name, expected_output):
+        """Tests that multiple calls to the inverse of an operation works"""
+
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.BasisState(np.array([1]), wires=[0])
+            op(wires=0).inv().inv().inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
+                                                           multiplier * 0.5432) for multiplier in range(8)
+                                                          ])
+    def test_inverse_circuit_with_parameters(self, qubit_device_1_wire, tol, name, expected_output, phi):
+        """Tests the inverse of supported gates that act on a single wire and are parameterized"""
+
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.RX(phi, wires=0)
+            qml.RX(phi, wires=0).inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
+
+
+    @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
+                                                           multiplier * 0.5432) for multiplier in range(8)
+                                                          ])
+    def test_inverse_circuit_with_parameters_expectation(self, qubit_device_1_wire, tol, name, expected_output, phi):
+        @qml.qnode(qubit_device_1_wire)
+        def circuit():
+            qml.RX(phi, wires=0)
+            qml.RX(phi, wires=0).inv()
+            return qml.expval(qml.PauliZ(0).inv())
+
+        assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
+
     # This test is ran against the state |0> with one Z expval
     @pytest.mark.parametrize("name,expected_output", [
         ("PauliX", -1),
@@ -882,7 +1017,6 @@ class TestDefaultQubitIntegration:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
-
     @pytest.mark.parametrize("name,expected_output", [
         ("CSWAP", [-1, -1, 1]),
     ])
@@ -900,7 +1034,6 @@ class TestDefaultQubitIntegration:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
-
 
     # This test is ran with two Z expvals
     @pytest.mark.parametrize("name,par,expected_output", [
