@@ -22,6 +22,10 @@
 
 ### Improvements
 
+* Templates integration tests are rewritten - now cover keyword/positional argument passing,
+  interfaces and combinations of templates.
+  [#409](https://github.com/XanaduAI/pennylane/pull/409)
+
 * The `QNode` class is split into a hierarchy of simpler classes.
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
 
