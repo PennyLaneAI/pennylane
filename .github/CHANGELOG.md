@@ -3,7 +3,7 @@
 ### New features since last release
 
 * Refactored templates integration tests
-  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
+  [#409](https://github.com/XanaduAI/pennylane/pull/409)
 
 * Added support for applying the inverse of an `Operation` within a circuit.
   [#377](https://github.com/XanaduAI/pennylane/pull/377)
@@ -18,7 +18,7 @@
 * The single layer templates `RandomLayer()`, `CVNeuralNetLayer()` and `StronglyEntanglingLayer()`
   have been turned into private functions `_random_layer()`, `_cv_neural_net_layer()` and
   `_strongly_entangling_layer()`. Recommended use is now via the corresponding `Layers()` templates.
-  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
+  [#413](https://github.com/XanaduAI/pennylane/pull/413)
 
 ### Improvements
 
