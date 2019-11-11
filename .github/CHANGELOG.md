@@ -1,6 +1,8 @@
 # Release 0.7.0-dev
 
 ### New features since last release
+* Added support for applying the inverse of an `Operation` within a circuit.
+  [#377](https://github.com/XanaduAI/pennylane/pull/377)
 
 * Added an `OperationRecorder()` context manager, that allows templates
   and quantum functions to be executed while recording events. The
@@ -15,6 +17,10 @@
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
   [#398](https://github.com/XanaduAI/pennylane/pull/398)
 
+* Changes have been made to accomodate the movement of the main function
+  in `pytest._internal` in pip<19.3 to `pytest._internal.main`.
+  [#404](https://github.com/XanaduAI/pennylane/pull/404)
+
 ### Documentation
 
 ### Bug fixes
@@ -23,7 +29,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Johannes Jakob Meyer
+Ville Bergholm, Oluwatobi Ogunbayo, Josh Izaac, Johannes Jakob Meyer
 
 ---
 

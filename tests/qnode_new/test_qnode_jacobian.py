@@ -35,9 +35,25 @@ def operable_mock_device_2_wires(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, '_capabilities', {"model": "qubit"})
-        m.setattr(dev, 'operations', ["RX", "RY", "CNOT"])
+        m.setattr(dev, 'capabilities', lambda self: {"model": "qubit"})
+        m.setattr(dev, 'operations', ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
         m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, 'reset', lambda self: None)
+        m.setattr(dev, 'apply', lambda self, x, y, z: None)
+        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
+        yield Device(wires=2)
+
+
+@pytest.fixture(scope="function")
+def operable_mock_CV_device_2_wires(monkeypatch):
+    """A mock instance of the abstract Device class that can support qfuncs."""
+
+    dev = Device
+    with monkeypatch.context() as m:
+        m.setattr(dev, '__abstractmethods__', frozenset())
+        m.setattr(dev, 'capabilities', lambda self: {"model": "cv"})
+        m.setattr(dev, 'operations', ["Displacement", "CubicPhase", "Squeezing", "Rotation", "Kerr", "Beamsplitter"])
+        m.setattr(dev, 'observables', ["X", "NumberOperator", "PolyXP"])
         m.setattr(dev, 'reset', lambda self: None)
         m.setattr(dev, 'apply', lambda self, x, y, z: None)
         m.setattr(dev, 'expval', lambda self, x, y, z: 1)
@@ -47,7 +63,6 @@ def operable_mock_device_2_wires(monkeypatch):
 @pytest.fixture(scope="module")
 def gaussian_dev():
     return qml.device('default.gaussian', wires=2)
-
 
 
 class TestJNodeExceptions:
@@ -209,7 +224,7 @@ class TestJNodeBestMethod:
         expected = node.jacobian([0.321], method='F')
         assert res == pytest.approx(expected, abs=tol)
 
-    def test_best_method_with_gaussian_successors_fails(self, gaussian_device_2_wires):
+    def test_best_method_with_gaussian_successors_fails(self, operable_mock_CV_device_2_wires):
         """Tests that the parameter-shift differentiation method is not allowed
         if a non-gaussian gate is between a differentiable gaussian gate and an observable."""
 
@@ -219,12 +234,12 @@ class TestJNodeBestMethod:
             qml.Kerr(0.54, wires=[1])
             return qml.expval(qml.NumberOperator(1))
 
-        node = JNode(circuit, gaussian_device_2_wires)
+        node = JNode(circuit, operable_mock_CV_device_2_wires)
 
         with pytest.raises(ValueError, match="parameter-shift gradient method cannot be used with"):
             node.jacobian([0.321], method='A')
 
-    def test_cv_gradient_methods(self, gaussian_device_2_wires):
+    def test_cv_gradient_methods(self, operable_mock_CV_device_2_wires):
         """Tests the gradient computation methods on CV circuits."""
         # we can only use the 'A' method on parameters which only affect gaussian operations
         # that are not succeeded by nongaussian operations
@@ -232,7 +247,7 @@ class TestJNodeBestMethod:
         par = [0.4, -2.3]
 
         def check_methods(qf, d):
-            q = JNode(qf, gaussian_device_2_wires)
+            q = JNode(qf, operable_mock_CV_device_2_wires)
             q._construct(par, {})
             assert q.par_to_grad_method == d
 
@@ -591,7 +606,7 @@ class TestJNodeJacobianQubit:
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
 
-    def test_gradient_gate_with_two_parameters(self, tol, gaussian_device_2_wires):
+    def test_gradient_gate_with_two_parameters(self, tol, gaussian_dev):
         """Test that a gate with two parameters yields
         correct gradients"""
         def qf(r0, phi0, r1, phi1):
@@ -599,7 +614,7 @@ class TestJNodeJacobianQubit:
             qml.Squeezing(r1, phi1, wires=[0])
             return qml.expval(qml.NumberOperator(0))
 
-        q = JNode(qf, gaussian_device_2_wires)
+        q = JNode(qf, gaussian_dev)
 
         par = [0.543, 0.123, 0.654, -0.629]
 

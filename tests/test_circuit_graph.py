@@ -166,7 +166,7 @@ class TestCircuitGraph:
     def test_layers(self, parameterized_circuit):
         """A test of a simple circuit with 3 layers and 6 parameters"""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.gaussian", wires=3)
         qnode = qml.QNode(parameterized_circuit, dev)
         qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
         circuit = qnode.circuit
@@ -184,7 +184,7 @@ class TestCircuitGraph:
     def test_iterate_layers(self, parameterized_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.gaussian", wires=3)
         qnode = qml.QNode(parameterized_circuit, dev)
         qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
         circuit = qnode.circuit

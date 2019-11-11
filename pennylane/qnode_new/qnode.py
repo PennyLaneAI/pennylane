@@ -29,7 +29,7 @@ from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
 from pennylane.utils import _flatten, unflatten, expand
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
-from pennylane.qnode import QNode as QNode_old, QuantumFunctionError
+from pennylane.qnode import QNode as QNode_old, QuantumFunctionError, decompose_queue
 
 
 def qnode(device, *, mutable=True, properties=None):
@@ -183,14 +183,12 @@ class QNode:
 
         self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
         self.output_dim = None  #: int: dimension of the QNode output vector
-        self.model = self.device.capabilities()["model"] #: str: circuit type, in {'cv', 'qubit'}
+        self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
     def __str__(self):
         """String representation"""
         detail = "<QNode: device='{}', func={}, wires={}>"
-        return detail.format(
-            self.device.short_name, self.func.__name__, self.num_wires
-        )
+        return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
     def __repr__(self):
         """REPL representation"""
@@ -392,6 +390,8 @@ class QNode:
         Raises:
             QuantumFunctionError: an error was discovered in the circuit
         """
+        # pylint: disable=too-many-branches
+
         # check the return value
         if isinstance(res, Observable):
             if res.return_type is ObservableReturnTypes.Sample:
@@ -436,12 +436,10 @@ class QNode:
                 "Each wire in the quantum circuit can only be measured once."
             )
 
-        self.ops = self.queue + list(res)
-        del self.queue
-        del self.obs_queue
-
         # True if op is a CV, False if it is a discrete variable (Identity could be either)
-        are_cvs = [isinstance(op, CV) for op in self.ops if not isinstance(op, qml.Identity)]
+        are_cvs = [
+            isinstance(op, CV) for op in self.queue + list(res) if not isinstance(op, qml.Identity)
+        ]
 
         if not all(are_cvs) and any(are_cvs):
             raise QuantumFunctionError(
@@ -450,13 +448,26 @@ class QNode:
 
         if any(are_cvs) and self.model == "qubit":
             raise QuantumFunctionError(
-                "Device {} is a qubit device; CV operations are not allowed.".format(self.device.short_name)
+                "Device {} is a qubit device; CV operations are not allowed.".format(
+                    self.device.short_name
+                )
             )
 
         if not all(are_cvs) and self.model == "cv":
             raise QuantumFunctionError(
-                "Device {} is a CV device; qubit operations are not allowed.".format(self.device.short_name)
+                "Device {} is a CV device; qubit operations are not allowed.".format(
+                    self.device.short_name
+                )
             )
+
+        queue = self.queue
+        if self.device.operations:
+            # replace operations in the queue with any decompositions if required
+            queue = decompose_queue(self.queue, self.device)
+
+        self.ops = queue + list(res)
+        del self.queue
+        del self.obs_queue
 
     def _default_args(self, kwargs):
         """Validate the quantum function arguments, apply defaults.

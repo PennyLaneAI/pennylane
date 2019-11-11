@@ -33,7 +33,9 @@ class AutogradQNode(JacobianQNode):
     evaluate = autograd.extend.primitive(JacobianQNode.evaluate)
 
     def __call__(self, *args, **kwargs):
-        args = autograd.builtins.tuple(args)  # prevents autograd boxed arguments from going through to evaluate
+        args = autograd.builtins.tuple(
+            args
+        )  # prevents autograd boxed arguments from going through to evaluate
         return self.evaluate(args, kwargs)
 
     @staticmethod
@@ -69,6 +71,7 @@ class AutogradQNode(JacobianQNode):
             return temp
 
         return gradient_product
+
 
 # define the vector-Jacobian product function for AutogradQNode.evaluate
 autograd.extend.defvjp(AutogradQNode.evaluate, AutogradQNode.QNode_vjp, argnums=[1])
