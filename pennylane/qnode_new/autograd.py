@@ -33,9 +33,8 @@ class AutogradQNode(JacobianQNode):
     evaluate = autograd.extend.primitive(JacobianQNode.evaluate)
 
     def __call__(self, *args, **kwargs):
-        args = autograd.builtins.tuple(
-            args
-        )  # prevents autograd boxed arguments from going through to evaluate
+        # prevents autograd boxed arguments from going through to evaluate
+        args = autograd.builtins.tuple(args)  # pylint: disable=no-member
         return self.evaluate(args, kwargs)
 
     @staticmethod

@@ -183,6 +183,7 @@ class JacobianQNode(QNode):
         Returns:
             array[float]: Jacobian, shape ``(n, len(wrt))``, where ``n`` is the number of outputs returned by the QNode
         """
+        # pylint: disable=too-many-branches,too-many-statements
         # arrays are not Sequences... but they ARE Iterables? FIXME decide which types we accept! cf. _flatten
         if not isinstance(args, (Sequence, np.ndarray)):
             args = (args,)
@@ -278,13 +279,15 @@ class JacobianQNode(QNode):
         self.mutable = mutable  # restore original mutability
         return grad
 
-    def _pd_finite_diff(self, idx, args, kwargs, *, y0=None, h=1e-7, order=1, **options):
+    def _pd_finite_diff(self, idx, args, kwargs, **options):
         """Partial derivative of the node using the finite difference method.
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
             args (array[float]): flattened positional arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
+
+        Keyword Args:
             y0 (array[float], None): value of the circuit at the given arguments
             h (float): step size
             order (int): finite difference method order, 1 or 2
@@ -292,6 +295,10 @@ class JacobianQNode(QNode):
         Returns:
             array[float]: partial derivative of the node
         """
+        y0 = options.get("y0", None)
+        h = options.get("h", 1e-7)
+        order = options.get("order", 1)
+
         shift_args = args.copy()
         if order == 1:
             # shift the parameter by h
@@ -335,7 +342,7 @@ class JacobianQNode(QNode):
             qp = qp + qp.T
         return qml.expval(qml.PolyXP(qp, wires=range(w), do_queue=False))
 
-    def _pd_parameter_shift(self, idx, args, kwargs, *, force_order2=False, **options):
+    def _pd_parameter_shift(self, idx, args, kwargs, **options):
         """Partial derivative of the node using the analytic parameter shift method.
 
         The 2nd order method can handle also first order observables, but
@@ -346,11 +353,15 @@ class JacobianQNode(QNode):
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
             args (array[float]): flattened positional arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
+
+        Keyword Args:
             force_order2 (bool): iff True, use the order-2 method even if not necessary
 
         Returns:
             array[float]: partial derivative of the node
         """
+        force_order2 = options.get("force_order2", False)
+
         n = self.num_variables
         w = self.num_wires
         pd = 0.0
@@ -471,16 +482,15 @@ class JacobianQNode(QNode):
                 # with itself, to get a square symmetric matrix representing
                 # the square of the observable
                 A = np.outer(A, A)
-                new = qml.expval(qml.ops.PolyXP(A, w, do_queue=False))
+                new = qml.expval(qml.PolyXP(A, w, do_queue=False))
 
             # replace the var(A) observable with <A^2>
             self.circuit.update_node(e, new)
             new_observables.append(new)
 
         # calculate the analytic derivatives of the <A^2> observables
-        pdA2 = self._pd_parameter_shift(
-            idx, args, kwargs, force_order2=(self.model == "cv")
-        )  # FIXME the force_order2 use here is convoluted and could be better
+        # FIXME the force_order2 use here is convoluted and could be better
+        pdA2 = self._pd_parameter_shift(idx, args, kwargs, force_order2=(self.model == "cv"))
 
         # restore the original observables, but convert their return types to expectation
         for e, new in zip(var_observables, new_observables):
