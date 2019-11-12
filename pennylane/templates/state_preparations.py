@@ -263,7 +263,7 @@ def _get_alpha_y(a, n, k):
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
-    by Möttönen et al. :cite:`mottonen2005transformation`. The state is prepared via a sequence
+    by Möttönen et al. (Quantum Info. Comput., 2005). The state is prepared via a sequence
     of "uniformly controlled rotations". A uniformly controlled rotation on a target qubit is
     composed from all possible controlled rotations on said qubit and can be used to address individual
     elements of the state vector. In the work of Mottonen et al., the inverse of their state preparation
