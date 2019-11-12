@@ -16,37 +16,17 @@ Experimental simulator plugin based on tensor network contractions
 """
 
 import warnings
+from itertools import product
 
 import numpy as np
 import tensornetwork as tn
-from itertools import product
 
 from pennylane import Device
-from pennylane.plugins.default_qubit import (
-    X,
-    Y,
-    Z,
-    H,
-    CNOT,
-    SWAP,
-    CZ,
-    S,
-    T,
-    CSWAP,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    Rot3,
-    CRotx,
-    CRoty,
-    CRotz,
-    CRot3,
-    hermitian,
-    identity,
-    unitary,
-    spectral_decomposition,
-)
+from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, CRot3,
+                                             CRotx, CRoty, CRotz, H, Rot3,
+                                             Rotx, Roty, Rotz, Rphi, S, T, X,
+                                             Y, Z, hermitian, identity,
+                                             spectral_decomposition, unitary)
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -271,7 +251,7 @@ class TensorNetwork(Device):
 
         joint_probabilities = [] #[(outcome, 0.0) for idx, outcome in enumerate(joint_outcomes)]
 
-        for idx, projs in enumerate(projector_tensor_products):
+        for projs in projector_tensor_products:
             obs_nodes = []
             obs_wires = []
             for proj, wire in projs:
