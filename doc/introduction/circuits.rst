@@ -165,3 +165,83 @@ For example:
         return qml.expval(qml.PauliZ(1))
 
     result = circuit(0.543)
+
+
+Quantum circuits from other frameworks
+--------------------------------------
+
+PennyLane now supports creating customized PennyLane templates from quantum
+circuit objects using supported plugins. Currently, QuantumCircuit objects from
+Qiskit, QASM strings or QASM files can be loaded by using the PennyLane-Qiskit
+plugin.
+
+Objects for quantum circuits can be loaded outside or directly inside of a
+:class:`~.pennylane.QNode`. Circuits that contain unbound parameters are also
+supported. Parameter binding may happen by passing a dictionary containing the
+parameter-value pairs.
+
+Once a PennyLane template has been created from such a quantum circuit, it can
+be used similarly to other templates in PennyLane. One important thing to note
+is that custom templates (similar to pre-defined templates) need to be called
+with a specific :class:`~.pennylane.QNode` object.
+
+.. note::
+    Certain instructions that are specific to the external frameworks might be
+    ignored when loading an object for a quantum circuit. A warning message is
+    created for such instructions.
+
+The following is an example of loading and calling a ``QuantumCircuit`` object
+while using the :class:`~.pennylane.QNode` decorator:
+
+.. code-block:: python
+
+    from qiskit import QuantumCircuit
+    from qiskit.circuit import Parameter
+    import numpy as np
+
+    dev = qml.device('default.qubit', wires=2)
+
+    theta = Parameter('θ')
+
+    qc = QuantumCircuit(2)
+    qc.rz(theta, [0])
+    qc.rx(theta, [0])
+    qc.cx(0, 1)
+
+
+    @qml.qnode(dev)
+    def quantum_circuit_with_loaded_subcircuit(x):
+        qml.load(qc, name='qiskit')({theta: x})
+        return qml.expval(qml.PauliZ(0))
+
+
+    angle = np.pi/2
+    result = quantum_circuit_with_loaded_subcircuit(angle)
+
+Users can also reuse the same custom template. The following is an example for
+this, in which a quantum circuit is loaded from a ``QASM`` string:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    dev = qml.device('default.qubit', wires=2)
+
+    hadamard_qasm = 'OPENQASM 2.0;' \
+                    'include "qelib1.inc";' \
+                    'qreg q[1];' \
+                    'h q[0];'
+
+    apply_hadamard = qml.from_qasm(hadamard_qasm)
+
+
+    @qml.qnode(dev)
+    def circuit_with_hadamards():
+        apply_hadamard(wires=[0])
+        apply_hadamard(wires=[1])
+        qml.Hadamard(wires=[1])
+        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+
+    result = circuit_with_hadamards()
+
