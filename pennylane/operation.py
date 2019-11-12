@@ -209,7 +209,7 @@ class Operator(abc.ABC):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        args (tuple[float, int, array, Variable]): operator parameters
+        params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -220,7 +220,6 @@ class Operator(abc.ABC):
             applicable `QNode._current_context`. If no context is
             available, this argument is ignored.
     """
-
     @property
     @abc.abstractmethod
     def num_params(self):
@@ -244,7 +243,6 @@ class Operator(abc.ABC):
         * ``'A'``: arrays of real or complex values.
         * ``None``: if there are no parameters.
         """
-
     @property
     def name(self):
         """String for the name of the operator.
@@ -255,7 +253,7 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
-    def __init__(self, *args, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__   #: str: name of the operator
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
@@ -265,9 +263,6 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
-        # extract the arguments
-        params = args
-
         if len(params) != self.num_params:
             raise ValueError("{}: wrong number of parameters. "
                              "{} parameters passed, {} expected.".format(self.name, params, self.num_params))
@@ -275,14 +270,16 @@ class Operator(abc.ABC):
         # check the validity of the params
         for p in params:
             self.check_domain(p)
-        self.params = list(params)  #: list[Any]: parameters of the operation
+        self.params = list(params)  #: list[Any]: parameters of the operator
 
         # apply the operator on the given wires
         if not isinstance(wires, Sequence):
             wires = [wires]
         self._check_wires(wires)
-        self._wires = wires  #: tuple[int]: wires on which the operation acts
+        self._wires = wires  #: tuple[int]: wires on which the operator acts
 
+        if QNode._current_context is None:
+            do_queue = False
         if do_queue:
             self.queue()
 
@@ -291,7 +288,7 @@ class Operator(abc.ABC):
         return  "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
 
     def _check_wires(self, wires):
-        """Check the validity of the operation wires.
+        """Check the validity of the operator wires.
 
         Args:
             wires (Sequence[Any]): wires to check
@@ -380,7 +377,7 @@ class Operator(abc.ABC):
         return _unflatten(temp_val, self.params)[0]
 
     def queue(self):
-        """Append the operation to a QNode queue."""
+        """Append the operator to a QNode queue."""
 
         QNode._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
@@ -412,7 +409,7 @@ class Operation(Operator):
     * :attr:`~.Operation.generator`
 
     Args:
-        args (tuple[float, int, array, Variable]): operation parameters
+        params (tuple[float, int, array, Variable]): operation parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -423,7 +420,6 @@ class Operation(Operator):
             outside of a QNode context.
     """
     # pylint: disable=abstract-method
-    _grad_recipe = None
     string_for_inverse = ".inv"
 
     @property
@@ -438,9 +434,8 @@ class Operation(Operator):
         """
         return None if self.num_params == 0 else 'F'
 
-    @property
-    def grad_recipe(self):
-        r"""Gradient recipe for the analytic differentiation method.
+    grad_recipe = None
+    r"""list[tuple[float]] or None: Gradient recipe for the analytic differentiation method.
 
         This is a list with one tuple per operation parameter. For parameter
         :math:`k`, the tuple is of the form :math:`(c_k, s_k)`, resulting in
@@ -448,10 +443,29 @@ class Operation(Operator):
 
         .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
-        If this property returns ``None``, the default gradient recipe
+        If ``None``, the default gradient recipe
         :math:`(c_k, s_k)=(1/2, \pi/2)` is assumed for every parameter.
+    """
+
+    def get_parameter_shift(self, idx):
+        """Multiplier and shift for the given parameter, based on its gradient recipe.
+
+        Args:
+            idx (int): parameter index
+
+        Returns:
+            float, float: multiplier, shift
         """
-        return self._grad_recipe
+        # get the gradient recipe for this parameter
+        recipe = self.grad_recipe[idx]
+        # internal multiplier in the Variable
+        var_mult = self.params[idx].mult
+
+        multiplier = 0.5 if recipe is None else recipe[0]
+        multiplier *= var_mult
+        shift = np.pi / 2 if recipe is None else recipe[1]
+        shift /= var_mult
+        return multiplier, shift
 
     @property
     def generator(self):
@@ -494,11 +508,6 @@ class Operation(Operator):
         quantum operations."""
         raise NotImplementedError
 
-    @grad_recipe.setter
-    def grad_recipe(self, value):
-        """Setter for the grad_recipe property"""
-        self._grad_recipe = value
-
     def inv(self):
         """Inverts the operation, such that the inverse will
         be used for the computations by the specific device.
@@ -527,7 +536,7 @@ class Operation(Operator):
         """
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
-    def __init__(self, *args, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True):
 
         self._inverse = False
 
@@ -547,7 +556,7 @@ class Operation(Operator):
         else:
             assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
 
-        super().__init__(*args, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
 #=============================================================================
@@ -568,7 +577,7 @@ class Observable(Operator):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        args (tuple[float, int, array, Variable]): observable parameters
+        params (tuple[float, int, array, Variable]): observable parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
@@ -582,13 +591,11 @@ class Observable(Operator):
     # pylint: disable=abstract-method
     return_type = None
 
-    def __init__(self, *args, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True):
         # extract the arguments
-        if wires is not None:
-            params = args
-        else:
-            params = args[:-1]
-            wires = args[-1]
+        if wires is None:
+            wires = params[-1]
+            params = params[:-1]
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
@@ -889,12 +896,7 @@ class CVOperation(CV, Operation):
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
-        # not defined?
         p = self.parameters
-
-        if self._heisenberg_rep(p) is None:
-            raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
-
         if inverse:
             if self.par_domain == 'A':
                 # TODO: expand this for the new par domain class, for non-unitary matrices.
@@ -902,6 +904,10 @@ class CVOperation(CV, Operation):
             else:
                 p[0] = -p[0]  # negate first parameter
         U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
+
+        # not defined?
+        if U is None:
+            raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
 
         return self.heisenberg_expand(U, num_wires)
 
