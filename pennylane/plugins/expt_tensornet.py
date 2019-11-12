@@ -19,6 +19,7 @@ import warnings
 
 import numpy as np
 import tensornetwork as tn
+from itertools import product
 
 from pennylane import Device
 from pennylane.plugins.default_qubit import (
@@ -44,6 +45,7 @@ from pennylane.plugins.default_qubit import (
     hermitian,
     identity,
     unitary,
+    spectral_decomposition,
 )
 
 # tolerance for numerical errors
@@ -102,8 +104,8 @@ class TensorNetwork(Device):
         "Identity": identity,
     }
 
-    def __init__(self, wires):
-        super().__init__(wires, shots=1)
+    def __init__(self, wires, shots=1000):
+        super().__init__(wires, shots)
         self.eng = None
         self.analytic = True
         self._nodes = []
@@ -245,6 +247,40 @@ class TensorNetwork(Device):
         obs_nodes_for_squares = self.create_nodes_from_tensors(tensors_of_squared_matrices, wires, observable)
 
         return self.ev(obs_nodes_for_squares, wires) - self.ev(obs_nodes, wires)**2
+
+    def sample(self, observable, wires, par):
+
+        if not isinstance(observable, list):
+            observable, wires, par = [observable], [wires], [par]
+
+        matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
+
+        decompositions = [spectral_decomposition(A) for A in matrices]
+        eigenvalues, projector_groups = list(zip(*decompositions))
+        eigenvalues = list(eigenvalues)
+
+        projectors_with_wires = [[(proj, wires[idx]) for proj in proj_group]
+                                 for idx, proj_group in enumerate(projector_groups)]
+
+        # TODO: check that the ordering is reserved for sure
+        joint_outcomes = list(product(*eigenvalues))
+        projector_tensor_products = list(product(*projectors_with_wires))
+
+        p = {outcome: 0.0 for outcome in joint_outcomes}
+
+        for idx, projs in enumerate(projector_tensor_products):
+            obs_nodes = []
+            local_wires = []
+            for proj, wire in projs:
+
+                tensor = proj.reshape([2] * len(wire) * 2)
+                obs_nodes.append(self._add_node(tensor, wire))
+                local_wires.append(wire)
+
+            p[joint_outcomes[idx]] += self.ev(obs_nodes, local_wires)
+
+        outcomes = np.array([np.prod(p) for p in joint_outcomes])
+        return np.random.choice(outcomes, self.shots, p=list(p.values()))
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
