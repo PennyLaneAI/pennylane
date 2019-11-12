@@ -209,7 +209,7 @@ def _get_alpha_z(omega, n, k):
         k (int): current qubit
 
     Returns:
-        a sparse vector representing :math:`\alpha^z_k`
+        scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^z_k`
     """
     alpha_z_k = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
 
