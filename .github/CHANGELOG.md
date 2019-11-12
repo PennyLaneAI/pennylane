@@ -14,7 +14,7 @@
 
 * Initialization functions now return single array of weights per function. Utility for multi-weight templates
   `Interferometer()` and `CVNeuralNetLayers()` are provided.
-  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
+  [#412](https://github.com/XanaduAI/pennylane/pull/412)
 
 ### Improvements
 
