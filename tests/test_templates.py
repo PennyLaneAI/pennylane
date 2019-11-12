@@ -18,18 +18,18 @@ combining templates, using positional and keyword arguments, and using different
 
 New tests are added as follows:
 
-* When adding a new interface, try to import it and extend the fixture ``interfaces``.
+* When adding a new interface, try to import it and extend the fixture ``interfaces``. Add interface to
+  TestGradientIntegration tests.
 
 * When adding a new template, extend the fixtures ``qubit_const`` or ``cv_const`` by a *list* of arguments to the
-template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
+  template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
 
 * When adding a new parameter initialization function, extend the fixtures ``qubit_func`` or ``cv_func`` by the
-function.
+  function.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from collections import OrderedDict
 import pennylane as qml
 from pennylane.templates.layers import Interferometer
 from pennylane.templates.layers import (CVNeuralNetLayers,
@@ -51,6 +51,7 @@ interfaces = [('numpy', np.array)]
 
 try:
     import torch
+    from torch.autograd import Variable as TorchVariable
     interfaces.append(('torch', torch.tensor))
 except ImportError as e:
     pass
@@ -62,24 +63,27 @@ try:
         print(tf.__version__)
         import tensorflow.contrib.eager as tfe
         tf.enable_eager_execution()
-        Variable = tfe.Variable
+        TFVariable = tfe.Variable
     else:
-        from tensorflow import Variable
-    interfaces.append(('tf', Variable))
+        from tensorflow import Variable as TFVariable
+    interfaces.append(('tf', lambda t: TFVariable(t, dtype=tf.float64)))
 except ImportError as e:
     pass
 
 #########################################
 # Templates
 
+# qubit templates and intialization functions
 qubit_func = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
               (StronglyEntanglingLayers, strong_ent_layers_normal),
               (RandomLayers, random_layers_uniform),
               (RandomLayers, random_layers_normal)]
 
+# cv templates and intialization functions
 cv_func = [(CVNeuralNetLayers, cvqnn_layers_uniform),
            (CVNeuralNetLayers, cvqnn_layers_normal)]
 
+# qubit templates and constant inputs
 qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                            [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]]),
                (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]]),
@@ -88,6 +92,7 @@ qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.
                (AngleEmbedding, [[1., 2.]])
               ]
 
+# cv templates and constant inputs
 cv_const = [(DisplacementEmbedding, [[1., 2.]]),
             (SqueezingEmbedding, [[1., 2.]]),
             (CVNeuralNetLayers, [[[2.31], [1.22]],
@@ -103,6 +108,31 @@ cv_const = [(DisplacementEmbedding, [[1., 2.]]),
                                  [[0.09,  0.03], [-0.14,  0.04]]
                                  ]),
             (Interferometer, [[2.31], [3.49], [0.98, 1.54]])
+            ]
+
+# qubit templates, constant inputs, and ``argnum`` argument of qml.grad
+qubit_grad = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
+                                           [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], [0]),
+               (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], [0]),
+               (AngleEmbedding, [[1., 2.]], [0])
+              ]
+
+# cv templates, constant inputs, and ``argnum`` argument of qml.grad
+cv_grad = [(DisplacementEmbedding, [[1., 2.]], [0]),
+            (SqueezingEmbedding, [[1., 2.]], [0]),
+            (CVNeuralNetLayers, [[[2.31], [1.22]],
+                                 [[3.47], [2.01]],
+                                 [[0.93, 1.58], [5.07, 4.82]],
+                                 [[0.21,  0.12], [-0.09, 0.04]],
+                                 [[4.76, 6.08], [6.09, 6.22]],
+                                 [[4.83], [1.70]],
+                                 [[4.74], [5.39]],
+                                 [[0.88, 0.62], [1.09, 3.02]],
+                                 [[-0.01, -0.05], [0.08, -0.19]],
+                                 [[1.89, 3.59], [1.49, 3.71]],
+                                 [[0.09,  0.03], [-0.14,  0.04]]
+                                 ], list(range(11))),
+            (Interferometer, [[2.31], [3.49], [0.98, 1.54]], [0, 1, 2])
             ]
 
 #########################################
@@ -257,4 +287,35 @@ class TestInitializationIntegration:
             template(*inp_, wires=range(n_subsystems))
             return qml.expval(qml.Identity(0))
         circuit(inp)
+
+
+class TestGradientIntegration:
+    """Tests that gradients of circuits with templates can be computed."""
+
+    @pytest.mark.parametrize("template, inpts, argnm", qubit_grad)
+    @pytest.mark.parametrize("intrfc, to_var", interfaces)
+    def test_integration_qubit_grad(self, template, inpts, argnm, intrfc, to_var):
+        """Checks integration of qubit templates using positional arguments."""
+        inpts = [to_var(i) for i in inpts]
+        dev = qml.device('default.qubit', wires=2)
+        @qml.qnode(dev, interface=intrfc)
+        def circuit(*inp_):
+            template(*inp_, wires=range(2))
+            return qml.expval(qml.Identity(0))
+
+        if intrfc == 'numpy':
+            grd = qml.grad(circuit, argnum=argnm)
+            res_numpy = grd(*inpts)
+
+        if intrfc == 'torch':
+            for a in argnm:
+                inpts[a] = TorchVariable(inpts[a], requires_grad=True)
+            res = circuit(*inpts)
+            res.backward()
+            res_torch = [inpts[a].grad.numpy() for a in argnm]
+
+        if intrfc == 'tf':
+            with tf.GradientTape() as tape:
+                res_tf = [tape.gradient(circuit, inpts[a]) for a in argnm]
+
 

@@ -72,16 +72,14 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
     Raises:
         ValueError: if less than 2 wires were specified
     """
-    if len(wires) < 2:
-        raise ValueError("StronglyEntanglingLayer requires at least two wires or subsystems to apply "
-                         "the imprimitive gates.")
 
     for i, wire in enumerate(wires):
         Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
     num_wires = len(wires)
-    for i in range(num_wires):
-        imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
+    if num_wires > 1:
+        for i in range(num_wires):
+            imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
 
 
 def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
