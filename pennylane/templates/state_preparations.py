@@ -146,7 +146,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     that is uniformly controlled by the control qubits.
 
     Args:
-        gate (qml.Operation): gate to be applied, needs to have exactly
+        gate (~.Operation): gate to be applied, needs to have exactly
             one parameter
         alpha (array[float]): alpha parameters
         control_wires (array[int]): wires that act as control
@@ -209,7 +209,7 @@ def _get_alpha_z(omega, n, k):
         k (int): current qubit
 
     Returns:
-        a sparse vector representing :math:`\alpha^z_k`
+        scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^z_k`
     """
     alpha_z_k = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
 
