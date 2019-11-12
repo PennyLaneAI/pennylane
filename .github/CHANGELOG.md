@@ -21,6 +21,10 @@
   in `pytest._internal` in pip<19.3 to `pytest._internal.main`.
   [#404](https://github.com/XanaduAI/pennylane/pull/404)
 
+* Added the templates `BasisStatePreparation` and `MottonenStatePreparation` that use
+  gates to prepare a basis state and an arbitrary state respectively.
+  [#336](https://github.com/XanaduAI/pennylane/pull/336)
+
 ### Documentation
 
 ### Bug fixes
@@ -113,6 +117,7 @@ Ville Bergholm, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva
 * Tensor observables are now supported within the `expval`,
   `var`, and `sample` functions, by using the `@` operator.
   [#267](https://github.com/XanaduAI/pennylane/pull/267)
+
 
 ### Breaking changes
 
