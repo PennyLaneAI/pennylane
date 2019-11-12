@@ -21,5 +21,10 @@ This package contains the new-style QNodes.
 
     qnode
     jacobian
-    autograd
+    qubit_parameter_shift
+    cv_parameter_shift
 """
+from .qnode import QNode, QuantumFunctionError
+from .jacobian import JacobianQNode
+from .qubit_parameter_shift import QubitQNode
+from .cv_parameter_shift import CVQNode
