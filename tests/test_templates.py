@@ -66,7 +66,7 @@ try:
         TFVariable = tfe.Variable
     else:
         from tensorflow import Variable as TFVariable
-    interfaces.append(('tf', lambda t: TFVariable(t, dtype=tf.float64)))
+    interfaces.append(('tf', TFVariable))
 except ImportError as e:
     pass
 
@@ -303,10 +303,12 @@ class TestGradientIntegration:
             template(*inp_, wires=range(2))
             return qml.expval(qml.Identity(0))
 
+        # Check gradients in numpy interface
         if intrfc == 'numpy':
             grd = qml.grad(circuit, argnum=argnm)
             res_numpy = grd(*inpts)
 
+        # Check gradients in torch interface
         if intrfc == 'torch':
             for a in argnm:
                 inpts[a] = TorchVariable(inpts[a], requires_grad=True)
@@ -314,8 +316,39 @@ class TestGradientIntegration:
             res.backward()
             res_torch = [inpts[a].grad.numpy() for a in argnm]
 
+        # Check gradients in tf interface
         if intrfc == 'tf':
+            grad_inpts = [inpts[a] for a in argnm]
             with tf.GradientTape() as tape:
-                res_tf = [tape.gradient(circuit, inpts[a]) for a in argnm]
+                loss = circuit(*inpts)
+                res_tf = tape.gradient(loss, grad_inpts)
 
+    @pytest.mark.parametrize("template, inpts, argnm", cv_grad)
+    @pytest.mark.parametrize("intrfc, to_var", interfaces)
+    def test_integration_cv_grad(self, gaussian_device_2_wires, template, inpts, argnm, intrfc, to_var):
+        """Checks integration of qubit templates using positional arguments."""
+        inpts = [to_var(i) for i in inpts]
+        @qml.qnode(gaussian_device_2_wires, interface=intrfc)
+        def circuit(*inp_):
+            template(*inp_, wires=range(2))
+            return qml.expval(qml.Identity(0))
 
+        # Check gradients in numpy interface
+        if intrfc == 'numpy':
+            grd = qml.grad(circuit, argnum=argnm)
+            res_numpy = grd(*inpts)
+
+        # Check gradients in torch interface
+        if intrfc == 'torch':
+            for a in argnm:
+                inpts[a] = TorchVariable(inpts[a], requires_grad=True)
+            res = circuit(*inpts)
+            res.backward()
+            res_torch = [inpts[a].grad.numpy() for a in argnm]
+
+        # Check gradients in tf interface
+        if intrfc == 'tf':
+            grad_inpts = [inpts[a] for a in argnm]
+            with tf.GradientTape() as tape:
+                loss = circuit(*inpts)
+                res_tf = tape.gradient(loss, grad_inpts)
