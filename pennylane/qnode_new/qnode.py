@@ -23,9 +23,8 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.measure import var
 from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
-from pennylane.utils import _flatten, unflatten, expand
+from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
 from pennylane.qnode import QNode as QNode_old, QuantumFunctionError, decompose_queue

@@ -37,6 +37,7 @@ def to_autograd(qnode):
 
         @property
         def interface(self):
+            """str, None: automatic differentiation interface used by the node, if any"""
             return "autograd"
 
         # mark the evaluate method as an Autograd primitive
