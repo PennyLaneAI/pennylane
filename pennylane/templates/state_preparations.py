@@ -53,14 +53,13 @@ def gray_code(rank):
         if rank <= 0:
             return
 
-        else:
-            for i in range(k - 1, -1, -1):
-                char = "1" + g[i]
-                g.append(char)
-            for i in range(k - 1, -1, -1):
-                g[i] = "0" + g[i]
+        for i in range(k - 1, -1, -1):
+            char = "1" + g[i]
+            g.append(char)
+        for i in range(k - 1, -1, -1):
+            g[i] = "0" + g[i]
 
-            gray_code_recurse(g, rank - 1)
+        gray_code_recurse(g, rank - 1)
 
     g = ["0", "1"]
     gray_code_recurse(g, rank - 1)
