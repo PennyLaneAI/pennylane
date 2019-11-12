@@ -118,6 +118,24 @@ def skip_if_no_torch_support(torch_support):
         pytest.skip("Skipped, no torch support")
 
 
+@pytest.fixture(scope='session')
+def pennylane_qiskit_support():
+    """Boolean fixture for PennyLane-Qiskit_support"""
+    try:
+        import pennylane_qiskit
+        pennylane_qiskit_support = True
+    except ImportError as e:
+        pennylane_qiskit_support = False
+
+    return pennylane_qiskit_support
+
+
+@pytest.fixture()
+def skip_if_no_pennylane_qiskit_support(pennylane_qiskit_support):
+    if not pennylane_qiskit_support:
+        pytest.skip("Skipped, no pennylane-qiskit support")
+
+
 @pytest.fixture(scope='module')
 def tf_support():
     """Boolean fixture for TensorFlow support"""

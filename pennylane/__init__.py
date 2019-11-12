@@ -136,15 +136,15 @@ def device(name, *args, **kwargs):
     )
 
 
-def load(name: str, quantum_circuit_object):
+def load(quantum_circuit_object, name: str):
     """load(name, quantum_circuit_object)
     Load a plugin :func:`~.load` which can then be used to convert objects of
     quantum circuits from other frameworks.
 
     Args:
-        name (str): the name of the plugin to convert from
         quantum_circuit_object: the quantum circuit that will be converted
             to a PennyLane template
+        name (str): the name of the plugin to convert from
 
     Returns:
         _function: the PennyLane template created from the quantum circuit
@@ -166,18 +166,31 @@ def load(name: str, quantum_circuit_object):
 
 
 def from_qasm(quantum_circuit: str):
-    """load(name, quantum_circuit)
+    """from_qasm(quantum_circuit)
     Loads quantum circuits defined in QASM by using the converter in the
     PennyLane-Qiskit plugin.
 
     Args:
-        quantum_circuit (str): the name for the QASM file or string
+        quantum_circuit (str): the name for the QASM string
 
     Returns:
-        _function: the PennyLane template created from the quantum circuit
-            object
+        _function: the PennyLane template created based on the QASM string
     """
-    return load('qasm', quantum_circuit)
+    return load(quantum_circuit, name='qasm')
+
+
+def from_qasm_file(qasm_filename: str):
+    """from_qasm_file(qasm_filename)
+    Loads quantum circuits defined in QASM by using the converter in the
+    PennyLane-Qiskit plugin.
+
+    Args:
+        qasm_filename (str): the name for the QASM file
+
+    Returns:
+        _function: the PennyLane template created based on the QASM file
+    """
+    return load(qasm_filename, name='qasm_file')
 
 
 def grad(func, argnum):
