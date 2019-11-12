@@ -146,7 +146,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     that is uniformly controlled by the control qubits.
 
     Args:
-        gate (qml.Operation): gate to be applied, needs to have exactly
+        gate (~.Operation): gate to be applied, needs to have exactly
             one parameter
         alpha (array[float]): alpha parameters
         control_wires (array[int]): wires that act as control
