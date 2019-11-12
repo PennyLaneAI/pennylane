@@ -16,6 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 import pytest
 import numpy as np
+from unittest.mock import patch
 
 import pennylane as qml
 from pennylane.operation import Tensor
@@ -777,36 +778,32 @@ class TestDecomposition:
         assert rec.queue[2].name == "PhaseShift"
         assert rec.queue[2].parameters == [phi]
 
-    def test_basis_state_decomposition(self):
-        """Test the basis state decomposition is correct"""
+    def test_basis_state_decomposition(self, monkeypatch):
+        """Test the decomposition of BasisState calls the
+        BasisStatePreparation template"""
         n = np.array([1, 0, 1, 1])
+        wires=[0, 1, 2, 3]
+        call_args = []
 
-        with qml.utils.OperationRecorder() as rec:
-            qml.BasisState.decomposition(n, wires=[0, 1, 2, 3])
+        # We have to patch BasisStatePreparation where it is loaded
+        monkeypatch.setattr(qml.ops.qubit, "BasisStatePreparation", lambda *args: call_args.append(args))
+        qml.BasisState.decomposition(n, wires=wires)
 
-        assert len(rec.queue) == 3
+        assert len(call_args) == 1
+        assert np.array_equal(call_args[0][0], n)
+        assert np.array_equal(call_args[0][1], wires)
 
-        assert rec.queue[0].name == "PauliX"
-        assert rec.queue[0].wires == [0]
-
-        assert rec.queue[1].name == "PauliX"
-        assert rec.queue[1].wires == [2]
-
-        assert rec.queue[2].name == "PauliX"
-        assert rec.queue[2].wires == [3]
-
-    def test_qubit_state_vector_decomposition(self):
-        """Test the decomposition of QubitStateVector is equivalent
-        to the MottonenStatePreparation template"""
+    def test_qubit_state_vector_decomposition(self, monkeypatch):
+        """Test the decomposition of QubitStateVector calls the
+        MottonenStatePreparation template"""
         state = np.array([1/2, 1j/np.sqrt(2), 0, -1/2])
+        wires = [0, 1]
+        call_args = []
 
-        with qml.utils.OperationRecorder() as rec1:
-            qml.QubitStateVector.decomposition(state, wires=[0, 1])
+        # We have to patch MottonenStatePreparation where it is loaded
+        monkeypatch.setattr(qml.ops.qubit, "MottonenStatePreparation", lambda *args: call_args.append(args))
+        qml.QubitStateVector.decomposition(state, wires=wires)
 
-        with qml.utils.OperationRecorder() as rec2:
-            qml.templates.state_preparations.MottonenStatePreparation(state, wires=[0, 1])
-
-        for op1, op2 in zip(rec1.queue, rec2.queue):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert op1.params == op2.params
+        assert len(call_args) == 1
+        assert np.array_equal(call_args[0][0], state)
+        assert np.array_equal(call_args[0][1], wires)
