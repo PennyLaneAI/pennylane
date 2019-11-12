@@ -24,7 +24,7 @@ requirements = [
     "autograd",
     "toml",
     "appdirs",
-    "semantic_version==2.6"
+    "semantic_version==2.6",
 ]
 
 info = {
@@ -40,7 +40,8 @@ info = {
                     'pennylane.templates',
                     'pennylane.plugins',
                     'pennylane.optimize',
-                    'pennylane.interfaces'
+                    'pennylane.interfaces',
+                    'pennylane.vqe'
                 ],
     'entry_points': {
         'pennylane.plugins': [

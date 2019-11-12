@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module provides quantum circuit architectures that can embed features into a quantum state.
+Embeddings are templates that take features and encode them into a quantum state.
+They can optionally be repeated, and may contain trainable parameters. Embeddings are typically
+used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
@@ -253,3 +255,8 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             Displacement(c, f, wires=wires[idx])
         else:
             raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))
+
+
+embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "SqueezingEmbedding", "DisplacementEmbedding"}
+
+__all__ = list(embeddings)
