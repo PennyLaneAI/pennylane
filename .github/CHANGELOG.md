@@ -9,6 +9,10 @@
   recorder can be used with and without QNodes as a debugging utility.
   [#388](https://github.com/XanaduAI/pennylane/pull/388)
 
+* Operations can now specify a decomposition that is used when the desired operation
+  is not supported on the target device.
+  [#396](https://github.com/XanaduAI/pennylane/pull/396)
+
 ### Breaking changes
 
 ### Improvements
@@ -17,6 +21,10 @@
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
   [#398](https://github.com/XanaduAI/pennylane/pull/398)
 
+* Added the gates U1, U2 and U3 parametrizing arbitrary unitaries on 1, 2 and 3
+  qubits and the Toffoli gate to the set of qubit operations.
+  [#396](https://github.com/XanaduAI/pennylane/pull/396)
+
 * Changes have been made to accomodate the movement of the main function
   in `pytest._internal` in pip<19.3 to `pytest._internal.main`.
   [#404](https://github.com/XanaduAI/pennylane/pull/404)
@@ -24,6 +32,10 @@
 * Added the templates `BasisStatePreparation` and `MottonenStatePreparation` that use
   gates to prepare a basis state and an arbitrary state respectively.
   [#336](https://github.com/XanaduAI/pennylane/pull/336)
+
+* Added decompositions for `BasisState` and `QubitStateVector` based on state
+  preparation templates.
+  [#414](https://github.com/XanaduAI/pennylane/pull/414)
 
 ### Documentation
 
