@@ -41,15 +41,31 @@ import numpy as np
 import pennylane as qml
 
 # pylint: disable=len-as-condition,arguments-out-of-order
-
-
 def gray_code(rank):
     """Generates the Gray code of given rank.
 
     Args:
         rank (int): rank of the Gray code (i.e. number of bits)
     """
-    return ["{0:0{1}b}".format(i ^ (i >> 1), rank) for i in range(0, 1 << rank)]
+
+    def gray_code_recurse(g, rank):
+        k = len(g)
+        if rank <= 0:
+            return
+
+        else:
+            for i in range(k - 1, -1, -1):
+                char = "1" + g[i]
+                g.append(char)
+            for i in range(k - 1, -1, -1):
+                g[i] = "0" + g[i]
+
+            gray_code_recurse(g, n - 1)
+
+    g = ["0", "1"]
+    gray_code_recurse(g, rank - 1)
+
+    return g
 
 
 def BasisStatePreparation(basis_state, wires):
