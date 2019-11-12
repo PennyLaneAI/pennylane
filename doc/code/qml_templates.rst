@@ -28,3 +28,10 @@ Subroutines
 .. automodapi:: pennylane.templates.subroutines
     :no-heading:
     :include-all-objects:
+
+State preperations
+------------------
+
+.. automodapi:: pennylane.templates.state_preparations
+    :no-heading:
+    :include-all-objects:
