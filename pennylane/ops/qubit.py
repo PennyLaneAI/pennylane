@@ -19,6 +19,8 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane.operation import All, Any, Observable, Operation
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.utils import OperationRecorder
 
 
 class Hadamard(Observable, Operation):
@@ -747,12 +749,10 @@ class BasisState(Operation):
 
     @staticmethod
     def decomposition(n, wires=None):
-        decomp_ops = []
-        for w, p in enumerate(n.flatten()):
-            if p == 1:
-                decomp_ops.append(PauliX(wires=wires[w]))
+        with OperationRecorder() as rec:
+            BasisStatePreparation(n, wires)
 
-        return decomp_ops
+        return rec.queue
 
 
 class QubitStateVector(Operation):
@@ -773,6 +773,13 @@ class QubitStateVector(Operation):
     num_wires = All
     par_domain = "A"
     grad_method = None
+
+    @staticmethod
+    def decomposition(state, wires=None):
+        with OperationRecorder() as rec:
+            MottonenStatePreparation(state, wires)
+
+        return rec.queue
 
 
 # =============================================================================
