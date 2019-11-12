@@ -769,7 +769,7 @@ class QubitStateVector(Operation):
 
         If the ``BasisState`` operation is not supported natively on the
         target device, PennyLane will attempt to decompose the operation
-        using the method developed by Möttönen et al. (Quantum Info. Comput., 
+        using the method developed by Möttönen et al. (Quantum Info. Comput.,
         2005).
 
     Args:
