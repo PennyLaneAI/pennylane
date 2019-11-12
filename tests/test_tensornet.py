@@ -104,7 +104,7 @@ class TestTensornetIntegration:
 
         dev = qml.device("expt.tensornet", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1
+        assert dev.shots == 1000
         assert dev.analytic
         assert dev.short_name == "expt.tensornet"
 
@@ -700,6 +700,53 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
         
+
+class TestSample:
+    """Tests that samples are properly calculated."""
+
+    def test_sample_dimensions(self, tensornet_device_2_wires):
+        """Tests if the samples returned by the sample function have
+        the correct dimensions
+        """
+
+        # Explicitly resetting is necessary as the internal
+        # state is set to None in __init__ and only properly
+        # initialized during reset
+        tensornet_device_2_wires.reset()
+
+        tensornet_device_2_wires.apply('RX', wires=[0], par=[1.5708])
+        tensornet_device_2_wires.apply('RX', wires=[1], par=[1.5708])
+
+        tensornet_device_2_wires.shots = 10
+        s1 = tensornet_device_2_wires.sample('PauliZ', [0], [])
+        assert np.array_equal(s1.shape, (10,))
+
+        tensornet_device_2_wires.shots = 12
+        s2 = tensornet_device_2_wires.sample('PauliZ', [1], [])
+        assert np.array_equal(s2.shape, (12,))
+
+        tensornet_device_2_wires.shots = 17
+        s3 = tensornet_device_2_wires.sample('CZ', [0, 1], [])
+        assert np.array_equal(s3.shape, (17,))
+
+    def test_sample_values(self, tensornet_device_2_wires, tol):
+        """Tests if the samples returned by sample have
+        the correct values
+        """
+
+        # Explicitly resetting is necessary as the internal
+        # state is set to None in __init__ and only properly
+        # initialized during reset
+        tensornet_device_2_wires.reset()
+
+        tensornet_device_2_wires.apply('RX', wires=[0], par=[1.5708])
+
+        s1 = tensornet_device_2_wires.sample('PauliZ', [0], [])
+
+        # s1 should only contain 1 and -1, which is guaranteed if
+        # they square to 1
+        assert np.allclose(s1**2, 1, atol=tol, rtol=0)
+
 
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorSample:

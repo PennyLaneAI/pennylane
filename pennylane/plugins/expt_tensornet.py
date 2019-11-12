@@ -269,7 +269,7 @@ class TensorNetwork(Device):
         joint_outcomes = list(product(*eigenvalues))
         projector_tensor_products = list(product(*projectors_with_wires))
 
-        joint_probabilities = {outcome: 0.0 for outcome in joint_outcomes}
+        joint_probabilities = [] #[(outcome, 0.0) for idx, outcome in enumerate(joint_outcomes)]
 
         for idx, projs in enumerate(projector_tensor_products):
             obs_nodes = []
@@ -280,10 +280,10 @@ class TensorNetwork(Device):
                 obs_nodes.append(self._add_node(tensor, wire))
                 obs_wires.append(wire)
 
-            joint_probabilities[joint_outcomes[idx]] += self.ev(obs_nodes, obs_wires)
+            joint_probabilities.append(self.ev(obs_nodes, obs_wires))
 
         outcomes = np.array([np.prod(p) for p in joint_outcomes])
-        return np.random.choice(outcomes, self.shots, p=list(joint_probabilities.values()))
+        return np.random.choice(outcomes, self.shots, p=joint_probabilities)
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
