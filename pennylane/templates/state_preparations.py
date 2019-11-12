@@ -12,26 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-State Preparations
-==================
-
-**Module name:** :mod:`pennylane.templates.state_preparations`
-
-.. currentmodule:: pennylane.templates.state_preparations
-
-This module provides routines that prepare a given state using only
-elementary gates.
-
-Qubit architectures
--------------------
-
-.. autosummary::
-
-    BasisStatePreparation
-    MottonenStatePreparation
-
-Code details
-^^^^^^^^^^^^
+State preperations are templates that prepare a given quantum state,
+by decomposing it into elementary operations.
 """
 import math
 from collections.abc import Iterable
