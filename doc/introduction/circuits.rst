@@ -172,8 +172,8 @@ Quantum circuits from other frameworks
 
 PennyLane now supports creating customized PennyLane templates from quantum
 circuit objects using supported plugins. Currently, QuantumCircuit objects from
-Qiskit, QASM strings or QASM files can be loaded by using the PennyLane-Qiskit
-plugin.
+Qiskit, QASM strings or QASM files can be loaded. For this, the PennyLane-Qiskit
+plugin needs to be installed.
 
 Objects for quantum circuits can be loaded outside or directly inside of a
 :class:`~.pennylane.QNode`. Circuits that contain unbound parameters are also
