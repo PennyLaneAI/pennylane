@@ -259,28 +259,31 @@ class TensorNetwork(Device):
         eigenvalues, projector_groups = list(zip(*decompositions))
         eigenvalues = list(eigenvalues)
 
+        # Matching each projector with the wires it acts on
+        # while preserving the groupings
         projectors_with_wires = [[(proj, wires[idx]) for proj in proj_group]
                                  for idx, proj_group in enumerate(projector_groups)]
 
-        # TODO: check that the ordering is reserved for sure
+        # The eigenvalue - projector maps are preserved as product() preserves
+        # the previous ordering by creating a lexicographic ordering
         joint_outcomes = list(product(*eigenvalues))
         projector_tensor_products = list(product(*projectors_with_wires))
 
-        p = {outcome: 0.0 for outcome in joint_outcomes}
+        joint_probabilities = {outcome: 0.0 for outcome in joint_outcomes}
 
         for idx, projs in enumerate(projector_tensor_products):
             obs_nodes = []
-            local_wires = []
+            obs_wires = []
             for proj, wire in projs:
 
                 tensor = proj.reshape([2] * len(wire) * 2)
                 obs_nodes.append(self._add_node(tensor, wire))
-                local_wires.append(wire)
+                obs_wires.append(wire)
 
-            p[joint_outcomes[idx]] += self.ev(obs_nodes, local_wires)
+            joint_probabilities[joint_outcomes[idx]] += self.ev(obs_nodes, obs_wires)
 
         outcomes = np.array([np.prod(p) for p in joint_outcomes])
-        return np.random.choice(outcomes, self.shots, p=list(p.values()))
+        return np.random.choice(outcomes, self.shots, p=list(joint_probabilities.values()))
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
