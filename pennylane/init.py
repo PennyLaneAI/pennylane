@@ -38,7 +38,7 @@ def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        parameter array
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
