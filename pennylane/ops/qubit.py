@@ -19,6 +19,8 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane.operation import All, Any, Observable, Operation
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.utils import OperationRecorder
 
 
 class Hadamard(Observable, Operation):
@@ -419,7 +421,7 @@ class Rot(Operation):
     grad_method = "A"
 
     @staticmethod
-    def decomposition(phi, theta, omega, wires=None):
+    def decomposition(phi, theta, omega, wires):
         decomp_ops = [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
@@ -585,7 +587,7 @@ class U1(Operation):
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
     @staticmethod
-    def decomposition(phi, wires=None):
+    def decomposition(phi, wires):
         return [PhaseShift(phi, wires=wires)]
 
 
@@ -629,7 +631,7 @@ class U2(Operation):
     grad_method = "A"
 
     @staticmethod
-    def decomposition(phi, lam, wires=None):
+    def decomposition(phi, lam, wires):
         decomp_ops = [
             Rot(lam, np.pi/2, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
@@ -679,7 +681,7 @@ class U3(Operation):
     grad_method = "A"
 
     @staticmethod
-    def decomposition(theta, phi, lam, wires=None):
+    def decomposition(theta, phi, lam, wires):
         decomp_ops = [
             Rot(lam, theta, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
@@ -746,13 +748,11 @@ class BasisState(Operation):
     grad_method = None
 
     @staticmethod
-    def decomposition(n, wires=None):
-        decomp_ops = []
-        for w, p in enumerate(n.flatten()):
-            if p == 1:
-                decomp_ops.append(PauliX(wires=wires[w]))
+    def decomposition(n, wires):
+        with OperationRecorder() as rec:
+            BasisStatePreparation(n, wires)
 
-        return decomp_ops
+        return rec.queue
 
 
 class QubitStateVector(Operation):
@@ -765,6 +765,13 @@ class QubitStateVector(Operation):
     * Number of parameters: 1
     * Gradient recipe: None
 
+    .. note::
+
+        If the ``QubitStateVector`` operation is not supported natively on the
+        target device, PennyLane will attempt to decompose the operation
+        using the method developed by Möttönen et al. (Quantum Info. Comput.,
+        2005).
+
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
@@ -773,6 +780,13 @@ class QubitStateVector(Operation):
     num_wires = All
     par_domain = "A"
     grad_method = None
+
+    @staticmethod
+    def decomposition(state, wires):
+        with OperationRecorder() as rec:
+            MottonenStatePreparation(state, wires)
+
+        return rec.queue
 
 
 # =============================================================================
