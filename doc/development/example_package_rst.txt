@@ -1,0 +1,6 @@
+qml.package_name
+================
+
+.. rubric:: Modules
+
+.. automodule:: pennylane.package_name

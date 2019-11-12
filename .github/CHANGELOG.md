@@ -1,4 +1,90 @@
-# Release 0.6.0-dev
+# Release 0.7.0-dev
+
+### New features since last release
+
+* Added an `OperationRecorder()` context manager, that allows templates
+  and quantum functions to be executed while recording events. The
+  recorder can be used with and without QNodes as a debugging utility.
+  [#388](https://github.com/XanaduAI/pennylane/pull/388)
+
+### Breaking changes
+
+### Improvements
+
+* The `QNode` class is split into a hierarchy of simpler classes.
+  [#354](https://github.com/XanaduAI/pennylane/pull/354)
+
+### Documentation
+
+### Bug fixes
+
+### Contributors
+
+This release contains contributions from (in alphabetical order):
+
+Ville Bergholm, Josh Izaac, Johannes Jakob Meyer
+
+---
+
+# Release 0.6.1
+
+### New features since last release
+
+* Added a `print_applied` method to QNodes, allowing the operation
+  and observable queue to be printed as last constructed.
+  [#378](https://github.com/XanaduAI/pennylane/pull/378)
+
+### Improvements
+
+* A new `Operator` base class is introduced, which is inherited by both the
+  `Observable` class and the `Operation` class.
+  [#355](https://github.com/XanaduAI/pennylane/pull/355)
+
+* Removed deprecated `@abstractproperty` decorators
+  in `_device.py`.
+  [#374](https://github.com/XanaduAI/pennylane/pull/374)
+
+* The `CircuitGraph` class is updated to deal with `Operation` instances directly.
+  [#344](https://github.com/XanaduAI/pennylane/pull/344)
+
+* Comprehensive gradient tests have been added for the interfaces.
+  [#381](https://github.com/XanaduAI/pennylane/pull/381
+
+### Documentation
+
+* The new restructured documentation has been polished and updated.
+  [#387](https://github.com/XanaduAI/pennylane/pull/387)
+  [#375](https://github.com/XanaduAI/pennylane/pull/375)
+  [#372](https://github.com/XanaduAI/pennylane/pull/372)
+  [#370](https://github.com/XanaduAI/pennylane/pull/370)
+  [#369](https://github.com/XanaduAI/pennylane/pull/369)
+  [#367](https://github.com/XanaduAI/pennylane/pull/367)
+  [#364](https://github.com/XanaduAI/pennylane/pull/364)
+
+* Updated the development guides.
+  [#382](https://github.com/XanaduAI/pennylane/pull/382)
+  [#379](https://github.com/XanaduAI/pennylane/pull/379)
+
+* Added all modules, classes, and functions to the API section
+  in the documentation.
+  [#373](https://github.com/XanaduAI/pennylane/pull/373)
+
+### Bug fixes
+
+* Replaces the existing `np.linalg.norm` normalization with hand-coded
+  normalization, allowing `AmplitudeEmbedding` to be used with differentiable
+  parameters. AmplitudeEmbedding tests have been added and improved.
+  [#376](https://github.com/XanaduAI/pennylane/pull/376)
+
+### Contributors
+
+This release contains contributions from (in alphabetical order):
+
+Ville Bergholm, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva
+
+---
+
+# Release 0.6.0
 
 ### New features since last release
 
@@ -52,7 +138,18 @@
 * Remainder of the unittest-style tests were ported to pytest.
   [#310](https://github.com/XanaduAI/pennylane/pull/310)
 
+* The `do_queue` argument for operations now only takes effect
+  within QNodes. Outside of QNodes, operations can now be instantiated
+  without needing to specify `do_queue`.
+  [#359](https://github.com/XanaduAI/pennylane/pull/359)
+
 ### Documentation
+
+* The docs are rewritten and restructured to contain a code introduction section as well as an API section.
+  [#314](https://github.com/XanaduAI/pennylane/pull/275)
+
+* Added Ising model example to the tutorials
+  [#319] (https://github.com/XanaduAI/pennylane/pull/319)
 
 * Added tutorial for QAOA on MaxCut problem
   [#328](https://github.com/XanaduAI/pennylane/pull/328)
@@ -79,8 +176,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Shahnawaz Ahmed, Ville Bergholm, Aroosa Ijaz, Josh Izaac, Angus Lowe,
-Johannes Jakob Meyer, Antal Száva, Roeland Wiersema.
+Shahnawaz Ahmed, Ville Bergholm, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Angus Lowe,
+Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 ---
 

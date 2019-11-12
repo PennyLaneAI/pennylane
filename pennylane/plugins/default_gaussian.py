@@ -13,79 +13,12 @@
 # limitations under the License.
 # pylint: disable=inconsistent-return-statements
 """
-
-Default Gaussian plugin
-=======================
-
-**Module name:** :mod:`pennylane.plugins.default_gaussian`
-
-**Short name:** ``"default.gaussian"``
-
-.. currentmodule:: pennylane.plugins.default_gaussian
-
 The :code:`default.gaussian` plugin is meant to be used as a template for writing PennyLane
 device plugins for new CV backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
-
-The following is the technical documentation of the implementation of the plugin. You will
-not need to read and understand this to use this plugin.
-
-Auxillary functions
--------------------
-
-.. autosummary::
-    partitions
-    fock_prob
-
-Gates and operations
---------------------
-
-.. autosummary::
-    rotation
-    displacement
-    squeezing
-    quadratic_phase
-    beamsplitter
-    two_mode_squeezing
-    controlled_addition
-    controlled_phase
-    interferometer
-
-State preparation
------------------
-
-.. autosummary::
-    squeezed_cov
-    vacuum_state
-    coherent_state
-    squeezed_state
-    displaced_squeezed_state
-    thermal_state
-    gaussian_state
-    set_state
-
-
-Observables
-------------
-
-.. autosummary::
-    photon_number
-    homodyne
-    poly_quad_expectations
-    fock_expectation
-
-
-Classes
--------
-
-.. autosummary::
-    DefaultGaussian
-
-Code details
-^^^^^^^^^^^^
 """
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
 import numpy as np
@@ -629,7 +562,8 @@ def poly_quad_expectations(mu, cov, wires, params, total_wires, hbar=2.):
     Q = params[0]
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
-    op = qml.ops.PolyXP(Q, wires=wires, do_queue=False)
+    # TODO: maybe we should make heisenberg_obs a class method or a static method to avoid this being a 'hack'?
+    op = qml.ops.PolyXP(Q, wires=wires)
     Q = op.heisenberg_obs(total_wires)
 
     if Q.ndim == 1:
@@ -713,9 +647,11 @@ class DefaultGaussian(Device):
     """
     name = 'Default Gaussian PennyLane plugin'
     short_name = 'default.gaussian'
-    pennylane_requires = '0.6'
-    version = '0.6.0'
+    pennylane_requires = '0.7'
+    version = '0.7.0'
     author = 'Xanadu Inc.'
+
+    _capabilities = {"model": "cv"}
 
     _operation_map = {
         'Beamsplitter': beamsplitter,

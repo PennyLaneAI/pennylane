@@ -15,7 +15,7 @@
 from setuptools import setup
 
 with open("pennylane/_version.py") as f:
-	version = f.readlines()[-1].split()[-1].strip("\"'")
+    version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
     "numpy",
@@ -45,7 +45,8 @@ info = {
     'entry_points': {
         'pennylane.plugins': [
             'default.qubit = pennylane.plugins:DefaultQubit',
-            'default.gaussian = pennylane.plugins:DefaultGaussian'
+            'default.gaussian = pennylane.plugins:DefaultGaussian',
+            'expt.tensornet = pennylane.plugins.expt_tensornet:TensorNetwork'
             ],
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',

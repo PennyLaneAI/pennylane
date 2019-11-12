@@ -14,13 +14,16 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QNode` class.
 """
+import contextlib
+import io
 import math
+import textwrap
 
 import pytest
-from autograd import numpy as np
-from scipy.linalg import block_diag, expm
+import numpy as np
+from scipy.linalg import block_diag
 
-from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, CRotx, CRoty, CRotz, X, Y, Z
+from pennylane.plugins.default_qubit import Y, Z
 
 import pennylane as qml
 from pennylane._device import Device
@@ -110,6 +113,53 @@ class TestQNodeOperationQueue:
         successors = qnode._op_successors(qnode.ops[2], only=None)
         assert qnode.ops[4] in successors
         assert qnode.ops[5] not in successors
+
+    def test_print_applied(self, mock_device):
+        """Test that printing applied gates works correctly"""
+
+        H = np.array([[0, 1], [1, 0]])
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1])
+            return qml.expval(qml.PauliX(0)), qml.var(qml.Hermitian(H, wires=1))
+
+        expected_qnode_print = textwrap.dedent("""\
+            Operations
+            ==========
+            RX({x}, wires=[0])
+            CNOT(wires=[0, 1])
+            RY(0.4, wires=[0])
+            RZ(-0.2, wires=[1])
+
+            Observables
+            ===========
+            expval(PauliX(wires=[0]))
+            var(Hermitian([[0 1]
+             [1 0]], wires=[1]))""")
+
+        node = qml.QNode(circuit, mock_device)
+
+        # test before construction
+        f = io.StringIO()
+
+        with contextlib.redirect_stdout(f):
+            node.print_applied()
+            out = f.getvalue().strip()
+
+        assert out == "QNode has not yet been executed."
+
+        # construct QNode
+        f = io.StringIO()
+        node.construct([0.1])
+
+        with contextlib.redirect_stdout(f):
+            node.print_applied()
+            out = f.getvalue().strip()
+
+        assert out == expected_qnode_print.format(x=0.1)
 
 
 @pytest.fixture(scope="function")
@@ -1265,6 +1315,106 @@ class TestQNodeGradients:
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
 
 
+gradient_test_data = [
+    (0.5, -0.1),
+    (0.0, np.pi),
+    (-3.6, -3.6),
+    (1.0, 2.5),
+]
+
+
+dev = qml.device("default.qubit", wires=2)
+
+
+@qml.qnode(dev)
+def f(x):
+    qml.RX(x, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
+@qml.qnode(dev)
+def g(y):
+    qml.RY(y, wires=0)
+    return qml.expval(qml.PauliX(0))
+
+
+class TestMultiQNodeGradients:
+    """Multi Qnode gradient tests."""
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_add_qnodes_gradient(self, x, y):
+        """Test the gradient of addition of two QNode circuits"""
+
+        def add(a, b):
+            return a + b
+
+        a = f(x)
+        b = g(y)
+
+        # addition
+        assert qml.grad(add, argnum=0)(a, b) == 1.0
+        assert qml.grad(add, argnum=1)(a, b) == 1.0
+
+        # same value added to itself; autograd doesn't distinguish inputs
+        assert qml.grad(add, argnum=0)(a, a) == 1.0
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_subtract_qnodes_gradient(self, x, y):
+        """Test the gradient of subtraction of two QNode circuits"""
+
+        def subtract(a, b):
+            return a - b
+
+        a = f(x)
+        b = g(y)
+
+        # subtraction
+        assert qml.grad(subtract, argnum=0)(a, b) == 1.0
+        assert qml.grad(subtract, argnum=1)(a, b) == -1.0
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_multiply_qnodes_gradient(self, x, y):
+        """Test the gradient of multiplication of two QNode circuits"""
+
+        def mult(a, b):
+            return a * b
+
+        a = f(x)
+        b = g(y)
+
+        # multipication
+        assert qml.grad(mult, argnum=0)(a, b) == b
+        assert qml.grad(mult, argnum=1)(a, b) == a
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_division_qnodes_gradient(self, x, y):
+        """Test the gradient of division of two QNode circuits"""
+
+        def div(a, b):
+            return a / b
+
+        a = f(x)
+        b = g(y)
+
+        # division
+        assert qml.grad(div, argnum=0)(a, b) == 1 / b
+        assert qml.grad(div, argnum=1)(a, b) == -a / b ** 2
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_composing_qnodes_gradient(self, x, y):
+        """Test the gradient of composing of two QNode circuits"""
+
+        def compose(f, x):
+            return f(x)
+
+        a = f(x)
+        b = g(y)
+
+        # composition
+        assert qml.grad(compose, argnum=1)(f, x) == qml.grad(f, argnum=0)(x)
+        assert qml.grad(compose, argnum=1)(f, a) == qml.grad(f, argnum=0)(a)
+        assert qml.grad(compose, argnum=1)(f, b) == qml.grad(f, argnum=0)(b)
+
 class TestQNodeVariance:
     """Qnode variance tests."""
 
@@ -1379,6 +1529,29 @@ class TestQNodeVariance:
         ).T
         assert np.allclose(gradF, expected, atol=tol, rtol=0)
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
+
+    @pytest.mark.xfail(reason="Bug in the old QNode class: Jacobian of multiple CV variances", raises=AssertionError, strict=True)
+    def test_expval_and_variance_cv(self, tol):
+        """Test that the qnode works for a combination of CV expectation
+        values and variances"""
+        dev = qml.device("default.gaussian", wires=3)
+
+        def circuit(a, b):
+            qml.Displacement(0.5, 0, wires=0)
+            qml.Squeezing(a, 0, wires=0)
+            qml.Squeezing(b, 0, wires=1)
+            qml.Beamsplitter(0.6, -0.3, wires=[0, 1])
+            qml.Squeezing(-0.3, 0, wires=2)
+            qml.Beamsplitter(1.4, 0.5, wires=[1, 2])
+            return qml.var(qml.X(0)), qml.expval(qml.X(1)), qml.var(qml.X(2))
+
+        node = QNode(circuit, dev)
+        par = [0.54, -0.423]
+
+        # jacobians must match
+        gradA = node.jacobian(par, method="A")
+        gradF = node.jacobian(par, method="F")
+        assert gradA == pytest.approx(gradF, abs=tol)
 
     def test_first_order_cv(self, tol):
         """Test variance of a first order CV expectation value"""

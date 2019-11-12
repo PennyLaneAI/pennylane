@@ -12,85 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Device base class
-=================
-
-**Module name:** :mod:`pennylane._device`
-
-.. currentmodule:: pennylane._device
-
-This module contains the :class:`Device` abstract base class. To write a plugin containing a PennyLane-compatible device, :class:`Device`
-must be subclassed, and the appropriate class attributes and methods
-implemented. For examples of subclasses of :class:`Device`, see :class:`~.DefaultQubit`,
-:class:`~.DefaultGaussian`, or the `StrawberryFields <https://pennylane-sf.readthedocs.io/>`_
-and `ProjectQ <https://pennylane-pq.readthedocs.io/>`_ plugins.
-
-.. autosummary::
-    Device
-
-Device attributes and methods
------------------------------
-
-.. currentmodule:: pennylane._device.Device
-
-The following methods and attributes are accessible from the PennyLane
-user interface:
-
-.. autosummary::
-    short_name
-    capabilities
-    supports_operation
-    supports_observable
-    execute
-    reset
-
-Abstract methods and attributes
--------------------------------
-
-The following methods and attributes must be defined for all devices:
-
-.. autosummary::
-    name
-    short_name
-    pennylane_requires
-    version
-    author
-    operations
-    observables
-    apply
-    expval
-    var
-
-In addition, the following may also be optionally defined:
-
-.. autosummary::
-    probability
-    pre_apply
-    post_apply
-    pre_measure
-    post_measure
-    execution_context
-
-
-Internal attributes and methods
--------------------------------
-
-The following methods and attributes are used internally by the :class:`Device` class,
-to ensure correct operation and internal consistency.
-
-.. autosummary::
-    check_validity
-
-.. currentmodule:: pennylane._device
-
-
-Code details
-~~~~~~~~~~~~
+This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args
 import abc
 
-import autograd.numpy as np
+import numpy as np
+
 from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
 from .qnode import QuantumFunctionError
 
@@ -99,7 +27,6 @@ class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
     """
-    pass
 
 
 class Device(abc.ABC):
@@ -132,48 +59,48 @@ class Device(abc.ABC):
         """Verbose string representation."""
         return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.pennylane_requires, self.version, self.author)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def name(self):
         """The full name of the device."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def short_name(self):
         """Returns the string used to load the device."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def pennylane_requires(self):
         """The current API version that the device plugin was made for."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def version(self):
         """The current version of the plugin."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def author(self):
         """The author(s) of the plugin."""
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def operations(self):
         """Get the supported set of operations.
 
         Returns:
             set[str]: the set of PennyLane operation names the device supports
         """
-        raise NotImplementedError
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def observables(self):
         """Get the supported set of observables.
 
         Returns:
             set[str]: the set of PennyLane observable names the device supports
         """
-        raise NotImplementedError
 
     @property
     def shots(self):
@@ -189,6 +116,9 @@ class Device(abc.ABC):
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
                 expectation values of observables
+
+        Raises:
+            DeviceError: if number of shots is less than 1
         """
         if shots < 1:
             raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
@@ -216,10 +146,11 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
             observables (Iterable[~.operation.Observable]): observables to measure and return
-            parameters (dict[int->list[(int, int)]]): Mapping from free parameter index to the list of
+            parameters (dict[int->list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
-                The first element of the tuple is the index of the Operation in the program queue,
-                the second the index of the parameter within the Operation.
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -277,6 +208,9 @@ class Device(abc.ABC):
         Note that this property can only be accessed within the execution context
         of :meth:`~.execute`.
 
+        Raises:
+            ValueError: if outside of the execution context
+
         Returns:
             list[~.operation.Operation]
         """
@@ -291,6 +225,9 @@ class Device(abc.ABC):
 
         Note that this property can only be accessed within the execution context
         of :meth:`~.execute`.
+
+        Raises:
+            ValueError: if outside of the execution context
 
         Returns:
             list[~.operation.Observable]
@@ -308,10 +245,11 @@ class Device(abc.ABC):
         Note that this property can only be accessed within the execution context
         of :meth:`~.execute`.
 
+        Raises:
+            ValueError: if outside of the execution context
+
         Returns:
-            dict[int->list[(int, int)]]: the first element of the tuple is the index
-            of the Operation in the program queue, the second the index of the parameter
-            within the Operation.
+            dict[int->list[ParameterDependency]]: the mapping
         """
         if self._parameters is None:
             raise ValueError("Cannot access the free parameter mapping outside of the execution context!")
@@ -320,19 +258,15 @@ class Device(abc.ABC):
 
     def pre_apply(self):
         """Called during :meth:`execute` before the individual operations are executed."""
-        pass
 
     def post_apply(self):
         """Called during :meth:`execute` after the individual operations have been executed."""
-        pass
 
     def pre_measure(self):
         """Called during :meth:`execute` before the individual observables are measured."""
-        pass
 
     def post_measure(self):
         """Called during :meth:`execute` after the individual observables have been measured."""
-        pass
 
     def execution_context(self):
         """The device execution context used during calls to :meth:`execute`.
@@ -385,7 +319,6 @@ class Device(abc.ABC):
 
         raise ValueError("The given operation must either be a pennylane.Observable class or a string.")
 
-
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
 
@@ -423,7 +356,6 @@ class Device(abc.ABC):
             wires (Sequence[int]): subsystems the operation is applied on
             par (tuple): parameters for the operation
         """
-        raise NotImplementedError
 
     @abc.abstractmethod
     def expval(self, observable, wires, par):
@@ -440,7 +372,6 @@ class Device(abc.ABC):
         Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        raise NotImplementedError
 
     def var(self, observable, wires, par):
         r"""Returns the variance of observable on specified wires.
@@ -452,6 +383,9 @@ class Device(abc.ABC):
             observable (str or list[str]): name of the observable(s)
             wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
+
+        Raises:
+            NotImplementedError: if the device does not support variance computation
 
         Returns:
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
@@ -472,6 +406,9 @@ class Device(abc.ABC):
             wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
+        Raises:
+            NotImplementedError: if the device does not support sampling
+
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
@@ -479,6 +416,9 @@ class Device(abc.ABC):
 
     def probability(self):
         """Return the full state probability of each computational basis state from the last run of the device.
+
+        Raises:
+            NotImplementedError: if the device does not support returning probabilities
 
         Returns:
             OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
@@ -491,7 +431,6 @@ class Device(abc.ABC):
     def reset(self):
         """Reset the backend state.
 
-        After the reset the backend should be as if it was just constructed.
+        After the reset, the backend should be as if it was just constructed.
         Most importantly the quantum state is reset to its initial value.
         """
-        raise NotImplementedError

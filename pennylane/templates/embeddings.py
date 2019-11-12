@@ -12,42 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Embeddings
-==========
-
-**Module name:** :mod:`pennylane.templates.embeddings`
-
-.. currentmodule:: pennylane.templates.embeddings
-
 This module provides quantum circuit architectures that can embed features into a quantum state.
-The features are associated with gate parameters, implicitly mapping them into the Hilbert space of the quantum state
-(see also Schuld & Killoran 2019 :cite:`schuld2018quantum`).
-
-Qubit architectures
--------------------
-
-.. autosummary::
-
-    AngleEmbedding
-    AmplitudeEmbedding
-    BasisEmbedding
-
-Continuous-variable architectures
----------------------------------
-
-.. autosummary::
-
-    SqueezingEmbedding
-    DisplacementEmbedding
-
-Code details
-^^^^^^^^^^^^
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
+from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
+from pennylane.variable import Variable
 import numpy as np
 
-from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 
 def AngleEmbedding(features, wires, rotation='X'):
     r"""
@@ -76,6 +48,9 @@ def AngleEmbedding(features, wires, rotation='X'):
 
     Keyword Args:
         rotation (str): Type of rotations used
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if not isinstance(wires, Iterable):
@@ -120,30 +95,46 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
         pad (Boolean): controls the activation of the padding option
         normalize (Boolean): controls the activation of automatic normalization
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
-    if not isinstance(wires, Iterable):
-        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
+    if isinstance(wires, int):
+        wires = [wires]
+
+    features = np.array(features)
 
     n_features = len(features)
     n_amplitudes = 2**len(wires)
 
     if n_amplitudes < n_features:
-        raise ValueError("AmplitudeEmbedding requires the size of feature vector to be smaller than or equal to 2**len(wires), which is {}; "
+        raise ValueError("AmplitudeEmbedding requires the size of feature vector to be "
+                         "smaller than or equal to 2**len(wires), which is {}; "
                          "got {}.".format(n_amplitudes, n_features))
 
     if pad and n_amplitudes >= n_features:
         features = np.pad(features, (0, n_amplitudes-n_features), 'constant')
 
-    if  not pad and n_amplitudes != n_features:
-        raise ValueError("AmplitudeEmbedding with no padding requires a feature vector of size 2**len(wires), which is {}; "
-                         "got {}.".format(n_amplitudes, n_features))
+    if not pad and n_amplitudes != n_features:
+        raise ValueError("AmplitudeEmbedding must get a feature vector of size 2**len(wires), "
+                         "which is {}; got {}. Use ``pad=True`` to automatically pad the "
+                         "features with zeros.".format(n_amplitudes, n_features))
 
-    if normalize and np.linalg.norm(features, 2) != 1:
-        features = features * (1/np.linalg.norm(features, 2))
+    # Get normalization
+    norm = 0
+    for f in features:
+        if isinstance(f, Variable):
+            norm += np.conj(f.val)*f.val
+        else:
+            norm += np.conj(f)*f
 
-    if not normalize and np.linalg.norm(features, 2) != 1:
-        raise ValueError("AmplitudeEmbedding requires a normalized feature vector. The argument normalize can be set to True to automatically normalize it.")
+    if not np.isclose(norm, 1):
+        if normalize:
+            features = features/np.sqrt(norm)
+        else:
+            raise ValueError("AmplitudeEmbedding requires a normalized feature vector. "
+                             "Set ``normalize=True`` to automatically normalize it.")
 
     QubitStateVector(features, wires=wires)
 
@@ -161,6 +152,9 @@ def BasisEmbedding(features, wires):
     Args:
         features (array): Binary input array of shape ``(n, )``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
     if not isinstance(wires, Iterable):
         raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
@@ -168,6 +162,7 @@ def BasisEmbedding(features, wires):
     if len(features) > len(wires):
         raise ValueError("Number of bits to embed cannot be larger than number of wires, which is {}; "
                          "got {}.".format(len(wires), len(features)))
+
     BasisState(features, wires=wires)
 
 
@@ -195,6 +190,9 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'``
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if not isinstance(wires, Iterable):
@@ -236,6 +234,9 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
             the amplitude of all displacement gates if ``execution='phase'``
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid or if ``method`` is unknown
    """
 
     if not isinstance(wires, Iterable):

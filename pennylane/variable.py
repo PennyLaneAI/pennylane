@@ -12,15 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Quantum circuit variables
-=========================
-
-**Module name:** :mod:`pennylane.variable`
-
-.. currentmodule:: pennylane.variable
-
 This module contains the :class:`Variable` class, which is used to track
 and identify :class:`~pennylane.qnode.QNode` parameters.
+
+Description
+-----------
 
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
@@ -63,11 +59,6 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
     property automates the process of unpacking the Variable value.
     The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
-
-
-.. raw:: html
-
-    <h3>Code details</h3>
 """
 from collections.abc import Sequence
 import copy
@@ -98,8 +89,8 @@ class Variable:
         name (None, str): name of the argument
     """
     # pylint: disable=too-few-public-methods
-    free_param_values = None  #: array[float]: current free parameter values, set in :meth:`QNode.evaluate`
-    kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`QNode.evaluate`
+    free_param_values = None  #: array[float]: current free parameter values, set in :meth:`~.QNode.evaluate`
+    kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`~.QNode.evaluate`
 
     def __init__(self, idx, name=None):
         self.idx = idx    #: int: parameter index
@@ -133,6 +124,9 @@ class Variable:
     @property
     def val(self):
         """Current numerical value of the Variable.
+
+        Raises:
+            TypeError: if the keyword arguments were not mapped to arrays
 
         Returns:
             float: current value of the Variable

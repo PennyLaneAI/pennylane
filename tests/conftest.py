@@ -52,7 +52,6 @@ def n_subsystems(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    """Number of qubits or modes."""
     return qml.device('default.qubit', wires=n_subsystems)
 
 @pytest.fixture(scope="function")
@@ -66,6 +65,22 @@ def qubit_device_2_wires():
 @pytest.fixture(scope="function")
 def qubit_device_3_wires():
     return qml.device('default.qubit', wires=3)
+
+@pytest.fixture(scope="session")
+def tensornet_device(n_subsystems):
+    return qml.device('expt.tensornet', wires=n_subsystems)
+
+@pytest.fixture(scope="function")
+def tensornet_device_1_wire():
+    return qml.device('expt.tensornet', wires=1)
+
+@pytest.fixture(scope="function")
+def tensornet_device_2_wires():
+    return qml.device('expt.tensornet', wires=2)
+
+@pytest.fixture(scope="function")
+def tensornet_device_3_wires():
+    return qml.device('expt.tensornet', wires=3)
 
 
 @pytest.fixture(scope="session")
@@ -97,6 +112,31 @@ def torch_support():
     return torch_support
 
 
+@pytest.fixture()
+def skip_if_no_torch_support(torch_support):
+    if not torch_support:
+        pytest.skip("Skipped, no torch support")
+
+
+@pytest.fixture(scope='module')
+def tf_support():
+    """Boolean fixture for TensorFlow support"""
+    try:
+        import tensorflow as tf
+        tf_support = True
+
+    except ImportError as e:
+        tf_support = False
+
+    return tf_support
+
+
+@pytest.fixture()
+def skip_if_no_tf_support(tf_support):
+    if not tf_support:
+        pytest.skip("Skipped, no tf support")
+
+
 @pytest.fixture(scope="module",
                 params=[1, 2, 3])
 def seed(request):
@@ -111,4 +151,6 @@ def mock_device(monkeypatch):
     with monkeypatch.context() as m:
         dev = qml.Device
         m.setattr(dev, '__abstractmethods__', frozenset())
-        yield qml.Device()
+        m.setattr(dev, 'short_name', 'mock_device')
+        m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
+        yield qml.Device(wires=2)

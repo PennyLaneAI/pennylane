@@ -13,18 +13,27 @@
 # limitations under the License.
 # pylint: disable=protected-access
 r"""
-Symbolic quantum operations
-===========================
+This module contains the abstract base classes for defining PennyLane
+operations and observables.
 
-**Module name:** :mod:`pennylane.operation`
+Description
+-----------
 
-.. currentmodule:: pennylane.operation
+Qubit Operations
+----------------
+The :class:`Operator` class serves as a base class for operators,
+and is inherited by both the :class:`Observable` class and the
+:class:`Operation` class. These classes are subclassed to implement quantum operations
+and measure observables in PennyLane.
 
-Operation base classes
-----------------------
+* Each :class:`~.Operator` subclass represents a general type of
+  map between physical states. Each instance of these subclasses
+  represents either
 
-This module contains the symbolic base class for performing quantum operations
-and measuring observables in PennyLane.
+  - an application of the operator or
+  - an instruction to measure and return the respective result.
+
+  Operators act on a sequence of wires (subsystems) using given parameter values.
 
 * Each :class:`~.Operation` subclass represents a type of quantum operation,
   for example a unitary quantum gate. Each instance of these subclasses
@@ -61,17 +70,8 @@ works as follows:
 
 .. math:: \frac{\partial}{\partial\phi_k}O = c_k\left[O(\phi_k+s_k)-O(\phi_k-s_k)\right].
 
-Summary
-^^^^^^^
-
-.. autosummary::
-   Operation
-   Observable
-   Tensor
-
-
 CV Operation base classes
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Due to additional requirements, continuous-variable (CV) operations must subclass the
 :class:`~.CVOperation` or :class:`~.CVObservable` classes instead of :class:`~.Operation`
@@ -98,26 +98,15 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
-
-Summary
-^^^^^^^
-
-.. autosummary::
-   CV
-   CVOperation
-   CVObservable
-
-Code details
-^^^^^^^^^^^^
 """
 import abc
 from enum import Enum, IntEnum
 import numbers
 from collections.abc import Sequence
 
-import autograd.numpy as np
+import numpy as np
 
-from .qnode import QNode, QuantumFunctionError
+from .qnode import QNode
 from .utils import _flatten, _unflatten
 from .variable import Variable
 
@@ -207,18 +196,197 @@ def classproperty(func):
 
 
 #=============================================================================
+# Base Operator class
+#=============================================================================
+
+class Operator(abc.ABC):
+    r"""Base class for quantum operators supported by a device.
+
+    The following class attributes must be defined for all Operators:
+
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
+
+    Args:
+        args (tuple[float, int, array, Variable]): operator parameters
+
+    Keyword Args:
+        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into a :class:`QNode` circuit queue.
+            The circuit queue is determined by the presence of an
+            applicable `QNode._current_context`. If no context is
+            available, this argument is ignored.
+    """
+
+    @property
+    @abc.abstractmethod
+    def num_params(self):
+        """Number of parameters the operator takes."""
+
+    @property
+    @abc.abstractmethod
+    def num_wires(self):
+        """Number of wires the operator acts on.
+
+        The value 0 allows the operator to act on any number of wires.
+        """
+
+    @property
+    @abc.abstractmethod
+    def par_domain(self):
+        """Domain of the gate parameters.
+
+        * ``'N'``: natural numbers (including zero).
+        * ``'R'``: floats.
+        * ``'A'``: arrays of real or complex values.
+        * ``None``: if there are no parameters.
+        """
+
+    def __init__(self, *args, wires=None, do_queue=True):
+        # pylint: disable=too-many-branches
+        self.name = self.__class__.__name__   #: str: name of the operation
+        self.queue_idx = None  #: int, None: index of the Operation in the circuit queue, or None if not in a queue
+        if QNode._current_context is None:
+            do_queue = False
+
+        if wires is None:
+            raise ValueError("Must specify the wires that {} acts on".format(self.name))
+
+        # extract the arguments
+        params = args
+
+        if len(params) != self.num_params:
+            raise ValueError("{}: wrong number of parameters. "
+                             "{} parameters passed, {} expected.".format(self.name, params, self.num_params))
+
+        # check the validity of the params
+        for p in params:
+            self.check_domain(p)
+        self.params = list(params)  #: list[Any]: parameters of the operation
+
+        # apply the operator on the given wires
+        if not isinstance(wires, Sequence):
+            wires = [wires]
+        self._check_wires(wires)
+        self._wires = wires  #: tuple[int]: wires on which the operation acts
+
+        if do_queue:
+            self.queue()
+
+    def __str__(self):
+        """Print the operator name and some information."""
+        return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
+
+    def _check_wires(self, wires):
+        """Check the validity of the operation wires.
+
+        Args:
+            wires (Sequence[Any]): wires to check
+        Raises:
+            TypeError, ValueError: list of wires is invalid
+        Returns:
+            tuple[int]: wires converted to integers
+        """
+        for w in wires:
+            if not isinstance(w, numbers.Integral):
+                raise TypeError('{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.'.format(self.name))
+
+        if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
+            raise ValueError("{}: wrong number of wires. "
+                             "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
+
+        if len(set(wires)) != len(wires):
+            raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
+
+        return tuple(int(w) for w in wires)
+
+    def check_domain(self, p, flattened=False):
+        """Check the validity of a parameter.
+
+        :class:`Variable` instances can represent any real scalars (but not arrays).
+
+        Args:
+            p (Number, array, Variable): parameter to check
+            flattened (bool): True means p is an element of a flattened parameter
+                sequence (affects the handling of 'A' parameters)
+        Raises:
+            TypeError: parameter is not an element of the expected domain
+            ValueError: parameter is an element of an unknown domain
+        Returns:
+            Number, array, Variable: p
+        """
+        if isinstance(p, Variable):
+            if self.par_domain == 'A':
+                raise TypeError('{}: Array parameter expected, got a Variable, which can only represent real scalars.'.format(self.name))
+            return p
+
+        # p is not a Variable
+        if self.par_domain == 'A':
+            if flattened:
+                if isinstance(p, np.ndarray):
+                    raise TypeError('{}: Flattened array parameter expected, got {}.'.format(self.name, type(p)))
+            else:
+                if not isinstance(p, np.ndarray):
+                    raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
+        elif self.par_domain in ('R', 'N'):
+            if not isinstance(p, numbers.Real):
+                raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
+
+            if self.par_domain == 'N':
+                if not isinstance(p, numbers.Integral):
+                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, type(p)))
+                if p < 0:
+                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, p))
+        else:
+            raise ValueError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
+        return p
+
+    @property
+    def wires(self):
+        """Wire values.
+
+        Returns:
+            tuple[int]: wire values
+        """
+        return self._wires
+
+    @property
+    def parameters(self):
+        """Current parameter values.
+
+        Fixed parameters are returned as is, free parameters represented by
+        :class:`~.variable.Variable` instances are replaced by their
+        current numerical value.
+
+        Returns:
+            list[float]: parameter values
+        """
+        temp = list(_flatten(self.params))
+        temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
+        return _unflatten(temp_val, self.params)[0]
+
+    def queue(self):
+        """Append the operation to a QNode queue."""
+
+        QNode._current_context._append_op(self)
+        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
+
+#=============================================================================
 # Base Operation class
 #=============================================================================
 
-
-class Operation(abc.ABC):
+class Operation(Operator):
     r"""Base class for quantum operations supported by a device.
 
-    The following class attributes must be defined for all Operations:
+    As with :class:`~.Operator`, the following class attributes must be
+    defined for all operations:
 
-    * :attr:`~.Operation.num_params`
-    * :attr:`~.Operation.num_wires`
-    * :attr:`~.Operation.par_domain`
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
 
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
@@ -243,31 +411,8 @@ class Operation(abc.ABC):
             This flag is useful if there is some reason to run an Operation
             outside of a QNode context.
     """
+    # pylint: disable=abstract-method
     _grad_recipe = None
-
-    @abc.abstractproperty
-    def num_params(self):
-        """Number of parameters the operation takes."""
-        raise NotImplementedError
-
-    @abc.abstractproperty
-    def num_wires(self):
-        """Number of wires the operation acts on.
-
-        The value 0 allows the operation to act on any number of wires.
-        """
-        raise NotImplementedError
-
-    @abc.abstractproperty
-    def par_domain(self):
-        """Domain of the gate parameters.
-
-        * ``'N'``: natural numbers (including zero).
-        * ``'R'``: floats.
-        * ``'A'``: arrays of real or complex values.
-        * ``None``: if there are no parameters.
-        """
-        raise NotImplementedError
 
     @property
     def grad_method(self):
@@ -327,29 +472,6 @@ class Operation(abc.ABC):
         self._grad_recipe = value
 
     def __init__(self, *args, wires=None, do_queue=True):
-        # pylint: disable=too-many-branches
-        self.name = self.__class__.__name__   #: str: name of the operation
-        self.queue_idx = None  #: int, None: index of the Operation in the circuit queue, or None if not in a queue
-
-        if self.num_wires == All:
-            if do_queue:
-                if set(wires) != set(range(QNode._current_context.num_wires)):
-                    raise ValueError("Operation {} must act on all wires".format(self.name))
-
-        if wires is None:
-            raise ValueError("Must specify the wires that {} acts on".format(self.name))
-
-        # extract the arguments
-        params = args
-
-        if len(params) != self.num_params:
-            raise ValueError("{}: wrong number of parameters. "
-                             "{} parameters passed, {} expected.".format(self.name, params, self.num_params))
-
-        # check the validity of the params
-        for p in params:
-            self.check_domain(p)
-        self.params = list(params)  #: list[Any]: parameters of the operation
 
         # check the grad_method validity
         if self.par_domain == 'N':
@@ -367,119 +489,7 @@ class Operation(abc.ABC):
         else:
             assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
 
-        # apply the operation on the given wires
-        if not isinstance(wires, Sequence):
-            wires = [wires]
-        self._wires = wires  #: Sequence[int, Variable]: wires on which the operation acts
-
-        if all([isinstance(w, int) for w in self._wires]):
-            # If all wires are integers (i.e., not Variable), check
-            # that they are valid for the given operation
-            self.check_wires(self._wires)
-
-        if do_queue:
-            self.queue()
-
-    def __str__(self):
-        """Print the operation name and some information."""
-        return self.name +': {} params, wires {}'.format(len(self.params), self.wires)
-
-    def check_wires(self, wires):
-        """Check the validity of the operation wires.
-
-        Args:
-            wires (Sequence[int, Variable]): wires to check
-        Raises:
-            ValueError: list of wires is invalid
-        Returns:
-            Number, array, Variable: p
-        """
-        if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
-            raise ValueError("{}: wrong number of wires. "
-                             "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
-
-        if len(set(wires)) != len(wires):
-            raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
-
-        return wires
-
-    def check_domain(self, p, flattened=False):
-        """Check the validity of a parameter.
-
-        :class:`Variable` instances can represent any real scalars (but not arrays).
-
-        Args:
-            p (Number, array, Variable): parameter to check
-            flattened (bool): True means p is an element of a flattened parameter
-                sequence (affects the handling of 'A' parameters)
-        Raises:
-            TypeError: parameter is not an element of the expected domain
-        Returns:
-            Number, array, Variable: p
-        """
-        if isinstance(p, Variable):
-            if self.par_domain == 'A':
-                raise TypeError('{}: Array parameter expected, got a Variable, which can only represent real scalars.'.format(self.name))
-            return p
-
-        # p is not a Variable
-        if self.par_domain == 'A':
-            if flattened:
-                if isinstance(p, np.ndarray):
-                    raise TypeError('{}: Flattened array parameter expected, got {}.'.format(self.name, type(p)))
-            else:
-                if not isinstance(p, np.ndarray):
-                    raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
-        elif self.par_domain in ('R', 'N'):
-            if not isinstance(p, numbers.Real):
-                raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
-
-            if self.par_domain == 'N':
-                if not isinstance(p, numbers.Integral):
-                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, type(p)))
-                if p < 0:
-                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, p))
-        else:
-            raise ValueError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
-        return p
-
-    @property
-    def wires(self):
-        """Current wire values.
-
-        Fixed wires are returned as is, free wires represented by
-        :class:`~.variable.Variable` instances are replaced by their
-        current numerical value.
-
-        Returns:
-            list[int]: wire values
-        """
-        w = [i.val if isinstance(i, Variable) else i for i in self._wires]
-        self.check_wires(w)
-        return [int(i) for i in w]
-
-    @property
-    def parameters(self):
-        """Current parameter values.
-
-        Fixed parameters are returned as is, free parameters represented by
-        :class:`~.variable.Variable` instances are replaced by their
-        current numerical value.
-
-        Returns:
-            list[float]: parameter values
-        """
-        temp = list(_flatten(self.params))
-        temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
-        return _unflatten(temp_val, self.params)[0]
-
-    def queue(self):
-        """Append the operation to a QNode queue."""
-        if QNode._current_context is None:
-            raise QuantumFunctionError("Quantum operations can only be used inside a qfunc.")
-
-        QNode._current_context._append_op(self)
-        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
+        super().__init__(*args, wires=wires, do_queue=do_queue)
 
 
 #=============================================================================
@@ -487,24 +497,17 @@ class Operation(abc.ABC):
 #=============================================================================
 
 
-class Observable(Operation):
+class Observable(Operator):
     """Base class for observables supported by a device.
 
     :class:`Observable` is used to describe Hermitian quantum observables.
 
-    As with :class:`~.Operation`, the following class attributes must be
+    As with :class:`~.Operator`, the following class attributes must be
     defined for all observables:
 
-    * :attr:`~.Operation.num_params`
-    * :attr:`~.Operation.num_wires`
-    * :attr:`~.Operation.par_domain`
-
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
-    differentiation.
-
-    * :attr:`~.Operation.grad_method`
-    * :attr:`~.Operation.grad_recipe`
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
 
     Args:
         args (tuple[float, int, array, Variable]): observable parameters
@@ -512,9 +515,11 @@ class Observable(Operation):
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operation should be immediately
-            pushed into a :class:`QNode` observable queue. This flag is useful if
-            there is some reason to call an observable outside of a QNode context.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`QNode` observable queue.
+            The observable queue is determined by the presence of an
+            applicable `QNode._current_context`. If no context is
+            available, this argument is ignored.
     """
     # pylint: disable=abstract-method
     return_type = None
@@ -665,6 +670,10 @@ class CV:
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
             num_wires (int): total number of wires in the quantum circuit. If zero, return ``U`` as is.
+
+        Raises:
+            ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
+
         Returns:
             array[float]: expanded array, dimension ``1+2*num_wires``
         """
@@ -750,14 +759,6 @@ class CV:
         return None
 
     @classproperty
-    def supports_analytic(self):
-        """Returns True if the CV Operation has ``grad_method='A'`` and
-        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
-        that analytic differentiation is supported.
-        """
-        return self.grad_method == 'A' and self.supports_heisenberg
-
-    @classproperty
     def supports_heisenberg(self):
         """Returns True if the CV Operation has
         overwritten the :meth:`~.CV._heisenberg_rep` static method
@@ -767,9 +768,18 @@ class CV:
         """
         return CV._heisenberg_rep != self._heisenberg_rep
 
+
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""
     # pylint: disable=abstract-method
+
+    @classproperty
+    def supports_analytic(self):
+        """Returns True if the CV Operation has ``grad_method='A'`` and
+        a defined :meth:`~.CV._heisenberg_rep` static method, indicating
+        that analytic differentiation is supported.
+        """
+        return self.grad_method == 'A' and self.supports_heisenberg
 
     def heisenberg_pd(self, idx):
         """Partial derivative of the Heisenberg picture transform matrix.
@@ -815,6 +825,9 @@ class CVOperation(CV, Operation):
         Args:
             num_wires (int): total number of wires in the quantum circuit
             inverse  (bool): if True, return the inverse transformation instead
+
+        Raises:
+            RuntimeError: if the specified operation is not Gaussian or is missing the `_heisenberg_rep` method
 
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation

@@ -43,25 +43,6 @@ def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
 
-@pytest.fixture(scope='module')
-def tf_support():
-    """Boolean fixture for TensorFlow support"""
-    try:
-        import tensorflow as tf
-        tf_support = True
-
-    except ImportError as e:
-        tf_support = False
-
-    return tf_support
-
-
-@pytest.fixture()
-def skip_if_no_tf_support(tf_support):
-    if not tf_support:
-        pytest.skip("Skipped, no tf support")
-
-
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFQNodeExceptions():
     """TFQNode basic tests."""
@@ -477,7 +458,7 @@ class TestTFQNodeParameterHandling:
 
 
 @pytest.mark.usefixtures("skip_if_no_tf_support")
-class TestIntegration():
+class TestIntegration:
     """Integration tests to ensure the TensorFlow QNode agrees with the NumPy QNode"""
 
     def test_qnode_evaluation_agrees(self, qubit_device_2_wires, tol):
@@ -544,3 +525,195 @@ class TestIntegration():
 
         assert np.allclose(autograd_grad[0], tf_grad[0], atol=tol, rtol=0)
         assert np.allclose(autograd_grad[1], tf_grad[1], atol=tol, rtol=0)
+
+
+gradient_test_data = [
+    (0.5, -0.1),
+    (0.0, np.pi),
+    (-3.6, -3.6),
+    (1.0, 2.5),
+]
+
+
+@pytest.mark.usefixtures("skip_if_no_tf_support")
+class TestTFGradients:
+    """Integration tests involving gradients of QNodes and hybrid computations using the tf interface"""
+
+    @pytest.fixture
+    def qnodes(self):
+        """Two QNodes to be used for the gradient tests"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def f(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev, interface="tf")
+        def g(y):
+            qml.RY(y, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        return f, g
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_addition_qnodes_gradient(self, qnodes, x, y):
+        """Test the gradient of addition of two QNode circuits"""
+        f, g = qnodes
+
+        def add(a, b):
+            return a + b
+
+        xt = Variable(x)
+        yt = Variable(y)
+
+        # addition
+        with tf.GradientTape() as tape:
+            tape.watch([xt, yt])
+            a = f(xt)
+            b = g(yt)
+            y = add(a, b)
+            grad = tape.gradient(y, [a, b])
+
+        assert grad[0].numpy() == 1.0
+        assert grad[1].numpy() == 1.0
+
+        # same tensor added to itself
+
+        with tf.GradientTape() as tape:
+            tape.watch([xt, yt])
+            a = f(xt)
+            y = add(a, a)
+            grad = tape.gradient(y, [a, a])
+
+        assert grad[0].numpy() == 2.0
+        assert grad[1].numpy() == 2.0
+
+        # different qnodes with same input parameter added together
+
+        with tf.GradientTape() as tape:
+            tape.watch([xt, yt])
+            a = f(xt)
+            b = g(xt)
+            y = add(a, b)
+            grad = tape.gradient(y, [a, b])
+
+        assert grad[0].numpy() == 1.0
+        assert grad[1].numpy() == 1.0
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_subtraction_qnodes_gradient(self, qnodes, x, y):
+        """Test the gradient of subtraction of two QNode circuits"""
+        f, g = qnodes
+
+        def subtract(a, b):
+            return a - b
+
+        xt = Variable(x)
+        yt = Variable(y)
+
+        # subtraction
+        with tf.GradientTape() as tape:
+            tape.watch([xt, yt])
+            a = f(xt)
+            b = g(yt)
+            y = subtract(a, b)
+            grad = tape.gradient(y, [a, b])
+
+        assert grad[0].numpy() == 1.0
+        assert grad[1].numpy() == -1.0
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_multiplication_qnodes_gradient(self, qnodes, x, y):
+        """Test the gradient of multiplication of two QNode circuits"""
+        f, g = qnodes
+
+        def mult(a, b):
+            return a * b
+
+        xt = Variable(x)
+        yt = Variable(y)
+
+        # multiplication
+        with tf.GradientTape() as tape:
+            tape.watch([xt, yt])
+            a = f(xt)
+            b = g(yt)
+            y = mult(a, b)
+            grad = tape.gradient(y, [a, b])
+
+        assert grad[0].numpy() == b.numpy()
+        assert grad[1].numpy() == a.numpy()
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_division_qnodes_gradient(self, qnodes, x, y, tol):
+        """Test the gradient of division of two QNode circuits"""
+        f, g = qnodes
+
+        def div(a, b):
+            return a / b
+
+        xt = Variable(x)
+        yt = Variable(y)
+
+        # division
+        with tf.GradientTape() as tape:
+            tape.watch([xt, yt])
+            a = f(xt)
+            b = g(yt)
+            y = div(a, b)
+            grad = tape.gradient(y, [a, b])
+
+        assert grad[0].numpy() == 1 / b.numpy()
+        assert np.allclose(grad[1].numpy(), -a.numpy() / b.numpy() ** 2, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("x, y", gradient_test_data)
+    def test_composition_qnodes_gradient(self, qnodes, x, y):
+        """Test the gradient of composition of two QNode circuits"""
+        f, g = qnodes
+
+        xt = Variable(x)
+        yt = Variable(y)
+
+        # compose function with xt as input
+        with tf.GradientTape() as tape:
+            tape.watch([xt])
+            y = f(xt)
+            grad1 = tape.gradient(y, xt)
+
+        with tf.GradientTape() as tape:
+            tape.watch([xt])
+            y = f(xt)
+            grad2 = tape.gradient(y, xt)
+
+        assert tf.equal(grad1, grad2)
+
+        # compose function with a as input
+        with tf.GradientTape() as tape:
+            tape.watch([xt])
+            a = f(xt)
+            y = f(a)
+            grad1 = tape.gradient(y, a)
+
+        with tf.GradientTape() as tape:
+            tape.watch([xt])
+            a = f(xt)
+            y = f(a)
+            grad2 = tape.gradient(y, a)
+
+        assert tf.equal(grad1, grad2)
+
+        # compose function with b as input
+        with tf.GradientTape() as tape:
+            tape.watch([xt])
+            b = g(xt)
+            y = g(b)
+            grad1 = tape.gradient(y, b)
+
+        with tf.GradientTape() as tape:
+            tape.watch([xt])
+            b = g(xt)
+            y = g(b)
+            grad2 = tape.gradient(y, b)
+
+        assert tf.equal(grad1, grad2)
