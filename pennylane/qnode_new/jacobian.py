@@ -37,15 +37,18 @@ class JacobianQNode(QNode):
         """dict[int, str]: map from flattened quantum function positional parameter index
         to the gradient method to be used with that parameter"""
 
-    def __repr__(self):
-        """String representation."""
-        detail = "<QNode (differentiable): device='{}', func={}, wires={}, interface={}>"
-        return detail.format(self.device.short_name, self.func.__name__, self.num_wires, self.interface)
-
     @property
     def interface(self):
         """str, None: automatic differentiation interface used by the node, if any"""
         return None
+
+
+    def __repr__(self):
+        """String representation."""
+        detail = "<QNode (differentiable): device='{}', func={}, wires={}, interface={}>"
+        return detail.format(
+            self.device.short_name, self.func.__name__, self.num_wires, self.interface
+        )
 
 
     def _construct(self, args, kwargs):
@@ -56,10 +59,16 @@ class JacobianQNode(QNode):
         """
         super()._construct(args, kwargs)
 
-        temp = [str(ob) for ob in self.circuit.observables if ob.return_type is ObservableReturnTypes.Sample]
+        temp = [
+            str(ob)
+            for ob in self.circuit.observables
+            if ob.return_type is ObservableReturnTypes.Sample
+        ]
         if temp:
-            raise QuantumFunctionError("Circuits that include sampling can not be differentiated. "
-                                       "The following observables include sampling: {}".format('; '.join(temp)))
+            raise QuantumFunctionError(
+                "Circuits that include sampling can not be differentiated. "
+                "The following observables include sampling: {}".format("; ".join(temp))
+            )
 
         self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
 
@@ -201,6 +210,8 @@ class JacobianQNode(QNode):
         Returns:
             array[float]: Jacobian, shape ``(n, len(wrt))``, where ``n`` is the number of outputs returned by the QNode
         """
+        # TODO: rename "A"->"parameter_shift", "F"->"finite_diff"
+
         # pylint: disable=too-many-branches,too-many-statements
         # Note: arrays are not Sequences, but they are Iterables
         if not isinstance(args, Iterable):
@@ -216,13 +227,15 @@ class JacobianQNode(QNode):
         if self.circuit is None or self.mutable:
             self._construct(args, kwargs)
 
-        # check that the requested parameters are ok
+        # check that the wrt parameters are ok
         if wrt is None:
             wrt = range(self.num_variables)
         else:
             if min(wrt) < 0 or max(wrt) >= self.num_variables:
-                raise ValueError("Tried to compute the gradient with respect to parameters {} "
-                                 "(this node has {} parameters).".format(wrt, self.num_variables))
+                raise ValueError(
+                    "Tried to compute the gradient with respect to parameters {} "
+                    "(this node has {} parameters).".format(wrt, self.num_variables)
+                )
             if len(wrt) != len(set(wrt)):  # set removes duplicates
                 raise ValueError("Parameter indices must be unique.")
 
@@ -318,18 +331,18 @@ class JacobianQNode(QNode):
             # shift the parameter by h
             shift_args[idx] += h
             y = np.asarray(self.evaluate(shift_args, kwargs))
-            return (y-y0) / h
+            return (y - y0) / h
 
         if order == 2:
             # symmetric difference
             # shift the parameter by +-h/2
-            shift_args[idx] += 0.5*h
+            shift_args[idx] += 0.5 * h
             y2 = np.asarray(self.evaluate(shift_args, kwargs))
-            shift_args[idx] = args[idx] -0.5*h
+            shift_args[idx] = args[idx] - 0.5 * h
             y1 = np.asarray(self.evaluate(shift_args, kwargs))
-            return (y2-y1) / h
+            return (y2 - y1) / h
 
-        raise ValueError('Order must be 1 or 2.')
+        raise ValueError("Order must be 1 or 2.")
 
     @staticmethod
     def _transform_observable(obs, w, Z):
@@ -347,7 +360,8 @@ class JacobianQNode(QNode):
 
         if q.ndim != obs.ev_order:
             raise QuantumFunctionError(
-                "Mismatch between the polynomial order of observable and its Heisenberg representation.")
+                "Mismatch between the polynomial order of observable and its Heisenberg representation."
+            )
 
         qp = q @ Z
         if q.ndim == 2:
@@ -393,8 +407,8 @@ class JacobianQNode(QNode):
             multiplier, shift = op.get_parameter_shift(p_idx)
 
             # shifted parameter values
-            shift_p1 = np.r_[args, args[idx] +shift]
-            shift_p2 = np.r_[args, args[idx] -shift]
+            shift_p1 = np.r_[args, args[idx] + shift]
+            shift_p2 = np.r_[args, args[idx] - shift]
 
             if not force_order2 and op.best_method != 'B':
                 # basic parameter-shift method, for discrete gates and gaussian CV gates
@@ -402,7 +416,7 @@ class JacobianQNode(QNode):
                 # evaluates the circuit at two points with shifted parameter values
                 y2 = np.asarray(self.evaluate(shift_p1, kwargs))
                 y1 = np.asarray(self.evaluate(shift_p2, kwargs))
-                pd += (y2-y1) * multiplier
+                pd += (y2 - y1) * multiplier
             else:
                 # observable-transforming parameter-shift method, for gaussian CV gates
                 # succeeded by observables of order 2 and above
@@ -412,7 +426,7 @@ class JacobianQNode(QNode):
                 Z2 = op.heisenberg_tr(w)
                 self._set_variables(shift_p2, kwargs)
                 Z1 = op.heisenberg_tr(w)
-                Z = (Z2-Z1) * multiplier  # derivative of the operation
+                Z = (Z2 - Z1) * multiplier  # derivative of the operation
 
                 unshifted_args = np.r_[args, args[idx]]
                 self._set_variables(unshifted_args, kwargs)
@@ -420,9 +434,9 @@ class JacobianQNode(QNode):
                 Z = Z @ Z0
 
                 # conjugate Z with all the descendant operations
-                B = np.eye(1 +2*w)
+                B = np.eye(1 + 2 * w)
                 B_inv = B.copy()
-                for BB in self._op_descendants(op, 'G'):
+                for BB in self._op_descendants(op, "G"):
                     if not BB.supports_heisenberg:
                         # if the descendant gate is non-Gaussian in parameter-shift differentiation
                         # mode, then there must be no observable following it.
@@ -432,9 +446,11 @@ class JacobianQNode(QNode):
                 Z = B @ Z @ B_inv  # conjugation
 
                 # transform the descendant observables
-                desc = self._op_descendants(op, 'O')
-                obs = [self._transform_observable(x, w, Z) if x in desc else x
-                       for x in self.circuit.observables]
+                desc = self._op_descendants(op, "O")
+                obs = [
+                    self._transform_observable(x, w, Z) if x in desc else x
+                    for x in self.circuit.observables
+                ]
 
                 # measure transformed observables
                 pd += self.evaluate_obs(obs, unshifted_args, kwargs)
@@ -456,8 +472,12 @@ class JacobianQNode(QNode):
             array[float]: partial derivative of the node
         """
         # boolean mask: elements are True where the return type is a variance, False for expectations
-        where_var = [e.return_type is ObservableReturnTypes.Variance for e in self.circuit.observables]
-        var_observables = [e for e in self.circuit.observables if e.return_type == ObservableReturnTypes.Variance]
+        where_var = [
+            e.return_type is ObservableReturnTypes.Variance for e in self.circuit.observables
+        ]
+        var_observables = [
+            e for e in self.circuit.observables if e.return_type == ObservableReturnTypes.Variance
+        ]
 
         # first, replace each var(A) with <A^2>
         new_observables = []
@@ -465,38 +485,39 @@ class JacobianQNode(QNode):
             # need to calculate d<A^2>/dp
             w = e.wires
 
-            if self.model == 'qubit':
-                if e.name == 'Hermitian':
+            if self.model == "qubit":
+                if e.name == "Hermitian":
                     # since arbitrary Hermitian observables
                     # are not guaranteed to be involutory, need to take them into
                     # account separately to calculate d<A^2>/dp
 
                     A = e.params[0]  # Hermitian matrix
-                    #if not np.allclose(A @ A, np.identity(A.shape[0])):
+                    # if not np.allclose(A @ A, np.identity(A.shape[0])):
                     new = qml.expval(qml.Hermitian(A @ A, w, do_queue=False))
                 else:
                     # involutory, A^2 = I
                     # For involutory observables (A^2 = I) we have d<A^2>/dp = 0
-                    new = qml.expval(qml.Hermitian(np.identity(2**len(w)), w, do_queue=False))
+                    new = qml.expval(qml.Hermitian(np.identity(2 ** len(w)), w, do_queue=False))
 
             else:  # CV circuit, first order observable
                 # get the heisenberg representation
                 # This will be a real 1D vector representing the
                 # first order observable in the basis [I, x, p]
-                A = e._heisenberg_rep(e.parameters) # pylint: disable=protected-access
+                A = e._heisenberg_rep(e.parameters)  # pylint: disable=protected-access
 
                 # take the outer product of the heisenberg representation
                 # with itself, to get a square symmetric matrix representing
                 # the square of the observable
                 A = np.outer(A, A)
-                new = qml.expval(qml.ops.PolyXP(A, w, do_queue=False))
+                new = qml.expval(qml.PolyXP(A, w, do_queue=False))
 
             # replace the var(A) observable with <A^2>
             self.circuit.update_node(e, new)
             new_observables.append(new)
 
         # calculate the analytic derivatives of the <A^2> observables
-        pdA2 = self._pd_parameter_shift(idx, args, kwargs, force_order2=(self.model == 'cv'))  # the force_order2 use here is a bit hacky
+        # the force_order2 use here is a bit hacky
+        pdA2 = self._pd_parameter_shift(idx, args, kwargs, force_order2=(self.model == "cv"))
 
         # restore the original observables, but convert their return types to expectation
         for e, new in zip(var_observables, new_observables):
@@ -515,4 +536,4 @@ class JacobianQNode(QNode):
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
         # d<A>/dp for plain expectations
-        return np.where(where_var, pdA2 -2 * evA * pdA, pdA)
+        return np.where(where_var, pdA2 - 2 * evA * pdA, pdA)

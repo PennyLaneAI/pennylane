@@ -55,9 +55,7 @@ Layer templates
 
 .. currentmodule:: pennylane.templates.layers
 
-Layer architectures, found in the :mod:`pennylane.templates.layers` module,
-define sequences of gates that are repeated like the layers in a neural network.
-They usually contain only trainable parameters.
+Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
 
 The following layer templates are available:
 
@@ -68,7 +66,6 @@ The following layer templates are available:
 
     ~pennylane.templates.layers.CVNeuralNetLayer
     ~pennylane.templates.layers.CVNeuralNetLayers
-    ~pennylane.templates.layers.Interferometer
     ~pennylane.templates.layers.RandomLayer
     ~pennylane.templates.layers.RandomLayers
     ~pennylane.templates.layers.StronglyEntanglingLayer
@@ -83,10 +80,9 @@ The following layer templates are available:
 Embedding templates
 -------------------
 
-Embeddings, found in the :mod:`pennylane.templates.embeddings` module,
-encode input features into the quantum state of the circuit.
+Embeddings encode input features into the quantum state of the circuit.
 Hence, they take a feature vector as an argument. These embeddings can also depend on
-trainable parameters, in which case the embedding is learnable.
+trainable parameters and be repeated.
 
 The following embedding templates are available:
 
@@ -104,6 +100,23 @@ The following embedding templates are available:
 :html:`</div>`
 
 .. _intro_ref_temp_params:
+
+Subroutines
+-----------
+
+Subroutines are simply a collection of (trainable) gates.
+
+The following subroutines are available:
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.templates.Interferometer
+
+:html:`</div>`
+
 
 Parameter initializations
 -------------------------

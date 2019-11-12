@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module provides quantum circuit architectures that can embed features into a quantum state.
+Embeddings are templates that take features and encode them into a quantum state.
+They can optionally be repeated, and may contain trainable parameters. Embeddings are typically
+used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
@@ -42,8 +44,8 @@ def AngleEmbedding(features, wires, rotation='X'):
     feature vector :math:`[0, \pi/2, \pi/2, 0]`. Alternatively, one can use the :mod:`BasisEmbedding()` template.
 
     Args:
-        features (array): Input array of shape ``(N,)``, where N is the number of input features to embed,
-            with :math:`N\leq n`
+        features (array): Input array of shape ``(N,)``, where N is the number of features
+            to embed. ``N`` must be smaller or equal to the total number of wires.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
@@ -54,7 +56,7 @@ def AngleEmbedding(features, wires, rotation='X'):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if len(features) > len(wires):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
@@ -157,7 +159,7 @@ def BasisEmbedding(features, wires):
         ValueError: if ``features`` or ``wires`` is invalid
     """
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if len(features) > len(wires):
         raise ValueError("Number of bits to embed cannot be larger than number of wires, which is {}; "
@@ -196,7 +198,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if len(wires) < len(features):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
@@ -240,7 +242,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
    """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if len(wires) < len(features):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
@@ -253,3 +255,8 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             Displacement(c, f, wires=wires[idx])
         else:
             raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))
+
+
+embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "SqueezingEmbedding", "DisplacementEmbedding"}
+
+__all__ = list(embeddings)
