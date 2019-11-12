@@ -577,7 +577,7 @@ class QubitStateVector(Operation):
     num_params = 1
     num_wires = All
     par_domain = "A"
-    grad_method = None
+    grad_method = None  # FIXME 'F'?
 
 
 # =============================================================================

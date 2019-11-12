@@ -184,14 +184,14 @@ class TestJNodeExceptions:
 
         node = JNode(circuit, dev)
 
-        with pytest.raises(QuantumFunctionError, match="Mismatch between polynomial order"):
+        with pytest.raises(QuantumFunctionError, match="Mismatch between the polynomial order"):
             node.jacobian([0.5])
 
 
 
 class TestJNodeBestMethod:
     """
-    Test different flows of _best_method TODO more
+    Test different flows of JacobianQNode._best_method
     """
     def test_best_method_with_non_gaussian_successors(self, tol, gaussian_device_2_wires):
         """Tests that the analytic differentiation method is allowed and matches numerical
@@ -203,11 +203,12 @@ class TestJNodeBestMethod:
             qml.Kerr(0.54, wires=[1])
             return qml.expval(qml.NumberOperator(0))
 
-        node = JNode(circuit, gaussian_device_2_wires, properties={'vis_check': False})
+        node = JNode(circuit, gaussian_device_2_wires)
 
         res = node.jacobian([0.321], wrt=[0], method='A')
         expected = node.jacobian([0.321], method='F')
         assert res == pytest.approx(expected, abs=tol)
+        assert node.par_to_grad_method == {0: 'A'}
 
     def test_best_method_with_gaussian_successors_fails(self, gaussian_device_2_wires):
         """Tests that the parameter-shift differentiation method is not allowed
@@ -223,6 +224,7 @@ class TestJNodeBestMethod:
 
         with pytest.raises(ValueError, match="parameter-shift gradient method cannot be used with"):
             node.jacobian([0.321], method='A')
+        assert node.par_to_grad_method == {0: 'F'}
 
     def test_cv_gradient_methods(self, gaussian_device_2_wires):
         """Tests the gradient computation methods on CV circuits."""
@@ -253,7 +255,7 @@ class TestJNodeBestMethod:
             qml.Rotation(1.3, wires=[1])
             return qml.expval(qml.X(0)), qml.expval(qml.X(1))
 
-        check_methods(qf, {0: "F"})
+        check_methods(qf, {0: "F", 1: "0"})
 
         def qf(x, y):
             qml.Displacement(x, 0, wires=[0])
@@ -266,12 +268,29 @@ class TestJNodeBestMethod:
         check_methods(qf, {0: "F", 1: "F"})
 
         def qf(x, y):
-            qml.Kerr(y, wires=[1])
+            qml.Kerr(y, wires=[1])  # nongaussian y
             qml.Displacement(x, 0, wires=[0])
             qml.Beamsplitter(0.2, 1.7, wires=[0, 1])
             return qml.expval(qml.X(0)), qml.expval(qml.X(1))
 
         check_methods(qf, {0: "A", 1: "F"})
+
+        def qf(x, y):
+            qml.FockState(x, wires=[0])  # nondifferentiable
+            qml.Beamsplitter(0.2, 1.7, wires=[0, 1])
+            qml.Displacement(y, 0, wires=[1])  # followed by variance
+            return qml.var(qml.X(0)), qml.var(qml.X(1))
+
+        check_methods(qf, {0: None, 1: "V"})
+
+        def qf(x, y):
+            qml.Displacement(x, 0, wires=[0])  # followed by nongaussian observable
+            qml.Beamsplitter(0.2, 1.7, wires=[0, 1])
+            qml.Displacement(y, 0, wires=[1])  # followed by order-2 observable
+            return qml.expval(qml.FockStateProjector(np.array([2]), 0)), qml.expval(qml.NumberOperator(1))
+
+        check_methods(qf, {0: "F", 1: "A"})
+
 
 
 class PolyN(qml.ops.PolyXP):
@@ -326,7 +345,7 @@ class TestJNodeJacobianCV:
         grad_F = node.jacobian(par, aux, method="F")
         assert grad_A == pytest.approx(grad_F, abs=tol)
 
-    @pytest.mark.parametrize('O', [qml.ops.X, qml.ops.NumberOperator, PolyN])
+    @pytest.mark.parametrize('O', [qml.ops.X, qml.ops.NumberOperator, PolyN, qml.ops.Identity])
     @pytest.mark.parametrize('G', analytic_cv_ops)
     def test_cv_gradients_gaussian_circuit(self, G, O, gaussian_dev, tol):
         """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
@@ -425,15 +444,15 @@ class TestJNodeJacobianCV:
             return qml.expval(qml.PolyXP(M, [0, 1]))
 
         q = JNode(qf, gaussian_dev)
-        grad = q.jacobian(par)
+        grad_best = q.jacobian(par)
+        grad_best2 = q.jacobian(par, options={'force_order2': True})
         grad_F = q.jacobian(par, method='F')
-        grad_A = q.jacobian(par, method='B')
-        grad_A2 = q.jacobian(par, method='B', options={'force_order2': True})
 
         # par[0] can use the 'A' method, par[1] cannot
         assert q.par_to_grad_method == {0:'A', 1:'F'}
         # the different methods agree
-        assert grad == pytest.approx(grad_F, abs=tol)
+        assert grad_best == pytest.approx(grad_F, abs=tol)
+        assert grad_best2 == pytest.approx(grad_F, abs=tol)
 
 
     def test_fanout_multiple_params(self, qubit_device_1_wire, tol):
@@ -1025,6 +1044,7 @@ class TestJNodeVariance:
 
     def test_involutory_variance(self, tol, qubit_device_1_wire):
         """Tests qubit observable that are involutory"""
+
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.var(qml.PauliZ(0))
@@ -1195,7 +1215,7 @@ class TestJNodeVariance:
             qml.Beamsplitter(0.6, -0.3, wires=[0, 1])
             qml.Squeezing(-0.3, 0, wires=2)
             qml.Beamsplitter(1.4, 0.5, wires=[1, 2])
-            return qml.var(qml.X(0)), qml.expval(qml.X(1)), qml.var(qml.X(2))  # TODO can you return them in arbitrary order?
+            return qml.var(qml.X(0)), qml.expval(qml.X(1)), qml.var(qml.X(2))
 
         node = JNode(circuit, dev)
         par = [0.54, -0.423]

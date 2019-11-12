@@ -248,15 +248,15 @@ class QNode:
             op (Operator): operator in the quantum circuit
             only (str, None): the type of descendants to return.
 
-                - ``'G'``: only return non-observables (default)
-                - ``'E'``: only return observables
+                - ``'G'``: only return non-observables
+                - ``'O'``: only return observables
                 - ``None``: return all descendants
 
         Returns:
             list[Operator]: descendants in a topological order
         """
         succ = self.circuit.descendants_in_order((op,))
-        if only == "E":
+        if only == "O":
             return list(filter(_is_observable, succ))
         if only == "G":
             return list(itertools.filterfalse(_is_observable, succ))

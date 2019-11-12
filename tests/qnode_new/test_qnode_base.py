@@ -85,7 +85,7 @@ class TestQNodeOperationQueue:
         """Tests that _op_descendants properly extracts the successors that are observables"""
 
         qnode = mock_qnode
-        observable_successors = qnode._op_descendants(qnode.ops[0], only="E")
+        observable_successors = qnode._op_descendants(qnode.ops[0], only="O")
         assert qnode.ops[0] not in observable_successors
         assert qnode.ops[1] not in observable_successors
         assert qnode.ops[4] in observable_successors
