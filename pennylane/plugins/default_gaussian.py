@@ -651,6 +651,8 @@ class DefaultGaussian(Device):
     version = '0.7.0'
     author = 'Xanadu Inc.'
 
+    _capabilities = {"model": "cv"}
+
     _operation_map = {
         'Beamsplitter': beamsplitter,
         'ControlledAddition': controlled_addition,

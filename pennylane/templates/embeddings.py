@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module provides quantum circuit architectures that can embed features into a quantum state.
+Embeddings are templates that take features and encode them into a quantum state.
+They can optionally be repeated, and may contain trainable parameters. Embeddings are typically
+used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
@@ -48,6 +50,9 @@ def AngleEmbedding(features, wires, rotation='X'):
 
     Keyword Args:
         rotation (str): Type of rotations used
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if not isinstance(wires, Iterable):
@@ -92,6 +97,9 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
         pad (Boolean): controls the activation of the padding option
         normalize (Boolean): controls the activation of automatic normalization
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if isinstance(wires, int):
@@ -146,6 +154,9 @@ def BasisEmbedding(features, wires):
     Args:
         features (array): Binary input array of shape ``(n, )``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
     if not isinstance(wires, Iterable):
         raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
@@ -181,6 +192,9 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'``
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid
     """
 
     if not isinstance(wires, Iterable):
@@ -222,6 +236,9 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
             the amplitude of all displacement gates if ``execution='phase'``
+
+    Raises:
+        ValueError: if ``features`` or ``wires`` is invalid or if ``method`` is unknown
    """
 
     if not isinstance(wires, Iterable):
@@ -238,3 +255,8 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             Displacement(c, f, wires=wires[idx])
         else:
             raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))
+
+
+embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "SqueezingEmbedding", "DisplacementEmbedding"}
+
+__all__ = list(embeddings)

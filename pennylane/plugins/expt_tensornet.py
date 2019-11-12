@@ -111,12 +111,10 @@ class TensorNetwork(Device):
         self._zero_state = np.zeros([2] * wires)
         self._zero_state[tuple([0] * wires)] = 1.0
         # TODO: since this state is separable, can be more intelligent about not making a dense matrix
-        self._state = self._add_node(
+        self._state_node = self._add_node(
             self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState"
         )
-        self._free_edges = self._state.edges[
-            :
-        ]  # we need this list to be distinct from self._state.edges
+        self._free_edges = self._state_node.edges[:]  # we need this list to be distinct from self._state_node.edges
 
     def _add_node(self, A, wires, name="UnnamedNode"):
         """Adds a node to the underlying tensor network.
@@ -162,28 +160,91 @@ class TensorNetwork(Device):
         self.reset()
 
     def apply(self, operation, wires, par):
+        if operation == "QubitStateVector":
+            state = np.asarray(par[0], dtype=np.complex128)
+            if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
+                self._state_node.tensor = np.reshape(state, [2] * self.num_wires)
+            else:
+                raise ValueError("State vector must be of length 2**wires.")
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError(
+                    "The expt.tensornet plugin can apply QubitStateVector only to all of the {} wires.".format(
+                        self.num_wires
+                    )
+                )
+            return
+        if operation == "BasisState":
+            n = len(par[0])
+            if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
+                raise ValueError(
+                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
+                        self.num_wires
+                    )
+                )
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError(
+                    "The expt.tensornet plugin can apply BasisState only to all of the {} wires.".format(
+                        self.num_wires
+                    )
+                )
+
+            self._state_node.tensor[tuple([0] * len(wires))] = 0
+            self._state_node.tensor[tuple(par[0])] = 1
+            return
+
         A = self._get_operator_matrix(operation, par)
         num_mult_idxs = len(wires)
         A = np.reshape(A, [2] * num_mult_idxs * 2)
         op_node = self._add_node(A, wires=wires, name=operation)
         for idx, w in enumerate(wires):
-            self._add_edge(op_node, num_mult_idxs + idx, self._state, w)
+            self._add_edge(op_node, num_mult_idxs + idx, self._state_node, w)
             self._free_edges[w] = op_node[idx]
         # TODO: can be smarter here about collecting contractions?
-        self._state = tn.contract_between(op_node, self._state, output_edge_order=self._free_edges)
+        self._state_node = tn.contract_between(
+            op_node, self._state_node, output_edge_order=self._free_edges
+        )
+
+    def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list):
+        """Helper function for creating tensornetwork nodes based on tensors.
+
+        Args:
+          tensors (np.ndarray, tf.Tensor, torch.Tensor): tensors of the observables
+          wires (Sequence[Sequence[int]]): measured subsystems for each observable
+          observable_names (Sequence[str]): name of the operation/observable
+
+        Returns:
+          list[tn.Node]: the observables as tensornetwork Nodes
+        """
+        return [self._add_node(A, w, name=o) for A, w, o in zip(tensors, wires, observable_names)]
 
     def expval(self, observable, wires, par):
+
         if not isinstance(observable, list):
-            observable = [observable]
-            wires = [wires]
-            par = [par]
-        matrices = []
+            observable, wires, par = [observable], [wires], [par]
+
+        tensors = []
         for o, p, w in zip(observable, par, wires):
             A = self._get_operator_matrix(o, p)
             num_mult_idxs = len(w)
-            matrices.append(np.reshape(A, [2] * num_mult_idxs * 2))
-        nodes = [self._add_node(A, w, name=o) for A, w, o in zip(matrices, wires, observable)]
+            tensors.append(np.reshape(A, [2] * num_mult_idxs * 2))
+
+        nodes = self.create_nodes_from_tensors(tensors, wires, observable)
         return self.ev(nodes, wires)
+
+    def var(self, observable, wires, par):
+
+        if not isinstance(observable, list):
+            observable, wires, par = [observable], [wires], [par]
+
+        matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
+
+        tensors = [np.reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
+        tensors_of_squared_matrices = [np.reshape(A@A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
+
+        obs_nodes = self.create_nodes_from_tensors(tensors, wires, observable)
+        obs_nodes_for_squares = self.create_nodes_from_tensors(tensors_of_squared_matrices, wires, observable)
+
+        return self.ev(obs_nodes_for_squares, wires) - self.ev(obs_nodes, wires)**2
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
@@ -204,13 +265,13 @@ class TensorNetwork(Device):
 
          Args:
             obs_nodes (Sequence[tn.Node]): the observables as tensornetwork Nodes
-            wires (Sequence[Sequence[[int]]): measured subsystems for each observable
+            wires (Sequence[Sequence[int]]): measured subsystems for each observable
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
 
         all_wires = tuple(w for w in range(self.num_wires))
-        ket = self._add_node(self._state, wires=all_wires, name="Ket")
+        ket = self._add_node(self._state_node, wires=all_wires, name="Ket")
         bra = self._add_node(tn.conj(ket), wires=all_wires, name="Bra")
         meas_wires = []
         # We need to build up <psi|A|psi> step-by-step.
@@ -242,6 +303,18 @@ class TensorNetwork(Device):
                 RuntimeWarning,
             )
         return expval.real
+
+    @property
+    def _state(self):
+        """The numerical value of the current state vector.
+
+        This attribute cannot be manually overwritten.
+
+        Returns:
+            (array, tf.Tensor, torch.Tensor): the numerical tensor
+        """
+
+        return self._state_node.tensor
 
     def reset(self):
         """Reset the device"""
