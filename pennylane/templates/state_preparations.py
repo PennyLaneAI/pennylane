@@ -60,7 +60,7 @@ def gray_code(rank):
             for i in range(k - 1, -1, -1):
                 g[i] = "0" + g[i]
 
-            gray_code_recurse(g, n - 1)
+            gray_code_recurse(g, rank - 1)
 
     g = ["0", "1"]
     gray_code_recurse(g, rank - 1)
