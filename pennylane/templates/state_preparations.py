@@ -159,7 +159,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
-def _unirz_dagger(alpha, control_wires, target_wire):
+def _uniform_rotation_z_dagger(alpha, control_wires, target_wire):
     """Applies the inverse of a Z rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -172,7 +172,7 @@ def _unirz_dagger(alpha, control_wires, target_wire):
     _uniform_rotation_dagger(qml.RZ, alpha, control_wires, target_wire)
 
 
-def _uniry_dagger(alpha, control_wires, target_wire):
+def _uniform_rotation_y_dagger(alpha, control_wires, target_wire):
     """Applies the inverse of a Y rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -304,7 +304,7 @@ def MottonenStatePreparation(state_vector, wires):
         alpha_y_k = _get_alpha_y(a, n, k)  # type: sparse.dok_matrix
         control = wires[k:]
         target = wires[k - 1]
-        _uniry_dagger(alpha_y_k, control, target)
+        _uniform_rotation_y_dagger(alpha_y_k, control, target)
 
     # Apply z rotations
     for k in range(n, 0, -1):
@@ -312,4 +312,4 @@ def MottonenStatePreparation(state_vector, wires):
         control = wires[k:]
         target = wires[k - 1]
         if len(alpha_z_k) > 0:
-            _unirz_dagger(alpha_z_k, control, target)
+            _uniform_rotation_z_dagger(alpha_z_k, control, target)
