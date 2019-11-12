@@ -174,7 +174,6 @@ def mock_device(monkeypatch):
         m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
         yield qml.Device()
 
-
 #####################################################
 # Tests
 
@@ -429,7 +428,6 @@ class TestTFInterface:
 class TestMultipleInterfaceIntegration:
     """Tests to ensure that interfaces agree and integrate correctly"""
 
-
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
         dev = qml.device("default.qubit", wires=2)
@@ -441,7 +439,7 @@ class TestMultipleInterfaceIntegration:
 
         # TensorFlow interface
         params = [Variable(i) for i in [qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]]
-        ansatz = qml.templates.layers.StronglyEntanglingLayers
+        ansatz = lambda params, wires: qml.templates.layers.StronglyEntanglingLayers(*params, wires=wires, repeat=3)
 
         cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
 
@@ -452,7 +450,7 @@ class TestMultipleInterfaceIntegration:
         # Torch interface
         params = torch.tensor([qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)])
         params = torch.autograd.Variable(params, requires_grad=True)
-        ansatz = qml.templates.layers.StronglyEntanglingLayers
+        ansatz = lambda params, wires:
 
         cost = qml.vqe.cost(params, ansatz, H, dev, interface="torch")
         cost.backward()
@@ -460,7 +458,7 @@ class TestMultipleInterfaceIntegration:
 
         # NumPy interface
         params = [qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]
-        ansatz = qml.templates.layers.StronglyEntanglingLayers
+        ansatz = lambda params, wires: qml.templates.layers.StronglyEntanglingLayers(*params, wires=wires, repeat=3)
         cost = qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
         cost2 = lambda params: qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
         dcost = qml.grad(cost2, argnum=[0])

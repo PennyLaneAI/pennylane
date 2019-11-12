@@ -17,11 +17,11 @@ Subroutines are the most basic template, consisting of a collection of quantum o
  repeatedly.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections.abc import Sequence
-
 from pennylane.ops import Beamsplitter, Rotation
-from pennylane.qnode import QuantumFunctionError
-from pennylane.variable import Variable
+from pennylane.templates.utils import (_check_shape,
+                                       _check_no_variable,
+                                       _check_wires,
+                                       _check_hyperp_is_in_options)
 
 
 def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='pennylane'):
@@ -31,11 +31,6 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     providing :math:`M(M-1)/2` transmittivity angles :math:`\theta` and the same number of
     phase angles :math:`\phi`, as well as either :math:`M-1` or :math:`M` additional rotation
     parameters :math:`\varphi`.
-
-    For the parametrization of a universal interferometer
-    :math:`M-1` such rotation parameters are sufficient. If :math:`M` rotation
-    parameters are given, the interferometer is over-parametrized, but the resulting
-    circuit is more symmetric, which can be advantageous.
 
     By specifying the keyword argument ``mesh``, the scheme used to implement the interferometer
     may be adjusted:
@@ -65,8 +60,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
           :target: javascript:void(0);
 
     In both schemes, the network of :class:`~pennylane.ops.Beamsplitter` operations is followed by
-    :math:`M` (or :math:`M-1`) local :class:`~pennylane.ops.Rotation` Operations. In the latter case, the
-    rotation on the last wire is left out.
+    :math:`M` local :class:`~pennylane.ops.Rotation` Operations.
 
     The rectangular decomposition is generally advantageous, as it has a lower
     circuit depth (:math:`M` vs :math:`2M-3`) and optical depth than the triangular
@@ -98,7 +92,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     Args:
         theta (array): length :math:`M(M-1)/2` array of transmittivity angles :math:`\theta`
         phi (array): length :math:`M(M-1)/2` array of phase angles :math:`\phi`
-        varphi (array): length :math:`M` or :math:`M-1` array of rotation angles :math:`\varphi`
+        varphi (array): length :math:`M` array of rotation angles :math:`\varphi`
         wires (Sequence[int]): wires the interferometer should act on
 
     Keyword Args:
@@ -108,27 +102,25 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
           beamsplitter is implemented via PennyLane's ``Beamsplitter`` operation.
 
     Raises:
-        QuantumFunctionError: if ``beamsplitter`` or ``mesh`` is an instance of
-            :class:`~pennylane.variable.Variable`
+        QuantumFunctionError if arguments do not have the correct format.
     """
-    if isinstance(beamsplitter, Variable):
-        raise QuantumFunctionError("The beamsplitter parameter influences the "
-                                   "circuit architecture and can not be passed as a QNode parameter.")
 
-    if isinstance(mesh, Variable):
-        raise QuantumFunctionError("The mesh parameter influences the circuit architecture "
-                                   "and can not be passed as a QNode parameter.")
+    #############
+    # Input checks
+    _check_no_variable([beamsplitter, mesh], ['beamsplitter', 'mesh'])
+    wires, n_wires = _check_wires(wires)
+    weights = [theta, phi, varphi]
+    n_if = n_wires*(n_wires-1)//2
+    shp = [(n_if,), (n_if,), (n_wires,)]
+    _check_shape(weights, shp)
+    _check_hyperp_is_in_options(mesh, ['triangular', 'rectangular'])
+    ###############
 
-    if not isinstance(wires, Sequence):
-        w = [wires]
-    else:
-        w = wires
-
-    M = len(w)
+    M = len(wires)
 
     if M == 1:
         # the interferometer is a single rotation
-        Rotation(varphi[0], wires=w[0])
+        Rotation(varphi[0], wires=wires[0])
         return
 
     n = 0  # keep track of free parameters
@@ -137,7 +129,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
         # Apply the Clements beamsplitter array
         # The array depth is N
         for l in range(M):
-            for k, (w1, w2) in enumerate(zip(w[:-1], w[1:])):
+            for k, (w1, w2) in enumerate(zip(wires[:-1], wires[1:])):
                 #skip even or odd pairs depending on layer
                 if (l+k)%2 != 1:
                     if beamsplitter == 'clements':
@@ -153,15 +145,15 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
         for l in range(2*M-3):
             for k in range(abs(l+1-(M-1)), M-1, 2):
                 if beamsplitter == 'clements':
-                    Rotation(phi[n], wires=[w[k]])
-                    Beamsplitter(theta[n], 0, wires=[w[k], w[k+1]])
+                    Rotation(phi[n], wires=[wires[k]])
+                    Beamsplitter(theta[n], 0, wires=[wires[k], wires[k+1]])
                 else:
-                    Beamsplitter(theta[n], phi[n], wires=[w[k], w[k+1]])
+                    Beamsplitter(theta[n], phi[n], wires=[wires[k], wires[k+1]])
                 n += 1
 
     # apply the final local phase shifts to all modes
     for i, p in enumerate(varphi):
-        Rotation(p, wires=[w[i]])
+        Rotation(p, wires=[wires[i]])
 
 
 subroutines = {"Interferometer"}

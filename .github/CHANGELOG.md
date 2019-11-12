@@ -14,9 +14,13 @@
 
 * Initialization functions now return single array of weights per function. Utility for multi-weight templates
   `Interferometer()` and `CVNeuralNetLayers()` are provided.
-  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
+  [#412](https://github.com/XanaduAI/pennylane/pull/412)
 
 ### Improvements
+
+* Templates have a clearer signature with some additional parameters and input checks are
+  standarized to work with all interfaces.
+  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
 
 * Templates integration tests are rewritten - now cover keyword/positional argument passing,
   interfaces and combinations of templates.

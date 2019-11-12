@@ -39,23 +39,19 @@ class TestInterferometer:
 
         @qml.qnode(dev)
         def circuit(varphi, mesh):
-            Interferometer(theta=None, phi=None, varphi=varphi, mesh=mesh, wires=0)
+            Interferometer(theta=[], phi=[], varphi=varphi, mesh=mesh, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(QuantumFunctionError) as excinfo:
+        with pytest.raises(QuantumFunctionError):
             circuit(varphi, 'rectangular')
-        assert excinfo.value.args[0] == 'The mesh parameter influences the circuit architecture ' \
-                                        'and can not be passed as a QNode parameter.'
 
         @qml.qnode(dev)
         def circuit(varphi, bs):
             Interferometer(theta=None, phi=None, varphi=varphi, beamsplitter=bs, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(QuantumFunctionError) as excinfo:
+        with pytest.raises(QuantumFunctionError):
             circuit(varphi, 'clements')
-        assert excinfo.value.args[0] == "The beamsplitter parameter influences the circuit architecture " \
-                                        "and can not be passed as a QNode parameter."
 
     def test_clements_beamsplitter_convention(self, tol):
         """test the beamsplitter convention"""
@@ -65,7 +61,7 @@ class TestInterferometer:
 
         theta = [0.321]
         phi = [0.234]
-        varphi = [0.42342]
+        varphi = [0.42342, 0.9182]
 
         def circuit_rect(varphi):
             Interferometer(theta, phi, varphi, mesh='rectangular', beamsplitter='clements', wires=wires)
@@ -80,7 +76,7 @@ class TestInterferometer:
             assert np.allclose(qnode(varphi), [0, 0], atol=tol)
 
             queue = qnode.queue
-            assert len(queue) == 3
+            assert len(queue) == 4
 
             assert isinstance(qnode.queue[0], qml.Rotation)
             assert qnode.queue[0].parameters == phi
@@ -89,7 +85,10 @@ class TestInterferometer:
             assert qnode.queue[1].parameters == [theta[0], 0]
 
             assert isinstance(qnode.queue[2], qml.Rotation)
-            assert qnode.queue[2].parameters == varphi
+            assert qnode.queue[2].parameters == [varphi[0]]
+
+            assert isinstance(qnode.queue[3], qml.Rotation)
+            assert qnode.queue[3].parameters == [varphi[1]]
 
     def test_one_mode(self, tol):
         """Test that a one mode interferometer correctly gives a rotation gate"""
@@ -97,7 +96,7 @@ class TestInterferometer:
         varphi = [0.42342]
 
         def circuit(varphi):
-            Interferometer(theta=None, phi=None, varphi=varphi, wires=0)
+            Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -111,60 +110,6 @@ class TestInterferometer:
     def test_two_mode_rect(self, tol):
         """Test that a two mode interferometer using the rectangular mesh
         correctly gives a beamsplitter+rotation gate"""
-        N = 2
-        wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
-
-        theta = [0.321]
-        phi = [0.234]
-        varphi = [0.42342]
-
-        def circuit(varphi):
-            Interferometer(theta, phi, varphi, wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
-
-        qnode = qml.QNode(circuit, dev)
-        assert np.allclose(qnode(varphi), [0, 0], atol=tol)
-
-        queue = qnode.queue
-        assert len(queue) == 2
-
-        assert isinstance(qnode.queue[0], qml.Beamsplitter)
-        assert qnode.queue[0].parameters == theta+phi
-
-        assert isinstance(qnode.queue[1], qml.Rotation)
-        assert qnode.queue[1].parameters == varphi
-
-    def test_two_mode_triangular(self, tol):
-        """Test that a two mode interferometer using the triangular mesh
-        correctly gives a beamsplitter+rotation gate"""
-        N = 2
-        wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
-
-        theta = [0.321]
-        phi = [0.234]
-        varphi = [0.42342]
-
-        def circuit(varphi):
-            Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
-
-        qnode = qml.QNode(circuit, dev)
-        assert np.allclose(qnode(varphi), [0, 0], atol=tol)
-
-        queue = qnode.queue
-        assert len(queue) == 2
-
-        assert isinstance(qnode.queue[0], qml.Beamsplitter)
-        assert qnode.queue[0].parameters == theta+phi
-
-        assert isinstance(qnode.queue[1], qml.Rotation)
-        assert qnode.queue[1].parameters == varphi
-
-    def test_two_mode_rect_overparameterised(self, tol):
-        """Test that a two mode interferometer using the rectangular mesh
-        correctly gives a beamsplitter+2 rotation gates"""
         N = 2
         wires = range(N)
         dev = qml.device('default.gaussian', wires=N)
@@ -192,6 +137,36 @@ class TestInterferometer:
         assert isinstance(qnode.queue[2], qml.Rotation)
         assert qnode.queue[2].parameters == [varphi[1]]
 
+    def test_two_mode_triangular(self, tol):
+        """Test that a two mode interferometer using the triangular mesh
+        correctly gives a beamsplitter+rotation gate"""
+        N = 2
+        wires = range(N)
+        dev = qml.device('default.gaussian', wires=N)
+
+        theta = [0.321]
+        phi = [0.234]
+        varphi = [0.42342, 0.543]
+
+        def circuit(varphi):
+            Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
+            return [qml.expval(qml.NumberOperator(w)) for w in wires]
+
+        qnode = qml.QNode(circuit, dev)
+        assert np.allclose(qnode(varphi), [0, 0], atol=tol)
+
+        queue = qnode.queue
+        assert len(queue) == 3
+
+        assert isinstance(qnode.queue[0], qml.Beamsplitter)
+        assert qnode.queue[0].parameters == theta+phi
+
+        assert isinstance(qnode.queue[1], qml.Rotation)
+        assert qnode.queue[1].parameters == [varphi[0]]
+
+        assert isinstance(qnode.queue[2], qml.Rotation)
+        assert qnode.queue[2].parameters == [varphi[1]]
+
     def test_three_mode(self, tol):
         """Test that a three mode interferometer using either mesh gives the correct gates"""
         N = 3
@@ -200,7 +175,7 @@ class TestInterferometer:
 
         theta = [0.321, 0.4523, 0.21321]
         phi = [0.234, 0.324, 0.234]
-        varphi = [0.42342, 0.234]
+        varphi = [0.42342, 0.234, 0.164]
 
         def circuit_rect(varphi):
             Interferometer(theta, phi, varphi, wires=wires)
@@ -216,7 +191,7 @@ class TestInterferometer:
             assert np.allclose(qnode(varphi), [0]*N, atol=tol)
 
             queue = qnode.queue
-            assert len(queue) == 5
+            assert len(queue) == 6
 
             expected_bs_wires = [[0, 1], [1, 2], [0, 1]]
 
@@ -238,7 +213,7 @@ class TestInterferometer:
 
         theta = [0.321, 0.4523, 0.21321, 0.123, 0.5234, 1.23]
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
-        varphi = [0.42342, 0.234, 0.4523]
+        varphi = [0.42342, 0.234, 0.4523, 0.2164]
 
         def circuit_rect(varphi):
             Interferometer(theta, phi, varphi, wires=wires)
@@ -248,7 +223,7 @@ class TestInterferometer:
         assert np.allclose(qnode(varphi), [0]*N, atol=tol)
 
         queue = qnode.queue
-        assert len(queue) == 9
+        assert len(queue) == 10
 
         expected_bs_wires = [[0, 1], [2, 3], [1, 2], [0, 1], [2, 3], [1, 2]]
 
@@ -270,7 +245,7 @@ class TestInterferometer:
 
         theta = [0.321, 0.4523, 0.21321, 0.123, 0.5234, 1.23]
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
-        varphi = [0.42342, 0.234, 0.4523]
+        varphi = [0.42342, 0.234, 0.4523, 0.1649]
 
         def circuit_tria(varphi):
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
@@ -280,7 +255,7 @@ class TestInterferometer:
         assert np.allclose(qnode(varphi), [0]*N, atol=tol)
 
         queue = qnode.queue
-        assert len(queue) == 9
+        assert len(queue) == 10
 
         expected_bs_wires = [[2, 3], [1, 2], [0, 1], [2, 3], [1, 2], [2, 3]]
 
@@ -338,14 +313,6 @@ class TestCVNeuralNet:
         return 4
 
     @pytest.fixture(scope="class")
-    def N(self):
-        return 4
-
-    @pytest.fixture(scope="class")
-    def depth(self):
-        return 2
-
-    @pytest.fixture(scope="class")
     def weights(self):
         return [
                 np.array([[ 5.48791879, 6.08552046, 5.46131036, 3.33546468, 1.46227521, 0.0716208 ],
@@ -356,12 +323,12 @@ class TestCVNeuralNet:
                          [ 2.73203094, 2.71115444, 1.16794164, 3.32823666]]),
                 np.array([[ 0.27344502, 0.68431314, 0.30026443, 0.23128064],
                          [ 0.45945175, 0.53255468, 0.28383751, 0.34263728]]),
-                np.array([[ 0.4134863 , 6.17555778, 0.80334114, 2.02400747, 0.44574704, 1.41227118],
+                np.array([[2.3936353, 4.80135971, 5.89867895, 2.00867023],
+                          [5.14552399, 3.31578667, 5.90119363, 4.54515204]]),
+            np.array([[ 0.4134863 , 6.17555778, 0.80334114, 2.02400747, 0.44574704, 1.41227118],
                          [ 5.16969442, 3.6890488 , 4.43916808, 3.20808287, 5.21543123, 4.52815349]]),
                 np.array([[ 2.47328111, 5.63064513, 2.17059932, 6.1873632 , 0.18052879, 2.20970037],
                          [ 5.44288268, 1.27806129, 1.87574979, 2.98956484, 3.10140853, 3.81814174]]),
-                np.array([[ 2.3936353 , 4.80135971, 5.89867895, 2.00867023, 2.71732643, 1.69737575],
-                         [ 5.14552399, 3.31578667, 5.90119363, 4.54515204, 1.12316345, 3.89384963]]),
                 np.array([[ 5.03318258, 4.01017269, 0.43159284, 3.7928101 ],
                          [ 3.5329307 , 4.79661266, 5.0683084 , 1.87631749]]),
                 np.array([[ 1.61159166, 0.1608155 , 0.96535086, 1.60132783],
@@ -372,11 +339,11 @@ class TestCVNeuralNet:
                          [ 0.26999146, 0.26256351, 0.14722687, 0.23137066]])
             ]
 
-    def test_cvneuralnet_integration(self, gaussian_device_4modes, weights, depth, N):
+    def test_cvneuralnet_integration(self, gaussian_device_4modes, weights):
         """integration test for the CVNeuralNetLayers template."""
 
         def circuit(weights):
-            CVNeuralNetLayers(*weights, wires=range(N))
+            CVNeuralNetLayers(*weights, wires=range(4), repeat=2)
             return qml.expval(qml.X(wires=0))
 
         qnode = qml.QNode(circuit, gaussian_device_4modes)
@@ -387,7 +354,7 @@ class TestCVNeuralNet:
 
         # Test that gates appear in the right order for each layer:
         # BS-R-S-BS-R-D-K
-        for l in range(depth):
+        for l in range(2):
             gates = [qml.Beamsplitter, qml.Rotation, qml.Squeezing,
                      qml.Beamsplitter, qml.Rotation, qml.Displacement]
 
@@ -437,11 +404,8 @@ class TestCVNeuralNet:
         qnode = qml.QNode(circuit, gaussian_device_4modes)
 
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(QuantumFunctionError):
             qnode(wrong_weights)
-        assert excinfo.value.args[0] == "All parameter arrays need to have the same first dimension, from which " \
-                                        "the number of layers is inferred; got first dimensions " \
-                                        "[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]."
 
 
 class TestStronglyEntangling:
@@ -450,14 +414,14 @@ class TestStronglyEntangling:
     def test_integration(self, n_subsystems):
         """integration test for the StronglyEntanglingLayers."""
         np.random.seed(12)
-        num_layers = 2
+        n_layers = 2
         num_wires = n_subsystems
 
         dev = qml.device('default.qubit', wires=num_wires)
-        weights = np.random.randn(num_layers, num_wires, 3)
+        weights = np.random.randn(n_layers, num_wires, 3)
 
         def circuit(weights):
-            StronglyEntanglingLayers(weights, wires=range(num_wires))
+            StronglyEntanglingLayers(weights, wires=range(num_wires), repeat=n_layers,)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -466,14 +430,14 @@ class TestStronglyEntangling:
 
         # Test that gates appear in the right order
         exp_gates = [qml.Rot]*num_wires + [qml.CNOT]*num_wires
-        exp_gates *= num_layers
+        exp_gates *= n_layers
         res_gates = [op for op in queue]
 
         for op1, op2 in zip(res_gates, exp_gates):
             assert isinstance(op1, op2)
 
         # test the device parameters
-        for l in range(num_layers):
+        for l in range(n_layers):
             layer_ops = queue[2*l*num_wires:2*(l+1)*num_wires]
 
             # check each rotation gate parameter
@@ -488,15 +452,16 @@ class TestStronglyEntangling:
         outcomes = []
 
         for num_wires in range(2, 4):
-            for num_layers in range(1, 3):
+            for n_layers in range(1, 3):
 
                 dev = qml.device('default.qubit', wires=num_wires)
-                weights = np.random.randn(num_layers, num_wires, 3)
+                weights = np.random.randn(n_layers, num_wires, 3)
 
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
                     qml.BasisState(x, wires=range(num_wires))
-                    StronglyEntanglingLayers(weights, wires=range(num_wires))
+                    StronglyEntanglingLayers(weights, wires=range(num_wires),
+                                             repeat=n_layers,)
                     return qml.expval(qml.PauliZ(0))
 
                 outcomes.append(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
@@ -504,26 +469,6 @@ class TestStronglyEntangling:
         res = np.array(outcomes)
         expected = np.array([-0.29242496, 0.22129055, 0.07540091, -0.77626557])
         assert np.allclose(res, expected, atol=tol)
-
-    def test_stronglyentangling_layer_exception_subsystems(self):
-        """Tests that pennylane.templates.layers.StronglyEntanglingLayer() throws exception if n_wires < 2."""
-        np.random.seed(12)
-        n_rots = 2
-        n_wires = 1
-
-        dev = qml.device('default.qubit', wires=n_wires)
-        weights = np.random.randn(n_rots)
-
-        def circuit(weights):
-            StronglyEntanglingLayer(weights=weights, wires=range(n_wires))
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError) as excinfo:
-            qnode(weights)
-        assert excinfo.value.args[0] == "StronglyEntanglingLayer requires at least two wires or subsystems to apply " \
-                                        "the imprimitive gates."
 
 
 class TestRandomLayers:
@@ -545,18 +490,20 @@ class TestRandomLayers:
         return request.param
 
     def test_random_layers_seed_deterministic(self, n_layers, tol, seed):
-        """Test that pennylane.templates.layers.RandomLayers() acts deterministically when using fixed seed."""
+        """Test that RandomLayers() acts deterministically when using fixed seed."""
         n_rots = 1
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
         weights = np.random.randn(n_layers, n_rots)
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), seed=seed)
+            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
+                         n_rots=n_rots, seed=seed)
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), seed=seed)
+            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
+                         n_rots=n_rots, seed=seed)
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
@@ -564,19 +511,21 @@ class TestRandomLayers:
 
         assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
-    def test_random_layers_no_seed_deterministic(self, n_layers, tol):
-        """Test that pennylane.templates.layers.RandomLayers() acts deterministically when using no seed."""
+    def test_random_layers_default_seed_deterministic(self, n_layers, tol):
+        """Test that RandomLayers() acts deterministically when using the default seed."""
         n_rots = 1
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
         weights = np.random.randn(n_layers, n_rots)
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires))
+            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
+                         n_rots=n_rots)
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires))
+            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
+                         n_rots=n_rots)
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
@@ -585,18 +534,20 @@ class TestRandomLayers:
         assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
     def test_random_layers_two_seeds_different(self, n_layers, tol):
-        """Test that pennylane.templates.layers.RandomLayers() does not have the same output for two different seeds."""
+        """Test that RandomLayers() does not have the same output for two different seeds."""
         n_rots = 10
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
         weights = np.random.randn(n_layers, n_rots)
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), seed=0)
+            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
+                         n_rots=n_rots, seed=0)
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), seed=1)
+            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
+                         n_rots=n_rots, seed=1)
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
@@ -605,7 +556,7 @@ class TestRandomLayers:
         assert not np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
     def test_random_layers_nlayers(self, n_layers):
-        """Test that  pennylane.templates.layers.RandomLayers() picks the correct number of gates."""
+        """Test that RandomLayers() picks the correct number of gates."""
         np.random.seed(12)
         n_rots = 1
         n_wires = 2
@@ -614,7 +565,8 @@ class TestRandomLayers:
         weights = np.random.randn(n_layers, n_rots)
 
         def circuit(weights):
-            RandomLayers(weights=weights, wires=range(n_wires))
+            RandomLayers(weights=weights, wires=range(n_wires),
+                         repeat=n_layers, n_rots=n_rots)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -624,7 +576,7 @@ class TestRandomLayers:
         assert len(types) - types.count(impr) == n_layers
 
     def test_random_layer_imprimitive(self, ratio):
-        """Test that  pennylane.templates.layers.RandomLayer() has the right ratio of imprimitive gates."""
+        """Test that  RandomLayer() has the right ratio of imprimitive gates."""
         np.random.seed(12)
         n_rots = 500
         n_wires = 2
@@ -633,7 +585,8 @@ class TestRandomLayers:
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_wires), ratio_imprim=ratio, impr=CNOT)
+            RandomLayer(weights=weights, wires=range(n_wires), ratio_imprim=ratio,
+                        n_rots=n_rots, impr=CNOT)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -644,15 +597,15 @@ class TestRandomLayers:
         assert np.isclose(ratio_impr, ratio, atol=0.05)
 
     def test_random_layer_imprimitive(self, n_subsystems, impr, rots):
-        """Test that  pennylane.templates.layers.RandomLayer() uses the correct types of gates."""
+        """Test that  RandomLayer() uses the correct types of gates."""
         np.random.seed(12)
         n_rots = 20
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_subsystems),
-                                             imprimitive=impr, rotations=rots)
+            RandomLayer(weights=weights, wires=range(n_subsystems), n_rots=n_rots,
+                        imprimitive=impr, rotations=rots)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -664,32 +617,33 @@ class TestRandomLayers:
         assert unique == gates
 
     def test_random_layer_numgates(self, n_subsystems):
-        """Test that  pennylane.templates.layers.RandomLayer() uses the correct number of gates."""
+        """Test that  RandomLayer() uses the correct number of gates."""
         np.random.seed(12)
         n_rots = 5
-        impr = CNOT
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_subsystems), imprimitive=impr)
+            RandomLayer(weights=weights, wires=range(n_subsystems), imprimitive=qml.CNOT,
+                        n_rots=n_rots)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
         qnode(weights)
         queue = qnode.queue
         types = [type(q) for q in queue]
-        assert len(types) - types.count(impr) == n_rots
+        assert len(types) - types.count(qml.CNOT) == n_rots
 
     def test_random_layer_randomwires(self, n_subsystems):
-        """Test that  pennylane.templates.layers.RandomLayer() picks random wires."""
+        """Test that  RandomLayer() picks random wires."""
         np.random.seed(12)
         n_rots = 500
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_subsystems))
+            RandomLayer(weights=weights, wires=range(n_subsystems), n_rots=n_rots,
+                        imprimitive=qml.CNOT)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -701,14 +655,15 @@ class TestRandomLayers:
         assert np.isclose(mean_wire, (n_subsystems - 1) / 2, atol=0.05)
 
     def test_random_layer_imprimitive(self, n_subsystems, tol):
-        """Test that  pennylane.templates.layers.RandomLayer() uses the correct weights."""
+        """Test that RandomLayer() uses the correct weights."""
         np.random.seed(12)
         n_rots = 5
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            RandomLayer(weights=weights, wires=range(n_subsystems))
+            RandomLayer(weights=weights, wires=range(n_subsystems), n_rots=n_rots,
+                        imprimitive=qml.CNOT)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -718,22 +673,4 @@ class TestRandomLayers:
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
-    def test_random_layer_exception_subsystems(self):
-        """Tests that pennylane.templates.layers.RandomLayer() throws exception if n_wires < 2."""
-        np.random.seed(12)
-        n_rots = 2
-        n_wires = 1
 
-        dev = qml.device('default.qubit', wires=n_wires)
-        weights = np.random.randn(n_rots)
-
-        def circuit(weights):
-            RandomLayers(weights=weights, wires=range(n_wires))
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError) as excinfo:
-            qnode(weights)
-        assert excinfo.value.args[0] == "RandomLayer requires at least two wires or subsystems to apply " \
-                                        "the imprimitive gates."

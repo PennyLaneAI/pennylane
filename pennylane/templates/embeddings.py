@@ -17,33 +17,81 @@ They can optionally be repeated, and may contain trainable parameters. Embedding
 used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections.abc import Iterable
+from pennylane import numpy as np
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
-from pennylane.variable import Variable
-import numpy as np
+from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
+                                       _check_hyperp_is_in_options, _check_type)
 
 
-def _check_wires(wires):
-    """Standard checks for the wires argument."""
-    if isinstance(wires, int):
-        wires = [wires]
-    if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires; got {}.".format(wires))
+def AmplitudeEmbedding(features, wires, pad=False, normalize=False, c=0.):
+    r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
+    If the total number of features to embed is less than the :math:`2^n` available amplitudes,
+    non-informative constants (zeros) can be padded to ``features``. To enable this, the argument
+    ``pad`` should be set to ``True``.
 
-def _check_features(features, min_size=None, max_size=None):
-    """Standard checks for features argument"""
+    The L2-norm of ``features`` must be one. By default, AmplitudeEmbedding expects a normalized
+    feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
 
-    n_features = len(features) #TODO: BETTER
+    .. note::
 
-    if min_size is not None:
-        if n_features < min_size:
-            raise ValueError("Number of features cannot be smaller than {}; got {}."
-                             .format(min_size, n_features))
-    if max_size is not None:
-        if n_features > min_size:
-            raise ValueError("Number of features cannot be larger than {}; got {}."
-                             .format(min_size, n_features))
+        AmplitudeEmbedding uses PennyLane's :class:`~pennylane.ops.QubitStateVector` and only works in conjunction with
+        devices that support this operation.
+
+    Args:
+        features (array): input array of shape ``(2**n,)``
+        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
+
+    Keyword Args:
+        pad (Boolean): controls the activation of the padding option
+        normalize (Boolean): controls the activation of automatic normalization
+        c (float or complex): used as the constant for padding
+
+    Raises:
+        QuantumFunctionError if inputs do not have the correct format.
+    """
+
+    #############
+    # Input checks
+    _check_no_variable([pad, normalize], ['pad', 'normalize'])
+    mssg = "At this stage, the feature input of AmplitudeEncoding cannot be trained. " \
+           "It has to be passed to the qnode via a positional argument."
+    _check_no_variable([features], ['features'], mssg=mssg)
+    mssg = "Due to the implementation, the feature input of AmplitudeEmbedding must be " \
+           "a numpy array."
+    _check_type(features, np.ndarray, mssg=mssg)
+    wires, n_wires = _check_wires(wires)
+    n_ampl = 2**n_wires
+    if pad:
+        mssg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}.".format(n_ampl)
+        shp = _check_shape(features, (n_ampl,), mssg=mssg, bound='max')
+    else:
+        mssg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}. Use ``pad=True`` " \
+               "to automatically pad the features.".format(n_ampl)
+        shp = _check_shape(features, (n_ampl,), mssg=mssg)
+    _check_type(pad, bool)
+    _check_type(normalize, bool)
+    _check_type(c, float, alt=complex)
+    ###############
+
+    n_feats = shp[0]
+    if pad and n_ampl > n_feats:
+        features = np.pad(features, (0, n_ampl-n_feats), mode='constant', constant_values=c)
+
+    # Get normalization
+    norm = 0
+    for f in features:
+        norm += np.conj(f)*f
+
+    if not np.isclose(norm, 1, atol=1e-5):
+        if normalize:
+            # TODO: Compatibility with interfaces
+            features = features/np.sqrt(norm)
+        else:
+            raise ValueError("AmplitudeEmbedding requires a normalized feature vector. "
+                             "Set ``normalize=True`` to automatically normalize it.")
+
+    QubitStateVector(features, wires=wires)
 
 
 def AngleEmbedding(features, wires, rotation='X'):
@@ -77,11 +125,17 @@ def AngleEmbedding(features, wires, rotation='X'):
         rotation (str): Type of rotations used
 
     Raises:
-        ValueError: if ``features`` or ``wires`` is invalid
+        QuantumFunctionError if inputs do not have the correct format.
     """
 
-    _check_wires(wires)
-    _check_features(features, len(wires))
+    #############
+    # Input checks
+    _check_no_variable([rotation], ['rotation'])
+    wires, n_wires = _check_wires(wires)
+    _check_shape(features, (n_wires,), bound='max')
+    _check_type(rotation, str)
+    _check_hyperp_is_in_options(rotation, ['X', 'Y', 'Z'])
+    ###############
 
     if rotation == 'X':
         for f, w in zip(features, wires):
@@ -92,63 +146,6 @@ def AngleEmbedding(features, wires, rotation='X'):
     elif rotation == 'Z':
         for f, w in zip(features, wires):
             RZ(f, wires=w)
-    else:
-        raise ValueError("Rotation has to be `X`, `Y` or `Z`; got {}.".format(rotation))
-
-
-def AmplitudeEmbedding(features, wires, pad=False, normalize=False):
-    r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
-
-    If the total number of features to embed are less than the :math:`2^n` available amplitudes,
-    non-informative constants (zeros) can be padded to ``features``. To enable this, the argument
-    ``pad`` should be set to ``True``.
-
-    The L2-norm of ``features`` must be one. By default, AmplitudeEmbedding expects a normalized
-    feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
-
-    .. note::
-
-        AmplitudeEmbedding uses PennyLane's :class:`~pennylane.ops.QubitStateVector` and only works in conjunction with
-        devices that support this operation.
-
-    Args:
-        features (array): input array of shape ``(2**n,)``
-        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
-        pad (Boolean): controls the activation of the padding option
-        normalize (Boolean): controls the activation of automatic normalization
-
-    Raises:
-        ValueError: if ``features`` or ``wires`` is not of the correct format
-    """
-
-    _check_wires(wires)
-    n_ampl = 2**len(wires)
-    n_feats = _check_features(features, min_size=1, max_size=2**len(wires))
-
-    if pad and n_ampl >= n_feats:
-        features = np.pad(features, (0, n_ampl-n_feats), 'constant')
-
-    if not pad and n_ampl != n_feats:
-        raise ValueError("AmplitudeEmbedding must get a feature vector of size 2**len(wires), "
-                         "which is {}; got {}. Use ``pad=True`` to automatically pad the "
-                         "features with zeros.".format(n_ampl, n_feats))
-
-    # Get normalization
-    norm = 0
-    for f in features:
-        if isinstance(f, Variable):
-            norm += np.conj(f.val)*f.val
-        else:
-            norm += np.conj(f)*f
-
-    if not np.isclose(norm, 1):
-        if normalize:
-            features = features/np.sqrt(norm)
-        else:
-            raise ValueError("AmplitudeEmbedding requires a normalized feature vector. "
-                             "Set ``normalize=True`` to automatically normalize it.")
-
-    QubitStateVector(features, wires=wires)
 
 
 def BasisEmbedding(features, wires):
@@ -166,11 +163,22 @@ def BasisEmbedding(features, wires):
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Raises:
-        ValueError: if ``features`` or ``wires`` is invalid
+        QuantumFunctionError if arguments do not have the correct format.
     """
 
-    _check_wires(wires)
-    _check_features(features, min_size=1, max_size=len(wires))
+    #############
+    # Input checks
+    mssg = "The feature input of BasisEmbedding cannot be trained, since it influences the " \
+           "circuit architecture. It has to be passed to the qnode via a positional argument."
+    _check_no_variable([features], ['features'], mssg=mssg)
+    mssg = "Due to the implementation, the feature input of BasisEmbedding must be " \
+           "a numpy array."
+    _check_type(features, np.ndarray, mssg=mssg)
+    wires, n_wires = _check_wires(wires)
+    _check_shape(features, (n_wires,))
+    ###############
+
+    # TODO: Check that features are binary
 
     BasisState(features, wires=wires)
 
@@ -201,19 +209,22 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             amplitude of all squeezing gates if ``execution='phase'``
 
     Raises:
-        ValueError: if ``features`` or ``wires`` is invalid
+        QuantumFunctionError if inputs do not have the correct format.
     """
 
-    _check_wires(wires)
-    _check_features(features, min_size=1, max_size=len(wires))
+    #############
+    # Input checks
+    _check_no_variable([method, c], ['method', 'c'])
+    wires, n_wires = _check_wires(wires)
+    _check_shape(features, (n_wires,), bound='max')
+    _check_hyperp_is_in_options(method, ['amplitude', 'phase'])
+    #############
 
     for idx, f in enumerate(features):
         if method == 'amplitude':
             Squeezing(f, c, wires=wires[idx])
         elif method == 'phase':
             Squeezing(c, f, wires=wires[idx])
-        else:
-            raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))
 
 
 def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
@@ -241,19 +252,22 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             the amplitude of all displacement gates if ``execution='phase'``
 
     Raises:
-        ValueError: if ``features`` or ``wires`` is invalid or if ``method`` is unknown
+        QuantumFunctionError if inputs do not have the correct format.
    """
 
-    _check_wires(wires)
-    _check_features(features, min_size=1, max_size=len(wires))
+    #############
+    # Input checks
+    _check_no_variable([method, c], ['method', 'c'])
+    wires, n_wires = _check_wires(wires)
+    _check_shape(features, (n_wires,), bound='max')
+    _check_hyperp_is_in_options(method, ['amplitude', 'phase'])
+    #############
 
     for idx, f in enumerate(features):
         if method == 'amplitude':
             Displacement(f, c, wires=wires[idx])
         elif method == 'phase':
             Displacement(c, f, wires=wires[idx])
-        else:
-            raise ValueError("Execution method '{}' not known. Has to be 'phase' or 'amplitude'.".format(method))
 
 
 embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "SqueezingEmbedding", "DisplacementEmbedding"}
