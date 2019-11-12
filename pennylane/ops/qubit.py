@@ -765,6 +765,13 @@ class QubitStateVector(Operation):
     * Number of parameters: 1
     * Gradient recipe: None
 
+    .. note::
+
+        If the ``BasisState`` operation is not supported natively on the
+        target device, PennyLane will attempt to decompose the operation
+        using the method developed by Möttönen et al. (Quantum Info. Comput., 
+        2005).
+
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
