@@ -500,7 +500,7 @@ class Operation(Operator):
         self._inverse = boolean
 
     @staticmethod
-    def decomposition(*params, wires=None):
+    def decomposition(*params, wires):
         """Returns a template decomposing the operation into other
         quantum operations."""
         raise NotImplementedError
