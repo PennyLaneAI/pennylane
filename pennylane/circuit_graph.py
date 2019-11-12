@@ -228,7 +228,7 @@ class CircuitGraph:
         return sorted(self.descendants(ops), key=_by_idx)
 
     def nodes_between(self, a, b):
-        """Nodes on all the directed paths between the two given nodes.
+        r"""Nodes on all the directed paths between the two given nodes.
 
         Returns the set of all nodes ``s`` that fulfill :math:`a \le s \le b`.
         There is a directed path from ``a`` via ``s`` to ``b`` iff the set is nonempty.
