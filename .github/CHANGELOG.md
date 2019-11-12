@@ -1,6 +1,8 @@
 # Release 0.7.0-dev
 
 ### New features since last release
+* Added support for applying the inverse of an `Operation` within a circuit.
+  [#377](https://github.com/XanaduAI/pennylane/pull/377)
 
 * Added an `OperationRecorder()` context manager, that allows templates
   and quantum functions to be executed while recording events. The
