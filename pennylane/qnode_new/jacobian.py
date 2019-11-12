@@ -159,9 +159,9 @@ class JacobianQNode(QNode):
 
             # All the observables are evaluated simultaneously, hence for each dependent op
             # we find out the best method compatible with all the observables.
-            a.best_method = self._best_method_combined(best[ka, :])
+            a.use_method = self._best_method_combined(best[ka, :])
 
-        return self._best_method_combined([x.best_method for x in ops], B_is_A=True)
+        return self._best_method_combined([x.use_method for x in ops], B_is_A=True)
 
 
     def jacobian(self, args, kwargs=None, *, wrt=None, method='best', options=None):
@@ -411,7 +411,7 @@ class JacobianQNode(QNode):
             shift_p1 = np.r_[args, args[idx] + shift]
             shift_p2 = np.r_[args, args[idx] - shift]
 
-            if not force_order2 and op.best_method != 'B':
+            if not force_order2 and op.use_method != 'B':
                 # basic parameter-shift method, for discrete gates and gaussian CV gates
                 # succeeded by order-1 observables
                 # evaluates the circuit at two points with shifted parameter values

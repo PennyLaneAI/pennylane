@@ -16,6 +16,7 @@
 * The `QNode` class is split into a hierarchy of simpler classes.
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
   [#398](https://github.com/XanaduAI/pennylane/pull/398)
+  [#417](https://github.com/XanaduAI/pennylane/pull/417)
 
 * Changes have been made to accomodate the movement of the main function
   in `pytest._internal` in pip<19.3 to `pytest._internal.main`.
