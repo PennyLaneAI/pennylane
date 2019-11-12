@@ -228,10 +228,7 @@ class Operator(abc.ABC):
     @property
     @abc.abstractmethod
     def num_wires(self):
-        """Number of wires the operator acts on.
-
-        The value 0 allows the operator to act on any number of wires.
-        """
+        """Number of wires the operator acts on."""
 
     @property
     @abc.abstractmethod
@@ -501,7 +498,7 @@ class Operation(Operator):
         self._inverse = boolean
 
     @staticmethod
-    def decomposition(*params, wires=None):
+    def decomposition(*params, wires):
         """Returns a template decomposing the operation into other
         quantum operations."""
         raise NotImplementedError

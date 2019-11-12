@@ -49,6 +49,7 @@ extensions = [
 autosummary_generate = True
 autosummary_imported_members = True
 automodapi_toctreedirnm = "code/api"
+automodsumm_inherited_members = True
 
 
 intersphinx_mapping = {"https://pennylane.ai/qml/": None}

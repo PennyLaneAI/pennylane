@@ -282,6 +282,13 @@
         $(".css-transitions-only-after-page-load").each(function (index, element) {
             setTimeout(function () { $(element).removeClass("css-transitions-only-after-page-load") }, 10);
         });
+        if (window.location.hash) {
+           var target = $("[id='"+window.location.hash.substr(1)+"']");
+           if (target.closest(".collapse").length) {
+              target.closest(".collapse").addClass("show");
+              target.closest(".collapse").prev().find(".rotate").addClass("up");
+           }
+        }
     });
 </script>
 <script type="text/javascript">
