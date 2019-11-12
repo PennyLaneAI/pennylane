@@ -18,7 +18,6 @@ Unit tests for the functions contained in pennylane/__init__.py.
 
 import pytest
 import pennylane as qml
-from qiskit import QuantumCircuit
 
 
 class TestPennyLaneInit:
@@ -35,6 +34,8 @@ class TestPennyLaneInit:
     @pytest.mark.usefixtures("skip_if_no_pennylane_qiskit_support")
     def test_load(self):
         """Test that a converter from the PennyLane-Qiskit plugin is returned."""
+
+        from qiskit import QuantumCircuit
 
         qc = QuantumCircuit(2)
         assert callable(qml.load(qc, name='qiskit'))
