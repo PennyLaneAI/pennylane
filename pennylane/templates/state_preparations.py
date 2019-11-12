@@ -59,7 +59,7 @@ def BasisStatePreparation(basis_state, wires):
     Args:
         basis_state (array): Input array of shape ``(N,)``, where N is the number of wires
             the state preparation acts on. ``N`` must be smaller or equal to the total
-            number of wires.
+            number of wires of the device.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
@@ -126,7 +126,7 @@ def _compute_theta(alpha):
     return theta
 
 
-def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
+def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     """Applies a given inverse rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -159,7 +159,7 @@ def _uniform_rotation_dg(gate, alpha, control_wires, target_wire):
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
-def _unirz_dg(alpha, control_wires, target_wire):
+def _unirz_dagger(alpha, control_wires, target_wire):
     """Applies the inverse of a Z rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -169,10 +169,10 @@ def _unirz_dg(alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    _uniform_rotation_dg(qml.RZ, alpha, control_wires, target_wire)
+    _uniform_rotation_dagger(qml.RZ, alpha, control_wires, target_wire)
 
 
-def _uniry_dg(alpha, control_wires, target_wire):
+def _uniry_dagger(alpha, control_wires, target_wire):
     """Applies the inverse of a Y rotation to the target qubit
     that is uniformly controlled by the control qubits.
 
@@ -182,7 +182,7 @@ def _uniry_dg(alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    _uniform_rotation_dg(qml.RY, alpha, control_wires, target_wire)
+    _uniform_rotation_dagger(qml.RY, alpha, control_wires, target_wire)
 
 
 def _get_alpha_z(omega, n, k):
@@ -304,7 +304,7 @@ def MottonenStatePreparation(state_vector, wires):
         alpha_y_k = _get_alpha_y(a, n, k)  # type: sparse.dok_matrix
         control = wires[k:]
         target = wires[k - 1]
-        _uniry_dg(alpha_y_k, control, target)
+        _uniry_dagger(alpha_y_k, control, target)
 
     # Apply z rotations
     for k in range(n, 0, -1):
@@ -312,4 +312,4 @@ def MottonenStatePreparation(state_vector, wires):
         control = wires[k:]
         target = wires[k - 1]
         if len(alpha_z_k) > 0:
-            _unirz_dg(alpha_z_k, control, target)
+            _unirz_dagger(alpha_z_k, control, target)
