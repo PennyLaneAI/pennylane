@@ -97,9 +97,9 @@ class JacobianQNode(QNode):
                 # op is Gaussian and has the heisenberg_* methods
 
                 obs_successors = self._op_descendants(op, "E")
-                if not obs_successors:
-                    # op is not succeeded by any observables, thus analytic method is OK    FIXME actually we can ignore it....
-                    return "A"
+                # if not obs_successors:
+                #     # op is not succeeded by any observables, thus analytic method is OK    FIXME actually we can ignore it....
+                #     return "A"
 
                 # check that all successor ops are also Gaussian
                 successor_ops = self._op_descendants(op, "G")
