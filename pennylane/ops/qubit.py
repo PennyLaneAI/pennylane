@@ -421,7 +421,7 @@ class Rot(Operation):
     grad_method = "A"
 
     @staticmethod
-    def decomposition(phi, theta, omega, wires=None):
+    def decomposition(phi, theta, omega, wires):
         decomp_ops = [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
@@ -587,7 +587,7 @@ class U1(Operation):
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
     @staticmethod
-    def decomposition(phi, wires=None):
+    def decomposition(phi, wires):
         return [PhaseShift(phi, wires=wires)]
 
 
@@ -631,7 +631,7 @@ class U2(Operation):
     grad_method = "A"
 
     @staticmethod
-    def decomposition(phi, lam, wires=None):
+    def decomposition(phi, lam, wires):
         decomp_ops = [
             Rot(lam, np.pi/2, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
@@ -681,7 +681,7 @@ class U3(Operation):
     grad_method = "A"
 
     @staticmethod
-    def decomposition(theta, phi, lam, wires=None):
+    def decomposition(theta, phi, lam, wires):
         decomp_ops = [
             Rot(lam, theta, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
@@ -748,7 +748,7 @@ class BasisState(Operation):
     grad_method = None
 
     @staticmethod
-    def decomposition(n, wires=None):
+    def decomposition(n, wires):
         with OperationRecorder() as rec:
             BasisStatePreparation(n, wires)
 
@@ -782,7 +782,7 @@ class QubitStateVector(Operation):
     grad_method = None
 
     @staticmethod
-    def decomposition(state, wires=None):
+    def decomposition(state, wires):
         with OperationRecorder() as rec:
             MottonenStatePreparation(state, wires)
 
