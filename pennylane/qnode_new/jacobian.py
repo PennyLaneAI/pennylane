@@ -80,7 +80,8 @@ class JacobianQNode(QNode):
         compatible with all of them.
 
         Args:
-            methods (Iterable[str, None]): p.d. computation methods {None, 'F', 'V', 'B', 'A', '0'}
+            methods (Iterable[str, None]): p.d. computation methods,
+                elements in (None, 'F', 'V', 'B', 'A', '0')
             B_is_A (bool): iff True, subsume 'B' into 'A'
 
         Returns:

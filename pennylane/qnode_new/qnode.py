@@ -186,14 +186,10 @@ class QNode:
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
-    def __str__(self):
+    def __repr__(self):
         """String representation"""
         detail = "<QNode: device='{}', func={}, wires={}>"
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
-
-    def __repr__(self):
-        """REPL representation"""
-        return self.__str__()
 
     def print_applied(self):
         """Prints the most recently applied operations from the QNode."""

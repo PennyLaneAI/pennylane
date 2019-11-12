@@ -19,6 +19,8 @@ This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
 
+import numpy as np
+
 from pennylane.operation import Any, Observable, CVObservable
 
 from .cv import *
