@@ -147,7 +147,7 @@ class TestAngleEmbd:
         """Checks the state produced by AngleEmbedding()
            using the rotation='Y' strategy."""
 
-        features = [pi/2,  pi/2, pi/4, 0]
+        features = [pi/2, pi/2, pi/4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
@@ -164,7 +164,7 @@ class TestAngleEmbd:
         """Checks the state produced by AngleEmbedding()
            using the rotation='Z' strategy."""
 
-        features = [pi/2,  pi/2, pi/4, 0]
+        features = [pi/2, pi/2, pi/4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
@@ -266,14 +266,69 @@ class TestBasisEmbedding:
 
         n_subsystems = 2
         dev = qml.device('default.qubit', wires=n_subsystems)
-
+        
+        
         @qml.qnode(dev)
         def circuit(x=None):
             BasisEmbedding(features=x, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(QuantumFunctionError):
             circuit(x=np.array([1]))
+
+    def test_basis_embedding_exception_wiresnolist(self):
+        """Verifies that BasisEmbedding() raises an exception if ``wires`` is not
+        iterable or an int."""
+
+        n_subsystems = 5
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            BasisEmbedding(features=x, wires="a")
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(QuantumFunctionError):
+            circuit(x=[1])
+
+
+class TestAmplitudeEmbedding:
+    """ Tests the AmplitudeEmbedding method."""
+
+    @pytest.mark.parametrize("inpt", [np.array([0, 1, 0, 0]),
+                                      1/np.sqrt(4)*np.array([1, 1, 1, 1]),
+                                      np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
+                                                np.complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])])
+    def test_amplitude_embedding_prepares_state(self, inpt):
+        """Checks the state produced by AmplitudeEmbedding() for real and complex
+        inputs."""
+
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
+
+        circuit(x=inpt)
+        state = dev._state
+        assert np.allclose(state, inpt)
+
+    def test_amplitude_embedding_throws_exception_if_wrong_number_of_subsystems(self):
+        """Verifies that AmplitudeEmbedding() throws exception
+        if number of subsystems is wrong."""
+
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(QuantumFunctionError):
+            circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
 
 
 class TestSqueezingEmbedding:
@@ -436,4 +491,3 @@ class TestDisplacementEmbedding:
 
         with pytest.raises(QuantumFunctionError):
             circuit(x=[1])
-

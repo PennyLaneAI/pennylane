@@ -137,6 +137,7 @@ def AngleEmbedding(features, wires, rotation='X'):
     _check_hyperp_is_in_options(rotation, ['X', 'Y', 'Z'])
     ###############
 
+
     if rotation == 'X':
         for f, w in zip(features, wires):
             RX(f, wires=w)
@@ -211,6 +212,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     Raises:
         QuantumFunctionError if inputs do not have the correct format.
     """
+
 
     #############
     # Input checks

@@ -82,17 +82,15 @@ def StronglyEntanglingLayer(weights, wires, r=None, imprimitive=None):
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
-    Raises:
-        ValueError: if less than 2 wires were specified
     """
 
     for i, wire in enumerate(wires):
         Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
-    num_wires = len(wires)
-    if num_wires > 1:
-        for i in range(num_wires):
-            imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
+    n_wires = len(wires)
+    if n_wires > 1:
+        for i in range(n_wires):
+            imprimitive(wires=[wires[i], wires[(i + r) % n_wires]])
 
 
 def RandomLayers(weights, wires, repeat=1, ratio_imprim=0.3, imprimitive=CNOT, n_rots=None, rotations=None, seed=42):

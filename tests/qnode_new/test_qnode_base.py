@@ -735,13 +735,6 @@ class TestQNodeCaching:
         node.ops[0] is temp  # it's the same circuit with the same objects
 
 
-class TestQNodeInterface:
-    """Test for the classical interface"""
-
-    def test_interface_property(self, mock_qnode):
-        """Test that the default interface value is 'numpy'"""
-        assert mock_qnode.interface == "numpy"
-
 
 class TestQNodeEvaluate:
     """Test for observable statistic evaluation"""
