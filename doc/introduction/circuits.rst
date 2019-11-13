@@ -234,7 +234,6 @@ this, in which a quantum circuit is loaded from a ``QASM`` string:
 
     apply_hadamard = qml.from_qasm(hadamard_qasm)
 
-
     @qml.qnode(dev)
     def circuit_with_hadamards():
         apply_hadamard(wires=[0])
