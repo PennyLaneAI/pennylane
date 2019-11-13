@@ -24,7 +24,7 @@ from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_
                                        _check_hyperp_is_in_options, _check_type)
 
 
-def AmplitudeEmbedding(features, wires, pad=False, normalize=False, c=0.):
+def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     If the total number of features to embed is less than the :math:`2^n` available amplitudes,
@@ -40,13 +40,12 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False, c=0.):
         devices that support this operation.
 
     Args:
-        features (array): input array of shape ``(2**n,)``
+        features (array): input array of shape ``(:math:`2^n`,)``
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Keyword Args:
-        pad (Boolean): controls the activation of the padding option
+        pad (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (Boolean): controls the activation of automatic normalization
-        c (float or complex): used as the constant for padding
 
     Raises:
         QuantumFunctionError if inputs do not have the correct format.
@@ -67,15 +66,14 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False, c=0.):
         mssg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}. Use ``pad=True`` " \
                "to automatically pad the features.".format(n_ampl)
         shp = _check_shape(features, (n_ampl,), mssg=mssg)
-    _check_type(pad, bool)
+    _check_type(pad, float, alt=complex)
     _check_type(normalize, bool)
-    _check_type(c, float, alt=complex)
     ###############
 
     # Pad
     n_feats = shp[0]
-    if pad and n_ampl > n_feats:
-        features = np.pad(features, (0, n_ampl-n_feats), mode='constant', constant_values=c)
+    if pad is not None and n_ampl > n_feats:
+        features = np.pad(features, (0, n_ampl-n_feats), mode='constant', constant_values=pad)
 
     # Normalize
     norm = 0
