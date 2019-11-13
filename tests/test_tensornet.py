@@ -750,7 +750,7 @@ class TestSample:
 
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorSample:
-    """Test tensor expectation values"""
+    """Test samped values from tensor product observables"""
 
     def test_paulix_pauliy(self, theta, phi, varphi, monkeypatch, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
