@@ -220,7 +220,7 @@ class JacobianQNode(QNode):
                     "The analytic gradient method cannot be "
                     "used with the parameters {}.".format(bad)
                 )
-                # only variants of the analytic method remain
+            # only variants of the analytic method remain
             method = self.par_to_grad_method
         elif method == "F":
             # use the requested method for every parameter
@@ -254,10 +254,12 @@ class JacobianQNode(QNode):
         grad = np.zeros((self.output_dim, len(wrt)), dtype=float)
         for i, k in enumerate(wrt):
             par_method = method[k]
+
             if par_method == "0":
                 # unused/invisible, partial derivatives wrt. this param are zero
                 continue
-            elif par_method == "A":
+
+            if par_method == "A":
                 if variances_required:
                     grad[:, i] = self._pd_analytic_var(k, flat_args, kwargs, **options)
                 else:

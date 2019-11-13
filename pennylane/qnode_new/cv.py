@@ -45,6 +45,7 @@ class CVQNode(JacobianQNode):
         Returns:
             str: partial derivative method to be used
         """
+        # pylint: disable=too-many-branches
         # operations that depend on this free parameter
         ops = [d.op for d in self.variable_deps[idx]]
 

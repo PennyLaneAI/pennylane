@@ -27,6 +27,60 @@ from pennylane.qnode_new.qubit import QubitQNode
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 
 
+@pytest.fixture(scope="function")
+def operable_mock_device_2_wires(monkeypatch):
+    """A mock instance of the abstract Device class that can support qfuncs."""
+
+    dev = Device
+    with monkeypatch.context() as m:
+        m.setattr(dev, '__abstractmethods__', frozenset())
+        m.setattr(dev, '_capabilities', {"model": "qubit"})
+        m.setattr(dev, 'operations', ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
+        m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, 'reset', lambda self: None)
+        m.setattr(dev, 'apply', lambda self, x, y, z: None)
+        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
+        yield Device(wires=2)
+
+
+class TestBestMethod:
+    """Test different flows of _best_method"""
+
+    def test_no_following_observable(self, operable_mock_device_2_wires):
+        """Test that the gradient is 0 if no observables succeed"""
+
+        def circuit(x):
+            qml.RX(x, wires=[1])
+            return qml.expval(qml.PauliZ(0))
+
+        q = QubitQNode(circuit, operable_mock_device_2_wires)
+        q._construct([1.0], {})
+        assert q.par_to_grad_method == {0: "0"}
+
+    def test_param_unused(self, operable_mock_device_2_wires):
+        """Test that the gradient is 0 of an unused parameter"""
+
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        q = QubitQNode(circuit, operable_mock_device_2_wires)
+        q._construct([1.0, 1.0], {})
+        assert q.par_to_grad_method == {0: "A", 1: "0"}
+
+    def test_not_differentiable(self, operable_mock_device_2_wires):
+        """Test that an operation with grad_method=None is marked as
+        non-differentiable"""
+
+        def circuit(x):
+            qml.BasisState(x, wires=[1])
+            return qml.expval(qml.PauliZ(0))
+
+        q = QubitQNode(circuit, operable_mock_device_2_wires)
+        q._construct([np.array([1.0])], {})
+        assert q.par_to_grad_method == {0: None}
+
+
 class TestExpectationJacobian:
     """Jacobian integration tests for qubit expectations."""
 
