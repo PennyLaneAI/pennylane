@@ -110,7 +110,7 @@ class JacobianQNode(QNode):
 
         * Analytic method (``'A'``). Analytic, if implemented by the inheriting QNode.
 
-        * Best known method for each parameter (``'B'``): uses the analhytic method if
+        * Best known method for each parameter (``'B'``): uses the analytic method if
           possible, otherwise finite difference.
 
         * Device method (``'D'``): Delegates the computation of the Jacobian to the
