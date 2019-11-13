@@ -90,8 +90,6 @@ cv_func_subrtn = [(Interferometer, interferometer_all)]
 qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                            [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]]),
                (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]]),
-               (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]]),
-               (BasisEmbedding, [[1, 0]]),
                (AngleEmbedding, [[1., 2.]]),
                ]
 
