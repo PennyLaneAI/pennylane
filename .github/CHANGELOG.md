@@ -1,6 +1,7 @@
 # Release 0.7.0-dev
 
 ### New features since last release
+
 * Added support for applying the inverse of an `Operation` within a circuit.
   [#377](https://github.com/XanaduAI/pennylane/pull/377)
 
@@ -16,6 +17,10 @@
 ### Breaking changes
 
 ### Improvements
+
+* Templates integration tests are rewritten - now cover keyword/positional argument passing,
+  interfaces and combinations of templates.
+  [#409](https://github.com/XanaduAI/pennylane/pull/409)
 
 * State vector preparation operations in the `default.qubit` plugin can now be
   applied to subsets of wires, and are restricted to being the first operation
@@ -52,7 +57,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Oluwatobi Ogunbayo
+Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Oluwatobi Ogunbayo, Maria Schuld
+
 
 ---
 
@@ -406,9 +412,12 @@ Rohit Midha, Nicolás Quesada, Maria Schuld, Antal Száva, Roeland Wiersema.
 ### Improvements
 
 * `default.qubit` plugin now uses `np.tensordot` when applying quantum operations
-  and evaluating expectations, resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239), [#241](https://github.com/XanaduAI/pennylane/pull/241)
+  and evaluating expectations, resulting in significant speedup
+  [#239](https://github.com/XanaduAI/pennylane/pull/239),
+  [#241](https://github.com/XanaduAI/pennylane/pull/241)
 
-* PennyLane now allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
+* PennyLane now allows division of quantum operation parameters by a constant
+  [#179](https://github.com/XanaduAI/pennylane/pull/179)
 
 * Portions of the test suite are in the process of being ported to pytest.
   Note: this is still a work in progress.

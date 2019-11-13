@@ -505,26 +505,6 @@ class TestStronglyEntangling:
         expected = np.array([-0.29242496, 0.22129055, 0.07540091, -0.77626557])
         assert np.allclose(res, expected, atol=tol)
 
-    def test_stronglyentangling_layer_exception_subsystems(self):
-        """Tests that pennylane.templates.layers.StronglyEntanglingLayer() throws exception if n_wires < 2."""
-        np.random.seed(12)
-        n_rots = 2
-        n_wires = 1
-
-        dev = qml.device('default.qubit', wires=n_wires)
-        weights = np.random.randn(n_rots)
-
-        def circuit(weights):
-            StronglyEntanglingLayer(weights=weights, wires=range(n_wires))
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError) as excinfo:
-            qnode(weights)
-        assert excinfo.value.args[0] == "StronglyEntanglingLayer requires at least two wires or subsystems to apply " \
-                                        "the imprimitive gates."
-
 
 class TestRandomLayers:
     """Tests for the RandomLayers method from the pennylane.templates.layers module."""

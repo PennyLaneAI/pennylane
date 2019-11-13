@@ -36,8 +36,10 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
     """
 
+    n_layers = len(weights)
+
     if ranges is None:
-        ranges = [1]*len(weights)
+        ranges = [1] * n_layers
 
     n_layers = len(weights)
     for l in range(n_layers):
@@ -67,19 +69,15 @@ def StronglyEntanglingLayer(weights, wires, r=1, imprimitive=CNOT):
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
-    Raises:
-        ValueError: if less than 2 wires were specified
     """
-    if len(wires) < 2:
-        raise ValueError("StronglyEntanglingLayer requires at least two wires or subsystems to apply "
-                         "the imprimitive gates.")
 
     for i, wire in enumerate(wires):
         Rot(weights[i, 0], weights[i, 1], weights[i, 2], wires=wire)
 
-    num_wires = len(wires)
-    for i in range(num_wires):
-        imprimitive(wires=[wires[i], wires[(i + r) % num_wires]])
+    n_wires = len(wires)
+    if n_wires > 1:
+        for i in range(n_wires):
+            imprimitive(wires=[wires[i], wires[(i + r) % n_wires]])
 
 
 def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
@@ -109,7 +107,11 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     n_layers = len(weights)
     for l in range(n_layers):
-        RandomLayer(weights[l], wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive, rotations=rotations,
+        RandomLayer(weights[l],
+                    wires=wires,
+                    ratio_imprim=ratio_imprim,
+                    imprimitive=imprimitive,
+                    rotations=rotations,
                     seed=seed)
 
 
