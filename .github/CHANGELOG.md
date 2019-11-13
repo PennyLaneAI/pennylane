@@ -1,6 +1,14 @@
 # Release 0.7.0-dev
 
 ### New features since last release
+
+* `StronglyEntanglingLayer` and `RandomLayer` now work with a single wire.
+   [#409](https://github.com/XanaduAI/pennylane/pull/409)
+   [#413](https://github.com/XanaduAI/pennylane/pull/413)
+
+* Refactored templates integration tests
+  [#409](https://github.com/XanaduAI/pennylane/pull/409)
+
 * Added support for applying the inverse of an `Operation` within a circuit.
   [#377](https://github.com/XanaduAI/pennylane/pull/377)
 
@@ -15,7 +23,21 @@
 
 ### Breaking changes
 
+* The single layer templates `RandomLayer()`, `CVNeuralNetLayer()` and `StronglyEntanglingLayer()`
+  have been turned into private functions `_random_layer()`, `_cv_neural_net_layer()` and
+  `_strongly_entangling_layer()`. Recommended use is now via the corresponding `Layers()` templates.
+  [#413](https://github.com/XanaduAI/pennylane/pull/413)
+
 ### Improvements
+
+* Templates integration tests are rewritten - now cover keyword/positional argument passing,
+  interfaces and combinations of templates.
+  [#409](https://github.com/XanaduAI/pennylane/pull/409)
+
+* State vector preparation operations in the `default.qubit` plugin can now be
+  applied to subsets of wires, and are restricted to being the first operation
+  in a circuit.
+  [#346](https://github.com/XanaduAI/pennylane/pull/346)
 
 * The `QNode` class is split into a hierarchy of simpler classes.
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
@@ -28,7 +50,7 @@
   [#396](https://github.com/XanaduAI/pennylane/pull/396)
 
 * Changes have been made to accomodate the movement of the main function
-  in `pytest._internal` in pip<19.3 to `pytest._internal.main`.
+  in `pytest._internal` to `pytest._internal.main` in pip 19.3.
   [#404](https://github.com/XanaduAI/pennylane/pull/404)
 
 * Added the templates `BasisStatePreparation` and `MottonenStatePreparation` that use
@@ -47,7 +69,12 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Oluwatobi Ogunbayo, Josh Izaac, Johannes Jakob Meyer
+<<<<<<< HEAD
+
+=======
+>>>>>>> master
+Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Oluwatobi Ogunbayo, Maria Schuld
+
 
 ---
 
@@ -401,9 +428,12 @@ Rohit Midha, Nicolás Quesada, Maria Schuld, Antal Száva, Roeland Wiersema.
 ### Improvements
 
 * `default.qubit` plugin now uses `np.tensordot` when applying quantum operations
-  and evaluating expectations, resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239), [#241](https://github.com/XanaduAI/pennylane/pull/241)
+  and evaluating expectations, resulting in significant speedup
+  [#239](https://github.com/XanaduAI/pennylane/pull/239),
+  [#241](https://github.com/XanaduAI/pennylane/pull/241)
 
-* PennyLane now allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
+* PennyLane now allows division of quantum operation parameters by a constant
+  [#179](https://github.com/XanaduAI/pennylane/pull/179)
 
 * Portions of the test suite are in the process of being ported to pytest.
   Note: this is still a work in progress.
