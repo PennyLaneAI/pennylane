@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+* `StronglyEntanglingLayer` and `RandomLayer` now work with a single wire.
+   [#409](https://github.com/XanaduAI/pennylane/pull/409)
+   [#413](https://github.com/XanaduAI/pennylane/pull/413)
+
 * Refactored templates integration tests
   [#409](https://github.com/XanaduAI/pennylane/pull/409)
 
