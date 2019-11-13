@@ -764,16 +764,16 @@ class TestTensorSample:
 
         with monkeypatch.context() as m:
             m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
-            s1, p = dev.sample(["PauliX", "PauliY"], [[0], [2]], [[], [], []])
+            s1, prob = dev.sample(["PauliX", "PauliY"], [[0], [2]], [[], [], []])
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
 
-        mean = s1 @ p
+        mean = s1 @ prob
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
         assert np.allclose(mean, expected, atol=tol, rtol=0)
 
-        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        var = (s1 ** 2) @ prob - (s1 @ prob).real ** 2
         expected = (
             8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
             - np.cos(2 * (theta - phi))
