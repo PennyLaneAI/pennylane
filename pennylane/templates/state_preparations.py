@@ -21,8 +21,7 @@ from scipy import sparse
 import numpy as np
 import pennylane as qml
 from pennylane.qnode import QuantumFunctionError, Variable
-from pennylane.templates.utils import (_check_type,
-                                       _check_wires,
+from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,
                                        _check_shape)
 

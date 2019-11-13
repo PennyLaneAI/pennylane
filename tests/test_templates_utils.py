@@ -106,15 +106,15 @@ OPTIONS_PASS = [("a", ["a", "b"])]
 
 OPTIONS_FAIL = [("c", ["a", "b"])]
 
-TYPE_PASS = [(["a"], list, None),
-             (1, int, None),
+TYPE_PASS = [(["a"], list, type(None)),
+             (1, int, type(None)),
              ("a", int, str),
              (Variable(1.), list, Variable)
              ]
 
-TYPE_FAIL = [("a", list, None),
+TYPE_FAIL = [("a", list, type(None)),
              (Variable(1.), int, list),
-             (1., Variable, None)
+             (1., Variable, type(None))
              ]
 
 ##############################
@@ -190,15 +190,15 @@ class TestInputChecks:
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_PASS)
     def test_check_type(self, hp, typ, alt):
-        _check_type(hp=hp, typ=typ, alt=alt)
+        _check_type(hp=hp, typ=[typ, alt])
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
     def test_check_type_exception(self, hp, typ, alt):
         with pytest.raises(QuantumFunctionError):
-            _check_type(hp=hp, typ=typ, alt=alt)
+            _check_type(hp=hp, typ=[typ, alt])
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
     def test_check_type_exception_message(self, hp, typ, alt):
         with pytest.raises(QuantumFunctionError) as excinfo:
-            _check_type(hp=hp, typ=typ, alt=alt, mssg="XXX")
+            _check_type(hp=hp, typ=[typ, alt], mssg="XXX")
         assert "XXX" in str(excinfo.value)

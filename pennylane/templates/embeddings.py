@@ -54,10 +54,13 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     #############
     # Input checks
     _check_no_variable([pad, normalize], ['pad', 'normalize'])
+
     mssg = "At this stage, the feature input of AmplitudeEncoding cannot be trained. " \
            "It has to be passed to the qnode via a positional argument."
     _check_no_variable([features], ['features'], mssg=mssg)
+
     wires, n_wires = _check_wires(wires)
+
     n_ampl = 2**n_wires
     if pad is None:
         mssg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}. Use 'pad' " \
@@ -67,8 +70,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         mssg = "AmplitudeEmbedding must get a feature vector of at least size 2**len(wires) = {}.".format(n_ampl)
         shp = _check_shape(features, (n_ampl,), mssg=mssg, bound='max')
 
-    _check_type(pad, [float, complex])
-    _check_type(normalize, bool)
+    _check_type(pad, [float, complex, type(None)])
+    _check_type(normalize, [bool])
     ###############
 
     # Pad
@@ -83,6 +86,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             norm += np.conj(f.val) * f.val
         else:
             norm += np.conj(f) * f
+    norm = np.real(norm)
 
     if not np.isclose(norm, 1.0, atol=1e-3):
         if normalize or pad:

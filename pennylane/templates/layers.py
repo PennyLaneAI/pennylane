@@ -217,10 +217,10 @@ def RandomLayers(weights, wires, repeat=1, ratio_imprim=0.3, imprimitive=CNOT, n
         n_rots = len(wires)
     _check_shape(inpt=weights, target_shp=(repeat, n_rots))
     _check_type(repeat, [int])
-    _check_type(ratio_imprim, [float, None])
-    _check_type(n_rots, [int, None])
-    _check_type(rotations, [list, None])
-    _check_type(seed, [int, None])
+    _check_type(ratio_imprim, [float, type(None)])
+    _check_type(n_rots, [int, type(None)])
+    _check_type(rotations, [list, type(None)])
+    _check_type(seed, [int, type(None)])
     ###############
 
     for l in range(repeat):
