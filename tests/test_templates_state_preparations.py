@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.qnode import QuantumFunctionError
 from pennylane.templates.state_preparations import (gray_code,
                                                     BasisStatePreparation,
                                                     MottonenStatePreparation)
@@ -41,6 +42,7 @@ class TestHelperFunctions:
         Gray code of given rank."""
 
         assert gray_code(rank) == expected_gray_code
+
 
 class TestBasisStatePreparation:
     """Tests the template BasisStatePreparation."""
@@ -111,15 +113,8 @@ class TestBasisStatePreparation:
         """Tests that the correct error message is raised when the number
         of qubits doesn't match the number of wires."""
 
-        with pytest.raises(ValueError, match="Number of qubits must be equal to the number of wires"):
+        with pytest.raises(QuantumFunctionError):
             BasisStatePreparation(basis_state, wires)
-
-    def test_error_wires_list(self):
-        """Tests that the correct error messages is raised when wires
-        are not passed as a list of integers."""
-
-        with pytest.raises(ValueError, match="Wires must be passed as a list of integers"):
-            BasisStatePreparation([0], 0)
 
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires", [
@@ -131,8 +126,9 @@ class TestBasisStatePreparation:
         """Tests that the correct error messages is raised when
         the basis state contains numbers different from 0 and 1."""
 
-        with pytest.raises(ValueError, match="Basis state must only consist of 0s and 1s"):
+        with pytest.raises(QuantumFunctionError):
             BasisStatePreparation(basis_state, wires)
+
 
 class TestMottonenStatePreparation:
     """Tests the template MottonenStatePreparation."""
@@ -275,7 +271,7 @@ class TestMottonenStatePreparation:
         """Tests that the correct error messages is raised if
         the given state vector is not normalized."""
 
-        with pytest.raises(ValueError, match="State vector probabilities have to sum up to 1.0"):
+        with pytest.raises(QuantumFunctionError):
             MottonenStatePreparation(state_vector, wires)
 
     # fmt: off
@@ -289,12 +285,6 @@ class TestMottonenStatePreparation:
         the number of entries in the given state vector does not match
         with the number of wires in the system."""
 
-        with pytest.raises(ValueError, match="Number of entries in the state vector must be equal to 2 to the power of the number of wires"):
+        with pytest.raises(QuantumFunctionError):
             MottonenStatePreparation(state_vector, wires)
 
-    def test_error_wires_list(self):
-        """Tests that the correct error messages is raised when wires
-        are not passed as a list of integers."""
-
-        with pytest.raises(ValueError, match="Wires must be passed as a list of integers"):
-            MottonenStatePreparation([1, 0], 0)

@@ -18,10 +18,14 @@ by decomposing it into elementary operations.
 import math
 from collections.abc import Iterable
 from scipy import sparse
-from pennylane.qnode import QuantumFunctionError
-
 import numpy as np
 import pennylane as qml
+from pennylane.qnode import QuantumFunctionError, Variable
+from pennylane.templates.utils import (_check_type,
+                                       _check_wires,
+                                       _check_no_variable,
+                                       _check_shape)
+
 
 # pylint: disable=len-as-condition,arguments-out-of-order
 def gray_code(rank):
@@ -54,24 +58,36 @@ def BasisStatePreparation(basis_state, wires):
     r"""
     Prepares a basis state on the given wires using a sequence of Pauli X gates.
 
+    .. warning::
+
+        ``basis_state`` influences the circuit architecture and is therefore incompatible with
+        gradient computations. Ensure that ``basis_state`` is not passed to the qnode by positional
+        arguments.
+
     Args:
         basis_state (array): Input array of shape ``(N,)``, where N is the number of wires
             the state preparation acts on. ``N`` must be smaller or equal to the total
             number of wires of the device.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
+
+    Raises:
+        QuantumFunctionError if inputs do not have the correct format.
     """
 
-    if not isinstance(wires, Iterable):
-        raise QuantumFunctionError("Wires must be passed as a list of integers; got {}.".format(wires))
+    ######################
+    # Input checks
+    wires, n_wires = _check_wires(wires)
+    _check_shape(basis_state, (n_wires,))
 
-    if not len(basis_state) == len(wires):
-        raise QuantumFunctionError(
-            "Number of qubits must be equal to the number of wires, which is {}; "
-            "got {}.".format(len(wires), len(basis_state))
-        )
+    # basis_state cannot be trainable
+    mssg = "Basis state influences circuit architecture and can therefore not be passed as a " \
+           "positional argument to the quantum node."
+    _check_no_variable([basis_state], ['basisstate'], mssg=mssg)
 
+    # basis_state is guaranteed to be a list
     if any([x not in [0, 1] for x in basis_state]):
         raise QuantumFunctionError("Basis state must only consist of 0s and 1s, got {}".format(basis_state))
+    ######################
 
     for wire, state in zip(wires, basis_state):
         if state == 1:
@@ -265,26 +281,24 @@ def MottonenStatePreparation(state_vector, wires):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
     """
 
-    if not isinstance(wires, Iterable):
-        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
+    ###############
+    # Input checks
+    wires, n_wires = _check_wires(wires)
+    _check_shape(state_vector, (2**n_wires,))
 
-    n = len(wires)
-
-    if not len(state_vector) == 2 ** n:
-        raise ValueError(
-            "Number of entries in the state vector must be equal to 2 to the power of the number of wires, which is {}; "
-            "got {}.".format(2 ** n, len(state_vector))
-        )
-
-    probability_sum = np.sum(np.abs(state_vector) ** 2)
-
-    if not np.isclose(probability_sum, 1.0, atol=1e-3):
-        raise ValueError(
-            "State vector probabilities have to sum up to 1.0, got {}".format(probability_sum)
-        )
+    # check if state_vector is normalized
+    norm = 0
+    for s in state_vector:
+        if isinstance(s, Variable):
+            norm += np.conj(s.val) * s.val
+        else:
+            norm += np.conj(s) * s
+    if not np.isclose(norm, 1.0, atol=1e-3):
+        raise QuantumFunctionError("State vector probabilities have to sum up to 1.0, got {}".format(norm))
+    #######################
 
     # Change ordering of indices, original code was for IBM machines
-    state_vector = np.array(state_vector).reshape([2] * n).T.flatten()[:, np.newaxis]
+    state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()[:, np.newaxis]
     state_vector = sparse.dok_matrix(state_vector)
 
     wires = np.array(wires)
@@ -300,15 +314,15 @@ def MottonenStatePreparation(state_vector, wires):
     # code to avoid inverting at the end
 
     # Apply y rotations
-    for k in range(n, 0, -1):
-        alpha_y_k = _get_alpha_y(a, n, k)  # type: sparse.dok_matrix
+    for k in range(n_wires, 0, -1):
+        alpha_y_k = _get_alpha_y(a, n_wires, k)  # type: sparse.dok_matrix
         control = wires[k:]
         target = wires[k - 1]
         _uniform_rotation_y_dagger(alpha_y_k, control, target)
 
     # Apply z rotations
-    for k in range(n, 0, -1):
-        alpha_z_k = _get_alpha_z(omega, n, k)
+    for k in range(n_wires, 0, -1):
+        alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
         if len(alpha_z_k) > 0:
