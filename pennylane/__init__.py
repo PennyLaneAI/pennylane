@@ -204,7 +204,7 @@ def from_qasm(quantum_circuit: str):
     PennyLane-Qiskit plugin.
 
     Args:
-        quantum_circuit (str): the name for the QASM string
+        quantum_circuit (str): a QASM string containing a valid quantum circuit
 
     Returns:
         function: the PennyLane template created based on the QASM string
