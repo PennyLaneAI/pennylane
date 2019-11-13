@@ -170,12 +170,12 @@ For example:
 Quantum circuits from other frameworks
 --------------------------------------
 
-PennyLane supports creating customized PennyLane templates imported from other frameworks.
-By loading your existing quantum code as a PennyLane template, you add the ability to perform
-analytic differentiation, and interface with machine learning libraries such as PyTorch and TensorFlow.
-Currently, circuits from
-Qiskit, QASM strings or QASM files can be loaded. For this, the PennyLane-Qiskit
-plugin needs to be installed.
+PennyLane supports creating customized PennyLane templates imported from other
+frameworks. By loading your existing quantum code as a PennyLane template, you
+add the ability to perform analytic differentiation, and interface with machine
+learning libraries such as PyTorch and TensorFlow. Currently, ``QuantumCircuit``
+objects from Qiskit, QASM strings or QASM files can be loaded. For this, the
+PennyLane-Qiskit plugin needs to be installed.
 
 Objects for quantum circuits can be loaded outside or directly inside of a
 :class:`~.pennylane.QNode`. Circuits that contain unbound parameters are also
@@ -184,8 +184,8 @@ parameter-value pairs.
 
 Once a PennyLane template has been created from such a quantum circuit, it can
 be used similarly to other :doc:`templates <templates>` in PennyLane. One important thing to note
-is that custom templates (similar to pre-defined templates) must always be executed
-within a :class:`~.pennylane.QNode`.
+is that custom templates must always be executed
+within a :class:`~.pennylane.QNode` (similar to pre-defined templates).
 
 .. note::
     Certain instructions that are specific to the external frameworks might be
@@ -212,7 +212,7 @@ while using the :class:`~.pennylane.QNode` decorator:
 
     @qml.qnode(dev)
     def quantum_circuit_with_loaded_subcircuit(x):
-        qml.load(qc, format='qiskit')({theta: x})
+        qml.from_qiskit(qc)({theta: x})
         return qml.expval(qml.PauliZ(0))
 
     angle = np.pi/2
