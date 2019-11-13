@@ -40,8 +40,6 @@ from pennylane.templates.embeddings import (AmplitudeEmbedding,
                                             AngleEmbedding,
                                             SqueezingEmbedding,
                                             DisplacementEmbedding)
-from pennylane.templates.state_preparations import (BasisStatePreparation,
-                                                    MottonenStatePreparation)
 from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
@@ -92,8 +90,6 @@ qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.
                (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]]),
                (BasisEmbedding, [[1, 0]]),
                (AngleEmbedding, [[1., 2.]]),
-               (BasisStatePreparation, [[1, 0]]),
-               (MottonenStatePreparation, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]]),
                ]
 
 # cv templates and constant inputs
