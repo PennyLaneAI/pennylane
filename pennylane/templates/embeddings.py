@@ -55,20 +55,20 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # Input checks
     _check_no_variable([pad, normalize], ['pad', 'normalize'])
 
-    mssg = "At this stage, the feature input of AmplitudeEncoding cannot be trained. " \
+    msg = "At this stage, the feature input of AmplitudeEncoding cannot be trained. " \
            "It has to be passed to the qnode via a positional argument."
-    _check_no_variable([features], ['features'], mssg=mssg)
+    _check_no_variable([features], ['features'], msg=msg)
 
     wires, n_wires = _check_wires(wires)
 
     n_ampl = 2**n_wires
     if pad is None:
-        mssg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}. Use 'pad' " \
+        msg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}. Use 'pad' " \
                "argument for automated padding.".format(n_ampl)
-        shp = _check_shape(features, (n_ampl,), mssg=mssg)
+        shp = _check_shape(features, (n_ampl,), msg=msg)
     else:
-        mssg = "AmplitudeEmbedding must get a feature vector of at least size 2**len(wires) = {}.".format(n_ampl)
-        shp = _check_shape(features, (n_ampl,), mssg=mssg, bound='max')
+        msg = "AmplitudeEmbedding must get a feature vector of at least size 2**len(wires) = {}.".format(n_ampl)
+        shp = _check_shape(features, (n_ampl,), msg=msg, bound='max')
 
     _check_type(pad, [float, complex, type(None)])
     _check_type(normalize, [bool])
@@ -177,9 +177,9 @@ def BasisEmbedding(features, wires):
     _check_shape(features, (n_wires,))
 
     # basis_state cannot be trainable
-    mssg = "The input features in BasisEmbedding influence the circuit architecture and can " \
-           "therefore not be passed as a positional argument to the quantum node."
-    _check_no_variable([features], ['features'], mssg=mssg)
+    msg = "The input features in BasisEmbedding influence the circuit architecture and can " \
+          "therefore not be passed as a positional argument to the quantum node."
+    _check_no_variable([features], ['features'], msg=msg)
 
     # basis_state is guaranteed to be a list
     if any([b not in [0, 1] for b in features]):

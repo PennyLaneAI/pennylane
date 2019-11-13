@@ -79,9 +79,9 @@ def BasisStatePreparation(basis_state, wires):
     _check_shape(basis_state, (n_wires,))
 
     # basis_state cannot be trainable
-    mssg = "Basis state influences circuit architecture and can therefore not be passed as a " \
+    msg = "Basis state influences circuit architecture and can therefore not be passed as a " \
            "positional argument to the quantum node."
-    _check_no_variable([basis_state], ['basisstate'], mssg=mssg)
+    _check_no_variable([basis_state], ['basisstate'], msg=msg)
 
     # basis_state is guaranteed to be a list
     if any([b not in [0, 1] for b in basis_state]):

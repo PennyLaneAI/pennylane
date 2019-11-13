@@ -16,8 +16,6 @@ Unit tests for the :mod:`pennylane.template.layers` module.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
-
-import logging as log
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.qnode import QuantumFunctionError
@@ -26,7 +24,6 @@ from pennylane.templates.layers import (CVNeuralNetLayers,
                                         RandomLayers,
                                         _random_layer)
 from pennylane import RX, RY, RZ, CZ, CNOT
-log.getLogger('defaults')
 
 
 class TestCVNeuralNet:
