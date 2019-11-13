@@ -180,6 +180,21 @@ def load(quantum_circuit_object, name: str):
         "and supports conversion."
     )
 
+def from_qiskit(quantum_circuit):
+    """from_qiskit(quantum_circuit)
+    Loads Qiskit QuantumCircuit objects by using the converter in the
+    PennyLane-Qiskit plugin.
+
+    Args:
+        quantum_circuit (QuantumCircuit): the name for the Qiskit QuantumCircuit 
+            object
+
+    Returns:
+        function: the PennyLane template created based on the QuantumCircuit 
+            object
+    """
+    return load(quantum_circuit, name='qiskit')
+
 
 def from_qasm(quantum_circuit: str):
     """from_qasm(quantum_circuit)
@@ -190,7 +205,7 @@ def from_qasm(quantum_circuit: str):
         quantum_circuit (str): the name for the QASM string
 
     Returns:
-        _function: the PennyLane template created based on the QASM string
+        function: the PennyLane template created based on the QASM string
     """
     return load(quantum_circuit, name='qasm')
 
@@ -204,7 +219,7 @@ def from_qasm_file(qasm_filename: str):
         qasm_filename (str): the name for the QASM file
 
     Returns:
-        _function: the PennyLane template created based on the QASM file
+        function: the PennyLane template created based on the QASM file
     """
     return load(qasm_filename, name='qasm_file')
 
