@@ -183,7 +183,7 @@ supported. Parameter binding may happen by passing a dictionary containing the
 parameter-value pairs.
 
 Once a PennyLane template has been created from such a quantum circuit, it can
-be used similarly to other templates in PennyLane. One important thing to note
+be used similarly to other :doc:`templates <templates>` in PennyLane. One important thing to note
 is that custom templates (similar to pre-defined templates) need to be called
 with a specific :class:`~.pennylane.QNode` object.
 
