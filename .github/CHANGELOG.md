@@ -20,6 +20,8 @@
 * The `QNode` class is split into a hierarchy of simpler classes.
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
   [#398](https://github.com/XanaduAI/pennylane/pull/398)
+  [#415](https://github.com/XanaduAI/pennylane/pull/415)
+  [#417](https://github.com/XanaduAI/pennylane/pull/417)
 
 * Added the gates U1, U2 and U3 parametrizing arbitrary unitaries on 1, 2 and 3
   qubits and the Toffoli gate to the set of qubit operations.
