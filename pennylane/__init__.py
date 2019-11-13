@@ -141,8 +141,9 @@ def load(quantum_circuit_object, name: str):
     Load external quantum assembly and quantum circuits from supported frameworks
     into PennyLane templates.
 
-    .. note::  For more details on which conversions are supported, visit the page 
-               for available plugins and their documentation: https://pennylane.ai/plugins.html
+    .. note:: For more details on which conversions are supported
+              visit the page on available plugins and their documentation:
+              https://pennylane.ai/plugins.html
 
     **Example:**
 
@@ -186,11 +187,11 @@ def from_qiskit(quantum_circuit):
     PennyLane-Qiskit plugin.
 
     Args:
-        quantum_circuit (QuantumCircuit): the name for the Qiskit QuantumCircuit 
+        quantum_circuit (QuantumCircuit): the name for the Qiskit QuantumCircuit
             object
 
     Returns:
-        function: the PennyLane template created based on the QuantumCircuit 
+        function: the PennyLane template created based on the QuantumCircuit
             object
     """
     return load(quantum_circuit, name='qiskit')
