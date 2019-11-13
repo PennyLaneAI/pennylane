@@ -311,7 +311,7 @@ def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None
 def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the ``varphi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+        The parameters are drawn from a normal distribution.
 
         The shape of the arrays is ``(n_layers, n_wires)``.
 
