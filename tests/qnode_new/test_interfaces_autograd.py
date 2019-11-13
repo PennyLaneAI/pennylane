@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`AutogradQNode` class.
+Unit tests for the :mod:`pennylane` :class:`to_autograd` class.
 """
 
 import autograd
@@ -22,7 +22,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.qnode_new.qnode import QuantumFunctionError
-from pennylane.qnode_new.autograd import AutogradQNode as ANode
+from pennylane.qnode_new.qubit import QubitQNode
+from pennylane.qnode_new.cv import CVQNode
+
+from pennylane.interfaces.autograd import to_autograd
 
 
 alpha = 0.5  # displacement in tests
@@ -30,59 +33,6 @@ hbar = 2
 mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
 sqz_vals = np.linspace(0., 1., 5)
-
-
-@pytest.fixture(scope="module")
-def gaussian_dev():
-    return qml.device('default.gaussian', wires=2)
-
-
-@pytest.fixture(scope="module")
-def grad_fn_R(gaussian_dev):
-    def circuit(y):
-        qml.Displacement(alpha, 0., wires=[0])
-        qml.Rotation(y, wires=[0])
-        return qml.expval(qml.X(0))
-    circuit = ANode(circuit, gaussian_dev)
-    return autograd.grad(circuit)
-
-
-@pytest.fixture(scope="module")
-def grad_fn_BS(gaussian_dev):
-    def circuit(y):
-        qml.Displacement(alpha, 0., wires=[0])
-        qml.Beamsplitter(y, 0, wires=[0, 1])
-        return qml.expval(qml.X(0))
-    circuit = ANode(circuit, gaussian_dev)
-    return autograd.grad(circuit)
-
-
-@pytest.fixture(scope="module")
-def grad_fn_D(gaussian_dev):
-    def circuit(r, phi):
-        qml.Displacement(r, phi, wires=[0])
-        return qml.expval(qml.X(0))
-    circuit = ANode(circuit, gaussian_dev)
-    return autograd.grad(circuit)
-
-
-@pytest.fixture(scope="module")
-def grad_fn_S(gaussian_dev):
-    def circuit(y):
-        qml.Displacement(alpha, 0., wires=[0])
-        qml.Squeezing(y, 0., wires=[0])
-        return qml.expval(qml.X(0))
-    circuit = ANode(circuit, gaussian_dev)
-    return autograd.grad(circuit)
-
-
-@pytest.fixture(scope="module")
-def grad_fn_S_Fock(gaussian_dev):
-    def circuit(y):
-        qml.Squeezing(y, 0., wires=[0])
-        return qml.expval(qml.FockStateProjector(np.array([2, 0]), wires=[0, 1]))
-    circuit = ANode(circuit, gaussian_dev)
-    return autograd.grad(circuit)
 
 
 class TestAutogradDetails:
@@ -95,57 +45,100 @@ class TestAutogradDetails:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        circuit = ANode(circuit, qubit_device_2_wires)
-        assert circuit.interface == "numpy"
+        circuit = to_autograd(QubitQNode(circuit, qubit_device_2_wires))
+        assert circuit.interface == "autograd"
 
 
 class TestAutogradJacobianCV:
     """Tests involving Autograd functions grad and jacobian for CV circuits."""
 
     @pytest.mark.parametrize('theta', thetas)
-    def test_rotation_gradient(self, theta, grad_fn_R, tol):
-        "Tests that the automatic gradient of a phase space rotation is correct."
+    def test_rotation_gradient(self, theta, tol):
+        """Tests that the automatic gradient of a phase space rotation is correct."""
 
-        autograd_val = grad_fn_R(theta)
+        def circuit(y):
+            qml.Displacement(alpha, 0., wires=[0])
+            qml.Rotation(y, wires=[0])
+            return qml.expval(qml.X(0))
+
+        dev = qml.device('default.gaussian', wires=1)
+        circuit = to_autograd(QubitQNode(circuit, dev))
+        grad_fn = autograd.grad(circuit)
+
+        autograd_val = grad_fn(theta)
         # qfunc evalutes to hbar * alpha * cos(theta)
         manualgrad_val = - hbar * alpha * np.sin(theta)
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
     @pytest.mark.parametrize('theta', thetas)
-    def test_beamsplitter_gradient(self, theta, grad_fn_BS, tol):
-        "Tests that the automatic gradient of a beamsplitter is correct."
+    def test_beamsplitter_gradient(self, theta, tol):
+        """Tests that the automatic gradient of a beamsplitter is correct."""
 
-        autograd_val = grad_fn_BS(theta)
+        def circuit(y):
+            qml.Displacement(alpha, 0., wires=[0])
+            qml.Beamsplitter(y, 0, wires=[0, 1])
+            return qml.expval(qml.X(0))
+
+        dev = qml.device('default.gaussian', wires=2)
+        circuit = to_autograd(CVQNode(circuit, dev))
+        grad_fn = autograd.grad(circuit)
+
+        autograd_val = grad_fn(theta)
         # qfunc evalutes to hbar * alpha * cos(theta)
         manualgrad_val = - hbar * alpha * np.sin(theta)
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
     @pytest.mark.parametrize('mag', mag_alphas)
     @pytest.mark.parametrize('theta', thetas)
-    def test_displacement_gradient(self, mag, theta, grad_fn_D, tol):
-        "Tests that the automatic gradient of a phase space displacement is correct."
+    def test_displacement_gradient(self, mag, theta, tol):
+        """Tests that the automatic gradient of a phase space displacement is correct."""
+
+        def circuit(r, phi):
+            qml.Displacement(r, phi, wires=[0])
+            return qml.expval(qml.X(0))
+
+        dev = qml.device('default.gaussian', wires=1)
+        circuit = to_autograd(CVQNode(circuit, dev))
+        grad_fn = autograd.grad(circuit)
 
         #alpha = mag * np.exp(1j * theta)
-        autograd_val = grad_fn_D(mag, theta)
+        autograd_val = grad_fn(mag, theta)
         # qfunc evalutes to hbar * Re(alpha)
         manualgrad_val = hbar * np.cos(theta)
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
     @pytest.mark.parametrize('r', sqz_vals)
-    def test_squeeze_gradient(self, r, grad_fn_S, tol):
-        "Tests that the automatic gradient of a phase space squeezing is correct."
+    def test_squeeze_gradient(self, r, tol):
+        """Tests that the automatic gradient of a phase space squeezing is correct."""
 
-        autograd_val = grad_fn_S(r)
+        def circuit(y):
+            qml.Displacement(alpha, 0., wires=[0])
+            qml.Squeezing(y, 0., wires=[0])
+            return qml.expval(qml.X(0))
+
+        dev = qml.device('default.gaussian', wires=1)
+        circuit = to_autograd(CVQNode(circuit, dev))
+        grad_fn = autograd.grad(circuit)
+
+        autograd_val = grad_fn(r)
         # qfunc evaluates to -exp(-r) * hbar * Re(alpha)
         manualgrad_val = -np.exp(-r) * hbar * alpha
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
     @pytest.mark.parametrize('r', sqz_vals[1:])  # formula is not valid for r=0
-    def test_number_state_gradient(self, r, grad_fn_S_Fock, tol):
-        "Tests that the automatic gradient of a squeezed state with number state expectation is correct."
+    def test_number_state_gradient(self, r, tol):
+        """Tests that the automatic gradient of a squeezed state with number state expectation is correct."""
+
+        def circuit(y):
+            qml.Squeezing(y, 0., wires=[0])
+            return qml.expval(qml.FockStateProjector(np.array([2, 0]), wires=[0, 1]))
+
+        dev = qml.device('default.gaussian', wires=2)
+        circuit = to_autograd(CVQNode(circuit, dev))
+        grad_fn = autograd.grad(circuit)
 
         # (d/dr) |<2|S(r)>|^2 = 0.5 tanh(r)^3 (2 csch(r)^2 - 1) sech(r)
-        autograd_val = grad_fn_S_Fock(r)
+        autograd_val = grad_fn(r)
         manualgrad_val = 0.5*np.tanh(r)**3 * (2/(np.sinh(r)**2)-1) / np.cosh(r)
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
@@ -177,7 +170,7 @@ class TestAutogradJacobianQubit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        circuit = ANode(circuit, qubit_device_2_wires)
+        circuit = to_autograd(QubitQNode(circuit, qubit_device_2_wires))
 
         # compare our manual Jacobian computation to theoretical result
         expected_jac = self.expected_jacobian(*par)
@@ -209,7 +202,7 @@ class TestAutogradJacobianQubit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        circuit = ANode(circuit, qubit_device_2_wires)
+        circuit = to_autograd(QubitQNode(circuit, qubit_device_2_wires))
 
         expected_jac = self.expected_jacobian(*par)
         res = circuit.jacobian([par])
@@ -241,7 +234,7 @@ class TestAutogradJacobianQubit:
         def circuit3(array):
             return ansatz(*array)
 
-        circuit1 = ANode(circuit1, qubit_device_2_wires)
+        circuit1 = to_autograd(QubitQNode(circuit1, qubit_device_2_wires))
         grad1 = autograd.grad(circuit1, argnum=[0, 1, 2])
 
         # three positional parameters
@@ -250,7 +243,7 @@ class TestAutogradJacobianQubit:
         ag = np.array([ag])
         assert jac == pytest.approx(ag, abs=tol)
 
-        circuit2 = ANode(circuit2, qubit_device_2_wires)
+        circuit2 = to_autograd(QubitQNode(circuit2, qubit_device_2_wires))
         grad2 = autograd.grad(circuit2, argnum=[0, 1])
 
         # one scalar, one array
@@ -260,7 +253,7 @@ class TestAutogradJacobianQubit:
         ag = np.r_[ag][np.newaxis, :]
         assert jac == pytest.approx(ag, abs=tol)
 
-        circuit3 = ANode(circuit3, qubit_device_2_wires)
+        circuit3 = to_autograd(QubitQNode(circuit3, qubit_device_2_wires))
         grad3 = autograd.grad(circuit3, argnum=0)
 
         # one array
@@ -279,7 +272,7 @@ class TestAutogradJacobianQubit:
             qml.RY(-0.5 * array[1, 1], wires=0)
             return qml.expval(qml.PauliX(0))
 
-        node = ANode(circuit, qubit_device_1_wire)
+        node = to_autograd(QubitQNode(circuit, qubit_device_1_wire))
 
         args = (0.46, np.array([[2.0, 3.0, 0.3], [7.0, 4.0, 2.1]]), -0.13)
         grad_target = (
@@ -311,7 +304,7 @@ class TestAutogradJacobianQubit:
             qml.RY(-0.5 * array[1, 1], wires=0)
             return (qml.expval(qml.PauliX(0)),)
 
-        node = ANode(circuit, qubit_device_1_wire)
+        node = to_autograd(QubitQNode(circuit, qubit_device_1_wire))
 
         args = (0.46, np.array([[2.0, 3.0, 0.3], [7.0, 4.0, 2.1]]), -0.13)
         grad_target = (
@@ -344,7 +337,7 @@ class TestAutogradJacobianQubit:
             qml.RY(array[1, 0], wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        node = ANode(circuit, qubit_device_2_wires)
+        node = to_autograd(QubitQNode(circuit, qubit_device_2_wires))
 
         args = (0.46, np.array([[2.0, 3.0, 0.3], [7.0, 4.0, 2.1]]), -0.13)
         grad_target = (
@@ -380,7 +373,7 @@ class TestAutogradJacobianQubit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        qnode = ANode(circuit, qubit_device_2_wires)
+        qnode = to_autograd(QubitQNode(circuit, qubit_device_2_wires))
         params = np.array([0.1, -1.6, np.pi / 5])
 
         # manual gradients
@@ -411,7 +404,7 @@ class TestAutogradJacobianQubit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        classifier = ANode(classifier_circuit, qubit_device_2_wires)
+        classifier = to_autograd(QubitQNode(classifier_circuit, qubit_device_2_wires))
 
         param = -0.1259
         in_data = np.array([-0.1, -0.88, np.exp(0.5)])
@@ -458,7 +451,7 @@ class TestAutogradJacobianQubit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        quantum = ANode(circuit, qubit_device_2_wires)
+        quantum = to_autograd(QubitQNode(circuit, qubit_device_2_wires))
 
         def classical(p):
             "Classical node, requires autograd.numpy functions."

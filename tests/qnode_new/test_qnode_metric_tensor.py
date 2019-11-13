@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`QNode` class.
+Unit tests for the :mod:`pennylane` :class:`QubitQNode` metric tensor methods.
 """
 import pytest
 import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.qnode_new.qnode import QNode, QuantumFunctionError, qnode
+from pennylane.qnode_new.qubit import QubitQNode
+from pennylane.qnode_new.qnode import QuantumFunctionError
 from pennylane.plugins.default_qubit import Y, Z
 
 
@@ -31,10 +32,11 @@ class TestMetricTensor:
         operation with no generator"""
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev)
         def circuit(a):
             qml.Rot(a, 0, 0, wires=0)
             return qml.expval(qml.PauliX(0))
+
+        circuit = QubitQNode(circuit, dev)
 
         with pytest.raises(QuantumFunctionError, match="has no defined generator"):
             circuit.metric_tensor([1], only_construct=True)
@@ -44,10 +46,11 @@ class TestMetricTensor:
         operation with generator object that is not an observable"""
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliX(0))
+
+        circuit = QubitQNode(circuit, dev)
 
         with monkeypatch.context() as m:
             m.setattr("pennylane.RX.generator", [qml.RX, 1])
@@ -66,7 +69,7 @@ class TestMetricTensor:
             qml.PhaseShift(c, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        circuit = QNode(circuit, dev)
+        circuit = QubitQNode(circuit, dev)
         circuit.metric_tensor([1, 1, 1], only_construct=True)
         res = circuit._metric_tensor_subcircuits
 
@@ -116,7 +119,7 @@ class TestMetricTensor:
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
 
-        circuit = QNode(circuit, dev)
+        circuit = QubitQNode(circuit, dev)
 
         params = np.ones([8])
         circuit.metric_tensor([params], only_construct=True)
@@ -179,7 +182,7 @@ class TestMetricTensor:
             qml.PhaseShift(c, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        circuit = QNode(circuit, dev)
+        circuit = QubitQNode(circuit, dev)
 
         a = 0.432
         b = 0.12
@@ -214,7 +217,7 @@ class TestMetricTensor:
             qml.PhaseShift(c, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-        circuit = QNode(circuit, dev)
+        circuit = QubitQNode(circuit, dev)
 
         a = 0.432
         b = 0.12
@@ -254,7 +257,6 @@ class TestMetricTensor:
         b = 0.1
         c = 0.5
 
-        @qnode(dev)
         def final(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -265,6 +267,8 @@ class TestMetricTensor:
             qml.RZ(g, wires=2)
             qml.RX(h, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
+
+        final = QubitQNode(final, dev)
 
         return dev, final, non_parametrized_layer, a, b, c
 
@@ -337,7 +341,6 @@ class TestMetricTensor:
         # Note: since this layer only consists of a single parameter,
         # only need to compute a single diagonal element.
 
-        @qnode(dev)
         def layer2_diag(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -347,6 +350,7 @@ class TestMetricTensor:
             qml.RY(f, wires=2)
             return qml.var(qml.PauliX(1))
 
+        layer2_diag = QubitQNode(layer2_diag, dev)
         G2 = layer2_diag(x, y, z, h, g, f) / 4
         assert np.allclose(G[3:4, 3:4], G2, atol=tol, rtol=0)
 
@@ -362,7 +366,6 @@ class TestMetricTensor:
         #   qml.RZ(g, wires=2)
         G3 = np.zeros([2, 2])
 
-        @qnode(dev)
         def layer3_diag(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -371,7 +374,8 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
 
-        @qnode(dev)
+        layer3_diag = QubitQNode(layer3_diag, dev)
+
         def layer3_off_diag_first_order(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -380,7 +384,8 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliY(1))
 
-        @qnode(dev)
+        layer3_off_diag_first_order = QubitQNode(layer3_off_diag_first_order, dev)
+
         def layer3_off_diag_second_order(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -388,6 +393,8 @@ class TestMetricTensor:
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
             return qml.expval(qml.Hermitian(np.kron(Z, Y), wires=[2, 1]))
+
+        layer3_off_diag_second_order = QubitQNode(layer3_off_diag_second_order, dev)
 
         # calculate the diagonal terms
         varK0, varK1 = layer3_diag(x, y, z, h, g, f)
@@ -458,7 +465,6 @@ class TestMetricTensor:
         # Note: since this layer only consists of a single parameter,
         # only need to compute a single diagonal element.
 
-        @qnode(dev)
         def layer2_diag(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -468,6 +474,7 @@ class TestMetricTensor:
             qml.RY(f, wires=2)
             return qml.var(qml.PauliX(1))
 
+        layer2_diag = QubitQNode(layer2_diag, dev)
         G2 = layer2_diag(x, y, z, h, g, f) / 4
         assert np.allclose(G[3:4, 3:4], G2, atol=tol, rtol=0)
 
@@ -483,7 +490,6 @@ class TestMetricTensor:
         #   qml.RZ(g, wires=2)
         G3 = np.zeros([2, 2])
 
-        @qnode(dev)
         def layer3_diag(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
@@ -491,6 +497,8 @@ class TestMetricTensor:
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
             return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
+
+        layer3_diag = QubitQNode(layer3_diag, dev)
 
         # calculate the diagonal terms
         varK0, varK1 = layer3_diag(x, y, z, h, g, f)

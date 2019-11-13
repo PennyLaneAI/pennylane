@@ -26,16 +26,23 @@
   interfaces and combinations of templates.
   [#409](https://github.com/XanaduAI/pennylane/pull/409)
 
+* State vector preparation operations in the `default.qubit` plugin can now be
+  applied to subsets of wires, and are restricted to being the first operation
+  in a circuit.
+  [#346](https://github.com/XanaduAI/pennylane/pull/346)
+
 * The `QNode` class is split into a hierarchy of simpler classes.
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
   [#398](https://github.com/XanaduAI/pennylane/pull/398)
+  [#415](https://github.com/XanaduAI/pennylane/pull/415)
+  [#417](https://github.com/XanaduAI/pennylane/pull/417)
 
 * Added the gates U1, U2 and U3 parametrizing arbitrary unitaries on 1, 2 and 3
   qubits and the Toffoli gate to the set of qubit operations.
   [#396](https://github.com/XanaduAI/pennylane/pull/396)
 
 * Changes have been made to accomodate the movement of the main function
-  in `pytest._internal` in pip<19.3 to `pytest._internal.main`.
+  in `pytest._internal` to `pytest._internal.main` in pip 19.3.
   [#404](https://github.com/XanaduAI/pennylane/pull/404)
 
 * Added the templates `BasisStatePreparation` and `MottonenStatePreparation` that use
@@ -54,7 +61,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Oluwatobi Ogunbayo, Josh Izaac, Johannes Jakob Meyer, Maria Schuld
+Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Oluwatobi Ogunbayo, Maria Schuld
+
 
 ---
 
@@ -408,9 +416,12 @@ Rohit Midha, Nicolás Quesada, Maria Schuld, Antal Száva, Roeland Wiersema.
 ### Improvements
 
 * `default.qubit` plugin now uses `np.tensordot` when applying quantum operations
-  and evaluating expectations, resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239), [#241](https://github.com/XanaduAI/pennylane/pull/241)
+  and evaluating expectations, resulting in significant speedup
+  [#239](https://github.com/XanaduAI/pennylane/pull/239),
+  [#241](https://github.com/XanaduAI/pennylane/pull/241)
 
-* PennyLane now allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
+* PennyLane now allows division of quantum operation parameters by a constant
+  [#179](https://github.com/XanaduAI/pennylane/pull/179)
 
 * Portions of the test suite are in the process of being ported to pytest.
   Note: this is still a work in progress.
