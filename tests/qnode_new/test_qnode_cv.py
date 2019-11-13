@@ -35,7 +35,7 @@ class PolyN(qml.ops.PolyXP):
 
 
 cv_ops = [getattr(qml.ops, name) for name in qml.ops._cv__ops__]
-analytic_cv_ops = [cls for cls in cv_ops if cls.supports_analytic]
+analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
 
 
 @pytest.fixture(scope="function")
@@ -45,8 +45,8 @@ def operable_mock_CV_device_2_wires(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, 'capabilities', lambda self: {"model": "cv"})
-        m.setattr(dev, 'operations', ["Displacement", "CubicPhase", "Squeezing", "Rotation", "Kerr", "Beamsplitter"])
+        m.setattr(dev, '_capabilities', {"model": "cv"})
+        m.setattr(dev, 'operations', ["FockState", "Displacement", "CubicPhase", "Squeezing", "Rotation", "Kerr", "Beamsplitter"])
         m.setattr(dev, 'observables', ["X", "NumberOperator", "PolyXP"])
         m.setattr(dev, 'reset', lambda self: None)
         m.setattr(dev, 'apply', lambda self, x, y, z: None)
@@ -76,7 +76,7 @@ def test_transform_observable_incorrect_heisenberg_size():
 
     node = CVQNode(circuit, dev)
 
-    with pytest.raises(QuantumFunctionError, match="Mismatch between polynomial order"):
+    with pytest.raises(QuantumFunctionError, match="Mismatch between the polynomial order"):
         node.jacobian([0.5])
 
 
@@ -94,11 +94,12 @@ class TestBestMethod:
             qml.Kerr(0.54, wires=[1])
             return qml.expval(qml.NumberOperator(0))
 
-        node = CVQNode(circuit, gaussian_device, properties={'vis_check': False})
+        node = CVQNode(circuit, gaussian_device)
 
         res = node.jacobian([0.321], wrt=[0], method="A")
         expected = node.jacobian([0.321], method="F")
         assert res == pytest.approx(expected, abs=tol)
+        assert node.par_to_grad_method == {0: "A"}
 
     def test_gaussian_successors_fails(self, operable_mock_CV_device_2_wires):
         """Tests that the parameter-shift differentiation method is not allowed
@@ -114,6 +115,8 @@ class TestBestMethod:
 
         with pytest.raises(ValueError, match="analytic gradient method cannot be used with"):
             node.jacobian([0.321], method="A")
+
+        assert node.par_to_grad_method == {0: "F"}
 
     def test_correct_method_non_gaussian_successor_one_param(self, operable_mock_CV_device_2_wires):
         """Tests that a non-Gaussian succeeding a parameter fallsback to finite-diff"""
@@ -145,7 +148,35 @@ class TestBestMethod:
 
         q = CVQNode(qf, operable_mock_CV_device_2_wires)
         q._construct(par, {})
-        assert q.par_to_grad_method == {0: "F"}
+        assert q.par_to_grad_method == {0: "F", 1: "0"}
+
+    def test_param_not_differentiable(self, operable_mock_CV_device_2_wires):
+        """Tests that a parameter is not differentiable if used in an operation
+        where grad_method=None"""
+        par = [0.4]
+
+        def qf(x):
+            qml.FockState(x, wires=[0])
+            qml.Rotation(1.3, wires=[0])
+            return qml.expval(qml.X(0))
+
+        q = CVQNode(qf, operable_mock_CV_device_2_wires)
+        q._construct(par, {})
+        assert q.par_to_grad_method == {0: None}
+
+    def test_param_no_observables(self, operable_mock_CV_device_2_wires):
+        """Tests that a parameter has 0 gradient if it is not followed by any observables"""
+        par = [0.4]
+
+        def qf(x):
+            qml.Displacement(x, 0, wires=[0])
+            qml.Squeezing(0.3, x, wires=[0])
+            qml.Rotation(1.3, wires=[1])
+            return qml.expval(qml.X(1))
+
+        q = CVQNode(qf, operable_mock_CV_device_2_wires)
+        q._construct(par, {})
+        assert q.par_to_grad_method == {0: "0"}
 
     def test_correct_method_non_gaussian_successor_all_params(self, operable_mock_CV_device_2_wires):
         """Tests that a non-Gaussian succeeding all parameters fallsback to finite-diff"""
@@ -176,6 +207,20 @@ class TestBestMethod:
         q = CVQNode(qf, operable_mock_CV_device_2_wires)
         q._construct(par, {})
         assert q.par_to_grad_method == {0: "A", 1: "F"}
+
+    def test_correct_method_non_gaussian_observable(self, operable_mock_CV_device_2_wires):
+        """Tests that a non-Gaussian observable one parameter fallsback to finite-diff"""
+        par = [0.4, -2.3]
+
+        def qf(x, y):
+            qml.Displacement(x, 0, wires=[0])  # followed by nongaussian observable
+            qml.Beamsplitter(0.2, 1.7, wires=[0, 1])
+            qml.Displacement(y, 0, wires=[1])  # followed by order-2 observable
+            return qml.expval(qml.FockStateProjector(np.array([2]), 0)), qml.expval(qml.NumberOperator(1))
+
+        q = CVQNode(qf, operable_mock_CV_device_2_wires)
+        q._construct(par, {})
+        assert q.par_to_grad_method == {0: "F", 1: "A"}
 
 
 class TestExpectationJacobian:
@@ -237,7 +282,7 @@ class TestExpectationJacobian:
         grad_F = node.jacobian(par, aux, method="F")
         assert grad_A == pytest.approx(grad_F, abs=tol)
 
-    @pytest.mark.parametrize('O', [qml.ops.X, qml.ops.NumberOperator, PolyN])
+    @pytest.mark.parametrize('O', [qml.ops.X, qml.ops.NumberOperator, PolyN, qml.ops.Identity])
     @pytest.mark.parametrize('G', analytic_cv_ops)
     def test_cv_gradients_gaussian_circuit(self, G, O, tol):
         """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
@@ -340,15 +385,16 @@ class TestExpectationJacobian:
             return qml.expval(qml.PolyXP(M, [0, 1]))
 
         q = CVQNode(qf, gaussian_dev)
-        grad = q.jacobian(par)
+
+        grad_best = q.jacobian(par)
+        grad_best2 = q.jacobian(par, options={"force_order2": True})
         grad_F = q.jacobian(par, method="F")
-        grad_A = q.jacobian(par, method='B')
-        grad_A2 = q.jacobian(par, method='B', options={'force_order2': True})
 
         # par[0] can use the "A" method, par[1] cannot
-        assert q.par_to_grad_method == {0:"A", 1:"F"}
+        assert q.par_to_grad_method == {0: "A", 1: "F"}
         # the different methods agree
-        assert grad == pytest.approx(grad_F, abs=tol)
+        assert grad_best == pytest.approx(grad_F, abs=tol)
+        assert grad_best2 == pytest.approx(grad_F, abs=tol)
 
     def test_cv_gradient_fanout(self, tol):
         """Tests that CV qnodes can compute the correct gradient when the same parameter is used
@@ -374,18 +420,17 @@ class TestExpectationJacobian:
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
     @pytest.mark.parametrize('name', qml.ops._cv__ops__)
-    def test_CVOperation_with_heisenberg_and_no_params(self, name, tol):
-        """An integration test for CV gates that support analytic differentiation
-        if succeeding the gate to be differentiated, but cannot be differentiated
-        themselves (for example, they may be Gaussian but accept no parameters).
+    def test_CVOperation_with_heisenberg_and_no_parshift(self, name, tol):
+        """An integration test for Gaussian CV gates that have a Heisenberg representation
+        but cannot be differentiated using the parameter-shift method themselves
+        (for example, they may accept no parameters, or have no gradient recipe).
 
-        This ensures that, assuming their _heisenberg_rep is defined, the quantum
-        gradient analytic method can still be used, and returns the correct result.
+        Tests that the parameter-shift method can still be used with other gates in the circuit.
         """
         gaussian_dev = qml.device("default.gaussian", wires=2)
 
         cls = getattr(qml.ops, name)
-        if cls.supports_heisenberg and (not cls.supports_analytic):
+        if cls.supports_heisenberg and (not cls.supports_parameter_shift):
             U = np.array([[0.51310276+0.81702166j, 0.13649626+0.22487759j],
                           [0.26300233+0.00556194j, -0.96414101-0.03508489j]])
 
@@ -414,6 +459,28 @@ class TestExpectationJacobian:
             # the different methods agree
             assert grad_A == pytest.approx(grad_F, abs=tol)
             assert grad_A2 == pytest.approx(grad_F, abs=tol)
+
+    @pytest.mark.xfail(reason="FIXME: 'A' method fails on QuadOperator (it has no gradient recipe)", raises=AttributeError, strict=True)
+    def test_quadoperator(self, tol):
+        """Test the differentiation of CV observables that depend on positional qfunc parameters."""
+
+        def circuit(a):
+            qml.Displacement(1.0, 0, wires=0)
+            return qml.expval(qml.QuadOperator(a, 0))
+
+        gaussian_dev = qml.device("default.gaussian", wires=1)
+        qnode = CVQNode(circuit, gaussian_dev)
+
+        par = [0.6]
+        grad_F = qnode.jacobian(par, method='F')
+        grad_A = qnode.jacobian(par, method='A')
+        grad_A2 = qnode.jacobian(par, method='A', options={'force_order2': True})
+
+        # par 0 can use the 'A' method
+        assert qnode.par_to_grad_method == {0: 'A'}
+        # the different methods agree
+        assert grad_A == pytest.approx(grad_F, abs=tol)
+        assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
 
 class TestVarianceJacobian:
@@ -483,7 +550,7 @@ class TestVarianceJacobian:
             qml.Beamsplitter(0.6, -0.3, wires=[0, 1])
             qml.Squeezing(-0.3, 0, wires=2)
             qml.Beamsplitter(1.4, 0.5, wires=[1, 2])
-            return qml.var(qml.X(0)), qml.expval(qml.X(1)), qml.var(qml.X(2))  # TODO can you return them in arbitrary order?
+            return qml.var(qml.X(0)), qml.expval(qml.X(1)), qml.var(qml.X(2))
 
         node = CVQNode(circuit, dev)
         par = [0.54, -0.423]

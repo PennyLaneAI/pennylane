@@ -62,7 +62,7 @@ def _unflatten(flat, model):
         TypeError: if ``model`` contains an object of unsupported type
 
     Returns:
-        (other, array): first elements of flat arranged into the nested
+        Union[array, list, Any], array: first elements of flat arranged into the nested
         structure of model, unused elements of flat
     """
     if isinstance(model, (numbers.Number, Variable, str)):

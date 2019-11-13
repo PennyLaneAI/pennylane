@@ -14,7 +14,7 @@
 """
 Differentiable quantum nodes.
 """
-from collections.abc import Sequence
+from collections.abc import Iterable
 
 import numpy as np
 
@@ -27,16 +27,17 @@ class JacobianQNode(QNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
 
+    def __init__(self, func, device, mutable=True, properties=None):
+        super().__init__(func, device, mutable=mutable, properties=properties)
+
+        self.par_to_grad_method = None
+        """dict[int, str]: map from flattened quantum function positional parameter index
+        to the gradient method to be used with that parameter"""
+
     @property
     def interface(self):
         """str, None: automatic differentiation interface used by the node, if any"""
         return None
-
-    def __init__(self, func, device, mutable=True, properties=None):
-        super().__init__(func, device, mutable=mutable, properties=properties)
-
-        #: dict[int, str]: map from free parameter index to the gradient method to be used with that parameter
-        self.par_to_grad_method = None
 
     def __repr__(self):
         """String representation."""
@@ -49,10 +50,9 @@ class JacobianQNode(QNode):
         """Constructs the quantum circuit graph by calling the quantum function.
 
         Like :meth:`.QNode._construct`, additionally determines the best gradient computation method
-        for each free parameter.
+        for each positional parameter.
         """
         super()._construct(args, kwargs)
-        self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
 
         temp = [
             str(ob)
@@ -64,6 +64,7 @@ class JacobianQNode(QNode):
                 "Circuits that include sampling can not be differentiated. "
                 "The following observables include sampling: {}".format("; ".join(temp))
             )
+        self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
 
     def _best_method(self, idx):
         """Determine the correct partial derivative computation method for a free parameter.
@@ -87,14 +88,49 @@ class JacobianQNode(QNode):
         """
         # operations that depend on this free parameter
         ops = [d.op for d in self.variable_deps[idx]]
-        methods = [op.grad_method for op in ops]
 
-        if None in methods:
+        # Observables in the circuit
+        # (the topological order is the queue order)
+        observables = self.circuit.observables_in_order
+
+        # an empty list to store the 'best' partial derivative method
+        # for each operator/observable pair
+        best = np.empty((len(ops), len(observables)), dtype=object)
+
+        # find the best supported partial derivative method for each operator
+        for k_op, op in enumerate(ops):
+            if op.grad_method is None:
+                # one nondifferentiable item makes the whole nondifferentiable
+                op.use_method = None
+                continue
+
+            # loop over all observables
+            for k_ob, ob in enumerate(observables):
+                # get the set of operations betweens the
+                # operation and the observable
+                S = self.circuit.nodes_between(op, ob)
+
+                # If there is no path between them, p.d. is zero
+                # Otherwise, use finite differences
+                best[k_op, k_ob] = "0" if not S else "F"
+
+            if all(k == "0" for k in best[k_op, :]):
+                op.use_method = "0"
+            else:
+                op.use_method = "F"
+
+        # if all ops that depend on the free parameter have a best method
+        # of "0", then we can skip the partial derivative altogether
+        if all(o.use_method == "0" for o in ops):
+            return "0"
+
+        # one nondifferentiable item makes the whole nondifferentiable
+        if any(o.use_method is None for o in ops):
             return None
 
         return "F"
 
-    def jacobian(self, args, kwargs=None, *, wrt=None, method="B", options=None):
+    def jacobian(self, args, kwargs=None, *, wrt=None, method="best", options=None):
         r"""Compute the Jacobian of the QNode.
 
         Returns the Jacobian of the parametrized quantum circuit encapsulated in the QNode.
@@ -110,10 +146,10 @@ class JacobianQNode(QNode):
 
         * Analytic method (``'A'``). Analytic, if implemented by the inheriting QNode.
 
-        * Best known method for each parameter (``'B'``): uses the analytic method if
+        * Best known method for each parameter (``'best'``): uses the analytic method if
           possible, otherwise finite difference.
 
-        * Device method (``'D'``): Delegates the computation of the Jacobian to the
+        * Device method (``'device'``): Delegates the computation of the Jacobian to the
           device executing the circuit.
 
         .. note::
@@ -127,7 +163,7 @@ class JacobianQNode(QNode):
             wrt (Sequence[int] or None): Indices of the flattened positional parameters with respect
                 to which to compute the Jacobian. None means all the parameters.
                 Note that you cannot compute the Jacobian with respect to the kwargs.
-            method (str): Jacobian computation method, in ``{'F', 'A', 'B', 'D'}``, see above
+            method (str): Jacobian computation method, in ``{'F', 'A', 'best', 'device'}``, see above
             options (dict[str, Any]): additional options for the computation methods
 
                 * h (float): finite difference method step size
@@ -137,9 +173,7 @@ class JacobianQNode(QNode):
             array[float]: Jacobian, shape ``(n, len(wrt))``, where ``n`` is the number of outputs returned by the QNode
         """
         # pylint: disable=too-many-branches,too-many-statements
-        # arrays are not Sequences... but they ARE Iterables? FIXME decide which types we accept! cf. _flatten
-        # TODO: rename "A"->"analytic", "B"->"best", "F"->"finite_diff", "D"->"device"
-        if not isinstance(args, (Sequence, np.ndarray)):
+        if not isinstance(args, Iterable):
             args = (args,)
         kwargs = kwargs or {}
 
@@ -152,27 +186,17 @@ class JacobianQNode(QNode):
         if self.circuit is None or self.mutable:
             self._construct(args, kwargs)
 
+        # check that the wrt parameters are ok
         if wrt is None:
             wrt = range(self.num_variables)
         else:
             if min(wrt) < 0 or max(wrt) >= self.num_variables:
                 raise ValueError(
-                    "Tried to compute the gradient with respect to free parameters {} "
-                    "(this node has {} free parameters).".format(wrt, self.num_variables)
+                    "Tried to compute the gradient with respect to parameters {} "
+                    "(this node has {} parameters).".format(wrt, self.num_variables)
                 )
             if len(wrt) != len(set(wrt)):  # set removes duplicates
                 raise ValueError("Parameter indices must be unique.")
-
-        if method == "D":
-            return self.device.jacobian(args, kwargs, wrt, self.circuit)  # FIXME placeholder
-
-        # In the following, to evaluate the Jacobian we call self.evaluate several times using
-        # modified args (and possibly modified circuit Operators).
-        # We do not want evaluate to call _construct again. This would only be necessary if the
-        # auxiliary args changed, since only they can change the structure of the circuit,
-        # and we do not modify them. To achieve this, we temporarily make the circuit immutable.
-        mutable = self.mutable
-        self.mutable = False
 
         # check if the method can be used on the requested parameters
         method_map = _inv_dict(self.par_to_grad_method)
@@ -184,18 +208,24 @@ class JacobianQNode(QNode):
         # are we trying to differentiate wrt. params that don't support any method?
         bad = inds_using(None)
         if bad:
-            raise ValueError("Cannot differentiate wrt. parameters {}.".format(bad))
+            raise ValueError("Cannot differentiate with respect to the parameters {}.".format(bad))
 
-        if method in ("A", "F"):
-            if method == "A":
-                bad = inds_using("F")
-                if bad:
-                    raise ValueError(
-                        "The analytic gradient method cannot be "
-                        "used with the parameters {}.".format(bad)
-                    )
-            method = {k: method for k in wrt}
-        elif method == "B":
+        if method == "device":
+            return self.device.jacobian(args, kwargs, wrt, self.circuit)  # FIXME placeholder
+
+        if method == "A":
+            bad = inds_using("F")
+            if bad:
+                raise ValueError(
+                    "The analytic gradient method cannot be "
+                    "used with the parameters {}.".format(bad)
+                )
+                # only variants of the analytic method remain
+            method = self.par_to_grad_method
+        elif method == "F":
+            # use the requested method for every parameter
+            method = {k: "F" for k in wrt}
+        elif method == "best":
             # use best known method for each parameter
             method = self.par_to_grad_method
         else:
@@ -206,6 +236,14 @@ class JacobianQNode(QNode):
                 # the value of the circuit at args, computed only once here
                 options["y0"] = np.asarray(self.evaluate(args, kwargs))
 
+        # In the following, to evaluate the Jacobian we call self.evaluate several times using
+        # modified args (and possibly modified circuit Operators).
+        # We do not want evaluate to call _construct again. This would only be necessary if the
+        # auxiliary args changed, since only they can change the structure of the circuit,
+        # and we do not modify them. To achieve this, we temporarily make the circuit immutable.
+        mutable = self.mutable
+        self.mutable = False
+
         # flatten the nested Sequence of input arguments
         flat_args = np.array(list(_flatten(args)), dtype=float)
         variances_required = any(
@@ -215,12 +253,11 @@ class JacobianQNode(QNode):
         # compute the partial derivative wrt. each parameter using the appropriate method
         grad = np.zeros((self.output_dim, len(wrt)), dtype=float)
         for i, k in enumerate(wrt):
-            if k not in self.variable_deps:
-                # unused parameter, partial derivatives wrt. it are zero
-                continue
-
             par_method = method[k]
-            if par_method == "A":
+            if par_method == "0":
+                # unused/invisible, partial derivatives wrt. this param are zero
+                continue
+            elif par_method == "A":
                 if variances_required:
                     grad[:, i] = self._pd_analytic_var(k, flat_args, kwargs, **options)
                 else:

@@ -32,7 +32,7 @@ def operable_mock_device_2_wires(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, 'capabilities', lambda self: {"model": "qubit"})
+        m.setattr(dev, '_capabilities', {"model": "qubit"})
         m.setattr(dev, 'operations', ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
         m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
         m.setattr(dev, 'reset', lambda self: None)
@@ -82,7 +82,7 @@ class TestJacobianQNodeExceptions:
 
         node = JacobianQNode(circuit, operable_mock_device_2_wires)
 
-        with pytest.raises(ValueError, match="Cannot differentiate wrt. parameter"):
+        with pytest.raises(ValueError, match="Cannot differentiate with respect to the parameters"):
             node.jacobian(0.5)
 
     def test_operator_not_supporting_pd_analytic(self, operable_mock_device_2_wires):
@@ -166,3 +166,52 @@ class TestJacobianQNodeExceptions:
 
         with pytest.raises(ValueError, match="Order must be 1 or 2"):
             node.jacobian(0.5, method="F", options={'order': 3})
+
+
+class TestBestMethod:
+    """Test different flows of _best_method"""
+
+    def test_all_finite_difference(self, operable_mock_device_2_wires):
+        """Finite difference is the best method in almost all cases"""
+
+        def circuit(x, y, z):
+            qml.Rot(x, y, z, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        q = JacobianQNode(circuit, operable_mock_device_2_wires)
+        q._construct([1.0, 1.0, 1.0], {})
+        assert q.par_to_grad_method == {0: "F", 1: "F", 2: "F"}
+
+    def test_no_following_observable(self, operable_mock_device_2_wires):
+        """Test that the gradient is 0 if no observables succeed"""
+
+        def circuit(x):
+            qml.RX(x, wires=[1])
+            return qml.expval(qml.PauliZ(0))
+
+        q = JacobianQNode(circuit, operable_mock_device_2_wires)
+        q._construct([1.0], {})
+        assert q.par_to_grad_method == {0: "0"}
+
+    def test_param_unused(self, operable_mock_device_2_wires):
+        """Test that the gradient is 0 of an unused parameter"""
+
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        q = JacobianQNode(circuit, operable_mock_device_2_wires)
+        q._construct([1.0, 1.0], {})
+        assert q.par_to_grad_method == {0: "F", 1: "0"}
+
+    def test_not_differentiable(self, operable_mock_device_2_wires):
+        """Test that an operation with grad_method=None is marked as
+        non-differentiable"""
+
+        def circuit(x):
+            qml.BasisState(x, wires=[1])
+            return qml.expval(qml.PauliZ(0))
+
+        q = JacobianQNode(circuit, operable_mock_device_2_wires)
+        q._construct([np.array([1.0])], {})
+        assert q.par_to_grad_method == {0: None}
