@@ -142,7 +142,7 @@ def load(quantum_circuit_object, format: str):
     into PennyLane templates.
 
     .. note::
-    
+
         For more details on which operations are supported
         please consult the corresponding plugin documentation:
         https://pennylane.ai/plugins.html
