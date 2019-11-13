@@ -17,6 +17,11 @@
 
 ### Improvements
 
+* State vector preparation operations in the `default.qubit` plugin can now be
+  applied to subsets of wires, and are restricted to being the first operation
+  in a circuit.
+  [#346](https://github.com/XanaduAI/pennylane/pull/346)
+
 * The `QNode` class is split into a hierarchy of simpler classes.
   [#354](https://github.com/XanaduAI/pennylane/pull/354)
   [#398](https://github.com/XanaduAI/pennylane/pull/398)
@@ -28,7 +33,7 @@
   [#396](https://github.com/XanaduAI/pennylane/pull/396)
 
 * Changes have been made to accomodate the movement of the main function
-  in `pytest._internal` in pip<19.3 to `pytest._internal.main`.
+  in `pytest._internal` to `pytest._internal.main` in pip 19.3.
   [#404](https://github.com/XanaduAI/pennylane/pull/404)
 
 * Added the templates `BasisStatePreparation` and `MottonenStatePreparation` that use
@@ -47,7 +52,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Oluwatobi Ogunbayo, Josh Izaac, Johannes Jakob Meyer
+Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Oluwatobi Ogunbayo
 
 ---
 
