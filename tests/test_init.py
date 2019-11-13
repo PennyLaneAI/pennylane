@@ -24,8 +24,8 @@ n_wires = 3
 repeat = 2
 n_rots = 10
 n_if = n_wires * (n_wires - 1) / 2
-wrs = (repeat, n_wires)
-intf = (repeat, n_if)
+wire_block = (repeat, n_wires)
+intf_block = (repeat, n_if)
 
 #######################################
 # Signatures
@@ -71,25 +71,25 @@ INIT = [(qml.init.random_layers_normal, rnd_rpt_nrml),
         (qml.init.interferometer_varphi_uniform, base_uni)
         ]
 # Functions returning a list of parameter arrays
-ALL = [(qml.init.cvqnn_layers_all, rpt),
-       (qml.init.interferometer_all, base)]
+INITALL = [(qml.init.cvqnn_layers_all, rpt),
+           (qml.init.interferometer_all, base)]
 
 ###########
 # Shapes
 
-SHP = [(repeat, n_rots), (repeat, n_wires, 3), intf, intf, wrs, wrs,
-       wrs, wrs, wrs, wrs, (n_if,), (n_if,), (n_wires,),
-       (repeat, n_rots), (repeat, n_wires, 3), intf, intf, wrs, wrs,
-       wrs, wrs, wrs, wrs, (n_if,), (n_if,), (n_wires,),
-       ]
-ALL_SHP = [[intf, intf, wrs, wrs, wrs, intf, intf, wrs, wrs, wrs, wrs],
-           [(n_if,), (n_if,), (n_wires,)]]
+SHAPE = [(repeat, n_rots), (repeat, n_wires, 3), intf_block, intf_block, wire_block, wire_block,
+         wire_block, wire_block, wire_block, wire_block, (n_if,), (n_if,), (n_wires,),
+         (repeat, n_rots), (repeat, n_wires, 3), intf_block, intf_block, wire_block, wire_block,
+         wire_block, wire_block, wire_block, wire_block, (n_if,), (n_if,), (n_wires,),
+         ]
+ALL_SHAPE = [[intf_block, intf_block, wire_block, wire_block, wire_block, intf_block, intf_block, wire_block, wire_block, wire_block, wire_block],
+             [(n_if,), (n_if,), (n_wires,)]]
 
 ###############
 # Combinations
 
-SHAPES = [i + (s,) for i, s in zip(INIT, SHP)]
-ALL_SHAPES = [i + (s,) for i, s in zip(ALL, ALL_SHP)]
+INIT_SHAPES = [i + (s,) for i, s in zip(INIT, SHAPE)]
+INIT_ALL_SHAPES = [i + (s,) for i, s in zip(INITALL, ALL_SHAPE)]
 
 ##################
 
@@ -97,21 +97,19 @@ ALL_SHAPES = [i + (s,) for i, s in zip(ALL, ALL_SHP)]
 class TestInitRepeated:
     """Tests the initialization functions from the ``init`` module."""
 
-    @pytest.mark.parametrize("init, sgntr, shp", SHAPES)
+    @pytest.mark.parametrize("init, sgntr, shp", INIT_SHAPES)
     def test_shape(self, init, sgntr, shp, seed):
         """Confirm that initialization functions
          return an array with the correct shape."""
-        s = sgntr.copy()
-        s['seed'] = seed
+        s = {**sgntr, 'seed': seed}
         p = init(**s)
         assert p.shape == shp
 
-    @pytest.mark.parametrize("init, sgntr, shp", ALL_SHAPES)
+    @pytest.mark.parametrize("init, sgntr, shp", INIT_ALL_SHAPES)
     def test_all_shape(self, init, sgntr, shp, seed):
         """Confirm that ``all`` initialization functions
          return an array with the correct shape."""
-        s = sgntr.copy()
-        s['seed'] = seed
+        s = {**sgntr, 'seed': seed}
         p = init(**s)
         shapes = [p_.shape for p_ in p]
         assert shapes == shp
@@ -120,8 +118,7 @@ class TestInitRepeated:
     def test_same_output_for_same_seed(self, init, sgntr, seed, tol):
         """Confirm that initialization functions return a deterministic output
         for a fixed seed."""
-        s = sgntr.copy()
-        s['seed'] = seed
+        s = {**sgntr, 'seed': seed}
         p1 = init(**s)
         p2 = init(**s)
         assert np.allclose(p1, p2, atol=tol)
@@ -130,21 +127,19 @@ class TestInitRepeated:
     def test_diff_output_for_diff_seed(self, init, sgntr, seed, tol):
         """Confirm that initialization function returns a different output for
         different seeds."""
-        s = sgntr.copy()
-        s['seed'] = seed
+        s = {**sgntr, 'seed': seed}
         p1 = init(**s)
-        s['seed'] = seed + 1
+        s = {**s, 'seed': seed + 1}
         p2 = init(**s)
         assert not np.allclose(p1, p2, atol=tol)
 
     @pytest.mark.parametrize("init, sgntr", INIT)
     def test_interval(self, init, sgntr, seed, tol):
         """Test that sampled parameters lie in correct interval."""
-        s = sgntr.copy()
-        s['seed'] = seed
+        s = {**sgntr, 'seed': seed}
 
         # Case A: Uniformly distributed parameters
-        if 'low' in sgntr.keys() and 'high' in s.keys():
+        if 'low' in s.keys() and 'high' in s.keys():
             s['low'] = 1
             s['high'] = 1
             p = init(**s)
@@ -152,7 +147,7 @@ class TestInitRepeated:
             assert np.isclose(p_mean, 1, atol=tol)
 
         # Case B: Normally distributed parameters
-        if 'mean' in sgntr.keys() and 'std' in s.keys():
+        if 'mean' in s.keys() and 'std' in s.keys():
             s['mean'] = 1
             s['std'] = 0
 
