@@ -18,7 +18,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 # pylint:disable=abstract-method,arguments-differ
 import numpy as np
 
-from pennylane.operation import All, Any, Observable, Operation
+from pennylane.operation import Any, Observable, Operation
 
 
 class Hadamard(Observable, Operation):
