@@ -227,6 +227,26 @@ class CircuitGraph:
         """
         return sorted(self.descendants(ops), key=_by_idx)
 
+    def nodes_between(self, a, b):
+        r"""Nodes on all the directed paths between the two given nodes.
+
+        Returns the set of all nodes ``s`` that fulfill :math:`a \le s \le b`.
+        There is a directed path from ``a`` via ``s`` to ``b`` iff the set is nonempty.
+        The endpoints belong to the path.
+
+        Args:
+            a (Operator): initial node
+            b (Operator): final node
+
+        Returns:
+            set[Operator]: nodes on all the directed paths between a and b
+        """
+        A = self.descendants([a])
+        A.add(a)
+        B = self.ancestors([b])
+        B.add(b)
+        return A & B
+
     @property
     def layers(self):
         """Identify the parametrized layer structure of the circuit.

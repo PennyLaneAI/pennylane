@@ -18,6 +18,7 @@
 This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
+import numpy as np
 
 from pennylane.operation import Any, Observable, CVObservable
 
@@ -33,7 +34,7 @@ from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
 
 
-class Identity(CVObservable, Observable):
+class Identity(CVObservable):
     r"""pennylane.Identity(wires)
     The identity observable :math:`\I`.
 
@@ -49,7 +50,12 @@ class Identity(CVObservable, Observable):
     num_params = 0
     par_domain = None
     grad_method = None
-    ev_order = None
+
+    ev_order = 1
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        return np.array([1, 0, 0])
 
 
 __all__ = _cv__all__ + _qubit__all__ + ["Identity"]

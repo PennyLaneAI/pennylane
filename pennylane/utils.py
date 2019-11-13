@@ -34,10 +34,11 @@ def _flatten(x):
     See also :func:`_unflatten`.
 
     Args:
-        x (array, Iterable, other): each element of the Iterable may itself be an iterable object
+        x (array, Iterable, Any): each element of an array or an Iterable may itself be an object
+            that can be flattened
 
     Yields:
-        other: elements of x in depth-first order
+        Any: elements of x in depth-first order
     """
     if isinstance(x, np.ndarray):
         yield from _flatten(x.flat)  # should we allow object arrays? or just "yield from x.flat"?
@@ -61,23 +62,25 @@ def _unflatten(flat, model):
         TypeError: if ``model`` contains an object of unsupported type
 
     Returns:
-        (other, array): first elements of flat arranged into the nested
+        Union[array, list, Any], array: first elements of flat arranged into the nested
         structure of model, unused elements of flat
     """
     if isinstance(model, (numbers.Number, Variable, str)):
         return flat[0], flat[1:]
-    elif isinstance(model, np.ndarray):
+
+    if isinstance(model, np.ndarray):
         idx = model.size
         res = np.array(flat)[:idx].reshape(model.shape)
         return res, flat[idx:]
-    elif isinstance(model, Iterable):
+
+    if isinstance(model, Iterable):
         res = []
         for x in model:
             val, flat = _unflatten(flat, x)
             res.append(val)
         return res, flat
-    else:
-        raise TypeError("Unsupported type in the model: {}".format(type(model)))
+
+    raise TypeError("Unsupported type in the model: {}".format(type(model)))
 
 
 def unflatten(flat, model):

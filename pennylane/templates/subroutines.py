@@ -13,8 +13,8 @@
 # limitations under the License.
 r"""
 Subroutines are the most basic template, consisting of a collection of quantum operations. As opposed
- to layers and embeddings, subroutines do not encode features, and they have no native option to be applied
- repeatedly.
+to layers and embeddings, subroutines do not encode features, and they have no native option to be applied
+repeatedly.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Sequence
