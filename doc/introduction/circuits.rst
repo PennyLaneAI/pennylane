@@ -189,8 +189,8 @@ within a :class:`~.pennylane.QNode`.
 
 .. note::
     Certain instructions that are specific to the external frameworks might be
-    ignored when loading an object for a quantum circuit. A warning message is
-    created for such instructions.
+    ignored when loading an external quantum circuit. Warning messages will
+    be emitted for ignored instructions.
 
 The following is an example of loading and calling a parametrized Qiskit ``QuantumCircuit`` object
 while using the :class:`~.pennylane.QNode` decorator:
@@ -218,9 +218,9 @@ while using the :class:`~.pennylane.QNode` decorator:
     angle = np.pi/2
     result = quantum_circuit_with_loaded_subcircuit(angle)
 
-What is more, users can use the custom template with any supported plugin, any number of times.
-As shown in the following example, a quantum circuit can be loaded from a ``QASM`` string,
-and then be used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
+Furthermore, loaded templates can be used with any supported device, any number of times.
+For instance, in the following example a template is loaded from a QASM string,
+and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
 
 .. code-block:: python
 
