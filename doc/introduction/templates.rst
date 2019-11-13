@@ -64,11 +64,8 @@ The following layer templates are available:
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.templates.layers.CVNeuralNetLayer
     ~pennylane.templates.layers.CVNeuralNetLayers
-    ~pennylane.templates.layers.RandomLayer
     ~pennylane.templates.layers.RandomLayers
-    ~pennylane.templates.layers.StronglyEntanglingLayer
     ~pennylane.templates.layers.StronglyEntanglingLayers
 
 :html:`</div>`
@@ -133,8 +130,6 @@ randomly initialized arrays for the trainable parameters.
 
     ~pennylane.init.strong_ent_layers_uniform
     ~pennylane.init.strong_ent_layers_normal
-    ~pennylane.init.strong_ent_layer_uniform
-    ~pennylane.init.strong_ent_layer_normal
 
 :html:`</div>`
 
@@ -147,8 +142,6 @@ randomly initialized arrays for the trainable parameters.
 
     ~pennylane.init.random_layers_uniform
     ~pennylane.init.random_layers_normal
-    ~pennylane.init.random_layer_uniform
-    ~pennylane.init.random_layer_normal
 
 :html:`</div>`
 
@@ -161,8 +154,6 @@ randomly initialized arrays for the trainable parameters.
 
     ~pennylane.init.cvqnn_layers_uniform
     ~pennylane.init.cvqnn_layers_normal
-    ~pennylane.init.cvqnn_layer_uniform
-    ~pennylane.init.cvqnn_layer_normal
 
 :html:`</div>`
 
