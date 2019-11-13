@@ -192,7 +192,7 @@ within a :class:`~.pennylane.QNode`.
     ignored when loading an object for a quantum circuit. A warning message is
     created for such instructions.
 
-The following is an example of loading and calling a ``QuantumCircuit`` object
+The following is an example of loading and calling a parametrized Qiskit ``QuantumCircuit`` object
 while using the :class:`~.pennylane.QNode` decorator:
 
 .. code-block:: python
