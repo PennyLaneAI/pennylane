@@ -147,7 +147,7 @@ def load(quantum_circuit_object, name: str):
         name (str): the name of the plugin to convert from
 
     Returns:
-        _function: the PennyLane template created from the quantum circuit
+        function: the PennyLane template created from the quantum circuit
             object
     """
 
