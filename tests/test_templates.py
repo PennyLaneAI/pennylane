@@ -343,7 +343,7 @@ class TestGradientIntegration:
         # Check gradients in numpy interface
         if intrfc == 'numpy':
             grd = qml.grad(circuit, argnum=argnm)
-            grd(*inpts)
+            assert grd(*inpts) is not None
 
         # Check gradients in torch interface
         if intrfc == 'torch':
@@ -352,11 +352,11 @@ class TestGradientIntegration:
             res = circuit(*inpts)
             res.backward()
             for a in argnm:
-                inpts[a].grad.numpy()
+                assert inpts[a].grad.numpy() is not None
 
         # Check gradients in tf interface
         if intrfc == 'tf':
             grad_inpts = [inpts[a] for a in argnm]
             with tf.GradientTape() as tape:
                 loss = circuit(*inpts)
-                tape.gradient(loss, grad_inpts)
+                assert tape.gradient(loss, grad_inpts) is not None

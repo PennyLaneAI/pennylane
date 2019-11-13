@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.qnode import QuantumFunctionError
 from pennylane.templates.layers import (Interferometer)
-log.getLogger('defaults')
 
 
 class TestInterferometer:
@@ -38,20 +37,16 @@ class TestInterferometer:
             Interferometer(theta=None, phi=None, varphi=varphi, mesh=mesh, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(QuantumFunctionError) as excinfo:
+        with pytest.raises(QuantumFunctionError):
             circuit(varphi, 'rectangular')
-        assert excinfo.value.args[0] == 'The mesh parameter influences the circuit architecture ' \
-                                        'and can not be passed as a QNode parameter.'
 
         @qml.qnode(dev)
         def circuit(varphi, bs):
             Interferometer(theta=None, phi=None, varphi=varphi, beamsplitter=bs, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(QuantumFunctionError) as excinfo:
+        with pytest.raises(QuantumFunctionError):
             circuit(varphi, 'clements')
-        assert excinfo.value.args[0] == "The beamsplitter parameter influences the circuit architecture " \
-                                        "and can not be passed as a QNode parameter."
 
     def test_clements_beamsplitter_convention(self, tol):
         """test the beamsplitter convention"""
@@ -318,9 +313,13 @@ class TestInterferometer:
         assert np.allclose(res, expected, atol=tol)
 
         res = qml.jacobian(circuit, 0)(theta, phi, varphi)
-        expected = np.array([[-6.18547248e-03, -3.20488426e-04, -4.20274087e-02, -6.21819638e-02, 9.68526932e-01, 9.68526932e-01],
-                             [ 3.55439246e-04,  3.89820238e-02, -3.35281306e-03,  7.93009027e-04, 8.30347888e-02,-3.45150707e-01],
-                             [ 5.44893380e-03,  9.30878007e-03, -5.33374094e-01,  6.13889548e-02, -1.16931385e-01, 3.45150707e-01],
-                             [ 3.81099442e-04, -4.79703154e-02,  5.78754316e-01,  1.65477867e-01, 3.38965967e-02, 1.65477867e-01]])
+        expected = np.array([[-6.18547248e-03, -3.20488426e-04, -4.20274087e-02, -6.21819638e-02,
+                              9.68526932e-01, 9.68526932e-01],
+                             [ 3.55439246e-04,  3.89820238e-02, -3.35281306e-03,  7.93009027e-04,
+                               8.30347888e-02,-3.45150707e-01],
+                             [ 5.44893380e-03,  9.30878007e-03, -5.33374094e-01,  6.13889548e-02,
+                               -1.16931385e-01, 3.45150707e-01],
+                             [ 3.81099442e-04, -4.79703154e-02,  5.78754316e-01,  1.65477867e-01,
+                               3.38965967e-02, 1.65477867e-01]])
         assert np.allclose(res, expected, atol=tol)
 
