@@ -113,7 +113,7 @@ def test_not_differentiable():
     """Test QNode marked as non-differentiable"""
     dev = qml.device('default.qubit', wires=1)
 
-    @qnode(dev, interface=None, differentiable=False)
+    @qnode(dev, interface=None, diff=None)
     def circuit(a):
         qml.RX(a, wires=0)
         return qml.expval(qml.PauliZ(wires=0))

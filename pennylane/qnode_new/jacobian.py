@@ -345,6 +345,7 @@ class JacobianQNode(QNode):
             QuantumFunctionError: if PyTorch is not installed
         """
         # Placing slow imports here, in case the user does not use the Torch interface
+        # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
             from pennylane.interfaces.torch import TorchQNode
         except ImportError:  # pragma: no cover
@@ -361,6 +362,7 @@ class JacobianQNode(QNode):
             QuantumFunctionError: if TensorFlow >= 1.12 is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
+        # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
             from pennylane.interfaces.tf import TFQNode
         except ImportError:  # pragma: no cover
@@ -378,6 +380,7 @@ class JacobianQNode(QNode):
             QuantumFunctionError: if TensorFlow >= 1.12 is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
+        # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
             from pennylane.interfaces.autograd import to_autograd
         except ImportError:  # pragma: no cover
