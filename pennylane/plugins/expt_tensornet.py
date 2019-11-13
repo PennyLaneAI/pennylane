@@ -84,7 +84,7 @@ class TensorNetwork(Device):
         "Identity": identity,
     }
 
-    def __init__(self, wires, shots=1000):
+    def __init__(self, wires, shots=1000, analytic=True):
         super().__init__(wires, shots)
         self.eng = None
         self.analytic = True
