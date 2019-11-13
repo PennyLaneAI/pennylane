@@ -218,14 +218,15 @@ while using the :class:`~.pennylane.QNode` decorator:
     angle = np.pi/2
     result = quantum_circuit_with_loaded_subcircuit(angle)
 
-Users can also reuse the same custom template. The following is an example for
-this, in which a quantum circuit is loaded from a ``QASM`` string:
+What is more, users can use the custom template with any supported plugin, any number of times.
+As shown in the following example, a quantum circuit can be loaded from a ``QASM`` string,
+and then be used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
 
 .. code-block:: python
 
     import pennylane as qml
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qml.device('forest.qpu', wires=2)
 
     hadamard_qasm = 'OPENQASM 2.0;' \
                     'include "qelib1.inc";' \
