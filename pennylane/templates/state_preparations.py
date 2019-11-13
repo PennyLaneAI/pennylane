@@ -18,6 +18,7 @@ by decomposing it into elementary operations.
 import math
 from collections.abc import Iterable
 from scipy import sparse
+from pennylane.qnode import QuantumFunctionError
 
 import numpy as np
 import pennylane as qml
@@ -61,16 +62,16 @@ def BasisStatePreparation(basis_state, wires):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
+        raise QuantumFunctionError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if not len(basis_state) == len(wires):
-        raise ValueError(
+        raise QuantumFunctionError(
             "Number of qubits must be equal to the number of wires, which is {}; "
             "got {}.".format(len(wires), len(basis_state))
         )
 
     if any([x not in [0, 1] for x in basis_state]):
-        raise ValueError("Basis state must only consist of 0s and 1s, got {}".format(basis_state))
+        raise QuantumFunctionError("Basis state must only consist of 0s and 1s, got {}".format(basis_state))
 
     for wire, state in zip(wires, basis_state):
         if state == 1:

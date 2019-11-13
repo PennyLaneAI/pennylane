@@ -79,17 +79,17 @@ except ImportError as e:
 # Templates
 
 
-# qubit templates, intialization functions and keyword argument
-qubit_func = [(StronglyEntanglingLayers, strong_ent_layers_uniform, {'repeat': None}, {'n_layers': None}),
-              (StronglyEntanglingLayers, strong_ent_layers_normal, {'repeat': None}, {'n_layers': None}),
-              (RandomLayers, random_layers_uniform, {'repeat': None, 'n_rots': 2}, {'n_layers': None, 'n_rots': 2}),
-              (RandomLayers, random_layers_normal, {'repeat': None, 'n_rots': 2}, {'n_layers': None, 'n_rots': 2})]
+# qubit templates & their kwargs + intialization functions & their kwargs
+qubit_func = [(StronglyEntanglingLayers, {'repeat': None}, strong_ent_layers_uniform, {'n_layers': None}),
+              (StronglyEntanglingLayers, {'repeat': None}, strong_ent_layers_normal, {'n_layers': None}),
+              (RandomLayers, {'repeat': None, 'n_rots': 2}, random_layers_uniform, {'n_layers': None, 'n_rots': 2}),
+              (RandomLayers, {'repeat': None, 'n_rots': 2}, random_layers_normal, {'n_layers': None, 'n_rots': 2})]
 
-# qubit templates, intialization functions and keyword argument
-cv_func = [(CVNeuralNetLayers, cvqnn_layers_all, {'repeat': None}, {'n_layers': None}),
-           (Interferometer, interferometer_all, {}, {})]
+# cv templates & their kwargs + intialization functions & their kwargs
+cv_func = [(CVNeuralNetLayers, {'repeat': None}, cvqnn_layers_all, {'n_layers': None}),
+           (Interferometer, {}, interferometer_all, {})]
 
-# qubit templates, constant inputs and keyword argument
+# qubit templates, constant inputs and kwargs
 qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                            [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], {'repeat': 2}),
                (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'repeat': 2, 'n_rots': 2}),
@@ -116,16 +116,16 @@ cv_const = [(DisplacementEmbedding, [[1., 2.]], {}),
             (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {})
             ]
 
-# qubit templates, constant inputs, and ``argnum`` argument of qml.grad
+# qubit templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
 qubit_grad = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
-                                           [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], [0]),
-               (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], [0]),
-               (AngleEmbedding, [[1., 2.]], [0])
+                                           [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], {'repeat': 2, 'wires': range(2)}, [0]),
+               (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'repeat': 2, 'wires': range(2), 'n_rots': 2}, [0]),
+               (AngleEmbedding, [[1., 2.]], {'wires': range(2)}, [0])
               ]
 
-# cv templates, constant inputs, and ``argnum`` argument of qml.grad
-cv_grad = [(DisplacementEmbedding, [[1., 2.]], [0]),
-            (SqueezingEmbedding, [[1., 2.]], [0]),
+# cv templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
+cv_grad = [(DisplacementEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
+            (SqueezingEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
             (CVNeuralNetLayers, [[[2.31], [1.22]],
                                  [[3.47], [2.01]],
                                  [[0.93, 1.58], [5.07, 4.82]],
@@ -137,8 +137,8 @@ cv_grad = [(DisplacementEmbedding, [[1., 2.]], [0]),
                                  [[-0.01, -0.05], [0.08, -0.19]],
                                  [[1.89, 3.59], [1.49, 3.71]],
                                  [[0.09,  0.03], [-0.14,  0.04]]
-                                 ], list(range(11))),
-            (Interferometer, [[2.31], [3.49], [0.98, 1.54]], [0, 1, 2])
+                                 ], {'repeat': 2, 'wires': range(2)}, list(range(11))),
+            (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {'wires': range(2)},  [0, 1, 2])
             ]
 
 #########################################
@@ -291,7 +291,7 @@ class TestIntegrationCircuit:
 class TestInitializationIntegration:
     """Tests integration with the parameter initialization functions from pennylane.init"""
 
-    @pytest.mark.parametrize("template, inpts, hyperp, hyperp_f", qubit_func)
+    @pytest.mark.parametrize("template, hyperp, inpts, hyperp_f", qubit_func)
     def test_integration_qubit_init(self, template, inpts, qubit_device, n_subsystems,
                                     n_layers, hyperp, hyperp_f):
         """Checks parameter initialization compatible with qubit templates."""
@@ -314,7 +314,7 @@ class TestInitializationIntegration:
         # Check that execution does not throw error
         circuit(inp)
 
-    @pytest.mark.parametrize("template, inpts, hyperp, hyperp_f", cv_func)
+    @pytest.mark.parametrize("template, hyperp, inpts, hyperp_f", cv_func)
     def test_integration_cv_init(self, template, inpts, gaussian_device, n_subsystems,
                                  n_layers, hyperp, hyperp_f):
         """Checks parameter initialization compatible with continuous-variable templates."""
@@ -341,15 +341,15 @@ class TestInitializationIntegration:
 class TestGradientIntegration:
     """Tests that gradients of circuits with templates can be computed."""
 
-    @pytest.mark.parametrize("template, inpts, argnm", qubit_grad)
+    @pytest.mark.parametrize("template, inpts, hyperp, argnm", qubit_grad)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_qubit_grad(self, template, inpts, argnm, intrfc, to_var):
+    def test_integration_qubit_grad(self, template, inpts, hyperp, argnm, intrfc, to_var):
         """Checks that gradient calculations of qubit templates execute without error."""
         inpts = [to_var(i) for i in inpts]
         dev = qml.device('default.qubit', wires=2)
         @qml.qnode(dev, interface=intrfc)
-        def circuit(*inp_):
-            template(*inp_, wires=range(2))
+        def circuit(*inp):
+            template(*inp, **hyperp)
             return qml.expval(qml.Identity(0))
 
         # Check gradients in numpy interface
@@ -373,14 +373,14 @@ class TestGradientIntegration:
                 loss = circuit(*inpts)
                 tape.gradient(loss, grad_inpts)
 
-    @pytest.mark.parametrize("template, inpts, argnm", cv_grad)
+    @pytest.mark.parametrize("template, inpts, hyperp, argnm", cv_grad)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_cv_grad(self, gaussian_device_2_wires, template, inpts, argnm, intrfc, to_var):
+    def test_integration_cv_grad(self, gaussian_device_2_wires, template, inpts, hyperp, argnm, intrfc, to_var):
         """Checks that gradient calculations of cv templates execute without error."""
         inpts = [to_var(i) for i in inpts]
         @qml.qnode(gaussian_device_2_wires, interface=intrfc)
-        def circuit(*inp_):
-            template(*inp_, wires=range(2))
+        def circuit(*inp):
+            template(*inp, **hyperp)
             return qml.expval(qml.Identity(0))
 
         # Check gradients in numpy interface
