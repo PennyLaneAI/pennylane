@@ -170,7 +170,7 @@ For example:
 Quantum circuits from other frameworks
 --------------------------------------
 
-PennyLane now supports creating customized PennyLane templates from quantum
+PennyLane supports creating customized PennyLane templates imported from other frameworks.
 circuit objects using supported plugins. Currently, QuantumCircuit objects from
 Qiskit, QASM strings or QASM files can be loaded. For this, the PennyLane-Qiskit
 plugin needs to be installed.
