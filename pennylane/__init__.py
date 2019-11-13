@@ -138,7 +138,8 @@ def device(name, *args, **kwargs):
 
 def load(quantum_circuit_object, name: str):
     """load(name, quantum_circuit_object)
-    Load a plugin :func:`~.load` which can then be used to convert objects of
+    Load external quantum assembly and quantum circuits from supported frameworks
+    into PennyLane templates.
     quantum circuits from other frameworks.
 
     Args:
