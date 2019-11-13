@@ -21,7 +21,7 @@ import numpy as np
 
 
 def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
-    r"""Creates an initial parameter array for :func:`~.StronglyEntanglingLayers`, drawn from a uniform
+    r"""Creates a parameter array for :func:`~.StronglyEntanglingLayers`, drawn from a uniform
     distribution.
 
     The shape of the parameter array is ``(n_layers, n_wires, 3)`` and each parameter is drawn uniformly at random \
@@ -38,7 +38,7 @@ def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        parameter array
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -48,7 +48,7 @@ def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
 
 
 def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates an initial parameter array for :func:`~.StronglyEntanglingLayers`, drawn from a normal
+    r"""Creates a parameter array for :func:`~.StronglyEntanglingLayers`, drawn from a normal
     distribution.
 
     The shape of the parameter array is ``(n_layers, n_wires, 3)`` and each parameter is drawn
@@ -65,7 +65,7 @@ def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        parameter array
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -74,8 +74,9 @@ def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     return params
 
 
+
 def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
-    r"""Creates an initial parameter array for :func:`~.RandomLayers`, drawn from a uniform distribution.
+    r"""Creates a parameter array for :func:`~.RandomLayers`, drawn from a uniform distribution.
 
     The shape of the parameter array is ``(n_layers, n_rots)`` and each parameter is drawn uniformly at random \
     from between ``low`` and ``high``. The parameters define the rotation angles of the randomly \
@@ -92,7 +93,7 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        parameter array
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -105,7 +106,7 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
 
 
 def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=None):
-    r"""Creates an initial parameter array for :func:`~.RandomLayers`, drawn from a normal distribution.
+    r"""Creates a parameter array for :func:`~.RandomLayers`, drawn from a normal distribution.
 
     The shape of the parameter array is ``(n_layers, n_rots)`` and each parameter is drawn
     from a normal distribution with mean ``mean`` and standard deviation ``std``.
@@ -122,7 +123,7 @@ def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=N
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        parameter array
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -191,7 +192,7 @@ def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2*pi, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -218,7 +219,7 @@ def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -245,7 +246,7 @@ def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2*pi, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -272,7 +273,7 @@ def cvqnn_layers_phi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -299,7 +300,7 @@ def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -311,7 +312,7 @@ def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None
 def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the ``varphi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+        The parameters are drawn from a normal distribution.
 
         The shape of the arrays is ``(n_layers, n_wires)``.
 
@@ -325,7 +326,7 @@ def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -351,7 +352,7 @@ def cvqnn_layers_r_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -377,7 +378,7 @@ def cvqnn_layers_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -403,7 +404,7 @@ def cvqnn_layers_phi_r_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -429,7 +430,7 @@ def cvqnn_layers_phi_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -455,7 +456,7 @@ def cvqnn_layers_a_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -481,7 +482,7 @@ def cvqnn_layers_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -507,7 +508,7 @@ def cvqnn_layers_phi_a_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -533,7 +534,7 @@ def cvqnn_layers_phi_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -559,7 +560,7 @@ def cvqnn_layers_kappa_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -585,7 +586,7 @@ def cvqnn_layers_kappa_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
             seed (int): seed used in sampling the parameters, makes function call deterministic
 
         Returns:
-            parameter array
+            array: parameter array
         """
     if seed is not None:
         np.random.seed(seed)
@@ -640,7 +641,7 @@ def interferometer_theta_uniform(n_wires, low=0, high=2*pi, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        list of parameter arrays
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -665,7 +666,7 @@ def interferometer_phi_uniform(n_wires, low=0, high=2*pi, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        list of parameter arrays
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -690,7 +691,7 @@ def interferometer_varphi_uniform(n_wires, low=0, high=2*pi, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        parameter array
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -714,7 +715,7 @@ def interferometer_theta_normal(n_wires, mean=0, std=0.1, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        list of parameter arrays
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -739,7 +740,7 @@ def interferometer_phi_normal(n_wires, mean=0, std=0.1, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        list of parameter arrays
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)
@@ -764,7 +765,7 @@ def interferometer_varphi_normal(n_wires, mean=0, std=0.1, seed=None):
         seed (int): seed used in sampling the parameters, makes function call deterministic
 
     Returns:
-        parameter array
+        array: parameter array
     """
     if seed is not None:
         np.random.seed(seed)

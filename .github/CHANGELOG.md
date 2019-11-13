@@ -23,7 +23,7 @@
 
 ### Breaking changes
 
-* Initialization functions now return single array of weights per function. Utility for multi-weight templates
+* Initialization functions now return a single array of weights per function. Utilities for multi-weight templates
   `Interferometer()` and `CVNeuralNetLayers()` are provided.
   [#412](https://github.com/XanaduAI/pennylane/pull/412)
 
@@ -31,7 +31,6 @@
   have been turned into private functions `_random_layer()`, `_cv_neural_net_layer()` and
   `_strongly_entangling_layer()`. Recommended use is now via the corresponding `Layers()` templates.
   [#413](https://github.com/XanaduAI/pennylane/pull/413)
-
 
 ### Improvements
 
@@ -42,7 +41,7 @@
 * Templates integration tests are rewritten - now cover keyword/positional argument passing,
   interfaces and combinations of templates.
   [#409](https://github.com/XanaduAI/pennylane/pull/409)
-  
+
 * State vector preparation operations in the `default.qubit` plugin can now be
   applied to subsets of wires, and are restricted to being the first operation
   in a circuit.
@@ -78,7 +77,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Maria Schuld, Oluwatobi Ogunbayo
+Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Oluwatobi Ogunbayo, Maria Schuld
 
 ---
 
@@ -432,9 +431,12 @@ Rohit Midha, Nicolás Quesada, Maria Schuld, Antal Száva, Roeland Wiersema.
 ### Improvements
 
 * `default.qubit` plugin now uses `np.tensordot` when applying quantum operations
-  and evaluating expectations, resulting in significant speedup [#239](https://github.com/XanaduAI/pennylane/pull/239), [#241](https://github.com/XanaduAI/pennylane/pull/241)
+  and evaluating expectations, resulting in significant speedup
+  [#239](https://github.com/XanaduAI/pennylane/pull/239),
+  [#241](https://github.com/XanaduAI/pennylane/pull/241)
 
-* PennyLane now allows division of quantum operation parameters by a constant [#179](https://github.com/XanaduAI/pennylane/pull/179)
+* PennyLane now allows division of quantum operation parameters by a constant
+  [#179](https://github.com/XanaduAI/pennylane/pull/179)
 
 * Portions of the test suite are in the process of being ported to pytest.
   Note: this is still a work in progress.

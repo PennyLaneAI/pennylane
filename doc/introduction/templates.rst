@@ -244,12 +244,21 @@ The following initialization functions are available:
     ~pennylane.init.cvqnn_layers_a_normal
     ~pennylane.init.cvqnn_layers_phi_a_uniform
     ~pennylane.init.cvqnn_layers_phi_a_normal
+<<<<<<< HEAD
     ~pennylane.init.cvqnn_layers_phi_a_uniform
     ~pennylane.init.cvqnn_layers_phi_a_normal
 =======
     ~pennylane.init.cvqnn_layers_uniform
     ~pennylane.init.cvqnn_layers_normal
 >>>>>>> make_layer_private
+=======
+    ~pennylane.init.cvqnn_layers_kappa_uniform
+    ~pennylane.init.cvqnn_layers_kappa_normal
+=======
+    ~pennylane.init.cvqnn_layers_uniform
+    ~pennylane.init.cvqnn_layers_normal
+>>>>>>> master
+>>>>>>> improve_initialization_functions
 
 :html:`</div>`
 

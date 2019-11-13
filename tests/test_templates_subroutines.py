@@ -109,7 +109,6 @@ class TestInterferometer:
         theta = [0.321]
         phi = [0.234]
         varphi = [0.42342, 0.1121]
-
         def circuit(varphi):
             Interferometer(theta, phi, varphi, wires=wires)
             return [qml.expval(qml.NumberOperator(w)) for w in wires]
@@ -139,7 +138,6 @@ class TestInterferometer:
         theta = [0.321]
         phi = [0.234]
         varphi = [0.42342, 0.1121]
-
         def circuit(varphi):
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
             return [qml.expval(qml.NumberOperator(w)) for w in wires]
@@ -148,6 +146,7 @@ class TestInterferometer:
         assert np.allclose(qnode(varphi), [0, 0], atol=tol)
 
         queue = qnode.queue
+
         assert len(queue) == 3
 
         assert isinstance(qnode.queue[0], qml.Beamsplitter)
@@ -294,5 +293,3 @@ class TestInterferometer:
                              [ 5.44893380e-03,  9.30878007e-03, -5.33374094e-01,  6.13889548e-02, -1.16931385e-01, 3.45150707e-01],
                              [ 3.81099442e-04, -4.79703154e-02,  5.78754316e-01,  1.65477867e-01, 3.38965967e-02, 1.65477867e-01]])
         assert np.allclose(res, expected, atol=tol)
-
-

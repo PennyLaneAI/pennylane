@@ -140,6 +140,7 @@ def StronglyEntanglingLayers(weights, wires, repeat=1, ranges=None, imprimitive=
     Keyword Args:
         repeat (int): number of layers applied
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer
+
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
     Raises:
@@ -185,7 +186,7 @@ def RandomLayers(weights, wires, repeat=1, ratio_imprim=0.3, imprimitive=CNOT, n
         a new random circuit architecture will be created every time the quantum node is evaluated.
 
     Args:
-        weights (array[float]): array of weights of shape ``(k,)``
+        weights (array[float]): array of weights of shape ``(L, k)``,
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
