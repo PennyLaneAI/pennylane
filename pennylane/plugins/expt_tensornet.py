@@ -254,11 +254,11 @@ class TensorNetwork(Device):
         for projs in projector_tensor_products:
             obs_nodes = []
             obs_wires = []
-            for proj, wire in projs:
+            for proj, proj_wires in projs:
 
-                tensor = proj.reshape([2] * len(wire) * 2)
-                obs_nodes.append(self._add_node(tensor, wire))
-                obs_wires.append(wire)
+                tensor = proj.reshape([2] * len(proj_wires) * 2)
+                obs_nodes.append(self._add_node(tensor, proj_wires))
+                obs_wires.append(proj_wires)
 
             joint_probabilities.append(self.ev(obs_nodes, obs_wires))
 
