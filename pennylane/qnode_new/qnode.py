@@ -16,7 +16,6 @@ Base QNode class and utilities
 """
 from collections.abc import Sequence
 from collections import namedtuple, OrderedDict
-from functools import wraps, lru_cache
 import inspect
 import itertools
 

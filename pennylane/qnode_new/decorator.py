@@ -14,7 +14,7 @@
 """
 QNode decorator.
 """
-from functools import wraps, lru_cache
+from functools import lru_cache
 
 from .cv import CVQNode
 from .jacobian import JacobianQNode
