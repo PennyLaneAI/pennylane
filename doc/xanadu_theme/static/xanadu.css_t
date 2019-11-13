@@ -2153,6 +2153,8 @@ div.body > div > span,
 }
 
 dl.attribute > dt:before,
+dl.staticmethod > dt:before,
+dl.classmethod > dt:before,
 dl.method > dt:before {
     content: '';
     display: block;
@@ -2175,8 +2177,29 @@ dl.class dd > .rubric:last-of-type {
 
 dl.class > dd > table.docutils {
     margin-bottom: -40px;
-    border-bottom: 1px solid lightgray;
+    /*border-bottom: 1px solid lightgray;*/
 }
+
+dd > .collapse-header:first-of-type > h2 {
+  margin-top: 70px;
+}
+
+
+dd > .collapse-header {
+  margin-top: 60px;
+}
+
+.rotate {
+    -moz-transition: all .1s linear;
+    -webkit-transition: all .1s linear;
+    transition: all .1s linear;
+}
+.rotate.up {
+    -moz-transform:rotate(180deg);
+    -webkit-transform:rotate(180deg);
+    transform:rotate(180deg);
+}
+
 /* Syntax highlighting
 -------------------------------------------------- */
 

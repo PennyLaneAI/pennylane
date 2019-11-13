@@ -44,8 +44,8 @@ def AngleEmbedding(features, wires, rotation='X'):
     feature vector :math:`[0, \pi/2, \pi/2, 0]`. Alternatively, one can use the :mod:`BasisEmbedding()` template.
 
     Args:
-        features (array): Input array of shape ``(N,)``, where N is the number of input features to embed,
-            with :math:`N\leq n`
+        features (array): Input array of shape ``(N,)``, where N is the number of features
+            to embed. ``N`` must be smaller or equal to the total number of wires.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Keyword Args:
@@ -56,7 +56,7 @@ def AngleEmbedding(features, wires, rotation='X'):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if len(features) > len(wires):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
@@ -159,7 +159,7 @@ def BasisEmbedding(features, wires):
         ValueError: if ``features`` or ``wires`` is invalid
     """
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if len(features) > len(wires):
         raise ValueError("Number of bits to embed cannot be larger than number of wires, which is {}; "
@@ -198,7 +198,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if len(wires) < len(features):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "
@@ -242,7 +242,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
    """
 
     if not isinstance(wires, Iterable):
-        raise ValueError("Wires needs to be a list of wires that the embedding uses; got {}.".format(wires))
+        raise ValueError("Wires must be passed as a list of integers; got {}.".format(wires))
 
     if len(wires) < len(features):
         raise ValueError("Number of features to embed cannot be larger than number of wires, which is {}; "

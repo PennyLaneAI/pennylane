@@ -16,9 +16,9 @@ Unit tests for :mod:`pennylane.operation`.
 """
 import pytest
 import numpy as np
+from unittest.mock import patch
 
 import pennylane as qml
-from pennylane.variable import Variable
 from pennylane.operation import Tensor
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -171,7 +171,6 @@ class TestOperation:
         with pytest.raises(ValueError, match='Unknown parameter domain'):
             test_class(*pars, wires=ww)
 
-
     @pytest.fixture(scope="function")
     def qnode(self, mock_device):
         """Provides a QNode for the subsequent tests of do_queue"""
@@ -195,6 +194,55 @@ class TestOperation:
         assert qnode.ops[1].name == "RY"
         assert qnode.ops[2].name == "PauliX"
         assert qnode.ops[3].name == "PauliZ"
+
+    @pytest.fixture(scope="function")
+    def qnode_for_inverse(self, mock_device):
+        """Provides a QNode for the subsequent tests of inv"""
+
+        def circuit(x):
+            qml.RZ(x, wires=[1]).inv()
+            qml.RZ(x, wires=[1]).inv().inv()
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+        node = qml.QNode(circuit, mock_device)
+        node.construct([1.0])
+
+        return node
+
+    def test_operation_inverse_defined(self, qnode_for_inverse):
+        """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
+        of the original class"""
+        assert qnode_for_inverse.ops[0].name == "RZ.inv"
+        assert qnode_for_inverse.ops[0].inverse
+        assert issubclass(qnode_for_inverse.ops[0].__class__, qml.operation.Operation)
+        assert qnode_for_inverse.ops[1].name == "RZ"
+        assert not qnode_for_inverse.ops[1].inverse
+        assert issubclass(qnode_for_inverse.ops[1].__class__, qml.operation.Operation)
+
+    def test_operation_inverse_using_dummy_operation(self):
+
+        some_param = 0.5
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom Operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+
+        # Check that the name of the Operation is initialized fine
+        dummy_op = DummyOp(some_param, wires=[1])
+
+        assert not dummy_op.inverse
+
+        dummy_op_class_name = dummy_op.name
+
+        # Check that the name of the Operation was modified when applying the inverse
+        assert dummy_op.inv().name == dummy_op_class_name + ".inv"
+        assert dummy_op.inverse
+
+        # Check that the name of the Operation is the original again, once applying the inverse a second time
+        assert dummy_op.inv().name == dummy_op_class_name
+        assert not dummy_op.inverse
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
@@ -454,7 +502,7 @@ class TestObservableConstruction:
 
 
 class TestOperatorIntegration:
-    """ Integration tests for the Operation class"""
+    """ Integration tests for the Operator class"""
 
     def test_all_wires_defined_but_init_with_one(self):
         """Test that an exception is raised if the class is defined with ALL wires,
@@ -476,6 +524,38 @@ class TestOperatorIntegration:
         with pytest.raises(ValueError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
             circuit()
 
+
+class TestOperationIntegration:
+    """ Integration tests for the Operation class"""
+
+    def test_inverse_of_operation(self):
+        """Test the inverse of an operation"""
+
+        dev1 = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev1)
+        def circuit():
+            qml.PauliZ(wires=[0])
+            qml.PauliZ(wires=[0]).inv()
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit() == 1
+
+    def test_inverse_operations_not_supported(self):
+        """Test that the inverse of operations is not currently
+        supported on the default gaussian device"""
+
+        dev1 = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev1)
+        def mean_photon_gaussian(mag_alpha, phase_alpha, phi):
+            qml.Displacement(mag_alpha, phase_alpha, wires=0)
+            qml.Rotation(phi, wires=0).inv()
+            return qml.expval(qml.NumberOperator(0))
+
+        with pytest.raises(qml.DeviceError, match="Gate Rotation.inv not supported on device {}"
+                .format(dev1.short_name)):
+            mean_photon_gaussian(0.015, 0.02, 0.005)
 
 class TestTensor:
     """Unit tests for the Tensor class"""
@@ -698,20 +778,32 @@ class TestDecomposition:
         assert rec.queue[2].name == "PhaseShift"
         assert rec.queue[2].parameters == [phi]
 
-    def test_basis_state_decomposition(self):
-        """Test the basis state decomposition is correct"""
+    def test_basis_state_decomposition(self, monkeypatch):
+        """Test the decomposition of BasisState calls the
+        BasisStatePreparation template"""
         n = np.array([1, 0, 1, 1])
+        wires=[0, 1, 2, 3]
+        call_args = []
 
-        with qml.utils.OperationRecorder() as rec:
-            qml.BasisState.decomposition(n, wires=[0, 1, 2, 3])
+        # We have to patch BasisStatePreparation where it is loaded
+        monkeypatch.setattr(qml.ops.qubit, "BasisStatePreparation", lambda *args: call_args.append(args))
+        qml.BasisState.decomposition(n, wires=wires)
 
-        assert len(rec.queue) == 3
+        assert len(call_args) == 1
+        assert np.array_equal(call_args[0][0], n)
+        assert np.array_equal(call_args[0][1], wires)
 
-        assert rec.queue[0].name == "PauliX"
-        assert rec.queue[0].wires == [0]
+    def test_qubit_state_vector_decomposition(self, monkeypatch):
+        """Test the decomposition of QubitStateVector calls the
+        MottonenStatePreparation template"""
+        state = np.array([1/2, 1j/np.sqrt(2), 0, -1/2])
+        wires = [0, 1]
+        call_args = []
 
-        assert rec.queue[1].name == "PauliX"
-        assert rec.queue[1].wires == [2]
+        # We have to patch MottonenStatePreparation where it is loaded
+        monkeypatch.setattr(qml.ops.qubit, "MottonenStatePreparation", lambda *args: call_args.append(args))
+        qml.QubitStateVector.decomposition(state, wires=wires)
 
-        assert rec.queue[2].name == "PauliX"
-        assert rec.queue[2].wires == [3]
+        assert len(call_args) == 1
+        assert np.array_equal(call_args[0][0], state)
+        assert np.array_equal(call_args[0][1], wires)

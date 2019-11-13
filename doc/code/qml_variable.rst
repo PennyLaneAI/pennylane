@@ -12,4 +12,3 @@ qml.variable
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
-    :skip: Sequence

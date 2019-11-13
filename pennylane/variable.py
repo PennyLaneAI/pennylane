@@ -60,10 +60,7 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     property automates the process of unpacking the Variable value.
     The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
 """
-from collections.abc import Sequence
 import copy
-
-import numpy as np
 
 
 class Variable:
@@ -137,8 +134,5 @@ class Variable:
             return Variable.free_param_values[self.idx] * self.mult
 
         # The variable is a placeholder for a keyword argument
-        temp = Variable.kwarg_values[self.name]
-        if isinstance(temp, (Sequence, np.ndarray)):
-            return temp[self.idx] * self.mult
-
-        raise TypeError('Internal: Keyword arguments must map to arrays.')
+        values = Variable.kwarg_values[self.name]
+        return values[self.idx] * self.mult
