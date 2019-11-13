@@ -100,7 +100,7 @@ class TestQNodeOperationQueue:
         """Tests that _op_descendants properly extracts the successors that are observables"""
 
         qnode = mock_qnode
-        observable_successors = qnode._op_descendants(qnode.ops[0], only="E")
+        observable_successors = qnode._op_descendants(qnode.ops[0], only="O")
         assert qnode.ops[0] not in observable_successors
         assert qnode.ops[1] not in observable_successors
         assert qnode.ops[4] in observable_successors
@@ -460,6 +460,17 @@ class TestQNodeExceptions:
         assert circuit.in_args[2:] == (0.3, 0.4)  # first two are Variables
         node(0.1, n=0.4)
         assert circuit.in_args[2:] == (0.3, 0.4)
+
+    def test_unused_positional_parameter(self, operable_mock_device_2_wires):
+        """Error: a positional parameter is not used in the circuit."""
+
+        def circuit(a, x):
+            qml.RX(a, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node = QNode(circuit, operable_mock_device_2_wires, properties={"par_check": True})
+        with pytest.raises(QuantumFunctionError, match="The positional parameters"):
+            node(1.0, 2.0)
 
     @pytest.mark.xfail(
         reason="Tests the auxiliary-equals-keyword-only syntax", raises=AssertionError, strict=True

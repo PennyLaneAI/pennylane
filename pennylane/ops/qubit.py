@@ -18,7 +18,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 # pylint:disable=abstract-method,arguments-differ
 import numpy as np
 
-from pennylane.operation import All, Any, Observable, Operation
+from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import OperationRecorder
 
@@ -701,7 +701,7 @@ class QubitUnitary(Operation):
 
     **Details:**
 
-    * Number of wires: The operation can act on any number of wires.
+    * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
     * Gradient recipe: None
 
@@ -726,7 +726,7 @@ class BasisState(Operation):
 
     **Details:**
 
-    * Number of wires: All (applied to the entire system)
+    * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
     * Gradient recipe: None (integer parameters not supported)
 
@@ -761,7 +761,7 @@ class QubitStateVector(Operation):
 
     **Details:**
 
-    * Number of wires: All (applied to the entire system)
+    * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
     * Gradient recipe: None
 
@@ -777,7 +777,7 @@ class QubitStateVector(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = All
+    num_wires = Any
     par_domain = "A"
     grad_method = None
 
