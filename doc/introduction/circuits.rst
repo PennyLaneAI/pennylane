@@ -210,7 +210,6 @@ while using the :class:`~.pennylane.QNode` decorator:
     qc.rx(theta, [0])
     qc.cx(0, 1)
 
-
     @qml.qnode(dev)
     def quantum_circuit_with_loaded_subcircuit(x):
         qml.load(qc, name='qiskit')({theta: x})
