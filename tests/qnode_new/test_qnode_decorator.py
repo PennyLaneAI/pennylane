@@ -18,7 +18,7 @@ Unit tests for the :mod:`pennylane.qnode` decorator.
 import numpy as np
 
 import pennylane as qml
-from pennylane.qnode_new import qnode, CVQNode, JacobianQNode, QNode, QubitQNode
+from pennylane.qnode_new import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode
 
 
 def test_create_qubit_qnode():
@@ -118,7 +118,7 @@ def test_not_differentiable():
         qml.RX(a, wires=0)
         return qml.expval(qml.PauliZ(wires=0))
 
-    assert isinstance(circuit, QNode)
+    assert isinstance(circuit, BaseQNode)
     assert not isinstance(circuit, JacobianQNode)
 
     assert not hasattr(circuit, "interface")

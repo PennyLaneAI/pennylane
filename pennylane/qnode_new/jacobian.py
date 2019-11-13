@@ -55,17 +55,6 @@ class JacobianQNode(QNode):
         for each positional parameter.
         """
         super()._construct(args, kwargs)
-
-        temp = [
-            str(ob)
-            for ob in self.circuit.observables
-            if ob.return_type is ObservableReturnTypes.Sample
-        ]
-        if temp:
-            raise QuantumFunctionError(
-                "Circuits that include sampling can not be differentiated. "
-                "The following observables include sampling: {}".format("; ".join(temp))
-            )
         self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
 
     def _best_method(self, idx):
@@ -187,6 +176,17 @@ class JacobianQNode(QNode):
         # (re-)construct the circuit if necessary
         if self.circuit is None or self.mutable:
             self._construct(args, kwargs)
+
+        returns_samples = [
+            str(ob)
+            for ob in self.circuit.observables
+            if ob.return_type is ObservableReturnTypes.Sample
+        ]
+        if returns_samples:
+            raise QuantumFunctionError(
+                "Circuits that include sampling can not be differentiated. "
+                "The following observables include sampling: {}".format("; ".join(returns_samples))
+            )
 
         # check that the wrt parameters are ok
         if wrt is None:
