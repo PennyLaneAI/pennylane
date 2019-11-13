@@ -29,7 +29,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
 
     For :math:`M` wires, the general interferometer is specified by
     providing :math:`M(M-1)/2` transmittivity angles :math:`\theta` and the same number of
-    phase angles :math:`\phi`, as well as either :math:`M-1` or :math:`M` additional rotation
+    phase angles :math:`\phi`, as well as :math:`M-1` additional rotation
     parameters :math:`\varphi`.
 
     By specifying the keyword argument ``mesh``, the scheme used to implement the interferometer

@@ -35,23 +35,19 @@ class TestInterferometer:
 
         @qml.qnode(dev)
         def circuit(varphi, mesh):
-            Interferometer(theta=None, phi=None, varphi=varphi, mesh=mesh, wires=0)
+            Interferometer(theta=[], phi=[], varphi=varphi, mesh=mesh, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(QuantumFunctionError) as excinfo:
+        with pytest.raises(QuantumFunctionError):
             circuit(varphi, 'rectangular')
-        assert excinfo.value.args[0] == 'The mesh parameter influences the circuit architecture ' \
-                                        'and can not be passed as a QNode parameter.'
 
         @qml.qnode(dev)
         def circuit(varphi, bs):
-            Interferometer(theta=None, phi=None, varphi=varphi, beamsplitter=bs, wires=0)
+            Interferometer(theta=[], phi=[], varphi=varphi, beamsplitter=bs, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(QuantumFunctionError) as excinfo:
+        with pytest.raises(QuantumFunctionError):
             circuit(varphi, 'clements')
-        assert excinfo.value.args[0] == "The beamsplitter parameter influences the circuit architecture " \
-                                        "and can not be passed as a QNode parameter."
 
     def test_clements_beamsplitter_convention(self, tol):
         """test the beamsplitter convention"""
@@ -61,7 +57,7 @@ class TestInterferometer:
 
         theta = [0.321]
         phi = [0.234]
-        varphi = [0.42342]
+        varphi = [0.42342, 0.1121]
 
         def circuit_rect(varphi):
             Interferometer(theta, phi, varphi, mesh='rectangular', beamsplitter='clements', wires=wires)
@@ -76,7 +72,7 @@ class TestInterferometer:
             assert np.allclose(qnode(varphi), [0, 0], atol=tol)
 
             queue = qnode.queue
-            assert len(queue) == 3
+            assert len(queue) == 4
 
             assert isinstance(qnode.queue[0], qml.Rotation)
             assert qnode.queue[0].parameters == phi
@@ -85,7 +81,10 @@ class TestInterferometer:
             assert qnode.queue[1].parameters == [theta[0], 0]
 
             assert isinstance(qnode.queue[2], qml.Rotation)
-            assert qnode.queue[2].parameters == varphi
+            assert qnode.queue[2].parameters == [varphi[0]]
+
+            assert isinstance(qnode.queue[3], qml.Rotation)
+            assert qnode.queue[3].parameters == [varphi[1]]
 
     def test_one_mode(self, tol):
         """Test that a one mode interferometer correctly gives a rotation gate"""
@@ -93,7 +92,7 @@ class TestInterferometer:
         varphi = [0.42342]
 
         def circuit(varphi):
-            Interferometer(theta=None, phi=None, varphi=varphi, wires=0)
+            Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -113,7 +112,7 @@ class TestInterferometer:
 
         theta = [0.321]
         phi = [0.234]
-        varphi = [0.42342]
+        varphi = [0.42342, 0.1121]
 
         def circuit(varphi):
             Interferometer(theta, phi, varphi, wires=wires)
@@ -123,13 +122,16 @@ class TestInterferometer:
         assert np.allclose(qnode(varphi), [0, 0], atol=tol)
 
         queue = qnode.queue
-        assert len(queue) == 2
+        assert len(queue) == 3
 
         assert isinstance(qnode.queue[0], qml.Beamsplitter)
         assert qnode.queue[0].parameters == theta+phi
 
         assert isinstance(qnode.queue[1], qml.Rotation)
-        assert qnode.queue[1].parameters == varphi
+        assert qnode.queue[1].parameters == [varphi[0]]
+
+        assert isinstance(qnode.queue[2], qml.Rotation)
+        assert qnode.queue[2].parameters == [varphi[1]]
 
     def test_two_mode_triangular(self, tol):
         """Test that a two mode interferometer using the triangular mesh
@@ -140,37 +142,10 @@ class TestInterferometer:
 
         theta = [0.321]
         phi = [0.234]
-        varphi = [0.42342]
+        varphi = [0.42342, 0.1121]
 
         def circuit(varphi):
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
-
-        qnode = qml.QNode(circuit, dev)
-        assert np.allclose(qnode(varphi), [0, 0], atol=tol)
-
-        queue = qnode.queue
-        assert len(queue) == 2
-
-        assert isinstance(qnode.queue[0], qml.Beamsplitter)
-        assert qnode.queue[0].parameters == theta+phi
-
-        assert isinstance(qnode.queue[1], qml.Rotation)
-        assert qnode.queue[1].parameters == varphi
-
-    def test_two_mode_rect_overparameterised(self, tol):
-        """Test that a two mode interferometer using the rectangular mesh
-        correctly gives a beamsplitter+2 rotation gates"""
-        N = 2
-        wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
-
-        theta = [0.321]
-        phi = [0.234]
-        varphi = [0.42342, 0.543]
-
-        def circuit(varphi):
-            Interferometer(theta, phi, varphi, wires=wires)
             return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
         qnode = qml.QNode(circuit, dev)
@@ -196,7 +171,7 @@ class TestInterferometer:
 
         theta = [0.321, 0.4523, 0.21321]
         phi = [0.234, 0.324, 0.234]
-        varphi = [0.42342, 0.234]
+        varphi = [0.42342, 0.234, 0.1121]
 
         def circuit_rect(varphi):
             Interferometer(theta, phi, varphi, wires=wires)
@@ -212,7 +187,7 @@ class TestInterferometer:
             assert np.allclose(qnode(varphi), [0]*N, atol=tol)
 
             queue = qnode.queue
-            assert len(queue) == 5
+            assert len(queue) == 6
 
             expected_bs_wires = [[0, 1], [1, 2], [0, 1]]
 
@@ -234,7 +209,7 @@ class TestInterferometer:
 
         theta = [0.321, 0.4523, 0.21321, 0.123, 0.5234, 1.23]
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
-        varphi = [0.42342, 0.234, 0.4523]
+        varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
         def circuit_rect(varphi):
             Interferometer(theta, phi, varphi, wires=wires)
@@ -244,7 +219,7 @@ class TestInterferometer:
         assert np.allclose(qnode(varphi), [0]*N, atol=tol)
 
         queue = qnode.queue
-        assert len(queue) == 9
+        assert len(queue) == 10
 
         expected_bs_wires = [[0, 1], [2, 3], [1, 2], [0, 1], [2, 3], [1, 2]]
 
@@ -266,7 +241,7 @@ class TestInterferometer:
 
         theta = [0.321, 0.4523, 0.21321, 0.123, 0.5234, 1.23]
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
-        varphi = [0.42342, 0.234, 0.4523]
+        varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
         def circuit_tria(varphi):
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
@@ -276,7 +251,7 @@ class TestInterferometer:
         assert np.allclose(qnode(varphi), [0]*N, atol=tol)
 
         queue = qnode.queue
-        assert len(queue) == 9
+        assert len(queue) == 10
 
         expected_bs_wires = [[2, 3], [1, 2], [0, 1], [2, 3], [1, 2], [2, 3]]
 
@@ -323,4 +298,5 @@ class TestInterferometer:
                              [ 5.44893380e-03,  9.30878007e-03, -5.33374094e-01,  6.13889548e-02, -1.16931385e-01, 3.45150707e-01],
                              [ 3.81099442e-04, -4.79703154e-02,  5.78754316e-01,  1.65477867e-01, 3.38965967e-02, 1.65477867e-01]])
         assert np.allclose(res, expected, atol=tol)
+
 
