@@ -52,7 +52,7 @@ class TestAngleEmbd:
         """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
            using the rotation='Y' strategy."""
 
-        features = [pi/2,  pi/2, pi/4, 0]
+        features = [pi/2, pi/2, pi/4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
@@ -69,7 +69,7 @@ class TestAngleEmbd:
         """Checks the state produced by pennylane.templates.embeddings.AngleEmbedding()
            using the rotation='Z' strategy."""
 
-        features = [pi/2,  pi/2, pi/4, 0]
+        features = [pi/2, pi/2, pi/4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
@@ -129,7 +129,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=3, rotation='A')
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
 
 
@@ -179,7 +179,7 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires=3)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
 
 
@@ -363,7 +363,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=3, method='A')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
 
 
@@ -446,6 +446,5 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=3, method='A')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match='Wires needs to be a list of wires that the embedding uses; got 3.'):
+        with pytest.raises(ValueError, match='Wires must be passed as a list of integers; got 3.'):
             circuit(x=[1])
-
