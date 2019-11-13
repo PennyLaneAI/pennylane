@@ -625,7 +625,7 @@ class TestDefaultGaussianIntegration:
         """Test error is raised with unsupported gates"""
         # TODO: Refactor this test to remove dynamic attribute loading, and instead
         # have separate tests for gates with specific number of parameters/wires.
-        if g == "BasisState":
+        if g == "BasisState" or g == "QubitStateVector":
             pytest.skip("Test not set up properly for gates with array parameters, needs refactoring.")
 
         op = getattr(qml.ops, g)
