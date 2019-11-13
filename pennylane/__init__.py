@@ -189,7 +189,7 @@ def from_qiskit(quantum_circuit):
     PennyLane-Qiskit plugin.
 
     Args:
-        quantum_circuit (QuantumCircuit): the name for the Qiskit QuantumCircuit
+        quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
             object
 
     Returns:
