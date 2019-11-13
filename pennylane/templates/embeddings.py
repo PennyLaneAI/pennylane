@@ -59,14 +59,15 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     _check_no_variable([features], ['features'], mssg=mssg)
     wires, n_wires = _check_wires(wires)
     n_ampl = 2**n_wires
-    if pad:
-        mssg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}.".format(n_ampl)
-        shp = _check_shape(features, (n_ampl,), mssg=mssg, bound='max')
-    else:
-        mssg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}. Use ``pad=True`` " \
-               "to automatically pad the features.".format(n_ampl)
+    if pad is None:
+        mssg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}. Use 'pad' " \
+               "argument for automated padding.".format(n_ampl)
         shp = _check_shape(features, (n_ampl,), mssg=mssg)
-    _check_type(pad, float, alt=complex)
+    else:
+        mssg = "AmplitudeEmbedding must get a feature vector of at least size 2**len(wires) = {}.".format(n_ampl)
+        shp = _check_shape(features, (n_ampl,), mssg=mssg, bound='max')
+
+    _check_type(pad, [float, complex])
     _check_type(normalize, bool)
     ###############
 
@@ -84,7 +85,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             norm += np.conj(f) * f
 
     if not np.isclose(norm, 1.0, atol=1e-3):
-        if normalize:
+        if normalize or pad:
             features = features/np.sqrt(norm)
         else:
             raise QuantumFunctionError("Vector of features has to be normalized to 1.0, got {}."
@@ -132,7 +133,7 @@ def AngleEmbedding(features, wires, rotation='X'):
     _check_no_variable([rotation], ['rotation'])
     wires, n_wires = _check_wires(wires)
     _check_shape(features, (n_wires,), bound='max')
-    _check_type(rotation, str)
+    _check_type(rotation, [str])
     _check_hyperp_is_in_options(rotation, ['X', 'Y', 'Z'])
     ###############
 

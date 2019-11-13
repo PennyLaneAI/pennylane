@@ -153,9 +153,9 @@ def StronglyEntanglingLayers(weights, wires, repeat=1, ranges=None, imprimitive=
     _check_no_variable([repeat, ranges, imprimitive], ['repeat', 'ranges', 'imprimitive'])
     wires, n_wires = _check_wires(wires)
     _check_shape(weights, (repeat, n_wires, 3))
-    _check_type(repeat, int)
-    _check_type(ranges, list)
-    _check_type(ranges[0], int)
+    _check_type(repeat, [int])
+    _check_type(ranges, [list])
+    _check_type(ranges[0], [int])
     ###############
 
     for l in range(repeat):
@@ -216,11 +216,11 @@ def RandomLayers(weights, wires, repeat=1, ratio_imprim=0.3, imprimitive=CNOT, n
     if n_rots is None:
         n_rots = len(wires)
     _check_shape(inpt=weights, target_shp=(repeat, n_rots))
-    _check_type(repeat, int)
-    _check_type(ratio_imprim, float)
-    _check_type(n_rots, int)
-    _check_type(rotations, list)
-    _check_type(seed, int)
+    _check_type(repeat, [int])
+    _check_type(ratio_imprim, [float, None])
+    _check_type(n_rots, [int, None])
+    _check_type(rotations, [list, None])
+    _check_type(seed, [int, None])
     ###############
 
     for l in range(repeat):
@@ -285,7 +285,7 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
            (repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
            (repeat, n_wires)]
     _check_shape(weights, shps)
-    _check_type(repeat, int)
+    _check_type(repeat, [int])
     ###############
 
     for l in range(repeat):

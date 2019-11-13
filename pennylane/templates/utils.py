@@ -54,6 +54,7 @@ def _check_shape(inpt, target_shp, mssg=None, bound=None):
     # If inpt is list of inputs, call this function recursively
     if isinstance(target_shp, list):
         shape = [_check_shape(l, t, mssg=mssg, bound=bound) for l, t in zip(inpt, target_shp)]
+
     else:
         if isinstance(inpt, list):
             try:
@@ -68,8 +69,10 @@ def _check_shape(inpt, target_shp, mssg=None, bound=None):
                 shape = tuple(inpt.shape)
             except:
                 raise QuantumFunctionError("Cannot derive shape of template input {}.".format(inpt))
+
         if mssg is None:
             mssg = "Input has shape {}; expected {}.".format(shape, target_shp)
+
         if bound == 'max':
             if shape > target_shp:
                 raise QuantumFunctionError(mssg)
@@ -79,6 +82,7 @@ def _check_shape(inpt, target_shp, mssg=None, bound=None):
         else:
             if shape != target_shp:
                 raise QuantumFunctionError(mssg)
+
     return shape
 
 
@@ -88,13 +92,11 @@ def _check_hyperp_is_in_options(hp, options):
         raise QuantumFunctionError("Hyperparameter {} must be one of {}".format(hp, *options))
 
 
-def _check_type(hp, typ, alt=None, mssg=None):
+def _check_type(hp, typ, mssg=None):
     """Checks the type of a hyperparameter."""
     if mssg is None:
-        mssg = "Hyperparameter {} must be of type {}".format(hp, typ)
-    if alt is not None:
-        if (not isinstance(hp, typ)) and (not isinstance(hp, alt)):
-            raise QuantumFunctionError(mssg)
-    else:
-        if not isinstance(hp, typ):
-            raise QuantumFunctionError(mssg)
+        mssg = "Hyperparameter type must be one of {}, got {}".format(typ, type(hp))
+
+    if not any([isinstance(hp, t) for t in typ]):
+        raise QuantumFunctionError(mssg)
+
