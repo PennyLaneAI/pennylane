@@ -218,7 +218,7 @@ while using the :class:`~.pennylane.QNode` decorator:
     angle = np.pi/2
     result = quantum_circuit_with_loaded_subcircuit(angle)
 
-What is more, users can use the custom template with any supported plugin, any number of times.
+Furthermore, loaded templates can be used with any supported device, any number of times.
 As shown in the following example, a quantum circuit can be loaded from a ``QASM`` string,
 and then be used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
 
