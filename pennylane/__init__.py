@@ -218,7 +218,7 @@ def from_qasm_file(qasm_filename: str):
     PennyLane-Qiskit plugin.
 
     Args:
-        qasm_filename (str): the name for the QASM file
+        qasm_filename (str): path to a QASM file containing a valid quantum circuit
 
     Returns:
         function: the PennyLane template created based on the QASM file
