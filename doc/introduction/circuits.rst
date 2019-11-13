@@ -171,7 +171,9 @@ Quantum circuits from other frameworks
 --------------------------------------
 
 PennyLane supports creating customized PennyLane templates imported from other frameworks.
-circuit objects using supported plugins. Currently, QuantumCircuit objects from
+By loading your existing quantum code as a PennyLane template, you add the ability to perform
+analytic differentiation, and interface with machine learning libraries such as PyTorch and TensorFlow.
+Currently, circuits from
 Qiskit, QASM strings or QASM files can be loaded. For this, the PennyLane-Qiskit
 plugin needs to be installed.
 
