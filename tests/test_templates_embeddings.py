@@ -122,7 +122,7 @@ class TestAmplitudeEmbedding:
             circuit(inpt)
 
 
-class TestAngleEmbd:
+class TestAngleEmbedding:
     """ Tests the AngleEmbedding method."""
 
     def test_angle_embedding_state_rotx(self, qubit_device, n_subsystems):
