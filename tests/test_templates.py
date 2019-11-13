@@ -150,7 +150,7 @@ def qnode_qubit_args(dev, intrfc, templ1, templ2, n):
         # Split inputs again
         inp1 = inp[:n]
         inp2 = inp[n:]
-
+        # Circuit
         qml.PauliX(wires=0)
         templ1(*inp1, wires=range(2))
         templ2(*inp2, wires=range(2))
@@ -169,7 +169,7 @@ def qnode_qubit_kwargs(dev, intrfc, templ1, templ2, n):
         inp = [x for _, x in sorted(zip(ks, vs))]
         inp1 = inp[:n]
         inp2 = inp[n:]
-
+        # Circuit
         qml.PauliX(wires=0)
         templ1(*inp1, wires=range(2))
         templ2(*inp2, wires=range(2))
@@ -185,7 +185,7 @@ def qnode_cv_args(dev, intrfc, templ1, templ2, n):
         # Split inputs again
         inp1 = inp[:n]
         inp2 = inp[n:]
-
+        # Circuit
         qml.Displacement(1., 1., wires=0)
         templ1(*inp1, wires=range(2))
         templ2(*inp2, wires=range(2))
@@ -204,7 +204,7 @@ def qnode_cv_kwargs(dev, intrfc, templ1, templ2, n):
         inp = [x for _, x in sorted(zip(ks, vs))]
         inp1 = inp[:n]
         inp2 = inp[n:]
-
+        # Circuit
         qml.Displacement(1., 1., wires=0)
         templ1(*inp1, wires=range(2))
         templ2(*inp2, wires=range(2))
@@ -216,7 +216,7 @@ def qnode_cv_kwargs(dev, intrfc, templ1, templ2, n):
 
 
 class TestIntegrationCircuit:
-    """Tests the integration of templates into circuits using the NumPy interface. """
+    """Tests the integration of templates into circuits using different interfaces. """
 
     @pytest.mark.parametrize("template1, inpts1", qubit_const)
     @pytest.mark.parametrize("template2, inpts2", qubit_const)
@@ -271,6 +271,74 @@ class TestIntegrationCircuit:
         circuit(**inpts)
 
 
+class TestIntegrationCircuitSpecialCases:
+    """Tests the integration of templates with special requirements into circuits. """
+
+    first_templ = [(AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]]),
+                   (BasisEmbedding, [[1, 0]])]
+
+    def qnode_first_op_args(self, dev, intrfc, templ1, templ2, n):
+        """QNode for qubit integration circuit using positional arguments"""
+
+        @qml.qnode(dev, interface=intrfc)
+        def circuit(*inp):
+            # Split inputs again
+            inp1 = inp[:n]
+            inp2 = inp[n:]
+            # Circuit
+            templ1(*inp1, wires=range(2))
+            templ2(*inp2, wires=range(2))
+            qml.PauliX(wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+
+        return circuit
+
+    def qnode_first_op_kwargs(self, dev, intrfc, templ1, templ2, n):
+        """QNode for qubit integration circuit using positional arguments"""
+
+        @qml.qnode(dev, interface=intrfc)
+        def circuit(**inp):
+            # Split inputs again
+            ks = [int(k) for k in inp.keys()]
+            vs = inp.values()
+            inp = [x for _, x in sorted(zip(ks, vs))]
+            inp1 = inp[:n]
+            inp2 = inp[n:]
+            # Circuit
+            templ1(*inp1, wires=range(2))
+            templ2(*inp2, wires=range(2))
+            qml.PauliX(wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+
+        return circuit
+
+    @pytest.mark.parametrize("first_tmpl, first_inpts", first_templ)
+    @pytest.mark.parametrize("template, inpts", qubit_const)
+    @pytest.mark.parametrize("intrfc, to_var", interfaces)
+    def test_integration_first_template_args(self, first_tmpl, first_inpts, template, inpts, intrfc, to_var):
+        """Checks integration of templates that must be the first operation in the circuit
+        , using positional arguments."""
+        inpts = first_inpts + inpts  # Combine inputs to allow passing with *
+        inpts = [to_var(i) for i in inpts]
+        dev = qml.device('default.qubit', wires=2)
+        circuit = self.qnode_first_op_args(dev, intrfc, first_tmpl, template, len(first_inpts))
+        # Check that execution does not throw error
+        circuit(*inpts)
+
+    @pytest.mark.parametrize("first_tmpl, first_inpts", first_templ)
+    @pytest.mark.parametrize("template, inpts", qubit_const)
+    @pytest.mark.parametrize("intrfc, to_var", interfaces)
+    def test_integration_first_template_kwargs(self, first_tmpl, first_inpts, template, inpts, intrfc, to_var):
+        """Checks integration of templates that must be the first operation in the circuit
+        , using keyword arguments."""
+        inpts = first_inpts + inpts  # Combine inputs to allow passing with *
+        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
+        dev = qml.device('default.qubit', wires=2)
+        circuit = self.qnode_first_op_kwargs(dev, intrfc, first_tmpl, template, len(first_inpts))
+        # Check that execution does not throw error
+        circuit(**inpts)
+
+
 class TestInitializationIntegration:
     """Tests integration with the parameter initialization functions from pennylane.init"""
 
@@ -281,12 +349,14 @@ class TestInitializationIntegration:
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
         if not isinstance(inp, list):
             inp = [inp]  # wrap argument for consistent unpacking
+
         @qml.qnode(qubit_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))
             return qml.expval(qml.Identity(0))
         # Check that execution does not throw error
         circuit(inp)
+
 
     @pytest.mark.parametrize("template, inpts", cv_func_layers)
     def test_integration_cv_init(self, template, inpts, gaussian_device, n_subsystems, n_layers):
@@ -295,6 +365,7 @@ class TestInitializationIntegration:
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
         if not isinstance(inp, list):
             inp = [inp]  # wrap argument for consistent unpacking
+
         @qml.qnode(gaussian_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))
@@ -351,7 +422,7 @@ class TestGradientIntegration:
         # Check gradients in numpy interface
         if intrfc == 'numpy':
             grd = qml.grad(circuit, argnum=argnm)
-            grd(*inpts)
+            assert grd(*inpts) is not None
 
         # Check gradients in torch interface
         if intrfc == 'torch':
@@ -360,11 +431,11 @@ class TestGradientIntegration:
             res = circuit(*inpts)
             res.backward()
             for a in argnm:
-                inpts[a].grad.numpy()
+                assert inpts[a].grad.numpy() is not None
 
         # Check gradients in tf interface
         if intrfc == 'tf':
             grad_inpts = [inpts[a] for a in argnm]
             with tf.GradientTape() as tape:
                 loss = circuit(*inpts)
-                tape.gradient(loss, grad_inpts)
+                assert tape.gradient(loss, grad_inpts) is not None

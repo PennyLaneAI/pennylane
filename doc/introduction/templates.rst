@@ -64,11 +64,8 @@ The following layer templates are available:
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.templates.layers.CVNeuralNetLayer
     ~pennylane.templates.layers.CVNeuralNetLayers
-    ~pennylane.templates.layers.RandomLayer
     ~pennylane.templates.layers.RandomLayers
-    ~pennylane.templates.layers.StronglyEntanglingLayer
     ~pennylane.templates.layers.StronglyEntanglingLayers
 
 :html:`</div>`
@@ -231,6 +228,7 @@ The following initialization functions are available:
 .. autosummary::
     :nosignatures:
 
+<<<<<<< HEAD
     ~pennylane.init.cvqnn_layers_all
     ~pennylane.init.cvqnn_layers_theta_uniform
     ~pennylane.init.cvqnn_layers_theta_normal
@@ -248,6 +246,10 @@ The following initialization functions are available:
     ~pennylane.init.cvqnn_layers_phi_a_normal
     ~pennylane.init.cvqnn_layers_kappa_uniform
     ~pennylane.init.cvqnn_layers_kappa_normal
+=======
+    ~pennylane.init.cvqnn_layers_uniform
+    ~pennylane.init.cvqnn_layers_normal
+>>>>>>> master
 
 :html:`</div>`
 

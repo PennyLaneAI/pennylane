@@ -155,5 +155,3 @@ class TestInitRepeated:
         p_mean = np.mean(p)
         assert np.isclose(p_mean, 1, atol=tol)
 
-
-
