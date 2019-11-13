@@ -215,7 +215,6 @@ while using the :class:`~.pennylane.QNode` decorator:
         qml.load(qc, name='qiskit')({theta: x})
         return qml.expval(qml.PauliZ(0))
 
-
     angle = np.pi/2
     result = quantum_circuit_with_loaded_subcircuit(angle)
 
