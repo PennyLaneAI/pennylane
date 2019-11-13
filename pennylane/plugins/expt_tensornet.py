@@ -249,7 +249,7 @@ class TensorNetwork(Device):
         joint_outcomes = list(product(*eigenvalues))
         projector_tensor_products = list(product(*projectors_with_wires))
 
-        joint_probabilities = [] #[(outcome, 0.0) for idx, outcome in enumerate(joint_outcomes)]
+        joint_probabilities = []
 
         for projs in projector_tensor_products:
             obs_nodes = []
