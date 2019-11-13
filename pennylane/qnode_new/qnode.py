@@ -183,19 +183,12 @@ class QNode:
 
         self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
         self.output_dim = None  #: int: dimension of the QNode output vector
-        self.type = self.device.capabilities()["model"] #: str: circuit type, in {'cv', 'qubit'}
-
-    @property
-    def interface(self):
-        """String representing the QNode interface"""
-        return "numpy"
+        self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
     def __str__(self):
         """String representation"""
-        detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
-        return detail.format(
-            self.device.short_name, self.func.__name__, self.num_wires, self.interface
-        )
+        detail = "<QNode: device='{}', func={}, wires={}>"
+        return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
     def __repr__(self):
         """REPL representation"""
@@ -328,9 +321,6 @@ class QNode:
         """
         # pylint: disable=protected-access  # remove when QNode_old is gone
         # pylint: disable=attribute-defined-outside-init, too-many-branches
-        self.args_model = (
-            args  #: nested Sequence[Number]: nested shape of the arguments for later unflattening
-        )
 
         # flatten the args, replace each argument with a Variable instance carrying a unique index
         arg_vars = [Variable(idx) for idx, _ in enumerate(_flatten(args))]
@@ -447,21 +437,27 @@ class QNode:
             )
 
         # True if op is a CV, False if it is a discrete variable (Identity could be either)
-        are_cvs = [isinstance(op, CV) for op in self.queue + list(res) if not isinstance(op, qml.Identity)]
+        are_cvs = [
+            isinstance(op, CV) for op in self.queue + list(res) if not isinstance(op, qml.Identity)
+        ]
 
         if not all(are_cvs) and any(are_cvs):
             raise QuantumFunctionError(
                 "Continuous and discrete operations are not allowed in the same quantum circuit."
             )
 
-        if any(are_cvs) and self.type == "qubit":
+        if any(are_cvs) and self.model == "qubit":
             raise QuantumFunctionError(
-                "Device {} is a qubit device; CV operations are not allowed.".format(self.device.short_name)
+                "Device {} is a qubit device; CV operations are not allowed.".format(
+                    self.device.short_name
+                )
             )
 
-        if not all(are_cvs) and self.type == "cv":
+        if not all(are_cvs) and self.model == "cv":
             raise QuantumFunctionError(
-                "Device {} is a CV device; qubit operations are not allowed.".format(self.device.short_name)
+                "Device {} is a CV device; qubit operations are not allowed.".format(
+                    self.device.short_name
+                )
             )
 
         queue = self.queue
