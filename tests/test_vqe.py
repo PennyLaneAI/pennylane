@@ -439,7 +439,7 @@ class TestMultipleInterfaceIntegration:
 
         # TensorFlow interface
         params = [Variable(i) for i in [qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]]
-        ansatz = lambda params, wires: qml.templates.layers.StronglyEntanglingLayers(*params, wires=wires, repeat=3)
+        ansatz = lambda params, wires: qml.templates.layers.StronglyEntanglingLayers(params, wires=wires, repeat=3)
 
         cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
 
@@ -450,7 +450,7 @@ class TestMultipleInterfaceIntegration:
         # Torch interface
         params = torch.tensor([qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)])
         params = torch.autograd.Variable(params, requires_grad=True)
-        ansatz = lambda params, wires: qml.templates.layers.StronglyEntanglingLayers(*params, wires=wires, repeat=3)
+        ansatz = lambda params, wires: qml.templates.layers.StronglyEntanglingLayers(params, wires=wires, repeat=3)
 
         cost = qml.vqe.cost(params, ansatz, H, dev, interface="torch")
         cost.backward()
@@ -458,7 +458,7 @@ class TestMultipleInterfaceIntegration:
 
         # NumPy interface
         params = [qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]
-        ansatz = lambda params, wires: qml.templates.layers.StronglyEntanglingLayers(*params, wires=wires, repeat=3)
+        ansatz = lambda params, wires: qml.templates.layers.StronglyEntanglingLayers(params, wires=wires, repeat=3)
         cost = qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
         cost2 = lambda params: qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
         dcost = qml.grad(cost2, argnum=[0])
