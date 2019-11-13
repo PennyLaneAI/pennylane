@@ -241,6 +241,5 @@ this, in which a quantum circuit is loaded from a ``QASM`` string:
         qml.Hadamard(wires=[1])
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
-
     result = circuit_with_hadamards()
 
