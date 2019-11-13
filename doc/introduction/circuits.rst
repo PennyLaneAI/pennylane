@@ -220,7 +220,7 @@ while using the :class:`~.pennylane.QNode` decorator:
 
 Furthermore, loaded templates can be used with any supported device, any number of times.
 For instance, in the following example a template is loaded from a QASM string,
-and then be used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
+and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
 
 .. code-block:: python
 
