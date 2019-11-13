@@ -14,14 +14,11 @@
 """
 Differentiable quantum nodes.
 """
-
-from collections.abc import Sequence
-import copy
+from collections.abc import Iterable
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import ObservableReturnTypes, CV
+from pennylane.operation import ObservableReturnTypes
 from pennylane.utils import _flatten, _inv_dict
 from pennylane.qnode_new.qnode import QNode, QuantumFunctionError
 
@@ -30,16 +27,17 @@ class JacobianQNode(QNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
 
+    def __init__(self, func, device, mutable=True, properties=None):
+        super().__init__(func, device, mutable=mutable, properties=properties)
+
+        self.par_to_grad_method = None
+        """dict[int, str]: map from flattened quantum function positional parameter index
+        to the gradient method to be used with that parameter"""
+
     @property
     def interface(self):
         """str, None: automatic differentiation interface used by the node, if any"""
         return None
-
-    def __init__(self, func, device, mutable=True, properties=None):
-        super().__init__(func, device, mutable=mutable, properties=properties)
-
-        #: dict[int, str]: map from free parameter index to the gradient method to be used with that parameter
-        self.par_to_grad_method = None
 
     def __repr__(self):
         """String representation."""
@@ -52,10 +50,9 @@ class JacobianQNode(QNode):
         """Constructs the quantum circuit graph by calling the quantum function.
 
         Like :meth:`.QNode._construct`, additionally determines the best gradient computation method
-        for each free parameter.
+        for each positional parameter.
         """
         super()._construct(args, kwargs)
-        self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
 
         temp = [
             str(ob)
@@ -67,76 +64,73 @@ class JacobianQNode(QNode):
                 "Circuits that include sampling can not be differentiated. "
                 "The following observables include sampling: {}".format("; ".join(temp))
             )
+        self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
 
     def _best_method(self, idx):
         """Determine the correct partial derivative computation method for a free parameter.
 
-        Use the parameter-shift analytic method iff every gate that depends on the parameter supports it.
-        If not, use the finite difference method only (one would have to use it anyway).
-
         Note that if even one dependent Operation does not support differentiation,
         we cannot differentiate with respect to this parameter at all.
 
+        .. note::
+
+            The ``JacobianQNode`` only supports numerical differentiation, so
+            this method will always return either ``"F"`` or ``None``. If an inheriting
+            QNode supports analytic differentiation for certain operations, make sure
+            that this method is overwritten appropriately to return ``"A"`` where
+            required.
+
         Args:
             idx (int): free parameter index
+
         Returns:
             str: partial derivative method to be used
         """
-        # TODO make sure Identity is recognized as gaussian
-
-        # pylint: disable=too-many-return-statements
-        def best_for_op(op):
-            "Returns the best gradient method for the Operation op."
-            # for qubit operations, other ops do not affect the choice
-
-            if not isinstance(op, CV):
-                return op.grad_method
-
-            # for CV ops it is more complicated
-            if op.grad_method == "A":
-                # op is Gaussian and has the heisenberg_* methods
-
-                obs_successors = self._op_descendants(op, "E")
-                # if not obs_successors:
-                #     # op is not succeeded by any observables, thus analytic method is OK    FIXME actually we can ignore it....
-                #     return "A"
-
-                # check that all successor ops are also Gaussian
-                successor_ops = self._op_descendants(op, "G")
-                if not all(x.supports_heisenberg for x in successor_ops):
-                    non_gaussian_ops = [x for x in successor_ops if not x.supports_heisenberg]
-                    # a non-Gaussian successor is OK if it isn't succeeded by any observables
-                    for x in non_gaussian_ops:
-                        if self._op_descendants(x, "E"):
-                            return "F"
-
-                # check successor EVs, if any order-2 observables are found return 'A2', else return 'A'
-                for observable in obs_successors:
-                    if observable.ev_order is None:
-                        # ev_order of None corresponds to a non-Gaussian observable
-                        return "F"
-                    if observable.ev_order == 2:
-                        if observable.return_type is ObservableReturnTypes.Variance:
-                            # second order observables don't support
-                            # analytic diff of variances
-                            return "F"
-                        op.grad_method = "A2"  # bit of a hack
-                return "A"
-            return op.grad_method
-
         # operations that depend on this free parameter
         ops = [d.op for d in self.variable_deps[idx]]
-        methods = list(map(best_for_op, ops))
 
-        if all(k in ("A", "A2") for k in methods):
-            return "A"
+        # Observables in the circuit
+        # (the topological order is the queue order)
+        observables = self.circuit.observables_in_order
 
-        if None in methods:
+        # an empty list to store the 'best' partial derivative method
+        # for each operator/observable pair
+        best = np.empty((len(ops), len(observables)), dtype=object)
+
+        # find the best supported partial derivative method for each operator
+        for k_op, op in enumerate(ops):
+            if op.grad_method is None:
+                # one nondifferentiable item makes the whole nondifferentiable
+                op.use_method = None
+                continue
+
+            # loop over all observables
+            for k_ob, ob in enumerate(observables):
+                # get the set of operations betweens the
+                # operation and the observable
+                S = self.circuit.nodes_between(op, ob)
+
+                # If there is no path between them, p.d. is zero
+                # Otherwise, use finite differences
+                best[k_op, k_ob] = "0" if not S else "F"
+
+            if all(k == "0" for k in best[k_op, :]):
+                op.use_method = "0"
+            else:
+                op.use_method = "F"
+
+        # if all ops that depend on the free parameter have a best method
+        # of "0", then we can skip the partial derivative altogether
+        if all(o.use_method == "0" for o in ops):
+            return "0"
+
+        # one nondifferentiable item makes the whole nondifferentiable
+        if any(o.use_method is None for o in ops):
             return None
 
         return "F"
 
-    def jacobian(self, args, kwargs=None, *, wrt=None, method="B", options=None):
+    def jacobian(self, args, kwargs=None, *, wrt=None, method="best", options=None):
         r"""Compute the Jacobian of the QNode.
 
         Returns the Jacobian of the parametrized quantum circuit encapsulated in the QNode.
@@ -150,16 +144,12 @@ class JacobianQNode(QNode):
           :math:`n+1` points of the parameter space, the second-order method at :math:`2n` points,
           where ``n = len(wrt)``.
 
-        * Parameter-shift method (``'A'``). Analytic, works for all one-parameter gates where the generator
-          only has two unique eigenvalues; this includes one-parameter single-qubit gates.
-          Additionally, can be used in CV systems for Gaussian circuits containing only first-
-          and second-order observables.
-          The circuit is evaluated twice for each incidence of each parameter in the circuit.
+        * Analytic method (``'A'``). Analytic, if implemented by the inheriting QNode.
 
-        * Best known method for each parameter (``'B'``): uses the parameter-shift method if
+        * Best known method for each parameter (``'best'``): uses the analytic method if
           possible, otherwise finite difference.
 
-        * Device method (``'D'``): Delegates the computation of the Jacobian to the
+        * Device method (``'device'``): Delegates the computation of the Jacobian to the
           device executing the circuit.
 
         .. note::
@@ -173,20 +163,17 @@ class JacobianQNode(QNode):
             wrt (Sequence[int] or None): Indices of the flattened positional parameters with respect
                 to which to compute the Jacobian. None means all the parameters.
                 Note that you cannot compute the Jacobian with respect to the kwargs.
-            method (str): Jacobian computation method, in ``{'F', 'A', 'B', 'D'}``, see above
+            method (str): Jacobian computation method, in ``{'F', 'A', 'best', 'device'}``, see above
             options (dict[str, Any]): additional options for the computation methods
 
                 * h (float): finite difference method step size
                 * order (int): finite difference method order, 1 or 2
-                * force_order2 (bool): force the parameter-shift method to use the second-order method
 
         Returns:
             array[float]: Jacobian, shape ``(n, len(wrt))``, where ``n`` is the number of outputs returned by the QNode
         """
         # pylint: disable=too-many-branches,too-many-statements
-        # arrays are not Sequences... but they ARE Iterables? FIXME decide which types we accept! cf. _flatten
-        # TODO: rename "A"->"parameter_shift", "B"->"best", "F"->"finite_diff", "D"->"device"
-        if not isinstance(args, (Sequence, np.ndarray)):
+        if not isinstance(args, Iterable):
             args = (args,)
         kwargs = kwargs or {}
 
@@ -199,27 +186,17 @@ class JacobianQNode(QNode):
         if self.circuit is None or self.mutable:
             self._construct(args, kwargs)
 
+        # check that the wrt parameters are ok
         if wrt is None:
             wrt = range(self.num_variables)
         else:
             if min(wrt) < 0 or max(wrt) >= self.num_variables:
                 raise ValueError(
-                    "Tried to compute the gradient with respect to free parameters {} "
-                    "(this node has {} free parameters).".format(wrt, self.num_variables)
+                    "Tried to compute the gradient with respect to parameters {} "
+                    "(this node has {} parameters).".format(wrt, self.num_variables)
                 )
             if len(wrt) != len(set(wrt)):  # set removes duplicates
                 raise ValueError("Parameter indices must be unique.")
-
-        if method == "D":
-            return self.device.jacobian(args, kwargs, wrt, self.circuit)  # FIXME placeholder
-
-        # In the following, to evaluate the Jacobian we call self.evaluate several times using
-        # modified args (and possibly modified circuit Operators).
-        # We do not want evaluate to call _construct again. This would only be necessary if the
-        # auxiliary args changed, since only they can change the structure of the circuit,
-        # and we do not modify them. To achieve this, we temporarily make the circuit immutable.
-        mutable = self.mutable
-        self.mutable = False
 
         # check if the method can be used on the requested parameters
         method_map = _inv_dict(self.par_to_grad_method)
@@ -231,18 +208,24 @@ class JacobianQNode(QNode):
         # are we trying to differentiate wrt. params that don't support any method?
         bad = inds_using(None)
         if bad:
-            raise ValueError("Cannot differentiate wrt. parameters {}.".format(bad))
+            raise ValueError("Cannot differentiate with respect to the parameters {}.".format(bad))
 
-        if method in ("A", "F"):
-            if method == "A":
-                bad = inds_using("F")
-                if bad:
-                    raise ValueError(
-                        "The parameter-shift gradient method cannot be "
-                        "used with the parameters {}.".format(bad)
-                    )
-            method = {k: method for k in wrt}
-        elif method == "B":
+        if method == "device":
+            return self.device.jacobian(args, kwargs, wrt, self.circuit)  # FIXME placeholder
+
+        if method == "A":
+            bad = inds_using("F")
+            if bad:
+                raise ValueError(
+                    "The analytic gradient method cannot be "
+                    "used with the parameters {}.".format(bad)
+                )
+            # only variants of the analytic method remain
+            method = self.par_to_grad_method
+        elif method == "F":
+            # use the requested method for every parameter
+            method = {k: "F" for k in wrt}
+        elif method == "best":
             # use best known method for each parameter
             method = self.par_to_grad_method
         else:
@@ -253,6 +236,14 @@ class JacobianQNode(QNode):
                 # the value of the circuit at args, computed only once here
                 options["y0"] = np.asarray(self.evaluate(args, kwargs))
 
+        # In the following, to evaluate the Jacobian we call self.evaluate several times using
+        # modified args (and possibly modified circuit Operators).
+        # We do not want evaluate to call _construct again. This would only be necessary if the
+        # auxiliary args changed, since only they can change the structure of the circuit,
+        # and we do not modify them. To achieve this, we temporarily make the circuit immutable.
+        mutable = self.mutable
+        self.mutable = False
+
         # flatten the nested Sequence of input arguments
         flat_args = np.array(list(_flatten(args)), dtype=float)
         variances_required = any(
@@ -262,16 +253,17 @@ class JacobianQNode(QNode):
         # compute the partial derivative wrt. each parameter using the appropriate method
         grad = np.zeros((self.output_dim, len(wrt)), dtype=float)
         for i, k in enumerate(wrt):
-            if k not in self.variable_deps:
-                # unused parameter, partial derivatives wrt. it are zero
+            par_method = method[k]
+
+            if par_method == "0":
+                # unused/invisible, partial derivatives wrt. this param are zero
                 continue
 
-            par_method = method[k]
             if par_method == "A":
                 if variances_required:
-                    grad[:, i] = self._pd_parameter_shift_var(k, flat_args, kwargs)
+                    grad[:, i] = self._pd_analytic_var(k, flat_args, kwargs, **options)
                 else:
-                    grad[:, i] = self._pd_parameter_shift(k, flat_args, kwargs, **options)
+                    grad[:, i] = self._pd_analytic(k, flat_args, kwargs, **options)
             elif par_method == "F":
                 grad[:, i] = self._pd_finite_diff(k, flat_args, kwargs, **options)
             else:
@@ -318,124 +310,8 @@ class JacobianQNode(QNode):
 
         raise ValueError("Order must be 1 or 2.")
 
-    @staticmethod
-    def _transform_observable(obs, w, Z):
-        """Apply a linear transformation on an observable.
-
-        Args:
-            obs (Observable): observable to transform
-            w (int): number of wires
-            Z (array[float]): Heisenberg picture representation of the linear transformation
-
-        Returns:
-            Observable: transformed observable
-        """
-        q = obs.heisenberg_obs(w)
-
-        if q.ndim != obs.ev_order:
-            raise QuantumFunctionError(
-                "Mismatch between polynomial order of observable and heisenberg representation"
-            )
-
-        qp = q @ Z
-        if q.ndim == 2:
-            # 2nd order observable
-            qp = qp + qp.T
-        return qml.expval(qml.PolyXP(qp, wires=range(w), do_queue=False))
-
-    def _pd_parameter_shift(self, idx, args, kwargs, **options):
-        """Partial derivative of the node using the analytic parameter shift method.
-
-        The 2nd order method can handle also first order observables, but
-        1st order method may be more efficient unless it's really easy to
-        experimentally measure arbitrary 2nd order observables.
-
-        Args:
-            idx (int): flattened index of the parameter wrt. which the p.d. is computed
-            args (array[float]): flattened positional arguments at which to evaluate the p.d.
-            kwargs (dict[str, Any]): auxiliary arguments
-
-        Keyword Args:
-            force_order2 (bool): iff True, use the order-2 method even if not necessary
-
-        Returns:
-            array[float]: partial derivative of the node
-        """
-        force_order2 = options.get("force_order2", False)
-
-        n = self.num_variables
-        w = self.num_wires
-        pd = 0.0
-        # find the Operators in which the free parameter appears, use the product rule
-        for op, p_idx in self.variable_deps[idx]:
-
-            # We temporarily edit the Operator such that parameter p_idx is replaced by a new one,
-            # which we can modify without affecting other Operators depending on the original.
-            orig = op.params[p_idx]
-            assert orig.idx == idx
-            assert orig.name is None
-
-            # reference to a new, temporary parameter with index n, otherwise identical with orig
-            temp_var = copy.copy(orig)
-            temp_var.idx = n
-            op.params[p_idx] = temp_var
-
-            multiplier, shift = op.get_parameter_shift(p_idx)
-
-            # shifted parameter values
-            shift_p1 = np.r_[args, args[idx] + shift]
-            shift_p2 = np.r_[args, args[idx] - shift]
-
-            if not force_order2 and op.grad_method != "A2":
-                # basic parameter-shift method, for discrete gates and gaussian CV gates succeeded by order-1 observables
-                # evaluate the circuit at two points with shifted parameter values
-                y2 = np.asarray(self.evaluate(shift_p1, kwargs))
-                y1 = np.asarray(self.evaluate(shift_p2, kwargs))
-                pd += (y2 - y1) * multiplier
-            else:
-                # order-2 parameter-shift method, for gaussian CV gates succeeded by order-2 observables
-                # evaluate transformed observables at the original parameter point
-                # first build the Z transformation matrix
-                self._set_variables(shift_p1, kwargs)
-                Z2 = op.heisenberg_tr(w)
-                self._set_variables(shift_p2, kwargs)
-                Z1 = op.heisenberg_tr(w)
-                Z = (Z2 - Z1) * multiplier  # derivative of the operation
-
-                unshifted_args = np.r_[args, args[idx]]
-                self._set_variables(unshifted_args, kwargs)
-                Z0 = op.heisenberg_tr(w, inverse=True)
-                Z = Z @ Z0
-
-                # conjugate Z with all the descendant operations
-                B = np.eye(1 + 2 * w)
-                B_inv = B.copy()
-                for BB in self._op_descendants(op, "G"):
-                    if not BB.supports_heisenberg:
-                        # if the descendant gate is non-Gaussian in parameter-shift differentiation
-                        # mode, then there must be no observable following it.
-                        continue
-                    B = BB.heisenberg_tr(w) @ B
-                    B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
-                Z = B @ Z @ B_inv  # conjugation
-
-                # transform the descendant observables
-                desc = self._op_descendants(op, "E")
-                obs = [
-                    self._transform_observable(x, w, Z) if x in desc else x
-                    for x in self.circuit.observables
-                ]
-
-                # measure transformed observables
-                pd += self.evaluate_obs(obs, unshifted_args, kwargs)
-
-            # restore the original parameter
-            op.params[p_idx] = orig
-
-        return pd
-
-    def _pd_parameter_shift_var(self, idx, args, kwargs):
-        """Partial derivative of the variance of an observable using the parameter-shift method.
+    def _pd_analytic(self, idx, args, kwargs, **options):
+        """Partial derivative of the node using an analytic method.
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
@@ -445,69 +321,17 @@ class JacobianQNode(QNode):
         Returns:
             array[float]: partial derivative of the node
         """
-        # boolean mask: elements are True where the return type is a variance, False for expectations
-        where_var = [
-            e.return_type is ObservableReturnTypes.Variance for e in self.circuit.observables
-        ]
-        var_observables = [
-            e for e in self.circuit.observables if e.return_type == ObservableReturnTypes.Variance
-        ]
+        raise NotImplementedError
 
-        # first, replace each var(A) with <A^2>
-        new_observables = []
-        for e in var_observables:
-            # need to calculate d<A^2>/dp
-            w = e.wires
+    def _pd_analytic_var(self, idx, args, kwargs, **options):
+        """Partial derivative of the variance of an observable using an analytic method.
 
-            if self.model == "qubit":
-                if e.name == "Hermitian":
-                    # since arbitrary Hermitian observables
-                    # are not guaranteed to be involutory, need to take them into
-                    # account separately to calculate d<A^2>/dp
+        Args:
+            idx (int): flattened index of the parameter wrt. which the p.d. is computed
+            args (array[float]): flattened positional arguments at which to evaluate the p.d.
+            kwargs (dict[str, Any]): auxiliary arguments
 
-                    A = e.params[0]  # Hermitian matrix
-                    # if not np.allclose(A @ A, np.identity(A.shape[0])):
-                    new = qml.expval(qml.Hermitian(A @ A, w, do_queue=False))
-                else:
-                    # involutory, A^2 = I
-                    # For involutory observables (A^2 = I) we have d<A^2>/dp = 0
-                    new = qml.expval(qml.Hermitian(np.identity(2 ** len(w)), w, do_queue=False))
-
-            else:  # CV circuit, first order observable
-                # get the heisenberg representation
-                # This will be a real 1D vector representing the
-                # first order observable in the basis [I, x, p]
-                A = e._heisenberg_rep(e.parameters)  # pylint: disable=protected-access
-
-                # take the outer product of the heisenberg representation
-                # with itself, to get a square symmetric matrix representing
-                # the square of the observable
-                A = np.outer(A, A)
-                new = qml.expval(qml.PolyXP(A, w, do_queue=False))
-
-            # replace the var(A) observable with <A^2>
-            self.circuit.update_node(e, new)
-            new_observables.append(new)
-
-        # calculate the analytic derivatives of the <A^2> observables
-        # FIXME the force_order2 use here is convoluted and could be better
-        pdA2 = self._pd_parameter_shift(idx, args, kwargs, force_order2=(self.model == "cv"))
-
-        # restore the original observables, but convert their return types to expectation
-        for e, new in zip(var_observables, new_observables):
-            self.circuit.update_node(new, e)
-            e.return_type = ObservableReturnTypes.Expectation
-
-        # evaluate <A>
-        evA = np.asarray(self.evaluate(args, kwargs))
-
-        # evaluate the analytic derivative of <A>
-        pdA = self._pd_parameter_shift(idx, args, kwargs)
-
-        # restore return types
-        for e in var_observables:
-            e.return_type = ObservableReturnTypes.Variance
-
-        # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
-        # d<A>/dp for plain expectations
-        return np.where(where_var, pdA2 - 2 * evA * pdA, pdA)
+        Returns:
+            array[float]: partial derivative of the node
+        """
+        raise NotImplementedError
