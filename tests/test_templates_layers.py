@@ -300,7 +300,7 @@ class TestRandomLayers:
         types = [type(q) for q in queue]
         assert len(types) - types.count(impr) == n_layers
 
-    def test_random_layer_imprimitive(self, ratio):
+    def test_random_layer_ratio_imprimitive(self, ratio):
         """Test that  pennylane.templates.layers._random_layer() has the right ratio of imprimitive gates."""
         np.random.seed(12)
         n_rots = 500
@@ -310,7 +310,8 @@ class TestRandomLayers:
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            _random_layer(weights=weights, wires=range(n_wires), ratio_imprim=ratio, impr=CNOT)
+            _random_layer(weights=weights, wires=range(n_wires), ratio_imprim=ratio,
+                          imprimitive=CNOT)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -377,7 +378,7 @@ class TestRandomLayers:
         mean_wire = np.mean(wires_flat)
         assert np.isclose(mean_wire, (n_subsystems - 1) / 2, atol=0.05)
 
-    def test_random_layer_imprimitive(self, n_subsystems, tol):
+    def test_random_layer_weights(self, n_subsystems, tol):
         """Test that pennylane.templates.layers._random_layer() uses the correct weights."""
         np.random.seed(12)
         n_rots = 5
@@ -395,22 +396,3 @@ class TestRandomLayers:
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
-    def test_random_layer_exception_subsystems(self):
-        """Tests that pennylane.templates.layers._random_layer() throws exception if n_wires < 2."""
-        np.random.seed(12)
-        n_rots = 2
-        n_wires = 1
-
-        dev = qml.device('default.qubit', wires=n_wires)
-        weights = np.random.randn(n_rots)
-
-        def circuit(weights):
-            RandomLayers(weights=weights, wires=range(n_wires))
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError) as excinfo:
-            qnode(weights)
-        assert excinfo.value.args[0] == "_random_layer requires at least two wires or subsystems to apply " \
-                                        "the imprimitive gates."

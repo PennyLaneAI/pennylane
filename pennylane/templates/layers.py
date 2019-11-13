@@ -57,14 +57,8 @@ def _random_layer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
         seed (int): seed to generate random architecture
-
-    Raises:
-        ValueError: if less than 2 wires were specified
     """
 
-    if len(wires) < 2:
-        raise ValueError("_random_layer requires at least two wires or subsystems to apply "
-                         "the imprimitive gates.")
     if seed is not None:
         np.random.seed(seed)
 
@@ -79,9 +73,10 @@ def _random_layer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=
             gate(weights[i], wires=wire)
             i += 1
         else:
-            on_wires = np.random.permutation(wires)[:2]
-            on_wires = list(on_wires)
-            imprimitive(wires=on_wires)
+            if len(wires) > 1:
+                on_wires = np.random.permutation(wires)[:2]
+                on_wires = list(on_wires)
+                imprimitive(wires=on_wires)
 
 
 def _cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
@@ -165,7 +160,9 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     and second dimension of ``weights``. The type of imprimitive (two-qubit) gate and rotations distributed
     randomly in the circuit can be chosen explicitly.
 
-    This is an example of two 4-qubit random layers with four Pauli-y/Pauli-z rotations :math:`R_y, R_z`,
+    If applied to one qubit only, this template will use no imprimitive gates.
+
+    This is an example of two 4-qubit random layers with four Pauli-Y/Pauli-Z rotations :math:`R_y, R_z`,
     controlled-Z gates as imprimitives, as well as ``ratio_imprim=0.3``:
 
     .. figure:: ../../_static/layer_rnd.png
