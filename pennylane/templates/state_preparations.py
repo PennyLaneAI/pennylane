@@ -20,7 +20,7 @@ from collections.abc import Iterable
 from scipy import sparse
 import numpy as np
 import pennylane as qml
-from pennylane.qnode import QuantumFunctionError, Variable
+from pennylane.qnode import Variable
 from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,
                                        _check_shape)
@@ -70,7 +70,7 @@ def BasisStatePreparation(basis_state, wires):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Raises:
-        QuantumFunctionError if inputs do not have the correct format.
+        ValueError if inputs do not have the correct format.
     """
 
     ######################
@@ -85,7 +85,7 @@ def BasisStatePreparation(basis_state, wires):
 
     # basis_state is guaranteed to be a list
     if any([b not in [0, 1] for b in basis_state]):
-        raise QuantumFunctionError("Basis state must only consist of 0s and 1s, got {}".format(basis_state))
+        raise ValueError("Basis state must only consist of 0s and 1s, got {}".format(basis_state))
     ######################
 
     for wire, state in zip(wires, basis_state):
@@ -278,6 +278,9 @@ def MottonenStatePreparation(state_vector, wires):
             the state preparation acts on. ``N`` must be smaller or equal to the total
             number of wires.
         wires (Sequence[int]): sequence of qubit indices that the template acts on
+
+    Raises:
+        ValueError if inputs do not have the correct format.
     """
 
     ###############
@@ -293,7 +296,7 @@ def MottonenStatePreparation(state_vector, wires):
         else:
             norm += np.conj(s) * s
     if not np.isclose(norm, 1.0, atol=1e-3):
-        raise QuantumFunctionError("State vector probabilities have to sum up to 1.0, got {}".format(norm))
+        raise ValueError("State vector probabilities have to sum up to 1.0, got {}".format(norm))
     #######################
 
     # Change ordering of indices, original code was for IBM machines

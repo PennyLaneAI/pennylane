@@ -18,7 +18,6 @@ Unit tests for the :mod:`pennylane.template.layers` module.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qnode import QuantumFunctionError
 from pennylane.templates.layers import (Interferometer)
 
 
@@ -35,7 +34,7 @@ class TestInterferometer:
             Interferometer(theta=[], phi=[], varphi=varphi, mesh=mesh, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(varphi, 'rectangular')
 
         @qml.qnode(dev)
@@ -43,7 +42,7 @@ class TestInterferometer:
             Interferometer(theta=[], phi=[], varphi=varphi, beamsplitter=bs, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(varphi, 'clements')
 
     def test_clements_beamsplitter_convention(self, tol):

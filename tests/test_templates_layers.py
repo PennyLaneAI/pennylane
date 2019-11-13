@@ -18,7 +18,6 @@ Unit tests for the :mod:`pennylane.template.layers` module.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qnode import QuantumFunctionError
 from pennylane.templates.layers import (CVNeuralNetLayers,
                                         StronglyEntanglingLayers,
                                         RandomLayers,
@@ -126,7 +125,7 @@ class TestCVNeuralNet:
         qnode = qml.QNode(circuit, gaussian_device_4modes)
 
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             qnode(wrong_weights)
 
 

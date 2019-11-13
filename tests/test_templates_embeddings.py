@@ -19,7 +19,6 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
-from pennylane.qnode import QuantumFunctionError
 from pennylane.templates.embeddings import (AngleEmbedding,
                                             BasisEmbedding,
                                             AmplitudeEmbedding,
@@ -69,10 +68,10 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8)])
 
     def test_amplitude_embedding_throws_exception_notnormalized(self):
@@ -87,7 +86,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=1, pad=False, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[1, 1])
 
     @pytest.mark.parametrize("inpt, expected", INPT_NRML)
@@ -118,7 +117,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=0, pad=False, normalize=True)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(inpt)
 
 
@@ -193,7 +192,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation=strategy)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=features)
 
     def test_angle_embedding_exception_wrongrot(self):
@@ -208,7 +207,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='A')
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[1])
 
     def test_angle_embedding_exception_wiresnolist(self):
@@ -223,7 +222,7 @@ class TestAngleEmbd:
             AngleEmbedding(features=x, wires=3, rotation='A')
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[1])
 
 
@@ -257,7 +256,7 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=np.array([0, 1, 1]))
 
     def test_basis_embedding_exception_subwires(self):
@@ -288,7 +287,7 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires="a")
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[1])
 
 
@@ -351,7 +350,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=not_nrmlzd)
 
     def test_amplitude_embedding_throws_exception_if_wrong_number_of_subsystems(self):
@@ -366,7 +365,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
 
 
@@ -417,7 +416,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='phase')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[0.2, 0.3, 0.4])
 
     def test_squeezing_embedding_exception_strategy(self):
@@ -432,7 +431,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='A')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[1, 2])
 
     def test_squeezing_embedding_exception_wiresnolist(self):
@@ -447,7 +446,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=3, method='A')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[1])
 
 
@@ -498,7 +497,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='phase')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[0.2, 0.3, 0.4])
 
     def test_displacement_embedding_exception_strategy(self):
@@ -513,7 +512,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='A')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[1, 2])
 
     def test_displacement_embedding_exception_wiresnolist(self):
@@ -528,5 +527,5 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=3, method='A')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=[1])

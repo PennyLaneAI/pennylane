@@ -18,7 +18,7 @@ used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane import numpy as np
-from pennylane.qnode import Variable, QuantumFunctionError
+from pennylane.qnode import Variable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_hyperp_is_in_options, _check_type)
@@ -92,8 +92,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         if normalize or pad:
             features = features/np.sqrt(norm)
         else:
-            raise QuantumFunctionError("Vector of features has to be normalized to 1.0, got {}."
-                                       "Use 'normalization=True' to automatically normalize.".format(norm))
+            raise ValueError("Vector of features has to be normalized to 1.0, got {}."
+                             "Use 'normalization=True' to automatically normalize.".format(norm))
 
     QubitStateVector(features, wires=wires)
 
@@ -183,7 +183,7 @@ def BasisEmbedding(features, wires):
 
     # basis_state is guaranteed to be a list
     if any([b not in [0, 1] for b in features]):
-        raise QuantumFunctionError("Basis state must only consist of 0s and 1s, got {}".format(features))
+        raise ValueError("Basis state must only consist of 0s and 1s, got {}".format(features))
     ###############
 
     BasisState(features, wires=wires)

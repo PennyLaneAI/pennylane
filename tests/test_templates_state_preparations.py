@@ -20,12 +20,11 @@ import math
 from unittest.mock import patch
 import numpy as np
 import pytest
-
 import pennylane as qml
-from pennylane.qnode import QuantumFunctionError
 from pennylane.templates.state_preparations import (gray_code,
                                                     BasisStatePreparation,
                                                     MottonenStatePreparation)
+
 
 class TestHelperFunctions:
     """Tests the functionality of helper functions."""
@@ -113,7 +112,7 @@ class TestBasisStatePreparation:
         """Tests that the correct error message is raised when the number
         of qubits doesn't match the number of wires."""
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             BasisStatePreparation(basis_state, wires)
 
     # fmt: off
@@ -126,7 +125,7 @@ class TestBasisStatePreparation:
         """Tests that the correct error messages is raised when
         the basis state contains numbers different from 0 and 1."""
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             BasisStatePreparation(basis_state, wires)
 
 
@@ -271,7 +270,7 @@ class TestMottonenStatePreparation:
         """Tests that the correct error messages is raised if
         the given state vector is not normalized."""
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             MottonenStatePreparation(state_vector, wires)
 
     # fmt: off
@@ -285,6 +284,6 @@ class TestMottonenStatePreparation:
         the number of entries in the given state vector does not match
         with the number of wires in the system."""
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             MottonenStatePreparation(state_vector, wires)
 

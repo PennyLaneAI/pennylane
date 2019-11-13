@@ -143,7 +143,7 @@ def StronglyEntanglingLayers(weights, wires, repeat=1, ranges=None, imprimitive=
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
     Raises:
-        QuantumFunctionError if arguments do not have the correct format.
+        ValueError if arguments do not have the correct format.
     """
     if ranges is None:
         ranges = [1] * repeat
@@ -199,7 +199,7 @@ def RandomLayers(weights, wires, repeat=1, ratio_imprim=0.3, imprimitive=CNOT, n
         seed (int): seed to generate random architecture
 
     Raises:
-        QuantumFunctionError if arguments do not have the correct format.
+        ValueError if arguments do not have the correct format.
     """
     if seed is not None:
         np.random.seed(seed)
@@ -215,7 +215,7 @@ def RandomLayers(weights, wires, repeat=1, ratio_imprim=0.3, imprimitive=CNOT, n
     wires, n_wires = _check_wires(wires)
     if n_rots is None:
         n_rots = len(wires)
-    _check_shape(inpt=weights, target_shp=(repeat, n_rots))
+    _check_shape(weights, (repeat, n_rots))
     _check_type(repeat, [int])
     _check_type(ratio_imprim, [float, type(None)])
     _check_type(n_rots, [int, type(None)])
@@ -272,7 +272,7 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
         repeat (int): number of layers applied
 
     Raises:
-        QuantumFunctionError if arguments do not have the correct format.
+        ValueError if arguments do not have the correct format.
     """
 
     #############

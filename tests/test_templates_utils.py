@@ -17,7 +17,7 @@ Tests for the templates utility functions.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.qnode import QuantumFunctionError, Variable
+from pennylane.qnode import Variable
 from pennylane.templates.utils import (_check_wires,
                                        _check_shape,
                                        _check_no_variable,
@@ -130,75 +130,75 @@ class TestInputChecks:
 
     @pytest.mark.parametrize("wires", WIRES_FAIL)
     def test_check_wires_exception(self, wires):
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             _check_wires(wires=wires)
 
-    @pytest.mark.parametrize("inpt, target_shp, bnd", SHP_PASS)
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHP_PASS)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_check_shape_with_diff_interfaces(self, inpt, target_shp, bnd, intrfc, to_var):
+    def test_check_shape_with_diff_interfaces(self, inpt, target_shape, bound, intrfc, to_var):
         inpt = to_var(inpt)
-        _check_shape(inpt=inpt, target_shp=target_shp, bound=bnd)
+        _check_shape(inpt, target_shape, bound=bound)
 
-    @pytest.mark.parametrize("inpt, target_shp, bnd", SHP_LST_PASS)
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHP_LST_PASS)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_check_shape_list_of_inputs_with_diff_interfaces(self, inpt, target_shp, bnd, intrfc, to_var):
+    def test_check_shape_list_of_inputs_with_diff_interfaces(self, inpt, target_shape, bound, intrfc, to_var):
         inpt = [to_var(i) for i in inpt]
-        _check_shape(inpt=inpt, target_shp=target_shp, bound=bnd)
+        _check_shape(inpt, target_shape, bound=bound)
 
-    @pytest.mark.parametrize("inpt, target_shp, bnd", SHP_FAIL)
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHP_FAIL)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_check_shape_with_diff_interfaces_exception(self, inpt, target_shp, bnd, intrfc, to_var):
+    def test_check_shape_with_diff_interfaces_exception(self, inpt, target_shape, bound, intrfc, to_var):
         inpt = to_var(inpt)
-        with pytest.raises(QuantumFunctionError):
-            _check_shape(inpt=inpt, target_shp=target_shp, bound=bnd)
+        with pytest.raises(ValueError):
+            _check_shape(inpt, target_shape, bound=bound)
 
-    @pytest.mark.parametrize("inpt, target_shp, bnd", SHP_LST_FAIL)
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHP_LST_FAIL)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_check_shape_list_of_inputs_with_diff_interfaces_exception(self, inpt, target_shp, bnd, intrfc, to_var):
+    def test_check_shape_list_of_inputs_with_diff_interfaces_exception(self, inpt, target_shape, bound, intrfc, to_var):
         inpt = [to_var(i) for i in inpt]
-        with pytest.raises(QuantumFunctionError):
-            _check_shape(inpt=inpt, target_shp=target_shp, bound=bnd)
+        with pytest.raises(ValueError):
+            _check_shape(inpt, target_shape, bound=bound)
 
     def test_check_shape_exception_message(self):
-        with pytest.raises(QuantumFunctionError) as excinfo:
-            _check_shape(inpt=[0.], target_shp=(3,), mssg="XXX")
+        with pytest.raises(ValueError) as excinfo:
+            _check_shape([0.], (3,), msg="XXX")
         assert "XXX" in str(excinfo.value)
 
     @pytest.mark.parametrize("arg", NOVARS_PASS)
     def test_check_no_variables(self, arg):
-        _check_no_variable(arg=arg, arg_str="dummy")
+        _check_no_variable(arg, "dummy")
 
     @pytest.mark.parametrize("arg", NOVARS_FAIL)
     def test_check_no_variables_exception(self, arg):
-        with pytest.raises(QuantumFunctionError):
-            _check_no_variable(arg=arg, arg_str="dummy")
+        with pytest.raises(ValueError):
+            _check_no_variable(arg, "dummy")
 
     def test_check_no_variables_exception_message(self):
-        with pytest.raises(QuantumFunctionError) as excinfo:
+        with pytest.raises(ValueError) as excinfo:
             a = Variable(0)
-            _check_no_variable(arg=[a], arg_str=["dummy"], mssg="XXX")
+            _check_no_variable([a], ["dummy"], msg="XXX")
         assert "XXX" in str(excinfo.value)
 
     @pytest.mark.parametrize("hp, opts", OPTIONS_PASS)
     def test_check_hyperp_options(self, hp, opts):
-        _check_hyperp_is_in_options(hp=hp, options=opts)
+        _check_hyperp_is_in_options(hp, opts)
 
     @pytest.mark.parametrize("hp, opts", OPTIONS_FAIL)
     def test_check_hyperp_options_exception(self, hp, opts):
-        with pytest.raises(QuantumFunctionError):
-            _check_hyperp_is_in_options(hp=hp, options=opts)
+        with pytest.raises(ValueError):
+            _check_hyperp_is_in_options(hp, opts)
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_PASS)
     def test_check_type(self, hp, typ, alt):
-        _check_type(hp=hp, typ=[typ, alt])
+        _check_type(hp, [typ, alt])
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
     def test_check_type_exception(self, hp, typ, alt):
-        with pytest.raises(QuantumFunctionError):
-            _check_type(hp=hp, typ=[typ, alt])
+        with pytest.raises(ValueError):
+            _check_type(hp, [typ, alt])
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
     def test_check_type_exception_message(self, hp, typ, alt):
-        with pytest.raises(QuantumFunctionError) as excinfo:
-            _check_type(hp=hp, typ=[typ, alt], mssg="XXX")
+        with pytest.raises(ValueError) as excinfo:
+            _check_type(hp, [typ, alt], msg="XXX")
         assert "XXX" in str(excinfo.value)

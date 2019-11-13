@@ -102,7 +102,7 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
           beamsplitter is implemented via PennyLane's ``Beamsplitter`` operation.
 
     Raises:
-        QuantumFunctionError if arguments do not have the correct format.
+        ValueError if arguments do not have the correct format.
     """
 
     #############
