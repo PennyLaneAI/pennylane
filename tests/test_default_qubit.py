@@ -20,7 +20,7 @@ import math
 
 import pytest
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as np, DeviceError
 from pennylane.operation import Operation
 from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
                                              Rot3, Rotx, Roty, Rotz,
@@ -452,20 +452,21 @@ class TestApply:
         assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
 
-    @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("BasisState", [1, 0, 0, 0], [0, 0, 1, 0], [[1, 0]]),
-        ("BasisState", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 1, 0], [[1, 0]]),
-        ("BasisState", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 0, 1], [[1, 1]]),
-        ("QubitStateVector", [1, 0, 0, 0], [0, 0, 1, 0], [[0, 0, 1, 0]]),
-        ("QubitStateVector", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 1, 0], [[0, 0, 1, 0]]),
-        ("QubitStateVector", [1/math.sqrt(2), 0, 1/math.sqrt(2), 0], [0, 0, 0, 1], [[0, 0, 0, 1]]),
-        ("QubitStateVector", [1, 0, 0, 0], [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)]]),
-        ("QubitStateVector", [1, 0, 0, 0], [1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)]]),
+    @pytest.mark.parametrize("name,expected_output,par", [
+        ("BasisState", [0, 0, 1, 0], [[1, 0]]),
+        ("BasisState", [0, 0, 1, 0], [[1, 0]]),
+        ("BasisState", [0, 0, 0, 1], [[1, 1]]),
+        ("QubitStateVector", [0, 0, 1, 0], [[0, 0, 1, 0]]),
+        ("QubitStateVector", [0, 0, 1, 0], [[0, 0, 1, 0]]),
+        ("QubitStateVector", [0, 0, 0, 1], [[0, 0, 0, 1]]),
+        ("QubitStateVector", [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)]]),
+        ("QubitStateVector", [1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)], [[1/math.sqrt(3), 0, -1/math.sqrt(3), 1/math.sqrt(3)]]),
     ])
-    def test_apply_operation_state_preparation(self, qubit_device_2_wires, tol, name, input, expected_output, par):
-        """Tests that applying state preparation operations yield the expected output."""
+    def test_apply_operation_state_preparation(self, qubit_device_2_wires, tol, name, expected_output, par):
+        """Tests that applying an operation yields the expected output state for single wire
+           operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input)
+        qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(name, wires=[0, 1], par=par)
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
@@ -571,27 +572,51 @@ class TestApply:
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
-    def test_apply_errors(self, qubit_device_2_wires):
+    def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
+        with pytest.raises(
+            ValueError,
+            match="Sum of amplitudes-squared does not equal one."
+        ):
+            qubit_device_2_wires.apply("QubitStateVector", wires=[0], par=[np.array([1, -1])])
 
         with pytest.raises(
             ValueError,
             match=r"State vector must be of length 2\*\*wires."
         ):
-            p = [np.array([1, 0, 1, 1, 1]) / np.sqrt(3)]
+            p = np.array([1, 0, 1, 1, 0]) / np.sqrt(3)
             qubit_device_2_wires.apply("QubitStateVector", wires=[0, 1], par=[p])
 
         with pytest.raises(
+            DeviceError,
+            match="Operation QubitStateVector cannot be used after other Operations have already been applied "
+                                  "on a default.qubit device."
+        ):
+            qubit_device_2_wires.reset()
+            qubit_device_2_wires.apply("RZ", wires=[0], par=[0.5])
+            qubit_device_2_wires.apply("QubitStateVector", wires=[0, 1], par=[np.array([0, 1, 0, 0])])
+
+    def test_apply_errors_basis_state(self, qubit_device_2_wires):
+        with pytest.raises(
             ValueError,
-            match="BasisState parameter must be an array of 0 or 1 integers of length at most 2."
+            match="BasisState parameter must consist of 0 or 1 integers."
         ):
             qubit_device_2_wires.apply("BasisState", wires=[0, 1], par=[np.array([-0.2, 4.2])])
 
         with pytest.raises(
             ValueError,
-            match="The default.qubit plugin can apply BasisState only to all of the 2 wires."
+            match="BasisState parameter and wires must be of equal length."
         ):
-            qubit_device_2_wires.apply("BasisState", wires=[0, 1, 2], par=[np.array([0, 1])])
+            qubit_device_2_wires.apply("BasisState", wires=[0], par=[np.array([0, 1])])
+
+        with pytest.raises(
+            DeviceError,
+            match="Operation BasisState cannot be used after other Operations have already been applied "
+                                  "on a default.qubit device."
+        ):
+            qubit_device_2_wires.reset()
+            qubit_device_2_wires.apply("RZ", wires=[0], par=[0.5])
+            qubit_device_2_wires.apply("BasisState", wires=[0, 1], par=[[1, 1]])
 
 
 class TestExpval:
@@ -1055,6 +1080,71 @@ class TestDefaultQubitIntegration:
         def circuit():
             op(np.array(par), wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    # This test is ran with two Z expvals
+    @pytest.mark.parametrize("name,par,wires,expected_output", [
+        ("BasisState", [1, 1], [0, 1], [-1, -1]),
+        ("BasisState", [1], [0], [-1, 1]),
+        ("BasisState", [1], [1], [1, -1])
+    ])
+    def test_basis_state_2_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
+        """Tests qubit basis state preparation on subsets of qubits"""
+
+        op = getattr(qml.ops, name)
+
+        @qml.qnode(qubit_device_2_wires)
+        def circuit():
+            op(np.array(par), wires=wires)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    # This test is run with two expvals
+    @pytest.mark.parametrize("name,par,wires,expected_output", [
+        ("QubitStateVector", [0, 1], [1], [1, -1]),
+        ("QubitStateVector", [0, 1], [0], [-1, 1]),
+        ("QubitStateVector", [1./np.sqrt(2), 1./np.sqrt(2)], [1], [1, 0]),
+        ("QubitStateVector", [1j/2., np.sqrt(3)/2.], [1], [1, -0.5]),
+        ("QubitStateVector", [(2-1j)/3., 2j/3.], [0], [1/9., 1])
+    ])
+    def test_state_vector_2_qubit_subset(self, qubit_device_2_wires, tol, name, par, wires, expected_output):
+        """Tests qubit state vector preparation on subsets of 2 qubits"""
+
+        op = getattr(qml.ops, name)
+
+        par = np.array(par)
+
+        @qml.qnode(qubit_device_2_wires)
+        def circuit():
+            op(par, wires=wires)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
+
+    # This test is run with three expvals
+    @pytest.mark.parametrize("name,par,wires,expected_output", [
+        ("QubitStateVector", [1j/np.sqrt(10), (1-2j)/np.sqrt(10), 0, 0, 0, 2/np.sqrt(10), 0, 0],
+         [0, 1, 2], [1/5., 1., -4/5.]),
+        ("QubitStateVector", [1/np.sqrt(2), 0, 0, 1/np.sqrt(2)], [0, 2], [0., 1., 0.]),
+        ("QubitStateVector", [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)], [0, 1], [0., 0., 1.]),
+        ("QubitStateVector", [0, 1, 0, 0, 0, 0, 0, 0], [2, 1, 0], [-1., 1., 1.]),
+        ("QubitStateVector", [0, 1j, 0, 0, 0, 0, 0, 0], [0, 2, 1], [1., -1., 1.]),
+        ("QubitStateVector", [0, 1/np.sqrt(2), 0, 1/np.sqrt(2)], [1, 0], [-1., 0., 1.]),
+        ("QubitStateVector", [0, 1 / np.sqrt(2), 0, 1 / np.sqrt(2)], [0, 1], [0., -1., 1.])
+    ])
+    def test_state_vector_3_qubit_subset(self, qubit_device_3_wires, tol, name, par, wires, expected_output):
+        """Tests qubit state vector preparation on subsets of 3 qubits"""
+
+        op = getattr(qml.ops, name)
+
+        par = np.array(par)
+
+        @qml.qnode(qubit_device_3_wires)
+        def circuit():
+            op(par, wires=wires)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
