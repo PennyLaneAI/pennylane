@@ -31,7 +31,6 @@ def _strongly_entangling_layer(weights, wires, r=1, imprimitive=CNOT):
     Keyword Args:
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-
     """
 
     for i, wire in enumerate(wires):
@@ -58,7 +57,6 @@ def _random_layer(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=
             rotations with equal frequency.
         seed (int): seed to generate random architecture
     """
-
     if seed is not None:
         np.random.seed(seed)
 
@@ -110,6 +108,7 @@ def _cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, var
 
     for i, wire in enumerate(wires):
         Kerr(k[i], wires=wire)
+
 
 
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
