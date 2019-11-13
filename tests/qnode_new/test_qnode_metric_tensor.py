@@ -19,7 +19,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.qnode_new.qubit_parameter_shift import QubitQNode
+from pennylane.qnode_new.qubit import QubitQNode
 from pennylane.qnode_new.qnode import QuantumFunctionError
 from pennylane.plugins.default_qubit import Y, Z
 

@@ -22,8 +22,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.qnode_new.qnode import QuantumFunctionError
-from pennylane.qnode_new.qubit_parameter_shift import QubitQNode
-from pennylane.qnode_new.cv_parameter_shift import CVQNode
+from pennylane.qnode_new.qubit import QubitQNode
+from pennylane.qnode_new.cv import CVQNode
 
 from pennylane.interfaces.autograd import to_autograd
 

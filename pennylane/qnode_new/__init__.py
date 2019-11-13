@@ -26,5 +26,5 @@ This package contains the new-style QNodes.
 """
 from .qnode import QNode, QuantumFunctionError
 from .jacobian import JacobianQNode
-from .qubit_parameter_shift import QubitQNode
-from .cv_parameter_shift import CVQNode
+from .qubit import QubitQNode
+from .cv import CVQNode

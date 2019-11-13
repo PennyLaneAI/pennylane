@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane._device import Device
 from pennylane.operation import CVObservable
 from pennylane.qnode_new.qnode import QuantumFunctionError
-from pennylane.qnode_new.cv_parameter_shift import CVQNode
+from pennylane.qnode_new.cv import CVQNode
 
 
 class PolyN(qml.ops.PolyXP):

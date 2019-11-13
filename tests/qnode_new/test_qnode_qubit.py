@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane._device import Device
 from pennylane.operation import CVObservable
 from pennylane.qnode_new.qnode import QuantumFunctionError
-from pennylane.qnode_new.qubit_parameter_shift import QubitQNode
+from pennylane.qnode_new.qubit import QubitQNode
 
 
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
