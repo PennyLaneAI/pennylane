@@ -190,7 +190,6 @@ def from_qiskit(quantum_circuit):
 
     Args:
         quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
-            object
 
     Returns:
         function: the PennyLane template created based on the QuantumCircuit
