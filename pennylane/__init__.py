@@ -201,7 +201,7 @@ def from_qiskit(quantum_circuit):
 
 def from_qasm(quantum_circuit: str):
     """from_qasm(quantum_circuit)
-    Loads quantum circuits defined in QASM by using the converter in the
+    Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
     Args:
@@ -215,7 +215,7 @@ def from_qasm(quantum_circuit: str):
 
 def from_qasm_file(qasm_filename: str):
     """from_qasm_file(qasm_filename)
-    Loads quantum circuits defined in QASM by using the converter in the
+    Loads quantum circuits from a QASM file using the converter in the
     PennyLane-Qiskit plugin.
 
     Args:
