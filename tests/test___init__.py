@@ -23,7 +23,7 @@ import pennylane as qml
 class TestPennyLaneInit:
     """Unit tests for the functions in the pennylane/__init__.py."""
 
-    @pytest.mark.usefixtures("skip_if_no_pennylane_qiskit_support")
+    pytest.importorskip("pennylane_qiskit")
     def test_plugin_converters(self):
         """Test that the converter from the PennyLane-Qiskit plugin entry points are included
         in the correct entry points."""
@@ -31,7 +31,7 @@ class TestPennyLaneInit:
         assert 'qasm' in qml.plugin_converters
         assert 'qasm_file' in qml.plugin_converters
 
-    @pytest.mark.usefixtures("skip_if_no_pennylane_qiskit_support")
+    pytest.importorskip("pennylane_qiskit")
     def test_load(self):
         """Test that a converter from the PennyLane-Qiskit plugin is returned."""
 
