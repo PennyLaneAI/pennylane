@@ -58,9 +58,6 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False, c=0.):
     mssg = "At this stage, the feature input of AmplitudeEncoding cannot be trained. " \
            "It has to be passed to the qnode via a positional argument."
     _check_no_variable([features], ['features'], mssg=mssg)
-    mssg = "Due to the implementation, the feature input of AmplitudeEmbedding must be " \
-           "a numpy array."
-    _check_type(features, np.ndarray, mssg=mssg)
     wires, n_wires = _check_wires(wires)
     n_ampl = 2**n_wires
     if pad:

@@ -20,15 +20,14 @@ import pytest
 import logging as log
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qnode import QuantumFunctionError
-from pennylane.templates.layers import (Interferometer,
-                                        CVNeuralNetLayers,
-                                        StronglyEntanglingLayers, StronglyEntanglingLayer,
-                                        RandomLayers, RandomLayer)
+from pennylane.templates.layers import (CVNeuralNetLayers,
+                                        StronglyEntanglingLayers, _strongly_entangling_layer,
+                                        RandomLayers, _random_layer)
 from pennylane import RX, RY, RZ, CZ, CNOT
 log.getLogger('defaults')
 
 
+<<<<<<< HEAD
 class TestInterferometer:
     """Tests for the Interferometer from the pennylane.template.layers module."""
 
@@ -304,6 +303,8 @@ class TestInterferometer:
         assert np.allclose(res, expected, atol=tol)
 
 
+=======
+>>>>>>> make_layer_private
 class TestCVNeuralNet:
     """Tests for the CVNeuralNet from the pennylane.template module."""
 
@@ -472,7 +473,7 @@ class TestStronglyEntangling:
 
 
 class TestRandomLayers:
-    """Tests for the RandomLayers method from the pennylane.templates.layers module."""
+    """Tests for the RandomLayers method from the pennylane.templates module."""
 
     @pytest.fixture(scope="class",
                     params=[0.2, 0.6])
@@ -489,7 +490,11 @@ class TestRandomLayers:
     def rots(self, request):
         return request.param
 
+<<<<<<< HEAD
     def test_random_layers_seed_deterministic(self, n_layers, tol, seed):
+=======
+    def test_random_layers_deterministic_seed(self, n_layers, tol, seed):
+>>>>>>> make_layer_private
         """Test that RandomLayers() acts deterministically when using fixed seed."""
         n_rots = 1
         n_wires = 2
@@ -508,11 +513,15 @@ class TestRandomLayers:
 
         qnode1 = qml.QNode(circuit1, dev)
         qnode2 = qml.QNode(circuit2, dev)
-
         assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
+<<<<<<< HEAD
     def test_random_layers_default_seed_deterministic(self, n_layers, tol):
         """Test that RandomLayers() acts deterministically when using the default seed."""
+=======
+    def test_random_layers_deterministic_default_seed(self, n_layers, tol):
+        """Test that RandomLayers() acts deterministically when using default seed."""
+>>>>>>> make_layer_private
         n_rots = 1
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
@@ -575,8 +584,13 @@ class TestRandomLayers:
         types = [type(q) for q in queue]
         assert len(types) - types.count(impr) == n_layers
 
+<<<<<<< HEAD
     def test_random_layer_imprimitive(self, ratio):
         """Test that  RandomLayer() has the right ratio of imprimitive gates."""
+=======
+    def test_random_layer_ratio_imprimitive(self, ratio):
+        """Test that  pennylane.templates.layers._random_layer() has the right ratio of imprimitive gates."""
+>>>>>>> make_layer_private
         np.random.seed(12)
         n_rots = 500
         n_wires = 2
@@ -585,8 +599,13 @@ class TestRandomLayers:
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
+<<<<<<< HEAD
             RandomLayer(weights=weights, wires=range(n_wires), ratio_imprim=ratio,
                         n_rots=n_rots, impr=CNOT)
+=======
+            _random_layer(weights=weights, wires=range(n_wires), ratio_imprim=ratio,
+                          imprimitive=CNOT)
+>>>>>>> make_layer_private
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -597,15 +616,24 @@ class TestRandomLayers:
         assert np.isclose(ratio_impr, ratio, atol=0.05)
 
     def test_random_layer_imprimitive(self, n_subsystems, impr, rots):
+<<<<<<< HEAD
         """Test that  RandomLayer() uses the correct types of gates."""
+=======
+        """Test that  pennylane.templates.layers._random_layer() uses the correct types of gates."""
+>>>>>>> make_layer_private
         np.random.seed(12)
         n_rots = 20
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
+<<<<<<< HEAD
             RandomLayer(weights=weights, wires=range(n_subsystems), n_rots=n_rots,
                         imprimitive=impr, rotations=rots)
+=======
+            _random_layer(weights=weights, wires=range(n_subsystems),
+                          imprimitive=impr, rotations=rots)
+>>>>>>> make_layer_private
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -617,15 +645,23 @@ class TestRandomLayers:
         assert unique == gates
 
     def test_random_layer_numgates(self, n_subsystems):
+<<<<<<< HEAD
         """Test that  RandomLayer() uses the correct number of gates."""
+=======
+        """Test that  pennylane.templates.layers._random_layer() uses the correct number of gates."""
+>>>>>>> make_layer_private
         np.random.seed(12)
         n_rots = 5
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
+<<<<<<< HEAD
             RandomLayer(weights=weights, wires=range(n_subsystems), imprimitive=qml.CNOT,
                         n_rots=n_rots)
+=======
+            _random_layer(weights=weights, wires=range(n_subsystems), imprimitive=impr)
+>>>>>>> make_layer_private
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -635,15 +671,23 @@ class TestRandomLayers:
         assert len(types) - types.count(qml.CNOT) == n_rots
 
     def test_random_layer_randomwires(self, n_subsystems):
+<<<<<<< HEAD
         """Test that  RandomLayer() picks random wires."""
+=======
+        """Test that  pennylane.templates.layers._random_layer() picks random wires."""
+>>>>>>> make_layer_private
         np.random.seed(12)
         n_rots = 500
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
+<<<<<<< HEAD
             RandomLayer(weights=weights, wires=range(n_subsystems), n_rots=n_rots,
                         imprimitive=qml.CNOT)
+=======
+            _random_layer(weights=weights, wires=range(n_subsystems))
+>>>>>>> make_layer_private
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -654,16 +698,25 @@ class TestRandomLayers:
         mean_wire = np.mean(wires_flat)
         assert np.isclose(mean_wire, (n_subsystems - 1) / 2, atol=0.05)
 
+<<<<<<< HEAD
     def test_random_layer_imprimitive(self, n_subsystems, tol):
         """Test that RandomLayer() uses the correct weights."""
+=======
+    def test_random_layer_weights(self, n_subsystems, tol):
+        """Test that pennylane.templates.layers._random_layer() uses the correct weights."""
+>>>>>>> make_layer_private
         np.random.seed(12)
         n_rots = 5
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
+<<<<<<< HEAD
             RandomLayer(weights=weights, wires=range(n_subsystems), n_rots=n_rots,
                         imprimitive=qml.CNOT)
+=======
+            _random_layer(weights=weights, wires=range(n_subsystems))
+>>>>>>> make_layer_private
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -673,4 +726,7 @@ class TestRandomLayers:
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> make_layer_private
