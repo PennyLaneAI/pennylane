@@ -16,35 +16,17 @@ Experimental simulator plugin based on tensor network contractions
 """
 
 import warnings
+from itertools import product
 
 import numpy as np
 import tensornetwork as tn
 
 from pennylane import Device
-from pennylane.plugins.default_qubit import (
-    X,
-    Y,
-    Z,
-    H,
-    CNOT,
-    SWAP,
-    CZ,
-    S,
-    T,
-    CSWAP,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    Rot3,
-    CRotx,
-    CRoty,
-    CRotz,
-    CRot3,
-    hermitian,
-    identity,
-    unitary,
-)
+from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, CRot3,
+                                             CRotx, CRoty, CRotz, H, Rot3,
+                                             Rotx, Roty, Rotz, Rphi, S, T, X,
+                                             Y, Z, hermitian, identity,
+                                             spectral_decomposition, unitary)
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -102,8 +84,8 @@ class TensorNetwork(Device):
         "Identity": identity,
     }
 
-    def __init__(self, wires):
-        super().__init__(wires, shots=1)
+    def __init__(self, wires, shots=1000, analytic=True):
+        super().__init__(wires, shots)
         self.eng = None
         self.analytic = True
         self._nodes = []
@@ -245,6 +227,43 @@ class TensorNetwork(Device):
         obs_nodes_for_squares = self.create_nodes_from_tensors(tensors_of_squared_matrices, wires, observable)
 
         return self.ev(obs_nodes_for_squares, wires) - self.ev(obs_nodes, wires)**2
+
+    def sample(self, observable, wires, par):
+
+        if not isinstance(observable, list):
+            observable, wires, par = [observable], [wires], [par]
+
+        matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
+
+        decompositions = [spectral_decomposition(A) for A in matrices]
+        eigenvalues, projector_groups = list(zip(*decompositions))
+        eigenvalues = list(eigenvalues)
+
+        # Matching each projector with the wires it acts on
+        # while preserving the groupings
+        projectors_with_wires = [[(proj, wires[idx]) for proj in proj_group]
+                                 for idx, proj_group in enumerate(projector_groups)]
+
+        # The eigenvalue - projector maps are preserved as product() preserves
+        # the previous ordering by creating a lexicographic ordering
+        joint_outcomes = list(product(*eigenvalues))
+        projector_tensor_products = list(product(*projectors_with_wires))
+
+        joint_probabilities = []
+
+        for projs in projector_tensor_products:
+            obs_nodes = []
+            obs_wires = []
+            for proj, proj_wires in projs:
+
+                tensor = proj.reshape([2] * len(proj_wires) * 2)
+                obs_nodes.append(self._add_node(tensor, proj_wires))
+                obs_wires.append(proj_wires)
+
+            joint_probabilities.append(self.ev(obs_nodes, obs_wires))
+
+        outcomes = np.array([np.prod(p) for p in joint_outcomes])
+        return np.random.choice(outcomes, self.shots, p=joint_probabilities)
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
