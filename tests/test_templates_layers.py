@@ -319,7 +319,7 @@ class TestRandomLayers:
         ratio_impr = types.count(impr) / len(types)
         assert np.isclose(ratio_impr, ratio, atol=0.05)
 
-    def test_random_layer_imprimitive(self, n_subsystems, impr, rots):
+    def test_random_layer_gate_types(self, n_subsystems, impr, rots):
         """Test that  _random_layer() uses the correct types of gates."""
         n_rots = 20
         dev = qml.device('default.qubit', wires=n_subsystems)
@@ -327,7 +327,7 @@ class TestRandomLayers:
 
         def circuit(weights):
             _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
-                          imprimitive=CNOT, n_rots=20, rotations=[RX, RY, RZ], seed=42)
+                          imprimitive=impr, n_rots=20, rotations=rots, seed=42)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
