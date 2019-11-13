@@ -219,7 +219,7 @@ while using the :class:`~.pennylane.QNode` decorator:
     result = quantum_circuit_with_loaded_subcircuit(angle)
 
 Furthermore, loaded templates can be used with any supported device, any number of times.
-As shown in the following example, a quantum circuit can be loaded from a ``QASM`` string,
+For instance, in the following example a template is loaded from a QASM string,
 and then be used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
 
 .. code-block:: python
