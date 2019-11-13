@@ -136,8 +136,8 @@ def device(name, *args, **kwargs):
     )
 
 
-def load(quantum_circuit_object, name: str):
-    """load(name, quantum_circuit_object)
+def load(quantum_circuit_object, format: str):
+    """load(quantum_circuit_object, format)
     Load external quantum assembly and quantum circuits from supported frameworks
     into PennyLane templates.
 
@@ -150,7 +150,7 @@ def load(quantum_circuit_object, name: str):
     >>> qc = qiskit.QuantumCircuit(2)
     >>> qc.rz(0.543, [0])
     >>> qc.cx(0, 1)
-    >>> my_circuit = qml.load(qc, name='qiskit')
+    >>> my_circuit = qml.load(qc, format='qiskit')
     >>>
     >>> @qml.qnode(dev)
     >>> def circuit(x):
@@ -161,17 +161,17 @@ def load(quantum_circuit_object, name: str):
     Args:
         quantum_circuit_object: the quantum circuit that will be converted
             to a PennyLane template
-        name (str): the name of the plugin to convert from
+        format (str): the format of the quantum circuit object to convert from
 
     Returns:
         function: the PennyLane template created from the quantum circuit
             object
     """
 
-    if name in plugin_converters:
+    if format in plugin_converters:
 
         # loads the plugin load function
-        plugin_converter = plugin_converters[name].load()
+        plugin_converter = plugin_converters[format].load()
 
         # calls the load function of the converter on the quantum circuit object
         return plugin_converter(quantum_circuit_object)
@@ -180,6 +180,7 @@ def load(quantum_circuit_object, name: str):
         "Converter does not exist. Make sure the required plugin is installed "
         "and supports conversion."
     )
+
 
 def from_qiskit(quantum_circuit):
     """from_qiskit(quantum_circuit)
@@ -194,7 +195,7 @@ def from_qiskit(quantum_circuit):
         function: the PennyLane template created based on the QuantumCircuit
             object
     """
-    return load(quantum_circuit, name='qiskit')
+    return load(quantum_circuit, format='qiskit')
 
 
 def from_qasm(quantum_circuit: str):
@@ -208,7 +209,7 @@ def from_qasm(quantum_circuit: str):
     Returns:
         function: the PennyLane template created based on the QASM string
     """
-    return load(quantum_circuit, name='qasm')
+    return load(quantum_circuit, format='qasm')
 
 
 def from_qasm_file(qasm_filename: str):
@@ -222,7 +223,7 @@ def from_qasm_file(qasm_filename: str):
     Returns:
         function: the PennyLane template created based on the QASM file
     """
-    return load(qasm_filename, name='qasm_file')
+    return load(qasm_filename, format='qasm_file')
 
 
 def grad(func, argnum):
