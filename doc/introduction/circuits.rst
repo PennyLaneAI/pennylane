@@ -189,7 +189,7 @@ within a :class:`~.pennylane.QNode`.
 
 .. note::
     Certain instructions that are specific to the external frameworks might be
-    ignored when loading an object for a quantum circuit. A warning message is
+    ignored when loading an external quantum circuit. Warning messages will
     created for such instructions.
 
 The following is an example of loading and calling a parametrized Qiskit ``QuantumCircuit`` object
