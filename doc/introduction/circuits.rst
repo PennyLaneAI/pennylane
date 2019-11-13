@@ -185,7 +185,7 @@ parameter-value pairs.
 Once a PennyLane template has been created from such a quantum circuit, it can
 be used similarly to other :doc:`templates <templates>` in PennyLane. One important thing to note
 is that custom templates (similar to pre-defined templates) must always be executed
-with a specific :class:`~.pennylane.QNode` object.
+within a :class:`~.pennylane.QNode`.
 
 .. note::
     Certain instructions that are specific to the external frameworks might be
