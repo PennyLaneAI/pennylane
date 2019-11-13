@@ -273,7 +273,7 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError):
+        with pytest.raises(ValueError):
             circuit(x=np.array([1]))
 
     def test_basis_embedding_exception_wiresnolist(self):

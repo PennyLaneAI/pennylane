@@ -18,6 +18,7 @@ used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane import numpy as np
+from pennylane.qnode import Variable, QuantumFunctionError
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_hyperp_is_in_options, _check_type)
@@ -74,22 +75,25 @@ def AmplitudeEmbedding(features, wires, pad=False, normalize=False, c=0.):
     _check_type(c, float, alt=complex)
     ###############
 
+    # Pad
     n_feats = shp[0]
     if pad and n_ampl > n_feats:
         features = np.pad(features, (0, n_ampl-n_feats), mode='constant', constant_values=c)
 
-    # Get normalization
+    # Normalize
     norm = 0
     for f in features:
-        norm += np.conj(f)*f
+        if isinstance(f, Variable):
+            norm += np.conj(f.val) * f.val
+        else:
+            norm += np.conj(f) * f
 
-    if not np.isclose(norm, 1, atol=1e-5):
+    if not np.isclose(norm, 1.0, atol=1e-3):
         if normalize:
-            # TODO: Compatibility with interfaces
             features = features/np.sqrt(norm)
         else:
-            raise ValueError("AmplitudeEmbedding requires a normalized feature vector. "
-                             "Set ``normalize=True`` to automatically normalize it.")
+            raise QuantumFunctionError("Vector of features has to be normalized to 1.0, got {}."
+                                       "Use 'normalization=True' to automatically normalize.".format(norm))
 
     QubitStateVector(features, wires=wires)
 
@@ -169,17 +173,18 @@ def BasisEmbedding(features, wires):
 
     #############
     # Input checks
-    mssg = "The feature input of BasisEmbedding cannot be trained, since it influences the " \
-           "circuit architecture. It has to be passed to the qnode via a positional argument."
-    _check_no_variable([features], ['features'], mssg=mssg)
-    mssg = "Due to the implementation, the feature input of BasisEmbedding must be " \
-           "a numpy array."
-    _check_type(features, np.ndarray, mssg=mssg)
     wires, n_wires = _check_wires(wires)
     _check_shape(features, (n_wires,))
-    ###############
 
-    # TODO: Check that features are binary
+    # basis_state cannot be trainable
+    mssg = "The input features in BasisEmbedding influence the circuit architecture and can " \
+           "therefore not be passed as a positional argument to the quantum node."
+    _check_no_variable([features], ['features'], mssg=mssg)
+
+    # basis_state is guaranteed to be a list
+    if any([b not in [0, 1] for b in features]):
+        raise QuantumFunctionError("Basis state must only consist of 0s and 1s, got {}".format(features))
+    ###############
 
     BasisState(features, wires=wires)
 

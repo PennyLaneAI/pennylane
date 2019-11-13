@@ -85,7 +85,7 @@ def BasisStatePreparation(basis_state, wires):
     _check_no_variable([basis_state], ['basisstate'], mssg=mssg)
 
     # basis_state is guaranteed to be a list
-    if any([x not in [0, 1] for x in basis_state]):
+    if any([b not in [0, 1] for b in basis_state]):
         raise QuantumFunctionError("Basis state must only consist of 0s and 1s, got {}".format(basis_state))
     ######################
 
