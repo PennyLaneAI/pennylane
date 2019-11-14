@@ -25,7 +25,7 @@ class DeviceJacobianQNode(JacobianQNode):
     # pylint: disable=abstract-method
 
     def _best_method(self, idx):
-        """Determine the correct partial derivative computation method for a free parameter.
+        """Determine the correct partial derivative computation method for a positional parameter.
 
         For this QNode, the partial derivative of every free parameter will be
         computed using the device; only parameters used in operations with
