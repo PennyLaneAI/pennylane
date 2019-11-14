@@ -16,10 +16,10 @@ literature, such architectures are commonly known as an *ansatz*.
     provided by PennyLane. This means that **template functions can only be used within a
     valid** :class:`~.QNode`.
 
-PennyLane conceptually distinguishes two types of templates, :ref:`layer architectures <intro_ref_temp_lay>`
-and :ref:`input embeddings <intro_ref_temp_emb>`.
-Most templates are complemented by functions that provide an array of
-random :ref:`initial parameters <intro_ref_temp_params>` .
+
+There are different types of templates, such as :ref:`layer architectures <intro_ref_temp_lay>`
+and :ref:`input embeddings <intro_ref_temp_emb>`. Templates that take trainable parameters are
+complemented by functions that provide an array of random :ref:`initial parameters <intro_ref_temp_params>` .
 
 An example of how to use templates is the following:
 
@@ -30,22 +30,21 @@ An example of how to use templates is the following:
     from pennylane.templates.layers import StronglyEntanglingLayers
     from pennylane.init import strong_ent_layers_uniform
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qml.device('default.qubit', wires=3)
 
     @qml.qnode(dev)
     def circuit(weights, x=None):
-        AngleEmbedding(x, [0,1])
-        StronglyEntanglingLayers(weights, wires=[0,1])
+        AngleEmbedding(x, wires=[0, 1, 2])
+        StronglyEntanglingLayers(weights, wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
 
-    init_weights = strong_ent_layers_uniform(n_layers=3, n_wires=2)
-    print(circuit(init_weights, x=[1., 2.]))
+    init_weights = strong_ent_layers_uniform(n_layers=3, n_wires=3)
+    print(circuit(init_weights, x=[0.2, 1.2, -1.1]))
 
 
 Here, we used the embedding template :func:`~.AngleEmbedding`
 together with the layer template :func:`~.StronglyEntanglingLayers`,
-and the uniform parameter initialization strategy
-:func:`~.strong_ent_layers_uniform`.
+and the uniform parameter initialization function :func:`~.strong_ent_layers_uniform`.
 
 
 .. _intro_ref_temp_lay:
@@ -57,19 +56,14 @@ Layer templates
 
 Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
 
-The following layer templates are available:
+The following layer templates are provided:
 
-:html:`<div class="summary-table">`
+.. toctree::
+   :maxdepth: 2
 
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.templates.layers.CVNeuralNetLayers
-    ~pennylane.templates.layers.RandomLayers
-    ~pennylane.templates.layers.StronglyEntanglingLayers
-
-:html:`</div>`
-
+    templates/layers/random
+    templates/layers/stronglyentangling
+    templates/layers/cvqnn
 
 
 .. _intro_ref_temp_emb:
@@ -83,18 +77,14 @@ trainable parameters and be repeated.
 
 The following embedding templates are available:
 
-:html:`<div class="summary-table">`
+.. toctree::
+   :maxdepth: 2
 
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.templates.embeddings.AmplitudeEmbedding
-    ~pennylane.templates.embeddings.BasisEmbedding
-    ~pennylane.templates.embeddings.AngleEmbedding
-    ~pennylane.templates.embeddings.SqueezingEmbedding
-    ~pennylane.templates.embeddings.DisplacementEmbedding
-
-:html:`</div>`
+    templates/embeddings/amplitude
+    templates/embeddings/angle
+    templates/embeddings/basis
+    templates/embeddings/displacement
+    templates/embeddings/squeezing
 
 .. _intro_ref_temp_params:
 
@@ -103,16 +93,31 @@ Subroutines
 
 Subroutines are simply a collection of (trainable) gates.
 
-The following subroutines are available:
+The following subroutine templates are available:
 
-:html:`<div class="summary-table">`
+.. toctree::
+   :maxdepth: 2
 
-.. autosummary::
-    :nosignatures:
+    templates/subroutines/interferometer
 
-    ~pennylane.templates.Interferometer
 
-:html:`</div>`
+State Preparations
+------------------
+
+State Preparation templates are special subroutines that have the purpose of preparing a particular
+state. They may depend on classical inputs.
+
+Embeddings and state preparations are closely related: One and the same embedding can be realized - and may
+therefore call - different state preparation routines. Furthermore, state preparations are typically not
+trainable.
+
+PennyLane provides the following state preparation templates:
+
+.. toctree::
+   :maxdepth: 2
+
+    templates/state_preparation/basis_state
+    templates/state_preparation/motonnen
 
 
 Parameter initializations
@@ -194,76 +199,3 @@ respective interfaces.
     init_pars = strong_ent_layers_normal(n_layers=3, n_wires=2)
     init_torch = torch.tensor(init_pars)
     init_tf = tf.Variable(init_pars)
-
-The following initialization functions are available:
-
-.. rubric:: Strongly entangling circuit
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.strong_ent_layers_uniform
-    ~pennylane.init.strong_ent_layers_normal
-
-:html:`</div>`
-
-.. rubric:: Random circuit
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.random_layers_uniform
-    ~pennylane.init.random_layers_normal
-
-:html:`</div>`
-
-.. rubric:: Continuous-variable quantum neural network
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.cvqnn_layers_all
-    ~pennylane.init.cvqnn_layers_theta_uniform
-    ~pennylane.init.cvqnn_layers_theta_normal
-    ~pennylane.init.cvqnn_layers_phi_uniform
-    ~pennylane.init.cvqnn_layers_phi_normal
-    ~pennylane.init.cvqnn_layers_varphi_uniform
-    ~pennylane.init.cvqnn_layers_varphi_normal
-    ~pennylane.init.cvqnn_layers_r_uniform
-    ~pennylane.init.cvqnn_layers_r_normal
-    ~pennylane.init.cvqnn_layers_phi_r_uniform
-    ~pennylane.init.cvqnn_layers_phi_r_normal
-    ~pennylane.init.cvqnn_layers_a_uniform
-    ~pennylane.init.cvqnn_layers_a_normal
-    ~pennylane.init.cvqnn_layers_phi_a_uniform
-    ~pennylane.init.cvqnn_layers_phi_a_normal
-    ~pennylane.init.cvqnn_layers_phi_a_uniform
-    ~pennylane.init.cvqnn_layers_phi_a_normal
-    ~pennylane.init.cvqnn_layers_kappa_uniform
-    ~pennylane.init.cvqnn_layers_kappa_normal
-
-
-:html:`</div>`
-
-.. rubric:: Interferometer
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.interferometer_all
-    ~pennylane.init.interferometer_theta_uniform
-    ~pennylane.init.interferometer_theta_normal
-    ~pennylane.init.interferometer_phi_uniform
-    ~pennylane.init.interferometer_phi_normal
-    ~pennylane.init.interferometer_varphi_uniform
-    ~pennylane.init.interferometer_varphi_normal
-
-:html:`</div>`
