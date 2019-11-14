@@ -23,6 +23,8 @@ from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, Qubit
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_hyperp_is_in_options, _check_type)
 
+TOLERANCE = 1e-3
+
 
 def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
@@ -84,7 +86,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             norm += np.conj(f) * f
     norm = np.real(norm)
 
-    if not np.isclose(norm, 1.0, atol=1e-3):
+    if not np.isclose(norm, 1.0, atol=TOLERANCE, rtol=0):
         if normalize or pad:
             features = features/np.sqrt(norm)
         else:
