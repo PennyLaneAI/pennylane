@@ -76,17 +76,8 @@ except ImportError as e:
     pass
 
 #########################################
-# Templates
+# Parameters shared by test classes
 
-# qubit templates & their kwargs + intialization functions & their kwargs
-qubit_func = [(StronglyEntanglingLayers, {'repeat': None}, strong_ent_layers_uniform, {'n_layers': None}),
-              (StronglyEntanglingLayers, {'repeat': None}, strong_ent_layers_normal, {'n_layers': None}),
-              (RandomLayers, {'repeat': None, 'n_rots': 2}, random_layers_uniform, {'n_layers': None, 'n_rots': 2}),
-              (RandomLayers, {'repeat': None, 'n_rots': 2}, random_layers_normal, {'n_layers': None, 'n_rots': 2})]
-
-# cv templates & their kwargs + intialization functions & their kwargs
-cv_func = [(CVNeuralNetLayers, {'repeat': None}, cvqnn_layers_all, {'n_layers': None}),
-           (Interferometer, {}, interferometer_all, {})]
 
 # qubit templates, constant inputs and kwargs
 qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
@@ -94,8 +85,6 @@ qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.
                (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'repeat': 2, 'n_rots': 2}),
                (AngleEmbedding, [[1., 2.]], {})
               ]
-qubit_const_kwargs = qubit_const + [(AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {}),
-                                    (BasisEmbedding, [[1, 0]], {})]
 
 # cv templates, constant inputs and keyword argument
 cv_const = [(DisplacementEmbedding, [[1., 2.]], {}),
@@ -115,33 +104,8 @@ cv_const = [(DisplacementEmbedding, [[1., 2.]], {}),
             (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {})
             ]
 
-# qubit templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
-qubit_grad = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
-                                           [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], {'repeat': 2, 'wires': range(2)}, [0]),
-              (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'repeat': 2, 'wires': range(2), 'n_rots': 2}, [0]),
-              (AngleEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
-              ]
-
-# cv templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
-cv_grad = [(DisplacementEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
-            (SqueezingEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
-            (CVNeuralNetLayers, [[[2.31], [1.22]],
-                                 [[3.47], [2.01]],
-                                 [[0.93, 1.58], [5.07, 4.82]],
-                                 [[0.21,  0.12], [-0.09, 0.04]],
-                                 [[4.76, 6.08], [6.09, 6.22]],
-                                 [[4.83], [1.70]],
-                                 [[4.74], [5.39]],
-                                 [[0.88, 0.62], [1.09, 3.02]],
-                                 [[-0.01, -0.05], [0.08, -0.19]],
-                                 [[1.89, 3.59], [1.49, 3.71]],
-                                 [[0.09,  0.03], [-0.14,  0.04]]
-                                 ], {'repeat': 2, 'wires': range(2)}, list(range(11))),
-            (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {'wires': range(2)},  [0, 1, 2])
-            ]
-
 #########################################
-# Circuits
+# Circuits shared by test classes
 
 
 def qnode_qubit_args(dev, intrfc, templ1, templ2, n, hyperp1, hyperp2):
@@ -247,8 +211,8 @@ class TestIntegrationCircuit:
         # Check that execution does not throw error
         circuit(*inpts)
 
-    @pytest.mark.parametrize("template1, inpts1, hyperp1", qubit_const_kwargs)
-    @pytest.mark.parametrize("template2, inpts2, hyperp2", qubit_const_kwargs)
+    @pytest.mark.parametrize("template1, inpts1, hyperp1", qubit_const)
+    @pytest.mark.parametrize("template2, inpts2, hyperp2", qubit_const)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
     def test_integration_qubit_kwargs(self, template1, inpts1, template2, inpts2,
                                       intrfc, to_var, hyperp1, hyperp2):
@@ -290,27 +254,15 @@ class TestIntegrationCircuit:
 class TestIntegrationCircuitSpecialCases:
     """Tests the integration of templates with special requirements into circuits. """
 
-    first_templ = [(AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]]),
-                   (BasisEmbedding, [[1, 0]])]
+    first_templ = [(AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': False}),
+                   (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': True}),
+                   (BasisEmbedding, [[1, 0]], {})]
 
-    def qnode_first_op_args(self, dev, intrfc, templ1, templ2, n):
-        """QNode for qubit integration circuit using positional arguments"""
-
-        @qml.qnode(dev, interface=intrfc)
-        def circuit(*inp):
-            # Split inputs again
-            inp1 = inp[:n]
-            inp2 = inp[n:]
-            # Circuit
-            templ1(*inp1, wires=range(2))
-            templ2(*inp2, wires=range(2))
-            qml.PauliX(wires=1)
-            return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
-
-        return circuit
-
-    def qnode_first_op_kwargs(self, dev, intrfc, templ1, templ2, n):
-        """QNode for qubit integration circuit using positional arguments"""
+    def qnode_first_op_kwargs(self, dev, intrfc, templ1, templ2, hyperparameters1, hyperparameters2, n):
+        """QNode for qubit integration circuit without gates before the first template,
+         and using keyword arguments"""
+        hyperparameters1['wires'] = range(2)
+        hyperparameters2['wires'] = range(2)
 
         @qml.qnode(dev, interface=intrfc)
         def circuit(**inp):
@@ -321,42 +273,40 @@ class TestIntegrationCircuitSpecialCases:
             inp1 = inp[:n]
             inp2 = inp[n:]
             # Circuit
-            templ1(*inp1, wires=range(2))
-            templ2(*inp2, wires=range(2))
+            templ1(*inp1, **hyperparameters1)
+            templ2(*inp2, **hyperparameters2)
             qml.PauliX(wires=1)
             return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
 
         return circuit
 
-    @pytest.mark.parametrize("first_tmpl, first_inpts", first_templ)
-    @pytest.mark.parametrize("template, inpts", qubit_const)
-    @pytest.mark.parametrize("intrfc, to_var", interfaces)
-    def test_integration_first_template_args(self, first_tmpl, first_inpts, template, inpts, intrfc, to_var):
-        """Checks integration of templates that must be the first operation in the circuit
-        , using positional arguments."""
-        inpts = first_inpts + inpts  # Combine inputs to allow passing with *
-        inpts = [to_var(i) for i in inpts]
-        dev = qml.device('default.qubit', wires=2)
-        circuit = self.qnode_first_op_args(dev, intrfc, first_tmpl, template, len(first_inpts))
-        # Check that execution does not throw error
-        circuit(*inpts)
-
-    @pytest.mark.parametrize("first_tmpl, first_inpts", first_templ)
-    @pytest.mark.parametrize("template, inpts", qubit_const)
-    @pytest.mark.parametrize("intrfc, to_var", interfaces)
-    def test_integration_first_template_kwargs(self, first_tmpl, first_inpts, template, inpts, intrfc, to_var):
-        """Checks integration of templates that must be the first operation in the circuit
-        , using keyword arguments."""
+    @pytest.mark.parametrize("first_tmpl, first_inpts, first_hyperparams", first_templ)
+    @pytest.mark.parametrize("template, inpts, hyperparams", qubit_const)
+    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
+    def test_integration_first_template_kwargs(self, first_tmpl, first_inpts, first_hyperparams,
+                                               template, inpts, hyperparams, intrfc, to_var):
+        """Checks integration of templates that must be the first operation in the circuit while
+        using keyword arguments."""
         inpts = first_inpts + inpts  # Combine inputs to allow passing with *
         inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
         dev = qml.device('default.qubit', wires=2)
-        circuit = self.qnode_first_op_kwargs(dev, intrfc, first_tmpl, template, len(first_inpts))
+        circuit = self.qnode_first_op_kwargs(dev, intrfc, first_tmpl, template, first_hyperparams, hyperparams, len(first_inpts))
         # Check that execution does not throw error
         circuit(**inpts)
 
 
 class TestInitializationIntegration:
     """Tests integration with the parameter initialization functions from pennylane.init"""
+
+    # qubit templates & their kwargs + intialization functions & their kwargs
+    qubit_func = [(StronglyEntanglingLayers, {'repeat': None}, strong_ent_layers_uniform, {'n_layers': None}),
+                  (StronglyEntanglingLayers, {'repeat': None}, strong_ent_layers_normal, {'n_layers': None}),
+                  (RandomLayers, {'repeat': None, 'n_rots': 2}, random_layers_uniform, {'n_layers': None, 'n_rots': 2}),
+                  (RandomLayers, {'repeat': None, 'n_rots': 2}, random_layers_normal, {'n_layers': None, 'n_rots': 2})]
+
+    # cv templates & their kwargs + intialization functions & their kwargs
+    cv_func = [(CVNeuralNetLayers, {'repeat': None}, cvqnn_layers_all, {'n_layers': None}),
+               (Interferometer, {}, interferometer_all, {})]
 
     @pytest.mark.parametrize("template, hyperp, inpts, hyperp_f", qubit_func)
     def test_integration_qubit_init(self, template, inpts, qubit_device, n_subsystems,
@@ -407,6 +357,32 @@ class TestInitializationIntegration:
 
 class TestGradientIntegration:
     """Tests that gradients of circuits with templates can be computed."""
+
+    # qubit templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
+    qubit_grad = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
+                                               [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]],
+                   {'repeat': 2, 'wires': range(2)}, [0]),
+                  (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'repeat': 2, 'wires': range(2), 'n_rots': 2}, [0]),
+                  (AngleEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
+                  ]
+
+    # cv templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
+    cv_grad = [(DisplacementEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
+               (SqueezingEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
+               (CVNeuralNetLayers, [[[2.31], [1.22]],
+                                    [[3.47], [2.01]],
+                                    [[0.93, 1.58], [5.07, 4.82]],
+                                    [[0.21, 0.12], [-0.09, 0.04]],
+                                    [[4.76, 6.08], [6.09, 6.22]],
+                                    [[4.83], [1.70]],
+                                    [[4.74], [5.39]],
+                                    [[0.88, 0.62], [1.09, 3.02]],
+                                    [[-0.01, -0.05], [0.08, -0.19]],
+                                    [[1.89, 3.59], [1.49, 3.71]],
+                                    [[0.09, 0.03], [-0.14, 0.04]]
+                                    ], {'repeat': 2, 'wires': range(2)}, list(range(11))),
+               (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {'wires': range(2)}, [0, 1, 2])
+               ]
 
     @pytest.mark.parametrize("template, inpts, hyperp, argnm", qubit_grad)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
