@@ -15,16 +15,9 @@ r"""
 This package contains the new-style QNodes.
 
 .. currentmodule:: pennylane.qnode_new
-
-.. autosummary::
-    :toctree: api
-
-    qnode
-    jacobian
-    qubit_parameter_shift
-    cv_parameter_shift
 """
-from .qnode import QNode, QuantumFunctionError
-from .jacobian import JacobianQNode
-from .qubit import QubitQNode
 from .cv import CVQNode
+from .decorator import qnode, QNode
+from .jacobian import JacobianQNode
+from .qnode import QNode as BaseQNode, QuantumFunctionError
+from .qubit import QubitQNode
