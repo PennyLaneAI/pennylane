@@ -31,10 +31,10 @@ def QNode(
     a :class:`QNode` instance.
 
     Args:
-        function (callable): a quantum function
+        func (callable): a quantum function
         device (~.Device): a PennyLane-compatible device
-        interface (str): the interface that will be used for automatic
-            differentiation and classical processing. This affects
+        interface (str): The interface that will be used for classical processing
+            and automatic differentiation. This affects
             the types of objects that can be passed to/returned from the QNode:
 
             * ``interface='autograd'``: The QNode accepts default Python types
@@ -58,6 +58,8 @@ def QNode(
         # classes, as well as the default QNode to use?
 
         # Set the default model to qubit, for backwards compatability with existing plugins
+        # TODO: once all plugins have been updated to add `model` to their
+        # capabilities plugin, change the logic here.
         model = device.capabilities().get("model", "qubit")
 
         if model == "qubit":
@@ -93,8 +95,8 @@ def qnode(device, *, interface="autograd", mutable=True, differentiable=True, pr
 
     Args:
         device (~.Device): a PennyLane-compatible device
-        interface (str): the interface that will be used for automatic
-            differentiation and classical processing. This affects
+        interface (str): The interface that will be used for classical processing
+            and automatic differentiation. This affects
             the types of objects that can be passed to/returned from the QNode:
 
             * ``interface='autograd'``: The QNode accepts default Python types

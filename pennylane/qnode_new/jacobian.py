@@ -375,7 +375,7 @@ class JacobianQNode(QNode):
         """Attach the TensorFlow interface to the Jacobian QNode.
 
         Raises:
-            QuantumFunctionError: if TensorFlow >= 1.12 is not installed
+            QuantumFunctionError: if Autograd is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
         try:  # pragma: no cover
