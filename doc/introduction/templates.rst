@@ -35,7 +35,7 @@ An example of how to use templates is the following:
     @qml.qnode(dev)
     def circuit(weights, x=None):
         AngleEmbedding(x, [0,1])
-        StronglyEntanglingLayers(*weights, wires=[0,1])
+        StronglyEntanglingLayers(weights, wires=[0,1])
         return qml.expval(qml.PauliZ(0))
 
     init_weights = strong_ent_layers_uniform(n_layers=3, n_wires=2)
