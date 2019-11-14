@@ -16,10 +16,10 @@ QNode decorator.
 """
 from functools import lru_cache
 
+from .base import BaseQNode
 from .cv import CVQNode
 from .device_jacobian import DeviceJacobianQNode
 from .jacobian import JacobianQNode
-from .qnode import QNode as BaseQNode
 from .qubit import QubitQNode
 
 

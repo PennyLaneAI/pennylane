@@ -20,10 +20,10 @@ import numpy as np
 
 from pennylane.operation import ObservableReturnTypes
 from pennylane.utils import _flatten, _inv_dict
-from pennylane.qnode_new.qnode import QNode, QuantumFunctionError
+from pennylane.qnode_new.base import BaseQNode, QuantumFunctionError
 
 
-class JacobianQNode(QNode):
+class JacobianQNode(BaseQNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
 

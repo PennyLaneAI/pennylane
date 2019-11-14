@@ -16,8 +16,8 @@ This package contains the new-style QNodes.
 
 .. currentmodule:: pennylane.qnode_new
 """
+from .base import BaseQNode, QuantumFunctionError
 from .cv import CVQNode
 from .decorator import qnode, QNode
 from .jacobian import JacobianQNode
-from .qnode import QNode as BaseQNode, QuantumFunctionError
 from .qubit import QubitQNode
