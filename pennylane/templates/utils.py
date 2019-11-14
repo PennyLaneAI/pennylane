@@ -155,7 +155,6 @@ def _check_number_of_layers(list_of_weights):
 
     shapes = [_get_shape(weight) for weight in list_of_weights]
 
-    print(shapes)
     if any(len(s) == 0 for s in shapes):
         raise ValueError("The first dimension of the weight parameters must be the number of layers in the "
                          "template. Found scalar weights.")
