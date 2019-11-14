@@ -143,7 +143,7 @@ def load(quantum_circuit_object, format: str):
 
     .. note::
 
-        For more details on which operations are supported
+        For more details on which formats are supported
         please consult the corresponding plugin documentation:
         https://pennylane.ai/plugins.html
 
@@ -153,7 +153,10 @@ def load(quantum_circuit_object, format: str):
     >>> qc.rz(0.543, [0])
     >>> qc.cx(0, 1)
     >>> my_circuit = qml.load(qc, format='qiskit')
-    >>>
+
+    The ``my_circuit`` template can now be used within QNodes, as a
+    two-wire quantum template.
+
     >>> @qml.qnode(dev)
     >>> def circuit(x):
     >>>     qml.RX(x, wires=1)
@@ -167,7 +170,7 @@ def load(quantum_circuit_object, format: str):
 
     Returns:
         function: the PennyLane template created from the quantum circuit
-            object
+        object
     """
 
     if format in plugin_converters:
@@ -189,12 +192,28 @@ def from_qiskit(quantum_circuit):
     Loads Qiskit QuantumCircuit objects by using the converter in the
     PennyLane-Qiskit plugin.
 
+    **Example:**
+
+    >>> qc = qiskit.QuantumCircuit(2)
+    >>> qc.rz(0.543, [0])
+    >>> qc.cx(0, 1)
+    >>> my_circuit = qml.from_qiskit(qc)
+
+    The ``my_circuit`` template can now be used within QNodes, as a
+    two-wire quantum template.
+
+    >>> @qml.qnode(dev)
+    >>> def circuit(x):
+    >>>     qml.RX(x, wires=1)
+    >>>     my_circuit(wires=(1, 0))
+    >>>     return qml.expval(qml.PauliZ(0))
+
     Args:
         quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
 
     Returns:
         function: the PennyLane template created based on the QuantumCircuit
-            object
+        object
     """
     return load(quantum_circuit, format='qiskit')
 
@@ -203,6 +222,25 @@ def from_qasm(quantum_circuit: str):
     """from_qasm(quantum_circuit)
     Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
+
+    **Example:**
+
+    .. code-block:: python
+
+        >>> hadamard_qasm = 'OPENQASM 2.0;' \\
+        ...                 'include "qelib1.inc";' \\
+        ...                 'qreg q[1];' \\
+        ...                 'h q[0];'
+        >>> my_circuit = qml.from_qasm(hadamard_qasm)
+
+    The ``my_circuit`` template can now be used within QNodes, as a
+    two-wire quantum template.
+
+    >>> @qml.qnode(dev)
+    >>> def circuit(x):
+    >>>     qml.RX(x, wires=1)
+    >>>     my_circuit(wires=(1, 0))
+    >>>     return qml.expval(qml.PauliZ(0))
 
     Args:
         quantum_circuit (str): a QASM string containing a valid quantum circuit
@@ -217,6 +255,19 @@ def from_qasm_file(qasm_filename: str):
     """from_qasm_file(qasm_filename)
     Loads quantum circuits from a QASM file using the converter in the
     PennyLane-Qiskit plugin.
+
+    **Example:**
+
+    >>> my_circuit = qml.from_qasm("hadamard_circuit.qasm")
+
+    The ``my_circuit`` template can now be used within QNodes, as a
+    two-wire quantum template.
+
+    >>> @qml.qnode(dev)
+    >>> def circuit(x):
+    >>>     qml.RX(x, wires=1)
+    >>>     my_circuit(wires=(1, 0))
+    >>>     return qml.expval(qml.PauliZ(0))
 
     Args:
         qasm_filename (str): path to a QASM file containing a valid quantum circuit
