@@ -137,8 +137,7 @@ def device(name, *args, **kwargs):
 
 
 def load(quantum_circuit_object, format: str):
-    """load(quantum_circuit_object, format)
-    Load external quantum assembly and quantum circuits from supported frameworks
+    """Load external quantum assembly and quantum circuits from supported frameworks
     into PennyLane templates.
 
     .. note::
@@ -188,8 +187,7 @@ def load(quantum_circuit_object, format: str):
 
 
 def from_qiskit(quantum_circuit):
-    """from_qiskit(quantum_circuit)
-    Loads Qiskit QuantumCircuit objects by using the converter in the
+    """Loads Qiskit QuantumCircuit objects by using the converter in the
     PennyLane-Qiskit plugin.
 
     **Example:**
@@ -219,8 +217,7 @@ def from_qiskit(quantum_circuit):
 
 
 def from_qasm(quantum_circuit: str):
-    """from_qasm(quantum_circuit)
-    Loads quantum circuits from a QASM string using the converter in the
+    """Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
     **Example:**
@@ -252,8 +249,7 @@ def from_qasm(quantum_circuit: str):
 
 
 def from_qasm_file(qasm_filename: str):
-    """from_qasm_file(qasm_filename)
-    Loads quantum circuits from a QASM file using the converter in the
+    """Loads quantum circuits from a QASM file using the converter in the
     PennyLane-Qiskit plugin.
 
     **Example:**
