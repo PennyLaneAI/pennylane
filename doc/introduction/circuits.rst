@@ -165,3 +165,95 @@ For example:
         return qml.expval(qml.PauliZ(1))
 
     result = circuit(0.543)
+
+
+Quantum circuits from other frameworks
+--------------------------------------
+
+PennyLane supports creating customized PennyLane templates imported from other
+frameworks. By loading your existing quantum code as a PennyLane template, you
+add the ability to perform analytic differentiation, and interface with machine
+learning libraries such as PyTorch and TensorFlow. Currently, ``QuantumCircuit``
+objects from Qiskit, QASM strings or QASM files can be loaded by using the
+following functions:
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.from_qiskit
+    ~pennylane.from_qasm
+    ~pennylane.from_qasm_file
+
+:html:`</div>`
+
+To use these conversion functions, the PennyLane-Qiskit plugin needs to be installed.
+
+Objects for quantum circuits can be loaded outside or directly inside of a
+:class:`~.pennylane.QNode`. Circuits that contain unbound parameters are also
+supported. Parameter binding may happen by passing a dictionary containing the
+parameter-value pairs.
+
+Once a PennyLane template has been created from such a quantum circuit, it can
+be used similarly to other :doc:`templates <templates>` in PennyLane. One important thing to note
+is that custom templates must always be executed
+within a :class:`~.pennylane.QNode` (similar to pre-defined templates).
+
+.. note::
+    Certain instructions that are specific to the external frameworks might be
+    ignored when loading an external quantum circuit. Warning messages will
+    be emitted for ignored instructions.
+
+The following is an example of loading and calling a parametrized Qiskit ``QuantumCircuit`` object
+while using the :class:`~.pennylane.QNode` decorator:
+
+.. code-block:: python
+
+    from qiskit import QuantumCircuit
+    from qiskit.circuit import Parameter
+    import numpy as np
+
+    dev = qml.device('default.qubit', wires=2)
+
+    theta = Parameter('θ')
+
+    qc = QuantumCircuit(2)
+    qc.rz(theta, [0])
+    qc.rx(theta, [0])
+    qc.cx(0, 1)
+
+    @qml.qnode(dev)
+    def quantum_circuit_with_loaded_subcircuit(x):
+        qml.from_qiskit(qc)({theta: x})
+        return qml.expval(qml.PauliZ(0))
+
+    angle = np.pi/2
+    result = quantum_circuit_with_loaded_subcircuit(angle)
+
+Furthermore, loaded templates can be used with any supported device, any number of times.
+For instance, in the following example a template is loaded from a QASM string,
+and then used multiple times on the ``forest.qpu`` device provided by PennyLane-Forest:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    dev = qml.device('forest.qpu', wires=2)
+
+    hadamard_qasm = 'OPENQASM 2.0;' \
+                    'include "qelib1.inc";' \
+                    'qreg q[1];' \
+                    'h q[0];'
+
+    apply_hadamard = qml.from_qasm(hadamard_qasm)
+
+    @qml.qnode(dev)
+    def circuit_with_hadamards():
+        apply_hadamard(wires=[0])
+        apply_hadamard(wires=[1])
+        qml.Hadamard(wires=[1])
+        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+    result = circuit_with_hadamards()
+
