@@ -2,12 +2,12 @@
 
 ### New features since last release
 
+* Custom padding constant in `AmplitudeEmbedding` is supported (see 'Breaking changes'.)
+  [#419](https://github.com/XanaduAI/pennylane/pull/419)
+
 * `StronglyEntanglingLayer` and `RandomLayer` now work with a single wire.
    [#409](https://github.com/XanaduAI/pennylane/pull/409)
    [#413](https://github.com/XanaduAI/pennylane/pull/413)
-
-* Refactored templates integration tests
-  [#409](https://github.com/XanaduAI/pennylane/pull/409)
 
 * Added support for applying the inverse of an `Operation` within a circuit.
   [#377](https://github.com/XanaduAI/pennylane/pull/377)
@@ -23,6 +23,10 @@
 
 ### Breaking changes
 
+* The ``pad`` parameter in `AmplitudeEmbedding()`` is now either ``None`` (no automatic padding), or a
+  number that is used as the padding constant.
+  [#419](https://github.com/XanaduAI/pennylane/pull/419)
+
 * Initialization functions now return a single array of weights per function. Utilities for multi-weight templates
   `Interferometer()` and `CVNeuralNetLayers()` are provided.
   [#412](https://github.com/XanaduAI/pennylane/pull/412)
@@ -34,13 +38,13 @@
 
 ### Improvements
 
-* Templates have a clearer signature with some additional parameters and input checks are
-  standarized to work with all interfaces.
-  [#XXX](https://github.com/XanaduAI/pennylane/pull/XXX)
+* Added extensive input checks in templates.
+  [#419](https://github.com/XanaduAI/pennylane/pull/419)
 
 * Templates integration tests are rewritten - now cover keyword/positional argument passing,
   interfaces and combinations of templates.
   [#409](https://github.com/XanaduAI/pennylane/pull/409)
+  [#419](https://github.com/XanaduAI/pennylane/pull/419)
 
 * State vector preparation operations in the `default.qubit` plugin can now be
   applied to subsets of wires, and are restricted to being the first operation
