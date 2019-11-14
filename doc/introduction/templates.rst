@@ -26,8 +26,8 @@ An example of how to use templates is the following:
 .. code-block:: python
 
     import pennylane as qml
-    from pennylane.templates.embeddings import AngleEmbedding
-    from pennylane.templates.layers import StronglyEntanglingLayers
+    from pennylane.templates import AngleEmbedding
+    from pennylane.templates import StronglyEntanglingLayers
     from pennylane.init import strong_ent_layers_uniform
 
     dev = qml.device('default.qubit', wires=3)
@@ -61,9 +61,9 @@ The following layer templates are provided:
 .. toctree::
    :maxdepth: 2
 
-    templates/layers/random
-    templates/layers/stronglyentangling
-    templates/layers/cvqnn
+   templates/layers/random
+   templates/layers/strongly_entangling
+   templates/layers/cvqnn
 
 
 .. _intro_ref_temp_emb:
@@ -80,11 +80,11 @@ The following embedding templates are available:
 .. toctree::
    :maxdepth: 2
 
-    templates/embeddings/amplitude
-    templates/embeddings/angle
-    templates/embeddings/basis
-    templates/embeddings/displacement
-    templates/embeddings/squeezing
+   templates/embeddings/amplitude
+   templates/embeddings/angle
+   templates/embeddings/basis
+   templates/embeddings/displacement
+   templates/embeddings/squeezing
 
 .. _intro_ref_temp_params:
 
@@ -98,7 +98,7 @@ The following subroutine templates are available:
 .. toctree::
    :maxdepth: 2
 
-    templates/subroutines/interferometer
+   templates/subroutines/interferometer
 
 
 State Preparations
@@ -116,8 +116,8 @@ PennyLane provides the following state preparation templates:
 .. toctree::
    :maxdepth: 2
 
-    templates/state_preparation/basis_state
-    templates/state_preparation/motonnen
+   templates/state_preparation/basis_state
+   templates/state_preparation/motonnen
 
 
 Parameter initializations
