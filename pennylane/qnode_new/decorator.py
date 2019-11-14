@@ -41,10 +41,10 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff="best", prop
     >>> qnode = QNode(circuit, dev)
 
     Args:
-        function (callable): a quantum function
+        func (callable): a quantum function
         device (~.Device): a PennyLane-compatible device
-        interface (str): the interface that will be used for automatic
-            differentiation and classical processing. This affects
+        interface (str): The interface that will be used for classical processing
+            and automatic differentiation. This affects
             the types of objects that can be passed to/returned from the QNode:
 
             * ``interface='autograd'``: The QNode accepts default Python types
@@ -77,15 +77,18 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff="best", prop
         return BaseQNode(func, device, mutable=mutable, properties=properties)
 
     # Set the default model to qubit, for backwards compatability with existing plugins
+    # TODO: once all plugins have been updated to add `model` to their
     model = device.capabilities().get("model", "qubit")
     device_jacobian = device.capabilities().get("provides_jacobian", False)
 
     if device_jacobian and (diff == "best"):
         # hand off differentiation to the device
         node = DeviceJacobianQNode(func, device, mutable=mutable, properties=properties)
+
     elif model in PARAMETER_SHIFT_QNODES and diff in ("best", "parameter-shift"):
         # parameter-shift analytic differentiation
         node = PARAMETER_SHIFT_QNODES[model](func, device, mutable=mutable, properties=properties)
+
     else:
         # finite differences
         node = JacobianQNode(func, device, mutable=mutable, properties=properties)
@@ -120,8 +123,8 @@ def qnode(device, *, interface="autograd", mutable=True, diff="best", properties
 
     Args:
         device (~.Device): a PennyLane-compatible device
-        interface (str): the interface that will be used for automatic
-            differentiation and classical processing. This affects
+        interface (str): The interface that will be used for classical processing
+            and automatic differentiation. This affects
             the types of objects that can be passed to/returned from the QNode:
 
             * ``interface='autograd'``: The QNode accepts default Python types

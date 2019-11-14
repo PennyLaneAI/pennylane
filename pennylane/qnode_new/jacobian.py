@@ -377,16 +377,16 @@ class JacobianQNode(QNode):
         """Attach the TensorFlow interface to the Jacobian QNode.
 
         Raises:
-            QuantumFunctionError: if TensorFlow >= 1.12 is not installed
+            QuantumFunctionError: if Autograd is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
         # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
-            from pennylane.interfaces.autograd import to_autograd
+            from pennylane.interfaces.autograd import to_autograd as _to_autograd
         except ImportError:  # pragma: no cover
             raise QuantumFunctionError(
                 "Autograd not found. Please install "
                 "the latest version of Autograd to enable the 'autograd' interface."
             ) from None
 
-        return to_autograd(self)
+        return _to_autograd(self)
