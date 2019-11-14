@@ -31,6 +31,7 @@ def test_create_qubit_qnode():
         return qml.expval(qml.PauliZ(wires=0))
 
     assert isinstance(circuit, QubitQNode)
+    assert hasattr(circuit, "jacobian")
 
 
 def test_create_CV_qnode():
@@ -43,6 +44,7 @@ def test_create_CV_qnode():
         return qml.expval(qml.X(wires=0))
 
     assert isinstance(circuit, CVQNode)
+    assert hasattr(circuit, "jacobian")
 
 
 def test_fallback_Jacobian_qnode(monkeypatch):
@@ -59,6 +61,7 @@ def test_fallback_Jacobian_qnode(monkeypatch):
     assert not isinstance(circuit, CVQNode)
     assert not isinstance(circuit, QubitQNode)
     assert isinstance(circuit, JacobianQNode)
+    assert hasattr(circuit, "jacobian")
 
 
 def test_torch_interface(skip_if_no_torch_support):

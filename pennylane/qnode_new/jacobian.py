@@ -379,11 +379,11 @@ class JacobianQNode(QNode):
         """
         # Placing slow imports here, in case the user does not use the TF interface
         try:  # pragma: no cover
-            from pennylane.interfaces.autograd import to_autograd
+            from pennylane.interfaces.autograd import to_autograd as _to_autograd
         except ImportError:  # pragma: no cover
             raise QuantumFunctionError(
                 "Autograd not found. Please install "
                 "the latest version of Autograd to enable the 'autograd' interface."
             ) from None
 
-        return to_autograd(self)
+        return _to_autograd(self)

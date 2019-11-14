@@ -50,41 +50,41 @@ def QNode(
         differentiable (bool): whether the QNode is differentiable
         properties (dict[str->Any]): additional keyword properties passed to the QNode
     """
-    if differentiable:
-        # Query the device to determine what analytic Jacobian QNodes
-        # are supported.
+    if not differentiable:
+        # QNode is not differentiable
+        return BaseQNode(func, device, mutable=mutable, properties=properties)
 
-        # TODO: should the device declare supported QNode
-        # classes, as well as the default QNode to use?
+    # Query the device to determine what analytic Jacobian QNodes
+    # are supported.
 
-        # Set the default model to qubit, for backwards compatability with existing plugins
-        # TODO: once all plugins have been updated to add `model` to their
-        # capabilities plugin, change the logic here.
-        model = device.capabilities().get("model", "qubit")
+    # TODO: should the device declare supported QNode
+    # classes, as well as the default QNode to use?
 
-        if model == "qubit":
-            node = QubitQNode(func, device, mutable=mutable, properties=properties)
-        elif model == "cv":
-            node = CVQNode(func, device, mutable=mutable, properties=properties)
-        else:
-            # unknown circuit type, default to finite differences
-            node = JacobianQNode(func, device, mutable=mutable, properties=properties)
+    # Set the default model to qubit, for backwards compatability with existing plugins
+    # TODO: once all plugins have been updated to add `model` to their
+    # capabilities plugin, change the logic here.
+    model = device.capabilities().get("model", "qubit")
 
-        if interface == "torch":
-            return node.to_torch()
+    if model == "qubit":
+        node = QubitQNode(func, device, mutable=mutable, properties=properties)
+    elif model == "cv":
+        node = CVQNode(func, device, mutable=mutable, properties=properties)
+    else:
+        # unknown circuit type, default to finite differences
+        node = JacobianQNode(func, device, mutable=mutable, properties=properties)
 
-        if interface == "tf":
-            return node.to_tf()
+    if interface == "torch":
+        return node.to_torch()
 
-        if interface in ("autograd", "numpy"):
-            # keep "numpy" for backwards compatibility
-            return node.to_autograd()
+    if interface == "tf":
+        return node.to_tf()
 
-        # if no interface is specified, return the 'bare' QNode
-        return node
+    if interface in ("autograd", "numpy"):
+        # keep "numpy" for backwards compatibility
+        return node.to_autograd()
 
-    # QNode is not differentiable
-    return BaseQNode(func, device, mutable=mutable, properties=properties)
+    # if no interface is specified, return the 'bare' QNode
+    return node
 
 
 def qnode(device, *, interface="autograd", mutable=True, differentiable=True, properties=None):
