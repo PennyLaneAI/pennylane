@@ -55,10 +55,13 @@ def _check_wires(wires):
 
 
 def _get_shape(inpt):
-    """Return the shape of inpt.
+    """Return the shape of ``inpt``.
 
     Args:
         inpt (list): input to a qnode
+
+    Returns:
+        tuple: shape of ``inpt``
 
     Raises:
         ValueError
@@ -146,12 +149,21 @@ def _check_number_of_layers(list_of_weights):
     Raises:
         ValueError
     """
-    if any([np.isscalar(w) for w in list_of_weights]):
-        raise ValueError("Weights cannot be scalars, the first dimension has to be the number "
-                         "of layers.")
-    # Check if all first dimensions are the same
-    lengths = set([len(w) for w in list_of_weights])
-    if len(lengths) > 1:
+
+    shapes = [_get_shape(weight) for weight in list_of_weights]
+
+    print(shapes)
+    if any(len(s) == 0 for s in shapes):
         raise ValueError("The first dimension of the weight parameters must be the number of layers in the "
-                         "template.")
-    return len(list_of_weights[0])
+                         "template. Found scalar weights.")
+
+    first_dimensions = [s[0] for s in shapes]
+    different_first_dims = set(first_dimensions)
+    n_different_first_dims = len(different_first_dims)
+
+    if n_different_first_dims > 1:
+        raise ValueError("The first dimension of the weight parameters must be the number of layers in the "
+                         "template. Found different first dimensions: {}.".format(*different_first_dims))
+
+    return first_dimensions[0]
+

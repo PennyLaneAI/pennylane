@@ -13,6 +13,7 @@
 # limitations under the License.
 """
 Unit tests for the :mod:`pennylane.template.state_preparations` module.
+Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 

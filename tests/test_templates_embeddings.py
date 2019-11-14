@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for embedding templates.
+Unit tests for the :mod:`pennylane.template.embeddings` module.
+Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
@@ -258,22 +259,6 @@ class TestBasisEmbedding:
 
         with pytest.raises(ValueError):
             circuit(x=np.array([0, 1, 1]))
-
-    def test_basis_embedding_exception_subwires(self):
-        """Verifies that BasisEmbedding() raises an exception if ``wires`` is a subset
-        of all wires."""
-
-        n_subsystems = 2
-        dev = qml.device('default.qubit', wires=n_subsystems)
-        
-        
-        @qml.qnode(dev)
-        def circuit(x=None):
-            BasisEmbedding(features=x, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError):
-            circuit(x=np.array([1]))
 
     def test_basis_embedding_exception_wiresnolist(self):
         """Verifies that BasisEmbedding() raises an exception if ``wires`` is not

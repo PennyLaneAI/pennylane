@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.template.layers` module.
+Unit tests for the :mod:`pennylane.template.subroutines` module.
+Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest

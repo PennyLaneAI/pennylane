@@ -20,36 +20,13 @@ import numpy as np
 from pennylane.qnode import Variable
 from pennylane.templates.utils import (_check_wires,
                                        _check_shape,
+                                       _check_shapes,
+                                       _get_shape,
+                                       _check_number_of_layers,
                                        _check_no_variable,
                                        _check_hyperp_is_in_options,
                                        _check_type)
 
-#######################################
-# Interfaces
-
-INTERFACES = [('numpy', np.array),
-              ('numpy', lambda x: x),  # identity
-              ]
-
-try:
-    import torch
-    INTERFACES.append(('torch', torch.tensor))
-except ImportError as e:
-    pass
-
-try:
-    import tensorflow as tf
-
-    if tf.__version__[0] == "1":
-        print(tf.__version__)
-        import tensorflow.contrib.eager as tfe
-        tf.enable_eager_execution()
-        TFVariable = tfe.Variable
-    else:
-        from tensorflow import Variable as TFVariable
-    INTERFACES.append(('tf', TFVariable))
-except ImportError as e:
-    pass
 
 #########################################
 # Inputs
@@ -61,39 +38,57 @@ WIRES_FAIL = [[-1],
               ['a'],
               lambda x: x]
 
-SHP_PASS = [(0.231, (), None),
-            ([[1., 2.], [3., 4.]], (2, 2), None),
-            ([-2.3], (1, ), None),
-            ([-2.3, 3.4], (4,), 'max'),
-            ([-2.3, 3.4], (1,), 'min'),
-            ([-2.3], (1,), 'max'),
-            ([-2.3], (1,), 'min'),
-            ([[-2.3, 3.4], [1., 0.2]], (3, 3), 'max'),
-            ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (1, 2), 'min'),
-            ]
+SHAPE_PASS = [(0.231, (), None),
+              ([[1., 2.], [3., 4.]], (2, 2), None),
+              ([-2.3], (1, ), None),
+              ([-2.3, 3.4], (4,), 'max'),
+              ([-2.3, 3.4], (1,), 'min'),
+              ([-2.3], (1,), 'max'),
+              ([-2.3], (1,), 'min'),
+              ([[-2.3, 3.4], [1., 0.2]], (3, 3), 'max'),
+              ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (1, 2), 'min'),
+              ]
 
-SHP_LST_PASS = [([0.231, 0.1], [(), ()], None),
-                ([[1., 2.], [4.]], [(2, ), (1, )], None),
-                ([[-2.3], -1.], [(1, ), ()], None),
-                ([[-2.3, 0.1], -1.], [(1,), ()], 'min'),
-                ([[-2.3, 0.1], -1.], [(3,), ()], 'max')
-                ]
+SHAPE_LST_PASS = [([0.231, 0.1], [(), ()], None),
+                  ([[1., 2.], [4.]], [(2, ), (1, )], None),
+                  ([[-2.3], -1.], [(1, ), ()], None),
+                  ([[-2.3, 0.1], -1.], [(1,), ()], 'min'),
+                  ([[-2.3, 0.1], -1.], [(3,), ()], 'max')
+                  ]
 
-SHP_FAIL = [(0.231, (1,), None),
-            ([[1., 2.], [3., 4.]], (2, ), None),
-            ([-2.3], (4, 5), None),
-            ([-2.3, 3.4], (4,), 'min'),
-            ([-2.3, 3.4], (1,), 'max'),
-            ([[-2.3, 3.4], [1., 0.2]], (3, 3), 'min'),
-            ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (1, 2), 'max'),
-            ]
+SHAPE_FAIL = [(0.231, (1,), None),
+              ([[1., 2.], [3., 4.]], (2, ), None),
+              ([-2.3], (4, 5), None),
+              ([-2.3, 3.4], (4,), 'min'),
+              ([-2.3, 3.4], (1,), 'max'),
+              ([[-2.3, 3.4], [1., 0.2]], (3, 3), 'min'),
+              ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (1, 2), 'max'),
+              ]
 
-SHP_LST_FAIL = [([0.231, 0.1], [(), (3, 4)], None),
-                ([[1., 2.], [4.]], [(1, ), (1, )], None),
-                ([[-2.3], -1.], [(1, 2), (1,)], None),
-                ([[-2.3, 0.1], -1.], [(1,), ()], 'max'),
-                ([[-2.3, 0.1], -1.], [(3,), ()], 'min')
-                ]
+GET_SHAPE_PASS = [(0.231, ()),
+                  ([[1., 2.], [3., 4.]], (2, 2)),
+                  ([-2.3], (1, )),
+                  ([-2.3, 3.4], (2,)),
+                  ([-2.3], (1,)),
+                  ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (2, 3)),
+                  ]
+
+GET_SHAPE_FAIL = []
+
+SHAPE_LST_FAIL = [([0.231, 0.1], [(), (3, 4)], None),
+                  ([[1., 2.], [4.]], [(1, ), (1, )], None),
+                  ([[-2.3], -1.], [(1, 2), (1,)], None),
+                  ([[-2.3, 0.1], -1.], [(1,), ()], 'max'),
+                  ([[-2.3, 0.1], -1.], [(3,), ()], 'min')
+                  ]
+
+LAYERS_PASS = [([[1], [2], [3]], 1),
+               ([[[1], [2], [3]], [['a'], ['b'], ['c']]], 3),
+             ]
+
+LAYERS_FAIL = [([1, 2, 3], None),
+               ([[[1], [2], [3]], [['b'], ['c']]], 3),
+              ]
 
 NOVARS_PASS = [[[], np.array([1., 4.])],
                [1, 'a']]
@@ -133,31 +128,43 @@ class TestInputChecks:
         with pytest.raises(ValueError):
             _check_wires(wires=wires)
 
-    @pytest.mark.parametrize("inpt, target_shape, bound", SHP_PASS)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_check_shape_with_diff_interfaces(self, inpt, target_shape, bound, intrfc, to_var):
-        inpt = to_var(inpt)
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_PASS)
+    def test_check_shape(self, inpt, target_shape, bound):
         _check_shape(inpt, target_shape, bound=bound)
 
-    @pytest.mark.parametrize("inpt, target_shape, bound", SHP_LST_PASS)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_check_shape_list_of_inputs_with_diff_interfaces(self, inpt, target_shape, bound, intrfc, to_var):
-        inpt = [to_var(i) for i in inpt]
-        _check_shape(inpt, target_shape, bound=bound)
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_PASS)
+    def test_check_shape_list_of_inputs(self, inpt, target_shape, bound):
+        _check_shapes(inpt, target_shape, bound_list=[bound]*len(inpt))
 
-    @pytest.mark.parametrize("inpt, target_shape, bound", SHP_FAIL)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_check_shape_with_diff_interfaces_exception(self, inpt, target_shape, bound, intrfc, to_var):
-        inpt = to_var(inpt)
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_FAIL)
+    def test_check_shape_exception(self, inpt, target_shape, bound):
         with pytest.raises(ValueError):
             _check_shape(inpt, target_shape, bound=bound)
 
-    @pytest.mark.parametrize("inpt, target_shape, bound", SHP_LST_FAIL)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_check_shape_list_of_inputs_with_diff_interfaces_exception(self, inpt, target_shape, bound, intrfc, to_var):
-        inpt = [to_var(i) for i in inpt]
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_FAIL)
+    def test_check_shape_list_of_inputs_exception(self, inpt, target_shape, bound):
         with pytest.raises(ValueError):
-            _check_shape(inpt, target_shape, bound=bound)
+            _check_shapes(inpt, target_shape, bound_list=[bound]*len(inpt))
+
+    @pytest.mark.parametrize("inpt, target_shape", GET_SHAPE_PASS)
+    def test_get_shape(self, inpt, target_shape):
+        shape = _get_shape(inpt)
+        assert shape == target_shape
+
+    # @pytest.mark.parametrize("inpt", GET_SHAPE_FAIL)
+    # def test_get_shape_exception(self, inpt):
+    #     with pytest.raises(ValueError):
+    #         _get_shape(inpt)
+
+    @pytest.mark.parametrize("inpt, repeat", LAYERS_PASS)
+    def test_check_num_layers(self, inpt, repeat):
+        n_layers = _check_number_of_layers(inpt)
+        assert n_layers == repeat
+
+    @pytest.mark.parametrize("inpt, repeat", LAYERS_FAIL)
+    def test_check_num_layers_exception(self, inpt, repeat):
+        with pytest.raises(ValueError):
+            _check_number_of_layers(inpt)
 
     def test_check_shape_exception_message(self):
         with pytest.raises(ValueError) as excinfo:
