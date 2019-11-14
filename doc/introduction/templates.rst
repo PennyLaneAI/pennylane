@@ -228,7 +228,6 @@ The following initialization functions are available:
 .. autosummary::
     :nosignatures:
 
-<<<<<<< HEAD
     ~pennylane.init.cvqnn_layers_all
     ~pennylane.init.cvqnn_layers_theta_uniform
     ~pennylane.init.cvqnn_layers_theta_normal
@@ -246,10 +245,7 @@ The following initialization functions are available:
     ~pennylane.init.cvqnn_layers_phi_a_normal
     ~pennylane.init.cvqnn_layers_kappa_uniform
     ~pennylane.init.cvqnn_layers_kappa_normal
-=======
-    ~pennylane.init.cvqnn_layers_uniform
-    ~pennylane.init.cvqnn_layers_normal
->>>>>>> master
+
 
 :html:`</div>`
 
