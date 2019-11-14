@@ -104,7 +104,7 @@ class TestTensornetIntegration:
 
         dev = qml.device("expt.tensornet", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == 1
+        assert dev.shots == 1000
         assert dev.analytic
         assert dev.short_name == "expt.tensornet"
 
@@ -700,3 +700,187 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
         
+
+class TestSample:
+    """Tests that samples are properly calculated."""
+
+    def test_sample_dimensions(self, tensornet_device_2_wires):
+        """Tests if the samples returned by the sample function have
+        the correct dimensions
+        """
+
+        # Explicitly resetting is necessary as the internal
+        # state is set to None in __init__ and only properly
+        # initialized during reset
+        tensornet_device_2_wires.reset()
+
+        tensornet_device_2_wires.apply('RX', wires=[0], par=[1.5708])
+        tensornet_device_2_wires.apply('RX', wires=[1], par=[1.5708])
+
+        tensornet_device_2_wires.shots = 10
+        s1 = tensornet_device_2_wires.sample('PauliZ', [0], [])
+        assert np.array_equal(s1.shape, (10,))
+
+        tensornet_device_2_wires.shots = 12
+        s2 = tensornet_device_2_wires.sample('PauliZ', [1], [])
+        assert np.array_equal(s2.shape, (12,))
+
+        tensornet_device_2_wires.shots = 17
+        s3 = tensornet_device_2_wires.sample('CZ', [0, 1], [])
+        assert np.array_equal(s3.shape, (17,))
+
+    def test_sample_values(self, tensornet_device_2_wires, tol):
+        """Tests if the samples returned by sample have
+        the correct values
+        """
+
+        # Explicitly resetting is necessary as the internal
+        # state is set to None in __init__ and only properly
+        # initialized during reset
+        tensornet_device_2_wires.reset()
+
+        tensornet_device_2_wires.apply('RX', wires=[0], par=[1.5708])
+
+        s1 = tensornet_device_2_wires.sample('PauliZ', [0], [])
+
+        # s1 should only contain 1 and -1, which is guaranteed if
+        # they square to 1
+        assert np.allclose(s1**2, 1, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+class TestTensorSample:
+    """Test samped values from tensor product observables"""
+
+    def test_paulix_pauliy(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving PauliX and PauliY works correctly"""
+        dev = qml.device("expt.tensornet", wires=3, shots=10000)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        with monkeypatch.context() as m:
+            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
+            s1, prob = dev.sample(["PauliX", "PauliY"], [[0], [2]], [[], [], []])
+
+        # s1 should only contain 1 and -1
+        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+
+        mean = s1 @ prob
+        expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
+        assert np.allclose(mean, expected, atol=tol, rtol=0)
+
+        var = (s1 ** 2) @ prob - (s1 @ prob).real ** 2
+        expected = (
+            8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
+            - np.cos(2 * (theta - phi))
+            - np.cos(2 * (theta + phi))
+            + 2 * np.cos(2 * theta)
+            + 2 * np.cos(2 * phi)
+            + 14
+        ) / 16
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+    def test_pauliz_hadamard(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
+        dev = qml.device("expt.tensornet", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        with monkeypatch.context() as m:
+            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
+            s1, p = dev.sample(["PauliZ", "Hadamard", "PauliY"], [[0], [1], [2]], [[], [], []])
+
+        # s1 should only contain 1 and -1
+        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+
+        mean = s1 @ p
+        expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
+        assert np.allclose(mean, expected, atol=tol, rtol=0)
+
+        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        expected = (
+            3
+            + np.cos(2 * phi) * np.cos(varphi) ** 2
+            - np.cos(2 * theta) * np.sin(varphi) ** 2
+            - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
+        ) / 4
+        assert np.allclose(var, expected, atol=tol, rtol=0)
+
+    def test_hermitian(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving qml.Hermitian works correctly"""
+        dev = qml.device("expt.tensornet", wires=3)
+        dev.reset()
+        dev.apply("RX", wires=[0], par=[theta])
+        dev.apply("RX", wires=[1], par=[phi])
+        dev.apply("RX", wires=[2], par=[varphi])
+        dev.apply("CNOT", wires=[0, 1], par=[])
+        dev.apply("CNOT", wires=[1, 2], par=[])
+
+        A = np.array(
+            [
+                [-6, 2 + 1j, -3, -5 + 2j],
+                [2 - 1j, 0, 2 - 1j, -5 + 4j],
+                [-3, 2 + 1j, 0, -4 + 3j],
+                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+            ]
+        )
+
+        with monkeypatch.context() as m:
+            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
+            s1, p = dev.sample(["PauliZ", "Hermitian"], [[0], [1, 2]], [[], [A]])
+
+        # s1 should only contain the eigenvalues of
+        # the hermitian matrix tensor product Z
+        Z = np.diag([1, -1])
+        eigvals = np.linalg.eigvalsh(np.kron(Z, A))
+        assert set(np.round(s1, 8)).issubset(set(np.round(eigvals, 8)))
+
+        mean = s1 @ p
+        expected = 0.5 * (
+            -6 * np.cos(theta) * (np.cos(varphi) + 1)
+            - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
+            + 3 * np.cos(varphi) * np.sin(phi)
+            + np.sin(phi)
+        )
+        assert np.allclose(mean, expected, atol=tol, rtol=0)
+
+        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        expected = (
+            1057
+            - np.cos(2 * phi)
+            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+            + 16 * np.sin(2 * phi)
+            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+            - 8
+            * np.cos(theta)
+            * (
+                4
+                * np.cos(phi)
+                * (
+                    4
+                    + 8 * np.cos(varphi)
+                    + np.cos(2 * varphi)
+                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                )
+                + np.sin(phi)
+                * (
+                    15
+                    + 8 * np.cos(varphi)
+                    - 11 * np.cos(2 * varphi)
+                    + 42 * np.sin(varphi)
+                    + 3 * np.sin(2 * varphi)
+                )
+            )
+        ) / 16
+        assert np.allclose(var, expected, atol=tol, rtol=0)

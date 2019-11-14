@@ -46,6 +46,8 @@ class JacobianQNode(QNode):
             self.device.short_name, self.func.__name__, self.num_wires, self.interface
         )
 
+    __str__ = __repr__
+
     def _construct(self, args, kwargs):
         """Constructs the quantum circuit graph by calling the quantum function.
 
@@ -53,17 +55,6 @@ class JacobianQNode(QNode):
         for each positional parameter.
         """
         super()._construct(args, kwargs)
-
-        temp = [
-            str(ob)
-            for ob in self.circuit.observables
-            if ob.return_type is ObservableReturnTypes.Sample
-        ]
-        if temp:
-            raise QuantumFunctionError(
-                "Circuits that include sampling can not be differentiated. "
-                "The following observables include sampling: {}".format("; ".join(temp))
-            )
         self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
 
     def _best_method(self, idx):
@@ -185,6 +176,17 @@ class JacobianQNode(QNode):
         # (re-)construct the circuit if necessary
         if self.circuit is None or self.mutable:
             self._construct(args, kwargs)
+
+        returns_samples = [
+            str(ob)
+            for ob in self.circuit.observables
+            if ob.return_type is ObservableReturnTypes.Sample
+        ]
+        if returns_samples:
+            raise QuantumFunctionError(
+                "Circuits that include sampling can not be differentiated. "
+                "The following observables include sampling: {}".format("; ".join(returns_samples))
+            )
 
         # check that the wrt parameters are ok
         if wrt is None:
@@ -335,3 +337,53 @@ class JacobianQNode(QNode):
             array[float]: partial derivative of the node
         """
         raise NotImplementedError
+
+    def to_torch(self):
+        """Attach the Torch interface to the Jacobian QNode.
+
+        Raises:
+            QuantumFunctionError: if PyTorch is not installed
+        """
+        # Placing slow imports here, in case the user does not use the Torch interface
+        try:  # pragma: no cover
+            from pennylane.interfaces.torch import TorchQNode
+        except ImportError:  # pragma: no cover
+            raise QuantumFunctionError(
+                "PyTorch not found. Please install " "PyTorch to enable the 'torch' interface."
+            ) from None
+
+        return TorchQNode(self)
+
+    def to_tf(self):
+        """Attach the TensorFlow interface to the Jacobian QNode.
+
+        Raises:
+            QuantumFunctionError: if TensorFlow >= 1.12 is not installed
+        """
+        # Placing slow imports here, in case the user does not use the TF interface
+        try:  # pragma: no cover
+            from pennylane.interfaces.tf import TFQNode
+        except ImportError:  # pragma: no cover
+            raise QuantumFunctionError(
+                "TensorFlow not found. Please install "
+                "the latest version of TensorFlow to enable the 'tf' interface."
+            ) from None
+
+        return TFQNode(self)
+
+    def to_autograd(self):
+        """Attach the TensorFlow interface to the Jacobian QNode.
+
+        Raises:
+            QuantumFunctionError: if Autograd is not installed
+        """
+        # Placing slow imports here, in case the user does not use the TF interface
+        try:  # pragma: no cover
+            from pennylane.interfaces.autograd import to_autograd as _to_autograd
+        except ImportError:  # pragma: no cover
+            raise QuantumFunctionError(
+                "Autograd not found. Please install "
+                "the latest version of Autograd to enable the 'autograd' interface."
+            ) from None
+
+        return _to_autograd(self)
