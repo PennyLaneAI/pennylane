@@ -117,7 +117,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff="best", properties
     **Example:**
 
     >>> dev = qml.device("default.qubit", wires=1)
-    >>> @qnode(dev)
+    >>> @qml.qnode(dev)
     >>> def circuit(x):
     >>>     qml.RX(x, wires=0)
     >>>     return qml.expval(qml.PauliZ(0))
