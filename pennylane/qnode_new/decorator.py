@@ -78,6 +78,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff="best", prop
 
     # Set the default model to qubit, for backwards compatability with existing plugins
     # TODO: once all plugins have been updated to add `model` to their
+    # capabilities dictionary, update the logic here
     model = device.capabilities().get("model", "qubit")
     device_jacobian = device.capabilities().get("provides_jacobian", False)
 
