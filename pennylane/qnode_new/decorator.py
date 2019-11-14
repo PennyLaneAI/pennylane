@@ -26,7 +26,7 @@ from .qubit import QubitQNode
 PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
 
 
-def QNode(func, device, *, interface="autograd", mutable=True, diff="best", properties=None):
+def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
     """QNode constructor for creating QNodes.
 
     When applied to a quantum function and device, converts it into
@@ -57,7 +57,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff="best", prop
               TensorFlow ``tfe.Variable`` objects.
 
         mutable (bool): whether the QNode circuit is mutable
-        diff (str, None): the method of differentiation to use in the created QNode.
+        diff_method (str, None): the method of differentiation to use in the created QNode.
 
             * ``"best"``: Best available method. Uses the device directly to compute
               the gradient if supported, otherwise will use the analytic parameter-shift
@@ -72,7 +72,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff="best", prop
 
         properties (dict[str->Any]): additional keyword properties passed to the QNode
     """
-    if diff is None:
+    if diff_method is None:
         # QNode is not differentiable
         return BaseQNode(func, device, mutable=mutable, properties=properties)
 
@@ -82,11 +82,11 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff="best", prop
     model = device.capabilities().get("model", "qubit")
     device_jacobian = device.capabilities().get("provides_jacobian", False)
 
-    if device_jacobian and (diff == "best"):
+    if device_jacobian and (diff_method == "best"):
         # hand off differentiation to the device
         node = DeviceJacobianQNode(func, device, mutable=mutable, properties=properties)
 
-    elif model in PARAMETER_SHIFT_QNODES and diff in ("best", "parameter-shift"):
+    elif model in PARAMETER_SHIFT_QNODES and diff_method in ("best", "parameter-shift"):
         # parameter-shift analytic differentiation
         node = PARAMETER_SHIFT_QNODES[model](func, device, mutable=mutable, properties=properties)
 
@@ -108,7 +108,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff="best", prop
     return node
 
 
-def qnode(device, *, interface="autograd", mutable=True, diff="best", properties=None):
+def qnode(device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
     """Decorator for creating QNodes.
 
     When applied to a quantum function, this decorator converts it into
@@ -138,7 +138,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff="best", properties
               TensorFlow ``tfe.Variable`` objects.
 
         mutable (bool): whether the QNode circuit is mutable
-        diff (str, None): the method of differentiation to use in the created QNode.
+        diff_method (str, None): the method of differentiation to use in the created QNode.
 
             * ``"best"``: Best available method. Uses the device directly to compute
               the gradient if supported, otherwise will use the analytic parameter-shift
@@ -158,7 +158,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff="best", properties
     def qfunc_decorator(func):
         """The actual decorator"""
         return QNode(
-            func, device, interface=interface, mutable=mutable, diff=diff, properties=properties,
+            func, device, interface=interface, mutable=mutable, diff_method=diff_method, properties=properties,
         )
 
     return qfunc_decorator
