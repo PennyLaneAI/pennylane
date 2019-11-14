@@ -18,8 +18,8 @@ combining templates, using positional and keyword arguments, and using different
 
 New tests are added as follows:
 
-* When adding a new interface, try to import it and extend the fixture ``interfaces``. Add interface to
-  TestGradientIntegration tests.
+* When adding a new interface, try to import it and extend the fixture ``interfaces``. Also add the interface
+  gradient computation to the TestGradientIntegration tests.
 
 * When adding a new template, extend the fixtures ``QUBIT_CONSTANT_INPUT`` or ``CV_CONSTANT_INPUT`` by a *list* of arguments to the
   template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).

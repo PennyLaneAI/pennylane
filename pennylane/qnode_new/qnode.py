@@ -16,7 +16,6 @@ Base QNode class and utilities
 """
 from collections.abc import Sequence
 from collections import namedtuple, OrderedDict
-from functools import wraps, lru_cache
 import inspect
 import itertools
 
@@ -28,41 +27,6 @@ from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
 from pennylane.qnode import QNode as QNode_old, QuantumFunctionError, decompose_queue
-
-
-def qnode(device, *, mutable=True, properties=None):
-    """Decorator for creating QNodes.
-
-    When applied to a quantum function, this decorator converts it into
-    a (wrapped) :class:`QNode` instance.
-
-    Args:
-        device (~.Device): a PennyLane-compatible device
-        mutable (bool): whether the node is mutable
-        properties (dict[str->Any]): additional keyword properties passed to the QNode
-    """
-
-    @lru_cache()
-    def qfunc_decorator(func):
-        """The actual decorator"""
-
-        node = QNode(func, device, mutable=mutable, properties=properties)
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            """Wrapper function"""
-            return node(*args, **kwargs)
-
-        # bind the jacobian method to the wrapped function
-        # wrapper.jacobian = node.jacobian
-        wrapper.metric_tensor = node.metric_tensor
-
-        # bind the node attributes to the wrapped function
-        wrapper.__dict__.update(node.__dict__)
-
-        return wrapper
-
-    return qfunc_decorator
 
 
 _MARKER = inspect.Parameter.empty  # singleton marker, could be any singleton class
@@ -191,9 +155,7 @@ class QNode:
         detail = "<QNode: device='{}', func={}, wires={}>"
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
-    def __repr__(self):
-        """REPL representation"""
-        return self.__str__()
+    __repr__ = __str__
 
     def print_applied(self):
         """Prints the most recently applied operations from the QNode."""
