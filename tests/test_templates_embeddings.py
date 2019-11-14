@@ -32,13 +32,19 @@ class TestAmplitudeEmbedding:
     """ Tests the AmplitudeEmbedding method."""
 
     INPT = [np.array([0, 1, 0, 0]),
-            1 / np.sqrt(4) * np.array([1, 1, 1, 1]),
+            1/np.sqrt(4)*np.array([1, 1, 1, 1]),
             np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-                      np.complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])]
-    INPT_NRML = [(np.array([0, 2]), [0, 1]),
-                 (1 / np.sqrt(2) * np.array([2, 2]), [1 / np.sqrt(2), 1 / np.sqrt(2)]),
-                 (np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3)]), [-0.5, 0.8660254]),
-                 (np.array([0, 2]), [0, 1])]
+            np.complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])]
+
+    NOT_ENOUGH_FEATURES = [np.array([0, 1, 0]),
+                           1 / np.sqrt(3) * np.array([1, 1, 1]),
+                           np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
+                           np.complex(0, -np.sqrt(0.6))])]
+
+    TOO_MANY_FEATURES = [[0, 0, 0, 1, 0],
+                         1/np.sqrt(8)*np.array([1]*8),
+                         [np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
+                         np.complex(0, -np.sqrt(0.6)), 0., 0.]]
 
     @pytest.mark.parametrize("inpt", INPT)
     def test_amplitude_embedding_prepares_state(self, inpt):
@@ -50,76 +56,95 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
         state = dev._state
         assert np.allclose(state, inpt)
 
-    def test_amplitude_embedding_throws_exception_if_wrong_number_of_subsystems(self):
+    @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
+    @pytest.mark.parametrize("pad", [complex(0.1, 0.1), 0., 1.])
+    def test_amplitude_embedding_prepares_padded_state(self, inpt, pad):
+        """Checks the state produced by AmplitudeEmbedding() for real and complex padding constants."""
+
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=pad, normalize=False)
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
+
+        circuit(x=inpt)
+        state = dev._state
+        assert len(set(state[len(inpt):])) == 1
+
+    @pytest.mark.parametrize("inpt", INPT)
+    def test_amplitude_embedding_throws_exception_if_not_normalized(self, inpt):
+        """Checks that AmplitudeEmbedding() throws exception when state is not normalized and `normalize=False`."""
+        not_nrmlzd = 2*inpt
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
+
+        with pytest.raises(ValueError, match="Vector of features has to be normalized to 1.0"):
+            circuit(x=not_nrmlzd)
+
+    @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
+    def test_amplitude_embedding_throws_exception_if_fewer_features_than_amplitudes(self, inpt):
         """Verifies that AmplitudeEmbedding() throws exception
-        if number of subsystems is wrong."""
+        if the number of features is fewer than the number of amplitudes, and
+        no automatic padding is chosen."""
 
         n_qubits = 2
         dev = qml.device('default.qubit', wires=n_qubits)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=False, normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError):
-            circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
+        with pytest.raises(ValueError, match="AmplitudeEmbedding must get a feature vector of size"):
+            circuit(x=inpt)
 
-        with pytest.raises(ValueError):
-            circuit(x=[np.sqrt(0.2), np.sqrt(0.8)])
+    @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES)
+    def test_amplitude_embedding_throws_exception_if_more_features_than_amplitudes(self, inpt):
+        """Verifies that AmplitudeEmbedding() throws exception
+        if the number of features is larger than the number of amplitudes, and
+        no automatic padding is chosen."""
 
-    def test_amplitude_embedding_throws_exception_notnormalized(self):
-        """Verifies that AmplitudeEmbedding() raises an exception if input is not
-        normalized and 'normalization' is set to False."""
-
-        n_subsystems = 5
-        dev = qml.device('default.qubit', wires=n_subsystems)
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=n_qubits)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=1, pad=False, normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError):
-            circuit(x=[1, 1])
+        with pytest.raises(ValueError, match="AmplitudeEmbedding must get a feature vector of size"):
+            circuit(x=inpt)
 
-    @pytest.mark.parametrize("inpt, expected", INPT_NRML)
-    def test_amplitude_embedding_normalizes_keywordargs(self, inpt, expected):
-        """Verifies that AmplitudeEmbedding() normalizes an input passed as a keyword
-         argument if `normalize` is set to `True`."""
+    @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES)
+    def test_amplitude_embedding_with_padding_throws_exception_if_more_features_than_amplitudes(self, inpt):
+        """Verifies that AmplitudeEmbedding() throws exception
+        if the number of features is larger than the number of amplitudes, and
+        automatic padding is chosen."""
 
-        dev = qml.device('default.qubit', wires=1)
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=n_qubits)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=0, pad=False, normalize=True)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=0., normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        circuit(x=inpt)
-        state = dev._state
-        assert np.allclose(state, expected)
-
-    @pytest.mark.parametrize("inpt, expected", INPT_NRML)
-    def test_amplitude_embedding_exception_positionalargs(self, inpt, expected):
-        """Verifies that AmplitudeEmbedding() normalizes an input passed as a positional
-        argument if `normalize` is set to `True`."""
-
-        dev = qml.device('default.qubit', wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            AmplitudeEmbedding(features=x, wires=0, pad=False, normalize=True)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError):
-            circuit(inpt)
+        with pytest.raises(ValueError, match="AmplitudeEmbedding must get a feature vector of at least size"):
+            circuit(x=inpt)
 
 
 class TestAngleEmbedding:
@@ -193,7 +218,7 @@ class TestAngleEmbedding:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation=strategy)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="AngleEmbedding cannot process more features than number of qubits"):
             circuit(x=features)
 
     def test_angle_embedding_exception_wrongrot(self):
@@ -208,22 +233,22 @@ class TestAngleEmbedding:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='A')
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Rotation strategy"):
             circuit(x=[1])
 
-    def test_angle_embedding_exception_wiresnolist(self):
+    def test_angle_embedding_exception_wires_not_valid(self):
         """Verifies that AngleEmbedding() raises an exception if ``wires`` is not
-        iterable."""
+        a valid list of indices."""
 
         n_subsystems = 5
         dev = qml.device('default.qubit', wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AngleEmbedding(features=x, wires=3, rotation='A')
+            AngleEmbedding(features=x, wires='a')
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Wires must be a positive"):
             circuit(x=[1])
 
 
@@ -276,84 +301,6 @@ class TestBasisEmbedding:
             circuit(x=[1])
 
 
-class TestAmplitudeEmbedding:
-    """ Tests the AmplitudeEmbedding method."""
-
-    INPT = [np.array([0, 1, 0, 0]),
-            1/np.sqrt(4)*np.array([1, 1, 1, 1]),
-            np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-            np.complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])]
-
-    MISSING_INPT = [np.array([0, 1, 0]),
-                    1/np.sqrt(3)*np.array([1, 1, 1]),
-                    np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-                    np.complex(0, -np.sqrt(0.6))])]
-
-    @pytest.mark.parametrize("inpt", INPT)
-    def test_amplitude_embedding_prepares_state(self, inpt):
-        """Checks the state produced by AmplitudeEmbedding() for real and complex
-        inputs."""
-
-        n_qubits = 2
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
-
-        circuit(x=inpt)
-        state = dev._state
-        assert np.allclose(state, inpt)
-
-    @pytest.mark.parametrize("inpt", MISSING_INPT)
-    @pytest.mark.parametrize("pad", [complex(0.1, 0.1), 0., 1.])
-    def test_amplitude_embedding_prepares_padded_state(self, inpt, pad):
-        """Checks the state produced by AmplitudeEmbedding() for real and complex padding constants."""
-
-        n_qubits = 2
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=pad, normalize=False)
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
-
-        circuit(x=inpt)
-        state = dev._state
-        assert len(set(state[len(inpt):])) == 1
-
-    @pytest.mark.parametrize("inpt", INPT)
-    def test_amplitude_embedding_throws_exception_if_not_normalized(self, inpt):
-        """Checks that AmplitudeEmbedding() throws exception when state is not normalized and `normalize=False`."""
-        not_nrmlzd = 2*inpt
-        n_qubits = 2
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
-
-        with pytest.raises(ValueError):
-            circuit(x=not_nrmlzd)
-
-    def test_amplitude_embedding_throws_exception_if_wrong_number_of_subsystems(self):
-        """Verifies that AmplitudeEmbedding() throws exception
-        if number of subsystems is wrong."""
-
-        n_qubits = 2
-        dev = qml.device('default.qubit', wires=n_qubits)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError):
-            circuit(x=[np.sqrt(0.2), np.sqrt(0.8), 0, 0, 0])
-
-
 class TestSqueezingEmbedding:
     """ Tests the SqueezingEmbedding method."""
 
@@ -389,9 +336,8 @@ class TestSqueezingEmbedding:
 
         assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
 
-    def test_squeezing_embedding_exception_subsystems(self):
-        """Verifies that SqueezingEmbedding() throws exception
-        if number of subsystems wrong."""
+    def test_squeezing_embedding_exception_for_wrong_num_wires(self):
+        """Verifies that SqueezingEmbedding() throws exception if number of modes is wrong."""
 
         n_wires = 2
         dev = qml.device('default.gaussian', wires=n_wires)
@@ -401,10 +347,10 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='phase')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="SqueezingEmbedding cannot process more features than number of"):
             circuit(x=[0.2, 0.3, 0.4])
 
-    def test_squeezing_embedding_exception_strategy(self):
+    def test_squeezing_embedding_strategy_not_recognized_exception(self):
         """Verifies that SqueezingEmbedding() throws exception
         if strategy unknown."""
 
@@ -416,22 +362,22 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='A')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Did not recognise parameter encoding method"):
             circuit(x=[1, 2])
 
-    def test_squeezing_embedding_exception_wiresnolist(self):
-        """Verifies that SqueezingEmbedding() raises an exception if ``wires`` is not
-        iterable."""
+    def test_squeezing_embedding_wires_not_valid_exception(self):
+        """Verifies that SqueezingtEmbedding() raises an exception if ``wires`` is not
+        a list of indices."""
 
         n_subsystems = 5
         dev = qml.device('default.gaussian', wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=3, method='A')
+            DisplacementEmbedding(features=x, wires='a')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Wires must be a positive"):
             circuit(x=[1])
 
 
@@ -470,7 +416,7 @@ class TestDisplacementEmbedding:
 
         assert np.allclose(circuit(x=features), [0.089327, 2.724715], atol=0.01)
 
-    def test_displacement_embedding_exception_subsystems(self):
+    def test_squeezing_embedding_exception_for_wrong_num_wires(self):
         """Verifies that DisplacementEmbedding() throws exception
         if number of subsystems wrong."""
 
@@ -482,10 +428,10 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='phase')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="DisplacementEmbedding cannot process more features than number of"):
             circuit(x=[0.2, 0.3, 0.4])
 
-    def test_displacement_embedding_exception_strategy(self):
+    def test_displacement_embedding_strategy_not_recognized_exception(self):
         """Verifies that DisplacementEmbedding() throws exception
         if strategy unknown."""
 
@@ -497,20 +443,20 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='A')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Did not recognise parameter encoding method"):
             circuit(x=[1, 2])
 
-    def test_displacement_embedding_exception_wiresnolist(self):
+    def test_displacement_embedding_wires_not_valid_exception(self):
         """Verifies that DisplacementEmbedding() raises an exception if ``wires`` is not
-        iterable."""
+        a list of indices."""
 
         n_subsystems = 5
         dev = qml.device('default.gaussian', wires=n_subsystems)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            DisplacementEmbedding(features=x, wires=3, method='A')
+            DisplacementEmbedding(features=x, wires='a')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Wires must be a positive"):
             circuit(x=[1])

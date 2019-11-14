@@ -113,7 +113,7 @@ class TestBasisStatePreparation:
         """Tests that the correct error message is raised when the number
         of qubits doesn't match the number of wires."""
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="basis state must match the number of qubits"):
             BasisStatePreparation(basis_state, wires)
 
     # fmt: off
@@ -126,7 +126,7 @@ class TestBasisStatePreparation:
         """Tests that the correct error messages is raised when
         the basis state contains numbers different from 0 and 1."""
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Basis state must only consist of 0s and 1s"):
             BasisStatePreparation(basis_state, wires)
 
 
@@ -271,7 +271,7 @@ class TestMottonenStatePreparation:
         """Tests that the correct error messages is raised if
         the given state vector is not normalized."""
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="State vector probabilities have to sum up to 1.0"):
             MottonenStatePreparation(state_vector, wires)
 
     # fmt: off
@@ -285,6 +285,6 @@ class TestMottonenStatePreparation:
         the number of entries in the given state vector does not match
         with the number of wires in the system."""
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="The state vector must be of size"):
             MottonenStatePreparation(state_vector, wires)
 

@@ -25,26 +25,31 @@ from pennylane.templates.layers import (Interferometer)
 class TestInterferometer:
     """Tests for the Interferometer from the pennylane.template.layers module."""
 
-    def test_exceptions(self):
-        """test that exceptions are correctly raised"""
+    def test_invalid_mesh_exception(self):
+        """Test that Interferometer() raises correct exception when mesh not recognized."""
         dev = qml.device('default.gaussian', wires=1)
         varphi = [0.42342]
 
         @qml.qnode(dev)
-        def circuit(varphi, mesh):
+        def circuit(varphi, mesh=None):
             Interferometer(theta=[], phi=[], varphi=varphi, mesh=mesh, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError):
-            circuit(varphi, 'rectangular')
+        with pytest.raises(ValueError, match="Mesh option"):
+            circuit(varphi, mesh='a')
+
+    def test_invalid_mesh_exception(self):
+        """Test that Interferometer() raises correct exception when beamsplitter not recognized."""
+        dev = qml.device('default.gaussian', wires=1)
+        varphi = [0.42342]
 
         @qml.qnode(dev)
-        def circuit(varphi, bs):
+        def circuit(varphi, bs=None):
             Interferometer(theta=[], phi=[], varphi=varphi, beamsplitter=bs, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError):
-            circuit(varphi, 'clements')
+        with pytest.raises(ValueError, match="Beamsplitter option"):
+            circuit(varphi, bs='a')
 
     def test_clements_beamsplitter_convention(self, tol):
         """test the beamsplitter convention"""

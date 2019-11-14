@@ -43,7 +43,7 @@ def _check_wires(wires):
     if isinstance(wires, int):
         wires = [wires]
 
-    msg = "Wires must a positive integer or a " \
+    msg = "Wires must be a positive integer or a " \
            "list of positive integers; got {}.".format(wires)
     if not isinstance(wires, Iterable):
         raise ValueError(msg)
@@ -121,10 +121,13 @@ def _check_shapes(inpt_list, target_shape_list, bound_list=None, msg=None):
     return shape_list
 
 
-def _check_hyperp_is_in_options(hyperparameter, options):
+def _check_hyperp_is_in_options(hyperparameter, options, msg=None):
     """Checks that a hyperparameter is one of the valid options of hyperparameters."""
+    if msg is None:
+        msg = "Hyperparameter {} must be one of {}".format(hyperparameter, *options)
+
     if hyperparameter not in options:
-        raise ValueError("Hyperparameter {} must be one of {}".format(hyperparameter, *options))
+        raise ValueError(msg)
 
 
 def _check_type(hyperparameter, typ, msg=None):

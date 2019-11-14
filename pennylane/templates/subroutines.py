@@ -116,7 +116,11 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     shape_list = [(n_if,), (n_if,), (n_wires,)]
     _check_shapes(weights_list, shape_list)
 
-    _check_hyperp_is_in_options(mesh, ['triangular', 'rectangular'])
+    msg = "Beamsplitter option {} not recognized.".format(mesh)
+    _check_hyperp_is_in_options(beamsplitter, ['clements', 'pennylane'], msg=msg)
+
+    msg = "Mesh option {} not recognized.".format(mesh)
+    _check_hyperp_is_in_options(mesh, ['triangular', 'rectangular'], msg=msg)
     ###############
 
     M = len(wires)

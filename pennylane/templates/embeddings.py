@@ -21,7 +21,8 @@ from pennylane import numpy as np
 from pennylane.qnode import Variable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
-                                       _check_hyperp_is_in_options, _check_type)
+                                       _check_hyperp_is_in_options, _check_type,
+                                       _get_shape)
 
 TOLERANCE = 1e-3
 
@@ -50,7 +51,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         normalize (Boolean): controls the activation of automatic normalization
 
     Raises:
-        QuantumFunctionError if inputs do not have the correct format.
+        ValueError if inputs do not have the correct format.
     """
 
     #############
@@ -127,18 +128,23 @@ def AngleEmbedding(features, wires, rotation='X'):
         rotation (str): Type of rotations used
 
     Raises:
-        QuantumFunctionError if inputs do not have the correct format.
+        ValueError if inputs do not have the correct format.
     """
 
     #############
     # Input checks
     _check_no_variable([rotation], ['rotation'])
     wires, n_wires = _check_wires(wires)
-    _check_shape(features, (n_wires,), bound='max')
-    _check_type(rotation, [str])
-    _check_hyperp_is_in_options(rotation, ['X', 'Y', 'Z'])
-    ###############
 
+    shape = _get_shape(features)
+    msg = "AngleEmbedding cannot process more features than number of qubits {};" \
+          "got {}.".format(n_wires, shape[0])
+    _check_shape(features, (n_wires,), bound='max', msg=msg)
+    _check_type(rotation, [str])
+
+    msg = "Rotation strategy {} not recognized.".format(rotation)
+    _check_hyperp_is_in_options(rotation, ['X', 'Y', 'Z'], msg=msg)
+    ###############
 
     if rotation == 'X':
         for f, w in zip(features, wires):
@@ -166,7 +172,7 @@ def BasisEmbedding(features, wires):
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Raises:
-        QuantumFunctionError if arguments do not have the correct format.
+        ValueError if arguments do not have the correct format.
     """
 
     #############
@@ -199,7 +205,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
 
     where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
 
-    ``features`` has to be an array of at most ``len(wires)`` floats. If there are fewer entries in
+    ``features`` has to be an iterable of at most ``len(wires)`` floats. If there are fewer entries in
     ``features`` than wires, the circuit does not apply the remaining squeezing gates.
 
     Args:
@@ -213,16 +219,23 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             amplitude of all squeezing gates if ``execution='phase'``
 
     Raises:
-        QuantumFunctionError if inputs do not have the correct format.
+        ValueError if inputs do not have the correct format.
     """
 
 
     #############
     # Input checks
     _check_no_variable([method, c], ['method', 'c'])
+
     wires, n_wires = _check_wires(wires)
-    _check_shape(features, (n_wires,), bound='max')
-    _check_hyperp_is_in_options(method, ['amplitude', 'phase'])
+
+    shape = _get_shape(features)
+    msg = "SqueezingEmbedding cannot process more features than number of wires {};" \
+          "got {}.".format(n_wires, shape[0])
+    _check_shape(features, (n_wires,), bound='max', msg=msg)
+
+    msg = "Did not recognise parameter encoding method {}.".format(method)
+    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg=msg)
     #############
 
     for idx, f in enumerate(features):
@@ -257,15 +270,22 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             the amplitude of all displacement gates if ``execution='phase'``
 
     Raises:
-        QuantumFunctionError if inputs do not have the correct format.
+        ValueError if inputs do not have the correct format.
    """
 
     #############
     # Input checks
     _check_no_variable([method, c], ['method', 'c'])
+
     wires, n_wires = _check_wires(wires)
-    _check_shape(features, (n_wires,), bound='max')
-    _check_hyperp_is_in_options(method, ['amplitude', 'phase'])
+
+    shape = _get_shape(features)
+    msg = "DisplacementEmbedding cannot process more features than number of wires {};" \
+          "got {}.".format(n_wires, shape[0])
+    _check_shape(features, (n_wires,), bound='max', msg=msg)
+
+    msg = "Did not recognise parameter encoding method {}.".format(method)
+    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg=msg)
     #############
 
     for idx, f in enumerate(features):

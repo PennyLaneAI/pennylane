@@ -126,7 +126,7 @@ class TestCVNeuralNet:
         qnode = qml.QNode(circuit, gaussian_device_4modes)
 
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="The first dimension of the weight parameters"):
             qnode(wrong_weights)
 
 
