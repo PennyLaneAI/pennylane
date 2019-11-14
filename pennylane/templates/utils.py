@@ -32,7 +32,14 @@ def _check_no_variable(arg, arg_str, msg=None):
 
 
 def _check_wires(wires):
-    """Standard checks for the wires argument."""
+    """Standard checks for the wires argument.
+
+    Args:
+        wires (int or list): (subset of) wires of a quantum node
+
+    Return:
+        list: wires as a list, int: number of wires
+    """
     if isinstance(wires, int):
         wires = [wires]
 
@@ -47,42 +54,68 @@ def _check_wires(wires):
     return wires, len(wires)
 
 
-def _check_shape(inpt, target_shape, msg=None, bound=None):
-    """Checks that the shape of inpt is equal to the target shape.
+def _get_shape(inpt):
+    """Return the shape of inpt.
+
+    Args:
+        inpt (list): input to a qnode
+
+    Raises:
+        ValueError
     """
-    # If inpt is list of inputs, call this function recursively
-    if isinstance(target_shape, list):
-        shape = [_check_shape(l, t, msg=msg, bound=bound) for l, t in zip(inpt, target_shape)]
-
+    try:
+        inpt = np.array(inpt)
+    except:
+        raise ValueError("Got a list which fails to be converted to a numpy array."
+                         "All arguments to a template should be of rectangular shape.")
+    if np.isscalar(inpt):
+        shape = ()
     else:
-        if isinstance(inpt, list):
-            try:
-                inpt = np.array(inpt)
-            except:
-                raise ValueError("Got a list as template input, which fails to "
-                                 "be converted to a numpy array.")
-        if np.isscalar(inpt):
-            shape = ()
-        else:
-            try:
-                shape = tuple(inpt.shape)
-            except:
-                raise ValueError("Cannot derive shape of template input {}.".format(inpt))
-
-        if msg is None:
-            msg = "Input has shape {}; expected {}.".format(shape, target_shape)
-
-        if bound == 'max':
-            if shape > target_shape:
-                raise ValueError(msg)
-        elif bound == 'min':
-            if shape < target_shape:
-                raise ValueError(msg)
-        else:
-            if shape != target_shape:
-                raise ValueError(msg)
+        try:
+            shape = tuple(inpt.shape)
+        except:
+            raise ValueError("Cannot derive shape of template input {}.".format(inpt))
 
     return shape
+
+
+def _check_shape(inpt, target_shape, msg=None, bound=None):
+    """Checks that the shape of inpt is equal to the target shape.
+    Args:
+        inpt (list): input to a qnode
+        target_shape (tuple[int]): expected shape of inpt
+
+    Keyword Args:
+        msg (str): Error message if the shapes are different
+        bound (str): If 'max' or 'min', the target shape is merely required to be a bound on the input shape
+    """
+
+    shape = _get_shape(inpt)
+
+    if msg is None:
+        msg = "Input has shape {}; expected {}.".format(shape, target_shape)
+
+    if bound == 'max':
+        if shape > target_shape:
+            raise ValueError(msg)
+    elif bound == 'min':
+        if shape < target_shape:
+            raise ValueError(msg)
+    else:
+        if shape != target_shape:
+            raise ValueError(msg)
+
+    return shape
+
+
+def _check_shapes(inpt_list, target_shape_list, bound_list=None, msg=None):
+    """Same as _check_shape, but for lists."""
+
+    if bound_list is None:
+        bound_list = [None] * len(inpt_list)
+
+    shape_list = [_check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shape_list, bound_list)]
+    return shape_list
 
 
 def _check_hyperp_is_in_options(hyperparameter, options):
@@ -99,3 +132,26 @@ def _check_type(hyperparameter, typ, msg=None):
     if not any([isinstance(hyperparameter, t) for t in typ]):
         raise ValueError(msg)
 
+
+def _check_number_of_layers(list_of_weights):
+    """Checks that all weights in ``list_of_weights`` have the same first dimension, which is interpreted
+    as the number of layers.
+
+    Args:
+        list_of_weights (list): list of all weights to the template
+
+    Returns:
+        int: number of layers
+
+    Raises:
+        ValueError
+    """
+    if any([np.isscalar(w) for w in list_of_weights]):
+        raise ValueError("Weights cannot be scalars, the first dimension has to be the number "
+                         "of layers.")
+    # Check if all first dimensions are the same
+    lengths = set([len(w) for w in list_of_weights])
+    if len(lengths) > 1:
+        raise ValueError("The first dimension of the weight parameters must be the number of layers in the "
+                         "template.")
+    return len(list_of_weights[0])

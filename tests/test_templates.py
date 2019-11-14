@@ -81,8 +81,8 @@ except ImportError as e:
 
 # qubit templates, constant inputs and kwargs
 qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
-                                           [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], {'repeat': 2}),
-               (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'repeat': 2, 'n_rots': 2}),
+                                           [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], {}),
+               (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {}),
                (AngleEmbedding, [[1., 2.]], {})
               ]
 
@@ -100,7 +100,7 @@ cv_const = [(DisplacementEmbedding, [[1., 2.]], {}),
                                  [[-0.01, -0.05], [0.08, -0.19]],
                                  [[1.89, 3.59], [1.49, 3.71]],
                                  [[0.09,  0.03], [-0.14,  0.04]]
-                                 ], {'repeat': 2}),
+                                 ], {}),
             (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {})
             ]
 
@@ -299,13 +299,13 @@ class TestInitializationIntegration:
     """Tests integration with the parameter initialization functions from pennylane.init"""
 
     # qubit templates & their kwargs + intialization functions & their kwargs
-    qubit_func = [(StronglyEntanglingLayers, {'repeat': None}, strong_ent_layers_uniform, {'n_layers': None}),
-                  (StronglyEntanglingLayers, {'repeat': None}, strong_ent_layers_normal, {'n_layers': None}),
-                  (RandomLayers, {'repeat': None, 'n_rots': 2}, random_layers_uniform, {'n_layers': None, 'n_rots': 2}),
-                  (RandomLayers, {'repeat': None, 'n_rots': 2}, random_layers_normal, {'n_layers': None, 'n_rots': 2})]
+    qubit_func = [(StronglyEntanglingLayers, {}, strong_ent_layers_uniform, {'n_layers': None}),
+                  (StronglyEntanglingLayers, {}, strong_ent_layers_normal, {'n_layers': None}),
+                  (RandomLayers, {}, random_layers_uniform, {'n_layers': None, 'n_rots': 2}),
+                  (RandomLayers, {}, random_layers_normal, {'n_layers': None, 'n_rots': 2})]
 
     # cv templates & their kwargs + intialization functions & their kwargs
-    cv_func = [(CVNeuralNetLayers, {'repeat': None}, cvqnn_layers_all, {'n_layers': None}),
+    cv_func = [(CVNeuralNetLayers, {}, cvqnn_layers_all, {'n_layers': None}),
                (Interferometer, {}, interferometer_all, {})]
 
     @pytest.mark.parametrize("template, hyperp, inpts, hyperp_f", qubit_func)
@@ -313,8 +313,6 @@ class TestInitializationIntegration:
                                     n_layers, hyperp, hyperp_f):
         """Checks parameter initialization compatible with qubit templates."""
         hyperp['wires'] = range(n_subsystems)
-        if 'repeat' in hyperp:
-            hyperp['repeat'] = n_layers
         hyperp_f['n_wires'] = n_subsystems
         if 'n_layers' in hyperp_f:
             hyperp_f['n_layers'] = n_layers
@@ -336,8 +334,6 @@ class TestInitializationIntegration:
                                  n_layers, hyperp, hyperp_f):
         """Checks parameter initialization compatible with continuous-variable templates."""
         hyperp['wires'] = range(n_subsystems)
-        if 'repeat' in hyperp:
-            hyperp['repeat'] = n_layers
         hyperp_f['n_wires'] = n_subsystems
         if 'n_layers' in hyperp_f:
             hyperp_f['n_layers'] = n_layers
@@ -361,8 +357,8 @@ class TestGradientIntegration:
     # qubit templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
     qubit_grad = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                                [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]],
-                   {'repeat': 2, 'wires': range(2)}, [0]),
-                  (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'repeat': 2, 'wires': range(2), 'n_rots': 2}, [0]),
+                   {'wires': range(2)}, [0]),
+                  (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'wires': range(2)}, [0]),
                   (AngleEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
                   ]
 
@@ -380,7 +376,7 @@ class TestGradientIntegration:
                                     [[-0.01, -0.05], [0.08, -0.19]],
                                     [[1.89, 3.59], [1.49, 3.71]],
                                     [[0.09, 0.03], [-0.14, 0.04]]
-                                    ], {'repeat': 2, 'wires': range(2)}, list(range(11))),
+                                    ], {'wires': range(2)}, list(range(11))),
                (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {'wires': range(2)}, [0, 1, 2])
                ]
 

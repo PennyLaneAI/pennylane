@@ -60,11 +60,11 @@ class TestCVNeuralNet:
                          [ 0.26999146, 0.26256351, 0.14722687, 0.23137066]])
             ]
 
-    def test_cvneuralnet_integration(self, gaussian_device_4modes, weights):
-        """integration test for the CVNeuralNetLayers template."""
+    def test_cvneuralnet_uses_correct_weights(self, gaussian_device_4modes, weights):
+        """Tests that the CVNeuralNetLayers template uses the weigh parameters correctly."""
 
         def circuit(weights):
-            CVNeuralNetLayers(*weights, wires=range(4), repeat=2)
+            CVNeuralNetLayers(*weights, wires=range(4))
             return qml.expval(qml.X(wires=0))
 
         qnode = qml.QNode(circuit, gaussian_device_4modes)
@@ -116,7 +116,7 @@ class TestCVNeuralNet:
                     assert res_params == exp_params
 
     def test_cvqnn_layers_exception_nlayers(self, gaussian_device_4modes):
-        """integration test for the CVNeuralNetLayers method."""
+        """Integration test for the CVNeuralNetLayers method."""
 
         def circuit(weights):
             CVNeuralNetLayers(*weights, wires=range(4))
@@ -142,7 +142,7 @@ class TestStronglyEntangling:
         weights = np.random.randn(n_layers, num_wires, 3)
 
         def circuit(weights):
-            StronglyEntanglingLayers(weights, wires=range(num_wires), repeat=n_layers,)
+            StronglyEntanglingLayers(weights, wires=range(num_wires))
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -181,8 +181,7 @@ class TestStronglyEntangling:
                 @qml.qnode(dev)
                 def circuit(weights, x=None):
                     qml.BasisState(x, wires=range(num_wires))
-                    StronglyEntanglingLayers(weights, wires=range(num_wires),
-                                             repeat=n_layers,)
+                    StronglyEntanglingLayers(weights, wires=range(num_wires))
                     return qml.expval(qml.PauliZ(0))
 
                 outcomes.append(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
@@ -218,13 +217,11 @@ class TestRandomLayers:
         weights = np.random.randn(n_layers, n_rots)
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
-                         n_rots=n_rots, seed=seed)
+            RandomLayers(weights=weights, wires=range(n_wires), seed=seed)
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
-                         n_rots=n_rots, seed=seed)
+            RandomLayers(weights=weights, wires=range(n_wires), seed=seed)
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
@@ -239,13 +236,11 @@ class TestRandomLayers:
         weights = np.random.randn(n_layers, n_rots)
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
-                         n_rots=n_rots)
+            RandomLayers(weights=weights, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
-                         n_rots=n_rots)
+            RandomLayers(weights=weights, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
@@ -261,13 +256,11 @@ class TestRandomLayers:
         weights = np.random.randn(n_layers, n_rots)
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
-                         n_rots=n_rots, seed=0)
+            RandomLayers(weights=weights, wires=range(n_wires), seed=0)
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), repeat=n_layers,
-                         n_rots=n_rots, seed=1)
+            RandomLayers(weights=weights, wires=range(n_wires), seed=1)
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
@@ -285,8 +278,7 @@ class TestRandomLayers:
         weights = np.random.randn(n_layers, n_rots)
 
         def circuit(weights):
-            RandomLayers(weights=weights, wires=range(n_wires),
-                         repeat=n_layers, n_rots=n_rots)
+            RandomLayers(weights=weights, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)

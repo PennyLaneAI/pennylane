@@ -18,7 +18,7 @@ repeatedly.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import Beamsplitter, Rotation
-from pennylane.templates.utils import (_check_shape,
+from pennylane.templates.utils import (_check_shapes,
                                        _check_no_variable,
                                        _check_wires,
                                        _check_hyperp_is_in_options)
@@ -108,11 +108,14 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     #############
     # Input checks
     _check_no_variable([beamsplitter, mesh], ['beamsplitter', 'mesh'])
+
     wires, n_wires = _check_wires(wires)
-    weights = [theta, phi, varphi]
+
+    weights_list = [theta, phi, varphi]
     n_if = n_wires*(n_wires-1)//2
-    shp = [(n_if,), (n_if,), (n_wires,)]
-    _check_shape(weights, shp)
+    shape_list = [(n_if,), (n_if,), (n_wires,)]
+    _check_shapes(weights_list, shape_list)
+
     _check_hyperp_is_in_options(mesh, ['triangular', 'rectangular'])
     ###############
 
