@@ -130,12 +130,12 @@ def _check_hyperp_is_in_options(hyperparameter, options, msg=None):
         raise ValueError(msg)
 
 
-def _check_type(hyperparameter, typ, msg=None):
+def _check_type(hyperparameter, type_list, msg=None):
     """Checks the type of a hyperparameter."""
     if msg is None:
-        msg = "Hyperparameter type must be one of {}, got {}".format(typ, type(hyperparameter))
+        msg = "Hyperparameter type must be one of {}, got {}".format(type_list, type(hyperparameter))
 
-    if not any([isinstance(hyperparameter, t) for t in typ]):
+    if not any([isinstance(hyperparameter, t) for t in type_list]):
         raise ValueError(msg)
 
 
