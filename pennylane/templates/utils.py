@@ -16,7 +16,6 @@ Utility functions used in the templates.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
-from collections.abc import Iterable
 from pennylane.qnode import Variable
 
 
@@ -166,4 +165,3 @@ def _check_number_of_layers(list_of_weights):
                          "template. Found different first dimensions: {}.".format(*different_first_dims))
 
     return first_dimensions[0]
-

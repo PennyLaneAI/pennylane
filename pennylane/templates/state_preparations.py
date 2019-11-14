@@ -16,7 +16,6 @@ State preperations are templates that prepare a given quantum state,
 by decomposing it into elementary operations.
 """
 import math
-from collections.abc import Iterable
 from scipy import sparse
 import numpy as np
 import pennylane as qml

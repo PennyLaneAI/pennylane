@@ -227,7 +227,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     hyperparam_names = ['ratio_imprim', 'imprimitive', 'rotations', 'seed']
     _check_no_variable(hyperparams, hyperparam_names)
 
-    wires, n_wires = _check_wires(wires)
+    wires, _ = _check_wires(wires)
 
     repeat = _check_number_of_layers([weights])
     n_rots = _get_shape(weights)[1]
