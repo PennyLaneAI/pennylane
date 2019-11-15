@@ -90,6 +90,20 @@ def tensornet_device_3_wires():
     return qml.device('expt.tensornet', wires=3)
 
 
+@pytest.fixture(scope="function")
+def tensornet_tf_device_1_wire():
+    return qml.device('expt.tensornet.tf', wires=1)
+
+
+@pytest.fixture(scope="function")
+def tensornet_tf_device_2_wires():
+    return qml.device('expt.tensornet', wires=2)
+
+
+@pytest.fixture(scope="function")
+def tensornet_tf_device_3_wires():
+    return qml.device('expt.tensornet.tf', wires=3)
+
 @pytest.fixture(scope="session")
 def gaussian_device(n_subsystems):
     """Number of qubits or modes."""

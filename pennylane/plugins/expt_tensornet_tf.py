@@ -280,6 +280,9 @@ class TensorNetworkTF(TensorNetwork):
         for obs_node in obs_nodes:
             contracted_ket = tn.contract_between(obs_node, contracted_ket)
         expval = tn.contract_between(bra, contracted_ket).tensor
+
+        # TODO: add complex non-vanishing part warning
+
         return tf.math.real(expval)
 
     def execute(self, queue, observables, parameters=None):
