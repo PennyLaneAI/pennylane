@@ -119,7 +119,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     The 2-qubit gates, whose type is specified by the ``imprimitive`` argument,
     act chronologically on the :math:`M` wires, :math:`i = 1,...,M`. The second qubit of each gate is given by
-    :math:`(i+r)\mod M`, where :math:`r` is a  hyperparameter called the *range*, and :math:`r < M`.
+    :math:`(i+r)\mod M`, where :math:`r` is a  hyperparameter called the *range*, and :math:`0 < r < M`.
     If applied to one qubit only, this template will use no imprimitive gates.
 
     This is an example of two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`, respectively) with
