@@ -73,6 +73,7 @@ GET_SHAPE_PASS = [(0.231, ()),
                   ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (2, 3)),
                   ]
 
+#TODO: Think of a data structure that CANNOT be converted to numpy array
 GET_SHAPE_FAIL = []
 
 SHAPE_LST_FAIL = [([0.231, 0.1], [(), (3, 4)], None),
@@ -90,12 +91,12 @@ LAYERS_FAIL = [([1, 2, 3], None),
                ([[[1], [2], [3]], [['b'], ['c']]], 3),
               ]
 
-NOVARS_PASS = [[[], np.array([1., 4.])],
-               [1, 'a']]
+NO_VARIABLES_PASS = [[[], np.array([1., 4.])],
+                     [1, 'a']]
 
-NOVARS_FAIL = [[[Variable(0.1)], Variable([0.1])],
-               np.array([Variable(0.3), Variable(4.)]),
-               [Variable(-1.)]]
+NO_VARIABLES_FAIL = [[[Variable(0.1)], Variable([0.1])],
+                     np.array([Variable(0.3), Variable(4.)]),
+                     [Variable(-1.)]]
 
 OPTIONS_PASS = [("a", ["a", "b"])]
 
@@ -138,12 +139,12 @@ class TestInputChecks:
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_FAIL)
     def test_check_shape_exception(self, inpt, target_shape, bound):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Input has shape"):
             _check_shape(inpt, target_shape, bound=bound)
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_FAIL)
     def test_check_shape_list_of_inputs_exception(self, inpt, target_shape, bound):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Input has shape"):
             _check_shapes(inpt, target_shape, bound_list=[bound]*len(inpt))
 
     @pytest.mark.parametrize("inpt, target_shape", GET_SHAPE_PASS)
@@ -151,10 +152,10 @@ class TestInputChecks:
         shape = _get_shape(inpt)
         assert shape == target_shape
 
-    # @pytest.mark.parametrize("inpt", GET_SHAPE_FAIL)
-    # def test_get_shape_exception(self, inpt):
-    #     with pytest.raises(ValueError):
-    #         _get_shape(inpt)
+    @pytest.mark.parametrize("inpt", GET_SHAPE_FAIL)
+    def test_get_shape_exception(self, inpt):
+        with pytest.raises(ValueError):
+            _get_shape(inpt)
 
     @pytest.mark.parametrize("inpt, repeat", LAYERS_PASS)
     def test_check_num_layers(self, inpt, repeat):
@@ -163,28 +164,26 @@ class TestInputChecks:
 
     @pytest.mark.parametrize("inpt, repeat", LAYERS_FAIL)
     def test_check_num_layers_exception(self, inpt, repeat):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="The first dimension of the weight parameters"):
             _check_number_of_layers(inpt)
 
     def test_check_shape_exception_message(self):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match="XXX"):
             _check_shape([0.], (3,), msg="XXX")
-        assert "XXX" in str(excinfo.value)
 
-    @pytest.mark.parametrize("arg", NOVARS_PASS)
+    @pytest.mark.parametrize("arg", NO_VARIABLES_PASS)
     def test_check_no_variables(self, arg):
         _check_no_variable(arg, "dummy")
 
-    @pytest.mark.parametrize("arg", NOVARS_FAIL)
+    @pytest.mark.parametrize("arg", NO_VARIABLES_FAIL)
     def test_check_no_variables_exception(self, arg):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="The argument dummy can not be passed"):
             _check_no_variable(arg, "dummy")
 
     def test_check_no_variables_exception_message(self):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match="XXX"):
             a = Variable(0)
             _check_no_variable([a], ["dummy"], msg="XXX")
-        assert "XXX" in str(excinfo.value)
 
     @pytest.mark.parametrize("hp, opts", OPTIONS_PASS)
     def test_check_hyperp_options(self, hp, opts):
@@ -192,7 +191,7 @@ class TestInputChecks:
 
     @pytest.mark.parametrize("hp, opts", OPTIONS_FAIL)
     def test_check_hyperp_options_exception(self, hp, opts):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Hyperparameter c must be one"):
             _check_hyperp_is_in_options(hp, opts)
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_PASS)
@@ -201,11 +200,10 @@ class TestInputChecks:
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
     def test_check_type_exception(self, hp, typ, alt):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Hyperparameter type must be one"):
             _check_type(hp, [typ, alt])
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
     def test_check_type_exception_message(self, hp, typ, alt):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match="XXX"):
             _check_type(hp, [typ, alt], msg="XXX")
-        assert "XXX" in str(excinfo.value)

@@ -28,7 +28,7 @@ def _check_no_variable(arg, arg_str, msg=None):
             raise ValueError(msg)
         if isinstance(a, Iterable):
             if any([isinstance(a_, Variable) for a_ in a]):
-                raise ValueError
+                raise ValueError(msg)
 
 
 def _check_wires(wires):
@@ -69,17 +69,9 @@ def _get_shape(inpt):
     try:
         inpt = np.array(inpt)
     except:
-        raise ValueError("Got a list which fails to be converted to a numpy array."
-                         "All arguments to a template should be of rectangular shape.")
-    if np.isscalar(inpt):
-        shape = ()
-    else:
-        try:
-            shape = tuple(inpt.shape)
-        except:
-            raise ValueError("Cannot derive shape of template input {}.".format(inpt))
+        raise ValueError("Fails to convert {} to array.". format(inpt))
 
-    return shape
+    return inpt.shape
 
 
 def _check_shape(inpt, target_shape, msg=None, bound=None):
@@ -124,7 +116,7 @@ def _check_shapes(inpt_list, target_shape_list, bound_list=None, msg=None):
 def _check_hyperp_is_in_options(hyperparameter, options, msg=None):
     """Checks that a hyperparameter is one of the valid options of hyperparameters."""
     if msg is None:
-        msg = "Hyperparameter {} must be one of {}".format(hyperparameter, *options)
+        msg = "Hyperparameter {} must be one of '{}'".format(hyperparameter, *options)
 
     if hyperparameter not in options:
         raise ValueError(msg)

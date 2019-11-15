@@ -17,8 +17,8 @@ by decomposing it into elementary operations.
 """
 import math
 from scipy import sparse
-import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.qnode import Variable
 from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,
@@ -295,12 +295,12 @@ def MottonenStatePreparation(state_vector, wires):
     _check_shape(state_vector, (2**n_wires,), msg=msg)
 
     # check if state_vector is normalized
-    norm = 0
-    for s in state_vector:
-        if isinstance(s, Variable):
-            norm += np.conj(s.val) * s.val
-        else:
-            norm += np.conj(s) * s
+    if isinstance(state_vector[0], Variable):
+        state_vector_values = [s.val for s in state_vector]
+        norm = np.sum(np.abs(state_vector_values)**2)
+    else:
+        norm = np.sum(np.abs(state_vector)**2)
+
     if not np.isclose(norm, 1.0, atol=1e-3):
         raise ValueError("State vector probabilities have to sum up to 1.0, got {}".format(norm))
     #######################
@@ -315,9 +315,12 @@ def MottonenStatePreparation(state_vector, wires):
     omega = sparse.dok_matrix(state_vector.shape)
 
     for (i, j), v in state_vector.items():
-        a[i, j] = np.absolute(v)
-        omega[i, j] = np.angle(v)
-
+        if isinstance(v, Variable):
+            a[i, j] = np.absolute(v.val)
+            omega[i, j] = np.angle(v.val)
+        else:
+            a[i, j] = np.absolute(v)
+            omega[i, j] = np.angle(v)
     # This code is directly applying the inverse of Carsten Blank's
     # code to avoid inverting at the end
 

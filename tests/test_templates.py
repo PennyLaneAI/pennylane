@@ -41,6 +41,8 @@ from pennylane.templates.embeddings import (AmplitudeEmbedding,
                                             AngleEmbedding,
                                             SqueezingEmbedding,
                                             DisplacementEmbedding)
+from pennylane.templates.state_preparations import (BasisStatePreparation,
+                                                    MottonenStatePreparation)
 from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
@@ -253,11 +255,14 @@ class TestIntegrationCircuitSpecialCases:
     """Tests the integration of templates with special requirements into circuits. """
 
     REQUIRE_FIRST_USING_ARGS = [(AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': False}),
-                                (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': True})]
+                                (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': True}),
+                                (MottonenStatePreparation, [np.array([1 / 2, 1 / 2, 1 / 2, 1 / 2])], {})]
 
     REQUIRE_FIRST_USING_KWARGS = [(AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': False}),
                                   (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': True}),
-                                  (BasisEmbedding, [[1, 0]], {})]
+                                  (BasisEmbedding, [[1, 0]], {}),
+                                  (MottonenStatePreparation, [np.array([1 / 2, 1 / 2, 1 / 2, 1 / 2])], {}),
+                                  (BasisStatePreparation, [np.array([1, 0])], {})]
 
     def qnode_first_op_args(self, dev, intrfc, templ1, templ2, hyperparameters1, hyperparameters2, n):
         """QNode for qubit integration circuit without gates before the first template,
@@ -268,9 +273,6 @@ class TestIntegrationCircuitSpecialCases:
         @qml.qnode(dev, interface=intrfc)
         def circuit(*inp):
             # Split inputs again
-            ks = [int(k) for k in inp.keys()]
-            vs = inp.values()
-            inp = [x for _, x in sorted(zip(ks, vs))]
             inp1 = inp[:n]
             inp2 = inp[n:]
             # Circuit
@@ -306,17 +308,17 @@ class TestIntegrationCircuitSpecialCases:
     @pytest.mark.parametrize("first_tmpl, first_inpts, first_hyperparams", REQUIRE_FIRST_USING_ARGS)
     @pytest.mark.parametrize("template, inpts, hyperparams", QUBIT_CONSTANT_INPUT)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_first_template_kwargs(self, first_tmpl, first_inpts, first_hyperparams,
+    def test_integration_first_template_args(self, first_tmpl, first_inpts, first_hyperparams,
                                                template, inpts, hyperparams, intrfc, to_var):
         """Checks integration of templates that must be the first operation in the circuit while
-        using keyword arguments."""
+        using positional arguments."""
         inpts = first_inpts + inpts  # Combine inputs to allow passing with *
-        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
+        inpts = [to_var(inp) for inp in inpts]
         dev = qml.device('default.qubit', wires=2)
         circuit = self.qnode_first_op_args(dev, intrfc, first_tmpl, template, first_hyperparams, hyperparams,
                                            len(first_inpts))
         # Check that execution does not throw error
-        circuit(**inpts)
+        circuit(*inpts)
 
     @pytest.mark.parametrize("first_tmpl, first_inpts, first_hyperparams", REQUIRE_FIRST_USING_KWARGS)
     @pytest.mark.parametrize("template, inpts, hyperparams", QUBIT_CONSTANT_INPUT)
@@ -328,7 +330,8 @@ class TestIntegrationCircuitSpecialCases:
         inpts = first_inpts + inpts  # Combine inputs to allow passing with *
         inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
         dev = qml.device('default.qubit', wires=2)
-        circuit = self.qnode_first_op_kwargs(dev, intrfc, first_tmpl, template, first_hyperparams, hyperparams, len(first_inpts))
+        circuit = self.qnode_first_op_kwargs(dev, intrfc, first_tmpl, template, first_hyperparams, hyperparams,
+                                             len(first_inpts))
         # Check that execution does not throw error
         circuit(**inpts)
 

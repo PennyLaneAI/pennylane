@@ -43,7 +43,7 @@ def _strongly_entangling_layer(weights, wires, r, imprimitive):
             imprimitive(wires=[wires[i], wires[(i + r) % n_wires]])
 
 
-def _random_layer(weights, wires, ratio_imprim, imprimitive, n_rots, rotations, seed):
+def _random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
     r"""A single random layer.
 
     Args:
@@ -51,7 +51,6 @@ def _random_layer(weights, wires, ratio_imprim, imprimitive, n_rots, rotations, 
         wires (Sequence[int]): sequence of qubit indices that the template acts on
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-        n_rots (int): number of rotations per layer
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
@@ -61,7 +60,7 @@ def _random_layer(weights, wires, ratio_imprim, imprimitive, n_rots, rotations, 
         np.random.seed(seed)
 
     i = 0
-    while i < n_rots:
+    while i < len(weights):
         if np.random.random() > ratio_imprim:
             gate = np.random.choice(rotations)
             wire = np.random.choice(wires)
@@ -112,16 +111,16 @@ def _cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, var
 
 
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
-    r"""Layers of type :func:`StronglyEntanglingLayer()`, consisting of single qubit rotations and entanglers,
-     [inspired by `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_].
+    r"""Layers consisting of single qubit rotations and entanglers, inspired by the circuit-centric classifier design
+    `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_.
 
     The argument ``weights`` contains the weights for each layer. The number of layers :math:`L` is therefore derived
     from the first dimension of ``weights``.
 
     The 2-qubit gates, whose type is specified by the ``imprimitive`` argument,
     act chronologically on the :math:`M` wires, :math:`i = 1,...,M`. The second qubit of each gate is given by
-    :math:`(i+r)\mod M`, where :math:`r` is a  hyperparameter called the *range*. If applied to one qubit only,
-    this template will use no imprimitive gates.
+    :math:`(i+r)\mod M`, where :math:`r` is a  hyperparameter called the *range*, and :math:`r < M`.
+    If applied to one qubit only, this template will use no imprimitive gates.
 
     This is an example of two 4-qubit strongly entangling layers (ranges :math:`r=1` and :math:`r=2`, respectively) with
     rotations :math:`R` and CNOTs as imprimitives:
@@ -132,12 +131,12 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         :target: javascript:void(0);
 
     Args:
-        weights (array[float]): array of weights of shape ``(:math:`L`, len(wires), 3)``
+        weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Keyword Args:
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
-                                using the :math:`r=l` for the :math:`l`th layer
+                                using :math:`r=l \mod M` for the :math:`l`th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
     Raises:
@@ -154,16 +153,23 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     _check_shape(weights, (repeat, n_wires, 3))
 
-    _check_type(repeat, [int])
     _check_type(ranges, [list, type(None)])
-    if ranges is not None:
-        _check_type(ranges[0], [int])
+
+    if ranges is None:
+        # Tile ranges with iterations of range(1, n_wires)
+        ranges = [(l % (n_wires-1)) + 1 for l in range(repeat)]
+
+    msg = "StronglyEntanglingLayers expects ``ranges`` to contain a range for each layer; " \
+          "got {}.".format(len(ranges))
+    _check_shape(ranges, (repeat,), msg=msg)
+    msg = "StronglyEntanglingLayers expects ``ranges`` to be a list of integers; got {}.".format(len(ranges))
+    _check_type(ranges[0], [int], msg=msg)
+    if any((r >= n_wires or r == 0) for r in ranges):
+        raise ValueError("The range hyperparameter for all layers needs to be smaller than the number of "
+                         "qubits; got ranges {}.".format(ranges))
     ###############
 
     for l in range(repeat):
-
-        if ranges is None:
-            ranges = [1] * repeat
 
         _strongly_entangling_layer(weights=weights[l], wires=wires, r=ranges[l], imprimitive=imprimitive)
 
@@ -242,7 +248,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     for l in range(repeat):
         _random_layer(weights=weights[l], wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive,
-                      n_rots=n_rots, rotations=rotations, seed=seed)
+                      rotations=rotations, seed=seed)
 
 
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):

@@ -74,11 +74,10 @@ def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     return params
 
 
-
 def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for :func:`~.RandomLayers`, drawn from a uniform distribution.
 
-    The shape of the parameter array is ``(n_layers, n_rots)`` and each parameter is drawn uniformly at random \
+    The shape of the parameter array is ``(n_layers, n_rotations)`` and each parameter is drawn uniformly at random \
     from between ``low`` and ``high``. The parameters define the rotation angles of the randomly \
     positioned rotations applied in each layer.
 
@@ -87,7 +86,7 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
         n_wires (int): number of qubits
 
     Keyword Args:
-        n_rots (int): number of rotations, if ``None``, ``n_rots=n_wires``
+        n_rots (int): number of rotations, if ``None``, ``n_rotations=n_wires``
         low (float): minimum value of non-angle gate parameters
         high (float): maximum value of non-angle gate parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
@@ -108,7 +107,7 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
 def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for :func:`~.RandomLayers`, drawn from a normal distribution.
 
-    The shape of the parameter array is ``(n_layers, n_rots)`` and each parameter is drawn
+    The shape of the parameter array is ``(n_layers, n_rotations)`` and each parameter is drawn
     from a normal distribution with mean ``mean`` and standard deviation ``std``.
     The parameters define the rotation angles of the randomly positioned rotations applied in each layer.
 
@@ -117,7 +116,7 @@ def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=N
         n_wires (int): number of qubits
 
     Keyword Args:
-        n_rots (int): number of rotations, if ``None``, ``n_rots=n_wires``
+        n_rots (int): number of rotations, if ``None``, ``n_rotations=n_wires``
         mean (float): mean of parameters
         std (float): standard deviation of parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic

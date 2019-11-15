@@ -270,9 +270,8 @@ class TestBasisEmbedding:
         res = circuit(x=state)
         assert np.allclose(res, [1, -1])
 
-    def test_basis_embedding_exception_subsystems(self):
-        """Verifies that BasisEmbedding() throws exception
-        if number of subsystems wrong."""
+    def test_basis_embedding_too_many_input_bits_exception(self):
+        """Verifies that BasisEmbedding() throws exception if there are more features than qubits."""
 
         n_qubits = 2
         dev = qml.device('default.qubit', wires=n_qubits)
@@ -285,11 +284,24 @@ class TestBasisEmbedding:
         with pytest.raises(ValueError):
             circuit(x=np.array([0, 1, 1]))
 
-    def test_basis_embedding_exception_wiresnolist(self):
-        """Verifies that BasisEmbedding() raises an exception if ``wires`` is not
-        iterable or an int."""
+    def test_basis_embedding_not_enough_input_bits_exception(self):
+        """Verifies that BasisEmbedding() throws exception if there are less features than qubits."""
 
-        n_subsystems = 5
+        n_qubits = 2
+        dev = qml.device('default.qubit', wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            BasisEmbedding(features=x, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError):
+            circuit(x=np.array([0]))
+
+    def test_basis_embedding_illegal_wires_exception(self):
+        """Verifies that BasisEmbedding() raises an exception if ``wires`` has incorrect format."""
+
+        n_subsystems = 2
         dev = qml.device('default.qubit', wires=n_subsystems)
 
         @qml.qnode(dev)
@@ -297,88 +309,23 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires="a")
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError):
-            circuit(x=[1])
-
-
-class TestSqueezingEmbedding:
-    """ Tests the SqueezingEmbedding method."""
-
-    def test_squeezing_embedding_state_execution_amplitude(self):
-        """Checks the state produced by SqueezingEmbedding()
-        using the amplitude execution method."""
-
-        features = np.array([1.2, 0.3])
-        n_wires = 2
-        dev = qml.device('default.gaussian', wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1)
-            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
-
-        assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
-
-    def test_squeezing_embedding_state_execution_phase(self):
-        """Checks the state produced by SqueezingEmbedding()
-        using the phase execution method."""
-
-        features = np.array([1.2, 0.3])
-        n_wires = 2
-        dev = qml.device('default.gaussian', wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=range(n_wires), method='phase', c=1)
-            Beamsplitter(pi/2, 0, wires=[0, 1])
-            SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1)
-            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
-
-        assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
-
-    def test_squeezing_embedding_exception_for_wrong_num_wires(self):
-        """Verifies that SqueezingEmbedding() throws exception if number of modes is wrong."""
-
-        n_wires = 2
-        dev = qml.device('default.gaussian', wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=range(n_wires), method='phase')
-            return [qml.expval(qml.X(i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError, match="SqueezingEmbedding cannot process more features than number of"):
-            circuit(x=[0.2, 0.3, 0.4])
-
-    def test_squeezing_embedding_strategy_not_recognized_exception(self):
-        """Verifies that SqueezingEmbedding() throws exception
-        if strategy unknown."""
-
-        n_wires = 2
-        dev = qml.device('default.gaussian', wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            SqueezingEmbedding(features=x, wires=range(n_wires), method='A')
-            return [qml.expval(qml.X(i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError, match="Did not recognise parameter encoding method"):
-            circuit(x=[1, 2])
-
-    def test_squeezing_embedding_wires_not_valid_exception(self):
-        """Verifies that SqueezingtEmbedding() raises an exception if ``wires`` is not
-        a list of indices."""
-
-        n_subsystems = 5
-        dev = qml.device('default.gaussian', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            DisplacementEmbedding(features=x, wires='a')
-            return qml.expval(qml.X(0))
-
         with pytest.raises(ValueError, match="Wires must be a positive"):
-            circuit(x=[1])
+            circuit(x=[1, 0])
+
+    def test_basis_embedding_input_not_binary_exception(self):
+        """Verifies that BasisEmbedding() raises an exception if the features contain
+        values other than zero and one."""
+
+        n_subsystems = 2
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            BasisEmbedding(features=x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Basis state must only consist of 0s and 1s"):
+            circuit(x=[2, 3])
 
 
 class TestDisplacementEmbedding:
@@ -448,6 +395,86 @@ class TestDisplacementEmbedding:
 
     def test_displacement_embedding_wires_not_valid_exception(self):
         """Verifies that DisplacementEmbedding() raises an exception if ``wires`` is not
+        a list of indices."""
+
+        n_subsystems = 5
+        dev = qml.device('default.gaussian', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            DisplacementEmbedding(features=x, wires='a')
+            return qml.expval(qml.X(0))
+
+        with pytest.raises(ValueError, match="Wires must be a positive"):
+            circuit(x=[1])
+
+
+class TestSqueezingEmbedding:
+    """ Tests the SqueezingEmbedding method."""
+
+    def test_squeezing_embedding_state_execution_amplitude(self):
+        """Checks the state produced by SqueezingEmbedding()
+        using the amplitude execution method."""
+
+        features = np.array([1.2, 0.3])
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, wires=range(n_wires), method='amplitude', c=1)
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
+
+        assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
+
+    def test_squeezing_embedding_state_execution_phase(self):
+        """Checks the state produced by SqueezingEmbedding()
+        using the phase execution method."""
+
+        features = np.array([1.2, 0.3])
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, wires=range(n_wires), method='phase', c=1)
+            Beamsplitter(pi/2, 0, wires=[0, 1])
+            SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1)
+            return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
+
+        assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
+
+    def test_squeezing_embedding_exception_for_wrong_num_wires(self):
+        """Verifies that SqueezingEmbedding() throws exception if number of modes is wrong."""
+
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, wires=range(n_wires), method='phase')
+            return [qml.expval(qml.X(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="SqueezingEmbedding cannot process more features than number of"):
+            circuit(x=[0.2, 0.3, 0.4])
+
+    def test_squeezing_embedding_strategy_not_recognized_exception(self):
+        """Verifies that SqueezingEmbedding() throws exception
+        if strategy unknown."""
+
+        n_wires = 2
+        dev = qml.device('default.gaussian', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            SqueezingEmbedding(features=x, wires=range(n_wires), method='A')
+            return [qml.expval(qml.X(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="Did not recognise parameter encoding method"):
+            circuit(x=[1, 2])
+
+    def test_squeezing_embedding_wires_not_valid_exception(self):
+        """Verifies that SqueezingtEmbedding() raises an exception if ``wires`` is not
         a list of indices."""
 
         n_subsystems = 5

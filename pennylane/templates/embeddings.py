@@ -79,13 +79,11 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         features = np.pad(features, (0, n_ampl-n_feats), mode='constant', constant_values=pad)
 
     # Normalize
-    norm = 0
-    for f in features:
-        if isinstance(f, Variable):
-            norm += np.conj(f.val) * f.val
-        else:
-            norm += np.conj(f) * f
-    norm = np.real(norm)
+    if isinstance(features[0], Variable):
+        feature_values = [s.val for s in features]
+        norm = np.sum(np.abs(feature_values)**2)
+    else:
+        norm = np.sum(np.abs(features)**2)
 
     if not np.isclose(norm, 1.0, atol=TOLERANCE, rtol=0):
         if normalize or pad:
@@ -183,6 +181,8 @@ def BasisEmbedding(features, wires):
     if any([b not in [0, 1] for b in features]):
         raise ValueError("Basis state must only consist of 0s and 1s, got {}".format(features))
     ###############
+
+    features = np.array(features)
 
     BasisState(features, wires=wires)
 
