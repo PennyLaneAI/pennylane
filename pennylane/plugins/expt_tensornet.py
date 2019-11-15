@@ -134,7 +134,10 @@ class TensorNetwork(Device):
         Returns:
             tn.Edge: the newly created edge
         """
-        edge = tn.connect(node1[idx1], node2[idx2])
+        try:
+            edge = tn.connect(node1[idx1], node2[idx2])
+        except AttributeError:
+            a = 3
         self._edges.append(edge)
         return edge
 
