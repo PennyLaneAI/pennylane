@@ -243,8 +243,6 @@ The following initialization functions are available:
     ~pennylane.init.cvqnn_layers_a_normal
     ~pennylane.init.cvqnn_layers_phi_a_uniform
     ~pennylane.init.cvqnn_layers_phi_a_normal
-    ~pennylane.init.cvqnn_layers_phi_a_uniform
-    ~pennylane.init.cvqnn_layers_phi_a_normal
     ~pennylane.init.cvqnn_layers_kappa_uniform
     ~pennylane.init.cvqnn_layers_kappa_normal
 
