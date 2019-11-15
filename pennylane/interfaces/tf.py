@@ -80,10 +80,10 @@ def TFQNode(qnode):
             # scalar result, cast to NumPy scalar
             res = np.array(res)
 
-        def grad(grad_output, **kwargs):
+        def grad(grad_output, **tfkwargs):
             """Returns the vector-Jacobian product"""
             # evaluate the Jacobian matrix of the QNode
-            variables = kwargs.get('variables', None)
+            variables = tfkwargs.get('variables', None)
             jacobian = qnode.jacobian(args, **kwargs)
 
             grad_output_np = grad_output.numpy()
