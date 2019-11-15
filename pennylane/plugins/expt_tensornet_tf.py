@@ -27,10 +27,22 @@ from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, I, H, S, T, 
                                              Y, Z, hermitian, identity,
                                              unitary)
 
+
 tn.set_default_backend("tensorflow")
 
 I = tf.constant(I, dtype=tf.complex128)
 X = tf.constant(X, dtype=tf.complex128)
+
+II = tf.eye(4, dtype=tf.complex128)
+ZZ = tf.constant(np.kron(Z, Z), dtype=tf.complex128)
+
+IX = tf.constant(np.kron(I, X), dtype=tf.complex128)
+IY = tf.constant(np.kron(I, Y), dtype=tf.complex128)
+IZ = tf.constant(np.kron(I, Z), dtype=tf.complex128)
+
+ZI = tf.constant(np.kron(Z, I), dtype=tf.complex128)
+ZX = tf.constant(np.kron(Z, X), dtype=tf.complex128)
+ZY = tf.constant(np.kron(Z, Y), dtype=tf.complex128)
 
 
 def Rphi(phi):
@@ -38,10 +50,12 @@ def Rphi(phi):
 
     Args:
         phi (float): phase shift angle
+
     Returns:
         array: unitary 2x2 phase shift matrix
     """
-    return np.array([[1, 0], [0, np.exp(1j*phi)]])
+    phi = tf.cast(phi, dtype=tf.complex128)
+    return ((1+tf.exp(1j*phi)) * I + (1-tf.exp(1j*phi)) * Z)/2
 
 
 def Rotx(theta):
@@ -49,6 +63,7 @@ def Rotx(theta):
 
     Args:
         theta (float): rotation angle
+
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
@@ -61,6 +76,7 @@ def Roty(theta):
 
     Args:
         theta (float): rotation angle
+
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
@@ -73,9 +89,11 @@ def Rotz(theta):
 
     Args:
         theta (float): rotation angle
+
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
+    theta = tf.cast(theta, dtype=tf.complex128)
     return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Z
 
 
@@ -84,6 +102,7 @@ def Rot3(a, b, c):
 
     Args:
         a,b,c (float): rotation angles
+
     Returns:
         array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
@@ -95,10 +114,13 @@ def CRotx(theta):
 
     Args:
         theta (float): rotation angle
+
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
+        array: unitary 4x4 rotation matrix
+        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
     """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1j*np.sin(theta/2)], [0, 0, -1j*np.sin(theta/2), np.cos(theta/2)]])
+    theta = tf.cast(theta, dtype=tf.complex128)
+    return tf.cos(theta/4)**2 * II - 1j*tf.sin(theta/2)/2 * IX + tf.sin(theta/4)**2 * ZI + 1j*tf.sin(theta/2)/2 * ZX
 
 
 def CRoty(theta):
@@ -109,7 +131,8 @@ def CRoty(theta):
     Returns:
         array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
     """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
+    theta = tf.cast(theta, dtype=tf.complex128)
+    return tf.cos(theta/4)**2 * II - 1j*tf.sin(theta/2)/2 * IY + tf.sin(theta/4)**2 * ZI + 1j*tf.sin(theta/2)/2 * ZY
 
 
 def CRotz(theta):
@@ -118,9 +141,11 @@ def CRotz(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
+        array: unitary 4x4 rotation matrix
+        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
     """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
+    theta = tf.cast(theta, dtype=tf.complex128)
+    return tf.cos(theta/4)**2 * II - 1j*tf.sin(theta/2)/2 * IZ + tf.sin(theta/4)**2 * ZI + 1j*tf.sin(theta/2)/2 * ZZ
 
 
 def CRot3(a, b, c):
@@ -129,9 +154,10 @@ def CRot3(a, b, c):
     Args:
         a,b,c (float): rotation angles
     Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
+        array: unitary 4x4 rotation matrix
+        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
+    return CRotz(c) @ (CRoty(b) @ CRotz(a))
 
 
 class TensorNetworkTF(TensorNetwork):
