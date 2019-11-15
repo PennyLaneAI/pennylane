@@ -317,7 +317,7 @@ class TensorNetworkTF(TensorNetwork):
 
         results = []
 
-        self.tape = tf.GradientTape()
+        self.tape = tf.GradientTape(persistent=True)
 
         with self.tape:
             self.pre_apply()
@@ -360,5 +360,5 @@ class TensorNetworkTF(TensorNetwork):
     def jacobian(self, queue, observables, parameters):
         res = self.execute(queue, observables, parameters=parameters)
         var = tf.nest.flatten(list(self.variables.values()))
-        jac = tf.stack(self.tape.jacobian(res, var)).numpy().T
+        jac = tf.stack(self.tape.jacobian(res, var, experimental_use_pfor=False)).numpy().T
         return jac
