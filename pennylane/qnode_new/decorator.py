@@ -25,7 +25,7 @@ from .qubit import QubitQNode
 
 PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
 ALLOWED_DIFF_METHODS = ("best", "parameter-shift", "finite-diff")
-ALLOWED_INTERFACE = ("autograd", "numpy", "torch", "tf")
+ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
 def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
@@ -122,7 +122,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
         return node
 
     raise ValueError("Interface {} not recognized. Allowed "
-                     "interfaces are {}".format(diff_method, ALLOWED_INTERFACE))
+                     "interfaces are {}".format(diff_method, ALLOWED_INTERFACES))
 
 
 def qnode(device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
