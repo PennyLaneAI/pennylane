@@ -26,8 +26,7 @@ from semantic_version import Version, Spec
 import pennylane.operation
 
 import pennylane.init
-import pennylane.templates.layers
-import pennylane.templates.embeddings
+import pennylane.templates
 import pennylane.vqe
 from pennylane.about import about
 

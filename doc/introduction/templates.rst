@@ -35,7 +35,7 @@ An example of how to use templates is the following:
     @qml.qnode(dev)
     def circuit(weights, x=None):
         AngleEmbedding(x, [0,1])
-        StronglyEntanglingLayers(*weights, wires=[0,1])
+        StronglyEntanglingLayers(weights, wires=[0,1])
         return qml.expval(qml.PauliZ(0))
 
     init_weights = strong_ent_layers_uniform(n_layers=3, n_wires=2)
@@ -118,8 +118,84 @@ The following subroutines are available:
 Parameter initializations
 -------------------------
 
-Each trainable template has a dedicated function in the :mod:`pennylane.init` module, which generates a list of
-randomly initialized arrays for the trainable parameters.
+Each trainable template has dedicated functions in the :mod:`pennylane.init` module, which generate
+randomly initialized arrays for the trainable parameters. For example, :func:`random_layers_uniform` can
+be used together with the template :func:`RandomLayers`:
+
+.. code-block:: python
+
+    import pennylane as qml
+    from pennylane.templates import RandomLayers
+    from pennylane.init import random_layers_uniform
+
+    dev = qml.device('default.qubit', wires=3)
+
+    @qml.qnode(dev)
+    def circuit(weights):
+        RandomLayers(weights=weights, wires=[0, 2])
+        return qml.expval(qml.PauliZ(0))
+
+    init_pars = random_layers_uniform(n_layers=3, n_wires=2)
+    circuit(init_pars)
+
+Templates that take more than one parameter
+array require several initialization functions:
+
+.. code-block:: python
+
+    from pennylane.templates import Interferometer
+    from pennylane.init import (interferometer_theta_uniform,
+                                interferometer_phi_uniform,
+                                interferometer_varphi_normal)
+
+    dev = qml.device('default.gaussian', wires=3)
+
+    @qml.qnode(dev)
+    def circuit(theta, phi, varphi):
+        Interferometer(theta=theta, phi=phi, varphi=varphi, wires=[0, 2])
+        return qml.expval(qml.X(0))
+
+    init_theta = interferometer_theta_uniform(n_wires=2)
+    init_phi = interferometer_phi_uniform(n_wires=2)
+    init_varphi = interferometer_varphi_normal(n_wires=2)
+
+    circuit(init_theta, init_phi, init_varphi)
+
+
+For templates with multiple parameters, initializations that
+return a list of all parameter arrays at once are provided, and can
+be conveniently used in conjunction with the unpacking operator ``*``:
+
+.. code-block:: python
+
+    from pennylane.templates import Interferometer
+    from pennylane.init import interferometer_all
+
+    dev = qml.device('default.gaussian', wires=3)
+
+    @qml.qnode(dev)
+    def circuit(*pars):
+        Interferometer(*pars, wires=[0, 2])
+        return qml.expval(qml.X(0))
+
+    init_pars = interferometer_all(n_wires=2)
+
+    circuit(*init_pars)
+
+Initial parameters can be converted to Torch or TensorFlow tensors, which can be used in the
+respective interfaces.
+
+.. code-block:: python
+
+    import torch
+    import tensorflow as tf
+    from pennylane.init import strong_ent_layers_normal
+
+    init_pars = strong_ent_layers_normal(n_layers=3, n_wires=2)
+    init_torch = torch.tensor(init_pars)
+    init_tf = tf.Variable(init_pars)
+
+The following initialization functions are available:
 
 .. rubric:: Strongly entangling circuit
 
@@ -152,8 +228,24 @@ randomly initialized arrays for the trainable parameters.
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.init.cvqnn_layers_uniform
-    ~pennylane.init.cvqnn_layers_normal
+    ~pennylane.init.cvqnn_layers_all
+    ~pennylane.init.cvqnn_layers_theta_uniform
+    ~pennylane.init.cvqnn_layers_theta_normal
+    ~pennylane.init.cvqnn_layers_phi_uniform
+    ~pennylane.init.cvqnn_layers_phi_normal
+    ~pennylane.init.cvqnn_layers_varphi_uniform
+    ~pennylane.init.cvqnn_layers_varphi_normal
+    ~pennylane.init.cvqnn_layers_r_uniform
+    ~pennylane.init.cvqnn_layers_r_normal
+    ~pennylane.init.cvqnn_layers_phi_r_uniform
+    ~pennylane.init.cvqnn_layers_phi_r_normal
+    ~pennylane.init.cvqnn_layers_a_uniform
+    ~pennylane.init.cvqnn_layers_a_normal
+    ~pennylane.init.cvqnn_layers_phi_a_uniform
+    ~pennylane.init.cvqnn_layers_phi_a_normal
+    ~pennylane.init.cvqnn_layers_kappa_uniform
+    ~pennylane.init.cvqnn_layers_kappa_normal
+
 
 :html:`</div>`
 
@@ -164,7 +256,12 @@ randomly initialized arrays for the trainable parameters.
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.init.interferometer_uniform
-    ~pennylane.init.interferometer_normal
+    ~pennylane.init.interferometer_all
+    ~pennylane.init.interferometer_theta_uniform
+    ~pennylane.init.interferometer_theta_normal
+    ~pennylane.init.interferometer_phi_uniform
+    ~pennylane.init.interferometer_phi_normal
+    ~pennylane.init.interferometer_varphi_uniform
+    ~pennylane.init.interferometer_varphi_normal
 
 :html:`</div>`
