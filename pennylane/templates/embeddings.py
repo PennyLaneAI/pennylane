@@ -21,8 +21,7 @@ from pennylane import numpy as np
 from pennylane.qnode import Variable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
-                                       _check_hyperp_is_in_options, _check_type,
-                                       _get_shape)
+                                       _check_hyperp_is_in_options, _check_type)
 
 TOLERANCE = 1e-3
 
@@ -128,9 +127,8 @@ def AngleEmbedding(features, wires, rotation='X'):
     _check_no_variable([rotation], ['rotation'])
     wires, n_wires = _check_wires(wires)
 
-    shape = _get_shape(features)
     msg = "AngleEmbedding cannot process more features than number of qubits {};" \
-          "got {}.".format(n_wires, shape[0])
+          "got {}.".format(n_wires, len(features))
     _check_shape(features, (n_wires,), bound='max', msg=msg)
     _check_type(rotation, [str])
 
@@ -223,9 +221,8 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
 
     wires, n_wires = _check_wires(wires)
 
-    shape = _get_shape(features)
     msg = "SqueezingEmbedding cannot process more features than number of wires {};" \
-          "got {}.".format(n_wires, shape[0])
+          "got {}.".format(n_wires, len(features))
     _check_shape(features, (n_wires,), bound='max', msg=msg)
 
     msg = "Did not recognise parameter encoding method {}.".format(method)
@@ -273,9 +270,8 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
 
     wires, n_wires = _check_wires(wires)
 
-    shape = _get_shape(features)
     msg = "DisplacementEmbedding cannot process more features than number of wires {};" \
-          "got {}.".format(n_wires, shape[0])
+          "got {}.".format(n_wires, len(features))
     _check_shape(features, (n_wires,), bound='max', msg=msg)
 
     msg = "Did not recognise parameter encoding method {}.".format(method)

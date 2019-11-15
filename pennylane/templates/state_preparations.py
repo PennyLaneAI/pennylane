@@ -22,8 +22,7 @@ from pennylane import numpy as np
 from pennylane.qnode import Variable
 from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,
-                                       _check_shape,
-                                       _get_shape)
+                                       _check_shape)
 
 
 # pylint: disable=len-as-condition,arguments-out-of-order
@@ -77,8 +76,7 @@ def BasisStatePreparation(basis_state, wires):
     # Input checks
     wires, n_wires = _check_wires(wires)
 
-    shape = _get_shape(basis_state)
-    msg = "The size of the basis state must match the number of qubits {}; got {}.".format(n_wires, shape[0])
+    msg = "The size of the basis state must match the number of qubits {}; got {}.".format(n_wires, len(basis_state))
     _check_shape(basis_state, (n_wires,), msg=msg)
 
     # basis_state cannot be trainable
@@ -290,8 +288,7 @@ def MottonenStatePreparation(state_vector, wires):
     # Input checks
     wires, n_wires = _check_wires(wires)
 
-    shape = _get_shape(state_vector)
-    msg = "The state vector must be of size {}; got {}.".format(2**n_wires, shape[0])
+    msg = "The state vector must be of size {}; got {}.".format(2**n_wires, len(state_vector))
     _check_shape(state_vector, (2**n_wires,), msg=msg)
 
     # check if state_vector is normalized
