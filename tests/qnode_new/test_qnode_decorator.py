@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.qnode` decorator.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.qnode_new import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode
@@ -32,7 +33,6 @@ def test_create_qubit_qnode():
 
     assert isinstance(circuit, QubitQNode)
     assert hasattr(circuit, "jacobian")
-
 
 def test_create_CV_qnode():
     """Test the decorator correctly creates Qubit QNodes"""
@@ -76,6 +76,22 @@ def test_torch_interface(skip_if_no_torch_support):
     assert circuit.interface == "torch"
 
 
+def test_finite_diff_qubit_qnode():
+    """Test that a finite-difference differentiable qubit QNode
+    is correctly created when diff_method='finite-diff'"""
+    dev = qml.device('default.qubit', wires=1)
+
+    @qnode(dev, diff_method="finite-diff")
+    def circuit(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.PauliZ(wires=0))
+
+    assert not isinstance(circuit, CVQNode)
+    assert not isinstance(circuit, QubitQNode)
+    assert isinstance(circuit, JacobianQNode)
+    assert hasattr(circuit, "jacobian")
+
+
 def test_tf_interface(skip_if_no_tf_support):
     """Test tf interface conversion"""
     dev = qml.device('default.qubit', wires=1)
@@ -116,7 +132,7 @@ def test_not_differentiable():
     """Test QNode marked as non-differentiable"""
     dev = qml.device('default.qubit', wires=1)
 
-    @qnode(dev, interface=None, differentiable=False)
+    @qnode(dev, interface=None, diff_method=None)
     def circuit(a):
         qml.RX(a, wires=0)
         return qml.expval(qml.PauliZ(wires=0))
@@ -126,3 +142,27 @@ def test_not_differentiable():
 
     assert not hasattr(circuit, "interface")
     assert not hasattr(circuit, "jacobian")
+
+
+def test_invalid_diff_method():
+    """Test exception raised if an invalid diff
+    method is provided"""
+    dev = qml.device('default.qubit', wires=1)
+
+    with pytest.raises(ValueError, match=r"Differentiation method \w+ not recognized"):
+        @qnode(dev, interface=None, diff_method="test")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+
+def test_invalid_interface():
+    """Test exception raised if an invalid interface
+    is provided"""
+    dev = qml.device('default.qubit', wires=1)
+
+    with pytest.raises(ValueError, match=r"Interface \w+ not recognized"):
+        @qnode(dev, interface="test")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
