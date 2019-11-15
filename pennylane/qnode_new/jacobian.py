@@ -34,6 +34,8 @@ class JacobianQNode(BaseQNode):
         """dict[int, str]: map from flattened quantum function positional parameter index
         to the gradient method to be used with that parameter"""
 
+    metric_tensor = None
+
     @property
     def interface(self):
         """str, None: automatic differentiation interface used by the node, if any"""
