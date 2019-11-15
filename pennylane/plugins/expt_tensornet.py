@@ -92,6 +92,7 @@ class TensorNetwork(Device):
         self._edges = []
         self._zero_state = np.zeros([2] * wires)
         self._zero_state[tuple([0] * wires)] = 1.0
+        self.backend = "numpy"
         # TODO: since this state is separable, can be more intelligent about not making a dense matrix
         self._state_node = self._add_node(
             self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState"
@@ -116,7 +117,7 @@ class TensorNetwork(Device):
             A.set_name(name)
             node = A
         else:
-            node = tn.Node(A, name=name)
+            node = tn.Node(A, name=name, backend=self.backend)
         self._nodes.append(node)
         return node
 
