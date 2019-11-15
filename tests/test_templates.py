@@ -18,8 +18,8 @@ combining templates, using positional and keyword arguments, and using different
 
 New tests are added as follows:
 
-* When adding a new interface, try to import it and extend the fixture ``interfaces``. Add interface to
-  TestGradientIntegration tests.
+* When adding a new interface, try to import it and extend the fixture ``interfaces``. Also add the interface
+  gradient computation to the TestGradientIntegration tests.
 
 * When adding a new template, extend the fixtures ``qubit_const`` or ``cv_const`` by a *list* of arguments to the
   template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
@@ -44,8 +44,12 @@ from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
                             random_layers_normal,
-                            cvqnn_layers_uniform,
-                            cvqnn_layers_normal)
+                            cvqnn_layers_all,
+                            interferometer_all)
+
+
+#######################################
+# Interfaces
 
 
 interfaces = [('numpy', np.array)]
@@ -73,15 +77,14 @@ except ImportError as e:
 #########################################
 # Templates
 
-# qubit templates and intialization functions
-qubit_func = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
-              (StronglyEntanglingLayers, strong_ent_layers_normal),
-              (RandomLayers, random_layers_uniform),
-              (RandomLayers, random_layers_normal)]
+qubit_func_layers = [(StronglyEntanglingLayers, strong_ent_layers_uniform),
+                     (StronglyEntanglingLayers, strong_ent_layers_normal),
+                     (RandomLayers, random_layers_uniform),
+                     (RandomLayers, random_layers_normal)]
 
-# cv templates and intialization functions
-cv_func = [(CVNeuralNetLayers, cvqnn_layers_uniform),
-           (CVNeuralNetLayers, cvqnn_layers_normal)]
+cv_func_layers = [(CVNeuralNetLayers, cvqnn_layers_all)]
+
+cv_func_subrtn = [(Interferometer, interferometer_all)]
 
 # qubit templates and constant inputs
 qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
@@ -91,6 +94,7 @@ qubit_const = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.
                ]
 
 # cv templates and constant inputs
+
 cv_const = [(DisplacementEmbedding, [[1., 2.]]),
             (SqueezingEmbedding, [[1., 2.]]),
             (CVNeuralNetLayers, [[[2.31], [1.22]],
@@ -336,11 +340,14 @@ class TestIntegrationCircuitSpecialCases:
 class TestInitializationIntegration:
     """Tests integration with the parameter initialization functions from pennylane.init"""
 
-    @pytest.mark.parametrize("template, inpts", qubit_func)
+    @pytest.mark.parametrize("template, inpts", qubit_func_layers)
     def test_integration_qubit_init(self, template, inpts, qubit_device, n_subsystems, n_layers):
         """Checks parameter initialization compatible with qubit templates."""
 
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
+        if not isinstance(inp, list):
+            inp = [inp]  # wrap argument for consistent unpacking
+
         @qml.qnode(qubit_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))
@@ -348,10 +355,15 @@ class TestInitializationIntegration:
         # Check that execution does not throw error
         circuit(inp)
 
-    @pytest.mark.parametrize("template, inpts", cv_func)
+
+    @pytest.mark.parametrize("template, inpts", cv_func_layers)
     def test_integration_cv_init(self, template, inpts, gaussian_device, n_subsystems, n_layers):
         """Checks parameter initialization compatible with continuous-variable templates."""
+
         inp = inpts(n_layers=n_layers, n_wires=n_subsystems)
+        if not isinstance(inp, list):
+            inp = [inp]  # wrap argument for consistent unpacking
+
         @qml.qnode(gaussian_device)
         def circuit(inp_):
             template(*inp_, wires=range(n_subsystems))
@@ -425,4 +437,3 @@ class TestGradientIntegration:
             with tf.GradientTape() as tape:
                 loss = circuit(*inpts)
                 assert tape.gradient(loss, grad_inpts) is not None
-
