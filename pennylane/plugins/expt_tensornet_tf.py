@@ -28,8 +28,6 @@ from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, I, H, S, T, 
                                              unitary)
 
 
-tn.set_default_backend("tensorflow")
-
 I = tf.constant(I, dtype=tf.complex128)
 X = tf.constant(X, dtype=tf.complex128)
 
@@ -197,6 +195,8 @@ class TensorNetworkTF(TensorNetwork):
 
     def __init__(self, wires, shots=1000, analytic=True):
         super().__init__(wires, shots)
+        self.backend = "tensorflow"
+
         self.eng = None
         self.analytic = True
         self._nodes = []
@@ -310,10 +310,6 @@ class TensorNetworkTF(TensorNetwork):
 
     def execute(self, queue, observables, parameters=None):
         self.check_validity(queue, observables)
-        self._op_queue = queue
-        self._obs_queue = observables
-        self._parameters = {} if parameters is None else parameters
-        self._parameters.update(parameters)
 
         results = []
 
@@ -325,7 +321,7 @@ class TensorNetworkTF(TensorNetwork):
             self.variables = {}
 
             for operation in queue:
-                self.variables[operation] = operation.params
+                self.variables[operation] = operation.params[:]
 
             for idx, par_dep_list in parameters.items():
                 first = par_dep_list[0]
@@ -351,14 +347,11 @@ class TensorNetworkTF(TensorNetwork):
                 elif obs.return_type is not None:
                     raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
-            self._op_queue = None
-            self._obs_queue = None
-            self._parameters = None
-
-            return tf.stack(results)
+            self.res = tf.stack(results)
+            return self.res.numpy()
 
     def jacobian(self, queue, observables, parameters):
-        res = self.execute(queue, observables, parameters=parameters)
+        self.execute(queue, observables, parameters=parameters)
         var = tf.nest.flatten(list(self.variables.values()))
-        jac = tf.stack(self.tape.jacobian(res, var, experimental_use_pfor=False)).numpy().T
+        jac = tf.stack(self.tape.jacobian(self.res, var, experimental_use_pfor=False)).numpy().T
         return jac
