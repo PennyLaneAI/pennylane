@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.qnode` decorator.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.qnode_new import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode
@@ -141,3 +142,27 @@ def test_not_differentiable():
 
     assert not hasattr(circuit, "interface")
     assert not hasattr(circuit, "jacobian")
+
+
+def test_invalid_diff_method():
+    """Test exception raised if an invalid diff
+    method is provided"""
+    dev = qml.device('default.qubit', wires=1)
+
+    with pytest.raises(ValueError, match=r"Differentiation method \w+ not recognized"):
+        @qnode(dev, interface=None, diff_method="test")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+
+def test_invalid_interface():
+    """Test exception raised if an invalid interface
+    is provided"""
+    dev = qml.device('default.qubit', wires=1)
+
+    with pytest.raises(ValueError, match=r"Interface \w+ not recognized"):
+        @qnode(dev, interface="test")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
