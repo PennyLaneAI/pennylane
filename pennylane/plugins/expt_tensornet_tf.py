@@ -226,9 +226,9 @@ class TensorNetworkTF(TensorNetwork):
 
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector":
-            state = np.asarray(par[0], dtype=np.complex128)
+            state = tf.constant(par[0], dtype=np.complex128)
             if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
-                self._state_node.tensor = np.reshape(state, [2] * self.num_wires)
+                self._state_node.tensor = tf.reshape(state, [2] * self.num_wires)
             else:
                 raise ValueError("State vector must be of length 2**wires.")
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
@@ -252,9 +252,9 @@ class TensorNetworkTF(TensorNetwork):
                         self.num_wires
                     )
                 )
-
-            self._state_node.tensor[tuple([0] * len(wires))] = 0
-            self._state_node.tensor[tuple(par[0])] = 1
+            stat_node = np.zeros(tuple([2] * len(wires)))
+            stat_node[tuple(par[0])] = 1
+            self._state_node.tensor = tf.constant(stat_node, dtype=tf.complex128)
             return
 
         A = self._get_operator_matrix(operation, par)

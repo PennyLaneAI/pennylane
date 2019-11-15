@@ -97,7 +97,7 @@ def tensornet_tf_device_1_wire():
 
 @pytest.fixture(scope="function")
 def tensornet_tf_device_2_wires():
-    return qml.device('expt.tensornet', wires=2)
+    return qml.device('expt.tensornet.tf', wires=2)
 
 
 @pytest.fixture(scope="function")
