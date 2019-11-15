@@ -213,7 +213,8 @@ class JacobianQNode(BaseQNode):
             raise ValueError("Cannot differentiate with respect to the parameters {}.".format(bad))
 
         if method == "device":
-            return self.device.jacobian(args, kwargs, wrt, self.circuit)  # FIXME placeholder
+            self._set_variables(args, kwargs)
+            return self.device.jacobian(self.circuit.operations, self.circuit.observables, self.variable_deps)
 
         if method == "A":
             bad = inds_using("F")
