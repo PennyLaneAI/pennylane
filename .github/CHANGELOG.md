@@ -23,6 +23,10 @@
 
 ### Breaking changes
 
+* Initialization functions now return a single array of weights per function. Utilities for multi-weight templates
+  `Interferometer()` and `CVNeuralNetLayers()` are provided.
+  [#412](https://github.com/XanaduAI/pennylane/pull/412)
+
 * The single layer templates `RandomLayer()`, `CVNeuralNetLayer()` and `StronglyEntanglingLayer()`
   have been turned into private functions `_random_layer()`, `_cv_neural_net_layer()` and
   `_strongly_entangling_layer()`. Recommended use is now via the corresponding `Layers()` templates.
@@ -69,10 +73,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-<<<<<<< HEAD
-
-=======
->>>>>>> master
 Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Oluwatobi Ogunbayo, Maria Schuld
 
 

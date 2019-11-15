@@ -110,7 +110,6 @@ def _cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, var
         Kerr(k[i], wires=wire)
 
 
-
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     r"""A sequence of layers specified in `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_. The layers are
     designed to rapidly entangle the qubits and consist of different.
