@@ -1,4 +1,4 @@
-# Copyright 2018 Xanadu Quantum Technologies Inc.
+# Copyright 2019 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests and integration tests for the :mod:`pennylane.plugin.Tensornet` device.
+Unit tests and integration tests for the :mod:`pennylane.plugin.Tensornet.tf` device.
 """
 import cmath
 # pylint: disable=protected-access,cell-var-from-loop
