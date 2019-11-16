@@ -19,6 +19,7 @@ import numpy as np
 import tensorflow as tf
 import tensornetwork as tn
 
+from pennylane import Device
 from pennylane.operation import Expectation, Variance, Sample
 from pennylane.qnode import QuantumFunctionError
 from pennylane.variable import Variable
@@ -29,19 +30,23 @@ from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, I, H, S, T, 
 from .expt_tensornet import TensorNetwork
 
 
-I = tf.constant(I, dtype=tf.complex128)
-X = tf.constant(X, dtype=tf.complex128)
+C_DTYPE = tf.complex128
+R_DTYPE = tf.float64
 
-II = tf.eye(4, dtype=tf.complex128)
-ZZ = tf.constant(np.kron(Z, Z), dtype=tf.complex128)
 
-IX = tf.constant(np.kron(I, X), dtype=tf.complex128)
-IY = tf.constant(np.kron(I, Y), dtype=tf.complex128)
-IZ = tf.constant(np.kron(I, Z), dtype=tf.complex128)
+I = tf.constant(I, dtype=C_DTYPE)
+X = tf.constant(X, dtype=C_DTYPE)
 
-ZI = tf.constant(np.kron(Z, I), dtype=tf.complex128)
-ZX = tf.constant(np.kron(Z, X), dtype=tf.complex128)
-ZY = tf.constant(np.kron(Z, Y), dtype=tf.complex128)
+II = tf.eye(4, dtype=C_DTYPE)
+ZZ = tf.constant(np.kron(Z, Z), dtype=C_DTYPE)
+
+IX = tf.constant(np.kron(I, X), dtype=C_DTYPE)
+IY = tf.constant(np.kron(I, Y), dtype=C_DTYPE)
+IZ = tf.constant(np.kron(I, Z), dtype=C_DTYPE)
+
+ZI = tf.constant(np.kron(Z, I), dtype=C_DTYPE)
+ZX = tf.constant(np.kron(Z, X), dtype=C_DTYPE)
+ZY = tf.constant(np.kron(Z, Y), dtype=C_DTYPE)
 
 
 def Rphi(phi):
@@ -53,7 +58,7 @@ def Rphi(phi):
     Returns:
         array: unitary 2x2 phase shift matrix
     """
-    phi = tf.cast(phi, dtype=tf.complex128)
+    phi = tf.cast(phi, dtype=C_DTYPE)
     return ((1+tf.exp(1j*phi)) * I + (1-tf.exp(1j*phi)) * Z)/2
 
 
@@ -66,7 +71,7 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    theta = tf.cast(theta, dtype=tf.complex128)
+    theta = tf.cast(theta, dtype=C_DTYPE)
     return tf.cos(theta/2) * I + 1j * tf.sin(-theta/2) * X
 
 
@@ -79,7 +84,7 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    theta = tf.cast(theta, dtype=tf.complex128)
+    theta = tf.cast(theta, dtype=C_DTYPE)
     return tf.cos(theta/2) * I + 1j * tf.sin(-theta/2) * Y
 
 
@@ -92,7 +97,7 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    theta = tf.cast(theta, dtype=tf.complex128)
+    theta = tf.cast(theta, dtype=C_DTYPE)
     return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Z
 
 
@@ -118,7 +123,7 @@ def CRotx(theta):
         array: unitary 4x4 rotation matrix
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
     """
-    theta = tf.cast(theta, dtype=tf.complex128)
+    theta = tf.cast(theta, dtype=C_DTYPE)
     return tf.cos(theta/4)**2 * II - 1j*tf.sin(theta/2)/2 * IX + tf.sin(theta/4)**2 * ZI + 1j*tf.sin(theta/2)/2 * ZX
 
 
@@ -130,7 +135,7 @@ def CRoty(theta):
     Returns:
         array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
     """
-    theta = tf.cast(theta, dtype=tf.complex128)
+    theta = tf.cast(theta, dtype=C_DTYPE)
     return tf.cos(theta/4)**2 * II - 1j*tf.sin(theta/2)/2 * IY + tf.sin(theta/4)**2 * ZI + 1j*tf.sin(theta/2)/2 * ZY
 
 
@@ -143,7 +148,7 @@ def CRotz(theta):
         array: unitary 4x4 rotation matrix
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
     """
-    theta = tf.cast(theta, dtype=tf.complex128)
+    theta = tf.cast(theta, dtype=C_DTYPE)
     return tf.cos(theta/4)**2 * II - 1j*tf.sin(theta/2)/2 * IZ + tf.sin(theta/4)**2 * ZI + 1j*tf.sin(theta/2)/2 * ZZ
 
 
@@ -198,7 +203,7 @@ class TensorNetworkTF(TensorNetwork):
     # observable mapping is inherited from expt.tensornet
 
     def __init__(self, wires, shots=1000, analytic=True):
-        super().__init__(wires, shots)
+        Device.__init__(self, wires, shots)
         self.backend = "tensorflow"
 
         self.variables = []
@@ -206,7 +211,7 @@ class TensorNetworkTF(TensorNetwork):
         for this circuit."""
 
         self.res = None
-        """tf.tensor[tf.float64]: result from the last circuit execution"""
+        """tf.tensor[R_DTYPE]: result from the last circuit execution"""
 
         self.eng = None
         self.analytic = True
@@ -214,7 +219,7 @@ class TensorNetworkTF(TensorNetwork):
         self._edges = []
         zero_state = np.zeros([2] * wires)
         zero_state[tuple([0] * wires)] = 1.0
-        self._zero_state = tf.constant(zero_state, dtype=tf.complex128)
+        self._zero_state = tf.constant(zero_state, dtype=C_DTYPE)
         # TODO: since this state is separable, can be more intelligent about not making a dense matrix
         self._state_node = self._add_node(
             self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState"
@@ -232,8 +237,8 @@ class TensorNetworkTF(TensorNetwork):
         """
         A = {**self._operation_map, **self._observable_map}[operation]
         if not callable(A):
-            return tf.constant(A, dtype=tf.complex128)
-        return tf.convert_to_tensor(A(*par), dtype=tf.complex128)
+            return tf.constant(A, dtype=C_DTYPE)
+        return tf.convert_to_tensor(A(*par), dtype=C_DTYPE)
 
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector":
@@ -263,9 +268,9 @@ class TensorNetworkTF(TensorNetwork):
                         self.num_wires
                     )
                 )
-            stat_node = np.zeros(tuple([2] * len(wires)))
-            stat_node[tuple(par[0])] = 1
-            self._state_node.tensor = tf.constant(stat_node, dtype=tf.complex128)
+            state_node = np.zeros(tuple([2] * len(wires)))
+            state_node[tuple(par[0])] = 1
+            self._state_node.tensor = tf.constant(state_node, dtype=C_DTYPE)
             return
 
         A = self._get_operator_matrix(operation, par)
@@ -352,7 +357,7 @@ class TensorNetworkTF(TensorNetwork):
                 # For the above parameter dependency, get the corresponding
                 # operation parameter variable, and get the numeric value.
                 # Convert the resulting value to a TensorFlow tensor.
-                v = tf.Variable(first.op.params[first.par_idx].val, dtype=tf.float64)
+                v = tf.Variable(first.op.params[first.par_idx].val, dtype=R_DTYPE)
 
                 # Mark the variable to be watched by the gradient tape,
                 # and append it to the variable list.
@@ -367,7 +372,7 @@ class TensorNetworkTF(TensorNetwork):
                     op_params[p.op][p.par_idx] = v*p.op.params[p.par_idx].mult
 
             # check that no Variables remain in the op_params dictionary
-            values = [item for sublist in list(op_params.values()) for item in sublist]
+            values = [item for sublist in op_params.values() for item in sublist]
             assert not any(isinstance(v, Variable) for v in values)
 
             for operation in queue:
