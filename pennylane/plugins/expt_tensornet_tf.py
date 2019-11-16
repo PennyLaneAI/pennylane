@@ -19,7 +19,6 @@ import numpy as np
 import tensorflow as tf
 import tensornetwork as tn
 
-from pennylane import Device
 from pennylane.operation import Expectation, Variance, Sample
 from pennylane.qnode import QuantumFunctionError
 from pennylane.variable import Variable
@@ -203,7 +202,7 @@ class TensorNetworkTF(TensorNetwork):
     # observable mapping is inherited from expt.tensornet
 
     def __init__(self, wires, shots=1000, analytic=True):
-        Device.__init__(self, wires, shots)
+        super(TensorNetwork, self).__init__(wires, shots)
         self.backend = "tensorflow"
 
         self.variables = []
@@ -211,7 +210,7 @@ class TensorNetworkTF(TensorNetwork):
         for this circuit."""
 
         self.res = None
-        """tf.tensor[R_DTYPE]: result from the last circuit execution"""
+        """tf.tensor[tf.float64]: result from the last circuit execution"""
 
         self.eng = None
         self.analytic = True
@@ -230,8 +229,9 @@ class TensorNetworkTF(TensorNetwork):
         """Get the operator matrix for a given operation or observable.
 
         Args:
-          operation    (str): name of the operation/observable
+          operation (str): name of the operation/observable
           par (tuple[float]): parameter values
+
         Returns:
           array: matrix representation.
         """
