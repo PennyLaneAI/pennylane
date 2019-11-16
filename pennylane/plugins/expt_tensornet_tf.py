@@ -19,13 +19,14 @@ import numpy as np
 import tensorflow as tf
 import tensornetwork as tn
 
-from pennylane.qnode import QuantumFunctionError
 from pennylane.operation import Expectation, Variance, Sample
-from .expt_tensornet import TensorNetwork
+from pennylane.qnode import QuantumFunctionError
+from pennylane.variable import Variable
 
 from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, I, H, S, T, X,
-                                             Y, Z, hermitian, identity,
-                                             unitary)
+                                             Y, Z, unitary)
+
+from .expt_tensornet import TensorNetwork
 
 
 I = tf.constant(I, dtype=tf.complex128)
@@ -164,6 +165,7 @@ class TensorNetworkTF(TensorNetwork):
     Args:
         wires (int): the number of modes to initialize the device in
     """
+    # pylint: disable=too-many-instance-attributes
     name = "PennyLane TensorNetwork (TensorFlow) simulator plugin"
     short_name = "expt.tensornet.tf"
     _capabilities = {"model": "qubit", "tensor_observables": True, "provides_jacobian": True}
@@ -193,9 +195,18 @@ class TensorNetworkTF(TensorNetwork):
         "CRot": CRot3,
     }
 
+    # observable mapping is inherited from expt.tensornet
+
     def __init__(self, wires, shots=1000, analytic=True):
         super().__init__(wires, shots)
         self.backend = "tensorflow"
+
+        self.variables = []
+        """List[tf.Variable]: Free parameters, cast to TensorFlow variables,
+        for this circuit."""
+
+        self.res = None
+        """tf.tensor[tf.float64]: result from the last circuit execution"""
 
         self.eng = None
         self.analytic = True
@@ -312,6 +323,7 @@ class TensorNetworkTF(TensorNetwork):
         return tf.math.real(expval)
 
     def execute(self, queue, observables, parameters=None):
+        # pylint: disable=attribute-defined-outside-init, pointless-string-statement
         self.check_validity(queue, observables)
 
         results = []
@@ -321,23 +333,51 @@ class TensorNetworkTF(TensorNetwork):
         with self.tape:
             self.pre_apply()
 
-            self.variables = {}
+            op_params = {}
+            """dict[Operation, List[Any, tf.Variable]]: a mapping from each operation
+            in the queue, to the corresponding list of parameter values. These
+            values can be Python numeric types, NumPy arrays, or TensorFlow variables."""
 
             for operation in queue:
-                self.variables[operation] = operation.params[:]
+                # Copy the operation parameters to the op_params dictionary.
+                # Note that these are the unwrapped parameters, so PennyLane
+                # free parameters will be represented as Variable instances.
+                op_params[operation] = operation.params[:]
 
-            for idx, par_dep_list in parameters.items():
+            # Loop through the free parameter reference dictionary
+            for _, par_dep_list in parameters.items():
+                # get the first parameter dependency for each free parameter
                 first = par_dep_list[0]
+
+                # For the above parameter dependency, get the corresponding
+                # operation parameter variable, and get the numeric value.
+                # Convert the resulting value to a TensorFlow tensor.
                 v = tf.Variable(first.op.params[first.par_idx].val, dtype=tf.float64)
+
+                # Mark the variable to be watched by the gradient tape,
+                # and append it to the variable list.
                 self.tape.watch(v)
+                self.variables.append(v)
 
                 for p in par_dep_list:
-                    self.variables[p.op][p.par_idx] = v*p.op.params[p.par_idx].mult
+                    # Replace the existing Variable free parameter in the op_params dictionary
+                    # with the corresponding tf.Variable parameter.
+                    # Note that the free parameter might be scaled by the
+                    # variable.mult scaling factor.
+                    op_params[p.op][p.par_idx] = v*p.op.params[p.par_idx].mult
+
+            # check that no Variables remain in the op_params dictionary
+            values = [item for sublist in list(op_params.values()) for item in sublist]
+            assert not any(isinstance(v, Variable) for v in values)
 
             for operation in queue:
-                self.apply(operation.name, operation.wires, self.variables[operation])
+                # Apply each operation, but instead of passing operation.parameters
+                # (which contains the evaluated numeric parameter values),
+                # pass op_params[operation], which contains numeric values
+                # for fixed parameters, and tf.Variable objects for free parameters.
+                self.apply(operation.name, operation.wires, op_params[operation])
 
-            for i, obs in enumerate(observables):
+            for obs in observables:
                 if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, obs.wires, obs.parameters))
 
@@ -350,11 +390,28 @@ class TensorNetworkTF(TensorNetwork):
                 elif obs.return_type is not None:
                     raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
+            # convert the results list into a single tensor
             self.res = tf.stack(results)
+            # flatten the variables list in case of nesting
+            self.variables = tf.nest.flatten(self.variables)
+
+            # return the results as a NumPy array
             return self.res.numpy()
 
     def jacobian(self, queue, observables, parameters):
+        """Calculates the Jacobian of the device circuit using TensorFlow
+        backpropagation.
+
+        Args:
+            queue (list[Operation]): operations to be applied to the device
+            observables (list[Observable]): observables to be measured
+            parameters (dict[int, ParameterDependency]): reference dictionary
+                mapping free parameter values to the operations that
+                depend on them
+
+        Returns:
+            array[float]: Jacobian matrix of size (``num_params``, ``num_wires``)
+        """
         self.execute(queue, observables, parameters=parameters)
-        var = tf.nest.flatten(list(self.variables.values()))
-        jac = tf.stack(self.tape.jacobian(self.res, var, experimental_use_pfor=False)).numpy().T
+        jac = tf.stack(self.tape.jacobian(self.res, self.variables, experimental_use_pfor=False)).numpy().T
         return jac
