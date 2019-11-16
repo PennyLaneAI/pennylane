@@ -373,7 +373,7 @@ class TensorNetworkTF(TensorNetwork):
 
             # check that no Variables remain in the op_params dictionary
             values = [item for sublist in op_params.values() for item in sublist]
-            assert not any(isinstance(v, Variable) for v in values)
+            assert not any(isinstance(v, Variable) for v in values), "A pennylane.Variable instance was not correctly converted to a tf.Variable"
 
             for operation in queue:
                 # Apply each operation, but instead of passing operation.parameters
