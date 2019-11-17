@@ -110,8 +110,6 @@ class TestQNodeIntegration:
         circuit2 = QNode(circuit, dev2, diff_method=diff_method)
 
         assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
-        print(circuit1.jacobian([p]))
-        print(circuit2.jacobian([p]))
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("diff_method", ALLOWED_DIFF_METHODS)
@@ -208,7 +206,7 @@ class TestBackpropagationInterfaceIntegration:
 
         params = Variable(torch.tensor(self.p), requires_grad=True)
         res = cost(params)
-        assert np.allclose(res.numpy(), self.expected_cost, atol=tol, rtol=0)
+        assert np.allclose(res.detach().numpy(), self.expected_cost, atol=tol, rtol=0)
 
         res.backward()
         res = params.grad
