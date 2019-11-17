@@ -110,6 +110,9 @@ def TFQNode(qnode):
             else:
                 grad_input = tf.convert_to_tensor(grad_input)
 
+            if variables is not None:
+                return grad_input, variables
+
             return grad_input
 
         return res, grad

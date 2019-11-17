@@ -211,7 +211,7 @@ class TestGradientInterfaceIntegration:
         assert np.allclose(res.numpy(), self.expected_cost, atol=tol, rtol=0)
 
         res = tape.gradient(res, [a, b])
-        assert np.allclose(res.numpy(), self.expected_grad, atol=tol, rtol=0)
+        assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
 
 
 class TestHybridInterfaceIntegration:
