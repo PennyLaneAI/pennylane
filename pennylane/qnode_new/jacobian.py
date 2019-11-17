@@ -20,10 +20,10 @@ import numpy as np
 
 from pennylane.operation import ObservableReturnTypes
 from pennylane.utils import _flatten, _inv_dict
-from pennylane.qnode_new.qnode import QNode, QuantumFunctionError
+from pennylane.qnode_new.base import BaseQNode, QuantumFunctionError
 
 
-class JacobianQNode(QNode):
+class JacobianQNode(BaseQNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
 
@@ -345,6 +345,7 @@ class JacobianQNode(QNode):
             QuantumFunctionError: if PyTorch is not installed
         """
         # Placing slow imports here, in case the user does not use the Torch interface
+        # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
             from pennylane.interfaces.torch import TorchQNode
         except ImportError:  # pragma: no cover
@@ -361,6 +362,7 @@ class JacobianQNode(QNode):
             QuantumFunctionError: if TensorFlow >= 1.12 is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
+        # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
             from pennylane.interfaces.tf import TFQNode
         except ImportError:  # pragma: no cover
@@ -378,6 +380,7 @@ class JacobianQNode(QNode):
             QuantumFunctionError: if Autograd is not installed
         """
         # Placing slow imports here, in case the user does not use the TF interface
+        # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
             from pennylane.interfaces.autograd import to_autograd as _to_autograd
         except ImportError:  # pragma: no cover

@@ -29,7 +29,7 @@ from pennylane.utils import expand
 
 from pennylane.operation import Observable, ObservableReturnTypes
 from pennylane.qnode_new.jacobian import JacobianQNode
-from pennylane.qnode_new.qnode import QuantumFunctionError
+from pennylane.qnode_new.base import QuantumFunctionError
 
 
 class QubitQNode(JacobianQNode):

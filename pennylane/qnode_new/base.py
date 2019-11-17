@@ -83,7 +83,7 @@ def _get_signature(func):
     func.n_pos = n_pos
 
 
-class QNode:
+class BaseQNode:
     """Base class for quantum nodes in the hybrid computational graph.
 
     A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`
