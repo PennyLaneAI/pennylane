@@ -15,6 +15,7 @@ r"""
 Experimental simulator plugin based on tensor network contractions,
 using the TensorFlow backend for Jacobian computations.
 """
+import copy
 from unittest import mock
 
 import numpy as np
@@ -187,6 +188,20 @@ class TensorNetworkTF(TensorNetwork):
     # pylint: disable=too-many-instance-attributes
     name = "PennyLane TensorNetwork (TensorFlow) simulator plugin"
     short_name = "expt.tensornet.tf"
+    _capabilities = {"model": "qubit", "tensor_observables": True, "provides_jacobian": True}
+
+    _operation_map = copy.copy(TensorNetwork._operation_map)
+    _operation_map.update({
+        "PhaseShift": Rphi,
+        "RX": Rotx,
+        "RY": Roty,
+        "RZ": Rotz,
+        "Rot": Rot3,
+        "CRX": CRotx,
+        "CRY": CRoty,
+        "CRZ": CRotz,
+        "CRot": CRot3,
+    })
 
     backend = "tensorflow"
     reshape = staticmethod(tf.reshape)
@@ -215,25 +230,6 @@ class TensorNetworkTF(TensorNetwork):
         self.tape = None
         """tf.GradientTape: the gradient tape under which all tensor network
         modifications must be made"""
-
-        # replace the original numpy versions of the parameterized
-        # gate functions with TensorFlow versions defined above
-        self._operation_map.update(
-            {
-                "PhaseShift": Rphi,
-                "RX": Rotx,
-                "RY": Roty,
-                "RZ": Rotz,
-                "Rot": Rot3,
-                "CRX": CRotx,
-                "CRY": CRoty,
-                "CRZ": CRotz,
-                "CRot": CRot3,
-            }
-        )
-
-        # update capabilities dictionary
-        self._capabilities.update({"provides_jacobian": True})
 
         super().__init__(wires, shots=shots, analytic=analytic)
 

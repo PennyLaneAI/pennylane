@@ -40,6 +40,7 @@ class TestQNodeIntegration:
         assert dev.shots == 1000
         assert dev.analytic
         assert dev.short_name == "expt.tensornet.tf"
+        assert dev.capabilities()["provides_jacobian"]
 
     @pytest.mark.parametrize("decorator", [qml.qnode, qnode])
     def test_qubit_circuit(self, decorator, tol):
@@ -88,8 +89,7 @@ class TestQNodeIntegration:
         expected = np.array([[1, 0], [1, 0]]) / np.sqrt(2)
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", ALLOWED_DIFF_METHODS)
-    def test_jacobian_fanout(self, diff_method, torch_support, tol):
+    def test_jacobian_fanout(self, torch_support, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
         returns the same result as default.qubit, in the case of repeated parameters"""
         p = np.array([0.43316321, 0.2162158, 0.75110998])
@@ -106,16 +106,15 @@ class TestQNodeIntegration:
         dev1 = qml.device("expt.tensornet.tf", wires=3)
         dev2 = qml.device("default.qubit", wires=3)
 
-        circuit1 = QNode(circuit, dev1, diff_method=diff_method)
-        circuit2 = QNode(circuit, dev2, diff_method=diff_method)
+        circuit1 = QNode(circuit, dev1, diff_method="best")
+        circuit2 = QNode(circuit, dev2, diff_method="best")
 
         assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", ALLOWED_DIFF_METHODS)
-    def test_jacobian_agrees(self, diff_method, torch_support, tol):
+    def test_jacobian_agrees(self, torch_support, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
-        returns the same result as default.qubit, for a variety of differentiation methods."""
+        returns the same result as default.qubit."""
         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
 
         def circuit(x):
@@ -129,17 +128,96 @@ class TestQNodeIntegration:
         dev1 = qml.device("expt.tensornet.tf", wires=3)
         dev2 = qml.device("default.qubit", wires=3)
 
-        circuit1 = QNode(circuit, dev1, diff_method=diff_method)
-        circuit2 = QNode(circuit, dev2, diff_method=diff_method)
+        circuit1 = QNode(circuit, dev1, diff_method="best")
+        circuit2 = QNode(circuit, dev2, diff_method="best")
 
         assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
 
 
-class TestBackpropagationInterfaceIntegration:
+class TestGradientInterfaceIntegration:
     """Integration tests for expt.tensornet.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
     interfaces."""
+
+    a = -0.234
+    b = 0.654
+    p = [a, b]
+
+    # the analytic result of evaluating circuit(a, b)
+    expected_cost = 0.5 * (np.cos(a)*np.cos(b) + np.cos(a) - np.cos(b) + 1)
+
+    # the analytic result of evaluating grad(circuit(a, b))
+    expected_grad = np.array([
+        -0.5 * np.sin(a) * (np.cos(b) + 1),
+        0.5 * np.sin(b) * (1 - np.cos(a))
+    ])
+
+    @pytest.fixture
+    def circuit(self, interface, torch_support):
+        """Fixture to create cost function for the test class"""
+        dev = qml.device("expt.tensornet.tf", wires=2)
+
+        if interface == "torch" and not torch_support:
+            pytest.skip("Skipped, no torch support")
+
+        @qnode(dev, diff_method="best", interface=interface)
+        def circuit_fn(a, b):
+            qml.RX(a, wires=0)
+            qml.CRX(b, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        return circuit_fn
+
+    @pytest.mark.parametrize("interface", ["autograd"])
+    def test_autograd_interface(self, circuit, interface, tol):
+        """Tests that the gradient of an arbitrary U3 gate is correct
+        using the autograd interface"""
+        res = circuit(*self.p)
+        assert np.allclose(res, self.expected_cost, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(circuit, argnum=[0, 1])
+        res = np.asarray(grad_fn(*self.p))
+        assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("interface", ["torch"])
+    def test_torch_interface(self, circuit, interface, tol):
+        """Tests that the gradient of an arbitrary U3 gate is correct
+        using the Torch interface"""
+        import torch
+        from torch.autograd import Variable
+
+        params = Variable(torch.tensor(self.p), requires_grad=True)
+        res = circuit(*params)
+        assert np.allclose(res.detach().numpy(), self.expected_cost, atol=tol, rtol=0)
+
+        res.backward()
+        res = params.grad
+        assert np.allclose(res.detach().numpy(), self.expected_grad, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_tf_interface(self, circuit, interface, tol):
+        """Tests that the gradient of an arbitrary U3 gate is correct
+        using the TensorFlow interface"""
+        import tensorflow as tf
+
+        a = tf.Variable(self.a, dtype=tf.float64)
+        b = tf.Variable(self.b, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            tape.watch([a, b])
+            res = circuit(a, b)
+
+        assert np.allclose(res.numpy(), self.expected_cost, atol=tol, rtol=0)
+
+        res = tape.gradient(res, [a, b])
+        assert np.allclose(res.numpy(), self.expected_grad, atol=tol, rtol=0)
+
+
+class TestHybridInterfaceIntegration:
+    """Integration tests for expt.tensornet.tf. This test class ensures it integrates
+    properly with the PennyLane UI, in particular the classical machine learning
+    interfaces in the case of hybrid-classical computation."""
 
     theta = 0.543
     phi = -0.234
@@ -210,7 +288,7 @@ class TestBackpropagationInterfaceIntegration:
 
         res.backward()
         res = params.grad
-        assert np.allclose(res.numpy(), self.expected_grad, atol=tol, rtol=0)
+        assert np.allclose(res.detach().numpy(), self.expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["tf"])
     def test_tf_interface(self, cost, interface, tol):
