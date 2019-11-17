@@ -19,7 +19,6 @@ from unittest import mock
 
 import numpy as np
 import tensorflow as tf
-import tensornetwork as tn
 
 from pennylane.variable import Variable
 from pennylane.plugins.default_qubit import I, X, Y, Z
@@ -213,6 +212,10 @@ class TensorNetworkTF(TensorNetwork):
         in the queue, to the corresponding list of parameter values. These
         values can be Python numeric types, NumPy arrays, or TensorFlow variables."""
 
+        self.tape = None
+        """tf.GradientTape: the gradient tape under which all tensor network
+        modifications must be made"""
+
         # replace the original numpy versions of the parameterized
         # gate functions with TensorFlow versions defined above
         self._operation_map.update(
@@ -292,7 +295,7 @@ class TensorNetworkTF(TensorNetwork):
             # for fixed parameters, and tf.Variable objects for free parameters.
             super().apply(operation.name, operation.wires, self.op_params[operation])
 
-    def apply(self, operation, wires, params):
+    def apply(self, operation, wires, par):
         # individual operations are already applied inside self.pre_apply()
         pass
 
@@ -301,6 +304,7 @@ class TensorNetworkTF(TensorNetwork):
             # call the Device.execute() method, but make sure
             # that np.asarray does not change the tf.tensor result
             # by temporarily mocking it out.
+            # pylint: disable=bad-super-call
             results = super(TensorNetwork, self).execute(queue, observables, parameters=parameters)
 
         with self.tape:
