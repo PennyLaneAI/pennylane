@@ -16,17 +16,365 @@ Unit tests and integration tests for the :mod:`pennylane.plugin.Tensornet.tf` de
 """
 from itertools import product
 
-import numpy
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane.plugins.expt_tensornet_tf import TensorNetworkTF
 from pennylane.qnode_new import qnode, QNode
 from pennylane.qnode_new.decorator import ALLOWED_INTERFACES, ALLOWED_DIFF_METHODS
+from pennylane.plugins.default_qubit import I, X, Y, Z, H, CNOT, SWAP, CNOT, Toffoli, CSWAP
+
+np.random.seed(42)
 
 
 tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
 tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
+
+
+#####################################################
+# Test matrices
+#####################################################
+
+U = np.array(
+    [
+        [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
+        [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
+    ]
+)
+
+U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
+A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+
+
+#####################################################
+# Define standard qubit operations
+#####################################################
+
+phase_shift = lambda phi: np.array([[1, 0], [0, np.exp(1j * phi)]])
+rx = lambda theta: np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * X
+ry = lambda theta: np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Y
+rz = lambda theta: np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Z
+rot = lambda a, b, c: rz(c) @ (ry(b) @ rz(a))
+crz = lambda theta: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, np.exp(-1j * theta / 2), 0],
+        [0, 0, 0, np.exp(1j * theta / 2)],
+    ]
+)
+
+
+single_qubit = [(qml.PauliX, X), (qml.PauliY, Y), (qml.PauliZ, Z), (qml.Hadamard, H)]
+
+
+single_qubit_param = [(qml.PhaseShift, phase_shift), (qml.RX, rx), (qml.RY, ry), (qml.RZ, rz)]
+two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP)]
+two_qubit_param = [(qml.CRZ, crz)]
+three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
+
+
+#####################################################
+# Fixtures
+#####################################################
+
+
+@pytest.fixture
+def init_state(scope="session"):
+    """Generates a random initial state"""
+
+    def _init_state(n):
+        """random initial state"""
+        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
+        state /= np.linalg.norm(state)
+        return state
+
+    return _init_state
+
+
+#####################################################
+# Unit tests
+#####################################################
+
+
+class TestApply:
+    """Test application of PennyLane operations."""
+
+    def test_basis_state(self, tol):
+        """Test basis state initialization"""
+        dev = TensorNetworkTF(wires=4)
+        state = np.array([0, 0, 1, 0])
+
+        dev.execute([qml.BasisState(state, wires=[0, 1, 2, 3])], [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.zeros([2 ** 4])
+        expected[np.ravel_multi_index(state, [2] * 4)] = 1
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_qubit_state_vector(self, init_state, tol):
+        """Test qubit state vector application"""
+        dev = TensorNetworkTF(wires=1)
+        state = init_state(1)
+
+        dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.abs(state) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_invalid_qubit_state_vector(self):
+        """Test that an exception is raised if the state
+        vector is the wrong size"""
+        dev = TensorNetworkTF(wires=2)
+        state = np.array([0, 123.432])
+
+        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
+            dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
+
+    @pytest.mark.parametrize("op,mat", single_qubit)
+    def test_single_qubit_no_parameters(self, init_state, op, mat, tol):
+        """Test non-parametrized single qubit operations"""
+        dev = TensorNetworkTF(wires=1)
+        state = init_state(1)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(wires=0)]
+        dev.execute(queue, [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.abs(mat @ state) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_single_qubit_parameters(self, init_state, op, func, theta, tol):
+        """Test parametrized single qubit operations"""
+        dev = TensorNetworkTF(wires=1)
+        state = init_state(1)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(theta, wires=0)]
+        dev.execute(queue, [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.abs(func(theta) @ state) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_rotation(self, init_state, tol):
+        """Test three axis rotation gate"""
+        dev = TensorNetworkTF(wires=1)
+        state = init_state(1)
+
+        a = 0.542
+        b = 1.3432
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [qml.Rot(a, b, c, wires=0)]
+        dev.execute(queue, [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.abs(rot(a, b, c) @ state) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op,mat", two_qubit)
+    def test_two_qubit_no_parameters(self, init_state, op, mat, tol):
+        """Test non-parametrized two qubit operations"""
+        dev = TensorNetworkTF(wires=2)
+        state = init_state(2)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [op(wires=[0, 1])]
+        dev.execute(queue, [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.abs(mat @ state) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mat", [U, U2])
+    def test_qubit_unitary(self, init_state, mat, tol):
+        """Test application of arbitrary qubit unitaries"""
+        N = int(np.log2(len(mat)))
+        dev = TensorNetworkTF(wires=N)
+        state = init_state(N)
+
+        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue += [qml.QubitUnitary(mat, wires=range(N))]
+        dev.execute(queue, [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.abs(mat @ state) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op, mat", three_qubit)
+    def test_three_qubit_no_parameters(self, init_state, op, mat, tol):
+        """Test non-parametrized three qubit operations"""
+        dev = TensorNetworkTF(wires=3)
+        state = init_state(3)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
+        queue += [op(wires=[0, 1, 2])]
+        dev.execute(queue, [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.abs(mat @ state) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", two_qubit_param)
+    def test_two_qubit_parameters(self, init_state, op, func, theta, tol):
+        """Test two qubit parametrized operations"""
+        dev = TensorNetworkTF(wires=2)
+        state = init_state(2)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [op(theta, wires=[0, 1])]
+        dev.execute(queue, [], {})
+
+        res = np.abs(dev._state.numpy().flatten()) ** 2
+        expected = np.abs(func(theta) @ state) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+THETA = np.linspace(0.11, 1, 3)
+PHI = np.linspace(0.32, 1, 3)
+VARPHI = np.linspace(0.02, 1, 3)
+
+# test data; each tuple is of the form (ANSATZ, OBSERVABLE, EXPECTED)
+single_wire_expval_test_data = [
+    (qml.RX, qml.Identity, lambda t, p: np.array([1, 1])),
+    (qml.RX, qml.PauliZ, lambda t, p: np.array([np.cos(t), np.cos(t) * np.cos(p)])),
+    (qml.RY, qml.PauliX, lambda t, p: np.array([np.sin(t) * np.sin(p), np.sin(p)])),
+    (qml.RX, qml.PauliY, lambda t, p: np.array([0, -np.cos(t) * np.sin(p)])),
+    (
+        qml.RY,
+        qml.Hadamard,
+        lambda t, p: np.array(
+            [np.sin(t) * np.sin(p) + np.cos(t), np.cos(t) * np.cos(p) + np.sin(p)]
+        )
+        / np.sqrt(2),
+    ),
+]
+
+
+@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
+class TestExpval:
+    """Test expectation values"""
+
+    @pytest.mark.parametrize("ansatz,obs,expected", single_wire_expval_test_data)
+    def test_single_wire_expectation(self, ansatz, obs, expected, theta, phi, tol):
+        """Test that identity expectation value (i.e. the trace) is 1"""
+        dev = TensorNetworkTF(wires=2)
+        queue = [ansatz(theta, wires=0), ansatz(phi, wires=1), qml.CNOT(wires=[0, 1])]
+        observables = [obs(wires=[i]) for i in range(2)]
+
+        for i in range(len(observables)):
+            observables[i].return_type = qml.operation.Expectation
+
+        res = dev.execute(queue, observables, {})
+        assert np.allclose(res, expected(theta, phi), atol=tol, rtol=0)
+
+    def test_hermitian_expectation(self, theta, phi, tol):
+        """Test that arbitrary Hermitian expectation values are correct"""
+        dev = TensorNetworkTF(wires=2)
+        queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
+        observables = [qml.Hermitian(A, wires=[i]) for i in range(2)]
+
+        for i in range(len(observables)):
+            observables[i].return_type = qml.operation.Expectation
+
+        res = dev.execute(queue, observables, {})
+
+        a = A[0, 0]
+        re_b = A[0, 1].real
+        d = A[1, 1]
+        ev1 = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
+        ev2 = ((a - d) * np.cos(theta) * np.cos(phi) + 2 * re_b * np.sin(phi) + a + d) / 2
+        expected = np.array([ev1, ev2])
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multi_mode_hermitian_expectation(self, theta, phi, tol):
+        """Test that arbitrary multi-mode Hermitian expectation values are correct"""
+        A = np.array(
+            [
+                [-6, 2 + 1j, -3, -5 + 2j],
+                [2 - 1j, 0, 2 - 1j, -5 + 4j],
+                [-3, 2 + 1j, 0, -4 + 3j],
+                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+            ]
+        )
+
+        dev = TensorNetworkTF(wires=2)
+        queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
+        observables = [qml.Hermitian(A, wires=[0, 1])]
+
+        for i in range(len(observables)):
+            observables[i].return_type = qml.operation.Expectation
+
+        res = dev.execute(queue, observables, {})
+
+        # below is the analytic expectation value for this circuit with arbitrary
+        # Hermitian observable A
+        expected = 0.5 * (
+            6 * np.cos(theta) * np.sin(phi)
+            - np.sin(theta) * (8 * np.sin(phi) + 7 * np.cos(phi) + 3)
+            - 2 * np.sin(phi)
+            - 6 * np.cos(phi)
+            - 6
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
+class TestVar:
+    """Tests for the variance"""
+
+    def test_var(self, theta, phi, tol):
+        """Tests for variance calculation"""
+        dev = TensorNetworkTF(wires=1)
+        # test correct variance for <Z> of a rotated state
+
+        queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
+        observables = [qml.PauliZ(wires=[0])]
+
+        for i in range(len(observables)):
+            observables[i].return_type = qml.operation.Variance
+
+        res = dev.execute(queue, observables, {})
+        expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_var_hermitian(self, theta, phi, tol):
+        """Tests for variance calculation using an arbitrary Hermitian observable"""
+        dev = TensorNetworkTF(wires=2)
+
+        # test correct variance for <H> of a rotated state
+        H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
+        observables = [qml.Hermitian(H, wires=[0])]
+
+        for i in range(len(observables)):
+            observables[i].return_type = qml.operation.Variance
+
+        res = dev.execute(queue, observables, {})
+        expected = 0.5 * (
+            2 * np.sin(2 * theta) * np.cos(phi) ** 2
+            + 24 * np.sin(phi) * np.cos(phi) * (np.sin(theta) - np.cos(theta))
+            + 35 * np.cos(2 * phi)
+            + 39
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+#####################################################
+# Integration tests
+#####################################################
 
 
 class TestQNodeIntegration:

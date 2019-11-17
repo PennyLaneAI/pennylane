@@ -25,7 +25,7 @@ from pennylane import Device
 from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, CRot3,
                                              CRotx, CRoty, CRotz, H, Rot3,
                                              Rotx, Roty, Rotz, Rphi, S, T, X,
-                                             Y, Z, hermitian, identity,
+                                             Y, Z, hermitian, identity, Toffoli,
                                              spectral_decomposition, unitary)
 
 # tolerance for numerical errors
@@ -51,28 +51,29 @@ class TensorNetwork(Device):
     _capabilities = {"model": "qubit", "tensor_observables": True}
 
     _operation_map = {
-        "QubitStateVector": None,
-        "BasisState": None,
-        "QubitUnitary": unitary,
-        "PauliX": X,
-        "PauliY": Y,
-        "PauliZ": Z,
-        "Hadamard": H,
-        "S": S,
-        "T": T,
-        "CNOT": CNOT,
-        "SWAP": SWAP,
-        "CSWAP": CSWAP,
-        "CZ": CZ,
-        "PhaseShift": Rphi,
-        "RX": Rotx,
-        "RY": Roty,
-        "RZ": Rotz,
-        "Rot": Rot3,
-        "CRX": CRotx,
-        "CRY": CRoty,
-        "CRZ": CRotz,
-        "CRot": CRot3,
+        'BasisState': None,
+        'QubitStateVector': None,
+        'QubitUnitary': unitary,
+        'PauliX': X,
+        'PauliY': Y,
+        'PauliZ': Z,
+        'Hadamard': H,
+        'S': S,
+        'T': T,
+        'CNOT': CNOT,
+        'SWAP': SWAP,
+        'CSWAP': CSWAP,
+        'Toffoli': Toffoli,
+        'CZ': CZ,
+        'PhaseShift': Rphi,
+        'RX': Rotx,
+        'RY': Roty,
+        'RZ': Rotz,
+        'Rot': Rot3,
+        'CRX': CRotx,
+        'CRY': CRoty,
+        'CRZ': CRotz,
+        'CRot': CRot3
     }
 
     _observable_map = {
