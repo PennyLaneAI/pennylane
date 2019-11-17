@@ -57,7 +57,6 @@ def Rphi(phi):
     Returns:
         array: unitary 2x2 phase shift matrix
     """
-    phi = tf.cast(phi, dtype=C_DTYPE)
     return ((1 + tf.exp(1j * phi)) * I + (1 - tf.exp(1j * phi)) * Z) / 2
 
 
@@ -70,7 +69,6 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    theta = tf.cast(theta, dtype=C_DTYPE)
     return tf.cos(theta / 2) * I + 1j * tf.sin(-theta / 2) * X
 
 
@@ -83,7 +81,6 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    theta = tf.cast(theta, dtype=C_DTYPE)
     return tf.cos(theta / 2) * I + 1j * tf.sin(-theta / 2) * Y
 
 
@@ -96,8 +93,7 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    theta = tf.cast(theta, dtype=C_DTYPE)
-    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Z
+    return tf.cos(theta / 2) * I + 1j * tf.sin(-theta / 2) * Z
 
 
 def Rot3(a, b, c):
@@ -109,7 +105,7 @@ def Rot3(a, b, c):
     Returns:
         array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
-    return Rotz(c) @ (Roty(b) @ Rotz(a))
+    return Rotz(c) @ Roty(b) @ Rotz(a)
 
 
 def CRotx(theta):
@@ -122,7 +118,6 @@ def CRotx(theta):
         array: unitary 4x4 rotation matrix
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
     """
-    theta = tf.cast(theta, dtype=C_DTYPE)
     return (
         tf.cos(theta / 4) ** 2 * II
         - 1j * tf.sin(theta / 2) / 2 * IX
@@ -139,7 +134,6 @@ def CRoty(theta):
     Returns:
         array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
     """
-    theta = tf.cast(theta, dtype=C_DTYPE)
     return (
         tf.cos(theta / 4) ** 2 * II
         - 1j * tf.sin(theta / 2) / 2 * IY
@@ -157,7 +151,6 @@ def CRotz(theta):
         array: unitary 4x4 rotation matrix
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
     """
-    theta = tf.cast(theta, dtype=C_DTYPE)
     return (
         tf.cos(theta / 4) ** 2 * II
         - 1j * tf.sin(theta / 2) / 2 * IZ
@@ -191,17 +184,19 @@ class TensorNetworkTF(TensorNetwork):
     _capabilities = {"model": "qubit", "tensor_observables": True, "provides_jacobian": True}
 
     _operation_map = copy.copy(TensorNetwork._operation_map)
-    _operation_map.update({
-        "PhaseShift": Rphi,
-        "RX": Rotx,
-        "RY": Roty,
-        "RZ": Rotz,
-        "Rot": Rot3,
-        "CRX": CRotx,
-        "CRY": CRoty,
-        "CRZ": CRotz,
-        "CRot": CRot3,
-    })
+    _operation_map.update(
+        {
+            "PhaseShift": Rphi,
+            "RX": Rotx,
+            "RY": Roty,
+            "RZ": Rotz,
+            "Rot": Rot3,
+            "CRX": CRotx,
+            "CRY": CRoty,
+            "CRZ": CRotz,
+            "CRot": CRot3,
+        }
+    )
 
     backend = "tensorflow"
     reshape = staticmethod(tf.reshape)
@@ -267,7 +262,9 @@ class TensorNetworkTF(TensorNetwork):
             # For the above parameter dependency, get the corresponding
             # operation parameter variable, and get the numeric value.
             # Convert the resulting value to a TensorFlow tensor.
-            v = tf.Variable(first.op.params[first.par_idx].val, dtype=self.R_DTYPE)
+            val = first.op.params[first.par_idx].val
+            mult = first.op.params[first.par_idx].mult
+            v = tf.Variable(val / mult, dtype=self.R_DTYPE)
 
             # Mark the variable to be watched by the gradient tape,
             # and append it to the variable list.
@@ -278,7 +275,8 @@ class TensorNetworkTF(TensorNetwork):
                 # with the corresponding tf.Variable parameter.
                 # Note that the free parameter might be scaled by the
                 # variable.mult scaling factor.
-                self.op_params[p.op][p.par_idx] = v * p.op.params[p.par_idx].mult
+                mult = p.op.params[p.par_idx].mult
+                self.op_params[p.op][p.par_idx] = tf.cast(v * mult, dtype=C_DTYPE)
 
         # check that no Variables remain in the op_params dictionary
         values = [item for sublist in self.op_params.values() for item in sublist]

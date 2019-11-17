@@ -215,7 +215,7 @@ class TensorNetwork(Device):
         for o, p, w in zip(observable, par, wires):
             A = self._get_operator_matrix(o, p)
             num_mult_idxs = len(w)
-            tensors.append(np.reshape(A, [2] * num_mult_idxs * 2))
+            tensors.append(self.reshape(A, [2] * num_mult_idxs * 2))
 
         nodes = self.create_nodes_from_tensors(tensors, wires, observable)
         return self.ev(nodes, wires)
@@ -227,8 +227,8 @@ class TensorNetwork(Device):
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
-        tensors = [np.reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
-        tensors_of_squared_matrices = [np.reshape(A@A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
+        tensors = [self.reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
+        tensors_of_squared_matrices = [self.reshape(A@A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
 
         obs_nodes = self.create_nodes_from_tensors(tensors, wires, observable)
         obs_nodes_for_squares = self.create_nodes_from_tensors(tensors_of_squared_matrices, wires, observable)

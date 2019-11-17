@@ -89,30 +89,68 @@ class TestQNodeIntegration:
         expected = np.array([[1, 0], [1, 0]]) / np.sqrt(2)
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
-    def test_jacobian_fanout(self, torch_support, tol):
+
+class TestJacobianIntegration:
+    """Tests for the Jacobian calculation"""
+
+    def test_jacobian_variable_multiply(self, torch_support, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
-        returns the same result as default.qubit, in the case of repeated parameters"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998])
+        gives the correct result in the case of parameters multiplied by scalars"""
+        x = 0.43316321
+        y = 0.2162158
+        z = 0.75110998
 
+        dev = qml.device("expt.tensornet.tf", wires=1)
+
+        @qnode(dev)
+        def circuit(p):
+            qml.RX(3 * p[0], wires=0)
+            qml.RY(p[1], wires=0)
+            qml.RX(p[2] / 2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit([x, y, z])
+        expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = circuit.jacobian([[x, y, z]])
+        expected = np.array(
+            [
+                -3 * (np.sin(3 * x) * np.cos(y) * np.cos(z / 2) + np.cos(3 * x) * np.sin(z / 2)),
+                -np.cos(3 * x) * np.sin(y) * np.cos(z / 2),
+                -0.5 * (np.sin(3 * x) * np.cos(z / 2) + np.cos(3 * x) * np.cos(y) * np.sin(z / 2)),
+            ]
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_jacobian_repeated(self, torch_support, tol):
+        """Test that qnode.jacobian applied to the tensornet.tf device
+        gives the correct result in the case of repeated parameters"""
+        x = 0.43316321
+        y = 0.2162158
+        z = 0.75110998
+        p = np.array([x, y, z])
+        dev = qml.device("expt.tensornet.tf", wires=1)
+
+        @qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.RY(x[0], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.Rot(*x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+            qml.RX(x[1], wires=0)
+            qml.Rot(x[0], x[1], x[2], wires=0)
+            return qml.expval(qml.PauliZ(0))
 
-        dev1 = qml.device("expt.tensornet.tf", wires=3)
-        dev2 = qml.device("default.qubit", wires=3)
+        res = circuit(p)
+        expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        circuit1 = QNode(circuit, dev1, diff_method="best")
-        circuit2 = QNode(circuit, dev2, diff_method="best")
+        res = circuit.jacobian([p])
+        expected = np.array(
+            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
-        assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
-
-    def test_jacobian_agrees(self, torch_support, tol):
+    @pytest.mark.parametrize("diff_method", ALLOWED_DIFF_METHODS)
+    def test_jacobian_agrees(self, diff_method, torch_support, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
         returns the same result as default.qubit."""
         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
@@ -128,14 +166,14 @@ class TestQNodeIntegration:
         dev1 = qml.device("expt.tensornet.tf", wires=3)
         dev2 = qml.device("default.qubit", wires=3)
 
-        circuit1 = QNode(circuit, dev1, diff_method="best")
-        circuit2 = QNode(circuit, dev2, diff_method="best")
+        circuit1 = QNode(circuit, dev1, diff_method=diff_method)
+        circuit2 = QNode(circuit, dev2, diff_method=diff_method)
 
         assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
 
 
-class TestGradientInterfaceIntegration:
+class TestInterfaceIntegration:
     """Integration tests for expt.tensornet.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
     interfaces."""
@@ -145,13 +183,12 @@ class TestGradientInterfaceIntegration:
     p = [a, b]
 
     # the analytic result of evaluating circuit(a, b)
-    expected_cost = 0.5 * (np.cos(a)*np.cos(b) + np.cos(a) - np.cos(b) + 1)
+    expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
 
     # the analytic result of evaluating grad(circuit(a, b))
-    expected_grad = np.array([
-        -0.5 * np.sin(a) * (np.cos(b) + 1),
-        0.5 * np.sin(b) * (1 - np.cos(a))
-    ])
+    expected_grad = np.array(
+        [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
+    )
 
     @pytest.fixture
     def circuit(self, interface, torch_support):
