@@ -84,20 +84,25 @@ class TensorNetwork(Device):
         "Identity": identity,
     }
 
+    backend = "numpy"
+    reshape = staticmethod(np.reshape)
+    array = staticmethod(np.array)
+    asarray = staticmethod(np.asarray)
+    real = staticmethod(np.real)
+    imag = staticmethod(np.imag)
+    abs = staticmethod(np.abs)
+
+    C_DTYPE = np.complex128
+    R_DTYPE = np.float64
+
     def __init__(self, wires, shots=1000, analytic=True):
         super().__init__(wires, shots)
-        self.eng = None
         self.analytic = True
         self._nodes = []
         self._edges = []
-        self._zero_state = np.zeros([2] * wires)
-        self._zero_state[tuple([0] * wires)] = 1.0
-        self.backend = "numpy"
-        # TODO: since this state is separable, can be more intelligent about not making a dense matrix
-        self._state_node = self._add_node(
-            self._zero_state, wires=tuple(w for w in range(wires)), name="AllZeroState"
-        )
-        self._free_edges = self._state_node.edges[:]  # we need this list to be distinct from self._state_node.edges
+        self._state_node = None
+        self._free_edges = []
+        self.reset()
 
     def _add_node(self, A, wires, name="UnnamedNode"):
         """Adds a node to the underlying tensor network.
@@ -145,9 +150,9 @@ class TensorNetwork(Device):
 
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector":
-            state = np.asarray(par[0], dtype=np.complex128)
+            state = self.array(par[0], dtype=np.complex128)
             if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
-                self._state_node.tensor = np.reshape(state, [2] * self.num_wires)
+                self._state_node.tensor = self.reshape(state, [2] * self.num_wires)
             else:
                 raise ValueError("State vector must be of length 2**wires.")
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
@@ -171,14 +176,14 @@ class TensorNetwork(Device):
                         self.num_wires
                     )
                 )
-
-            self._state_node.tensor[tuple([0] * len(wires))] = 0
-            self._state_node.tensor[tuple(par[0])] = 1
+            state_node = np.zeros(tuple([2] * len(wires)))
+            state_node[tuple(par[0])] = 1
+            self._state_node.tensor = self.asarray(state_node, dtype=self.C_DTYPE)
             return
 
         A = self._get_operator_matrix(operation, par)
         num_mult_idxs = len(wires)
-        A = np.reshape(A, [2] * num_mult_idxs * 2)
+        A = self.reshape(A, [2] * num_mult_idxs * 2)
         op_node = self._add_node(A, wires=wires, name=operation)
         for idx, w in enumerate(wires):
             self._add_edge(op_node, num_mult_idxs + idx, self._state_node, w)
@@ -278,8 +283,8 @@ class TensorNetwork(Device):
         """
         A = {**self._operation_map, **self._observable_map}[operation]
         if not callable(A):
-            return A
-        return A(*par)
+            return self.array(A, dtype=self.C_DTYPE)
+        return self.asarray(A(*par), dtype=self.C_DTYPE)
 
     def ev(self, obs_nodes, wires):
         r"""Expectation value of observables on specified wires.
@@ -318,12 +323,12 @@ class TensorNetwork(Device):
         for obs_node in obs_nodes:
             contracted_ket = tn.contract_between(obs_node, contracted_ket)
         expval = tn.contract_between(bra, contracted_ket).tensor
-        if np.abs(expval.imag) > tolerance:
+        if self.abs(self.imag(expval)) > tolerance:
             warnings.warn(
                 "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
                 RuntimeWarning,
             )
-        return expval.real
+        return self.real(expval)
 
     @property
     def _state(self):
@@ -339,7 +344,18 @@ class TensorNetwork(Device):
 
     def reset(self):
         """Reset the device"""
-        self.__init__(self.num_wires)
+        self._nodes = []
+        self._edges = []
+
+        zero_state = np.zeros([2] * self.num_wires)
+        zero_state[tuple([0] * self.num_wires)] = 1.0
+        zero_state = self.array(zero_state, dtype=self.C_DTYPE)
+
+        # TODO: since this state is separable, can be more intelligent about not making a dense matrix
+        self._state_node = self._add_node(
+            zero_state, wires=tuple(w for w in range(self.num_wires)), name="AllZeroState"
+        )
+        self._free_edges = self._state_node.edges[:]  # we need this list to be distinct from self._state_node.edges
 
     @property
     def operations(self):
