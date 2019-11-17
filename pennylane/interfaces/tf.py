@@ -21,6 +21,7 @@ from functools import partial
 import numpy as np
 import tensorflow as tf
 
+from pennylane.qnode_new import JacobianQNode
 from pennylane.utils import unflatten
 
 
@@ -84,7 +85,12 @@ def TFQNode(qnode):
             """Returns the vector-Jacobian product"""
             # evaluate the Jacobian matrix of the QNode
             variables = tfkwargs.get('variables', None)
-            jacobian = qnode.jacobian(args, **kwargs)
+
+            if isinstance(qnode, JacobianQNode):
+                # new style QNode.jacobian has a different signature
+                jacobian = qnode.jacobian(args, kwargs)
+            else:
+                jacobian = qnode.jacobian(args, **kwargs)
 
             grad_output_np = grad_output.numpy()
 

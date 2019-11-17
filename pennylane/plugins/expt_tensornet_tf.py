@@ -259,6 +259,12 @@ class TensorNetworkTF(TensorNetwork):
 
         # Loop through the free parameter reference dictionary
         for _, par_dep_list in self.parameters.items():
+            if not par_dep_list:
+                # parameter is not used within circuit
+                v = tf.Variable(0, dtype=self.R_DTYPE)
+                self.variables.append(v)
+                continue
+
             # get the first parameter dependency for each free parameter
             first = par_dep_list[0]
 
@@ -269,7 +275,6 @@ class TensorNetworkTF(TensorNetwork):
 
             # Mark the variable to be watched by the gradient tape,
             # and append it to the variable list.
-            self.tape.watch(v)
             self.variables.append(v)
 
             for p in par_dep_list:
@@ -287,6 +292,7 @@ class TensorNetworkTF(TensorNetwork):
 
         # flatten the variables list in case of nesting
         self.variables = tf.nest.flatten(self.variables)
+        self.tape.watch(self.variables)
 
         for operation in self.op_queue:
             # Apply each operation, but instead of passing operation.parameters
@@ -329,5 +335,7 @@ class TensorNetworkTF(TensorNetwork):
             array[float]: Jacobian matrix of size (``num_params``, ``num_wires``)
         """
         self.execute(queue, observables, parameters=parameters)
-        jac = tf.stack(self.tape.jacobian(self.res, self.variables, experimental_use_pfor=False))
+        jac = self.tape.jacobian(self.res, self.variables, experimental_use_pfor=False)
+        jac = [i if i is not None else tf.zeros(self.res.shape, dtype=tf.float64) for i in jac]
+        jac = tf.stack(jac)
         return jac.numpy().T
