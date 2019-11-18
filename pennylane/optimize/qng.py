@@ -15,7 +15,6 @@
 #pylint: disable=too-many-branches
 
 import numpy as np
-from scipy import linalg
 
 from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
