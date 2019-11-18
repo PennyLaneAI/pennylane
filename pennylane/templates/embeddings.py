@@ -36,13 +36,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     The L2-norm of ``features`` must be one. By default, AmplitudeEmbedding expects a normalized
     feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
 
-    .. note::
-
-        AmplitudeEmbedding uses PennyLane's :class:`~pennylane.ops.QubitStateVector` and only works in conjunction with
-        devices that support this operation.
-
     Args:
-        features (array): input array of shape ``(:math:`2^n`,)``
+        features (array): input array of shape ``(2^n,)``
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Keyword Args:
@@ -150,7 +145,8 @@ def AngleEmbedding(features, wires, rotation='X'):
 def BasisEmbedding(features, wires):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
-    For example, for ``features=[0, 1, 0]``, the quantum system will be prepared in state :math:`|010 \rangle`.
+    For example, for ``features=np.array([0, 1, 0])``, the quantum system will be
+    prepared in state :math:`|010 \rangle`.
 
     .. note::
 
