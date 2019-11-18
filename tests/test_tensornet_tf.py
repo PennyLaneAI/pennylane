@@ -107,7 +107,7 @@ class TestApply:
 
         dev.execute([qml.BasisState(state, wires=[0, 1, 2, 3])], [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
+        res = dev._state.numpy().flatten()
         expected = np.zeros([2 ** 4])
         expected[np.ravel_multi_index(state, [2] * 4)] = 1
 
@@ -120,8 +120,8 @@ class TestApply:
 
         dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
-        expected = np.abs(state) ** 2
+        res = dev._state.numpy().flatten()
+        expected = state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_invalid_qubit_state_vector(self):
@@ -143,8 +143,8 @@ class TestApply:
         queue += [op(wires=0)]
         dev.execute(queue, [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
-        expected = np.abs(mat @ state) ** 2
+        res = dev._state.numpy().flatten()
+        expected = mat @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
@@ -158,8 +158,8 @@ class TestApply:
         queue += [op(theta, wires=0)]
         dev.execute(queue, [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
-        expected = np.abs(func(theta) @ state) ** 2
+        res = dev._state.numpy().flatten()
+        expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_rotation(self, init_state, tol):
@@ -175,8 +175,8 @@ class TestApply:
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.execute(queue, [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
-        expected = np.abs(rot(a, b, c) @ state) ** 2
+        res = dev._state.numpy().flatten()
+        expected = rot(a, b, c) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op,mat", two_qubit)
@@ -189,8 +189,8 @@ class TestApply:
         queue += [op(wires=[0, 1])]
         dev.execute(queue, [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
-        expected = np.abs(mat @ state) ** 2
+        res = dev._state.numpy().flatten()
+        expected = mat @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("mat", [U, U2])
@@ -204,8 +204,8 @@ class TestApply:
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.execute(queue, [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
-        expected = np.abs(mat @ state) ** 2
+        res = dev._state.numpy().flatten()
+        expected = mat @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op, mat", three_qubit)
@@ -218,8 +218,8 @@ class TestApply:
         queue += [op(wires=[0, 1, 2])]
         dev.execute(queue, [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
-        expected = np.abs(mat @ state) ** 2
+        res = dev._state.numpy().flatten()
+        expected = mat @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
@@ -233,8 +233,8 @@ class TestApply:
         queue += [op(theta, wires=[0, 1])]
         dev.execute(queue, [], {})
 
-        res = np.abs(dev._state.numpy().flatten()) ** 2
-        expected = np.abs(func(theta) @ state) ** 2
+        res = dev._state.numpy().flatten()
+        expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
@@ -242,7 +242,7 @@ THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
-# test data; each tuple is of the form (ANSATZ, OBSERVABLE, EXPECTED)
+# test data; each tuple is of the form (GATE, OBSERVABLE, EXPECTED)
 single_wire_expval_test_data = [
     (qml.RX, qml.Identity, lambda t, p: np.array([1, 1])),
     (qml.RX, qml.PauliZ, lambda t, p: np.array([np.cos(t), np.cos(t) * np.cos(p)])),
@@ -263,11 +263,11 @@ single_wire_expval_test_data = [
 class TestExpval:
     """Test expectation values"""
 
-    @pytest.mark.parametrize("ansatz,obs,expected", single_wire_expval_test_data)
-    def test_single_wire_expectation(self, ansatz, obs, expected, theta, phi, tol):
+    @pytest.mark.parametrize("gate,obs,expected", single_wire_expval_test_data)
+    def test_single_wire_expectation(self, gate, obs, expected, theta, phi, tol):
         """Test that identity expectation value (i.e. the trace) is 1"""
         dev = TensorNetworkTF(wires=2)
-        queue = [ansatz(theta, wires=0), ansatz(phi, wires=1), qml.CNOT(wires=[0, 1])]
+        queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
         observables = [obs(wires=[i]) for i in range(2)]
 
         for i in range(len(observables)):
@@ -540,10 +540,10 @@ class TestInterfaceIntegration:
     @pytest.fixture
     def circuit(self, interface, torch_support):
         """Fixture to create cost function for the test class"""
-        dev = qml.device("expt.tensornet.tf", wires=2)
-
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
+
+        dev = qml.device("expt.tensornet.tf", wires=2)
 
         @qnode(dev, diff_method="best", interface=interface)
         def circuit_fn(a, b):
@@ -555,7 +555,7 @@ class TestInterfaceIntegration:
 
     @pytest.mark.parametrize("interface", ["autograd"])
     def test_autograd_interface(self, circuit, interface, tol):
-        """Tests that the gradient of an arbitrary U3 gate is correct
+        """Tests that the gradient of the circuit fixture above is correct
         using the autograd interface"""
         res = circuit(*self.p)
         assert np.allclose(res, self.expected_cost, atol=tol, rtol=0)
@@ -566,7 +566,7 @@ class TestInterfaceIntegration:
 
     @pytest.mark.parametrize("interface", ["torch"])
     def test_torch_interface(self, circuit, interface, tol):
-        """Tests that the gradient of an arbitrary U3 gate is correct
+        """Tests that the gradient of the circuit fixture above is correct
         using the Torch interface"""
         import torch
         from torch.autograd import Variable
@@ -581,7 +581,7 @@ class TestInterfaceIntegration:
 
     @pytest.mark.parametrize("interface", ["tf"])
     def test_tf_interface(self, circuit, interface, tol):
-        """Tests that the gradient of an arbitrary U3 gate is correct
+        """Tests that the gradient of the circuit fixture above is correct
         using the TensorFlow interface"""
         import tensorflow as tf
 

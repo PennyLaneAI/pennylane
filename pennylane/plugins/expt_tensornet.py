@@ -155,7 +155,7 @@ class TensorNetwork(Device):
 
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector":
-            state = self.array(par[0], dtype=np.complex128)
+            state = self.array(par[0], dtype=self.C_DTYPE)
             if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
                 self._state_node.tensor = self.reshape(state, [2] * self.num_wires)
             else:
