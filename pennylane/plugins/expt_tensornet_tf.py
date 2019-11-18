@@ -271,7 +271,7 @@ class TensorNetworkTF(TensorNetwork):
         """tf.tensor[tf.float64]: result from the last circuit execution"""
 
         self.op_params = {}
-        """dict[Operation, List[Any, tf.Variable]]: a mapping from each operation
+        """dict[Operation, List[Any, tf.Variable]]: A mapping from each operation
         in the queue, to the corresponding list of parameter values. These
         values can be Python numeric types, NumPy arrays, or TensorFlow variables."""
 
