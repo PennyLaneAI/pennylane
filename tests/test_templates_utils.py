@@ -121,7 +121,7 @@ class TestInputChecks:
 
     @pytest.mark.parametrize("wires, targt", WIRES_PASS)
     def test_check_wires(self, wires, targt):
-        """Tests that wires check returns wires list and its length."""
+        """Tests that wires check returns correct wires list and its length."""
         res = _check_wires(wires=wires)
         assert res == targt
 
@@ -133,23 +133,23 @@ class TestInputChecks:
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_PASS)
     def test_check_shape(self, inpt, target_shape, bound):
-        """Tests that shape checks succeed for valid arguments."""
+        """Tests that shape check succeeds for valid arguments."""
         _check_shape(inpt, target_shape, bound=bound)
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_PASS)
     def test_check_shape_list_of_inputs(self, inpt, target_shape, bound):
-        """Tests that list version of shape checks succeed for valid arguments."""
+        """Tests that list version of shape check succeeds for valid arguments."""
         _check_shapes(inpt, target_shape, bound_list=[bound]*len(inpt))
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_FAIL)
     def test_check_shape_exception(self, inpt, target_shape, bound):
-        """Tests that shape checks fail for invalid arguments."""
+        """Tests that shape check fails for invalid arguments."""
         with pytest.raises(ValueError, match="Input has shape"):
             _check_shape(inpt, target_shape, bound=bound)
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_FAIL)
     def test_check_shape_list_of_inputs_exception(self, inpt, target_shape, bound):
-        """Tests that list version of shape checks succeed for valid arguments."""
+        """Tests that list version of shape check succeeds for valid arguments."""
         with pytest.raises(ValueError, match="Input has shape"):
             _check_shapes(inpt, target_shape, bound_list=[bound]*len(inpt))
 
@@ -178,13 +178,13 @@ class TestInputChecks:
             _check_number_of_layers(inpt)
 
     def test_check_shape_exception_message(self):
-        """Tests that shape checks displays custom error message."""
+        """Tests that shape check displays custom error message."""
         with pytest.raises(ValueError, match="XXX"):
             _check_shape([0.], (3,), msg="XXX")
 
     @pytest.mark.parametrize("arg", NO_VARIABLES_PASS)
     def test_check_no_variables(self, arg):
-        """Tests that variable check displays succeeds for valid arguments."""
+        """Tests that variable check succeeds for valid arguments."""
         _check_no_variable(arg, "dummy")
 
     @pytest.mark.parametrize("arg", NO_VARIABLES_FAIL)
