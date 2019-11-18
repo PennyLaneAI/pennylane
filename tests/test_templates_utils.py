@@ -226,4 +226,3 @@ class TestInputChecks:
         """Tests that type check displays custom error message."""
         with pytest.raises(ValueError, match="XXX"):
             _check_type(hp, [typ, alt], msg="XXX")
-            

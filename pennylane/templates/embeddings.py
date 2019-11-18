@@ -33,7 +33,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     non-informative constants (zeros) can be padded to ``features``. To enable this, the argument
     ``pad`` should be set to ``True``.
 
-    The L2-norm of ``features`` must be one. By default, AmplitudeEmbedding expects a normalized
+    The L2-norm of ``features`` must be one. By default, ``AmplitudeEmbedding`` expects a normalized
     feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
 
     Args:

@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane._device import Device
-from pennylane.qnode_new.qnode import QNode, QuantumFunctionError, QNode_old, decompose_queue
+from pennylane.qnode_new.base import BaseQNode, QuantumFunctionError, QNode_old, decompose_queue
 
 
 @pytest.fixture(scope="function")
@@ -37,7 +37,7 @@ def mock_qnode(mock_device):
         qml.RZ(-0.2, wires=[1])
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
-    node = QNode(circuit, mock_device)
+    node = BaseQNode(circuit, mock_device)
     node._construct([1.0], {})
     return node
 
@@ -172,7 +172,7 @@ class TestQNodeOperationQueue:
              [1 0]], wires=[1]))"""
         )
 
-        node = QNode(circuit, mock_device)
+        node = BaseQNode(circuit, mock_device)
 
         # test before construction
         f = io.StringIO()
@@ -207,7 +207,7 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(wires=0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with monkeypatch.context() as m:
             m.setattr(QNode_old, "_current_context", node)
             with pytest.raises(
@@ -225,7 +225,7 @@ class TestQNodeExceptions:
             qml.RY(0.5, wires=[0])
             return qml.expval(qml.PauliZ(wires=0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(QuantumFunctionError, match="gates must precede measured"):
             node(0.5)
 
@@ -236,7 +236,7 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(wires=0)), 0.3
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(QuantumFunctionError, match="A quantum function must return either"):
             node(0.5)
 
@@ -247,7 +247,7 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(wires=0)), qml.PauliZ(wires=1)
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(
             QuantumFunctionError, match="does not have the measurement type specified"
         ):
@@ -261,7 +261,7 @@ class TestQNodeExceptions:
             ex = qml.expval(qml.PauliZ(wires=1))
             return qml.expval(qml.PauliZ(wires=0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(QuantumFunctionError, match="All measured observables must be returned"):
             node(0.5)
 
@@ -273,7 +273,7 @@ class TestQNodeExceptions:
             ex = qml.expval(qml.PauliZ(wires=1))
             return qml.expval(qml.PauliZ(wires=0)), ex
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(QuantumFunctionError, match="All measured observables must be returned"):
             node(0.5)
 
@@ -285,7 +285,7 @@ class TestQNodeExceptions:
             qml.Displacement(0.5, 0, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(
             QuantumFunctionError, match="Continuous and discrete operations are not allowed"
         ):
@@ -298,7 +298,7 @@ class TestQNodeExceptions:
             qml.Displacement(0.5, 0, wires=[0])
             return qml.expval(qml.X(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(
             QuantumFunctionError, match="a qubit device; CV operations are not allowed"
         ):
@@ -312,7 +312,7 @@ class TestQNodeExceptions:
             qml.RX(0.5, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(
             QuantumFunctionError, match="a CV device; qubit operations are not allowed"
         ):
@@ -326,7 +326,7 @@ class TestQNodeExceptions:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliX(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(QuantumFunctionError, match="can only be measured once"):
             node(0.5)
 
@@ -338,7 +338,7 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[1])  # on its own component in the circuit graph
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires, properties={"vis_check": True})
+        node = BaseQNode(circuit, operable_mock_device_2_wires, properties={"vis_check": True})
         with pytest.raises(QuantumFunctionError, match="cannot affect the output"):
             node(0.5)
 
@@ -355,7 +355,7 @@ class TestQNodeExceptions:
             DummyOp(wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(QuantumFunctionError, match="must act on all wires"):
             node()
 
@@ -367,7 +367,7 @@ class TestQNodeExceptions:
             qml.CNOT(wires=[0, 2])
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(QuantumFunctionError, match="applied to invalid wire"):
             node(0.5)
 
@@ -378,7 +378,7 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(QuantumFunctionError, match="applied to invalid wire"):
             node(0.5)
 
@@ -389,7 +389,7 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[0.5])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(TypeError, match="Wires must be integers"):
             node(1)
 
@@ -400,7 +400,7 @@ class TestQNodeExceptions:
             qml.RX(0.5, wires=[x])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         with pytest.raises(TypeError, match="Wires must be integers"):
             node(1)
 
@@ -411,7 +411,7 @@ class TestQNodeExceptions:
             qml.RX(0.5, wires=[x])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        node = QNode(circuit, operable_mock_device_2_wires, mutable=False)
+        node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=False)
         with pytest.raises(TypeError, match="Wires must be integers"):
             node(x=1)
 
@@ -426,7 +426,7 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
         node(0.3)
         assert node.ops[0].parameters[0] == 0.3
 
@@ -440,7 +440,7 @@ class TestQNodeExceptions:
             circuit.in_args = (x, y, m, n)
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires, mutable=True)
+        node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=True)
 
         with pytest.raises(QuantumFunctionError, match="parameter 'x' given twice"):
             node(0.1, x=1.1)
@@ -468,7 +468,7 @@ class TestQNodeExceptions:
             qml.RX(a, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires, properties={"par_check": True})
+        node = BaseQNode(circuit, operable_mock_device_2_wires, properties={"par_check": True})
         with pytest.raises(QuantumFunctionError, match="The positional parameters"):
             node(1.0, 2.0)
 
@@ -482,7 +482,7 @@ class TestQNodeExceptions:
             circuit.in_args = (x, y, m, n)
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires, mutable=True)
+        node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=True)
 
         with pytest.raises(QuantumFunctionError, match="parameter 'x' given twice"):
             node(0.1, x=1.1)
@@ -509,7 +509,7 @@ class TestQNodeExceptions:
         def circuit(x=0.1):
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires)
+        node = BaseQNode(circuit, operable_mock_device_2_wires)
 
         with pytest.raises(TypeError, match="got multiple values for argument 'x'"):
             node(0.3)  # default arg given positionally, wrong error message
@@ -521,7 +521,7 @@ class TestQNodeExceptions:
             circuit.in_args = (x, y, z)
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, operable_mock_device_2_wires, mutable=True)
+        node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=True)
 
         with pytest.raises(
             QuantumFunctionError, match="'x' cannot be given using the keyword syntax"
@@ -565,7 +565,7 @@ class TestQNodeArgs:
         def analytic_expval(x, y):
             return np.cos(x) ** 2 - np.cos(y) * np.sin(x) ** 2
 
-        node = QNode(circuit, qubit_device_1_wire)
+        node = BaseQNode(circuit, qubit_device_1_wire)
         res = node(x, y)
         assert res == pytest.approx(analytic_expval(x, y), abs=tol)
 
@@ -585,7 +585,7 @@ class TestQNodeArgs:
         def analytic_expval(a, b, c):
             return [-1 * np.cos(a) * np.cos(b) * np.sin(c), np.cos(a)]
 
-        node = QNode(circuit, qubit_device_2_wires)
+        node = BaseQNode(circuit, qubit_device_2_wires)
         res = node(a, b, c)
         assert res == pytest.approx(analytic_expval(a, b, c), abs=tol)
 
@@ -598,7 +598,7 @@ class TestQNodeArgs:
             qml.RZ(w, wires=[0])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        node = QNode(circuit, qubit_device_2_wires)
+        node = BaseQNode(circuit, qubit_device_2_wires)
         c = node(1.0, x=np.pi, y=np.pi / 2)
         assert c == pytest.approx([-1.0, 0.0], abs=tol)
 
@@ -610,7 +610,7 @@ class TestQNodeArgs:
             qml.RX(x[1], wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        node = QNode(circuit, qubit_device_2_wires)
+        node = BaseQNode(circuit, qubit_device_2_wires)
         c = node([np.pi, np.pi])
         assert c == pytest.approx([-1.0, -1.0], abs=tol)
 
@@ -623,7 +623,7 @@ class TestQNodeArgs:
             qml.RZ(w, wires=[0])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        node = QNode(circuit, qubit_device_2_wires)
+        node = BaseQNode(circuit, qubit_device_2_wires)
         c = node(1.0, x=[np.pi, np.pi / 2])
         assert c == pytest.approx([-1.0, 0.0], abs=tol)
 
@@ -636,7 +636,7 @@ class TestQNodeArgs:
             qml.RX(x, wires=[q])
             return qml.expval(qml.PauliZ(q))
 
-        node = QNode(circuit, qubit_device_2_wires)
+        node = BaseQNode(circuit, qubit_device_2_wires)
         c = node(np.pi, q=1)
         assert node.ops[0].wires == [1]
         assert c == pytest.approx(-1.0, abs=tol)
@@ -652,7 +652,7 @@ class TestQNodeArgs:
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, qubit_device_1_wire)
+        node = BaseQNode(circuit, qubit_device_1_wire)
         c = node(1.0, x=np.pi)
         assert c == pytest.approx(-1.0, abs=tol)
 
@@ -664,7 +664,7 @@ class TestQNodeArgs:
             qml.RX(x, wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        node = QNode(circuit, qubit_device_2_wires)
+        node = BaseQNode(circuit, qubit_device_2_wires)
         c1 = node(0.1, x=0.0)
         c2 = node(0.1, x=np.pi)
         assert c1[1] != c2[1]
@@ -677,7 +677,7 @@ class TestQNodeArgs:
             qml.RX(x, wires=[1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        node = QNode(circuit, qubit_device_2_wires)
+        node = BaseQNode(circuit, qubit_device_2_wires)
 
         def classical_node(w, x=None):
             return node(w, x=x)
@@ -692,7 +692,7 @@ class TestQNodeArgs:
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(circuit, qubit_device_1_wire)
+        node = BaseQNode(circuit, qubit_device_1_wire)
         c = node(1.0, x=np.pi, y=10)
         assert c == pytest.approx(-1.0, abs=tol)
 
@@ -711,7 +711,7 @@ class TestQNodeCaching:
                 qml.RX(x, wires=i)
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(mutable_circuit, dev, mutable=True)
+        node = BaseQNode(mutable_circuit, dev, mutable=True)
 
         # first evaluation
         node(0, c=0)
@@ -733,7 +733,7 @@ class TestQNodeCaching:
             qml.RX(c, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        node = QNode(non_mutable_circuit, dev, mutable=False)
+        node = BaseQNode(non_mutable_circuit, dev, mutable=False)
 
         # first evaluation
         node(0, c=0)
@@ -764,7 +764,7 @@ class TestQNodeEvaluate:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node = QNode(circuit, dev)
+        node = BaseQNode(circuit, dev)
         res = node.evaluate([x, y], {})
         expected = np.sin(y)*np.cos(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -783,10 +783,10 @@ class TestQNodeEvaluate:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node = QNode(circuit, dev)
+        node = BaseQNode(circuit, dev)
 
         # test standard evaluation
-        node = QNode(circuit, dev)
+        node = BaseQNode(circuit, dev)
         res = node.evaluate([x, y], {})
         expected = np.sin(y)*np.cos(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -808,7 +808,7 @@ class TestQNodeEvaluate:
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0) @ qml.PauliX(1))
 
-        node = QNode(circuit, dev)
+        node = BaseQNode(circuit, dev)
         res = node(0.432, 0.12)
         assert res.shape == (10,)
 
