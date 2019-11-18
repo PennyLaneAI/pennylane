@@ -108,7 +108,7 @@ def AngleEmbedding(features, wires, rotation='X'):
     Args:
         features (array): Input array of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on
 
     Keyword Args:
         rotation (str): Type of rotations used
