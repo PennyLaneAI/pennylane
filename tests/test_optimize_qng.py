@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the QNG optimizer"""
 import pytest
+import scipy as sp
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -77,12 +78,12 @@ class TestOptimize:
             theta_new = opt.step(circuit, theta)
 
             # check metric tensor
-            res = opt.metric_tensor_inv
-            exp = np.diag([4, 4 / (np.cos(theta[0]) ** 2)])
+            res = opt.metric_tensor
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update
-            dtheta = eta * exp @ gradient(theta)
+            dtheta = eta * sp.linalg.pinvh(exp) @ gradient(theta)
             assert np.allclose(dtheta, theta - theta_new, atol=tol, rtol=0)
 
             theta = theta_new
