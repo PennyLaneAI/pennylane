@@ -69,7 +69,7 @@ def BasisStatePreparation(basis_state, wires):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Raises:
-        ValueError if inputs do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
 
     ######################
@@ -281,7 +281,7 @@ def MottonenStatePreparation(state_vector, wires):
         wires (Sequence[int]): sequence of qubit indices that the template acts on
 
     Raises:
-        ValueError if inputs do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
 
     ###############

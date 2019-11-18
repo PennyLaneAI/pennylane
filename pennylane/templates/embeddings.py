@@ -45,7 +45,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         normalize (Boolean): controls the activation of automatic normalization
 
     Raises:
-        ValueError if inputs do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
 
     #############
@@ -114,7 +114,7 @@ def AngleEmbedding(features, wires, rotation='X'):
         rotation (str): Type of rotations used
 
     Raises:
-        ValueError if inputs do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
 
     #############
@@ -158,7 +158,7 @@ def BasisEmbedding(features, wires):
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Raises:
-        ValueError if arguments do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
 
     #############
@@ -207,7 +207,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             amplitude of all squeezing gates if ``execution='phase'``
 
     Raises:
-        ValueError if inputs do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
 
 
@@ -257,7 +257,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             the amplitude of all displacement gates if ``execution='phase'``
 
     Raises:
-        ValueError if inputs do not have the correct format.
+        ValueError: if inputs do not have the correct format
    """
 
     #############

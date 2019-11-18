@@ -140,7 +140,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
     Raises:
-        ValueError if arguments do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
 
     #############
@@ -219,7 +219,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         seed (int): seed to generate random architecture
 
     Raises:
-        ValueError if arguments do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
     if seed is not None:
         np.random.seed(seed)
@@ -294,7 +294,7 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
         wires (Sequence[int]): sequence of mode indices that the template acts on
 
     Raises:
-        ValueError if arguments do not have the correct format.
+        ValueError: if inputs do not have the correct format
     """
 
     #############
