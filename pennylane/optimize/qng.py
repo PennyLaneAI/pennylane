@@ -99,8 +99,6 @@ class QNGOptimizer(GradientDescentOptimizer):
             time taken per optimization step.
         lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
             to be applied at each optimization step
-        tol (float): tolerance used when finding the inverse of the
-            quantum gradient tensor
     """
     def __init__(self, stepsize=0.01, diag_approx=False, lam=0):
         super().__init__(stepsize)
