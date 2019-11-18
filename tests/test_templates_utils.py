@@ -200,8 +200,8 @@ class TestInputChecks:
             _check_no_variable([a], ["dummy"], msg="XXX")
 
     @pytest.mark.parametrize("hp, opts", OPTIONS_PASS)
-    """Tests that hyperparameter option check succeeds for valid arguments."""
     def test_check_hyperp_options(self, hp, opts):
+        """Tests that hyperparameter option check succeeds for valid arguments."""
         _check_hyperp_is_in_options(hp, opts)
 
     @pytest.mark.parametrize("hp, opts", OPTIONS_FAIL)
