@@ -42,7 +42,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         devices that support this operation.
 
     Args:
-        features (array): input array of shape ``(:math:`2^n`,)``
+        features (array): input array of shape ``(2n,)``
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
 
     Keyword Args:
