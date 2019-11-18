@@ -155,7 +155,7 @@ def BasisEmbedding(features, wires):
 
     Args:
         features (array): Binary input array of shape ``(n, )``
-        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on
 
     Raises:
         ValueError: if inputs do not have the correct format
