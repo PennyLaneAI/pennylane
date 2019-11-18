@@ -15,7 +15,6 @@
 #pylint: disable=too-many-branches
 
 import numpy as np
-from scipy import linalg
 
 from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
@@ -98,13 +97,14 @@ class QNGOptimizer(GradientDescentOptimizer):
             where the calculated metric tensor only contains diagonal
             elements :math:`G_{ii}`. In some cases, this may reduce the
             time taken per optimization step.
-        tol (float): tolerance used when finding the inverse of the
-            quantum gradient tensor
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step
     """
-    def __init__(self, stepsize=0.01, diag_approx=False):
+    def __init__(self, stepsize=0.01, diag_approx=False, lam=0):
         super().__init__(stepsize)
         self.diag_approx = diag_approx
-        self.metric_tensor_inv = None
+        self.metric_tensor = None
+        self.lam = lam
 
     def step(self, qnode, x, recompute_tensor=True):
         """Update x with one step of the optimizer.
@@ -125,8 +125,8 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             # pseudo-inverse metric tensor
-            metric_tensor = qnode.metric_tensor(x, diag_approx=self.diag_approx)
-            self.metric_tensor_inv = linalg.pinvh(metric_tensor)
+            self.metric_tensor = qnode.metric_tensor(x, diag_approx=self.diag_approx)
+            self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
         g = self.compute_grad(qnode, x)
         x_out = self.apply_grad(g, x)
@@ -146,5 +146,5 @@ class QNGOptimizer(GradientDescentOptimizer):
         """
         grad_flat = np.array(list(_flatten(grad)))
         x_flat = np.array(list(_flatten(x)))
-        x_new_flat = x_flat - self._stepsize * self.metric_tensor_inv @ grad_flat
+        x_new_flat = x_flat - self._stepsize * np.linalg.solve(self.metric_tensor, grad_flat)
         return unflatten(x_new_flat, x)
