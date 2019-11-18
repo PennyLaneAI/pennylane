@@ -19,7 +19,15 @@ import copy
 from unittest import mock
 
 import numpy as np
-import tensorflow as tf
+
+try:
+    import tensorflow as tf
+
+    if tf.__version__[0] == "1":
+        raise ImportError("expt.tensornet.tf device requires TensorFlow>=2.0")
+
+except ImportError as e:
+    raise ImportError("expt.tensornet.tf device requires TensorFlow>=2.0")
 
 from pennylane.variable import Variable
 from pennylane.plugins.default_qubit import I, X, Y, Z
@@ -181,8 +189,46 @@ def CRot3(a, b, c):
 class TensorNetworkTF(TensorNetwork):
     """Experimental TensorFlow Tensor Network simulator device for PennyLane.
 
+    **Short name:** ``expt.tensornet.tf``
+
+    This experimental device extends ``expt.tensornet`` by making use of
+    the TensorFlow backend of TensorNetwork. As a result, it supports
+    classical backpropagation as a means to compute the Jacobian. This can
+    be faster than the parameter-shift rule for analytic quantum gradients
+    when the number of parameters to be optimized is large.
+
+    To use this device, you will need to install TensorFlow and TensorNetwork:
+
+    .. code-block:: bash
+
+        pip install tensornetwork>=0.2 tensorflow>=2.0
+
+    In addition, you will need to use the new-style QNode to enable
+    calculation of the quantum gradient using TensorFlow.
+
+    **Example:**
+
+    >>> from pennylane.beta.qnodes import qnode
+    >>> dev = qml.device("expt.tensornet.tf", wires=1)
+    >>> @qnode(dev, interface="autograd", diff_method="best")
+    >>> def circuit(x):
+    ...     qml.RX(x[1], wires=0)
+    ...     qml.Rot(x[0], x[1], x[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> grad_fn = qml.grad(circuit, argnum=[0])
+    >>> print(grad_fn([0.2, 0.5, 0.1]))
+    ([array(-0.22526717), array(-1.00864546), array(6.9388939e-18)],)
+
+    .. note::
+
+        TensorFlow is used as the device backend, and is independent
+        of the chosen QNode interface. In the example above, we combine
+        ```expt.tensornet.tf`` with the ``autograd`` interface.
+        It can also be used with the ``torch`` and the ``tf`` interface.
+
     Args:
         wires (int): the number of modes to initialize the device in
+        shots (int): the number of shots used for returning samples
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -216,7 +262,7 @@ class TensorNetworkTF(TensorNetwork):
     C_DTYPE = C_DTYPE
     R_DTYPE = R_DTYPE
 
-    def __init__(self, wires, shots=1000, analytic=True):
+    def __init__(self, wires, shots=1000):
         self.variables = []
         """List[tf.Variable]: Free parameters, cast to TensorFlow variables,
         for this circuit."""
@@ -233,7 +279,7 @@ class TensorNetworkTF(TensorNetwork):
         """tf.GradientTape: the gradient tape under which all tensor network
         modifications must be made"""
 
-        super().__init__(wires, shots=shots, analytic=analytic)
+        super().__init__(wires, shots=shots, analytic=True)
 
     def reset(self):
         self.res = None

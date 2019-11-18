@@ -19,7 +19,11 @@ import warnings
 from itertools import product
 
 import numpy as np
-import tensornetwork as tn
+
+try:
+    import tensornetwork as tn
+except ImportError as e:
+    raise ImportError("expt.tensornet device requires TensorNetwork>=0.2")
 
 from pennylane import Device
 from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, CRot3,
