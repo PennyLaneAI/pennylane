@@ -17,7 +17,7 @@ They can optionally be repeated, and may contain trainable parameters. Embedding
 used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import numpy as np
+import numpy as np
 from pennylane.qnode import Variable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
