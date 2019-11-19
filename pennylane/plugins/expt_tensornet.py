@@ -109,6 +109,23 @@ class TensorNetwork(Device):
         self._free_edges = []
         self.reset()
 
+    @staticmethod
+    def _create_basis_state(state, wires):
+        """Helper function to create a basis state with the correct shape.
+
+        Args:
+            state (array[int]): array of 0s and 1s of size ``(wires,)`` representing
+                the basis state
+            wires (list[int]): the wires the basis state should
+                be prepared on
+
+        Returns:
+            array[int]: state array of size ``[2]*len(wires)``
+        """
+        state_node = np.zeros(tuple([2] * len(wires)))
+        state_node[tuple(state)] = 1
+        return state_node
+
     def _add_node(self, A, wires, name="UnnamedNode"):
         """Adds a node to the underlying tensor network.
 
@@ -181,8 +198,7 @@ class TensorNetwork(Device):
                         self.num_wires
                     )
                 )
-            state_node = np.zeros(tuple([2] * len(wires)))
-            state_node[tuple(par[0])] = 1
+            state_node = self._create_basis_state(par[0], wires)
             self._state_node.tensor = self.asarray(state_node, dtype=self.C_DTYPE)
             return
 
@@ -352,13 +368,12 @@ class TensorNetwork(Device):
         self._nodes = []
         self._edges = []
 
-        zero_state = np.zeros([2] * self.num_wires)
-        zero_state[tuple([0] * self.num_wires)] = 1.0
-        zero_state = self.array(zero_state, dtype=self.C_DTYPE)
+        state = self._create_basis_state([0] * self.num_wires, range(self.num_wires))
+        state = self.array(state, dtype=self.C_DTYPE)
 
         # TODO: since this state is separable, can be more intelligent about not making a dense matrix
         self._state_node = self._add_node(
-            zero_state, wires=tuple(w for w in range(self.num_wires)), name="AllZeroState"
+            state, wires=tuple(w for w in range(self.num_wires)), name="AllZeroState"
         )
         self._free_edges = self._state_node.edges[:]  # we need this list to be distinct from self._state_node.edges
 

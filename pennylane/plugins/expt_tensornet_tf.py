@@ -16,7 +16,6 @@ Experimental simulator plugin based on tensor network contractions,
 using the TensorFlow backend for Jacobian computations.
 """
 import copy
-from unittest import mock
 
 import numpy as np
 
@@ -353,12 +352,7 @@ class TensorNetworkTF(TensorNetwork):
         pass
 
     def execute(self, queue, observables, parameters=None):
-        with mock.patch("numpy.asarray", lambda x, y=None: x):
-            # call the Device.execute() method, but make sure
-            # that np.asarray does not change the tf.tensor result
-            # by temporarily mocking it out.
-            # pylint: disable=bad-super-call
-            results = super(TensorNetwork, self).execute(queue, observables, parameters=parameters)
+        results = super(TensorNetwork, self).execute(queue, observables, parameters=parameters)
 
         with self.tape:
             # convert the results list into a single tensor
