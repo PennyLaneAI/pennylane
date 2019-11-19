@@ -23,7 +23,7 @@ from functools import wraps, lru_cache
 from .qnode import QNode
 
 
-def qnode(device, interface='numpy', cache=False):
+def qnode(device, interface="numpy", cache=False):
     """QNode decorator.
 
     Args:
@@ -47,16 +47,17 @@ def qnode(device, interface='numpy', cache=False):
             all further executions. The circuit parameters can still change with every call. Only activate this
             feature if your quantum circuit structure will never change.
     """
+
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
 
         qnode = QNode(func, device, cache=cache)
 
-        if interface == 'torch':
+        if interface == "torch":
             return qnode.to_torch()
 
-        if interface == 'tf':
+        if interface == "tf":
             return qnode.to_tf()
 
         @wraps(func)
@@ -74,4 +75,5 @@ def qnode(device, interface='numpy', cache=False):
         wrapper.__dict__.update(qnode.__dict__)
 
         return wrapper
+
     return qfunc_decorator

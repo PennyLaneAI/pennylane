@@ -44,7 +44,7 @@ def _is_observable(x):
     Returns:
         bool: True iff x is an observable
     """
-    return getattr(x, 'return_type', None) is not None
+    return getattr(x, "return_type", None) is not None
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
@@ -55,7 +55,7 @@ Args:
     ops (list[Operator]): parametrized operators in the layer
     param_inds (list[int]): corresponding free parameter indices
 """
-#TODO define what a layer is
+# TODO define what a layer is
 
 LayerData = namedtuple("LayerData", ["pre_ops", "ops", "param_inds", "post_ops"])
 """Parametrized layer of the circuit.
@@ -66,6 +66,7 @@ Args:
     param_inds (tuple[int]): corresponding free parameter indices
     post_ops (list[Operator]): operators that succeed the layer
 """
+
 
 class CircuitGraph:
     """Represents a quantum circuit as a directed acyclic graph.
@@ -80,6 +81,7 @@ class CircuitGraph:
         variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
     """
+
     def __init__(self, ops, variable_deps):
         self.variable_deps = variable_deps
 
@@ -89,11 +91,13 @@ class CircuitGraph:
         """
         for k, op in enumerate(ops):
             op.queue_idx = k  # store the queue index in the Operator
-            for w in set(_flatten(op.wires)):  # flatten the nested wires lists of Tensor observables
+            for w in set(
+                _flatten(op.wires)
+            ):  # flatten the nested wires lists of Tensor observables
                 # Add op to the grid, to the end of wire w
                 self._grid.setdefault(w, []).append(op)
 
-        #TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
+        # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
         self._graph = nx.DiGraph()  #: nx.DiGraph: DAG representation of the quantum circuit
         # Iterate over each (populated) wire in the grid
@@ -211,7 +215,7 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
-        #return self._in_topological_order(self.ancestors(ops))  # an abitrary topological order
+        # return self._in_topological_order(self.ancestors(ops))  # an abitrary topological order
         return sorted(self.ancestors(ops), key=_by_idx)
 
     def descendants_in_order(self, ops):
@@ -306,6 +310,6 @@ class CircuitGraph:
         """
         # NOTE Does not alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous!
         if new.wires != old.wires:
-            raise ValueError('The new Operator must act on the same wires as the old one.')
+            raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place

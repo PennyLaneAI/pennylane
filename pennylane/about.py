@@ -21,10 +21,14 @@ import sys
 from pkg_resources import iter_entry_points
 import numpy
 import scipy
+
 # The following if/else block enables support for pip versions 19.3.x
-_parent_module = importlib.util.find_spec("pip._internal.main") or importlib.util.find_spec("pip._internal")
+_parent_module = importlib.util.find_spec("pip._internal.main") or importlib.util.find_spec(
+    "pip._internal"
+)
 _internal_main = importlib.util.module_from_spec(_parent_module)
 _parent_module.loader.exec_module(_internal_main)
+
 
 def about():
     """

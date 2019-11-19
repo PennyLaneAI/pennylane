@@ -85,18 +85,21 @@ class Variable:
         idx  (int): index into the value vector, >= 0
         name (None, str): name of the argument
     """
+
     # pylint: disable=too-few-public-methods
-    free_param_values = None  #: array[float]: current free parameter values, set in :meth:`~.QNode.evaluate`
+    free_param_values = (
+        None  #: array[float]: current free parameter values, set in :meth:`~.QNode.evaluate`
+    )
     kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`~.QNode.evaluate`
 
     def __init__(self, idx, name=None):
-        self.idx = idx    #: int: parameter index
+        self.idx = idx  #: int: parameter index
         self.name = name  #: str: parameter name
-        self.mult = 1     #: int, float: parameter scalar multiplier
+        self.mult = 1  #: int, float: parameter scalar multiplier
 
     def __str__(self):
-        temp = ' * {}'.format(self.mult) if self.mult != 1.0 else ''
-        return 'Variable {}: name = {}, {}'.format(self.idx, self.name, temp)
+        temp = " * {}".format(self.mult) if self.mult != 1.0 else ""
+        return "Variable {}: name = {}, {}".format(self.idx, self.name, temp)
 
     def __neg__(self):
         """Unary negation."""
@@ -116,7 +119,7 @@ class Variable:
         temp.mult /= scalar
         return temp
 
-    __rmul__ = __mul__ # """Left multiplication by scalars."""
+    __rmul__ = __mul__  # """Left multiplication by scalars."""
 
     @property
     def val(self):

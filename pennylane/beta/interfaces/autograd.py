@@ -14,8 +14,6 @@
 """
 Differentiable quantum nodes with Autograd interface.
 """
-import copy
-
 import autograd.extend
 import autograd.builtins
 

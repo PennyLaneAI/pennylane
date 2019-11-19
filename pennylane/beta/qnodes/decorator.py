@@ -86,8 +86,10 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
         return BaseQNode(func, device, mutable=mutable, properties=properties)
 
     if diff_method not in ALLOWED_DIFF_METHODS:
-        raise ValueError("Differentiation method {} not recognized. Allowed "
-                         "options are {}".format(diff_method, ALLOWED_DIFF_METHODS))
+        raise ValueError(
+            "Differentiation method {} not recognized. Allowed "
+            "options are {}".format(diff_method, ALLOWED_DIFF_METHODS)
+        )
 
     # Set the default model to qubit, for backwards compatability with existing plugins
     # TODO: once all plugins have been updated to add `model` to their
@@ -121,8 +123,10 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
         # if no interface is specified, return the 'bare' QNode
         return node
 
-    raise ValueError("Interface {} not recognized. Allowed "
-                     "interfaces are {}".format(diff_method, ALLOWED_INTERFACES))
+    raise ValueError(
+        "Interface {} not recognized. Allowed "
+        "interfaces are {}".format(diff_method, ALLOWED_INTERFACES)
+    )
 
 
 def qnode(device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
@@ -182,7 +186,12 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", pro
     def qfunc_decorator(func):
         """The actual decorator"""
         return QNode(
-            func, device, interface=interface, mutable=mutable, diff_method=diff_method, properties=properties,
+            func,
+            device,
+            interface=interface,
+            mutable=mutable,
+            diff_method=diff_method,
+            properties=properties,
         )
 
     return qfunc_decorator

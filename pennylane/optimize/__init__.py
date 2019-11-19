@@ -28,11 +28,11 @@ from .qng import QNGOptimizer
 
 # Optimizers to display in the docs
 __all__ = [
-    'AdagradOptimizer',
-    'AdamOptimizer',
-    'GradientDescentOptimizer',
-    'MomentumOptimizer',
-    'NesterovMomentumOptimizer',
-    'RMSPropOptimizer',
-    'QNGOptimizer'
+    "AdagradOptimizer",
+    "AdamOptimizer",
+    "GradientDescentOptimizer",
+    "MomentumOptimizer",
+    "NesterovMomentumOptimizer",
+    "RMSPropOptimizer",
+    "QNGOptimizer",
 ]

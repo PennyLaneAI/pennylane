@@ -33,6 +33,7 @@ class GradientDescentOptimizer:
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
     """
+
     def __init__(self, stepsize=0.01):
         self._stepsize = stepsize
 

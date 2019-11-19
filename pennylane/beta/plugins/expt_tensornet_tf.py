@@ -31,7 +31,7 @@ except ImportError as e:
 from pennylane.variable import Variable
 from pennylane.plugins.default_qubit import I, X, Y, Z
 
-from .expt_tensornet import TensorNetwork
+from pennylane.beta.plugins.expt_tensornet import TensorNetwork
 
 
 # tolerance for numerical errors
@@ -222,7 +222,7 @@ class TensorNetworkTF(TensorNetwork):
 
         TensorFlow is used as the device backend, and is independent
         of the chosen QNode interface. In the example above, we combine
-        ```expt.tensornet.tf`` with the ``autograd`` interface.
+        ``expt.tensornet.tf`` with the ``autograd`` interface.
         It can also be used with the ``torch`` and the ``tf`` interface.
 
     Args:
@@ -251,12 +251,12 @@ class TensorNetworkTF(TensorNetwork):
     )
 
     backend = "tensorflow"
-    reshape = staticmethod(tf.reshape)
-    array = staticmethod(tf.constant)
-    asarray = staticmethod(tf.convert_to_tensor)
-    real = staticmethod(tf.math.real)
-    imag = staticmethod(tf.math.imag)
-    abs = staticmethod(tf.abs)
+    _reshape = staticmethod(tf.reshape)
+    _array = staticmethod(tf.constant)
+    _asarray = staticmethod(tf.convert_to_tensor)
+    _real = staticmethod(tf.math.real)
+    _imag = staticmethod(tf.math.imag)
+    _abs = staticmethod(tf.abs)
 
     C_DTYPE = C_DTYPE
     R_DTYPE = R_DTYPE

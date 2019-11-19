@@ -20,8 +20,8 @@ import numpy as np
 import pennylane as qml
 from pennylane._device import Device
 from pennylane.operation import CVObservable
-from pennylane.qnode_new.base import QuantumFunctionError
-from pennylane.qnode_new.cv import CVQNode
+from pennylane.beta.qnodes.base import QuantumFunctionError
+from pennylane.beta.qnodes.cv import CVQNode
 
 
 class PolyN(qml.ops.PolyXP):

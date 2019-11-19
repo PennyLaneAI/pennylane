@@ -218,6 +218,7 @@ class SWAP(Operation):
     num_wires = 2
     par_domain = None
 
+
 class CSWAP(Operation):
     r"""CSWAP(wires)
     The controlled-swap operator
@@ -303,7 +304,7 @@ class RX(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
-    generator = [PauliX, -1/2]
+    generator = [PauliX, -1 / 2]
 
 
 class RY(Operation):
@@ -330,7 +331,7 @@ class RY(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
-    generator = [PauliY, -1/2]
+    generator = [PauliY, -1 / 2]
 
 
 class RZ(Operation):
@@ -357,7 +358,7 @@ class RZ(Operation):
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
-    generator = [PauliZ, -1/2]
+    generator = [PauliZ, -1 / 2]
 
 
 class PhaseShift(Operation):
@@ -422,11 +423,7 @@ class Rot(Operation):
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [
-            RZ(phi, wires=wires),
-            RY(theta, wires=wires),
-            RZ(omega, wires=wires)
-        ]
+        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
         return decomp_ops
 
 
@@ -458,7 +455,7 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1/2]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
 
 class CRY(Operation):
@@ -489,7 +486,7 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1/2]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
 
 class CRZ(Operation):
@@ -520,7 +517,7 @@ class CRZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1/2]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
 
 class CRot(Operation):
@@ -633,9 +630,9 @@ class U2(Operation):
     @staticmethod
     def decomposition(phi, lam, wires):
         decomp_ops = [
-            Rot(lam, np.pi/2, -lam, wires=wires),
+            Rot(lam, np.pi / 2, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
-            PhaseShift(phi, wires=wires)
+            PhaseShift(phi, wires=wires),
         ]
         return decomp_ops
 
@@ -685,7 +682,7 @@ class U3(Operation):
         decomp_ops = [
             Rot(lam, theta, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
-            PhaseShift(phi, wires=wires)
+            PhaseShift(phi, wires=wires),
         ]
         return decomp_ops
 

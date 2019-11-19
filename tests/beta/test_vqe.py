@@ -184,7 +184,7 @@ class TestHamiltonian:
     def test_hamiltonian_valid_init(self, coeffs, ops):
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
-        H = qml.vqe.Hamiltonian(coeffs, ops)
+        H = qml.beta.vqe.Hamiltonian(coeffs, ops)
         assert H.terms == (coeffs, ops)
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
@@ -192,7 +192,7 @@ class TestHamiltonian:
         """Tests that an exception is raised when giving an invalid
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
-            H = qml.vqe.Hamiltonian(coeffs, ops)
+            H = qml.beta.vqe.Hamiltonian(coeffs, ops)
 
     @pytest.mark.parametrize("coeffs", [[0.2, -1j], [0.5j, 2-1j]])
     def test_hamiltonian_complex(self, coeffs):
@@ -201,7 +201,7 @@ class TestHamiltonian:
         obs = [qml.PauliX(0), qml.PauliZ(1)]
 
         with pytest.raises(ValueError, match="coefficients are not real-valued"):
-            H = qml.vqe.Hamiltonian(coeffs, obs)
+            H = qml.beta.vqe.Hamiltonian(coeffs, obs)
 
     @pytest.mark.parametrize("obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]])
     def test_hamiltonian_invalid_observables(self, obs):
@@ -210,7 +210,7 @@ class TestHamiltonian:
         coeffs = [0.1, 0.2]
 
         with pytest.raises(ValueError, match="observables are not valid"):
-            H = qml.vqe.Hamiltonian(coeffs, obs)
+            H = qml.beta.vqe.Hamiltonian(coeffs, obs)
 
 
 class TestVQE:
@@ -220,7 +220,7 @@ class TestVQE:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_circuits_valid_init(self, ansatz, observables, mock_device):
         """Tests that a collection of circuits is properly created by vqe.circuits"""
-        circuits = qml.vqe.circuits(ansatz, observables, device=mock_device)
+        circuits = qml.beta.vqe.circuits(ansatz, observables, device=mock_device)
 
         assert len(circuits) == len(observables)
         assert all(callable(c) for c in circuits)
@@ -232,7 +232,7 @@ class TestVQE:
     def test_circuits_evaluate(self, ansatz, observables, params, mock_device, seed):
         """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
         mock_device.num_wires = 3
-        circuits = qml.vqe.circuits(ansatz, observables, device=mock_device)
+        circuits = qml.beta.vqe.circuits(ansatz, observables, device=mock_device)
         res = [c(*params) for c in circuits]
         assert all(val == 1.0 for val in res)
 
@@ -240,7 +240,7 @@ class TestVQE:
     def test_circuits_expvals(self, coeffs, observables, expected):
         """Tests that the vqe.circuits function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
-        circuits = qml.vqe.circuits(lambda *params, **kwargs: None, observables, dev)
+        circuits = qml.beta.vqe.circuits(lambda *params, **kwargs: None, observables, dev)
         res = [a * c([]) for a, c in zip(coeffs, circuits)]
         assert np.all(res == expected)
 
@@ -250,30 +250,30 @@ class TestVQE:
         """Tests that an exception is raised when no observables are supplied to vqe.circuits"""
         with pytest.raises(ValueError, match="observables are not valid"):
             obs = (observables,)
-            circuits = qml.vqe.circuits(ansatz, obs, device=mock_device)
+            circuits = qml.beta.vqe.circuits(ansatz, obs, device=mock_device)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_circuits_no_ansatz(self, ansatz, observables, mock_device):
         """Tests that an exception is raised when no valid ansatz is supplied to vqe.circuits"""
         with pytest.raises(ValueError, match="ansatz is not a callable function"):
-            circuits = qml.vqe.circuits(ansatz, observables, device=mock_device)
+            circuits = qml.beta.vqe.circuits(ansatz, observables, device=mock_device)
 
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
     def test_aggregate_expval(self, coeffs, observables, expected):
         """Tests that the aggregate function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
-        qnodes = qml.vqe.circuits(lambda *params, **kwargs: None, observables, dev)
-        expval = qml.vqe.aggregate(coeffs, qnodes, [])
+        qnodes = qml.beta.vqe.circuits(lambda *params, **kwargs: None, observables, dev)
+        expval = qml.beta.vqe.aggregate(coeffs, qnodes, [])
         assert expval == sum(expected)
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
-        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
+        hamiltonian = qml.beta.vqe.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
-        expval = qml.vqe.cost(params, ansatz, hamiltonian, dev)
+        expval = qml.beta.vqe.cost(params, ansatz, hamiltonian, dev)
         assert type(expval) == float
         assert np.shape(expval) == ()  # expval should be scalar
 
@@ -281,16 +281,16 @@ class TestVQE:
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
-        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        cost = qml.vqe.cost([], lambda *params, **kwargs: None, hamiltonian, dev)
+        hamiltonian = qml.beta.vqe.Hamiltonian(coeffs, observables)
+        cost = qml.beta.vqe.cost([], lambda *params, **kwargs: None, hamiltonian, dev)
         assert cost == sum(expected)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     def test_cost_invalid_ansatz(self, ansatz, mock_device):
         """Tests that the cost function raises an exception if the ansatz is not valid"""
-        hamiltonian = qml.vqe.Hamiltonian((1.0,), [qml.PauliZ(0)])
+        hamiltonian = qml.beta.vqe.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="The ansatz is not a callable function."):
-            cost = qml.vqe.cost([], 4, hamiltonian, mock_device)
+            cost = qml.beta.vqe.cost([], 4, hamiltonian, mock_device)
 
 
 class TestNumPyInterface:
@@ -301,7 +301,7 @@ class TestNumPyInterface:
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
         """Test that QNodes have the NumPy interface"""
         mock_device.num_wires = 3
-        circuits = qml.vqe.circuits(ansatz, observables, device=mock_device, interface="numpy")
+        circuits = qml.beta.vqe.circuits(ansatz, observables, device=mock_device, interface="numpy")
         assert all(c.interface == "numpy" for c in circuits)
 
         res = [c(*params) for c in circuits]
@@ -318,13 +318,13 @@ class TestNumPyInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.beta.vqe.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = np.array([a, b])
 
-        cost = qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface="numpy")
 
-        cost2 = lambda params: qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        cost2 = lambda params: qml.beta.vqe.cost(params, ansatz, H, dev, interface="numpy")
         dcost = qml.grad(cost2, argnum=[0])
         res = dcost(params)
 
@@ -345,7 +345,7 @@ class TestTorchInterface:
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
         """Test that QNodes have the torch interface"""
         mock_device.num_wires = 3
-        circuits = qml.vqe.circuits(ansatz, observables, device=mock_device, interface="torch")
+        circuits = qml.beta.vqe.circuits(ansatz, observables, device=mock_device, interface="torch")
         assert all(c.interface == "torch" for c in circuits)
 
         res = [c(*params) for c in circuits]
@@ -362,11 +362,11 @@ class TestTorchInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.beta.vqe.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = torch.autograd.Variable(torch.tensor([a, b]), requires_grad=True)
 
-        cost = qml.vqe.cost(params, ansatz, H, dev, interface="torch")
+        cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface="torch")
         cost.backward()
 
         res = params.grad.numpy()
@@ -389,7 +389,7 @@ class TestTFInterface:
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
         """Test that QNodes have the tf interface"""
         mock_device.num_wires = 3
-        circuits = qml.vqe.circuits(ansatz, observables, device=mock_device, interface="tf")
+        circuits = qml.beta.vqe.circuits(ansatz, observables, device=mock_device, interface="tf")
         assert all(c.interface == "tf" for c in circuits)
 
         res = [c(*params) for c in circuits]
@@ -406,12 +406,12 @@ class TestTFInterface:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.beta.vqe.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = [Variable(i, dtype=tf.float64) for i in [a, b]]
 
         with tf.GradientTape() as tape:
-            cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
+            cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface="tf")
             res = np.array(tape.gradient(cost, params))
 
         expected = [
@@ -434,16 +434,16 @@ class TestMultipleInterfaceIntegration:
         coeffs = [0.2, 0.5]
         observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
 
-        H = qml.vqe.Hamiltonian(coeffs, observables)
+        H = qml.beta.vqe.Hamiltonian(coeffs, observables)
 
         # TensorFlow interface
         params = [Variable(i) for i in [qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]]
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
+        cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
-            cost = qml.vqe.cost(params, ansatz, H, dev, interface="tf")
+            cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface="tf")
             res_tf = np.array(tape.gradient(cost, params))
 
         # Torch interface
@@ -451,15 +451,15 @@ class TestMultipleInterfaceIntegration:
         params = torch.autograd.Variable(params, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = qml.vqe.cost(params, ansatz, H, dev, interface="torch")
+        cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface="torch")
         cost.backward()
         res_torch = params.grad.numpy()
 
         # NumPy interface
         params = [qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)]
         ansatz = qml.templates.layers.StronglyEntanglingLayers
-        cost = qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
-        cost2 = lambda params: qml.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        cost2 = lambda params: qml.beta.vqe.cost(params, ansatz, H, dev, interface="numpy")
         dcost = qml.grad(cost2, argnum=[0])
         res = dcost(params)
 
@@ -480,4 +480,4 @@ class TestMultipleInterfaceIntegration:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="must all use the same interface"):
-            qml.vqe.aggregate([1, 1], [circuit1, circuit2], [])
+            qml.beta.vqe.aggregate([1, 1], [circuit1, circuit2], [])

@@ -22,7 +22,6 @@ from functools import partial
 import numpy as np
 import torch
 
-from pennylane.qnode_new import JacobianQNode
 from pennylane.utils import unflatten
 
 
@@ -141,7 +140,7 @@ def TorchQNode(qnode):
             # the way in which the backward class is created on the fly
 
             # evaluate the Jacobian matrix of the QNode
-            if isinstance(qnode, JacobianQNode):
+            if hasattr(qnode, "to_autograd"):
                 # new style QNode.jacobian has a different signature
                 jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
             else:

@@ -41,14 +41,18 @@ info = {
                     'pennylane.plugins',
                     'pennylane.optimize',
                     'pennylane.interfaces',
-                    'pennylane.vqe'
+                    'pennylane.beta',
+                    'pennylane.beta.interfaces',
+                    'pennylane.beta.plugins',
+                    'pennylane.beta.qnodes',
+                    'pennylane.beta.vqe',
                 ],
     'entry_points': {
         'pennylane.plugins': [
             'default.qubit = pennylane.plugins:DefaultQubit',
             'default.gaussian = pennylane.plugins:DefaultGaussian',
-            'expt.tensornet = pennylane.plugins.expt_tensornet:TensorNetwork',
-            'expt.tensornet.tf = pennylane.plugins.expt_tensornet_tf:TensorNetworkTF'
+            'expt.tensornet = pennylane.beta.plugins.expt_tensornet:TensorNetwork',
+            'expt.tensornet.tf = pennylane.beta.plugins.expt_tensornet_tf:TensorNetworkTF'
             ],
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',

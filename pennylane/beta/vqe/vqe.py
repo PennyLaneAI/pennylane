@@ -92,6 +92,7 @@ def circuits(ansatz, observables, device, interface="numpy"):
     The circuits have the following structure:
 
     .. code-block:: python
+
         @qml.qnode(device)
         def circuit(params):
             ansatz(*params, wires=range(device.num_wires))
@@ -155,7 +156,7 @@ def aggregate(coeffs, qnodes, params):
     if len(interfaces) != 1:
         raise ValueError("Provided QNodes must all use the same interface.")
 
-    expvals = [c*circuit(*params) for c, circuit in zip(coeffs, qnodes)]
+    expvals = [c * circuit(*params) for c, circuit in zip(coeffs, qnodes)]
     return sum(expvals)
 
 

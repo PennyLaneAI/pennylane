@@ -36,25 +36,26 @@ class Configuration:
         This should be a valid TOML file. You may also pass an absolute
         or a relative file path to the configuration file.
     """
+
     def __init__(self, name):
         # Look for an existing configuration file
         self._config = {}
         self._filepath = None
         self._name = name
-        self._user_config_dir = user_config_dir('pennylane', 'Xanadu')
+        self._user_config_dir = user_config_dir("pennylane", "Xanadu")
         self._env_config_dir = os.environ.get("PENNYLANE_CONF", "")
 
         # search the current directory the directory under environment
         # variable PENNYLANE_CONF, and default user config directory, in that order.
-        directories = [os.curdir, self._env_config_dir, self._user_config_dir, '']
+        directories = [os.curdir, self._env_config_dir, self._user_config_dir, ""]
         for idx, directory in enumerate(directories):
             try:
                 self._filepath = os.path.join(directory, self._name)
                 self.load(self._filepath)
                 break
             except FileNotFoundError:
-                if idx == len(directories)-1:
-                    log.info('No PennyLane configuration file found.')
+                if idx == len(directories) - 1:
+                    log.info("No PennyLane configuration file found.")
 
     def __str__(self):
         if self._config:
@@ -78,7 +79,7 @@ class Configuration:
         Args:
             filepath (str): path to the configuration file.
         """
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             self._config = toml.load(f)
 
     def save(self, filepath):
@@ -87,15 +88,15 @@ class Configuration:
         Args:
             filepath (str): path to the configuration file.
         """
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             toml.dump(self._config, f)
 
     def __getitem__(self, key):
-        keys = key.split('.')
+        keys = key.split(".")
         return self.safe_get(self._config, *keys)
 
     def __setitem__(self, key, value):
-        keys = key.split('.')
+        keys = key.split(".")
         self.safe_set(self._config, value, *keys)
 
     def __bool__(self):

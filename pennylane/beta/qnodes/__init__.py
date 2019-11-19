@@ -14,7 +14,7 @@
 r"""
 This package contains the new-style QNodes.
 
-.. currentmodule:: pennylane.qnode_new
+.. currentmodule:: pennylane.beta.qnodes
 """
 from .base import BaseQNode, QuantumFunctionError
 from .cv import CVQNode
