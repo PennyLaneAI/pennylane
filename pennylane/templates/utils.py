@@ -17,7 +17,7 @@ Utility functions used in the templates.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
 import numpy as np
-from pennylane.qnode import Variable
+from pennylane.variable import Variable
 
 
 def _check_no_variable(arg, arg_str, msg=None):
