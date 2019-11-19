@@ -106,7 +106,7 @@ def AngleEmbedding(features, wires, rotation='X'):
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
     Args:
-        features (array): Input array of shape ``(N,)``, where N is the number of input features to embed,
+        features (array): input array of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
         wires (Sequence[int] or int): qubit indices that the template acts on
 
