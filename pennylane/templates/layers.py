@@ -16,7 +16,7 @@ Layers are trainable templates that are typically repeated, using different adju
 They implement a transformation from a quantum state to another quantum state.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import numpy as np
+import numpy as np
 from pennylane.ops import CNOT, RX, RY, RZ, Rot, Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
