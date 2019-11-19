@@ -131,17 +131,10 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         :target: javascript:void(0);
 
     Args:
-<<<<<<< HEAD
-        weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
-        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
-        ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
-=======
-        weights (array[float]): weights of shape ``(:math:`L`, :math:`M`, 3)``
-        wires (Sequence[int] or int): qubit indices that the template acts on
 
-    Keyword Args:
-        ranges (Sequence[int]): Sequence determining the range hyperparameter for each subsequent layer; if None
->>>>>>> f06cc819ae808ffde1255d34dd716aceab7ff477
+        weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
+        wires (Sequence[int] or int): qubit indices that the template acts on
+        ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
                                 using :math:`r=l \mod M` for the :math:`l`th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
