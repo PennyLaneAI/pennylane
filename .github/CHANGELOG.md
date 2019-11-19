@@ -2,13 +2,6 @@
 
 ### New features since last release
 
-* `StronglyEntanglingLayer` and `RandomLayer` now work with a single wire.
-   [#409](https://github.com/XanaduAI/pennylane/pull/409)
-   [#413](https://github.com/XanaduAI/pennylane/pull/413)
-
-* Refactored templates integration tests
-  [#409](https://github.com/XanaduAI/pennylane/pull/409)
-
 * Added support for applying the inverse of an `Operation` within a circuit.
   [#377](https://github.com/XanaduAI/pennylane/pull/377)
 
@@ -20,6 +13,23 @@
 * Operations can now specify a decomposition that is used when the desired operation
   is not supported on the target device.
   [#396](https://github.com/XanaduAI/pennylane/pull/396)
+
+* The ability to load circuits from external frameworks as templates
+  has been added via the new `qml.load()` function. This feature
+  requires plugin support --- this initial release provides support
+  for Qiskit circuits and QASM files when `pennylane-qiskit` is installed,
+  via the functions `qml.from_qiskit` and `qml.from_qasm`.
+  [#418](https://github.com/XanaduAI/pennylane/pull/418)
+
+* An experimental tensor network device has been added
+  [#416](https://github.com/XanaduAI/pennylane/pull/416)
+  [#395](https://github.com/XanaduAI/pennylane/pull/395)
+  [#394](https://github.com/XanaduAI/pennylane/pull/394)
+  [#380](https://github.com/XanaduAI/pennylane/pull/380)
+
+* An experimental tensor network device which uses TensorFlow for
+  backpropagation has been added
+  [#427](https://github.com/XanaduAI/pennylane/pull/427)
 
 ### Breaking changes
 
@@ -33,6 +43,10 @@
   [#413](https://github.com/XanaduAI/pennylane/pull/413)
 
 ### Improvements
+
+* `StronglyEntanglingLayer` and `RandomLayer` now work with a single wire.
+  [#409](https://github.com/XanaduAI/pennylane/pull/409)
+  [#413](https://github.com/XanaduAI/pennylane/pull/413)
 
 * Templates integration tests are rewritten - now cover keyword/positional argument passing,
   interfaces and combinations of templates.
@@ -66,15 +80,16 @@
   preparation templates.
   [#414](https://github.com/XanaduAI/pennylane/pull/414)
 
-### Documentation
-
-### Bug fixes
+* Replaces the pseudo-inverse in the quantum natural gradient optimizer
+  (which can be numerically unstable) with `np.linalg.solve`.
+  [#428](https://github.com/XanaduAI/pennylane/pull/428)
 
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Angus Lowe, Johannes Jakob Meyer, Oluwatobi Ogunbayo, Maria Schuld
+Ville Bergholm, Josh Izaac, Nathan Killoran, Angus Lowe, Johannes Jakob Meyer,
+Oluwatobi Ogunbayo, Maria Schuld, Antal Száva.
 
 
 ---
