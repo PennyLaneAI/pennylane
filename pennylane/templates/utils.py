@@ -48,6 +48,9 @@ def _check_wires(wires):
 
     Return:
         tuple(list, int): tuple containing the list of wires and number of wires
+
+    Raises:
+        ValueError: if the wires argument is invalid
     """
     if isinstance(wires, int):
         wires = [wires]
