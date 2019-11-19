@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Quantum natural gradient optimizer"""
-#pylint: disable=too-many-branches
+# pylint: disable=too-many-branches
 
 import numpy as np
 
@@ -100,6 +100,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
             to be applied at each optimization step
     """
+
     def __init__(self, stepsize=0.01, diag_approx=False, lam=0):
         super().__init__(stepsize)
         self.diag_approx = diag_approx

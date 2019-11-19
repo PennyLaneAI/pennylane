@@ -26,11 +26,32 @@ except ImportError as e:
     raise ImportError("expt.tensornet device requires TensorNetwork>=0.2")
 
 from pennylane._device import Device
-from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, CRot3,
-                                             CRotx, CRoty, CRotz, H, Rot3,
-                                             Rotx, Roty, Rotz, Rphi, S, T, X,
-                                             Y, Z, hermitian, identity, Toffoli,
-                                             spectral_decomposition, unitary)
+from pennylane.plugins.default_qubit import (
+    CNOT,
+    CSWAP,
+    CZ,
+    SWAP,
+    CRot3,
+    CRotx,
+    CRoty,
+    CRotz,
+    H,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    T,
+    X,
+    Y,
+    Z,
+    hermitian,
+    identity,
+    Toffoli,
+    spectral_decomposition,
+    unitary,
+)
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -55,29 +76,29 @@ class TensorNetwork(Device):
     _capabilities = {"model": "qubit", "tensor_observables": True}
 
     _operation_map = {
-        'BasisState': None,
-        'QubitStateVector': None,
-        'QubitUnitary': unitary,
-        'PauliX': X,
-        'PauliY': Y,
-        'PauliZ': Z,
-        'Hadamard': H,
-        'S': S,
-        'T': T,
-        'CNOT': CNOT,
-        'SWAP': SWAP,
-        'CSWAP': CSWAP,
-        'Toffoli': Toffoli,
-        'CZ': CZ,
-        'PhaseShift': Rphi,
-        'RX': Rotx,
-        'RY': Roty,
-        'RZ': Rotz,
-        'Rot': Rot3,
-        'CRX': CRotx,
-        'CRY': CRoty,
-        'CRZ': CRotz,
-        'CRot': CRot3
+        "BasisState": None,
+        "QubitStateVector": None,
+        "QubitUnitary": unitary,
+        "PauliX": X,
+        "PauliY": Y,
+        "PauliZ": Z,
+        "Hadamard": H,
+        "S": S,
+        "T": T,
+        "CNOT": CNOT,
+        "SWAP": SWAP,
+        "CSWAP": CSWAP,
+        "Toffoli": Toffoli,
+        "CZ": CZ,
+        "PhaseShift": Rphi,
+        "RX": Rotx,
+        "RY": Roty,
+        "RZ": Rotz,
+        "Rot": Rot3,
+        "CRX": CRotx,
+        "CRY": CRoty,
+        "CRZ": CRotz,
+        "CRot": CRot3,
     }
 
     _observable_map = {
@@ -249,12 +270,16 @@ class TensorNetwork(Device):
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
         tensors = [self.reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
-        tensors_of_squared_matrices = [self.reshape(A@A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
+        tensors_of_squared_matrices = [
+            self.reshape(A @ A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)
+        ]
 
         obs_nodes = self.create_nodes_from_tensors(tensors, wires, observable)
-        obs_nodes_for_squares = self.create_nodes_from_tensors(tensors_of_squared_matrices, wires, observable)
+        obs_nodes_for_squares = self.create_nodes_from_tensors(
+            tensors_of_squared_matrices, wires, observable
+        )
 
-        return self.ev(obs_nodes_for_squares, wires) - self.ev(obs_nodes, wires)**2
+        return self.ev(obs_nodes_for_squares, wires) - self.ev(obs_nodes, wires) ** 2
 
     def sample(self, observable, wires, par):
 
@@ -269,8 +294,10 @@ class TensorNetwork(Device):
 
         # Matching each projector with the wires it acts on
         # while preserving the groupings
-        projectors_with_wires = [[(proj, wires[idx]) for proj in proj_group]
-                                 for idx, proj_group in enumerate(projector_groups)]
+        projectors_with_wires = [
+            [(proj, wires[idx]) for proj in proj_group]
+            for idx, proj_group in enumerate(projector_groups)
+        ]
 
         # The eigenvalue - projector maps are preserved as product() preserves
         # the previous ordering by creating a lexicographic ordering
@@ -375,7 +402,9 @@ class TensorNetwork(Device):
         self._state_node = self._add_node(
             state, wires=tuple(w for w in range(self.num_wires)), name="AllZeroState"
         )
-        self._free_edges = self._state_node.edges[:]  # we need this list to be distinct from self._state_node.edges
+        self._free_edges = self._state_node.edges[
+            :
+        ]  # we need this list to be distinct from self._state_node.edges
 
     @property
     def operations(self):

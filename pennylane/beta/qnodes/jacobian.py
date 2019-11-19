@@ -217,7 +217,9 @@ class JacobianQNode(BaseQNode):
 
         if method == "device":
             self._set_variables(args, kwargs)
-            return self.device.jacobian(self.circuit.operations, self.circuit.observables, self.variable_deps)
+            return self.device.jacobian(
+                self.circuit.operations, self.circuit.observables, self.variable_deps
+            )
 
         if method == "A":
             bad = inds_using("F")

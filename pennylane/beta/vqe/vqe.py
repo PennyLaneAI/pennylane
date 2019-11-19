@@ -155,7 +155,7 @@ def aggregate(coeffs, qnodes, params):
     if len(interfaces) != 1:
         raise ValueError("Provided QNodes must all use the same interface.")
 
-    expvals = [c*circuit(*params) for c, circuit in zip(coeffs, qnodes)]
+    expvals = [c * circuit(*params) for c, circuit in zip(coeffs, qnodes)]
     return sum(expvals)
 
 

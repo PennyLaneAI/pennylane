@@ -37,6 +37,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
         stepsize (float): user-defined hyperparameter :math:`\eta`
         momentum (float): user-defined hyperparameter :math:`m`
     """
+
     def __init__(self, stepsize=0.01, momentum=0.9):
         super().__init__(stepsize)
         self.momentum = momentum
@@ -61,9 +62,11 @@ class MomentumOptimizer(GradientDescentOptimizer):
         if self.accumulation is None:
             self.accumulation = [self._stepsize * g for g in grad_flat]
         else:
-            self.accumulation = [self.momentum * a + self._stepsize * g for a, g in zip(self.accumulation, grad_flat)]
+            self.accumulation = [
+                self.momentum * a + self._stepsize * g for a, g in zip(self.accumulation, grad_flat)
+            ]
 
-        x_new_flat = [e-a for a, e in zip(self.accumulation, x_flat)]
+        x_new_flat = [e - a for a, e in zip(self.accumulation, x_flat)]
 
         return unflatten(x_new_flat, x)
 
