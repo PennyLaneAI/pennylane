@@ -31,7 +31,7 @@ except ImportError as e:
 from pennylane.variable import Variable
 from pennylane.plugins.default_qubit import I, X, Y, Z
 
-from .expt_tensornet import TensorNetwork
+from pennylane.beta.plugins.expt_tensornet import TensorNetwork
 
 
 # tolerance for numerical errors
