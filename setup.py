@@ -47,7 +47,8 @@ info = {
         'pennylane.plugins': [
             'default.qubit = pennylane.plugins:DefaultQubit',
             'default.gaussian = pennylane.plugins:DefaultGaussian',
-            'expt.tensornet = pennylane.plugins.expt_tensornet:TensorNetwork'
+            'expt.tensornet = pennylane.plugins.expt_tensornet:TensorNetwork',
+            'expt.tensornet.tf = pennylane.plugins.expt_tensornet_tf:TensorNetworkTF'
             ],
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',

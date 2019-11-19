@@ -84,6 +84,5 @@ def to_autograd(qnode):
 
     # define the vector-Jacobian product function for AutogradQNode.evaluate
     autograd.extend.defvjp(AutogradQNode.evaluate, AutogradQNode.QNode_vjp, argnums=[1])
-    qnode_new = copy.deepcopy(qnode)
-    qnode_new.__class__ = AutogradQNode
-    return qnode_new
+    qnode.__class__ = AutogradQNode
+    return qnode

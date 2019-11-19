@@ -500,11 +500,11 @@ class BaseQNode:
         """
         kwargs = self._default_args(kwargs)
 
-        if self.circuit is None or self.mutable:
-            self._construct(args, kwargs)
-
         # temporarily store the parameter values in the Variable class
         self._set_variables(args, kwargs)
+
+        if self.circuit is None or self.mutable:
+            self._construct(args, kwargs)
 
         self.device.reset()
         ret = self.device.execute(
