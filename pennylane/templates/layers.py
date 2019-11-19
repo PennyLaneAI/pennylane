@@ -16,7 +16,7 @@ Layers are trainable templates that are typically repeated, using different adju
 They implement a transformation from a quantum state to another quantum state.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane import numpy as np
+import numpy as np
 from pennylane.ops import CNOT, RX, RY, RZ, Rot, Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
@@ -131,9 +131,17 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         :target: javascript:void(0);
 
     Args:
+<<<<<<< HEAD
         weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
+=======
+        weights (array[float]): weights of shape ``(:math:`L`, :math:`M`, 3)``
+        wires (Sequence[int] or int): qubit indices that the template acts on
+
+    Keyword Args:
+        ranges (Sequence[int]): Sequence determining the range hyperparameter for each subsequent layer; if None
+>>>>>>> f06cc819ae808ffde1255d34dd716aceab7ff477
                                 using :math:`r=l \mod M` for the :math:`l`th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 

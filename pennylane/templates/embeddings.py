@@ -38,7 +38,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     Args:
         features (array): input array of shape ``(2^n,)``
-        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on
         pad (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (Boolean): controls the activation of automatic normalization
 
@@ -104,9 +104,9 @@ def AngleEmbedding(features, wires, rotation='X'):
     ``features`` than rotations, the circuit does not apply the remaining rotation gates.
 
     Args:
-        features (array): Input array of shape ``(N,)``, where N is the number of input features to embed,
+        features (array): input array of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on
         rotation (str): Type of rotations used
 
     Raises:
@@ -150,8 +150,8 @@ def BasisEmbedding(features, wires):
         devices that implement this function.
 
     Args:
-        features (array): Binary input array of shape ``(n, )``
-        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
+        features (array): binary input array of shape ``(n, )``
+        wires (Sequence[int] or int): qubit indices that the template acts on
 
     Raises:
         ValueError: if inputs do not have the correct format

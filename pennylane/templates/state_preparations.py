@@ -18,7 +18,7 @@ by decomposing it into elementary operations.
 import math
 from scipy import sparse
 import pennylane as qml
-from pennylane import numpy as np
+import numpy as np
 from pennylane.qnode import Variable
 from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,

@@ -29,7 +29,7 @@ def _check_no_variable(arg, arg_str, msg=None):
         msg (str): error message
     """
     if msg is None:
-        msg = "The argument {} can not be passed as a QNode parameter.".format(arg_str)
+        msg = "The argument {} can not be passed as a QNode parameter. Try passing it as a keyword argument.".format(arg_str)
     for a, s in zip(arg, arg_str):
         if isinstance(a, Variable):
             raise ValueError(msg)
@@ -45,7 +45,10 @@ def _check_wires(wires):
         wires (int or list): (subset of) wires of a quantum node
 
     Return:
-        list: wires as a list, int: number of wires
+        tuple(list, int): tuple containing the list of wires and number of wires
+
+    Raises:
+        ValueError: if the wires argument is invalid
     """
     if isinstance(wires, int):
         wires = [wires]
@@ -71,7 +74,7 @@ def _get_shape(inpt):
         tuple: shape of ``inpt``
 
     Raises:
-        ValueError
+        ValueError: if ``inpt`` fails to convert to a NumPy array
     """
     try:
         inpt = np.array(inpt)
