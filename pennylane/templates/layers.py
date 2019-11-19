@@ -131,7 +131,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         :target: javascript:void(0);
 
     Args:
-        weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
+        weights (array[float]): weights of shape ``(:math:`L`, :math:`M`, 3)``
         wires (Sequence[int] or int): qubit indices that the template acts on
 
     Keyword Args:
