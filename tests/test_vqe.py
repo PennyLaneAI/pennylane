@@ -174,7 +174,6 @@ def mock_device(monkeypatch):
         m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
         yield qml.Device()
 
-
 #####################################################
 # Tests
 
@@ -423,12 +422,10 @@ class TestTFInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-
 @pytest.mark.usefixtures("skip_if_no_tf_support")
 @pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestMultipleInterfaceIntegration:
     """Tests to ensure that interfaces agree and integrate correctly"""
-
 
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""

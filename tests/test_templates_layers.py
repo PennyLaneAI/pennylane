@@ -13,18 +13,17 @@
 # limitations under the License.
 """
 Unit tests for the :mod:`pennylane.template.layers` module.
+Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
-
-import logging as log
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.templates.layers import (CVNeuralNetLayers,
-                                        StronglyEntanglingLayers, _strongly_entangling_layer,
-                                        RandomLayers, _random_layer)
+                                        StronglyEntanglingLayers,
+                                        RandomLayers,
+                                        _random_layer)
 from pennylane import RX, RY, RZ, CZ, CNOT
-log.getLogger('defaults')
 
 
 class TestCVNeuralNet:
@@ -34,14 +33,6 @@ class TestCVNeuralNet:
     @pytest.fixture(scope="class")
     def num_subsystems(self):
         return 4
-
-    @pytest.fixture(scope="class")
-    def N(self):
-        return 4
-
-    @pytest.fixture(scope="class")
-    def depth(self):
-        return 2
 
     @pytest.fixture(scope="class")
     def weights(self):
@@ -54,12 +45,12 @@ class TestCVNeuralNet:
                          [ 2.73203094, 2.71115444, 1.16794164, 3.32823666]]),
                 np.array([[ 0.27344502, 0.68431314, 0.30026443, 0.23128064],
                          [ 0.45945175, 0.53255468, 0.28383751, 0.34263728]]),
-                np.array([[ 0.4134863 , 6.17555778, 0.80334114, 2.02400747, 0.44574704, 1.41227118],
+                np.array([[2.3936353, 4.80135971, 5.89867895, 2.00867023],
+                          [5.14552399, 3.31578667, 5.90119363, 4.54515204]]),
+            np.array([[ 0.4134863 , 6.17555778, 0.80334114, 2.02400747, 0.44574704, 1.41227118],
                          [ 5.16969442, 3.6890488 , 4.43916808, 3.20808287, 5.21543123, 4.52815349]]),
                 np.array([[ 2.47328111, 5.63064513, 2.17059932, 6.1873632 , 0.18052879, 2.20970037],
                          [ 5.44288268, 1.27806129, 1.87574979, 2.98956484, 3.10140853, 3.81814174]]),
-                np.array([[ 2.3936353 , 4.80135971, 5.89867895, 2.00867023, 2.71732643, 1.69737575],
-                         [ 5.14552399, 3.31578667, 5.90119363, 4.54515204, 1.12316345, 3.89384963]]),
                 np.array([[ 5.03318258, 4.01017269, 0.43159284, 3.7928101 ],
                          [ 3.5329307 , 4.79661266, 5.0683084 , 1.87631749]]),
                 np.array([[ 1.61159166, 0.1608155 , 0.96535086, 1.60132783],
@@ -70,11 +61,11 @@ class TestCVNeuralNet:
                          [ 0.26999146, 0.26256351, 0.14722687, 0.23137066]])
             ]
 
-    def test_cvneuralnet_integration(self, gaussian_device_4modes, weights, depth, N):
-        """integration test for the CVNeuralNetLayers template."""
+    def test_cvneuralnet_uses_correct_weights(self, gaussian_device_4modes, weights):
+        """Tests that the CVNeuralNetLayers template uses the weigh parameters correctly."""
 
         def circuit(weights):
-            CVNeuralNetLayers(*weights, wires=range(N))
+            CVNeuralNetLayers(*weights, wires=range(4))
             return qml.expval(qml.X(wires=0))
 
         qnode = qml.QNode(circuit, gaussian_device_4modes)
@@ -85,7 +76,7 @@ class TestCVNeuralNet:
 
         # Test that gates appear in the right order for each layer:
         # BS-R-S-BS-R-D-K
-        for l in range(depth):
+        for l in range(2):
             gates = [qml.Beamsplitter, qml.Rotation, qml.Squeezing,
                      qml.Beamsplitter, qml.Rotation, qml.Displacement]
 
@@ -126,7 +117,7 @@ class TestCVNeuralNet:
                     assert res_params == exp_params
 
     def test_cvqnn_layers_exception_nlayers(self, gaussian_device_4modes):
-        """integration test for the CVNeuralNetLayers method."""
+        """Integration test for the CVNeuralNetLayers method."""
 
         def circuit(weights):
             CVNeuralNetLayers(*weights, wires=range(4))
@@ -135,24 +126,21 @@ class TestCVNeuralNet:
         qnode = qml.QNode(circuit, gaussian_device_4modes)
 
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError, match="The first dimension of the weight parameters"):
             qnode(wrong_weights)
-        assert excinfo.value.args[0] == "All parameter arrays need to have the same first dimension, from which " \
-                                        "the number of layers is inferred; got first dimensions " \
-                                        "[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]."
 
 
 class TestStronglyEntangling:
     """Tests for the StronglyEntanglingLayers method from the pennylane.templates.layers module."""
 
-    def test_integration(self, n_subsystems):
-        """integration test for the StronglyEntanglingLayers."""
+    def test_strong_ent_layers_uses_correct_weights(self, n_subsystems):
+        """Test that StronglyEntanglingLayers uses the correct weights in the circuit."""
         np.random.seed(12)
-        num_layers = 2
+        n_layers = 2
         num_wires = n_subsystems
 
         dev = qml.device('default.qubit', wires=num_wires)
-        weights = np.random.randn(num_layers, num_wires, 3)
+        weights = np.random.randn(n_layers, num_wires, 3)
 
         def circuit(weights):
             StronglyEntanglingLayers(weights, wires=range(num_wires))
@@ -164,14 +152,14 @@ class TestStronglyEntangling:
 
         # Test that gates appear in the right order
         exp_gates = [qml.Rot]*num_wires + [qml.CNOT]*num_wires
-        exp_gates *= num_layers
+        exp_gates *= n_layers
         res_gates = [op for op in queue]
 
         for op1, op2 in zip(res_gates, exp_gates):
             assert isinstance(op1, op2)
 
         # test the device parameters
-        for l in range(num_layers):
+        for l in range(n_layers):
             layer_ops = queue[2*l*num_wires:2*(l+1)*num_wires]
 
             # check each rotation gate parameter
@@ -180,28 +168,73 @@ class TestStronglyEntangling:
                 exp_params = weights[l, n, :]
                 assert sum([r == e for r, e in zip(res_params, exp_params)])
 
-    def test_execution(self, tol):
-        """Tests the StronglyEntanglingLayers for various parameters."""
-        np.random.seed(0)
-        outcomes = []
+    def test_strong_ent_layers_uses_correct_number_of_imprimitives(self, n_layers, n_subsystems):
+        """Test that StronglyEntanglingLayers uses the correct number of imprimitives."""
+        imprimitive = CZ
+        dev = qml.device('default.qubit', wires=n_subsystems)
+        weights = np.random.randn(n_layers, n_subsystems, 3)
 
-        for num_wires in range(2, 4):
-            for num_layers in range(1, 3):
+        def circuit(weights):
+            StronglyEntanglingLayers(weights=weights, wires=range(n_subsystems), imprimitive=imprimitive)
+            return qml.expval(qml.PauliZ(0))
 
-                dev = qml.device('default.qubit', wires=num_wires)
-                weights = np.random.randn(num_layers, num_wires, 3)
+        qnode = qml.QNode(circuit, dev)
+        qnode(weights)
+        queue = qnode.queue
+        types = [type(q) for q in queue]
+        assert types.count(imprimitive) == n_subsystems*n_layers
 
-                @qml.qnode(dev)
-                def circuit(weights, x=None):
-                    qml.BasisState(x, wires=range(num_wires))
-                    StronglyEntanglingLayers(weights, wires=range(num_wires))
-                    return qml.expval(qml.PauliZ(0))
+    @pytest.mark.parametrize("n_wires, n_layers, ranges", [(2, 2, [2, 1]),
+                                                           (3, 1, [5])])
+    def test_strong_ent_layers_ranges_equals_wires_exception(self, n_layers, n_wires, ranges):
+        """Test that StronglyEntanglingLayers throws and exception if a range is equal to or
+        larger than the number of wires."""
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_layers, n_wires, 3)
 
-                outcomes.append(circuit(weights, x=np.array(np.random.randint(0, 1, num_wires))))
+        def circuit(weights):
+            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
+            return qml.expval(qml.PauliZ(0))
 
-        res = np.array(outcomes)
-        expected = np.array([-0.29242496, 0.22129055, 0.07540091, -0.77626557])
-        assert np.allclose(res, expected, atol=tol)
+        qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match="The range hyperparameter for all layers needs to be smaller than"):
+            qnode(weights)
+
+    def test_strong_ent_layers_illegal_ranges_exception(self):
+        """Test that StronglyEntanglingLayers throws and exception if ``ranges`` parameter of illegal type."""
+        n_wires = 2
+        n_layers = 2
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_layers, n_wires, 3)
+
+        def circuit(weights):
+            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=['a', 'a'])
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match="StronglyEntanglingLayers expects ``ranges`` to be a list of integers"):
+            qnode(weights)
+
+    @pytest.mark.parametrize("n_layers, ranges", [(2, [1, 2, 4]),
+                                                  (5, [2])])
+    def test_strong_ent_layers_wrong_size_ranges_exception(self, n_layers, ranges):
+        """Test that StronglyEntanglingLayers throws and exception if ``ranges`` parameter
+        not of shape (len(wires),)."""
+        n_wires = 5
+        dev = qml.device('default.qubit', wires=n_wires)
+        weights = np.random.randn(n_layers, n_wires, 3)
+
+        def circuit(weights):
+            StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match="StronglyEntanglingLayers expects ``ranges`` to contain "
+                                             "a range for each layer"):
+            qnode(weights)
 
 
 class TestRandomLayers:
@@ -282,7 +315,7 @@ class TestRandomLayers:
         assert not np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
     def test_random_layers_nlayers(self, n_layers):
-        """Test that  pennylane.templates.layers.RandomLayers() picks the correct number of gates."""
+        """Test that RandomLayers() picks the correct number of gates."""
         np.random.seed(12)
         n_rots = 1
         n_wires = 2
@@ -301,8 +334,7 @@ class TestRandomLayers:
         assert len(types) - types.count(impr) == n_layers
 
     def test_random_layer_ratio_imprimitive(self, ratio):
-        """Test that  pennylane.templates.layers._random_layer() has the right ratio of imprimitive gates."""
-        np.random.seed(12)
+        """Test that  _random_layer() has the right ratio of imprimitive gates."""
         n_rots = 500
         n_wires = 2
         impr = CNOT
@@ -311,7 +343,7 @@ class TestRandomLayers:
 
         def circuit(weights):
             _random_layer(weights=weights, wires=range(n_wires), ratio_imprim=ratio,
-                          imprimitive=CNOT)
+                          imprimitive=CNOT, rotations=[RX, RY, RZ], seed=42)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -321,16 +353,15 @@ class TestRandomLayers:
         ratio_impr = types.count(impr) / len(types)
         assert np.isclose(ratio_impr, ratio, atol=0.05)
 
-    def test_random_layer_imprimitive(self, n_subsystems, impr, rots):
-        """Test that  pennylane.templates.layers._random_layer() uses the correct types of gates."""
-        np.random.seed(12)
+    def test_random_layer_gate_types(self, n_subsystems, impr, rots):
+        """Test that  _random_layer() uses the correct types of gates."""
         n_rots = 20
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            _random_layer(weights=weights, wires=range(n_subsystems),
-                          imprimitive=impr, rotations=rots)
+            _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
+                          imprimitive=impr, rotations=rots, seed=42)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -342,32 +373,31 @@ class TestRandomLayers:
         assert unique == gates
 
     def test_random_layer_numgates(self, n_subsystems):
-        """Test that  pennylane.templates.layers._random_layer() uses the correct number of gates."""
-        np.random.seed(12)
+        """Test that _random_layer() uses the correct number of gates."""
         n_rots = 5
-        impr = CNOT
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            _random_layer(weights=weights, wires=range(n_subsystems), imprimitive=impr)
+            _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
+                          imprimitive=qml.CNOT, rotations=[RX, RY, RZ], seed=42)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
         qnode(weights)
         queue = qnode.queue
         types = [type(q) for q in queue]
-        assert len(types) - types.count(impr) == n_rots
+        assert len(types) - types.count(qml.CNOT) == n_rots
 
     def test_random_layer_randomwires(self, n_subsystems):
-        """Test that  pennylane.templates.layers._random_layer() picks random wires."""
-        np.random.seed(12)
+        """Test that  _random_layer() picks random wires."""
         n_rots = 500
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            _random_layer(weights=weights, wires=range(n_subsystems))
+            _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
+                          imprimitive=qml.CNOT, rotations=[RX, RY, RZ], seed=42)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -379,14 +409,15 @@ class TestRandomLayers:
         assert np.isclose(mean_wire, (n_subsystems - 1) / 2, atol=0.05)
 
     def test_random_layer_weights(self, n_subsystems, tol):
-        """Test that pennylane.templates.layers._random_layer() uses the correct weights."""
+        """Test that _random_layer() uses the correct weights."""
         np.random.seed(12)
         n_rots = 5
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
         def circuit(weights):
-            _random_layer(weights=weights, wires=range(n_subsystems))
+            _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
+                          imprimitive=qml.CNOT, rotations=[RX, RY, RZ], seed=4)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)

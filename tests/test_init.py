@@ -22,13 +22,11 @@ import pennylane as qml
 # Fix inputs to create fixture parameters
 n_wires = 3
 repeat = 2
-n_rots = 10
+n_rotations = 10
 n_if = n_wires * (n_wires - 1) / 2
-wire_block = (repeat, n_wires)
-intf_block = (repeat, n_if)
 
 #######################################
-# Signatures
+# Common keyword arguments
 
 base = {'n_wires': n_wires}
 rpt = {'n_layers': repeat, 'n_wires': n_wires}
@@ -36,68 +34,62 @@ rpt_nrml = {'n_layers': repeat, 'n_wires': n_wires, 'mean': 0, 'std': 1}
 rpt_uni = {'n_layers': repeat, 'n_wires': n_wires, 'low': 0, 'high': 1}
 base_nrml = {'n_wires': n_wires, 'mean': 0, 'std': 1}
 base_uni = {'n_wires': n_wires, 'low': 0, 'high': 1}
-rnd_rpt_nrml = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': n_rots, 'mean': 0, 'std': 1}
-rnd_rpt_uni = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': n_rots, 'low': 0, 'high': 1}
+rnd_rpt_nrml1 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': n_rotations, 'mean': 0, 'std': 1}
+rnd_rpt_uni1 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': n_rotations, 'low': 0, 'high': 1}
+rnd_rpt_nrml2 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': None, 'mean': 0, 'std': 1}
+rnd_rpt_uni2 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': None, 'low': 0, 'high': 1}
 
 #######################################
 # Functions and their signatures
 
 # Functions returning a single parameter array
-INIT = [(qml.init.random_layers_normal, rnd_rpt_nrml),
-        (qml.init.strong_ent_layers_normal, rpt_nrml),
-        (qml.init.cvqnn_layers_theta_normal, rpt_nrml),
-        (qml.init.cvqnn_layers_phi_normal, rpt_nrml),
-        (qml.init.cvqnn_layers_varphi_normal, rpt_nrml),
-        (qml.init.cvqnn_layers_r_normal, rpt_nrml),
-        (qml.init.cvqnn_layers_phi_r_normal, rpt_nrml),
-        (qml.init.cvqnn_layers_a_normal, rpt_nrml),
-        (qml.init.cvqnn_layers_phi_a_normal, rpt_nrml),
-        (qml.init.cvqnn_layers_kappa_normal, rpt_nrml),
-        (qml.init.interferometer_theta_normal, base_nrml),
-        (qml.init.interferometer_phi_normal, base_nrml),
-        (qml.init.interferometer_varphi_normal, base_nrml),
-        (qml.init.random_layers_uniform, rnd_rpt_uni),
-        (qml.init.strong_ent_layers_uniform, rpt_uni),
-        (qml.init.cvqnn_layers_theta_uniform, rpt_uni),
-        (qml.init.cvqnn_layers_phi_uniform, rpt_uni),
-        (qml.init.cvqnn_layers_varphi_uniform, rpt_uni),
-        (qml.init.cvqnn_layers_r_uniform, rpt_uni),
-        (qml.init.cvqnn_layers_phi_r_uniform, rpt_uni),
-        (qml.init.cvqnn_layers_a_uniform, rpt_uni),
-        (qml.init.cvqnn_layers_phi_a_uniform, rpt_uni),
-        (qml.init.cvqnn_layers_kappa_uniform, rpt_uni),
-        (qml.init.interferometer_theta_uniform, base_uni),
-        (qml.init.interferometer_phi_uniform, base_uni),
-        (qml.init.interferometer_varphi_uniform, base_uni)
-        ]
+INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal, rnd_rpt_nrml1, (repeat, n_rotations)),
+                      (qml.init.random_layers_normal, rnd_rpt_nrml2, (repeat, n_wires)),
+                      (qml.init.strong_ent_layers_normal, rpt_nrml, (repeat, n_wires, 3)),
+                      (qml.init.cvqnn_layers_theta_normal, rpt_nrml, (repeat, n_if)),
+                      (qml.init.cvqnn_layers_phi_normal, rpt_nrml, (repeat, n_if)),
+                      (qml.init.cvqnn_layers_varphi_normal, rpt_nrml, (repeat, n_wires),),
+                      (qml.init.cvqnn_layers_r_normal, rpt_nrml, (repeat, n_wires),),
+                      (qml.init.cvqnn_layers_phi_r_normal, rpt_nrml, (repeat, n_wires),),
+                      (qml.init.cvqnn_layers_a_normal, rpt_nrml, (repeat, n_wires),),
+                      (qml.init.cvqnn_layers_phi_a_normal, rpt_nrml, (repeat, n_wires),),
+                      (qml.init.cvqnn_layers_kappa_normal, rpt_nrml, (repeat, n_wires),),
+                      (qml.init.interferometer_theta_normal, base_nrml, (n_if,)),
+                      (qml.init.interferometer_phi_normal, base_nrml, (n_if,)),
+                      (qml.init.interferometer_varphi_normal, base_nrml, (n_wires,)),
+                      (qml.init.random_layers_uniform, rnd_rpt_uni1, (repeat, n_rotations)),
+                      (qml.init.random_layers_uniform, rnd_rpt_uni2, (repeat, n_wires)),
+                      (qml.init.strong_ent_layers_uniform, rpt_uni, (repeat, n_wires, 3)),
+                      (qml.init.cvqnn_layers_theta_uniform, rpt_uni, (repeat, n_if)),
+                      (qml.init.cvqnn_layers_phi_uniform, rpt_uni, (repeat, n_if)),
+                      (qml.init.cvqnn_layers_varphi_uniform, rpt_uni, (repeat, n_wires)),
+                      (qml.init.cvqnn_layers_r_uniform, rpt_uni, (repeat, n_wires)),
+                      (qml.init.cvqnn_layers_phi_r_uniform, rpt_uni, (repeat, n_wires)),
+                      (qml.init.cvqnn_layers_a_uniform, rpt_uni, (repeat, n_wires)),
+                      (qml.init.cvqnn_layers_phi_a_uniform, rpt_uni, (repeat, n_wires)),
+                      (qml.init.cvqnn_layers_kappa_uniform, rpt_uni, (repeat, n_wires)),
+                      (qml.init.interferometer_theta_uniform, base_uni, (n_if,)),
+                      (qml.init.interferometer_phi_uniform, base_uni, (n_if,)),
+                      (qml.init.interferometer_varphi_uniform, base_uni, (n_wires,))
+                      ]
 # Functions returning a list of parameter arrays
-INITALL = [(qml.init.cvqnn_layers_all, rpt),
-           (qml.init.interferometer_all, base)]
+INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, rpt,
+                          [(repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
+                           (repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
+                           (repeat, n_wires)]),
+                         (qml.init.interferometer_all, base, [(n_if,), (n_if,), (n_wires,)])]
 
-###########
-# Shapes
+# Without shapes
+INIT_KWARGS = [i[0:2] for i in INIT_KWARGS_SHAPES]
+INITALL_KWARGS = [i[0:2] for i in INITALL_KWARGS_SHAPES]
 
-SHAPE = [(repeat, n_rots), (repeat, n_wires, 3), intf_block, intf_block, wire_block, wire_block,
-         wire_block, wire_block, wire_block, wire_block, (n_if,), (n_if,), (n_wires,),
-         (repeat, n_rots), (repeat, n_wires, 3), intf_block, intf_block, wire_block, wire_block,
-         wire_block, wire_block, wire_block, wire_block, (n_if,), (n_if,), (n_wires,),
-         ]
-ALL_SHAPE = [[intf_block, intf_block, wire_block, wire_block, wire_block, intf_block, intf_block, wire_block, wire_block, wire_block, wire_block],
-             [(n_if,), (n_if,), (n_wires,)]]
-
-###############
-# Combinations
-
-INIT_SHAPES = [i + (s,) for i, s in zip(INIT, SHAPE)]
-INIT_ALL_SHAPES = [i + (s,) for i, s in zip(INITALL, ALL_SHAPE)]
-
-##################
+#################
 
 
 class TestInitRepeated:
     """Tests the initialization functions from the ``init`` module."""
 
-    @pytest.mark.parametrize("init, sgntr, shp", INIT_SHAPES)
+    @pytest.mark.parametrize("init, sgntr, shp", INIT_KWARGS_SHAPES)
     def test_shape(self, init, sgntr, shp, seed):
         """Confirm that initialization functions
          return an array with the correct shape."""
@@ -105,7 +97,7 @@ class TestInitRepeated:
         p = init(**s)
         assert p.shape == shp
 
-    @pytest.mark.parametrize("init, sgntr, shp", INIT_ALL_SHAPES)
+    @pytest.mark.parametrize("init, sgntr, shp", INITALL_KWARGS_SHAPES)
     def test_all_shape(self, init, sgntr, shp, seed):
         """Confirm that ``all`` initialization functions
          return an array with the correct shape."""
@@ -114,7 +106,7 @@ class TestInitRepeated:
         shapes = [p_.shape for p_ in p]
         assert shapes == shp
 
-    @pytest.mark.parametrize("init, sgntr", INIT)
+    @pytest.mark.parametrize("init, sgntr", INIT_KWARGS)
     def test_same_output_for_same_seed(self, init, sgntr, seed, tol):
         """Confirm that initialization functions return a deterministic output
         for a fixed seed."""
@@ -123,7 +115,7 @@ class TestInitRepeated:
         p2 = init(**s)
         assert np.allclose(p1, p2, atol=tol)
 
-    @pytest.mark.parametrize("init, sgntr", INIT)
+    @pytest.mark.parametrize("init, sgntr", INIT_KWARGS)
     def test_diff_output_for_diff_seed(self, init, sgntr, seed, tol):
         """Confirm that initialization function returns a different output for
         different seeds."""
@@ -133,7 +125,7 @@ class TestInitRepeated:
         p2 = init(**s)
         assert not np.allclose(p1, p2, atol=tol)
 
-    @pytest.mark.parametrize("init, sgntr", INIT)
+    @pytest.mark.parametrize("init, sgntr", INIT_KWARGS)
     def test_interval(self, init, sgntr, seed, tol):
         """Test that sampled parameters lie in correct interval."""
         s = {**sgntr, 'seed': seed}
@@ -154,4 +146,3 @@ class TestInitRepeated:
         p = init(**s)
         p_mean = np.mean(p)
         assert np.isclose(p_mean, 1, atol=tol)
-

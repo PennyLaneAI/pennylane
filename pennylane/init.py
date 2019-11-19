@@ -74,7 +74,6 @@ def strong_ent_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     return params
 
 
-
 def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for :func:`~.RandomLayers`, drawn from a uniform distribution.
 

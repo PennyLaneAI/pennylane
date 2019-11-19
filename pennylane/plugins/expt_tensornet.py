@@ -25,7 +25,7 @@ try:
 except ImportError as e:
     raise ImportError("expt.tensornet device requires TensorNetwork>=0.2")
 
-from pennylane import Device
+from pennylane._device import Device
 from pennylane.plugins.default_qubit import (CNOT, CSWAP, CZ, SWAP, CRot3,
                                              CRotx, CRoty, CRotz, H, Rot3,
                                              Rotx, Roty, Rotz, Rphi, S, T, X,
