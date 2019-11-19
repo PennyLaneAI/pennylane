@@ -1,4 +1,4 @@
-# Release 0.7.0-dev
+# Release 0.7.0
 
 ### New features since last release
 
@@ -40,7 +40,7 @@
 
 * Custom padding constant in `AmplitudeEmbedding` is supported (see 'Breaking changes'.)
   [#419](https://github.com/XanaduAI/pennylane/pull/419)
-  
+
 ### Breaking changes
 
 * The ``pad`` parameter in `AmplitudeEmbedding()`` is now either ``None`` (no automatic padding), or a
