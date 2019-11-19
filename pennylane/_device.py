@@ -41,6 +41,7 @@ class Device(abc.ABC):
     #pylint: disable=too-many-public-methods
     _capabilities = {} #: dict[str->*]: plugin capabilities
     _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
+    asarray = staticmethod(np.asarray)
 
     def __init__(self, wires=1, shots=1000):
         self.num_wires = wires
@@ -195,11 +196,11 @@ class Device(abc.ABC):
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
             if all(obs.return_type is Sample for obs in observables):
-                return np.asarray(results)
+                return self.asarray(results)
             if any(obs.return_type is Sample for obs in observables):
-                return np.asarray(results, dtype="object")
+                return self.asarray(results, dtype="object")
 
-            return np.asarray(results)
+            return self.asarray(results)
 
     @property
     def op_queue(self):
