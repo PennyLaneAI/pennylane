@@ -92,6 +92,7 @@ def circuits(ansatz, observables, device, interface="numpy"):
     The circuits have the following structure:
 
     .. code-block:: python
+
         @qml.qnode(device)
         def circuit(params):
             ansatz(*params, wires=range(device.num_wires))

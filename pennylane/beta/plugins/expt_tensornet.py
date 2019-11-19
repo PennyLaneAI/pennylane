@@ -111,12 +111,12 @@ class TensorNetwork(Device):
     }
 
     backend = "numpy"
-    reshape = staticmethod(np.reshape)
-    array = staticmethod(np.array)
-    asarray = staticmethod(np.asarray)
-    real = staticmethod(np.real)
-    imag = staticmethod(np.imag)
-    abs = staticmethod(np.abs)
+    _reshape = staticmethod(np.reshape)
+    _array = staticmethod(np.array)
+    _asarray = staticmethod(np.asarray)
+    _real = staticmethod(np.real)
+    _imag = staticmethod(np.imag)
+    _abs = staticmethod(np.abs)
 
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
@@ -193,9 +193,9 @@ class TensorNetwork(Device):
 
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector":
-            state = self.array(par[0], dtype=self.C_DTYPE)
+            state = self._array(par[0], dtype=self.C_DTYPE)
             if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
-                self._state_node.tensor = self.reshape(state, [2] * self.num_wires)
+                self._state_node.tensor = self._reshape(state, [2] * self.num_wires)
             else:
                 raise ValueError("State vector must be of length 2**wires.")
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
@@ -220,12 +220,12 @@ class TensorNetwork(Device):
                     )
                 )
             state_node = self._create_basis_state(par[0], wires)
-            self._state_node.tensor = self.asarray(state_node, dtype=self.C_DTYPE)
+            self._state_node.tensor = self._asarray(state_node, dtype=self.C_DTYPE)
             return
 
         A = self._get_operator_matrix(operation, par)
         num_mult_idxs = len(wires)
-        A = self.reshape(A, [2] * num_mult_idxs * 2)
+        A = self._reshape(A, [2] * num_mult_idxs * 2)
         op_node = self._add_node(A, wires=wires, name=operation)
         for idx, w in enumerate(wires):
             self._add_edge(op_node, num_mult_idxs + idx, self._state_node, w)
@@ -257,7 +257,7 @@ class TensorNetwork(Device):
         for o, p, w in zip(observable, par, wires):
             A = self._get_operator_matrix(o, p)
             num_mult_idxs = len(w)
-            tensors.append(self.reshape(A, [2] * num_mult_idxs * 2))
+            tensors.append(self._reshape(A, [2] * num_mult_idxs * 2))
 
         nodes = self.create_nodes_from_tensors(tensors, wires, observable)
         return self.ev(nodes, wires)
@@ -269,9 +269,9 @@ class TensorNetwork(Device):
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
-        tensors = [self.reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
+        tensors = [self._reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
         tensors_of_squared_matrices = [
-            self.reshape(A @ A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)
+            self._reshape(A @ A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)
         ]
 
         obs_nodes = self.create_nodes_from_tensors(tensors, wires, observable)
@@ -331,8 +331,8 @@ class TensorNetwork(Device):
         """
         A = {**self._operation_map, **self._observable_map}[operation]
         if not callable(A):
-            return self.array(A, dtype=self.C_DTYPE)
-        return self.asarray(A(*par), dtype=self.C_DTYPE)
+            return self._array(A, dtype=self.C_DTYPE)
+        return self._asarray(A(*par), dtype=self.C_DTYPE)
 
     def ev(self, obs_nodes, wires):
         r"""Expectation value of observables on specified wires.
@@ -371,12 +371,12 @@ class TensorNetwork(Device):
         for obs_node in obs_nodes:
             contracted_ket = tn.contract_between(obs_node, contracted_ket)
         expval = tn.contract_between(bra, contracted_ket).tensor
-        if self.abs(self.imag(expval)) > tolerance:
+        if self._abs(self._imag(expval)) > tolerance:
             warnings.warn(
                 "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
                 RuntimeWarning,
             )
-        return self.real(expval)
+        return self._real(expval)
 
     @property
     def _state(self):
@@ -396,7 +396,7 @@ class TensorNetwork(Device):
         self._edges = []
 
         state = self._create_basis_state([0] * self.num_wires, range(self.num_wires))
-        state = self.array(state, dtype=self.C_DTYPE)
+        state = self._array(state, dtype=self.C_DTYPE)
 
         # TODO: since this state is separable, can be more intelligent about not making a dense matrix
         self._state_node = self._add_node(
