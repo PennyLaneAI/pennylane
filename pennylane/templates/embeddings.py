@@ -154,7 +154,7 @@ def BasisEmbedding(features, wires):
         devices that implement this function.
 
     Args:
-        features (array): Binary input array of shape ``(n, )``
+        features (array): binary input array of shape ``(n, )``
         wires (Sequence[int] or int): qubit indices that the template acts on
 
     Raises:
