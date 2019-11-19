@@ -135,7 +135,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         wires (Sequence[int] or int): qubit indices that the template acts on
 
     Keyword Args:
-        ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
+        ranges (Sequence[int]): Sequence determining the range hyperparameter for each subsequent layer; if None
                                 using :math:`r=l \mod M` for the :math:`l`th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
