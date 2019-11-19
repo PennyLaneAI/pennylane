@@ -38,7 +38,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     Args:
         features (array): input array of shape ``(2^n,)``
-        wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on
 
     Keyword Args:
         pad (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
