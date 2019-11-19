@@ -38,6 +38,9 @@
   backpropagation has been added
   [#427](https://github.com/XanaduAI/pennylane/pull/427)
 
+* Custom padding constant in `AmplitudeEmbedding` is supported (see 'Breaking changes'.)
+  [#419](https://github.com/XanaduAI/pennylane/pull/419)
+  
 ### Breaking changes
 
 * The ``pad`` parameter in `AmplitudeEmbedding()`` is now either ``None`` (no automatic padding), or a
