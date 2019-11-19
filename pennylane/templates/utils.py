@@ -17,7 +17,7 @@ Utility functions used in the templates.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
 import numpy as np
-from pennylane.qnode import Variable
+from pennylane.variable import Variable
 
 
 def _check_no_variable(arg, arg_str, msg=None):
@@ -30,7 +30,7 @@ def _check_no_variable(arg, arg_str, msg=None):
     """
     if msg is None:
         msg = "The argument {} can not be passed as a QNode parameter. Try passing it as a keyword argument.".format(arg_str)
-    for a, _ in zip(arg, arg_str):
+    for a, s in zip(arg, arg_str):
         if isinstance(a, Variable):
             raise ValueError(msg)
         if isinstance(a, Iterable):
@@ -181,7 +181,7 @@ def _check_number_of_layers(list_of_weights):
 
     shapes = [_get_shape(weight) for weight in list_of_weights]
 
-    if any(len(s) == 0 for s in shapes): # pylint: disable=len-as-condition
+    if any(len(s) == 0 for s in shapes):
         raise ValueError("The first dimension of the weight parameters must be the number of layers in the "
                          "template. Found scalar weights.")
 

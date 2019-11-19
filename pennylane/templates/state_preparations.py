@@ -20,7 +20,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.qnode import Variable
+from pennylane.variable import Variable
 from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,
                                        _check_shape)

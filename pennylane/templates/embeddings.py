@@ -18,7 +18,7 @@ used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
-from pennylane.qnode import Variable
+from pennylane.variable import Variable
 from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_hyperp_is_in_options, _check_type)
