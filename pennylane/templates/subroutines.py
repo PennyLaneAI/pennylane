@@ -94,8 +94,6 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
         phi (array): length :math:`M(M-1)/2` array of phase angles :math:`\phi`
         varphi (array): length :math:`M` array of rotation angles :math:`\varphi`
         wires (Sequence[int]): wires the interferometer should act on
-
-    Keyword Args:
         mesh (string): the type of mesh to use
         beamsplitter (str): if ``clements``, the beamsplitter convention from
           Clements et al. 2016 (https://dx.doi.org/10.1364/OPTICA.3.001460) is used; if ``pennylane``, the

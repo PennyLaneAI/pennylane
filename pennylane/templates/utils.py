@@ -26,8 +26,6 @@ def _check_no_variable(arg, arg_str, msg=None):
     Args:
         arg (list): arguments or list of arguments to check
         arg_str (list[str]): name of arguments for error printing
-
-    Keyword Args:
         msg (str): error message
     """
     if msg is None:
@@ -88,8 +86,6 @@ def _check_shape(inpt, target_shape, msg=None, bound=None):
     Args:
         inpt (list): input to a qnode
         target_shape (tuple[int]): expected shape of inpt
-
-    Keyword Args:
         msg (str): error message if the shapes are different
         bound (str): If 'max' or 'min', the target shape is merely required to be a bound on the input shape
 
@@ -121,8 +117,6 @@ def _check_shapes(inpt_list, target_shape_list, bound_list=None, msg=None):
     Args:
         inpt_list (list): list of elements of which to check the shape
         target_shape_list (list): list of target shapes, of same length as ``inpt_list``
-
-    Keyword Args:
         bound_list (list): list of 'max' or 'min', indicating the bound that the target shape imposes on the input
              shape
         msg (str): error message to display
@@ -144,8 +138,6 @@ def _check_hyperp_is_in_options(element, options, msg=None):
     Args:
         element: any element
         options: possible realizations for ``element``
-
-    Keyword Args:
         msg (str): error message to display
     """
     if msg is None:
@@ -161,8 +153,6 @@ def _check_type(element, type_list, msg=None):
     Args:
         element: element to check
         type_list (list): possible types for ``element``
-
-    Keyword Args:
          msg (str): error message to display
     """
     if msg is None:

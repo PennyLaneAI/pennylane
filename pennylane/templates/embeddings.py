@@ -39,8 +39,6 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     Args:
         features (array): input array of shape ``(2^n,)``
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
-
-    Keyword Args:
         pad (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (Boolean): controls the activation of automatic normalization
 
@@ -109,8 +107,6 @@ def AngleEmbedding(features, wires, rotation='X'):
         features (array): Input array of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
-
-    Keyword Args:
         rotation (str): Type of rotations used
 
     Raises:
@@ -199,8 +195,6 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     Args:
         features (array): Array of features of size (N,)
         wires (Sequence[int]): sequence of mode indices that the template acts on
-
-    Keyword Args:
         method (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
@@ -249,8 +243,6 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
     Args:
         features (array): Array of features of size (N,)
         wires (Sequence[int]): sequence of mode indices that the template acts on
-
-    Keyword Args:
         method (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or

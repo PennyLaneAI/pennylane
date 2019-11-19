@@ -133,8 +133,6 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     Args:
         weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
         wires (Sequence[int] or int): int or sequence of qubit indices that the template acts on
-
-    Keyword Args:
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
                                 using :math:`r=l \mod M` for the :math:`l`th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
@@ -209,8 +207,6 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     Args:
         weights (array[float]): array of weights of shape ``(L, k)``,
         wires (Sequence[int]): sequence of qubit indices that the template acts on
-
-    Keyword Args:
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
