@@ -76,7 +76,7 @@ def _get_shape(inpt):
         tuple: shape of ``inpt``
 
     Raises:
-        ValueError
+        ValueError: if ``inpt`` fails to convert to a NumPy array
     """
     try:
         inpt = np.array(inpt)
