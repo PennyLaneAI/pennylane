@@ -16,7 +16,9 @@ Utility functions used in the templates.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
+
 import numpy as np
+
 from pennylane.variable import Variable
 
 

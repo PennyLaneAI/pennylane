@@ -32,17 +32,17 @@ New tests are added as follows:
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.templates.layers import Interferometer
-from pennylane.templates.layers import (CVNeuralNetLayers,
-                                        StronglyEntanglingLayers,
-                                        RandomLayers)
-from pennylane.templates.embeddings import (AmplitudeEmbedding,
-                                            BasisEmbedding,
-                                            AngleEmbedding,
-                                            SqueezingEmbedding,
-                                            DisplacementEmbedding)
-from pennylane.templates.state_preparations import (BasisStatePreparation,
-                                                    MottonenStatePreparation)
+from pennylane.templates import (Interferometer,
+                                 CVNeuralNetLayers,
+                                 StronglyEntanglingLayers,
+                                 RandomLayers,
+                                 AmplitudeEmbedding,
+                                 BasisEmbedding,
+                                 AngleEmbedding,
+                                 SqueezingEmbedding,
+                                 DisplacementEmbedding,
+                                 BasisStatePreparation,
+                                 MottonenStatePreparation)
 from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
