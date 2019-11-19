@@ -47,7 +47,7 @@ def _check_wires(wires):
         wires (int or list): (subset of) wires of a quantum node
 
     Return:
-        list: wires as a list, int: number of wires
+        tuple(list, int): tuple containing the list of wires and number of wires
     """
     if isinstance(wires, int):
         wires = [wires]
