@@ -1,4 +1,4 @@
-# Copyright 2018 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ from functools import partial
 import numpy as np
 import torch
 
+from pennylane.qnode_new import JacobianQNode
 from pennylane.utils import unflatten
 
 
@@ -140,7 +141,11 @@ def TorchQNode(qnode):
             # the way in which the backward class is created on the fly
 
             # evaluate the Jacobian matrix of the QNode
-            jacobian = qnode.jacobian(ctx.args, **ctx.kwargs)
+            if isinstance(qnode, JacobianQNode):
+                # new style QNode.jacobian has a different signature
+                jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
+            else:
+                jacobian = qnode.jacobian(ctx.args, **ctx.kwargs)
 
             if grad_output.is_cuda: # pragma: no cover
                 grad_output_np = grad_output.cpu().detach().numpy()
