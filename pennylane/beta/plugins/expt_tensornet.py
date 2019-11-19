@@ -70,8 +70,8 @@ class TensorNetwork(Device):
 
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "expt.tensornet"
-    pennylane_requires = "0.7"
-    version = "0.7.0"
+    pennylane_requires = "0.8"
+    version = "0.8.0"
     author = "Xanadu Inc."
     _capabilities = {"model": "qubit", "tensor_observables": True}
 
