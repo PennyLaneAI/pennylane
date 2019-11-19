@@ -352,6 +352,7 @@ class TensorNetworkTF(TensorNetwork):
         pass
 
     def execute(self, queue, observables, parameters=None):
+        # pylint: disable=bad-super-call
         results = super(TensorNetwork, self).execute(queue, observables, parameters=parameters)
 
         with self.tape:
