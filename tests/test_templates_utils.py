@@ -17,7 +17,7 @@ Tests for the templates utility functions.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.qnode import Variable
+from pennylane.variable import Variable
 from pennylane.templates.utils import (_check_wires,
                                        _check_shape,
                                        _check_shapes,
