@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qnode_new import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode
+from pennylane.beta.qnodes import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode
 
 
 def test_create_qubit_qnode():

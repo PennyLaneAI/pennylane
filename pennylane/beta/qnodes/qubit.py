@@ -28,8 +28,9 @@ from pennylane.measure import var
 from pennylane.utils import expand
 
 from pennylane.operation import Observable, ObservableReturnTypes
-from pennylane.qnode_new.jacobian import JacobianQNode
-from pennylane.qnode_new.base import QuantumFunctionError
+
+from .base import QuantumFunctionError
+from .jacobian import JacobianQNode
 
 
 class QubitQNode(JacobianQNode):

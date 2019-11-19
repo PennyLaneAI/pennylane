@@ -16,7 +16,7 @@ Device Jacobian QNode.
 
 A QNode that delegates all gradient computations directly to the device.
 """
-from pennylane.qnode_new.jacobian import JacobianQNode
+from .jacobian import JacobianQNode
 
 
 class DeviceJacobianQNode(JacobianQNode):

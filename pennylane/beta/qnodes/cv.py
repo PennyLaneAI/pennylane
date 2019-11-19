@@ -23,8 +23,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import ObservableReturnTypes
-from pennylane.qnode_new.jacobian import JacobianQNode
-from pennylane.qnode_new.base import QuantumFunctionError
+
+from .base import QuantumFunctionError
+from .jacobian import JacobianQNode
 
 
 class CVQNode(JacobianQNode):

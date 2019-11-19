@@ -21,11 +21,11 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.qnode_new.base import QuantumFunctionError
-from pennylane.qnode_new.qubit import QubitQNode
-from pennylane.qnode_new.cv import CVQNode
+from pennylane.beta.qnodes.base import QuantumFunctionError
+from pennylane.beta.qnodes.qubit import QubitQNode
+from pennylane.beta.qnodes.cv import CVQNode
 
-from pennylane.interfaces.autograd import to_autograd
+from pennylane.beta.interfaces.autograd import to_autograd
 
 
 alpha = 0.5  # displacement in tests

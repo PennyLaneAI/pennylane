@@ -20,7 +20,8 @@ import numpy as np
 
 from pennylane.operation import ObservableReturnTypes
 from pennylane.utils import _flatten, _inv_dict
-from pennylane.qnode_new.base import BaseQNode, QuantumFunctionError
+
+from .base import BaseQNode, QuantumFunctionError
 
 
 class JacobianQNode(BaseQNode):
@@ -385,7 +386,7 @@ class JacobianQNode(BaseQNode):
         # Placing slow imports here, in case the user does not use the TF interface
         # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
-            from pennylane.interfaces.autograd import to_autograd as _to_autograd
+            from pennylane.beta.interfaces.autograd import to_autograd as _to_autograd
         except ImportError:  # pragma: no cover
             raise QuantumFunctionError(
                 "Autograd not found. Please install "

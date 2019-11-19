@@ -27,7 +27,6 @@ import pennylane.operation
 
 import pennylane.init
 import pennylane.templates
-import pennylane.vqe
 from pennylane.about import about
 
 

@@ -22,7 +22,7 @@ from functools import partial
 import numpy as np
 import torch
 
-from pennylane.qnode_new import JacobianQNode
+from pennylane.beta.qnodes import JacobianQNode
 from pennylane.utils import unflatten
 
 

@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane._device import Device
-from pennylane.qnode_new.base import BaseQNode, QuantumFunctionError, QNode_old, decompose_queue
+from pennylane.beta.qnodes.base import BaseQNode, QuantumFunctionError, QNode_old, decompose_queue
 
 
 @pytest.fixture(scope="function")

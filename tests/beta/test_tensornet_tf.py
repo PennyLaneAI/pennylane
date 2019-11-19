@@ -23,9 +23,9 @@ tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
 tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
 
 import pennylane as qml
-from pennylane.plugins.expt_tensornet_tf import TensorNetworkTF
-from pennylane.qnode_new import qnode, QNode
-from pennylane.qnode_new.decorator import ALLOWED_INTERFACES, ALLOWED_DIFF_METHODS
+from pennylane.beta.plugins.expt_tensornet_tf import TensorNetworkTF
+from pennylane.beta.qnodes import qnode, QNode
+from pennylane.beta.qnodes.decorator import ALLOWED_INTERFACES, ALLOWED_DIFF_METHODS
 from pennylane.plugins.default_qubit import I, X, Y, Z, H, CNOT, SWAP, CNOT, Toffoli, CSWAP
 
 np.random.seed(42)
