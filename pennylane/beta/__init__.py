@@ -33,9 +33,12 @@ def prob(wires):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    # pylint: disable=protected-access
+    op = Identity(wires=wires, do_queue=False)
+    op.return_type = Probability
+
     if QNode._current_context is not None:
         # add observable to QNode observable queue
-        op = Identity(wires=wires, do_queue=False)
-        op.return_type = Probability
         QNode._current_context._append_op(op)
-        return op
+
+    return op

@@ -521,28 +521,10 @@ class DefaultQubit(Device):
     def observables(self):
         return set(self._observable_map.keys())
 
-    @property
-    def state(self):
-        return self._state
-
     def probability(self, wires=None):
-        """Return the (marginal) probability of each computational basis
-        state from the last run of the device.
-
-        Args:
-            wires (Sequence[int]): Sequence of wires to return
-                marginal probabilities for. Wires not provided
-                are traced out of the system.
-
-        Returns:
-            OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
-            to the resulting probability. The dictionary should be sorted such that the
-            state tuples are in lexicographical order.
-        """
         if self._state is None:
             return None
 
-        states = itertools.product(range(2), repeat=self.num_wires)
         prob = np.abs(self._state.reshape([2] * self.num_wires)) ** 2
 
         wires = wires or range(self.num_wires)
