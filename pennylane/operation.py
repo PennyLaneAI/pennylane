@@ -143,6 +143,7 @@ class ObservableReturnTypes(Enum):
     Sample = 1
     Variance = 2
     Expectation = 3
+    Probability = 4
 
 
 Sample = ObservableReturnTypes.Sample
@@ -156,6 +157,9 @@ Expectation = ObservableReturnTypes.Expectation
 """Enum: An enumeration which represents returning the expectation
 value of an observable on specified wires."""
 
+Probability = ObservableReturnTypes.Probability
+"""Enum: An enumeration which represents returning probabilities
+of all computational basis states."""
 
 #=============================================================================
 # Class property

@@ -14,6 +14,28 @@
 """
 This module contains experimental, contributed, and beta code.
 """
+from pennylane.operation import All, Observable, Operation, Probability
+from pennylane.ops import Identity
+from pennylane.qnode import QNode
+
 import pennylane.beta.interfaces
 import pennylane.beta.qnodes
 import pennylane.beta.vqe
+
+
+def prob(wires):
+    r"""Probability of each computational basis state.
+
+    This measurement function accepts no observables, and instead
+    instructs the QNode to return a flat array containing the
+    probabilities of each quantum state.
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    if QNode._current_context is not None:
+        # add observable to QNode observable queue
+        op = Identity(wires=wires, do_queue=False)
+        op.return_type = Probability
+        QNode._current_context._append_op(op)
+        return op

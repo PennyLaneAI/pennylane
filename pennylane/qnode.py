@@ -299,15 +299,20 @@ class QNode:
 
         # quantum circuit function return validation
         if isinstance(res, qml.operation.Observable):
+            self.output_dim = 1
+
             if res.return_type is qml.operation.Sample:
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
                 self.output_conversion = np.squeeze
+            elif res.return_type is qml.operation.Probability:
+                self.output_conversion = np.squeeze
+                self.output_dim = 2**len(res.wires)
             else:
                 self.output_conversion = float
 
-            self.output_dim = 1
             res = (res,)
+
         elif isinstance(res, Sequence) and res and all(isinstance(x, qml.operation.Observable) for x in res):
             # for multiple observables values, any valid Python sequence of observables
             # (i.e., lists, tuples, etc) are supported in the QNode return statement.

@@ -19,7 +19,7 @@ import abc
 
 import numpy as np
 
-from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
+from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Probability, Tensor
 from .qnode import QuantumFunctionError
 
 
@@ -183,6 +183,9 @@ class Device(abc.ABC):
 
                 elif obs.return_type is Sample:
                     results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
+
+                elif obs.return_type is Probability:
+                    results.append(list(self.probability(wires=obs.wires).values()))
 
                 elif obs.return_type is not None:
                     raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
