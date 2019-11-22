@@ -10,9 +10,16 @@
 
 ### Bug fixes
 
+* Fixed a bug in `CVQNode._pd_analytic` where non-descendant observables were not
+  Heisenberg-transformed before evaluating the partial derivatives, resulting in an
+  erroneous Jacobian.
+  [#433](https://github.com/XanaduAI/pennylane/pull/433)
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
+
+Ville Bergholm
 
 ---
 

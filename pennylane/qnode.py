@@ -1069,8 +1069,6 @@ class QNode:
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
 
-                ob_successors = self._op_successors(op, 'E')
-
                 # transform the observables
                 obs = [
                     self._transform_observable(ob, w, Z)
