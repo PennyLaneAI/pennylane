@@ -739,6 +739,98 @@ class TestDecomposition:
         assert rec.queue[2].name == "RZ"
         assert rec.queue[2].parameters == [omega]
 
+    def test_crx_decomposition(self):
+        """Test the decomposition of the controlled X
+        qubit rotation"""
+        phi = 0.432
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.CRX.decomposition(phi, wires=[0, 1])
+
+        assert len(rec.queue) == 6
+
+        assert rec.queue[0].name == "RZ"
+        assert rec.queue[0].parameters == [np.pi/2]
+        assert rec.queue[0].wires == [1]
+
+        assert rec.queue[1].name == "RY"
+        assert rec.queue[1].parameters == [phi]
+        assert rec.queue[1].wires == [1]
+
+        assert rec.queue[2].name == "CNOT"
+        assert rec.queue[2].parameters == []
+        assert rec.queue[2].wires == [0, 1]
+
+        assert rec.queue[3].name == "RY"
+        assert rec.queue[3].parameters == [-phi]
+        assert rec.queue[3].wires == [1]
+
+        assert rec.queue[4].name == "CNOT"
+        assert rec.queue[4].parameters == []
+        assert rec.queue[4].wires == [0, 1]
+
+        assert rec.queue[5].name == "RZ"
+        assert rec.queue[5].parameters == [-np.pi/2]
+        assert rec.queue[5].wires == [1]
+
+    def test_cry_decomposition(self):
+        """Test the decomposition of the controlled Y
+        qubit rotation"""
+        phi = 0.432
+
+        operation_wires = [0, 1]
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.CRY.decomposition(phi, wires=operation_wires)
+
+        assert len(rec.queue) == 4
+
+        assert rec.queue[0].name == "U3"
+        assert rec.queue[0].parameters == [phi/2, 0, 0]
+        assert rec.queue[0].wires == [1]
+
+        assert rec.queue[1].name == "CNOT"
+        assert rec.queue[1].parameters == []
+        assert rec.queue[1].wires == operation_wires
+
+        assert rec.queue[2].name == "U3"
+        assert rec.queue[2].parameters == [-phi/2, 0, 0]
+        assert rec.queue[2].wires == [1]
+
+        assert rec.queue[3].name == "CNOT"
+        assert rec.queue[3].parameters == []
+        assert rec.queue[3].wires == operation_wires
+
+    def test_crz_decomposition(self):
+        """Test the decomposition of the controlled Z
+        qubit rotation"""
+        phi = 0.432
+
+        operation_wires = [0, 1]
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.CRZ.decomposition(phi, wires=operation_wires)
+
+        assert len(rec.queue) == 4
+
+        assert rec.queue[0].name == "U1"
+        assert rec.queue[0].parameters == [phi/2]
+        assert rec.queue[0].wires == [1]
+
+        assert rec.queue[1].name == "CNOT"
+        assert rec.queue[1].parameters == []
+        assert rec.queue[1].wires == operation_wires
+
+        assert rec.queue[2].name == "U1"
+        assert rec.queue[2].parameters == [-phi/2]
+        assert rec.queue[2].wires == [1]
+
+        assert rec.queue[3].name == "CNOT"
+        assert rec.queue[3].parameters == []
+        assert rec.queue[3].wires == operation_wires
+
+
+
     def test_U2_decomposition(self):
         """Test the U2 decomposition is correct"""
         phi = 0.432
