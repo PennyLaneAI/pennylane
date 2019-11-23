@@ -440,6 +440,10 @@ class CRX(Operation):
 
     .. note:: The first wire provided corresponds to the **control qubit**.
 
+        If the ``CRX`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.RZ, `:class:`~.RY` 
+        and :class:`~.CNOT` gates.
+
     **Details:**
 
     * Number of wires: 2
@@ -481,6 +485,9 @@ class CRY(Operation):
         \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit**.
+        
+        If the ``CRY`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.U3` and :class:`~.CNOT` gates.
 
     **Details:**
 
@@ -521,6 +528,9 @@ class CRZ(Operation):
         \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit**.
+
+        If the ``CRZ`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.U1` and :class:`~.CNOT` gates.
 
     **Details:**
 
