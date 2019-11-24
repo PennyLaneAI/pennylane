@@ -424,10 +424,10 @@ class Rot(Operation):
     @staticmethod
     def decomposition(phi, theta, omega, wires):
         decomp_ops = [
-                      RZ(phi, wires=wires),
-                      RY(theta, wires=wires),
-                      RZ(omega, wires=wires)
-                      ]
+            RZ(phi, wires=wires),
+            RY(theta, wires=wires),
+            RZ(omega, wires=wires)
+        ]
         return decomp_ops
 
 
@@ -463,17 +463,19 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+
     @staticmethod
     def decomposition(theta, wires):
         decomp_ops = [
-              RZ(np.pi/2, wires=wires[1]),
-              RY(theta, wires=wires[1]),
-              CNOT(wires=wires),
-              RY(-theta, wires=wires[1]),
-              CNOT(wires=wires),
-              RZ(-np.pi/2, wires=wires[1]),
-              ]
+            RZ(np.pi / 2, wires=wires[1]),
+            RY(theta, wires=wires[1]),
+            CNOT(wires=wires),
+            RY(-theta, wires=wires[1]),
+            CNOT(wires=wires),
+            RZ(-np.pi / 2, wires=wires[1]),
+        ]
         return decomp_ops
 
 
@@ -508,15 +510,17 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+
     @staticmethod
     def decomposition(theta, wires):
         decomp_ops = [
-                      U3(theta / 2, 0, 0, wires=wires[1]),
-                      CNOT(wires=wires),
-                      U3(-theta / 2, 0, 0, wires=wires[1]),
-                      CNOT(wires=wires)
-                     ]
+            U3(theta / 2, 0, 0, wires=wires[1]),
+            CNOT(wires=wires),
+            U3(-theta / 2, 0, 0, wires=wires[1]),
+            CNOT(wires=wires)
+        ]
         return decomp_ops
 
 
@@ -551,15 +555,17 @@ class CRZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+
     @staticmethod
     def decomposition(lam, wires):
         decomp_ops = [
-                      U1(lam / 2, wires=wires[1]),
-                      CNOT(wires=wires),
-                      U1(-lam / 2, wires=wires[1]),
-                      CNOT(wires=wires)
-                     ]
+            U1(lam / 2, wires=wires[1]),
+            CNOT(wires=wires),
+            U1(-lam / 2, wires=wires[1]),
+            CNOT(wires=wires)
+        ]
         return decomp_ops
 
 
