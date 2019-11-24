@@ -423,7 +423,11 @@ class Rot(Operation):
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
+        decomp_ops = [
+                      RZ(phi, wires=wires),
+                      RY(theta, wires=wires),
+                      RZ(omega, wires=wires)
+                      ]
         return decomp_ops
 
 
@@ -438,18 +442,18 @@ class CRX(Operation):
             0 & 0 & -i\sin(\phi/2) & \cos(\phi/2)
         \end{bmatrix}.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-        If the ``CRX`` gate is not supported on the targeted device, PennyLane
-        will attempt to decompose the gate into :class:`~.RZ, `:class:`~.RY`
-        and :class:`~.CNOT` gates.
-
-    **Details:**
+   **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_x(\phi)) = \frac{1}{2}\left[f(CR_x(\phi+\pi/2)) - f(CR_x(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+        If the ``CRX`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.RZ`, :class:`~.RY`
+        and :class:`~.CNOT` gates.
 
     Args:
         phi (float): rotation angle :math:`\phi`
