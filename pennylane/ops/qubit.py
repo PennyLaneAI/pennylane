@@ -442,7 +442,7 @@ class CRX(Operation):
             0 & 0 & -i\sin(\phi/2) & \cos(\phi/2)
         \end{bmatrix}.
 
-   **Details:**
+    **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
