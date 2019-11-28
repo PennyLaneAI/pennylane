@@ -19,6 +19,7 @@ import numpy as np
 from unittest.mock import patch
 
 import pennylane as qml
+from pennylane.plugins.default_qubit import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT
 from pennylane.operation import Tensor
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -754,7 +755,7 @@ class TestDecomposition:
         assert rec.queue[0].wires == [1]
 
         assert rec.queue[1].name == "RY"
-        assert rec.queue[1].parameters == [phi]
+        assert rec.queue[1].parameters == [phi/2]
         assert rec.queue[1].wires == [1]
 
         assert rec.queue[2].name == "CNOT"
@@ -762,7 +763,7 @@ class TestDecomposition:
         assert rec.queue[2].wires == [0, 1]
 
         assert rec.queue[3].name == "RY"
-        assert rec.queue[3].parameters == [-phi]
+        assert rec.queue[3].parameters == [-phi/2]
         assert rec.queue[3].wires == [1]
 
         assert rec.queue[4].name == "CNOT"
@@ -772,6 +773,18 @@ class TestDecomposition:
         assert rec.queue[5].name == "RZ"
         assert rec.queue[5].parameters == [-np.pi/2]
         assert rec.queue[5].wires == [1]
+
+    def test_crx_decomposition_correctness(self, tol):
+        """Test that the decomposition of the controlled X
+        qubit rotation is correct"""
+
+        phi = 0.432
+
+        expected = CRotx(phi)
+
+        obtained = np.kron(I, Rotz(-np.pi/2)) @ CNOT @ np.kron(I, Roty(-phi/2)) @ CNOT @ np.kron(I, Roty(phi/2)) @ np.kron(I, Rotz(np.pi/2))
+        assert np.allclose(expected, obtained, atol=tol, rtol=0)
+
 
     def test_cry_decomposition(self):
         """Test the decomposition of the controlled Y
@@ -813,7 +826,7 @@ class TestDecomposition:
 
         assert len(rec.queue) == 4
 
-        assert rec.queue[0].name == "U1"
+        assert rec.queue[0].name == "PhaseShift"
         assert rec.queue[0].parameters == [phi/2]
         assert rec.queue[0].wires == [1]
 
@@ -821,7 +834,7 @@ class TestDecomposition:
         assert rec.queue[1].parameters == []
         assert rec.queue[1].wires == operation_wires
 
-        assert rec.queue[2].name == "U1"
+        assert rec.queue[2].name == "PhaseShift"
         assert rec.queue[2].parameters == [-phi/2]
         assert rec.queue[2].wires == [1]
 
