@@ -393,9 +393,9 @@ class Rot(Operation):
     Arbitrary single qubit rotation
 
     .. math:: R(\phi,\theta,\omega) = RZ(\omega)RY(\theta)RZ(\phi)= \begin{bmatrix}
-                e^{-i(\phi+\omega)/2}\cos(\theta/2) & -e^{i(\phi-\omega)/2}\sin(\theta/2) \\
-                e^{-i(\phi-\omega)/2}\sin(\theta/2) & e^{i(\phi+\omega)/2}\cos(\theta/2)
-            \end{bmatrix}.
+        e^{-i(\phi+\omega)/2}\cos(\theta/2) & -e^{i(\phi-\omega)/2}\sin(\theta/2) \\
+        e^{-i(\phi-\omega)/2}\sin(\theta/2) & e^{i(\phi+\omega)/2}\cos(\theta/2)
+        \end{bmatrix}.
 
     **Details:**
 
@@ -407,14 +407,14 @@ class Rot(Operation):
 
     .. note::
 
-        If the ``Rot`` gate is not supported on the targeted device, PennyLane
-        will attempt to decompose the gate into :class:`~.RZ` and :class:`~.RY` gates.
+    If the ``Rot`` gate is not supported on the targeted device, PennyLane
+    will attempt to decompose the gate into :class:`~.RZ` and :class:`~.RY` gates.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
-        theta (float): rotation angle :math:`\theta`
-        omega (float): rotation angle :math:`\omega`
-        wires (Sequence[int] or int): the wire the operation acts on
+    phi (float): rotation angle :math:`\phi`
+    theta (float): rotation angle :math:`\theta`
+    omega (float): rotation angle :math:`\omega`
+    wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 3
     num_wires = 1
@@ -435,12 +435,22 @@ class CRX(Operation):
     r"""CRX(phi, wires)
     The controlled-RX operator
 
-    .. math:: CR_x(\phi) = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & \cos(\phi/2) & -i\sin(\phi/2)\\
-            0 & 0 & -i\sin(\phi/2) & \cos(\phi/2)
-        \end{bmatrix}.
+    .. math::
+
+
+        \begin{align}
+            CRX(\phi) &= I_{1}\otimes RZ_{2}(\pi / 2) ~\cdot~ I_{1}\otimes RY_{2}(\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ RY_{2}(-\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes RZ_{2}(-\pi / 2)\notag \\[10pt]
+            &=
+            \begin{bmatrix}
+            & 1 & 0 & 0 & 0 \\
+            & 0 & 1 & 0 & 0\\
+            & 0 & 0 & \cos(\phi/2) & -i\sin(\phi/2)\\
+            & 0 & 0 & -i\sin(\phi/2) & \cos(\phi/2)
+            \end{bmatrix}.
+        \end{align}
+
+    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in `wires` that is the **control qubit**.
+
 
     **Details:**
 
@@ -449,11 +459,16 @@ class CRX(Operation):
     * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_x(\phi)) = \frac{1}{2}\left[f(CR_x(\phi+\pi/2)) - f(CR_x(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`CR_x(\phi)`.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
+    **Decomposition**
 
-        If the ``CRX`` gate is not supported on the targeted device, PennyLane
-        will attempt to decompose the gate into :class:`~.RZ`, :class:`~.RY`
-        and :class:`~.CNOT` gates.
+    If the ``CRX`` gate is not supported on the targeted device, PennyLane
+    will attempt to decompose the gate into :class:`~.RZ`, :class:`~.RY`
+    and :class:`~.CNOT` gates the following way:
+
+
+    .. image:: circuits/crx_circuit.png
+        :align: center
+        :width: 800px
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -464,15 +479,15 @@ class CRX(Operation):
     par_domain = "R"
     grad_method = "A"
     generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
     @staticmethod
     def decomposition(theta, wires):
         decomp_ops = [
             RZ(np.pi / 2, wires=wires[1]),
-            RY(theta, wires=wires[1]),
+            RY(theta / 2, wires=wires[1]),
             CNOT(wires=wires),
-            RY(-theta, wires=wires[1]),
+            RY(-theta / 2, wires=wires[1]),
             CNOT(wires=wires),
             RZ(-np.pi / 2, wires=wires[1]),
         ]
@@ -483,17 +498,20 @@ class CRY(Operation):
     r"""CRY(phi, wires)
     The controlled-RY operator
 
-    .. math:: CR_y(\phi) = \begin{bmatrix}
+    .. math::
+
+        \begin{align}
+             CRY(\phi) &= I_{1}\otimes U3_{2}(\pi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes U3_{2}(-\pi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
+            &=
+        \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0\\
             0 & 0 & \cos(\phi/2) & -\sin(\phi/2)\\
             0 & 0 & \sin(\phi/2) & \cos(\phi/2)
         \end{bmatrix}.
+        \end{align}
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-        If the ``CRY`` gate is not supported on the targeted device, PennyLane
-        will attempt to decompose the gate into :class:`~.U3` and :class:`~.CNOT` gates.
+    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in `wires` that is the **control qubit**.
 
     **Details:**
 
@@ -501,6 +519,16 @@ class CRY(Operation):
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_y(\phi)) = \frac{1}{2}\left[f(CR_y(\phi+\pi/2)) - f(CR_y(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`CR_y(\phi)`.
+
+    **Decomposition**
+
+    If the ``CRY`` gate is not supported on the targeted device, PennyLane
+    will attempt to decompose the gate into :class:`~.U3` and :class:`~.CNOT` gates the following way:
+
+    .. image:: circuits/cry_circuit.png
+        :align: center
+        :width: 800px
+
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -528,17 +556,20 @@ class CRZ(Operation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
-    .. math:: CR_z(\phi) = \begin{bmatrix}
+    .. math::
+        \begin{align}
+             CRZ(\phi) &= I_{1}\otimes PhaseShift_{2}(\pi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes PhaseShift_{2}(-\pi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
+            &=
+         \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0\\
             0 & 0 & e^{-i\phi/2} & 0\\
             0 & 0 & 0 & e^{i\phi/2}
         \end{bmatrix}.
+        \end{align}
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
 
-        If the ``CRZ`` gate is not supported on the targeted device, PennyLane
-        will attempt to decompose the gate into :class:`~.U1` and :class:`~.CNOT` gates.
+    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in `wires` that is the **control qubit**.
 
     **Details:**
 
@@ -546,6 +577,15 @@ class CRZ(Operation):
     * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_z(\phi)) = \frac{1}{2}\left[f(CR_z(\phi+\pi/2)) - f(CR_z(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`CR_z(\phi)`.
+
+    **Decomposition**
+
+    If the ``CRZ`` gate is not supported on the targeted device, PennyLane
+    will attempt to decompose the gate into :class:`~.PhaseShift` and :class:`~.CNOT` gates the following way:
+
+    .. image:: circuits/crz_circuit.png
+        :align: center
+        :width: 800px
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -561,9 +601,9 @@ class CRZ(Operation):
     @staticmethod
     def decomposition(lam, wires):
         decomp_ops = [
-            U1(lam / 2, wires=wires[1]),
+            PhaseShift(lam / 2, wires=wires[1]),
             CNOT(wires=wires),
-            U1(-lam / 2, wires=wires[1]),
+            PhaseShift(-lam / 2, wires=wires[1]),
             CNOT(wires=wires)
         ]
         return decomp_ops
