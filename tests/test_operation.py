@@ -29,6 +29,17 @@ op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
 
+def PhaseShift(phi):
+    return np.exp(1j*phi/2)*Rotz(phi)
+
+def Rot(theta, phi, lam):
+    return Rotz(lam) @ Roty(phi) @ Rotz(theta)
+
+
+def U3(theta, phi, lam):
+    return PhaseShift(phi) @ PhaseShift(lam) @ Rot(lam, theta, -lam)
+
+
 
 class TestOperation:
     """Operation class tests."""
@@ -820,7 +831,7 @@ class TestDecomposition:
 
         expected = CRoty(phi)
 
-        obtained = np.kron(I, Rotz(-np.pi/2)) @ CNOT @ np.kron(I, Roty(-phi/2)) @ CNOT @ np.kron(I, Roty(phi/2)) @ np.kron(I, Rotz(np.pi/2))
+        obtained = CNOT @ np.kron(I, U3(-phi / 2, 0, 0)) @ CNOT @ np.kron(I, U3(phi / 2, 0, 0))
         assert np.allclose(expected, obtained, atol=tol, rtol=0)
 
 
@@ -852,7 +863,15 @@ class TestDecomposition:
         assert rec.queue[3].parameters == []
         assert rec.queue[3].wires == operation_wires
 
+    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    def test_crz_decomposition_correctness(self, phi, tol):
+        """Test that the decomposition of the controlled Z
+        qubit rotation is correct"""
 
+        expected = CRotz(phi)
+
+        obtained = CNOT @ np.kron(I, PhaseShift(-phi / 2)) @ CNOT @ np.kron(I, PhaseShift(phi / 2))
+        assert np.allclose(expected, obtained, atol=tol, rtol=0)
 
     def test_U2_decomposition(self):
         """Test the U2 decomposition is correct"""
