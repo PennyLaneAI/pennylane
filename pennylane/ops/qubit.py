@@ -466,7 +466,7 @@ class CRX(Operation):
     and :class:`~.CNOT` gates the following way:
 
 
-    .. image:: circuits/crx_circuit.png
+    .. image:: ../../_static/crx_circuit.png
         :align: center
         :width: 800px
 
@@ -525,9 +525,9 @@ class CRY(Operation):
     If the ``CRY`` gate is not supported on the targeted device, PennyLane
     will attempt to decompose the gate into :class:`~.U3` and :class:`~.CNOT` gates the following way:
 
-    .. image:: circuits/cry_circuit.png
+    .. image:: ../../_static/cry_circuit.png
         :align: center
-        :width: 800px
+        :width: 650px
 
 
     Args:
@@ -583,9 +583,9 @@ class CRZ(Operation):
     If the ``CRZ`` gate is not supported on the targeted device, PennyLane
     will attempt to decompose the gate into :class:`~.PhaseShift` and :class:`~.CNOT` gates the following way:
 
-    .. image:: circuits/crz_circuit.png
+    .. image:: ../../_static/crz_circuit.png
         :align: center
-        :width: 800px
+        :width: 650px
 
     Args:
         phi (float): rotation angle :math:`\phi`
