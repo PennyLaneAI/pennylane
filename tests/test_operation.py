@@ -774,11 +774,10 @@ class TestDecomposition:
         assert rec.queue[5].parameters == [-np.pi/2]
         assert rec.queue[5].wires == [1]
 
-    def test_crx_decomposition_correctness(self, tol):
+    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    def test_crx_decomposition_correctness(self, phi, tol):
         """Test that the decomposition of the controlled X
         qubit rotation is correct"""
-
-        phi = 0.432
 
         expected = CRotx(phi)
 
@@ -813,6 +812,17 @@ class TestDecomposition:
         assert rec.queue[3].name == "CNOT"
         assert rec.queue[3].parameters == []
         assert rec.queue[3].wires == operation_wires
+
+    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    def test_cry_decomposition_correctness(self, phi, tol):
+        """Test that the decomposition of the controlled Y
+        qubit rotation is correct"""
+
+        expected = CRoty(phi)
+
+        obtained = np.kron(I, Rotz(-np.pi/2)) @ CNOT @ np.kron(I, Roty(-phi/2)) @ CNOT @ np.kron(I, Roty(phi/2)) @ np.kron(I, Rotz(np.pi/2))
+        assert np.allclose(expected, obtained, atol=tol, rtol=0)
+
 
     def test_crz_decomposition(self):
         """Test the decomposition of the controlled Z
