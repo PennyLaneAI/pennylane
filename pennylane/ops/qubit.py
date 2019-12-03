@@ -556,6 +556,7 @@ class CRZ(Operation):
     The controlled-RZ operator
 
     .. math::
+
         \begin{align}
              CRZ(\phi) &= I_{1}\otimes PhaseShift_{2}(\pi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes PhaseShift_{2}(-\pi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
             &=
