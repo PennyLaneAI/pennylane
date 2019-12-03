@@ -569,7 +569,7 @@ class CRZ(Operation):
         \end{align}
 
 
-    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in `wires` that is the **control qubit**.
+    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in ``wires`` that is the **control qubit**.
 
     **Details:**
 
