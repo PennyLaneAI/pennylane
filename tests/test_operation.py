@@ -19,7 +19,7 @@ import numpy as np
 from unittest.mock import patch
 
 import pennylane as qml
-from pennylane.plugins.default_qubit import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT
+from pennylane.plugins.default_qubit import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.operation import Tensor
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -29,16 +29,8 @@ op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
 
-def PhaseShift(phi):
-    return np.exp(1j*phi/2)*Rotz(phi)
-
-def Rot(theta, phi, lam):
-    return Rotz(lam) @ Roty(phi) @ Rotz(theta)
-
-
 def U3(theta, phi, lam):
-    return PhaseShift(phi) @ PhaseShift(lam) @ Rot(lam, theta, -lam)
-
+    return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
 
 
 class TestOperation:
@@ -870,7 +862,7 @@ class TestDecomposition:
 
         expected = CRotz(phi)
 
-        obtained = CNOT @ np.kron(I, PhaseShift(-phi / 2)) @ CNOT @ np.kron(I, PhaseShift(phi / 2))
+        obtained = CNOT @ np.kron(I, Rphi(-phi / 2)) @ CNOT @ np.kron(I, Rphi(phi / 2))
         assert np.allclose(expected, obtained, atol=tol, rtol=0)
 
     def test_U2_decomposition(self):

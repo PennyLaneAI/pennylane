@@ -597,7 +597,6 @@ class CRZ(Operation):
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
-
     @staticmethod
     def decomposition(lam, wires):
         decomp_ops = [
