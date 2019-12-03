@@ -18,7 +18,7 @@ computations using PennyLane.
 import numpy as np
 from pennylane.ops import Observable
 from pennylane.measure import expval
-from pennylane.qnode import QNode
+from pennylane.qnodes import QNode
 
 
 class Hamiltonian:

@@ -20,7 +20,7 @@ import abc
 import numpy as np
 
 from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
-from .qnode import QuantumFunctionError
+from pennylane.qnodes import QuantumFunctionError
 
 
 class DeviceError(Exception):

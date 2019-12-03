@@ -353,13 +353,13 @@ class JacobianQNode(BaseQNode):
         # Placing slow imports here, in case the user does not use the Torch interface
         # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
-            from pennylane.interfaces.torch import TorchQNode
+            from pennylane.interfaces.torch import to_torch as _to_torch
         except ImportError:  # pragma: no cover
             raise QuantumFunctionError(
                 "PyTorch not found. Please install " "PyTorch to enable the 'torch' interface."
             ) from None
 
-        return TorchQNode(self)
+        return _to_torch(self)
 
     def to_tf(self):
         """Attach the TensorFlow interface to the Jacobian QNode.
@@ -370,14 +370,14 @@ class JacobianQNode(BaseQNode):
         # Placing slow imports here, in case the user does not use the TF interface
         # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
-            from pennylane.interfaces.tf import TFQNode
+            from pennylane.interfaces.tf import to_tf as _to_tf
         except ImportError:  # pragma: no cover
             raise QuantumFunctionError(
                 "TensorFlow not found. Please install "
                 "the latest version of TensorFlow to enable the 'tf' interface."
             ) from None
 
-        return TFQNode(self)
+        return _to_tf(self)
 
     def to_autograd(self):
         """Attach the TensorFlow interface to the Jacobian QNode.
@@ -388,7 +388,7 @@ class JacobianQNode(BaseQNode):
         # Placing slow imports here, in case the user does not use the TF interface
         # pylint: disable=import-outside-toplevel
         try:  # pragma: no cover
-            from pennylane.beta.interfaces.autograd import to_autograd as _to_autograd
+            from pennylane.interfaces.autograd import to_autograd as _to_autograd
         except ImportError:  # pragma: no cover
             raise QuantumFunctionError(
                 "Autograd not found. Please install "

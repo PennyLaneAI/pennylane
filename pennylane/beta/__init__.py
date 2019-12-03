@@ -14,6 +14,4 @@
 """
 This module contains experimental, contributed, and beta code.
 """
-import pennylane.beta.interfaces
-import pennylane.beta.qnodes
 import pennylane.beta.vqe
