@@ -439,7 +439,6 @@ class CRX(Operation):
 
     .. math::
 
-
         \begin{align}
             CRX(\phi) &= I_{1}\otimes RZ_{2}(\pi / 2) ~\cdot~ I_{1}\otimes RY_{2}(\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ RY_{2}(-\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes RZ_{2}(-\pi / 2)\notag \\[10pt]
             &=
@@ -451,7 +450,7 @@ class CRX(Operation):
             \end{bmatrix}.
         \end{align}
 
-    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in `wires` that is the **control qubit**.
+    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g., 1 corresponds to the first element in ``wires`` that is the **control qubit**.
 
 
     **Details:**
@@ -512,7 +511,7 @@ class CRY(Operation):
         \end{bmatrix}.
         \end{align}
 
-    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in `wires` that is the **control qubit**.
+    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in ``wires`` that is the **control qubit**.
 
     **Details:**
 
@@ -557,6 +556,7 @@ class CRZ(Operation):
     The controlled-RZ operator
 
     .. math::
+
         \begin{align}
              CRZ(\phi) &= I_{1}\otimes PhaseShift_{2}(\pi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes PhaseShift_{2}(-\pi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
             &=
@@ -569,7 +569,7 @@ class CRZ(Operation):
         \end{align}
 
 
-    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in `wires` that is the **control qubit**.
+    .. note:: The subscripts of the operations in the formula refer to the wires they act on, e.g. 1 corresponds to the first element in ``wires`` that is the **control qubit**.
 
     **Details:**
 
