@@ -19,6 +19,7 @@ import numpy as np
 from unittest.mock import patch
 
 import pennylane as qml
+from pennylane.plugins.default_qubit import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.operation import Tensor
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -27,6 +28,9 @@ from pennylane.operation import Tensor
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
+
+def U3(theta, phi, lam):
+    return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
 
 
 class TestOperation:
@@ -738,6 +742,128 @@ class TestDecomposition:
 
         assert rec.queue[2].name == "RZ"
         assert rec.queue[2].parameters == [omega]
+
+    def test_crx_decomposition(self):
+        """Test the decomposition of the controlled X
+        qubit rotation"""
+        phi = 0.432
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.CRX.decomposition(phi, wires=[0, 1])
+
+        assert len(rec.queue) == 6
+
+        assert rec.queue[0].name == "RZ"
+        assert rec.queue[0].parameters == [np.pi/2]
+        assert rec.queue[0].wires == [1]
+
+        assert rec.queue[1].name == "RY"
+        assert rec.queue[1].parameters == [phi/2]
+        assert rec.queue[1].wires == [1]
+
+        assert rec.queue[2].name == "CNOT"
+        assert rec.queue[2].parameters == []
+        assert rec.queue[2].wires == [0, 1]
+
+        assert rec.queue[3].name == "RY"
+        assert rec.queue[3].parameters == [-phi/2]
+        assert rec.queue[3].wires == [1]
+
+        assert rec.queue[4].name == "CNOT"
+        assert rec.queue[4].parameters == []
+        assert rec.queue[4].wires == [0, 1]
+
+        assert rec.queue[5].name == "RZ"
+        assert rec.queue[5].parameters == [-np.pi/2]
+        assert rec.queue[5].wires == [1]
+
+    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    def test_crx_decomposition_correctness(self, phi, tol):
+        """Test that the decomposition of the controlled X
+        qubit rotation is correct"""
+
+        expected = CRotx(phi)
+
+        obtained = np.kron(I, Rotz(-np.pi/2)) @ CNOT @ np.kron(I, Roty(-phi/2)) @ CNOT @ np.kron(I, Roty(phi/2)) @ np.kron(I, Rotz(np.pi/2))
+        assert np.allclose(expected, obtained, atol=tol, rtol=0)
+
+
+    def test_cry_decomposition(self):
+        """Test the decomposition of the controlled Y
+        qubit rotation"""
+        phi = 0.432
+
+        operation_wires = [0, 1]
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.CRY.decomposition(phi, wires=operation_wires)
+
+        assert len(rec.queue) == 4
+
+        assert rec.queue[0].name == "U3"
+        assert rec.queue[0].parameters == [phi/2, 0, 0]
+        assert rec.queue[0].wires == [1]
+
+        assert rec.queue[1].name == "CNOT"
+        assert rec.queue[1].parameters == []
+        assert rec.queue[1].wires == operation_wires
+
+        assert rec.queue[2].name == "U3"
+        assert rec.queue[2].parameters == [-phi/2, 0, 0]
+        assert rec.queue[2].wires == [1]
+
+        assert rec.queue[3].name == "CNOT"
+        assert rec.queue[3].parameters == []
+        assert rec.queue[3].wires == operation_wires
+
+    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    def test_cry_decomposition_correctness(self, phi, tol):
+        """Test that the decomposition of the controlled Y
+        qubit rotation is correct"""
+
+        expected = CRoty(phi)
+
+        obtained = CNOT @ np.kron(I, U3(-phi / 2, 0, 0)) @ CNOT @ np.kron(I, U3(phi / 2, 0, 0))
+        assert np.allclose(expected, obtained, atol=tol, rtol=0)
+
+
+    def test_crz_decomposition(self):
+        """Test the decomposition of the controlled Z
+        qubit rotation"""
+        phi = 0.432
+
+        operation_wires = [0, 1]
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.CRZ.decomposition(phi, wires=operation_wires)
+
+        assert len(rec.queue) == 4
+
+        assert rec.queue[0].name == "PhaseShift"
+        assert rec.queue[0].parameters == [phi/2]
+        assert rec.queue[0].wires == [1]
+
+        assert rec.queue[1].name == "CNOT"
+        assert rec.queue[1].parameters == []
+        assert rec.queue[1].wires == operation_wires
+
+        assert rec.queue[2].name == "PhaseShift"
+        assert rec.queue[2].parameters == [-phi/2]
+        assert rec.queue[2].wires == [1]
+
+        assert rec.queue[3].name == "CNOT"
+        assert rec.queue[3].parameters == []
+        assert rec.queue[3].wires == operation_wires
+
+    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    def test_crz_decomposition_correctness(self, phi, tol):
+        """Test that the decomposition of the controlled Z
+        qubit rotation is correct"""
+
+        expected = CRotz(phi)
+
+        obtained = CNOT @ np.kron(I, Rphi(-phi / 2)) @ CNOT @ np.kron(I, Rphi(phi / 2))
+        assert np.allclose(expected, obtained, atol=tol, rtol=0)
 
     def test_U2_decomposition(self):
         """Test the U2 decomposition is correct"""
