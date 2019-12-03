@@ -228,7 +228,7 @@ class CVQNode(JacobianQNode):
                 # hence their partial derivatives are zero.
                 res = self.evaluate_obs(obs, unshifted_args, kwargs)
 
-                # add the measured pd:s to the correct locations
+                # add the measured pd's to the correct locations
                 inds = [self.circuit.observables.index(x) for x in desc]
                 pd[inds] += res
 
