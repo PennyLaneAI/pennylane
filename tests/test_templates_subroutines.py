@@ -293,9 +293,7 @@ class TestInterferometer:
         expected = np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786])
         assert np.allclose(res, expected, atol=tol)
 
-        res = qml.jacobian(circuit, 0)(theta, phi, varphi)
-        expected = np.array([[-6.18547248e-03, -3.20488426e-04, -4.20274087e-02, -6.21819638e-02, 9.68526932e-01, 9.68526932e-01],
-                             [ 3.55439246e-04,  3.89820238e-02, -3.35281306e-03,  7.93009027e-04, 8.30347888e-02,-3.45150707e-01],
-                             [ 5.44893380e-03,  9.30878007e-03, -5.33374094e-01,  6.13889548e-02, -1.16931385e-01, 3.45150707e-01],
-                             [ 3.81099442e-04, -4.79703154e-02,  5.78754316e-01,  1.65477867e-01, 3.38965967e-02, 1.65477867e-01]])
-        assert np.allclose(res, expected, atol=tol)
+        # compare the two methods of computing the Jacobian
+        jac_A = circuit.jacobian((theta, phi, varphi), method="A")
+        jac_F = circuit.jacobian((theta, phi, varphi), method="F")
+        assert jac_A == pytest.approx(jac_F, abs=tol)

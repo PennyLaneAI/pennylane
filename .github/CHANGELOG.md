@@ -10,9 +10,16 @@
 
 ### Bug fixes
 
+* Fixed a bug in `CVQNode._pd_analytic`, where non-descendant observables were not
+  Heisenberg-transformed before evaluating the partial derivatives when using the
+  order-2 parameter-shift method, resulting in an erroneous Jacobian for some circuits.
+  [#433](https://github.com/XanaduAI/pennylane/pull/433)
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
+
+Ville Bergholm
 
 ---
 

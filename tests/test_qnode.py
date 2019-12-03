@@ -917,6 +917,30 @@ class TestQNodeGradients:
         # the different methods agree
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
+    def test_second_order_obs_not_following_gate(self, tol):
+        """Parshift differentiation method matches finite diff and analytical result
+        when we have order-2 observables that do not follow the parametrized gate.
+        """
+        num_wires = 2
+        dev = qml.device("default.gaussian", wires=2)
+        def circuit(params):
+            for i in range(num_wires):
+                qml.Squeezing(params[i], 0, wires=i)
+            return [qml.expval(qml.NumberOperator(wires=i)) for i in range(num_wires)]
+
+        node = qml.QNode(circuit, dev)
+        par = [0.321, -0.184]
+
+        res = node(par)
+        res_true = np.sinh(np.abs(par)) ** 2  # analytical result
+        assert res == pytest.approx(res_true, abs=tol)
+
+        grad_A = node.jacobian([par], method="A")
+        grad_F = node.jacobian([par], method="F")
+        grad_true = np.diag(np.sinh(2 * np.abs(par)) * np.sign(par))  # analytical gradient
+        assert grad_A == pytest.approx(grad_F, abs=tol)
+        assert grad_A == pytest.approx(grad_true, abs=tol)
+
     def test_qnode_gradient_repeated_gate_parameters(self, tol):
         """Tests that repeated use of a free parameter in a
         multi-parameter gate yield correct gradients."""

@@ -960,12 +960,11 @@ class QNode:
             raise ValueError('Order must be 1 or 2.')
 
     @staticmethod
-    def _transform_observable(observable, ob_successors, w, Z):
+    def _transform_observable(observable, w, Z):
         """Transform the observable
 
         Args:
             observable (Observable): the observable to perform the transformation on
-            ob_successors (list[Observable]): list of observable successors to current operation
             w (int): number of wires
             Z (array[float]): the Heisenberg picture representation of the linear transformation
 
@@ -976,9 +975,6 @@ class QNode:
         Returns:
             float: expectation value
         """
-        if observable not in ob_successors:
-            return observable
-
         q = observable.heisenberg_obs(w)
 
         if q.ndim != observable.ev_order:
@@ -1073,11 +1069,9 @@ class QNode:
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
 
-                ob_successors = self._op_successors(op, 'E')
-
                 # transform the observables
                 obs = [
-                    self._transform_observable(ob, ob_successors, w, Z)
+                    self._transform_observable(ob, w, Z)
                     for ob in self.circuit.observables]
 
                 # measure transformed observables
