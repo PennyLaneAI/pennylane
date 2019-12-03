@@ -437,7 +437,6 @@ class CRX(Operation):
 
     .. math::
 
-
         \begin{align}
             CRX(\phi) &= I_{1}\otimes RZ_{2}(\pi / 2) ~\cdot~ I_{1}\otimes RY_{2}(\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ RY_{2}(-\phi/2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes RZ_{2}(-\pi / 2)\notag \\[10pt]
             &=
