@@ -392,7 +392,9 @@ class Rot(Operation):
     r"""Rot(phi, theta, omega, wires)
     Arbitrary single qubit rotation
 
-    .. math:: R(\phi,\theta,\omega) = RZ(\omega)RY(\theta)RZ(\phi)= \begin{bmatrix}
+    .. math::
+
+        R(\phi,\theta,\omega) = RZ(\omega)RY(\theta)RZ(\phi)= \begin{bmatrix}
         e^{-i(\phi+\omega)/2}\cos(\theta/2) & -e^{i(\phi-\omega)/2}\sin(\theta/2) \\
         e^{-i(\phi-\omega)/2}\sin(\theta/2) & e^{i(\phi+\omega)/2}\cos(\theta/2)
         \end{bmatrix}.
@@ -407,14 +409,14 @@ class Rot(Operation):
 
     .. note::
 
-    If the ``Rot`` gate is not supported on the targeted device, PennyLane
-    will attempt to decompose the gate into :class:`~.RZ` and :class:`~.RY` gates.
+        If the ``Rot`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.RZ` and :class:`~.RY` gates.
 
     Args:
-    phi (float): rotation angle :math:`\phi`
-    theta (float): rotation angle :math:`\theta`
-    omega (float): rotation angle :math:`\omega`
-    wires (Sequence[int] or int): the wire the operation acts on
+        phi (float): rotation angle :math:`\phi`
+        theta (float): rotation angle :math:`\theta`
+        omega (float): rotation angle :math:`\omega`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 3
     num_wires = 1
@@ -478,8 +480,7 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [
-    np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
     @staticmethod
     def decomposition(theta, wires):
@@ -538,8 +539,7 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
     @staticmethod
     def decomposition(theta, wires):
@@ -595,8 +595,8 @@ class CRZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+
 
     @staticmethod
     def decomposition(lam, wires):
