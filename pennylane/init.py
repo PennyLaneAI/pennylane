@@ -19,6 +19,31 @@ to use in templates.
 from math import pi
 import numpy as np
 
+def ising_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for :func:`~.IsingLayers`, drawn from a uniform
+    distribution.
+
+    The shape of the parameter array is ``(n_layers, n_wires, 3)`` and each parameter is drawn uniformly at random \
+    from between ``low`` and ``high``. The parameters define the the trainable angles of the ZZ interactions.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires, 3))
+    return params
+
 
 def strong_ent_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for :func:`~.StronglyEntanglingLayers`, drawn from a uniform
