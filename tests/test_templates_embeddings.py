@@ -95,21 +95,6 @@ class TestAmplitudeEmbedding:
         with pytest.raises(ValueError, match="Vector of features has to be normalized to 1.0"):
             circuit(x=not_nrmlzd)
 
-    @pytest.mark.parametrize("inpt", INPT)
-    def test_amplitude_embedding_throws_exception_if_features_passed_as_positional(self, inpt):
-        """Checks that AmplitudeEmbedding() throws exception when `features` is passed as a positional
-        argument."""
-        n_qubits = 2
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(f):
-            AmplitudeEmbedding(features=f, wires=range(n_qubits), pad=None, normalize=False)
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
-
-        with pytest.raises(ValueError, match="The input features in AmplitudeEmbedding"):
-            circuit(inpt)
-
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
     def test_amplitude_embedding_throws_exception_if_fewer_features_than_amplitudes(self, inpt):
         """Verifies that AmplitudeEmbedding() throws exception
@@ -341,20 +326,6 @@ class TestBasisEmbedding:
 
         with pytest.raises(ValueError, match="Basis state must only consist of 0s and 1s"):
             circuit(x=[2, 3])
-
-    def test_basis_embedding_throws_exception_if_features_passed_as_positional(self):
-        """Checks that BasisEmbedding() throws exception when `features` is passed as a positional
-        argument."""
-        n_subsystems = 2
-        dev = qml.device('default.qubit', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            BasisEmbedding(features=x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="The input features in BasisEmbedding influence"):
-            circuit([0, 1])
 
 
 class TestDisplacementEmbedding:
