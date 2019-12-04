@@ -100,6 +100,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             raise ValueError("Vector of features has to be normalized to 1.0, got {}."
                              "Use 'normalization=True' to automatically normalize.".format(norm))
 
+    features = np.array(features)
     QubitStateVector(features, wires=wires)
 
 
@@ -195,7 +196,6 @@ def BasisEmbedding(features, wires):
     ###############
 
     features = np.array(features)
-
     BasisState(features, wires=wires)
 
 
