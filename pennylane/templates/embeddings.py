@@ -199,6 +199,53 @@ def BasisEmbedding(features, wires):
     BasisState(features, wires=wires)
 
 
+def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
+    r"""Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
+     where :math:`N\leq M`.
+
+    The mathematical definition of the displacement gate is given by the operator
+
+    .. math::
+            D(\alpha) = \exp(r (e^{i\phi}\ad -e^{-i\phi}\a)),
+
+    where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
+
+    ``features`` has to be an array of at most ``len(wires)`` floats. If there are fewer entries in
+    ``features`` than wires, the circuit does not apply the remaining displacement gates.
+
+    Args:
+        features (array): Array of features of size (N,)
+        wires (Sequence[int]): sequence of mode indices that the template acts on
+        method (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
+            ``'amplitude'`` uses the amplitude
+        c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
+            the amplitude of all displacement gates if ``execution='phase'``
+
+    Raises:
+        ValueError: if inputs do not have the correct format
+   """
+
+    #############
+    # Input checks
+    _check_no_variable([method, c], ['method', 'c'])
+
+    wires, n_wires = _check_wires(wires)
+
+    msg = "DisplacementEmbedding cannot process more features than number of wires {};" \
+          "got {}.".format(n_wires, len(features))
+    _check_shape(features, (n_wires,), bound='max', msg=msg)
+
+    msg = "Did not recognise parameter encoding method {}.".format(method)
+    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg=msg)
+    #############
+
+    for idx, f in enumerate(features):
+        if method == 'amplitude':
+            Displacement(f, c, wires=wires[idx])
+        elif method == 'phase':
+            Displacement(c, f, wires=wires[idx])
+
+
 def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     r"""Encodes :math:`N` features into the squeezing amplitudes :math:`r \geq 0` or phases :math:`\phi \in [0, 2\pi)`
     of :math:`M` modes, where :math:`N\leq M`.
@@ -248,53 +295,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
             Squeezing(c, f, wires=wires[idx])
 
 
-def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
-    r"""Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
-     where :math:`N\leq M`.
-
-    The mathematical definition of the displacement gate is given by the operator
-
-    .. math::
-            D(\alpha) = \exp(r (e^{i\phi}\ad -e^{-i\phi}\a)),
-
-    where :math:`\a` and :math:`\ad` are the bosonic creation and annihilation operators.
-
-    ``features`` has to be an array of at most ``len(wires)`` floats. If there are fewer entries in
-    ``features`` than wires, the circuit does not apply the remaining displacement gates.
-
-    Args:
-        features (array): Array of features of size (N,)
-        wires (Sequence[int]): sequence of mode indices that the template acts on
-        method (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
-            ``'amplitude'`` uses the amplitude
-        c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
-            the amplitude of all displacement gates if ``execution='phase'``
-
-    Raises:
-        ValueError: if inputs do not have the correct format
-   """
-
-    #############
-    # Input checks
-    _check_no_variable([method, c], ['method', 'c'])
-
-    wires, n_wires = _check_wires(wires)
-
-    msg = "DisplacementEmbedding cannot process more features than number of wires {};" \
-          "got {}.".format(n_wires, len(features))
-    _check_shape(features, (n_wires,), bound='max', msg=msg)
-
-    msg = "Did not recognise parameter encoding method {}.".format(method)
-    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg=msg)
-    #############
-
-    for idx, f in enumerate(features):
-        if method == 'amplitude':
-            Displacement(f, c, wires=wires[idx])
-        elif method == 'phase':
-            Displacement(c, f, wires=wires[idx])
-
-
-embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "SqueezingEmbedding", "DisplacementEmbedding"}
+embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "DisplacementEmbedding",
+              "SqueezingEmbedding"}
 
 __all__ = list(embeddings)
