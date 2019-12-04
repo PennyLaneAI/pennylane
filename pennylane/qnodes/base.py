@@ -341,6 +341,7 @@ class BaseQNode:
         self.obs_queue = []  #: list[Observable]: applied observables
 
         # set up the context for Operator entry
+        print(qml._current_context)
         if qml._current_context is None:
             qml._current_context = self
         else:

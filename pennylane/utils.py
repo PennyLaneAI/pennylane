@@ -304,7 +304,7 @@ class OperationRecorder:
             )
         )
 
-        qml.QNode._current_context = self.old_context
+        qml._current_context = self.old_context
 
     def __str__(self):
         output = ""
