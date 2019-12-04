@@ -38,10 +38,15 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     The L2-norm of ``features`` must be one. By default, ``AmplitudeEmbedding`` expects a normalized
     feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
 
+    .. note::
+
+        ``AmplitudeEmbedding`` uses PennyLane's :class:`~pennylane.ops.QubitStateVector` and only works in conjunction with
+        devices that implement this operation.
+
     .. warning::
 
-        ``AmplitudeEmbedding`` calls a circuit that involves a lot of classical processing of the
-        features. The `features` argument is therefore not differentiable, and must be
+        ``AmplitudeEmbedding`` calls a circuit that involves non-trivial classical processing of the
+        features. The `features` argument is therefore not differentiable when using the template, and must be
         passed to the encapsulating quantum node as a keyword argument.
 
     Args:
@@ -58,6 +63,9 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # Input checks
     _check_no_variable([pad, normalize], ['pad', 'normalize'])
 
+    msg = "The input features in AmplitudeEmbedding require classical postprocessing and can" \
+          "therefore not be passed as a positional argument to the quantum node in which the template is called."
+    _check_no_variable([features], ['features'], msg=msg)
     wires, n_wires = _check_wires(wires)
 
     n_ampl = 2**n_wires
@@ -154,8 +162,14 @@ def BasisEmbedding(features, wires):
 
     .. note::
 
-        BasisEmbedding uses PennyLane's :class:`~pennylane.ops.BasisState` and only works in conjunction with
-        devices that implement this function.
+        ``BasisEmbedding`` uses PennyLane's :class:`~pennylane.ops.BasisState` and only works in conjunction with
+        devices that implement this operation.
+
+    .. warning::
+
+        ``BasisEmbedding`` calls a circuit whose architecture depends on the binary features.
+        The `features` argument is therefore not differentiable when using the template, and must be
+        passed to the encapsulating quantum node as a keyword argument.
 
     Args:
         features (array): binary input array of shape ``(n, )``
@@ -172,7 +186,7 @@ def BasisEmbedding(features, wires):
 
     # basis_state cannot be trainable
     msg = "The input features in BasisEmbedding influence the circuit architecture and can " \
-          "therefore not be passed as a positional argument to the quantum node."
+          "therefore not be passed as a positional argument to the quantum node in which the template is called."
     _check_no_variable([features], ['features'], msg=msg)
 
     # basis_state is guaranteed to be a list
