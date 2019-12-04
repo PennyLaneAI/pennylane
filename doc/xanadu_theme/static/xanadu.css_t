@@ -2181,7 +2181,7 @@ dl.class > dd > table.docutils {
 }
 
 dd > .collapse-header:first-of-type > h2 {
-  margin-top: 70px;
+  /*margin-top: 70px;*/
 }
 
 

@@ -72,124 +72,108 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     Raises:
         ValueError: if inputs do not have the correct format
 
-    .. raw:: html
+    .. UsageDetails::
 
-        <a class="meth-details-header collapse-header" data-toggle="collapse" href="#Usage"
-        aria-expanded="false" aria-controls="Usage">
-         <h2 style="font-size: 24px;">
-            <i class="fas fa-angle-down rotate" style="float: right;"></i>
-            Usage
-         </h2>
-        </a>
+        Amplitude embedding encodes a normalized :math:`2^n` dimensional feature vector into the state
+        of :math:`n` qubits:
 
-        <div class="collapse" id="Usage">
-            Amplitude embedding encodes a normalized :math:`2^n` dimensional feature vector into the state
-            of :math:`n` qubits:
+        .. code-block:: python
 
-            .. code-block:: python
+            import pennylane as qml
+            import numpy as np
+            from pennylane.templates import AmplitudeEmbedding
 
-                import pennylane as qml
-                import numpy as np
-                from pennylane.templates import AmplitudeEmbedding
+            features = np.array([1/2, 1/2, 1/2, 1/2])
 
-                features = np.array([1/2, 1/2, 1/2, 1/2])
+            dev = qml.device('default.qubit', wires=2)
 
-                dev = qml.device('default.qubit', wires=2)
+            @qml.qnode(dev)
+            def circuit(features_=None):
+                AmplitudeEmbedding(features=features_, wires=range(2))
+                return qml.expval(qml.PauliZ(0))
 
-                @qml.qnode(dev)
-                def circuit(features_=None):
-                    AmplitudeEmbedding(features=features_, wires=range(2))
-                    return qml.expval(qml.PauliZ(0))
+            circuit(features_=features)
 
-                circuit(features_=features)
+        Checking the final state of the device, we find that it is equivalent to ``features``:
 
-            Checking the final state of the device, we find that it is equivalent to ``features``:
+        >>> dev._state
+        [0.5+0.j 0.5+0.j 0.5+0.j 0.5+0.j]
 
-            >>> dev._state
-            [0.5+0.j 0.5+0.j 0.5+0.j 0.5+0.j]
+        .. warning::
 
+            On some devices, AmplitudeEmbedding must be the first operation of a circuit.
 
-            .. warning::
+        **Normalization**
 
-                On some devices, AmplitudeEmbedding must be the first operation of a circuit.
+        The template will raise an error if the feature input is not normalized. Alternatively,
+        one can set ``normalize=True`` to automatically normalize it:
 
-            Normalization
-            -------------
+        .. code-block:: python
 
-            The template will raise an error if the feature input is not normalized. Alternatively,
-            one can set ``normalize=True`` to automatically normalize it:
+            features = np.array([1, 1, 1, 1])
 
-            .. code-block:: python
+            dev = qml.device('default.qubit', wires=2)
 
-                features = np.array([1, 1, 1, 1])
+            @qml.qnode(dev)
+            def circuit(features_=None):
+                AmplitudeEmbedding(features=features_, wires=range(2), normalize=True)
+                return qml.expval(qml.PauliZ(0))
 
-                dev = qml.device('default.qubit', wires=2)
+            circuit(features_=features)
 
-                @qml.qnode(dev)
-                def circuit(features_=None):
-                    AmplitudeEmbedding(features=features_, wires=range(2), normalize=True)
-                    return qml.expval(qml.PauliZ(0))
+        Again, the normalized feature vector is encoded into the quantum state vector:
 
-                circuit(features_=features)
+        >>> dev._state
+        [0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j]
 
-            Again, the normalized feature vector is encoded into the quantum state vector:
+        **Padding**
 
-            >>> dev._state
-            [0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j]
+        If the dimension of the feature vector is smaller than the number of amplitudes,
+        one can automatically pad it with a constant for the missing dimensions using the ``pad`` option:
 
-            Padding
-            -------
+        .. code-block:: python
 
-            If the dimension of the feature vector is smaller than the number of amplitudes,
-            one can automatically pad it with a constant for the missing dimensions using the ``pad`` option:
+            features = 1/np.sqrt(2)*np.array([1, 1])
 
+            dev = qml.device('default.qubit', wires=2)
 
-            .. code-block:: python
+            @qml.qnode(dev)
+            def circuit(features_=None):
+                AmplitudeEmbedding(features=features_, wires=range(2), pad=0.)
+                return qml.expval(qml.PauliZ(0))
 
-                features = 1/np.sqrt(2)*np.array([1, 1])
+            circuit(features_=features)
 
-                dev = qml.device('default.qubit', wires=2)
+        >>> dev._state
+        [0.70710678 + 0.j, 0.70710678 + 0.j, 0.0 + 0.j, 0.0 + 0.j]
 
-                @qml.qnode(dev)
-                def circuit(features_=None):
-                    AmplitudeEmbedding(features=features_, wires=range(2), pad=0.)
-                    return qml.expval(qml.PauliZ(0))
+        .. note::
 
-                circuit(features_=features)
+            Padding will be executed *before* normalization.
 
-            >>> dev._state
-            [0.70710678 + 0.j, 0.70710678 + 0.j, 0.0 + 0.j, 0.0 + 0.j]
+        **Learning the features**
 
-            .. note::
+        The ``feature`` argument of AmplitudeEmbedding is **not differentiable**. It has to be passed as a keyword argument
+        to the encapsulating QNode.
 
-                Padding will be executed *before* normalization.
+        The following code will therefore produce a ``ValueError``:
 
+        .. code-block:: python
 
-            Learning the features
-            ---------------------
+            import pennylane as qml
+            import numpy as np
+            from pennylane.templates import AmplitudeEmbedding
 
-            The ``feature`` argument of AmplitudeEmbedding is **not differentiable**. It has to be passed as a keyword argument
-            to the encapsulating QNode.
+            features = np.array([1/2, 1/2, 1/2, 1/2])
 
-            The following code will therefore produce a ``ValueError``:
+            dev = qml.device('default.qubit', wires=2)
 
-            .. code-block:: python
+            @qml.qnode(dev)
+            def circuit(features_):
+                AmplitudeEmbedding(features=features_, wires=range(2))
+                return qml.expval(qml.PauliZ(0))
 
-                import pennylane as qml
-                import numpy as np
-                from pennylane.templates import AmplitudeEmbedding
-
-                features = np.array([1/2, 1/2, 1/2, 1/2])
-
-                dev = qml.device('default.qubit', wires=2)
-
-                @qml.qnode(dev)
-                def circuit(features_):
-                    AmplitudeEmbedding(features=features_, wires=range(2))
-                    return qml.expval(qml.PauliZ(0))
-
-                circuit(features)
-        </div>
+            circuit(features)
     """
 
     #############
