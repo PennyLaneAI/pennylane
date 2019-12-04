@@ -20,7 +20,7 @@ import math
 
 import pytest
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as np, QuantumFunctionError
 
 tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
 
@@ -135,8 +135,7 @@ class TestTensornetIntegration:
             return qml.expval(qml.X(0))
 
         with pytest.raises(
-            qml.DeviceError,
-            match="Gate {} not supported on device expt.tensornet".format(gate),
+            QuantumFunctionError, match="Device expt.tensornet is a qubit device; CV operations are not allowed."
         ):
             x = np.random.random([op.num_params])
             circuit(*x)
@@ -159,8 +158,7 @@ class TestTensornetIntegration:
             return qml.expval(op(*x, wires=wires))
 
         with pytest.raises(
-            qml.DeviceError,
-            match="Observable {} not supported on device expt.tensornet".format(observable),
+            QuantumFunctionError, match="Device expt.tensornet is a qubit device; CV operations are not allowed."
         ):
             x = np.random.random([op.num_params])
             circuit(*x)
