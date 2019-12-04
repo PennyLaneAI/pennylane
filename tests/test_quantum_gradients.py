@@ -505,7 +505,7 @@ class TestQubitGradient:
             for d_in, d_out in zip(in_data, out_data):
                 args = (d_in, p)
                 diff = (classifier(*args) - d_out)
-                ret = ret + 2 * diff * classifier.jacobian(args, which=[1], method=grad_method)
+                ret = ret + 2 * diff * classifier.jacobian(args, wrt=[1], method=grad_method)
             return ret
 
         y0 = error(param)
