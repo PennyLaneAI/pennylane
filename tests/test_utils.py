@@ -347,7 +347,7 @@ class TestOperationRecorder:
 
     def test_context_switching(self, monkeypatch):
         """Test that the current QNode context is properly switched."""
-        monkeypatch.setattr(qml.QNode, "_current_context", "Test")
+        monkeypatch.setattr(qml, "_current_context", "Test")
 
         assert qml._current_context == "Test"
 
