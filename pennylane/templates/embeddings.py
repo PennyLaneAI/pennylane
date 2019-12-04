@@ -38,6 +38,12 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     The L2-norm of ``features`` must be one. By default, ``AmplitudeEmbedding`` expects a normalized
     feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
 
+    .. warning::
+
+        ``AmplitudeEmbedding`` calls a circuit that involves a lot of classical processing of the
+        features. The `features` argument is therefore not differentiable, and must be
+        passed to the encapsulating quantum node as a keyword argument.
+
     Args:
         features (array): input array of shape ``(2^n,)``
         wires (Sequence[int] or int): qubit indices that the template acts on
