@@ -162,7 +162,7 @@ CIRCUITS = [
 def mock_device(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(qml.Device, "__abstractmethods__", frozenset())
-        m.setattr(qml.Device, "_capabilities", {"tensor_observables": True})
+        m.setattr(qml.Device, "_capabilities", {"tensor_observables": True, "model": "qubit"})
         m.setattr(qml.Device, "operations", ["RX", "Rot", "CNOT", "Hadamard", "QubitStateVector"])
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
