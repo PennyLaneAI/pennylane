@@ -64,15 +64,9 @@ class TestCVNeuralNet:
     def test_cvneuralnet_uses_correct_weights(self, gaussian_device_4modes, weights):
         """Tests that the CVNeuralNetLayers template uses the weigh parameters correctly."""
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             CVNeuralNetLayers(*weights, wires=range(4))
             return qml.expval(qml.X(wires=0))
-
-        qnode = qml.QNode(circuit, gaussian_device_4modes)
-
-        # execution test
-        qnode(weights)
-        queue = qnode.queue
 
         # Test that gates appear in the right order for each layer:
         # BS-R-S-BS-R-D-K
@@ -88,7 +82,7 @@ class TestCVNeuralNet:
             # loop through expected gates
             for idx, g in enumerate(gates):
                 # loop through where these gates should be in the queue
-                for opidx, op in enumerate(queue[gc[idx, 0]:gc[idx, 1]]):
+                for opidx, op in enumerate(rec.queue[[idx, 0]:rec.queue[idx, 1]]):
                     # check that op in queue is correct gate
                     assert isinstance(op, g)
 
@@ -142,13 +136,9 @@ class TestStronglyEntangling:
         dev = qml.device('default.qubit', wires=num_wires)
         weights = np.random.randn(n_layers, num_wires, 3)
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             StronglyEntanglingLayers(weights, wires=range(num_wires))
             return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
-        qnode(weights)
-        queue = qnode.queue
 
         # Test that gates appear in the right order
         exp_gates = [qml.Rot]*num_wires + [qml.CNOT]*num_wires
@@ -160,7 +150,7 @@ class TestStronglyEntangling:
 
         # test the device parameters
         for l in range(n_layers):
-            layer_ops = queue[2*l*num_wires:2*(l+1)*num_wires]
+            layer_ops = rec[2*l*num_wires:2*(l+1)*num_wires]
 
             # check each rotation gate parameter
             for n in range(num_wires):
@@ -174,14 +164,11 @@ class TestStronglyEntangling:
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_layers, n_subsystems, 3)
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             StronglyEntanglingLayers(weights=weights, wires=range(n_subsystems), imprimitive=imprimitive)
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
-        qnode(weights)
-        queue = qnode.queue
-        types = [type(q) for q in queue]
+        types = [type(q) for q in rec]
         assert types.count(imprimitive) == n_subsystems*n_layers
 
     @pytest.mark.parametrize("n_wires, n_layers, ranges", [(2, 2, [2, 1]),
@@ -323,14 +310,11 @@ class TestRandomLayers:
         dev = qml.device('default.qubit', wires=n_wires)
         weights = np.random.randn(n_layers, n_rots)
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             RandomLayers(weights=weights, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
-        qnode(weights)
-        queue = qnode.queue
-        types = [type(q) for q in queue]
+        types = [type(q) for q in rec]
         assert len(types) - types.count(impr) == n_layers
 
     def test_random_layer_ratio_imprimitive(self, ratio):
@@ -341,15 +325,12 @@ class TestRandomLayers:
         dev = qml.device('default.qubit', wires=n_wires)
         weights = np.random.randn(n_rots)
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             _random_layer(weights=weights, wires=range(n_wires), ratio_imprim=ratio,
                           imprimitive=CNOT, rotations=[RX, RY, RZ], seed=42)
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
-        qnode(weights)
-        queue = qnode.queue
-        types = [type(q) for q in queue]
+        types = [type(q) for q in rec]
         ratio_impr = types.count(impr) / len(types)
         assert np.isclose(ratio_impr, ratio, atol=0.05)
 
@@ -359,15 +340,12 @@ class TestRandomLayers:
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
                           imprimitive=impr, rotations=rots, seed=42)
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
-        qnode(weights)
-        queue = qnode.queue
-        types = [type(q) for q in queue]
+        types = [type(q) for q in rec]
         unique = set(types)
         gates = {impr, *rots}
         assert unique == gates
@@ -378,15 +356,12 @@ class TestRandomLayers:
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
                           imprimitive=qml.CNOT, rotations=[RX, RY, RZ], seed=42)
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
-        qnode(weights)
-        queue = qnode.queue
-        types = [type(q) for q in queue]
+        types = [type(q) for q in rec]
         assert len(types) - types.count(qml.CNOT) == n_rots
 
     def test_random_layer_randomwires(self, n_subsystems):
@@ -395,15 +370,12 @@ class TestRandomLayers:
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
                           imprimitive=qml.CNOT, rotations=[RX, RY, RZ], seed=42)
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
-        qnode(weights)
-        queue = qnode.queue
-        wires = [q._wires for q in queue]
+        wires = [q._wires for q in rec]
         wires_flat = [item for w in wires for item in w]
         mean_wire = np.mean(wires_flat)
         assert np.isclose(mean_wire, (n_subsystems - 1) / 2, atol=0.05)
@@ -415,15 +387,12 @@ class TestRandomLayers:
         dev = qml.device('default.qubit', wires=n_subsystems)
         weights = np.random.randn(n_rots)
 
-        def circuit(weights):
+        with qml.utils.OperationRecorder() as rec:
             _random_layer(weights=weights, wires=range(n_subsystems), ratio_imprim=0.3,
                           imprimitive=qml.CNOT, rotations=[RX, RY, RZ], seed=4)
             return qml.expval(qml.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
-        qnode(weights)
-        queue = qnode.queue
-        params = [q.parameters for q in queue]
+        params = [q.parameters for q in rec]
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
