@@ -19,9 +19,10 @@ used at the beginning of a circuit.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 
-from pennylane.ops import RX, RY, RZ, BasisState, Squeezing, Displacement, QubitStateVector
+from pennylane.ops import RX, RY, RZ, CNOT, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
-                                       _check_hyperp_is_in_options, _check_type)
+                                       _check_hyperp_is_in_options, _check_type,
+                                       _check_number_of_layers)
 from pennylane.variable import Variable
 
 
@@ -177,6 +178,82 @@ def BasisEmbedding(features, wires):
     features = np.array(features)
 
     BasisState(features, wires=wires)
+
+
+def IsingEmbedding(features, weights, wires):
+    r"""
+    Encodes :math:`N` features into :math:`N` qubits, using a layered, trainable quantum
+    circuit.
+
+    The circuit alternates :class:`RX` rotations which encode the features with trainable two-qubit ZZ interactions
+    and single-qubit :mod:`RY` gates. After the final layer, another set of feature encoding :class:`RX`
+    gates is applied.
+
+    The argument ``weights`` contains an array of weights for each layer.
+    The number of layers :math:`L` is therefore derived from the first dimension of ``weights``.
+
+    Example for one layer, 4 wires, 2 inputs:
+
+       |0> - R_x(x1) - |^| -------- |_| - R_y(w7)  -
+       |0> - R_x(x2) - |_|-|^| ---------- R_y(w8)  -
+       |0> - R_x(w1) ------|_|-|^| ------ R_y(w9)  -
+       |0> - R_x(w2) ----------|_| -|^| - R_y(w10) -
+
+    Args:
+
+        features (array): Array of features to encode
+        weights (array): Array of weights of shape `(L, 2n)`
+        wires (Sequence[int] or int): qubit indices that the template acts on
+
+    Raises:
+        ValueError: if inputs do not have the correct format
+    """
+    wires, n_wires = _check_wires(wires)
+    _check_shape(features, (n_wires,))
+    repeat = _check_number_of_layers([weights])
+
+    if n_wires == 1:
+        _check_shape(weights, (repeat, ))
+    elif n_wires == 2:
+        _check_shape(weights, (repeat, 3))
+    else:
+        _check_shape(weights, (repeat, 2*n_wires))
+
+    for l in range(repeat):
+
+        # encode inputs in RX gates
+        for i in range(n_wires):
+            RX(features[i], wires=wires[i])
+
+        # 1-d nearest neighbour coupling
+        if n_wires == 1:
+            RY(weights[l], wires=wires[0])
+        elif n_wires == 2:
+            CNOT(wires=[wires[0: 2]])
+            RZ(2 * weights[l * 3 + 2], wires=wires[0])
+            CNOT(wires=[wires[0: 2]])
+
+            # local fields
+            for i in range(n_wires):
+                RY(weights[l * 3 + i], wires=wires[i])
+        else:
+            for i in range(n_wires):
+                if i < n_wires - 1:
+                    CNOT(wires=wires[i: i + 2])
+                    RZ(2 * weights[l * 2 * n_wires + i], wires=wires[0])
+                    CNOT(wires=wires[i: i + 2])
+                else:
+                    # enforce periodic boundary condition
+                    CNOT(wires=[wires[i], wires[0]])
+                    RZ(2 * weights[l * 2 * n_wires + i], wires=wires[0])
+                    CNOT(wires=[wires[i], wires[0]])
+            # local fields
+            for i in range(n_wires):
+                RY(weights[l * 2 * n_wires + n_wires + i], wires=wires[i])
+
+    # repeat feature encoding once more at the end
+    for i in range(n_wires):
+        RX(features[i], wires=wires[i])
 
 
 def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
