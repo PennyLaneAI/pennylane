@@ -168,7 +168,7 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=3)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
+        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         circuit = qnode.circuit
         layers = circuit.layers
         ops = circuit.operations
@@ -186,7 +186,7 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=3)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode.construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
+        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         circuit = qnode.circuit
         result = list(circuit.iterate_layers())
 
