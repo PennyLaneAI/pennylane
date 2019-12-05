@@ -38,11 +38,6 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     The L2-norm of ``features`` must be one. By default, ``AmplitudeEmbedding`` expects a normalized
     feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
 
-    .. note::
-
-        ``AmplitudeEmbedding`` uses PennyLane's :class:`~pennylane.ops.QubitStateVector`
-        and only works in conjunction with devices that implement this operation.
-
     .. warning::
 
         ``AmplitudeEmbedding`` calls a circuit that involves non-trivial classical processing of the
@@ -156,11 +151,6 @@ def BasisEmbedding(features, wires):
 
     For example, for ``features=np.array([0, 1, 0])``, the quantum system will be
     prepared in state :math:`|010 \rangle`.
-
-    .. note::
-
-        ``BasisEmbedding`` uses PennyLane's :class:`~pennylane.ops.BasisState` and only works in conjunction with
-        devices that implement this operation.
 
     .. warning::
 
