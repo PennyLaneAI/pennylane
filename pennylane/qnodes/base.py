@@ -517,7 +517,7 @@ class BaseQNode:
             correct_default_parameter = any(d == inspect.Parameter.empty for d in default_parameter)\
                                         if isinstance(default_parameter, np.ndarray)\
                                         else default_parameter == inspect.Parameter.empty
-            if s.par.kind in forbidden_kinds or correct_default_parameter: 
+            if s.par.kind in forbidden_kinds or correct_default_parameter:
                 raise QuantumFunctionError(
                     "Quantum function parameter '{}' cannot be given using the keyword syntax.".format(
                         name
