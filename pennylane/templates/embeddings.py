@@ -155,7 +155,7 @@ def BasisEmbedding(features, wires):
     .. warning::
 
         ``BasisEmbedding`` calls a circuit whose architecture depends on the binary features.
-        The `features` argument is therefore not differentiable when using the template, and
+        The ``features`` argument is therefore not differentiable when using the template, and
         gradients with respect to the argument cannot be computed by PennyLane.
 
     Args:
