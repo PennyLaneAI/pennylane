@@ -22,7 +22,7 @@ Available categories include:
 * `PennyLane Help`: For help and advice using PennyLane
 * `PennyLane Development`: For discussion of PennyLane development
 * `PennyLane Plugins`: For discussion of the available PennyLane plugins, and plugin development
-* `Xanadu Software`: For discussion relating to other Xanadu software projects, including [StrawberryFields](https://github.com/xanaduai/strawberryfields), [QMLT](https://github.com/xanaduai/hafnian), [Hafnian](https://github.com/xanaduai/hafnian), and [OpenBoson](https://github.com/xanaduai/sfopenboson).
+* `Xanadu Software`: For discussion relating to other Xanadu software projects, including [Strawberry Fields](https://github.com/xanaduai/strawberryfields) and [The Walrus](https://github.com/xanaduai/thewalrus).
 
 Sometimes, it might take us a couple of hours to reply - please be patient!
 
@@ -54,7 +54,7 @@ It's up to you!
 * **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework agnostic;
   the quantum node device can be switched out to any other compatible devices, with no code changes necessary.
   We would love to support even more devices and quantum frameworks. If you would like to write a PennyLane plugin,
-  see the [developer overview](https://pennylane.readthedocs.io/en/latest/API/overview.html) section of our documentation.
+  see the [developer overview](https://pennylane.readthedocs.io/en/stable/development/guide.html) section of our documentation.
 
   Ask us if you have any questions, and send a link to your plugin to support@xanadu.ai so we can highlight it in
   our documentation!
@@ -74,7 +74,7 @@ To submit a bug report, please work your way through the following checklist:
   to expand on the issue if you would like.
 
 * **Fill out the issue template**. If you cannot find an existing issue addressing the problem, create a new
-  issue by filling out the [issue template](.github/ISSUE_TEMPLATE.md). This template is added automatically to the comment
+  issue by filling out the [issue template](ISSUE_TEMPLATE.md). This template is added automatically to the comment
   box when you create a new issue. Please try and add as many details as possible!
 
 * Try and make your issue as **clear, concise, and descriptive** as possible. Include a clear and descriptive title,
@@ -128,7 +128,7 @@ Before submitting a pull request, please make sure the following is done:
 
 ### Submitting the pull request
 * When ready, submit your fork as a [pull request](https://help.github.com/articles/about-pull-requests) to the PennyLane
-  repository, filling out the [pull request template](.github/PULL_REQUEST_TEMPLATE.md). This template is added automatically
+  repository, filling out the [pull request template](PULL_REQUEST_TEMPLATE.md). This template is added automatically
   to the comment box when you create a new issue.
 
 * When describing the pull request, please include as much detail as possible regarding the changes made/new features
