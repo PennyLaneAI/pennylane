@@ -56,12 +56,10 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     .. note::
 
-        ``AmplitudeEmbedding`` uses PennyLane's :class:`~pennylane.ops.QubitStateVector`
-        and only works in conjunction with devices that implement this operation. On some devices,
-        ``AmplitudeEmbedding`` must be the first operation of a quantum node.
+        On some devices, ``AmplitudeEmbedding`` must be the first operation of a quantum node.
 
 
-    .. warning::
+    .. note::
 
         ``AmplitudeEmbedding`` calls a circuit that involves non-trivial classical processing of the
         features. The `features` argument is therefore **not differentiable** when using the template, and
@@ -277,11 +275,6 @@ def BasisEmbedding(features, wires):
 
     For example, for ``features=np.array([0, 1, 0])``, the quantum system will be
     prepared in state :math:`|010 \rangle`.
-
-    .. note::
-
-        ``BasisEmbedding`` uses PennyLane's :class:`~pennylane.ops.BasisState` and only works in conjunction with
-        devices that implement this operation.
 
     .. warning::
 
