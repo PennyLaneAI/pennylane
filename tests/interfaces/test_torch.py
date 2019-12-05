@@ -132,7 +132,7 @@ class TestTorchQNodeExceptions():
             qml.Displacement(0.5, 0, wires=[0])
             return qml.expval(qml.X(0))
 
-        with pytest.raises(DeviceError, match='Gate [a-zA-Z]+ not supported on device'):
+        with pytest.raises(QuantumFunctionError, match='Device default.qubit is a qubit device; CV operations are not allowed.'):
             qf(torch.tensor(0.5))
 
     def test_qnode_fails_for_cv_observables_on_qubit_device(self, qubit_device_1_wire):
@@ -142,7 +142,7 @@ class TestTorchQNodeExceptions():
         def qf(x):
             return qml.expval(qml.X(0))
 
-        with pytest.raises(DeviceError, match='Observable [a-zA-Z]+ not supported on device'):
+        with pytest.raises(QuantumFunctionError, match='Device default.qubit is a qubit device; CV operations are not allowed.'):
             qf(torch.tensor(0.5))
 
 

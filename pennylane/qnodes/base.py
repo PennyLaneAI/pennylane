@@ -512,7 +512,12 @@ class BaseQNode:
                 if self.func.var_keyword:
                     continue  # unknown parameter, but **kwargs will take it TODO should it?
                 raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
-            if s.par.kind in forbidden_kinds or s.par.default == inspect.Parameter.empty:
+
+            default_parameter = s.par.default
+            correct_default_parameter = any(d == inspect.Parameter.empty for d in default_parameter)\
+                                        if isinstance(default_parameter, np.ndarray)\
+                                        else default_parameter == inspect.Parameter.empty
+            if s.par.kind in forbidden_kinds or correct_default_parameter: 
                 raise QuantumFunctionError(
                     "Quantum function parameter '{}' cannot be given using the keyword syntax.".format(
                         name
@@ -522,7 +527,11 @@ class BaseQNode:
         # apply defaults
         for name, s in self.func.sig.items():
             default = s.par.default
-            if default != inspect.Parameter.empty:
+            correct_default = all(d != inspect.Parameter.empty for d in default)\
+                              if isinstance(default, np.ndarray)\
+                              else default != inspect.Parameter.empty
+
+            if correct_default:
                 # meant to be given using keyword syntax
                 kwargs.setdefault(name, default)
 

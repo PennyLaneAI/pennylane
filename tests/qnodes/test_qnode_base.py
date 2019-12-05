@@ -212,7 +212,7 @@ class TestQNodeExceptions:
             m.setattr(qml, "_current_context", node)
             with pytest.raises(
                 QuantumFunctionError,
-                match="QNode._current_context must not be modified outside this method.",
+                match="qml._current_context must not be modified outside this method.",
             ):
                 node(0.5)
 

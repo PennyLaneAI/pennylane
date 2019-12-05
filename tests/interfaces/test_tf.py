@@ -139,7 +139,7 @@ class TestTFQNodeExceptions():
             qml.Displacement(0.5, 0, wires=[0])
             return qml.expval(qml.X(0))
 
-        with pytest.raises(DeviceError, match='Gate [a-zA-Z]+ not supported on device'):
+        with pytest.raises(QuantumFunctionError, match='Device default.qubit is a qubit device; CV operations are not allowed.'):
             qf(Variable(0.5))
 
     def test_qnode_fails_for_cv_observables_on_qubit_device(self, qubit_device_1_wire):
@@ -149,7 +149,7 @@ class TestTFQNodeExceptions():
         def qf(x):
             return qml.expval(qml.X(0))
 
-        with pytest.raises(DeviceError, match='Observable [a-zA-Z]+ not supported on device'):
+        with pytest.raises(QuantumFunctionError, match='Device default.qubit is a qubit device; CV operations are not allowed.'):
             qf(Variable(0.5))
 
 
@@ -427,7 +427,7 @@ class TestTFQNodeParameterHandling:
             qml.RY(y, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        circuit = qml.QNode(circuit, qubit_device_2_wires).to_tf()
+        circuit = qml.QNode(circuit, qubit_device_2_wires, interface='tf')
 
         x = 0.543
         y = 0.45632
