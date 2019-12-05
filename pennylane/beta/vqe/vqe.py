@@ -122,12 +122,7 @@ def circuits(ansatz, observables, device, interface="numpy"):
             ansatz(*params, wires=range(device.num_wires))
             return expval(obs)
 
-        qnode = QNode(circuit, device)
-
-        if interface == "tf":
-            qnode = qnode.to_tf()
-        elif interface == "torch":
-            qnode = qnode.to_torch()
+        qnode = QNode(circuit, device, interface=interface)
 
         qnodes.append(qnode)
 
