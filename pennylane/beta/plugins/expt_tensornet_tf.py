@@ -202,14 +202,10 @@ class TensorNetworkTF(TensorNetwork):
 
         pip install tensornetwork>=0.2 tensorflow>=2.0
 
-    In addition, you will need to use the new-style QNode to enable
-    calculation of the quantum gradient using TensorFlow.
-
     **Example:**
 
-    >>> from pennylane.beta.qnodes import qnode
     >>> dev = qml.device("expt.tensornet.tf", wires=1)
-    >>> @qnode(dev, interface="autograd", diff_method="best")
+    >>> @qml.qnode(dev, interface="autograd", diff_method="best")
     >>> def circuit(x):
     ...     qml.RX(x[1], wires=0)
     ...     qml.Rot(x[0], x[1], x[2], wires=0)

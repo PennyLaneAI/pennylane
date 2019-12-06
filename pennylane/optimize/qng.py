@@ -126,7 +126,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             # pseudo-inverse metric tensor
-            self.metric_tensor = qnode.metric_tensor(x, diag_approx=self.diag_approx)
+            self.metric_tensor = qnode.metric_tensor([x], diag_approx=self.diag_approx)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
         g = self.compute_grad(qnode, x)

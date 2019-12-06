@@ -187,7 +187,7 @@ class TestOperation:
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
         node = qml.QNode(circuit, mock_device)
-        node.construct([1.0])
+        node._construct([1.0], {})
 
         return node
 
@@ -209,7 +209,7 @@ class TestOperation:
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
         node = qml.QNode(circuit, mock_device)
-        node.construct([1.0])
+        node._construct([1.0], {})
 
         return node
 
@@ -525,7 +525,7 @@ class TestOperatorIntegration:
             DummyOp(wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
+        with pytest.raises(qml.QuantumFunctionError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
             circuit()
 
 

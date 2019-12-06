@@ -19,8 +19,8 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.beta.qnodes.qubit import QubitQNode
-from pennylane.beta.qnodes.base import QuantumFunctionError
+from pennylane.qnodes.qubit import QubitQNode
+from pennylane.qnodes.base import QuantumFunctionError
 from pennylane.plugins.default_qubit import Y, Z
 
 

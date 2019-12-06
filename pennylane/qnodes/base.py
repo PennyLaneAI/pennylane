@@ -26,7 +26,6 @@ from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
 from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
-from pennylane.qnode import QNode as QNode_old, QuantumFunctionError, decompose_queue
 
 
 _MARKER = inspect.Parameter.empty  # singleton marker, could be any singleton class
@@ -49,6 +48,10 @@ Args:
     idx (int): positional index of the parameter in the function signature
     par (inspect.Parameter): parameter description
 """
+
+
+class QuantumFunctionError(Exception):
+    """Exception raised when an illegal operation is defined in a quantum function."""
 
 
 def _get_signature(func):
@@ -81,6 +84,49 @@ def _get_signature(func):
         [(p.name, SignatureParameter(idx, p)) for idx, p in enumerate(sig.parameters.values())]
     )
     func.n_pos = n_pos
+
+
+def _decompose_queue(ops, device):
+    """Recursively loop through a queue and decompose
+    operations that are not supported by a device.
+
+    Args:
+        ops (List[~.Operation]): operation queue
+        device (~.Device): a PennyLane device
+    """
+    new_ops = []
+
+    for op in ops:
+        if device.supports_operation(op.name):
+            new_ops.append(op)
+        else:
+            decomposed_ops = op.decomposition(*op.params, wires=op.wires)
+            decomposition = _decompose_queue(decomposed_ops, device)
+            new_ops.extend(decomposition)
+
+    return new_ops
+
+
+def decompose_queue(ops, device):
+    """Decompose operations in a queue that are not supported by a device.
+
+    This is a wrapper function for :func:`~._decompose_queue`,
+    which raises an error if an operation or its decomposition
+    is not supported by the device.
+
+    Args:
+        ops (List[~.Operation]): operation queue
+        device (~.Device): a PennyLane device
+    """
+    new_ops = []
+
+    for op in ops:
+        try:
+            new_ops.extend(_decompose_queue([op], device))
+        except NotImplementedError:
+            raise qml.DeviceError("Gate {} not supported on device {}".format(op.name, device.short_name))
+
+    return new_ops
 
 
 class BaseQNode:
@@ -282,7 +328,6 @@ class BaseQNode:
                 inside of this method, the quantum function returns incorrect values or if
                 both continuous and discrete operations are specified in the same quantum circuit
         """
-        # pylint: disable=protected-access  # remove when QNode_old is gone
         # pylint: disable=attribute-defined-outside-init, too-many-branches
 
         # flatten the args, replace each argument with a Variable instance carrying a unique index
@@ -296,11 +341,11 @@ class BaseQNode:
         self.obs_queue = []  #: list[Observable]: applied observables
 
         # set up the context for Operator entry
-        if QNode_old._current_context is None:
-            QNode_old._current_context = self
+        if qml._current_context is None:
+            qml._current_context = self
         else:
             raise QuantumFunctionError(
-                "QNode._current_context must not be modified outside this method."
+                "qml._current_context must not be modified outside this method."
             )
         try:
             # generate the program queue by executing the quantum circuit function
@@ -317,7 +362,7 @@ class BaseQNode:
 
                 res = self.func(*arg_vars, **kwarg_vars)
         finally:
-            QNode_old._current_context = None
+            qml._current_context = None
 
         # check the validity of the circuit
         self._check_circuit(res)
@@ -467,7 +512,15 @@ class BaseQNode:
                 if self.func.var_keyword:
                     continue  # unknown parameter, but **kwargs will take it TODO should it?
                 raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
-            if s.par.kind in forbidden_kinds or s.par.default == inspect.Parameter.empty:
+
+            default_parameter = s.par.default
+
+            # The following is a check of the default parameter which works for numpy
+            # arrays as well (if it is a numpy array, each element is checked separately).
+            correct_default_parameter = any(d == inspect.Parameter.empty for d in default_parameter)\
+                                        if isinstance(default_parameter, np.ndarray)\
+                                        else default_parameter == inspect.Parameter.empty
+            if s.par.kind in forbidden_kinds or correct_default_parameter:
                 raise QuantumFunctionError(
                     "Quantum function parameter '{}' cannot be given using the keyword syntax.".format(
                         name
@@ -477,7 +530,11 @@ class BaseQNode:
         # apply defaults
         for name, s in self.func.sig.items():
             default = s.par.default
-            if default != inspect.Parameter.empty:
+            correct_default = all(d != inspect.Parameter.empty for d in default)\
+                              if isinstance(default, np.ndarray)\
+                              else default != inspect.Parameter.empty
+
+            if correct_default:
                 # meant to be given using keyword syntax
                 kwargs.setdefault(name, default)
 

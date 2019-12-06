@@ -165,17 +165,17 @@ class TestCVGradient:
             return qml.expval(O(wires=0))
 
         q = qml.QNode(circuit, gaussian_dev)
-        val = q.evaluate(par)
+        val = q.evaluate(par, {})
 
         grad_F  = q.jacobian(par, method='F')
-        grad_A2 = q.jacobian(par, method='A', force_order2=True)
+        grad_A2 = q.jacobian(par, method='A', options={"force_order2": True})
         if O.ev_order == 1:
             grad_A = q.jacobian(par, method='A')
             # the different methods agree
             assert grad_A == pytest.approx(grad_F, abs=tol)
 
         # analytic method works for every parameter
-        assert q.grad_method_for_par == {0:'A'}
+        assert q.par_to_grad_method == {0:'A'}
         # the different methods agree
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
@@ -192,10 +192,10 @@ class TestCVGradient:
         q = qml.QNode(qf, gaussian_dev)
         grad_F = q.jacobian(par, method='F')
         grad_A = q.jacobian(par, method='A')
-        grad_A2 = q.jacobian(par, method='A', force_order2=True)
+        grad_A2 = q.jacobian(par, method='A', options={"force_order2": True})
 
         # analytic method works for every parameter
-        assert q.grad_method_for_par == {i:'A' for i in range(4)}
+        assert q.par_to_grad_method == {i:'A' for i in range(4)}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -222,10 +222,10 @@ class TestCVGradient:
         q = qml.QNode(qf, gaussian_dev)
         grad_F = q.jacobian(par, method='F')
         grad_A = q.jacobian(par, method='A')
-        grad_A2 = q.jacobian(par, method='A', force_order2=True)
+        grad_A2 = q.jacobian(par, method='A', options={"force_order2": True})
 
         # analytic method works for every parameter
-        assert q.grad_method_for_par == {0:'A', 1:'A'}
+        assert q.par_to_grad_method == {0:'A', 1:'A'}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -247,11 +247,11 @@ class TestCVGradient:
         q = qml.QNode(qf, gaussian_dev)
         grad = q.jacobian(par)
         grad_F = q.jacobian(par, method='F')
-        grad_A = q.jacobian(par, method='B')
-        grad_A2 = q.jacobian(par, method='B', force_order2=True)
+        grad_A = q.jacobian(par, method="best")
+        grad_A2 = q.jacobian(par, method="best", options={"force_order2": True})
 
         # par[0] can use the 'A' method, par[1] cannot
-        assert q.grad_method_for_par == {0:'A', 1:'F'}
+        assert q.par_to_grad_method == {0:'A', 1:'F'}
         # the different methods agree
         assert grad == pytest.approx(grad_F, abs=tol)
 
@@ -269,10 +269,10 @@ class TestCVGradient:
         q = qml.QNode(circuit, gaussian_dev)
         grad_F = q.jacobian(par, method='F')
         grad_A = q.jacobian(par, method='A')
-        grad_A2 = q.jacobian(par, method='A', force_order2=True)
+        grad_A2 = q.jacobian(par, method='A', options={"force_order2": True})
 
         # analytic method works for every parameter
-        assert q.grad_method_for_par == {0:'A', 1:'A'}
+        assert q.par_to_grad_method == {0:'A', 1:'A'}
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
@@ -310,10 +310,10 @@ class TestCVGradient:
             qnode = qml.QNode(circuit, gaussian_dev)
             grad_F = qnode.jacobian(0.5, method='F')
             grad_A = qnode.jacobian(0.5, method='A')
-            grad_A2 = qnode.jacobian(0.5, method='A', force_order2=True)
+            grad_A2 = qnode.jacobian(0.5, method='A', options={"force_order2": True})
 
             # par[0] can use the 'A' method
-            assert qnode.grad_method_for_par == {0: 'A'}
+            assert qnode.par_to_grad_method == {0: 'A'}
 
             # the different methods agree
             assert grad_A == pytest.approx(grad_F, abs=tol)
@@ -458,12 +458,14 @@ class TestQubitGradient:
         params = np.array([0.1, -1.6, np.pi / 5])
 
         # manual gradients
-        grad_fd1 = qnode.jacobian(params, method='F', order=1)
-        grad_fd2 = qnode.jacobian(params, method='F', order=2)
+        grad_fd1 = qnode.jacobian(params, method='F', options={"order": 1})
+        grad_fd2 = qnode.jacobian(params, method='F', options={"order": 2})
         grad_angle = qnode.jacobian(params, method='A')
 
         # automatic gradient
-        grad_fn = autograd.grad(qnode.evaluate)
+        # Note: the lambda function is required as evaluate now receives a required `kwargs` argument
+        # that cannot be differentiated by autograd.
+        grad_fn = autograd.grad(lambda x: qnode.evaluate(x, {}))
         grad_auto = grad_fn(params)[np.newaxis, :]  # so shapes will match
 
         # gradients computed with different methods must agree
@@ -505,7 +507,7 @@ class TestQubitGradient:
             for d_in, d_out in zip(in_data, out_data):
                 args = (d_in, p)
                 diff = (classifier(*args) - d_out)
-                ret = ret + 2 * diff * classifier.jacobian(args, which=[1], method=grad_method)
+                ret = ret + 2 * diff * classifier.jacobian(args, wrt=[1], method=grad_method)
             return ret
 
         y0 = error(param)

@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.vqe` submodule.
 import pytest
 import pennylane as qml
 import numpy as np
+import pennylane.beta.vqe
 
 
 try:
@@ -162,7 +163,7 @@ CIRCUITS = [
 def mock_device(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(qml.Device, "__abstractmethods__", frozenset())
-        m.setattr(qml.Device, "_capabilities", {"tensor_observables": True})
+        m.setattr(qml.Device, "_capabilities", {"tensor_observables": True, "model": "qubit"})
         m.setattr(qml.Device, "operations", ["RX", "Rot", "CNOT", "Hadamard", "QubitStateVector"])
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
@@ -293,21 +294,25 @@ class TestVQE:
             cost = qml.beta.vqe.cost([], 4, hamiltonian, mock_device)
 
 
-class TestNumPyInterface:
-    """Tests for the NumPy interface"""
+class TestAutogradInterface:
+    """Tests for the Autograd interface (and the NumPy interface for backward compatibility)"""
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
-        """Test that QNodes have the NumPy interface"""
+    @pytest.mark.parametrize("interface", ["autograd", "numpy"])
+    def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device, interface):
+        """Test that QNodes have the Autograd interface"""
         mock_device.num_wires = 3
-        circuits = qml.beta.vqe.circuits(ansatz, observables, device=mock_device, interface="numpy")
-        assert all(c.interface == "numpy" for c in circuits)
+        circuits = qml.beta.vqe.circuits(ansatz, observables, device=mock_device, interface=interface)
+
+        assert all(c.interface == "autograd" for c in circuits)
+        assert all(c.__class__.__name__ == "AutogradQNode" for c in circuits)
 
         res = [c(*params) for c in circuits]
         assert all(isinstance(val, float) for val in res)
 
-    def test_gradient(self, tol):
+    @pytest.mark.parametrize("interface", ["autograd", "numpy"])
+    def test_gradient(self, tol, interface):
         """Test differentiation works"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -322,9 +327,9 @@ class TestNumPyInterface:
         a, b = 0.54, 0.123
         params = np.array([a, b])
 
-        cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        cost = qml.beta.vqe.cost(params, ansatz, H, dev, interface=interface)
 
-        cost2 = lambda params: qml.beta.vqe.cost(params, ansatz, H, dev, interface="numpy")
+        cost2 = lambda params: qml.beta.vqe.cost(params, ansatz, H, dev, interface=interface)
         dcost = qml.grad(cost2, argnum=[0])
         res = dcost(params)
 

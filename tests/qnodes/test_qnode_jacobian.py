@@ -21,8 +21,8 @@ import numpy as np
 import pennylane as qml
 from pennylane._device import Device
 from pennylane.operation import CVObservable
-from pennylane.beta.qnodes.base import QuantumFunctionError
-from pennylane.beta.qnodes.jacobian import JacobianQNode
+from pennylane.qnodes.base import QuantumFunctionError
+from pennylane.qnodes.jacobian import JacobianQNode
 
 
 @pytest.fixture(scope="function")

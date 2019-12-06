@@ -48,7 +48,7 @@ extensions = [
 ]
 
 autosummary_generate = True
-autosummary_imported_members = True
+autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodsumm_inherited_members = True
 

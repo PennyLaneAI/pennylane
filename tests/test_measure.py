@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.qnode import QuantumFunctionError
+from pennylane.qnodes import QuantumFunctionError
 from pennylane.operation import Sample, Variance, Expectation
 
 
