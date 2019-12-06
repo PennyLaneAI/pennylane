@@ -427,7 +427,7 @@ class TestTFQNodeParameterHandling:
             qml.RY(y, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        circuit = qml.QNode(circuit, qubit_device_2_wires, interface='tf')
+        circuit = qml.QNode(circuit, qubit_device_2_wires).to_tf()
 
         x = 0.543
         y = 0.45632
