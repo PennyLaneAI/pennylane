@@ -44,6 +44,7 @@ extensions = [
     # 'sphinx_gallery.gen_gallery',
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
+    'sphinx_copybutton',
 ]
 
 autosummary_generate = True
