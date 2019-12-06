@@ -14,7 +14,3 @@ qml.interfaces
 .. rubric:: Modules
 
 .. automodule:: pennylane.interfaces
-
-.. automodapi:: pennylane.interfaces
-    :include-all-objects:
-    :no-inheritance-diagram:
