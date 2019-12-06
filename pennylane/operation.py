@@ -20,7 +20,7 @@ Description
 -----------
 
 Qubit Operations
-----------------
+~~~~~~~~~~~~~~~~
 The :class:`Operator` class serves as a base class for operators,
 and is inherited by both the :class:`Observable` class and the
 :class:`Operation` class. These classes are subclassed to implement quantum operations

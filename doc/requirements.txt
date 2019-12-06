@@ -5,7 +5,7 @@ numpy
 pygments-github-lexers
 semantic_version==2.6
 scipy
-sphinx==1.8.5
+sphinx==2.2.2
 sphinx-automodapi
 sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2
