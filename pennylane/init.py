@@ -19,18 +19,18 @@ to use in templates.
 from math import pi
 import numpy as np
 
-def ising_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
-    r"""Creates a parameter array for :func:`~.IsingLayers`, drawn from a uniform
+
+def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for :func:`~.QAOAEmbedding`, drawn from a uniform
     distribution.
 
-    The shape of the parameter array is ``(n_layers, n_wires, 3)`` and each parameter is drawn uniformly at random \
-    from between ``low`` and ``high``. The parameters define the the trainable angles of the ZZ interactions.
+    Each parameter is drawn uniformly at random \
+    from between ``low`` and ``high``. The parameters define the the trainable angles of 'ZZ interactions' and
+    the 'local fields'.
 
     Args:
         n_layers (int): number of layers
         n_wires (int): number of qubits
-
-    Keyword Args:
         low (float): minimum value of uniform distribution
         high (float): maximum value of uniform distribution
         seed (int): seed used in sampling the parameters, makes function call deterministic
@@ -41,7 +41,46 @@ def ising_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     if seed is not None:
         np.random.seed(seed)
 
-    params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires, 3))
+    if n_wires == 1:
+        shp = (n_layers, 1)
+    elif n_wires == 2:
+        shp = (n_layers, 3)
+    else:
+        shp = (n_layers, 2*n_wires)
+
+    params = np.random.uniform(low=low, high=high, size=shp)
+    return params
+
+
+def qaoa_embedding_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for :func:`~.QAOAEmbedding`, drawn from a normal
+    distribution.
+
+    Each parameter is drawn from a normal
+    distribution with ``mean`` and ``variance``. The parameters define the the trainable angles of
+    'ZZ interactions' and the 'local fields' in the template.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    if n_wires == 1:
+        shp = (n_layers, 1)
+    elif n_wires == 2:
+        shp = (n_layers, 3)
+    else:
+        shp = (n_layers, 2 * n_wires)
+
+    params = np.random.normal(loc=mean, scale=std, size=shp)
     return params
 
 

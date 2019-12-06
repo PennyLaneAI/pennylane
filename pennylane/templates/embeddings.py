@@ -18,11 +18,10 @@ used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
-
-from pennylane.ops import RX, RY, RZ, CNOT, BasisState, Squeezing, Displacement, QubitStateVector
+from pennylane.ops import RX, RY, RZ, CNOT, Hadamard, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_hyperp_is_in_options, _check_type,
-                                       _check_number_of_layers)
+                                       _check_number_of_layers, _get_shape)
 from pennylane.variable import Variable
 
 
@@ -180,80 +179,131 @@ def BasisEmbedding(features, wires):
     BasisState(features, wires=wires)
 
 
-def IsingEmbedding(features, weights, wires):
+def QAOAEmbedding(features, weights, wires, local_field=None):
     r"""
-    Encodes :math:`N` features into :math:`N` qubits, using a layered, trainable quantum
-    circuit.
+    Encodes :math:`N` features into :math:`n` qubits, using a layered, trainable quantum
+    circuit that is inspired by the QAOA ansatz.
 
-    The circuit alternates :class:`RX` rotations which encode the features with trainable two-qubit ZZ interactions
-    and single-qubit :mod:`RY` gates. After the final layer, another set of feature encoding :class:`RX`
-    gates is applied.
+    A single layer applies two circuits or "Hamiltonians": The first encodes the features, and the second is
+    a variational ansatz inspired by an Ising model. The feature-encoding circuit associates features with
+    the angles of :class:`RX` rotations. The Ising ansatz consists of
+    trainable two-qubit ZZ interactions :math:`e^{-i \alpha \sigma_z \otimes \sigma_z}`, and trainable local fields
+    :math:`e^{-i \frac{\beta}{2} \sigma_{\mu}}`, where :math:`\sigma_{\mu}` can be chosen to be
+    :math:`\sigma_{x}`, :math:`\sigma_{y}` or :math:`\sigma_{z}` (defaul choice is :math:`\sigma_{y}`).
+    :math:`\alpha, \beta` are adjustable gate parameters.
 
-    The argument ``weights`` contains an array of weights for each layer.
-    The number of layers :math:`L` is therefore derived from the first dimension of ``weights``.
+    The number of features has to be smaller or equal to the number of qubits. If there are fewer features than
+    qubits, the feature-encoding rotation is replaced by a Hadamard gate.
 
-    Example for one layer, 4 wires, 2 inputs:
+    This is an example for a layer using 3 features, 4 wires, and ``RY`` gates:
 
-       |0> - R_x(x1) - |^| -------- |_| - R_y(w7)  -
-       |0> - R_x(x2) - |_|-|^| ---------- R_y(w8)  -
-       |0> - R_x(w1) ------|_|-|^| ------ R_y(w9)  -
-       |0> - R_x(w2) ----------|_| -|^| - R_y(w10) -
+    |
+
+    .. figure:: ../../_static/layer_ising.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    |
+
+    The argument ``weights`` contains an array of the :math:`\alpha, \beta` parameters for each layer.
+    The number of layers :math:`L` is derived from the first dimension of ``weights``.  If the embedding
+    acts on a single wire, ``weights`` has shape ``(:math:`L`, )``, if the embedding acts on two wires, it has
+    shape ``(:math:`L`, :math:`3`)``, and else it has shape ``(:math:`L`, :math:`2n`)``
+
+    After the :math:`L`th layer,
+    another set of feature encoding :class:`RX` gates is applied.
+
+    .. note::
+        ``QAOAEmbedding`` supports gradient computations with respect to both the ``features`` and the ``weights``
+        arguments.
 
     Args:
 
         features (array): Array of features to encode
-        weights (array): Array of weights of shape `(L, 2n)`
-        wires (Sequence[int] or int): qubit indices that the template acts on
+        weights (array): Array of weights
+        wires (Sequence[int] or int): `n` qubit indices that the template acts on
+        local_field (pennylane.ops.Operation): single qubit rotation ``RX``, ``RY`` or ``RZ`` that is applied to
+            each qubit at the end of the layer
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    UsageDetails:
+        EXAMPLES
     """
+    #############
+    # Input checks
     wires, n_wires = _check_wires(wires)
-    _check_shape(features, (n_wires,))
+
+    n_features = _get_shape(features)[0]
+    msg = "QAOAEmbedding cannot process more features than number of qubits {};" \
+          "got {}.".format(n_wires, len(features))
+    _check_shape(features, (n_wires,), bound='max', msg=msg)
+
+    if local_field is None:
+        local_field = RY
+    else:
+        msg = "Gate for local field not known. Has to be one of ``RX``, ``RY``, ``RZ``."
+        _check_type(local_field, [RX, RY, RZ], msg=msg)
+
     repeat = _check_number_of_layers([weights])
 
     if n_wires == 1:
-        _check_shape(weights, (repeat, ))
+        _check_shape(weights, (repeat, 1))
     elif n_wires == 2:
         _check_shape(weights, (repeat, 3))
     else:
         _check_shape(weights, (repeat, 2*n_wires))
 
+    weights = np.array(weights)
+    #####################
+
     for l in range(repeat):
 
-        # encode inputs in RX gates
+        # encode inputs into RX gates
         for i in range(n_wires):
-            RX(features[i], wires=wires[i])
+            # Either feed in feature
+            if i < n_features:
+                RX(features[i], wires=wires[i])
+            # or a Hadamard
+            else:
+                Hadamard(wires=wires[i])
 
-        # 1-d nearest neighbour coupling
+        # trainable "Ising" ansatz
         if n_wires == 1:
-            RY(weights[l], wires=wires[0])
+            local_field(weights[l, 0], wires=wires[0])
         elif n_wires == 2:
-            CNOT(wires=[wires[0: 2]])
-            RZ(2 * weights[l * 3 + 2], wires=wires[0])
-            CNOT(wires=[wires[0: 2]])
+            CNOT(wires=[wires[0], wires[1]])
+            RZ(2 * weights[l, 0], wires=wires[0])
+            CNOT(wires=[wires[0], wires[1]])
 
             # local fields
             for i in range(n_wires):
-                RY(weights[l * 3 + i], wires=wires[i])
+                RY(weights[l, i+1], wires=wires[i])
         else:
             for i in range(n_wires):
                 if i < n_wires - 1:
-                    CNOT(wires=wires[i: i + 2])
-                    RZ(2 * weights[l * 2 * n_wires + i], wires=wires[0])
-                    CNOT(wires=wires[i: i + 2])
+                    CNOT(wires=[wires[i], wires[i + 1]])
+                    RZ(2 * weights[l, i], wires=wires[i])
+                    CNOT(wires=[wires[i], wires[i + 1]])
                 else:
                     # enforce periodic boundary condition
                     CNOT(wires=[wires[i], wires[0]])
-                    RZ(2 * weights[l * 2 * n_wires + i], wires=wires[0])
+                    RZ(2 * weights[l, i], wires=wires[i])
                     CNOT(wires=[wires[i], wires[0]])
             # local fields
             for i in range(n_wires):
-                RY(weights[l * 2 * n_wires + n_wires + i], wires=wires[i])
+                local_field(weights[l, n_wires + i], wires=wires[i])
 
     # repeat feature encoding once more at the end
     for i in range(n_wires):
-        RX(features[i], wires=wires[i])
+        # Either feed in feature
+        if i < n_features:
+            RX(features[i], wires=wires[i])
+        # or a Hadamard
+        else:
+            Hadamard(wires=wires[i])
 
 
 def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
@@ -352,7 +402,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             Displacement(c, f, wires=wires[idx])
 
 
-embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "IsingEmbedding",
+embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "QAOAEmbedding",
               "SqueezingEmbedding", "DisplacementEmbedding"}
 
 __all__ = list(embeddings)
