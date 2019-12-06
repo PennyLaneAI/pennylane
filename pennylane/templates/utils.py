@@ -30,9 +30,11 @@ def _check_no_variable(arg, arg_str, msg=None):
         arg_str (list[str]): name of arguments for error printing
         msg (str): error message
     """
-    if msg is None:
-        msg = "The argument {} can not be passed as a QNode parameter. Try passing it as a keyword argument.".format(arg_str)
+
     for a, s in zip(arg, arg_str):
+        if msg is None:
+            msg = "The argument '{}' can not be passed as a QNode parameter. Try passing it as a keyword argument."\
+                .format(s)
         if isinstance(a, Variable):
             raise ValueError(msg)
         if isinstance(a, Iterable):
