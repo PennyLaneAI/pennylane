@@ -66,7 +66,6 @@ class TestInterferometer:
 
         with qml.utils.OperationRecorder() as rec_tria:
             Interferometer(theta, phi, varphi, mesh='triangular', beamsplitter='clements', wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
         for rec in [rec_rect, rec_tria]:
 
@@ -132,7 +131,6 @@ class TestInterferometer:
 
         with qml.utils.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
         assert len(rec.queue) == 3
 
