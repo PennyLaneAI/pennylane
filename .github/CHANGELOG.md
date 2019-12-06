@@ -21,7 +21,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Maria Schuld
+Ville Bergholm, Josh Izaac, Maria Schuld
 
 ---
 
