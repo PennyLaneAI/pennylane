@@ -514,6 +514,9 @@ class BaseQNode:
                 raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
 
             default_parameter = s.par.default
+
+            # The following is a check of the default parameter which works for numpy
+            # arrays as well (if it is a numpy array, each element is checked separately).
             correct_default_parameter = any(d == inspect.Parameter.empty for d in default_parameter)\
                                         if isinstance(default_parameter, np.ndarray)\
                                         else default_parameter == inspect.Parameter.empty
