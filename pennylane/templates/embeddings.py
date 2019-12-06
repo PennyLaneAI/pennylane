@@ -31,21 +31,6 @@ TOLERANCE = 1e-3
 def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
-    .. code-block:: python
-
-        import pennylane as qml
-        from pennylane.templates import AmplitudeEmbedding
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(f=None):
-            AmplitudeEmbedding(features=f, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
-
-        circuit(f=[1/2, 1/2, 1/2, 1/2])
-
-
     By setting ``pad`` to a real or complex number, ``features`` is automatically padded to dimension
     :math:`2^n` where :math:`n` is the number of qubits used in the embedding.
 
