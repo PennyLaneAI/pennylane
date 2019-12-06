@@ -164,7 +164,7 @@ class CVQNode(JacobianQNode):
 
         n = self.num_variables
         w = self.num_wires
-        pd = 0.0
+        pd = np.zeros(self.output_dim)
         # find the Operators in which the free parameter appears, use the product rule
         for op, p_idx in self.variable_deps[idx]:
 
@@ -196,7 +196,7 @@ class CVQNode(JacobianQNode):
                 # order-2 parameter-shift method, for gaussian CV gates
                 # succeeded by order-2 observables
                 # evaluate transformed observables at the original parameter point
-                # first build the Z transformation matrix
+                # first build the Heisenberg picture transformation matrix Z
                 self._set_variables(shift_p1, kwargs)
                 Z2 = op.heisenberg_tr(w)
                 self._set_variables(shift_p2, kwargs)
@@ -220,15 +220,17 @@ class CVQNode(JacobianQNode):
                     B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
 
-                # transform the descendant observables
+                # transform the descendant observables into their derivatives using Z
                 desc = self._op_descendants(op, "O")
-                obs = [
-                    self._transform_observable(x, w, Z) if x in desc else x
-                    for x in self.circuit.observables
-                ]
+                obs = [self._transform_observable(x, w, Z) for x in desc]
+                # Measure the transformed observables.
+                # The other observables do not depend on this parameter instance,
+                # hence their partial derivatives are zero.
+                res = self.evaluate_obs(obs, unshifted_args, kwargs)
 
-                # measure transformed observables
-                pd += self.evaluate_obs(obs, unshifted_args, kwargs)
+                # add the measured pd's to the correct locations
+                inds = [self.circuit.observables.index(x) for x in desc]
+                pd[inds] += res
 
             # restore the original parameter
             op.params[p_idx] = orig
