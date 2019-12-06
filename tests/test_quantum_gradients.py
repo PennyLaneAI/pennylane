@@ -463,6 +463,8 @@ class TestQubitGradient:
         grad_angle = qnode.jacobian(params, method='A')
 
         # automatic gradient
+        # Note: the lambda function is required as evaluate now receives a required `kwargs` argument
+        # that cannot be differentiated by autograd.
         grad_fn = autograd.grad(lambda x: qnode.evaluate(x, {}))
         grad_auto = grad_fn(params)[np.newaxis, :]  # so shapes will match
 

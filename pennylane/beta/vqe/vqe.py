@@ -102,7 +102,7 @@ def circuits(ansatz, observables, device, interface="numpy"):
         ansatz (callable): the ansatz for the circuit before the final measurement step
         observables (Iterable[:class:`~.Observable`]): observables to measure during the final step of each circuit
         device (:class:`~.Device`): device where the circuits should be executed
-        interface (str): which interface to use for the :class:`~.QNode`s of the circuits
+        interface (str): which interface to use for the circuit QNodes
 
     Returns:
         tuple: callable functions which evaluate each observable

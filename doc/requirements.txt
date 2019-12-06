@@ -1,12 +1,14 @@
 --find-links https://download.pytorch.org/whl/torch_stable.html
+pip==19.3.1
 appdirs
 autograd
 numpy
 pygments-github-lexers
 semantic_version==2.6
 scipy
-sphinx==1.8.5
+sphinx==2.2.2
 sphinx-automodapi
+sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2
 tensorflow==2.0
 tensornetwork==0.2

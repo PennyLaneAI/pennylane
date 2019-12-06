@@ -185,13 +185,13 @@ class TestInputChecks:
     @pytest.mark.parametrize("arg", NO_VARIABLES_PASS)
     def test_check_no_variables(self, arg):
         """Tests that variable check succeeds for valid arguments."""
-        _check_no_variable(arg, "dummy")
+        _check_no_variable([arg], ["dummy"])
 
     @pytest.mark.parametrize("arg", NO_VARIABLES_FAIL)
     def test_check_no_variables_exception(self, arg):
         """Tests that variable check throws error for invalid arguments."""
-        with pytest.raises(ValueError, match="The argument dummy can not be passed"):
-            _check_no_variable(arg, "dummy")
+        with pytest.raises(ValueError, match="The argument 'dummy' can not be passed"):
+            _check_no_variable([arg], ["dummy"])
 
     def test_check_no_variables_exception_message(self):
         """Tests that variable check displays custom error message."""
