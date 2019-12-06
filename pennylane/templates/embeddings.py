@@ -62,7 +62,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     .. note::
 
         ``AmplitudeEmbedding`` calls a circuit that involves non-trivial classical processing of the
-        features. The `features` argument is therefore **not differentiable** when using the template, and
+        features. The ``features`` argument is therefore **not differentiable** when using the template, and
         gradients with respect to the features cannot be computed by PennyLane.
 
     .. warning::
