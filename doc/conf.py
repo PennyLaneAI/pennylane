@@ -44,10 +44,11 @@ extensions = [
     # 'sphinx_gallery.gen_gallery',
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
+    'sphinx_copybutton',
 ]
 
 autosummary_generate = True
-autosummary_imported_members = True
+autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodsumm_inherited_members = True
 

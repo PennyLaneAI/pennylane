@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage defines quantum nodes that are compatible with different machine
+This subpackage defines functions convert QNodes to interface with different machine
 learning libraries.
 
 .. currentmodule:: pennylane.interfaces
@@ -21,4 +21,5 @@ learning libraries.
 
     tf
     torch
+    autograd
 """

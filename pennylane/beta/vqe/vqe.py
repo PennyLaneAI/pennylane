@@ -18,7 +18,7 @@ computations using PennyLane.
 import numpy as np
 from pennylane.ops import Observable
 from pennylane.measure import expval
-from pennylane.qnode import QNode
+from pennylane.qnodes import QNode
 
 
 class Hamiltonian:
@@ -102,7 +102,7 @@ def circuits(ansatz, observables, device, interface="numpy"):
         ansatz (callable): the ansatz for the circuit before the final measurement step
         observables (Iterable[:class:`~.Observable`]): observables to measure during the final step of each circuit
         device (:class:`~.Device`): device where the circuits should be executed
-        interface (str): which interface to use for the :class:`~.QNode`s of the circuits
+        interface (str): which interface to use for the circuit QNodes
 
     Returns:
         tuple: callable functions which evaluate each observable
@@ -122,12 +122,7 @@ def circuits(ansatz, observables, device, interface="numpy"):
             ansatz(*params, wires=range(device.num_wires))
             return expval(obs)
 
-        qnode = QNode(circuit, device)
-
-        if interface == "tf":
-            qnode = qnode.to_tf()
-        elif interface == "torch":
-            qnode = qnode.to_torch()
+        qnode = QNode(circuit, device, interface=interface)
 
         qnodes.append(qnode)
 

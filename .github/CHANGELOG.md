@@ -4,15 +4,26 @@
 
 ### Breaking changes
 
+* Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
+  moved all related files from the `pennylane/beta` folder to `pennylane`.
+  [#440](https://github.com/XanaduAI/pennylane/pull/440)
+
 ### Improvements
 
 ### Documentation
 
 ### Bug fixes
 
+* Fixed a bug in `CVQNode._pd_analytic`, where non-descendant observables were not
+  Heisenberg-transformed before evaluating the partial derivatives when using the
+  order-2 parameter-shift method, resulting in an erroneous Jacobian for some circuits.
+  [#433](https://github.com/XanaduAI/pennylane/pull/433)
+
 ### Contributors
 
 This release contains contributions from (in alphabetical order):
+
+Ville Bergholm, Josh Izaac, Antal Száva
 
 ---
 

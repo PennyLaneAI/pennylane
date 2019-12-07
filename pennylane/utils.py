@@ -272,13 +272,13 @@ class OperationRecorder:
         self.old_context = None
 
     def __enter__(self):
-        self.rec = Recorder(qml.QNode._current_context)
+        self.rec = Recorder(qml._current_context)
 
         # store the old context to be returned later
-        self.old_context = qml.QNode._current_context
+        self.old_context = qml._current_context
 
         # set the recorder as the QNode context
-        qml.QNode._current_context = self.rec
+        qml._current_context = self.rec
 
         self.queue = None
         self.operations = None
@@ -304,7 +304,7 @@ class OperationRecorder:
             )
         )
 
-        qml.QNode._current_context = self.old_context
+        qml._current_context = self.old_context
 
     def __str__(self):
         output = ""

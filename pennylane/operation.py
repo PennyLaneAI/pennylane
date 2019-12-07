@@ -20,7 +20,7 @@ Description
 -----------
 
 Qubit Operations
-----------------
+~~~~~~~~~~~~~~~~
 The :class:`Operator` class serves as a base class for operators,
 and is inherited by both the :class:`Observable` class and the
 :class:`Operation` class. These classes are subclassed to implement quantum operations
@@ -106,7 +106,8 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from .qnode import QNode
+import pennylane as qml
+
 from .utils import _flatten, _unflatten
 from .variable import Variable
 
@@ -215,9 +216,9 @@ class Operator(abc.ABC):
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into a :class:`QNode` circuit queue.
+            immediately pushed into a :class:`BaseQNode` circuit queue.
             The circuit queue is determined by the presence of an
-            applicable `QNode._current_context`. If no context is
+            applicable `qml._current_context`. If no context is
             available, this argument is ignored.
     """
     @property
@@ -273,7 +274,7 @@ class Operator(abc.ABC):
         self._check_wires(wires)
         self._wires = wires  #: tuple[int]: wires on which the operator acts
 
-        if do_queue and (QNode._current_context is not None):
+        if do_queue and (qml._current_context is not None):
             self.queue()
 
     def __str__(self):
@@ -370,9 +371,9 @@ class Operator(abc.ABC):
         return _unflatten(temp_val, self.params)[0]
 
     def queue(self):
-        """Append the operator to a QNode queue."""
+        """Append the operator to a BaseQNode queue."""
 
-        QNode._current_context._append_op(self)
+        qml._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 #=============================================================================
@@ -408,9 +409,9 @@ class Operation(Operator):
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
         do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`QNode` circuit queue.
+            immediately pushed into a :class:`BaseQNode` circuit queue.
             This flag is useful if there is some reason to run an Operation
-            outside of a QNode context.
+            outside of a BaseQNode context.
     """
     # pylint: disable=abstract-method
     string_for_inverse = ".inv"
@@ -576,9 +577,9 @@ class Observable(Operator):
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
         do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`QNode` observable queue.
+            immediately pushed into a :class:`BaseQNode` observable queue.
             The observable queue is determined by the presence of an
-            applicable `QNode._current_context`. If no context is
+            applicable `qml._current_context`. If no context is
             available, this argument is ignored.
     """
     # pylint: disable=abstract-method

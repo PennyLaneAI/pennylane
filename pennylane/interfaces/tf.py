@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :func:`TFQNode` function to convert Numpy-interfacing quantum nodes to TensorFlow
+This module contains the :func:`to_tf` function to convert Numpy-interfacing quantum nodes to TensorFlow
 compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name
@@ -31,7 +31,7 @@ else:
     from tensorflow import Variable # pylint: disable=unused-import,ungrouped-imports
 
 
-def TFQNode(qnode):
+def to_tf(qnode):
     """Function that accepts a :class:`~.QNode`, and returns a TensorFlow eager-execution-compatible QNode.
 
     Args:
@@ -85,12 +85,7 @@ def TFQNode(qnode):
             # evaluate the Jacobian matrix of the QNode
             variables = tfkwargs.get('variables', None)
 
-            if hasattr(qnode, "to_autograd"):
-                # new style QNode.jacobian has a different signature
-                jacobian = qnode.jacobian(args, kwargs)
-            else:
-                jacobian = qnode.jacobian(args, **kwargs)
-
+            jacobian = qnode.jacobian(args, kwargs)
             grad_output_np = grad_output.numpy()
 
             # perform the vector-Jacobian product
