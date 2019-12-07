@@ -333,6 +333,8 @@ class TestBasisEmbedding:
 class TestQAOAEmbedding:
     """ Tests the QAOAEmbedding method."""
 
+    # TODO: Do we need to test all possible local fields?
+
     def test_qaoa_embedding_state_zero_weights(self, qubit_device, n_subsystems):
         """Checks the state produced by QAOAEmbedding() is correct if the weights are zero."""
 
@@ -361,8 +363,6 @@ class TestQAOAEmbedding:
     def test_qaoa_embedding_state_zero_features_local_field_ry(self, n_subsystems, weights, target):
         """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RY local fields."""
 
-        # TODO: The ZZ weights are not tested since they act as identity on initial qubits
-
         features = np.zeros(shape=(n_subsystems,))
         dev = qml.device('default.qubit', wires=n_subsystems)
 
@@ -372,6 +372,23 @@ class TestQAOAEmbedding:
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
+        assert np.allclose(res, target)
+
+    @pytest.mark.parametrize('features, weights, target', [([np.pi/2, 0], [[np.pi, 0, 0]], [-1, 1]),
+                                                           ([0, np.pi/2], [[np.pi, 0, 0]], [1, -1]),
+                                                           ([np.pi/2, np.pi/2], [[np.pi, 0, 0]], [-1, -1])])
+    def test_qaoa_embedding_state_features_and_zz(self, features, weights, target):
+        """Checks the state produced by QAOAEmbedding() is correct if the features and weights are nonzero.
+        Uses RY local fields."""
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(2))
+            return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+        res = circuit(x=features)
         assert np.allclose(res, target)
 
     def test_qaoa_embedding_exception_fewer_wires_than_features(self, ):
