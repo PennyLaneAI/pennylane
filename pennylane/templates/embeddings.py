@@ -229,9 +229,6 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
 
     Raises:
         ValueError: if inputs do not have the correct format
-
-    UsageDetails:
-        EXAMPLES
     """
     #############
     # Input checks
@@ -250,14 +247,20 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
 
     repeat = _check_number_of_layers([weights])
 
-    if n_wires == 1:
-        _check_shape(weights, (repeat, 1))
-    elif n_wires == 2:
-        _check_shape(weights, (repeat, 3))
-    else:
-        _check_shape(weights, (repeat, 2*n_wires))
-
     weights = np.array(weights)
+    weights_shape = weights.shape
+    if n_wires == 1:
+        msg = "QAOAEmbedding with 1 qubit and {} layers requires weight " \
+              "array of shape {}; got {}".format(repeat, (repeat, 1), weights_shape)
+        _check_shape(weights, (repeat, 1), msg=msg)
+    elif n_wires == 2:
+        msg = "QAOAEmbedding with 2 qubits and {} layers requires weight " \
+              "array of shape {}; got {}".format(repeat, (repeat, 3), weights_shape)
+        _check_shape(weights, (repeat, 3), msg=msg)
+    else:
+        msg = "QAOAEmbedding with {} qubits and {} layers requires weight " \
+              "array of shape {}; got {}".format(n_wires, repeat, (repeat, 2*n_wires), weights_shape)
+        _check_shape(weights, (repeat, 2*n_wires), msg=msg)
     #####################
 
     for l in range(repeat):

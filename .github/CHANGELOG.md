@@ -2,6 +2,9 @@
 
 ### New features since last release
 
+* Added ``QAOAEmbedding`` and its parameter initialization 
+  as a new trainable template.
+
 ### Breaking changes
 
 * Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
@@ -23,7 +26,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Antal Száva
+Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva
 
 ---
 
