@@ -447,9 +447,9 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
 
     msg = "Option for local field not known. Has to be one of ``'X'``, ``'Y'``, or ``'Z'``."
     _check_hyperp_is_in_options(local_field, ['X', 'Y', 'Z'], msg=msg)
-    if local_field is 'Z':
+    if local_field == 'Z':
         local_field = RZ
-    elif local_field is 'X':
+    elif local_field == 'X':
         local_field = RX
     else:
         local_field = RY
@@ -493,7 +493,7 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
 
             # local fields
             for i in range(n_wires):
-                RY(weights[l, i+1], wires=wires[i])
+                local_field(weights[l, i+1], wires=wires[i])
         else:
             for i in range(n_wires):
                 if i < n_wires - 1:
