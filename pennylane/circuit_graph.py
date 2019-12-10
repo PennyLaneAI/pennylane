@@ -309,12 +309,34 @@ class CircuitGraph:
         else:
             return None
 
+    @staticmethod
+    def empty_list_to_none(list):
+        if list:
+            return list
+        else:
+            return [None]
+
     def greedy_layers(self):
         l = 0
         greedy_grid = self._grid.copy()
 
+        greedy_grid = {
+            wire: list(
+                filter(
+                    lambda op: not (
+                        isinstance(op, qml.operation.Observable) and op.return_type is not None
+                    ),
+                    greedy_grid[wire],
+                )
+            )
+            for wire in greedy_grid
+        }
+
         while True:
-            layer_ops = {wire: CircuitGraph.list_at_index_or_none(greedy_grid[wire], l) for wire in greedy_grid}
+            layer_ops = {
+                wire: CircuitGraph.list_at_index_or_none(greedy_grid[wire], l)
+                for wire in greedy_grid
+            }
             num_ops = Counter(layer_ops.values())
 
             if None in num_ops and num_ops[None] == len(greedy_grid):
@@ -331,9 +353,21 @@ class CircuitGraph:
 
             l += 1
 
-        # l is now the number of total layers
-        return np.array([[greedy_grid[wire][i] for wire in greedy_grid] for i in range(l)], dtype=object).T
+        observables = {
+            wire: CircuitGraph.empty_list_to_none(list(
+                filter(
+                    lambda op: isinstance(op, qml.operation.Observable)
+                    and op.return_type is not None,
+                    self._grid[wire],
+                )
+            ))
+            for wire in self._grid
+        }
 
+        print(observables)
+        print(np.array([observables[wire] for wire in observables], dtype=object))
+
+        return np.array([greedy_grid[wire] for wire in greedy_grid], dtype=object), np.array([observables[wire] for wire in observables], dtype=object)
 
     def update_node(self, old, new):
         """Replaces the given circuit graph node with a new one.
@@ -352,10 +386,11 @@ class CircuitGraph:
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
 
     op_dict = {
-        "PauliX" : "X",
-        "PauliY" : "Y",
-        "PauliZ" : "Z",
-        "Identity" : "I",
+        "PauliX": "X",
+        "PauliY": "Y",
+        "PauliZ": "Z",
+        "Identity": "I",
+        "Hadamard": "H",
     }
 
     def operator_string(self, op):
@@ -368,29 +403,53 @@ class CircuitGraph:
 
         if op.num_params == 0:
             return name
-        
-        return "{}({})".format(name, ",".join([str(par) if not isinstance(par, qml.variable.Variable) else par.render() for par in op.params]))
 
+        return "{}({})".format(
+            name,
+            ",".join(
+                [
+                    str(par) if not isinstance(par, qml.variable.Variable) else par.render()
+                    for par in op.params
+                ]
+            ),
+        )
 
+    def observable_string(self, obs):
+        if obs.return_type == qml.operation.Expectation:
+            return "<{}>".format(self.operator_string(obs))
+        elif obs.return_type == qml.operation.Variance:
+            return "Var[{}]".format(self.operator_string(obs))
+        elif obs.return_type == qml.operation.Sample:
+            return "Sample[{}]".format(self.operator_string(obs))
+
+    def string_representation(self, op):
+        if isinstance(op, qml.operation.Observable) and op.return_type is not None:
+            return self.observable_string(op)
+        else:
+            return self.operator_string(op)
 
     def render(self):
-        grid = self.greedy_layers()
+        grid, obs = self.greedy_layers()
 
-        repr_grid = np.vectorize(self.operator_string)(grid)
+        repr_grid = np.vectorize(self.string_representation)(grid)
+        obs_repr = np.vectorize(self.string_representation)(obs)
         len_grid = np.vectorize(lambda x: len(x))(repr_grid)
+        obs_len = np.vectorize(lambda x: len(x))(obs_repr)
 
         widths = np.max(len_grid, axis=0)
 
-        print(len_grid)
-        print(widths)
-
         for i in range(len(widths)):
-            repr_grid[:, i] = np.vectorize(lambda x: x.ljust(widths[i], "-"))(repr_grid[:, i])
+            repr_grid[:, i] = np.vectorize(lambda x: x.ljust(widths[i], "─"))(repr_grid[:, i])
 
-        for wire in range(len(repr_grid)):
-            print("{}: --".format(wire), end="")
+        obs_width = np.max(obs_len)
+        obs_repr = np.vectorize(lambda x: "┤" + x.ljust(obs_width, " "))(obs_repr)
 
-            for repr in repr_grid[wire]:
-                print("-{}-".format(repr), end="")
+        all_repr = np.hstack([repr_grid, obs_repr])
+
+        for wire in range(len(all_repr)):
+            print("{}: ──".format(wire), end="")
+
+            for repr in all_repr[wire]:
+                print("──{}".format(repr), end="")
 
             print()

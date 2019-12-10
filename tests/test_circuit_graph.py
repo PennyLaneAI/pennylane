@@ -88,14 +88,20 @@ def parameterized_qubit_circuit():
         qml.RX(d, wires=0)
         qml.RX(e, wires=1)
         qml.RY(c, wires=2)
+        qml.RZ(b, wires=3)
         qml.RX(f, wires=2)
         qml.Toffoli(wires=[0,2,1])
         qml.CZ(wires=[0, 1])
         qml.CZ(wires=[0, 2])
         qml.CNOT(wires=[2, 1])
+        qml.CNOT(wires=[0, 2])
+        qml.CNOT(wires=[1, 3])
+        qml.RZ(b, wires=3)
 
         return [
-            qml.expval(qml.PauliY(i)) for i in range(3)
+            qml.expval(qml.PauliY(0)),
+            qml.var(qml.Hadamard(wires=1)),
+            qml.sample(qml.PauliX(2)),
         ]
 
     return qfunc
@@ -237,7 +243,7 @@ class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=4)
         qnode = qml.QNode(parameterized_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         qnode.circuit.render()
