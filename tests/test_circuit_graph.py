@@ -85,6 +85,7 @@ def parameterized_qubit_circuit():
         qml.RX(b, wires=1)
         qml.PauliZ(1)
         qml.CNOT(wires=[0, 1])
+        qml.CRY(b, wires=[3, 1])
         qml.RX(d, wires=0)
         qml.RX(e, wires=1)
         qml.RY(c, wires=2)

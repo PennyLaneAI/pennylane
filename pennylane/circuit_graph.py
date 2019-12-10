@@ -15,7 +15,7 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
-from collections import namedtuple, Counter
+from collections import namedtuple, Counter, OrderedDict
 import networkx as nx
 
 import numpy as np
@@ -318,7 +318,10 @@ class CircuitGraph:
 
     def greedy_layers(self):
         l = 0
-        greedy_grid = self._grid.copy()
+        
+        greedy_grid = OrderedDict()
+        for key in sorted(self._grid):
+            greedy_grid[key] = self._grid[key]
 
         greedy_grid = {
             wire: list(
@@ -472,6 +475,9 @@ class RepresentationResolver:
         "CZ": "Z",
         "Identity": "I",
         "Hadamard": "H",
+        "CRX": "RX",
+        "CRY": "RY",
+        "CRZ": "RZ",
     }
 
     def __init__(self, charset=UnicodeCharSet):
@@ -479,6 +485,7 @@ class RepresentationResolver:
 
     def operation_representation(self, op, wire):
         name = op.name
+
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
