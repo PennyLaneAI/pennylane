@@ -139,3 +139,23 @@ class Variable:
         # The variable is a placeholder for a keyword argument
         values = Variable.kwarg_values[self.name]
         return values[self.idx] * self.mult
+
+    def render(self):
+        if self.name is None:
+            if len(Variable.free_param_values) >= self.idx:
+                return str(self.val)
+            else:
+                if self.mult != 1:
+                    return "{}*#{}".format(self.mult, self.idx)
+                else:
+                    return "#{}".format(self.idx)
+        else:
+            if self.name in Variable.kwarg_values:
+                return str(self.val)
+            else:
+                if self.mult != 1:
+                    return "{}*{}".format(self.mult, self.name)
+                else:
+                    return self.name
+
+
