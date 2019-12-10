@@ -18,13 +18,11 @@ used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
-import pennylane as qml
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_hyperp_is_in_options, _check_type,
                                        _check_number_of_layers, _get_shape)
 from pennylane.variable import Variable
-from pennylane.operation import Operation
 
 
 TOLERANCE = 1e-3
