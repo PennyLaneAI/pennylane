@@ -78,6 +78,27 @@ def parameterized_circuit():
 
     return qfunc
 
+@pytest.fixture
+def parameterized_qubit_circuit():
+    def qfunc(a, b, c, d, e, f):
+        qml.RX(a, wires=0)
+        qml.RX(b, wires=1)
+        qml.PauliZ(1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(d, wires=0)
+        qml.RX(e, wires=1)
+        qml.RY(c, wires=2)
+        qml.RX(f, wires=2)
+        qml.CZ(wires=[0, 1])
+
+        return [
+            qml.expval(qml.PauliZ(wires=0)),
+            qml.expval(qml.PauliZ(wires=1)),
+            qml.expval(qml.PauliZ(wires=2)),
+        ]
+
+    return qfunc
+
 
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
@@ -209,3 +230,27 @@ class TestCircuitGraph:
         assert set(result[2][1]) == set(circuit.operations[5:])
         assert result[2][2] == (4, 5)
         assert set(result[2][3]) == set(circuit.observables[1:])
+
+def qfunc(a):
+    qml.PauliX(0)
+    qml.CNOT(wires=[0, 1])
+    qml.RX(0.34253, wires=[1])
+    qml.RY(a, wires=[1])
+    qml.PauliZ(2)
+    qml.CZ(wires=[2, 0])
+    qml.CZ(wires=[2, 1])
+    qml.CZ(wires=[0, 1])
+
+    return [qml.expval(qml.PauliY(i)) for i in range(3)]
+
+class TestCircuitGraphDrawing:
+
+    def test_simple_circuit(self, parameterized_qubit_circuit):
+        """A test of the different layers, their successors and ancestors using a simple circuit"""
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(parameterized_qubit_circuit, dev)
+        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+        qnode.circuit.render()
+
+        raise Exception()

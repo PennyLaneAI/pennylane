@@ -315,3 +315,18 @@ class CircuitGraph:
             raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
+
+    def render(self):
+        print("render")
+        print("self._graph = ", self._graph)
+        print("self._grid = ", self._grid)
+        for ops, param_inds in self.layers:
+            print("LAYER")
+            for op in ops:
+                print(op)
+
+        print("----")
+        for layer in self.iterate_layers():
+            print("LAYER")
+            for op in layer.ops:
+                print(op)
