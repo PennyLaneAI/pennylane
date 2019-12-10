@@ -344,6 +344,10 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    UsageDetails:
+
+
     """
     #############
     # Input checks
