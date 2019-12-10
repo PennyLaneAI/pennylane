@@ -91,6 +91,7 @@ def parameterized_qubit_circuit():
         qml.RY(c, wires=2)
         qml.RZ(b, wires=3)
         qml.RX(f, wires=2)
+        # qml.QubitUnitary(np.eye(2), wires=[2])
         qml.Toffoli(wires=[0,2,1])
         qml.CZ(wires=[0, 1])
         qml.CZ(wires=[0, 2])
