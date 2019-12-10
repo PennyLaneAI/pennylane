@@ -637,3 +637,4 @@ class CircuitDrawer:
 # * QubitUnitary, Hermitian support -> move matrices to end of circuit and replace with U1, U2, ... H1, H2, ...
 # * Move crossing multi-wire gates to different layers
 # * Support multi-wire measurements
+# * Move to QNode, enable printing of unevaluated QNodes
