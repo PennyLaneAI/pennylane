@@ -18,11 +18,13 @@ used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+import pennylane as qml
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_hyperp_is_in_options, _check_type,
                                        _check_number_of_layers, _get_shape)
 from pennylane.variable import Variable
+from pennylane.operation import Operation
 
 
 TOLERANCE = 1e-3
@@ -295,27 +297,27 @@ def BasisEmbedding(features, wires):
     BasisState(features, wires=wires)
 
 
-def QAOAEmbedding(features, weights, wires, local_field=None):
+def QAOAEmbedding(features, weights, wires, local_field='Y'):
     r"""
     Encodes :math:`N` features into :math:`n` qubits, using a layered, trainable quantum
     circuit that is inspired by the QAOA ansatz.
 
     A single layer applies two circuits or "Hamiltonians": The first encodes the features, and the second is
-    a variational ansatz inspired by an Ising model. The feature-encoding circuit associates features with
-    the angles of :class:`RX` rotations. The Ising ansatz consists of
-    trainable two-qubit ZZ interactions :math:`e^{-i \alpha \sigma_z \otimes \sigma_z}`, and trainable local fields
-    :math:`e^{-i \frac{\beta}{2} \sigma_{\mu}}`, where :math:`\sigma_{\mu}` can be chosen to be
-    :math:`\sigma_{x}`, :math:`\sigma_{y}` or :math:`\sigma_{z}` (default choice is :math:`\sigma_{y}`).
-    :math:`\alpha, \beta` are adjustable gate parameters.
+    a variational ansatz inspired by a 1-dimensional Ising model. The feature-encoding circuit associates features with
+    the angles of :class:`RX` rotations. The Ising ansatz consists of trainable two-qubit ZZ interactions
+    :math:`e^{-i \alpha \sigma_z \otimes \sigma_z}`,
+    and trainable local fields :math:`e^{-i \frac{\beta}{2} \sigma_{\mu}}`, where :math:`\sigma_{\mu}`
+    can be chosen to be :math:`\sigma_{x}`, :math:`\sigma_{y}` or :math:`\sigma_{z}`
+    (default choice is :math:`\sigma_{y}` or the ``RY`` gate). :math:`\alpha, \beta` are adjustable gate parameters.
 
     The number of features has to be smaller or equal to the number of qubits. If there are fewer features than
     qubits, the feature-encoding rotation is replaced by a Hadamard gate.
 
-    This is an example for a layer using 3 features, 4 wires, and ``RY`` gates:
+    This is an example for the full embedding circuit using 2 layers, 3 features, 4 wires, and ``RY`` local fields:
 
     |
 
-    .. figure:: ../../_static/layer_ising.png
+    .. figure:: ../../_static/qaoa_layers.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -324,28 +326,27 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
 
     The argument ``weights`` contains an array of the :math:`\alpha, \beta` parameters for each layer.
     The number of layers :math:`L` is derived from the first dimension of ``weights``.  If the embedding
-    acts on a single wire, ``weights`` has shape ``(:math:`L`, )``, if the embedding acts on two wires, it has
-    shape ``(:math:`L`, :math:`3`)``, and else it has shape ``(:math:`L`, :math:`2n`)``
+    acts on a single wire, ``weights`` has shape :math:`(L, )`, if the embedding acts on two wires, it has
+    shape :math:`(L, 3)`, and else it has shape :math:`(L, 2n)`
 
     After the :math:`L`th layer,
     another set of feature encoding :class:`RX` gates is applied.
 
     .. note::
         ``QAOAEmbedding`` supports gradient computations with respect to both the ``features`` and the ``weights``
-        arguments.
+        arguments. Note that trainable parameters need to be passed to the quantum node as positional arguments.
 
     Args:
 
-        features (array): Array of features to encode
-        weights (array): Array of weights
+        features (array): array of features to encode
+        weights (array): array of weights
         wires (Sequence[int] or int): `n` qubit indices that the template acts on
-        local_field (pennylane.ops.Operation): single qubit rotation ``RX``, ``RY`` or ``RZ`` that is applied to
-            each qubit at the end of the layer
+        local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
 
     Raises:
         ValueError: if inputs do not have the correct format
 
-    UsageDetails:
+    .. UsageDetails::
 
         The QAOA embedding encodes an :math:`n`-dimensional feature vector into at most :math:`n` qubits. The
         embedding applies layers of a circuit, and each layer is defined by a set of weight parameters.
@@ -357,12 +358,10 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
 
             dev = qml.device('default.qubit', wires=2)
 
-
             @qml.qnode(dev)
             def circuit(weights, f=None):
                 QAOAEmbedding(features=f, weights=weights, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
-
 
             features = [1., 2.]
             layer1 = [0.1, -0.3, 1.5]
@@ -374,7 +373,7 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
         **Using parameter initialization functions**
 
         The initial weight parameters can alternatively be generated by utility functions from the
-        ``pennylane.init`` module, for example using the function ``qaoa_embedding_normal``:
+        ``pennylane.init`` module, for example using the function :func:`qaoa_embedding_normal`:
 
         .. code-block:: python
 
@@ -384,6 +383,9 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
 
 
         **Training the embedding**
+
+        The embedding is typically trained with respect to a given cost. For example, one can train it to
+        minimize the PauliZ expectation of the first qubit:
 
         .. code-block:: python
 
@@ -396,34 +398,42 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
         **Training the features**
 
         In principle, also the features are trainable, which means that gradients with respect to feature values
-        can be computed. To train both weights and featires, they need to be passed to the qnode as a
-        positional argument. If the built-in optimizer is used, they have to be merged to one input:
+        can be computed. To train both weights and features, they need to be passed to the qnode as
+        positional arguments. If the built-in optimizer is used, they have to be merged to one input:
 
         .. code-block:: python
 
             @qml.qnode(dev)
-            def circuit2(weights_and_features):
-                weights = weights_and_features[0]
-                features = weights_and_features[1]
+            def circuit2(pars):
+                weights = pars[0]
+                features = pars[1]
                 QAOAEmbedding(features=features, weights=weights, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
 
             features = [1., 2.]
             weights = [[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]]
-            w_and_f = [weights, features]
+            pars = [weights, features]
 
             o = GradientDescentOptimizer()
             for i in range(10):
-                w_and_f = o.step(circuit2, w_and_f)
-                print("Step ", i, " weights = ", w_and_f[0], " features = ", w_and_f[1])
+                pars = o.step(circuit2, pars)
+                print("Step ", i, " weights = ", pars[0], " features = ", pars[1])
 
         **Local Fields**
 
-        While by default, ``RY`` gates are used as local fields, one may also choose ``local_field=RZ`` or
-        ``local_field=RX`` in the embedding. Choosing ``RZ`` fields reveals that the QAOAEmbedding is inspired by
-         an Ising model: The feature embedding gates can be understood as a simple Hamiltonian that is alternated with
-         a more complex Ising model Hamiltonian on a linear chain of spins.
+        While by default, ``RY`` gates are used as local fields, one may also choose ``local_field='Z'`` or
+        ``local_field='X'`` as hyperparameters of the embedding.
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(weights, f=None):
+                QAOAEmbedding(features=f, weights=weights, wires=range(2), local_field='Z')
+                return qml.expval(qml.PauliZ(0))
+
+        Choosing ``'Z'`` fields implements a QAOAEmbedding where the second Hamiltonian is a
+        1-dimensional Ising model.
 
     """
     #############
@@ -435,11 +445,14 @@ def QAOAEmbedding(features, weights, wires, local_field=None):
           "got {}.".format(n_wires, len(features))
     _check_shape(features, (n_wires,), bound='max', msg=msg)
 
-    if local_field is None:
-        local_field = RY
+    msg = "Option for local field not known. Has to be one of ``'X'``, ``'Y'``, or ``'Z'``."
+    _check_hyperp_is_in_options(local_field, ['X', 'Y', 'Z'], msg=msg)
+    if local_field is 'Z':
+        local_field = RZ
+    elif local_field is 'X':
+        local_field = RX
     else:
-        msg = "Gate for local field not known. Has to be one of ``RX``, ``RY``, ``RZ``."
-        _check_type(local_field, [RX, RY, RZ], msg=msg)
+        local_field = RY
 
     repeat = _check_number_of_layers([weights])
 
