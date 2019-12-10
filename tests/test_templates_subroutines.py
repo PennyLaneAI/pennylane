@@ -61,49 +61,39 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        def circuit_rect(varphi):
+        with qml.utils.OperationRecorder() as rec_rect:
             Interferometer(theta, phi, varphi, mesh='rectangular', beamsplitter='clements', wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
-        def circuit_tria(varphi):
+        with qml.utils.OperationRecorder() as rec_tria:
             Interferometer(theta, phi, varphi, mesh='triangular', beamsplitter='clements', wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
-        for c in [circuit_rect, circuit_tria]:
-            qnode = qml.QNode(c, dev)
-            assert np.allclose(qnode(varphi), [0, 0], atol=tol)
+        for rec in [rec_rect, rec_tria]:
 
-            queue = qnode.queue
-            assert len(queue) == 4
+            assert len(rec.queue) == 4
 
-            assert isinstance(qnode.queue[0], qml.Rotation)
-            assert qnode.queue[0].parameters == phi
+            assert isinstance(rec.queue[0], qml.Rotation)
+            assert rec.queue[0].parameters == phi
 
-            assert isinstance(qnode.queue[1], qml.Beamsplitter)
-            assert qnode.queue[1].parameters == [theta[0], 0]
+            assert isinstance(rec.queue[1], qml.Beamsplitter)
+            assert rec.queue[1].parameters == [theta[0], 0]
 
-            assert isinstance(qnode.queue[2], qml.Rotation)
-            assert qnode.queue[2].parameters == [varphi[0]]
+            assert isinstance(rec.queue[2], qml.Rotation)
+            assert rec.queue[2].parameters == [varphi[0]]
 
-            assert isinstance(qnode.queue[3], qml.Rotation)
-            assert qnode.queue[3].parameters == [varphi[1]]
+            assert isinstance(rec.queue[3], qml.Rotation)
+            assert rec.queue[3].parameters == [varphi[1]]
 
     def test_one_mode(self, tol):
         """Test that a one mode interferometer correctly gives a rotation gate"""
         dev = qml.device('default.gaussian', wires=1)
         varphi = [0.42342]
 
-        def circuit(varphi):
+        with qml.utils.OperationRecorder() as rec:
             Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
-            return qml.expval(qml.NumberOperator(0))
 
-        qnode = qml.QNode(circuit, dev)
-        assert np.allclose(qnode(varphi), 0, atol=tol)
-
-        queue = qnode.queue
-        assert len(queue) == 1
-        assert isinstance(qnode.queue[0], qml.Rotation)
-        assert np.allclose(qnode.queue[0].parameters, varphi, atol=tol)
+        assert len(rec.queue) == 1
+        assert isinstance(rec.queue[0], qml.Rotation)
+        assert np.allclose(rec.queue[0].parameters, varphi, atol=tol)
 
     def test_two_mode_rect(self, tol):
         """Test that a two mode interferometer using the rectangular mesh
@@ -115,24 +105,18 @@ class TestInterferometer:
         theta = [0.321]
         phi = [0.234]
         varphi = [0.42342, 0.1121]
-        def circuit(varphi):
+
+        with qml.utils.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
-        qnode = qml.QNode(circuit, dev)
-        assert np.allclose(qnode(varphi), [0, 0], atol=tol)
+        isinstance(rec.queue[0], qml.Beamsplitter)
+        assert rec.queue[0].parameters == theta+phi
 
-        queue = qnode.queue
-        assert len(queue) == 3
+        assert isinstance(rec.queue[1], qml.Rotation)
+        assert rec.queue[1].parameters == [varphi[0]]
 
-        assert isinstance(qnode.queue[0], qml.Beamsplitter)
-        assert qnode.queue[0].parameters == theta+phi
-
-        assert isinstance(qnode.queue[1], qml.Rotation)
-        assert qnode.queue[1].parameters == [varphi[0]]
-
-        assert isinstance(qnode.queue[2], qml.Rotation)
-        assert qnode.queue[2].parameters == [varphi[1]]
+        assert isinstance(rec.queue[2], qml.Rotation)
+        assert rec.queue[2].parameters == [varphi[1]]
 
     def test_two_mode_triangular(self, tol):
         """Test that a two mode interferometer using the triangular mesh
@@ -144,25 +128,20 @@ class TestInterferometer:
         theta = [0.321]
         phi = [0.234]
         varphi = [0.42342, 0.1121]
-        def circuit(varphi):
+
+        with qml.utils.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
-        qnode = qml.QNode(circuit, dev)
-        assert np.allclose(qnode(varphi), [0, 0], atol=tol)
+        assert len(rec.queue) == 3
 
-        queue = qnode.queue
+        assert isinstance(rec.queue[0], qml.Beamsplitter)
+        assert rec.queue[0].parameters == theta+phi
 
-        assert len(queue) == 3
+        assert isinstance(rec.queue[1], qml.Rotation)
+        assert rec.queue[1].parameters == [varphi[0]]
 
-        assert isinstance(qnode.queue[0], qml.Beamsplitter)
-        assert qnode.queue[0].parameters == theta+phi
-
-        assert isinstance(qnode.queue[1], qml.Rotation)
-        assert qnode.queue[1].parameters == [varphi[0]]
-
-        assert isinstance(qnode.queue[2], qml.Rotation)
-        assert qnode.queue[2].parameters == [varphi[1]]
+        assert isinstance(rec.queue[2], qml.Rotation)
+        assert rec.queue[2].parameters == [varphi[1]]
 
     def test_three_mode(self, tol):
         """Test that a three mode interferometer using either mesh gives the correct gates"""
@@ -174,30 +153,24 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234]
         varphi = [0.42342, 0.234, 0.1121]
 
-        def circuit_rect(varphi):
+        with qml.utils.OperationRecorder() as rec_rect:
             Interferometer(theta, phi, varphi, wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
-        def circuit_tria(varphi):
+        with qml.utils.OperationRecorder() as rec_tria:
             Interferometer(theta, phi, varphi, wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
-        for c in [circuit_rect, circuit_tria]:
+        for rec in [rec_rect, rec_tria]:
             # test both meshes (both give identical results for the 3 mode case).
-            qnode = qml.QNode(c, dev)
-            assert np.allclose(qnode(varphi), [0]*N, atol=tol)
-
-            queue = qnode.queue
-            assert len(queue) == 6
+            assert len(rec.queue) == 6
 
             expected_bs_wires = [[0, 1], [1, 2], [0, 1]]
 
-            for idx, op in enumerate(qnode.queue[:3]):
+            for idx, op in enumerate(rec_rect.queue[:3]):
                 assert isinstance(op, qml.Beamsplitter)
                 assert op.parameters == [theta[idx], phi[idx]]
                 assert op.wires == expected_bs_wires[idx]
 
-            for idx, op in enumerate(qnode.queue[3:]):
+            for idx, op in enumerate(rec.queue[3:]):
                 assert isinstance(op, qml.Rotation)
                 assert op.parameters == [varphi[idx]]
                 assert op.wires == [idx]
@@ -212,24 +185,19 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
-        def circuit_rect(varphi):
+        with qml.utils.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
-        qnode = qml.QNode(circuit_rect, dev)
-        assert np.allclose(qnode(varphi), [0]*N, atol=tol)
-
-        queue = qnode.queue
-        assert len(queue) == 10
+        assert len(rec.queue) == 10
 
         expected_bs_wires = [[0, 1], [2, 3], [1, 2], [0, 1], [2, 3], [1, 2]]
 
-        for idx, op in enumerate(qnode.queue[:6]):
+        for idx, op in enumerate(rec.queue[:6]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
             assert op.wires == expected_bs_wires[idx]
 
-        for idx, op in enumerate(qnode.queue[6:]):
+        for idx, op in enumerate(rec.queue[6:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
             assert op.wires == [idx]
@@ -244,24 +212,19 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
-        def circuit_tria(varphi):
+        with qml.utils.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
-        qnode = qml.QNode(circuit_tria, dev)
-        assert np.allclose(qnode(varphi), [0]*N, atol=tol)
-
-        queue = qnode.queue
-        assert len(queue) == 10
+        assert len(rec.queue) == 10
 
         expected_bs_wires = [[2, 3], [1, 2], [0, 1], [2, 3], [1, 2], [2, 3]]
 
-        for idx, op in enumerate(qnode.queue[:6]):
+        for idx, op in enumerate(rec.queue[:6]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
             assert op.wires == expected_bs_wires[idx]
 
-        for idx, op in enumerate(qnode.queue[6:]):
+        for idx, op in enumerate(rec.queue[6:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
             assert op.wires == [idx]

@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane._device import Device
-from pennylane.beta.qnodes.base import BaseQNode, QuantumFunctionError, QNode_old, decompose_queue
+from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 
 
 @pytest.fixture(scope="function")
@@ -209,10 +209,10 @@ class TestQNodeExceptions:
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
         with monkeypatch.context() as m:
-            m.setattr(QNode_old, "_current_context", node)
+            m.setattr(qml, "_current_context", node)
             with pytest.raises(
                 QuantumFunctionError,
-                match="QNode._current_context must not be modified outside this method.",
+                match="qml._current_context must not be modified outside this method.",
             ):
                 node(0.5)
 

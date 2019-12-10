@@ -620,51 +620,6 @@ class TestDefaultGaussianIntegration:
         with pytest.raises(TypeError, match="missing 1 required positional argument: 'wires'"):
             qml.device('default.gaussian')
 
-    @pytest.mark.parametrize("g", set(qml.ops.__all_ops__) - set(DefaultGaussian._operation_map.keys()))
-    def test_unsupported_gates(self, g, gaussian_device_3_wires):
-        """Test error is raised with unsupported gates"""
-        # TODO: Refactor this test to remove dynamic attribute loading, and instead
-        # have separate tests for gates with specific number of parameters/wires.
-        if g == "BasisState" or g == "QubitStateVector":
-            pytest.skip("Test not set up properly for gates with array parameters, needs refactoring.")
-
-        op = getattr(qml.ops, g)
-        if op.num_wires <= 0:
-            wires = list(range(3))
-        else:
-            wires = list(range(op.num_wires))
-
-        @qml.qnode(gaussian_device_3_wires)
-        def circuit(*x):
-            """Test quantum function"""
-            x = prep_par(x, op)
-            op(*x, wires=wires)
-            return qml.expval(qml.X(0)) if issubclass(op, qml.operation.CV) else qml.expval(qml.PauliZ(0))
-
-        x = np.random.random([op.num_params])
-        with pytest.raises(qml.DeviceError, match="Gate {} not supported on device default.gaussian".format(g)):
-            circuit(*x)
-
-    @pytest.mark.parametrize("g", set(qml.ops.__all_obs__) - set(DefaultGaussian._observable_map.keys()))
-    def test_unsupported_observables(self, g, gaussian_dev):
-        """Test error is raised with unsupported observables."""
-
-        op = getattr(qml.ops, g)
-        if op.num_wires <= 0:
-            wires = list(range(2))
-        else:
-            wires = list(range(op.num_wires))
-
-        @qml.qnode(gaussian_dev)
-        def circuit(*x):
-            """Test quantum function"""
-            x = prep_par(x, op)
-            return qml.expval(op(*x, wires=wires))
-
-        x = np.random.random([op.num_params])
-        with pytest.raises(qml.DeviceError, match="Observable {} not supported on device default.gaussian".format(g)):
-            circuit(*x)
-
     def test_gaussian_circuit(self, tol):
         """Test that the default gaussian plugin provides correct result for simple circuit"""
         dev = qml.device('default.gaussian', wires=1)

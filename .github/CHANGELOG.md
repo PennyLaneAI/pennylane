@@ -4,6 +4,10 @@
 
 ### Breaking changes
 
+* Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
+  moved all related files from the `pennylane/beta` folder to `pennylane`.
+  [#440](https://github.com/XanaduAI/pennylane/pull/440)
+
 ### Improvements
 
 ### Documentation
@@ -21,7 +25,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Maria Schuld
+Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva
 
 ---
 

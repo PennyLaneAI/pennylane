@@ -347,15 +347,15 @@ class TestOperationRecorder:
 
     def test_context_switching(self, monkeypatch):
         """Test that the current QNode context is properly switched."""
-        monkeypatch.setattr(qml.QNode, "_current_context", "Test")
+        monkeypatch.setattr(qml, "_current_context", "Test")
 
-        assert qml.QNode._current_context == "Test"
+        assert qml._current_context == "Test"
 
         with pu.OperationRecorder() as recorder:
             assert recorder.old_context == "Test"
-            assert qml.QNode._current_context == recorder.rec
+            assert qml._current_context == recorder.rec
 
-        assert qml.QNode._current_context == "Test"
+        assert qml._current_context == "Test"
 
     def test_circuit_integration(self):
         """Tests that the OperationRecorder integrates well with the

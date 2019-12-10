@@ -42,9 +42,7 @@ info = {
                     'pennylane.optimize',
                     'pennylane.interfaces',
                     'pennylane.beta',
-                    'pennylane.beta.interfaces',
                     'pennylane.beta.plugins',
-                    'pennylane.beta.qnodes',
                     'pennylane.beta.vqe',
                 ],
     'entry_points': {
