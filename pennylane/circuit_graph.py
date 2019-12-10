@@ -425,13 +425,49 @@ class CircuitGraph:
     def string_representation(self, op):
         if isinstance(op, qml.operation.Observable) and op.return_type is not None:
             return self.observable_string(op)
+        elif isinstance(op, str):
+            return op
         else:
             return self.operator_string(op)
+
+    def build_string_representations(self, grid):
+        grid_copy = grid.copy()
+        j = 0
+
+        for i in range(grid.shape[1]):
+            layer_ops = set(grid[:, i])
+            print("i = {}, layer_ops = {}".format(i, layer_ops))
+            for op in layer_ops:
+                if op is None:
+                    continue
+
+                if op.num_wires > 1:
+                    additional = np.array([None] * grid.shape[0], dtype=object)
+                    sorted_wires = op.wires.copy()
+                    sorted_wires.sort()
+                    additional[sorted_wires[0]] = "╗"
+                    additional[sorted_wires[-1]] = "╝"
+                    for k in range(sorted_wires[0] + 1, sorted_wires[-1]):
+                        if k in sorted_wires:
+                            additional[k] = "╣"
+                        else:
+                            additional[k] = "║"
+
+                    print("additional = ", additional)
+                    print("insert location = ", i + j)
+                    #print("grid_copy before insert = \n", grid_copy)
+                    grid_copy = np.insert(grid_copy, i + j + 1, additional, axis=1)
+                    j += 1
+                    #print("grid_copy after insert before ", i + j, " = \n", grid_copy)
+
+        return np.vectorize(self.string_representation)(grid_copy)
+
+
 
     def render(self):
         grid, obs = self.greedy_layers()
 
-        repr_grid = np.vectorize(self.string_representation)(grid)
+        repr_grid = self.build_string_representations(grid)
         obs_repr = np.vectorize(self.string_representation)(obs)
         len_grid = np.vectorize(lambda x: len(x))(repr_grid)
         obs_len = np.vectorize(lambda x: len(x))(obs_repr)
