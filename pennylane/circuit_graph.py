@@ -382,99 +382,6 @@ class CircuitGraph:
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
 
-    op_dict = {
-        "PauliX": "X",
-        "CNOT": "X",
-        "Toffoli": "X",
-        "PauliY": "Y",
-        "PauliZ": "Z",
-        "CZ": "X",
-        "Identity": "I",
-        "Hadamard": "H",
-    }
-
-    def operator_string(self, op):
-        name = op.name
-        if name in self.op_dict:
-            name = self.op_dict[name]
-
-        if op.num_params == 0:
-            return name
-
-        return "{}({})".format(
-            name,
-            ",".join(
-                [
-                    str(par) if not isinstance(par, qml.variable.Variable) else par.render()
-                    for par in op.params
-                ]
-            ),
-        )
-
-    def observable_string(self, obs):
-        if obs.return_type == qml.operation.Expectation:
-            return "<{}>".format(self.operator_string(obs))
-        elif obs.return_type == qml.operation.Variance:
-            return "Var[{}]".format(self.operator_string(obs))
-        elif obs.return_type == qml.operation.Sample:
-            return "Sample[{}]".format(self.operator_string(obs))
-
-    def string_representation(self, op):
-        if op is None:
-            return "─"
-        elif isinstance(op, qml.operation.Observable) and op.return_type is not None:
-            return self.observable_string(op)
-        elif isinstance(op, str):
-            return op
-        else:
-            return self.operator_string(op)
-
-    def build_string_representations(self, grid):
-        grid_copy = grid.copy()
-        j = 0
-
-        # Transpose to work in layers
-        grid = list(map(list, zip(*grid)))
-        grid_copy = list(map(list, zip(*grid_copy)))
-
-        # Iterate over all layers
-        for i in range(len(grid)):
-            layer_ops = set(grid[i])
-            
-            for op in layer_ops:
-                if op is None:
-                    continue
-
-                if op.num_wires > 1:
-                    additional = [None] * len(grid[0])
-                    sorted_wires = op.wires.copy()
-                    sorted_wires.sort()
-                    additional[sorted_wires[0]] = "╗"
-                    additional[sorted_wires[-1]] = "╝"
-                    for k in range(sorted_wires[0] + 1, sorted_wires[-1]):
-                        if k in sorted_wires:
-                            additional[k] = "╣"
-                        else:
-                            additional[k] = "║"
-
-                    grid_copy.insert(i + j + 1, additional)
-
-                    j += 1
-
-        grid = list(map(list, zip(*grid)))
-        grid_copy = list(map(list, zip(*grid_copy)))
-
-        return list(map(lambda l: list(map(self.string_representation, l)), grid_copy))
-
-    def is_box(self, str):
-        return str in ["╗", "╝", "╣", "║"]
-
-    def justify_all(self, arr, width, fill_char, prepend=""):
-        for i in range(len(arr)):
-            arr[i] = prepend + str.ljust(arr[i], width, fill_char)
-
-        return arr
-
     def render(self):
         grid, obs = self.greedy_layers()
 
@@ -486,36 +393,6 @@ class CircuitGraph:
         print(drawer.observable_representation_grid)
 
         drawer.render()
-
-        # repr_grid = self.build_string_representations(grid)
-        # obs_repr = list(map(lambda l: list(map(self.string_representation, l)), obs))
-        # len_grid = list(map(lambda l: list(map(len, l)), repr_grid))
-        # obs_len = list(map(lambda l: list(map(len, l)), obs_repr))
-
-        # widths = np.max(len_grid, axis=0)
-
-        # repr_grid = list(map(list, zip(*repr_grid)))
-        # for i in range(len(widths)):
-        #     if not any([self.is_box(repr) for repr in repr_grid[i]]):
-        #         repr_grid[i] = self.justify_all(repr_grid[i], widths[i], "─", "──")
-        #     else:
-        #         repr_grid[i] = self.justify_all(repr_grid[i], widths[i], "─")
-
-        # repr_grid = list(map(list, zip(*repr_grid)))
-        # print(repr_grid)
-
-        # obs_width = np.max(obs_len)
-        # obs_repr = np.vectorize(lambda x: "┤" + x.ljust(obs_width, " "))(obs_repr)
-
-        # all_repr = np.hstack([repr_grid, obs_repr])
-
-        # for wire in range(len(all_repr)):
-        #     print("{}: ──".format(wire), end="")
-
-        #     for repr in all_repr[wire]:
-        #         print("{}".format(repr), end="")
-
-        #     print()
 
 class Grid:
     def __init__(self, raw_grid=[]):
@@ -580,6 +457,8 @@ class UnicodeCharSet:
     BOTTOM_MULTI_LINE_GATE_CONNECTOR = "╝"
     EMPTY_MULTI_LINE_GATE_CONNECTOR = "║"
     CONTROL = "●"
+    LANGLE = "⟨"
+    RANGLE = "⟩"
 
 class RepresentationResolver:
     resolution_dict = {
@@ -619,7 +498,7 @@ class RepresentationResolver:
 
     def observable_representation(self, obs, wire):
         if obs.return_type == qml.operation.Expectation:
-            return "<{}>".format(self.operation_representation(obs, wire))
+            return self.charset.LANGLE + "{}".format(self.operation_representation(obs, wire)) + self.charset.RANGLE
         elif obs.return_type == qml.operation.Variance:
             return "Var[{}]".format(self.operation_representation(obs, wire))
         elif obs.return_type == qml.operation.Sample:
@@ -674,6 +553,15 @@ class CircuitDrawer:
                     decoration_indices.append(i +  j + 1)
                     j += 1
 
+    def resolve_padding(self, representation_grid, pad_str, prepend_str, skip_prepend_idx):        
+        for i in range(representation_grid.num_layers):
+            layer = representation_grid.layer(i)
+            max_width = max(map(len, layer))
+
+            if i in skip_prepend_idx:
+                representation_grid.replace_layer(i, list(map(lambda x: str.ljust(x, max_width, pad_str), layer)))
+            else:
+                representation_grid.replace_layer(i, list(map(lambda x: prepend_str + str.ljust(x, max_width, pad_str), layer)))
 
     def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet):
         self.charset = charset
@@ -693,21 +581,9 @@ class CircuitDrawer:
         self.resolve_decorations(self.operator_grid, self.operator_representation_grid, self.operator_decoration_indices)
         self.resolve_decorations(self.observable_grid, self.observable_representation_grid, self.observable_decoration_indices)
 
-        for i in range(self.operator_representation_grid.num_layers):
-            layer = self.operator_representation_grid.layer(i)
-            max_width = max(map(len, layer))
+        self.resolve_padding(self.operator_representation_grid, charset.WIRE, 2*charset.WIRE, self.operator_decoration_indices)
+        self.resolve_padding(self.observable_representation_grid, " ", charset.WIRE + charset.MEASUREMENT + " ", self.observable_decoration_indices)
 
-            if i in self.operator_decoration_indices:
-                self.operator_representation_grid.replace_layer(i, list(map(lambda x: str.ljust(x, max_width, charset.WIRE), layer)))
-            else:
-                self.operator_representation_grid.replace_layer(i, list(map(lambda x: 2 * charset.WIRE + str.ljust(x, max_width, charset.WIRE), layer)))
-
-        for i in range(self.observable_representation_grid.num_layers):
-            layer = self.observable_representation_grid.layer(i)
-            max_width = max(map(len, layer))
-
-            self.observable_representation_grid.replace_layer(i, list(map(lambda x: charset.WIRE + charset.MEASUREMENT + " " + str.ljust(x, max_width, " "), layer)))
-        
         self.full_representation_grid = self.operator_representation_grid.copy()
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
