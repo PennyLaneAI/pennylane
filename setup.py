@@ -36,14 +36,15 @@ info = {
     'license': 'Apache License 2.0',
     'packages': [
                     'pennylane',
-                    'pennylane.ops',
-                    'pennylane.templates',
-                    'pennylane.plugins',
-                    'pennylane.optimize',
-                    'pennylane.interfaces',
                     'pennylane.beta',
                     'pennylane.beta.plugins',
                     'pennylane.beta.vqe',
+                    'pennylane.interfaces',
+                    'pennylane.ops',
+                    'pennylane.optimize',
+                    'pennylane.plugins',
+                    'pennylane.qnodes',
+                    'pennylane.templates',
                 ],
     'entry_points': {
         'pennylane.plugins': [
