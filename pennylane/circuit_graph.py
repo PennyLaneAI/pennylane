@@ -18,6 +18,7 @@ representation of a quantum circuit from an Operator queue.
 from collections import namedtuple, Counter
 import networkx as nx
 
+import numpy as np
 from .utils import _flatten
 import pennylane as qml
 
@@ -330,7 +331,8 @@ class CircuitGraph:
 
             l += 1
 
-        return greedy_grid
+        # l is now the number of total layers
+        return np.array([[greedy_grid[wire][i] for wire in greedy_grid] for i in range(l)], dtype=object).T
 
 
     def update_node(self, old, new):
@@ -349,23 +351,46 @@ class CircuitGraph:
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
 
+    op_dict = {
+        "PauliX" : "X",
+        "PauliY" : "Y",
+        "PauliZ" : "Z",
+        "Identity" : "I",
+    }
+
     def operator_string(self, op):
+        if op is None:
+            return ""
+
+        name = op.name
+        if name in self.op_dict:
+            name = self.op_dict[name]
+
         if op.num_params == 0:
-            return op.name
+            return name
         
-        return "{}({})".format(op.name, ",".join([str(par) if not isinstance(par, qml.variable.Variable) else par.render() for par in op.params]))
+        return "{}({})".format(name, ",".join([str(par) if not isinstance(par, qml.variable.Variable) else par.render() for par in op.params]))
+
+
 
     def render(self):
-        print("render")
-
         grid = self.greedy_layers()
-        for wire in grid:
+
+        repr_grid = np.vectorize(self.operator_string)(grid)
+        len_grid = np.vectorize(lambda x: len(x))(repr_grid)
+
+        widths = np.max(len_grid, axis=0)
+
+        print(len_grid)
+        print(widths)
+
+        for i in range(len(widths)):
+            repr_grid[:, i] = np.vectorize(lambda x: x.ljust(widths[i], "-"))(repr_grid[:, i])
+
+        for wire in range(len(repr_grid)):
             print("{}: --".format(wire), end="")
 
-            for op in grid[wire]:
-                if op:
-                    print("--{}--".format(self.operator_string(op)), end="")
-                else:
-                    print("--()--", end="")
+            for repr in repr_grid[wire]:
+                print("-{}-".format(repr), end="")
 
             print()
