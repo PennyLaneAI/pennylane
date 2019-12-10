@@ -31,12 +31,24 @@ TOLERANCE = 1e-3
 def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
-    If the total number of features to embed is less than the :math:`2^n` available amplitudes,
-    non-informative constants (zeros) can be padded to ``features``. To enable this, the argument
-    ``pad`` should be set to ``True``.
+    By setting ``pad`` to a real or complex number, ``features`` is automatically padded to dimension
+    :math:`2^n` where :math:`n` is the number of qubits used in the embedding.
 
-    The L2-norm of ``features`` must be one. By default, ``AmplitudeEmbedding`` expects a normalized
-    feature vector. The argument ``normalize`` can be set to ``True`` to automatically normalize it.
+    To represent a valid quantum state vector, the L2-norm of ``features`` must be one.
+    The argument ``normalize`` can be set to ``True`` to automatically normalize the features.
+
+    If both automatic padding and normalization are used, padding is executed *before* normalizing.
+
+    .. note::
+
+        On some devices, ``AmplitudeEmbedding`` must be the first operation of a quantum node.
+
+
+    .. note::
+
+        ``AmplitudeEmbedding`` calls a circuit that involves non-trivial classical processing of the
+        features. The ``features`` argument is therefore **not differentiable** when using the template, and
+        gradients with respect to the features cannot be computed by PennyLane.
 
     .. warning::
 
@@ -46,12 +58,115 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     Args:
         features (array): input array of shape ``(2^n,)``
-        wires (Sequence[int] or int): qubit indices that the template acts on
+        wires (Sequence[int] or int): :math:`n` qubit indices that the template acts on
         pad (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (Boolean): controls the activation of automatic normalization
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    .. UsageDetails::
+
+        Amplitude embedding encodes a normalized :math:`2^n`-dimensional feature vector into the state
+        of :math:`n` qubits:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.templates import AmplitudeEmbedding
+
+            dev = qml.device('default.qubit', wires=2)
+
+            @qml.qnode(dev)
+            def circuit(f=None):
+                AmplitudeEmbedding(features=f, wires=range(2))
+                return qml.expval(qml.PauliZ(0))
+
+            circuit(f=[1/2, 1/2, 1/2, 1/2])
+
+        Checking the final state of the device, we find that it is equivalent to the input passed to the circuit:
+
+        >>> dev._state
+        [0.5+0.j 0.5+0.j 0.5+0.j 0.5+0.j]
+
+        **Passing features as positional arguments to a quantum node**
+
+        The ``features`` argument of ``AmplitudeEmbedding`` can in principle also be passed to the quantum node
+        as a positional argument:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(f):
+                AmplitudeEmbedding(features=f, wires=range(2))
+                return qml.expval(qml.PauliZ(0))
+
+        However, due to non-trivial classical processing to construct the state preparation circuit,
+        the features argument is **not differentiable**.
+
+        >>> g = qml.grad(circuit, argnum=0)
+        >>> g([1,1,1,1])
+        ValueError: Cannot differentiate wrt parameter(s) {0, 1, 2, 3}.
+
+
+        **Normalization**
+
+        The template will raise an error if the feature input is not normalized.
+        One can set ``normalize=True`` to automatically normalize it:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(f=None):
+                AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
+                return qml.expval(qml.PauliZ(0))
+
+            circuit(f=[15, 15, 15, 15])
+
+        The re-normalized feature vector is encoded into the quantum state vector:
+
+        >>> dev._state
+        [0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j]
+
+        **Padding**
+
+        If the dimension of the feature vector is smaller than the number of amplitudes,
+        one can automatically pad it with a constant for the missing dimensions using the ``pad`` option:
+
+        .. code-block:: python
+
+            from math import sqrt
+
+            @qml.qnode(dev)
+            def circuit(f=None):
+                AmplitudeEmbedding(features=f, wires=range(2), pad=0.)
+                return qml.expval(qml.PauliZ(0))
+
+            circuit(f=[1/sqrt(2), 1/sqrt(2)])
+
+        >>> dev._state
+        [0.70710678 + 0.j, 0.70710678 + 0.j, 0.0 + 0.j, 0.0 + 0.j]
+
+        **Operations before the embedding**
+
+        On some devices, ``AmplitudeEmbedding`` must be the first operation in the quantum node.
+        For example, ``'default.qubit'`` complains when running the following circuit:
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=2)
+
+            @qml.qnode(dev)
+            def circuit(f=None):
+                qml.Hadamard(wires=0)
+                AmplitudeEmbedding(features=f, wires=range(2))
+                return qml.expval(qml.PauliZ(0))
+
+
+        >>> circuit(f=[1/2, 1/2, 1/2, 1/2])
+        pennylane._device.DeviceError: Operation QubitStateVector cannot be used
+        after other Operations have already been applied on a default.qubit device.
+
     """
 
     #############

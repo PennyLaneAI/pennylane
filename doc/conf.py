@@ -375,3 +375,9 @@ autodoc_member_order = 'bysource'
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
+
+from directives import UsageDetails
+
+
+def setup(app):
+    app.add_directive("usagedetails", UsageDetails)
