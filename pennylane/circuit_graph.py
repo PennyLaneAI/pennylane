@@ -392,11 +392,6 @@ class CircuitGraph:
 
         drawer = CircuitDrawer(grid, obs)
 
-        print(drawer.operator_grid)
-        print(drawer.operator_representation_grid)
-        print(drawer.observable_grid)
-        print(drawer.observable_representation_grid)
-
         drawer.render()
 
 

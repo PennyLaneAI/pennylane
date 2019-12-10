@@ -248,5 +248,7 @@ class TestCircuitGraphDrawing:
         qnode = qml.QNode(parameterized_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         qnode.circuit.render()
+        qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
+        qnode.circuit.render()
 
         raise Exception()

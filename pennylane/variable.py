@@ -142,8 +142,8 @@ class Variable:
 
     def render(self):
         if self.name is None:
-            if Variable.free_param_values and len(Variable.free_param_values) >= self.idx:
-                return str(self.val)
+            if Variable.free_param_values is not None and len(Variable.free_param_values) > self.idx:
+                return str(round(self.val, 2))
             else:
                 if self.mult != 1:
                     return "{}*#{}".format(self.mult, self.idx)
